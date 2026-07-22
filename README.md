@@ -14,9 +14,10 @@ A pixel-art roguelite about assembling, placing, and upgrading a company of dwar
 
 ## Current phase
 
-The project is in **concept development**. This first revision establishes the visual direction and communicates the intended game loop. The next phase will turn the concept into an implementation plan covering scope, mechanics, technology, milestones, and a playable vertical slice.
+The project is in **gameplay definition and implementation planning**. The initial concept establishes the visual direction; the current design work defines the progression loop, player interaction model, and smallest useful playable slice.
 
-See [Concept Art Direction](docs/concept-art.md) for a breakdown of the mockup.
+- [Concept Art Direction](docs/concept-art.md)
+- [Core Progression and Round Structure](docs/gameplay-loop.md)
 
 ## Working title
 
