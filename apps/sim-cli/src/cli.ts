@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { execFile } from "node:child_process";
+import { constants } from "node:fs";
 import {
   lstat,
   mkdir,
   mkdtemp,
+  open,
   readFile,
   rename,
   rm,
@@ -194,15 +196,29 @@ async function readArtifactText(
   name: string
 ): Promise<string> {
   const path = resolve(directory, name);
-  const status = await pathStatus(path);
-  if (status === undefined || status.isSymbolicLink() || !status.isFile()) {
+  let handle: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    const status = await handle.stat();
+    if (!status.isFile()) {
+      throw new ReplayArtifactError(
+        "missing_or_unsafe_artifact",
+        name,
+        `${name} must be a regular file inside the run bundle`
+      );
+    }
+    return await handle.readFile("utf8");
+  } catch (error) {
+    if (error instanceof ReplayArtifactError) throw error;
+    const message = error instanceof Error ? error.message : String(error);
     throw new ReplayArtifactError(
       "missing_or_unsafe_artifact",
       name,
-      `${name} must be a regular file inside the run bundle`
+      `unable to open ${name} as a non-symlink regular file: ${message}`
     );
+  } finally {
+    await handle?.close().catch(() => undefined);
   }
-  return readFile(path, "utf8");
 }
 
 async function readArtifactJson(
