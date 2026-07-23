@@ -10,17 +10,22 @@ A pixel-art roguelite about assembling, placing, and upgrading a company of dwar
 - **Create synergies:** combine wards, elemental effects, defensive formations, and support auras.
 - **Control the battlefield:** place the company around halls, passages, stairways, bridges, and other natural chokepoints.
 - **Survive the deep:** withstand escalating waves of goblins, trolls, spiders, and ancient subterranean horrors.
-- **Push farther:** earn gold and runestones, improve the roster, and reach increasingly dangerous sections of the fallen kingdom.
+- **Push farther:** earn character XP and Forge Ore, improve the roster, and reach increasingly dangerous sections of the fallen kingdom.
 
 ## Current phase
 
-The project is in **gameplay definition and implementation planning**. The initial concept establishes the visual direction; the current design work defines the progression loop, player interaction model, and smallest useful playable slice.
+The project is in **technical design**. The game rules are sufficiently closed to design the deterministic simulation, agent-inspectable harness, client architecture, content pipeline, persistence, and vertical-slice delivery plan.
 
 - [Concept Art Direction](docs/concept-art.md)
 - [Core Progression and Round Structure](docs/gameplay-loop.md)
 - [First-Pass Systems and Content Decisions](docs/first-pass-systems.md)
 - [Independent Design Review Synthesis](docs/design-review-synthesis.md)
 - [Technical Design Readiness Rules](docs/technical-design-readiness.md)
+- [Technical Design](docs/technical-design.md)
+- [Simulation, Test, and Balance Harness](docs/simulation-harness.md)
+- [Technical Design Review Synthesis](docs/technical-design-review-synthesis.md)
+- [Technical Implementation Plan](docs/implementation-plan.md)
+- [ADR-0001: TypeScript deterministic core](docs/adr/0001-typescript-deterministic-core.md)
 
 ## Working title
 

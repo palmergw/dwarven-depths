@@ -255,7 +255,7 @@ The slice is successful when it demonstrates, with deterministic content and a p
 - XP thresholds and currency amounts
 - Replay reward multiplier
 - Skill and item numerical effects
-- Character recruitment cost after availability
+- Character unlock presentation and catch-up level
 - Level roster capacity
 - Enemy statistics and resistance values
 - Optional combat slowdown amount
