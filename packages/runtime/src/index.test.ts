@@ -21,7 +21,9 @@ import nonterminatingScenarioInput from "../../../scenarios/conformance/nontermi
   type: "json"
 };
 import {
+  createLifecycleDiagnostics,
   createReplayDefinition,
+  createTimelineRecords,
   type ReplayDivergenceError,
   type RuntimeSafetyStopError,
   runScenario,
@@ -95,7 +97,20 @@ describe("shared runtime", () => {
     const scenario = compileScenario(scenarioInput, content);
     const result = await runScenario(scenario, content);
     const generatedReplay = createReplayDefinition(result, scenario, content);
+    const timeline = createTimelineRecords(result.events, generatedReplay);
+    const diagnostics = createLifecycleDiagnostics(result.events);
     const replay = compileReplay(replayInput);
+
+    expect(await canonicalHash(timeline)).toBe(
+      "04e1044de1adf6ba571172f83dddeffc05e5fc2a0c015f05f4ec35d522b6d2c3"
+    );
+    expect(await canonicalHash(diagnostics)).toBe(
+      "9382c5a1d0943c6c1fec137ef21b79f9f1fe4ae82811fe71c8db0c00bfea0256"
+    );
+    expect(Object.isFrozen(timeline)).toBe(true);
+    expect(Object.isFrozen(timeline[0])).toBe(true);
+    expect(Object.isFrozen(diagnostics)).toBe(true);
+    expect(Object.isFrozen(diagnostics[0])).toBe(true);
 
     expect(generatedReplay).toEqual(replay);
     await expect(

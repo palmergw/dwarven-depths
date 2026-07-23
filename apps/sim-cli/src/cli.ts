@@ -31,11 +31,12 @@ import {
   canonicalHash,
   type LifecycleDiagnosticRecord,
   type ReplayDefinition,
-  type SimulationEvent,
   type TimelineRecord
 } from "@dwarven-depths/contracts";
 import {
+  createLifecycleDiagnostics,
   createReplayDefinition,
+  createTimelineRecords,
   ReplayDivergenceError,
   RuntimeAssertionError,
   RuntimeSafetyStopError,
@@ -494,56 +495,6 @@ function toNdjson(values: readonly unknown[]): string {
     : `${values.map((value) => JSON.stringify(value)).join("\n")}\n`;
 }
 
-function createTimeline(
-  events: readonly SimulationEvent[],
-  replay: ReplayDefinition
-): readonly TimelineRecord[] {
-  const records: TimelineRecord[] = events.map((event) => ({
-    schemaVersion: 1,
-    kind: "event",
-    tick: event.tick,
-    sequence: event.sequence,
-    event
-  }));
-  for (const checkpoint of replay.checkpoints) {
-    let sequence = 0;
-    for (const event of events) {
-      if (event.tick === checkpoint.tick && event.sequence >= sequence) {
-        sequence = event.sequence + 1;
-      }
-    }
-    records.push({
-      schemaVersion: 1,
-      kind: "checkpoint",
-      tick: checkpoint.tick,
-      sequence,
-      checkpoint
-    });
-  }
-  records.sort(
-    (left, right) =>
-      left.tick - right.tick ||
-      left.sequence - right.sequence ||
-      (left.kind < right.kind ? -1 : left.kind > right.kind ? 1 : 0)
-  );
-  return records;
-}
-
-function createDiagnostics(
-  events: readonly SimulationEvent[]
-): readonly LifecycleDiagnosticRecord[] {
-  return events.map((event, index) => ({
-    schemaVersion: 1,
-    id: `diagnostic.${String(index).padStart(6, "0")}`,
-    kind: "lifecycle",
-    tick: event.tick,
-    sequence: event.sequence,
-    code: event.type,
-    ruleId: event.ruleId,
-    eventId: event.id
-  }));
-}
-
 async function collectProvenance(): Promise<{
   readonly repositoryRevision: string;
   readonly repositoryDirty: boolean;
@@ -754,8 +705,8 @@ async function run(args: ParsedArgs): Promise<void> {
     collectProvenance()
   ]);
   const replay = createReplayDefinition(result, scenario, content);
-  const timeline = createTimeline(result.events, replay);
-  const diagnostics = createDiagnostics(result.events);
+  const timeline = createTimelineRecords(result.events, replay);
+  const diagnostics = createLifecycleDiagnostics(result.events);
   const summary = {
     scenarioId: result.scenarioId,
     scenarioHash: result.scenarioHash,
@@ -1292,8 +1243,8 @@ async function verifyReplayBundle(
     "summary.json",
     "summary does not match replay terminal evidence"
   );
-  const expectedTimeline = createTimeline(result.events, compiledReplay);
-  const expectedDiagnostics = createDiagnostics(result.events);
+  const expectedTimeline = createTimelineRecords(result.events, compiledReplay);
+  const expectedDiagnostics = createLifecycleDiagnostics(result.events);
   const [
     timelineArtifactHash,
     expectedTimelineHash,

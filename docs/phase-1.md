@@ -48,7 +48,7 @@ Replay schema version 1 intentionally supports exactly one terminal checkpoint. 
 
 ## Timeline and lifecycle diagnostics
 
-Timeline schema version 1 merges each ordered simulation event with each replay checkpoint by tick and sequence. Diagnostic schema version 1 emits one reason-coded lifecycle record per event, binding a stable diagnostic ID to the event ID, event type, rule ID, tick, and sequence. `sim replay --verify` reconstructs both streams from authoritative replay execution and rejects any missing, extra, reordered, or changed record before `inspect` can present it. The compact `empty-level.json` and `nonterminating.json` conformance scenarios cover completed and safety-stopped lifecycle boundaries without introducing gameplay mechanics.
+Timeline schema version 1 merges each ordered simulation event with each replay checkpoint by tick and sequence. Diagnostic schema version 1 emits one reason-coded lifecycle record per event, binding a stable diagnostic ID to the event ID, event type, rule ID, tick, and sequence. The shared `@dwarven-depths/runtime` derivation has pinned timeline and diagnostic hashes in Node, Chromium, Firefox, and WebKit. `sim replay --verify` reconstructs both streams from authoritative replay execution and rejects any missing, extra, reordered, or changed record before `inspect` can present it. The compact `empty-level.json` and `nonterminating.json` conformance scenarios cover completed and safety-stopped lifecycle boundaries without introducing gameplay mechanics.
 
 ## Stable entity/effect tables
 
