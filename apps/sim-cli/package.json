@@ -1,0 +1,17 @@
+{
+  "name": "@dwarven-depths/sim-cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "dwarven-depths-sim": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@dwarven-depths/content-runtime": "workspace:*",
+    "@dwarven-depths/runtime": "workspace:*"
+  }
+}

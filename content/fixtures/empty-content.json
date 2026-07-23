@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "milestone-0",
+  "definitions": [
+    {
+      "kind": "level",
+      "id": "level.empty",
+      "waveIds": []
+    }
+  ]
+}

@@ -14,7 +14,9 @@ A pixel-art roguelite about assembling, placing, and upgrading a company of dwar
 
 ## Current phase
 
-The project is in **technical design**. The game rules are sufficiently closed to design the deterministic simulation, agent-inspectable harness, client architecture, content pipeline, persistence, and vertical-slice delivery plan.
+The project is in **Milestone 0 implementation**. The first deterministic TypeScript workspace, content/scenario validation, canonical checksums, headless CLI run bundles, and Node/Chromium/Firefox/WebKit parity fixture are now under active development.
+
+- [Milestone 0 Implementation and Commands](docs/milestone-0.md)
 
 - [Concept Art Direction](docs/concept-art.md)
 - [Core Progression and Round Structure](docs/gameplay-loop.md)

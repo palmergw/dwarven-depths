@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "scenario.conformance.empty",
+  "levelId": "level.empty",
+  "seed": "1",
+  "maximumTicks": 1,
+  "commands": [
+    {
+      "atTick": 0,
+      "type": "confirmPreparation"
+    }
+  ],
+  "expectedTerminalResult": "victory"
+}

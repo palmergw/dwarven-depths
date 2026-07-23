@@ -6,6 +6,17 @@ Thumbs.db
 .vscode/
 .idea/
 
+# JavaScript workspace
+node_modules/
+.pnpm-store/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Generated simulation artifacts
+.ddh/
+reports/
+
 # Local environment
 .env
 .env.*
