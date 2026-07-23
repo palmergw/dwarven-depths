@@ -12,6 +12,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
+import { canonicalHash } from "@dwarven-depths/contracts";
 import { afterEach, describe, expect, it } from "vitest";
 
 const temporaryDirectories: string[] = [];
@@ -53,6 +54,109 @@ afterEach(() => {
 });
 
 describe("simulation CLI", () => {
+  it("compares verified bundles while ignoring provenance metadata", async () => {
+    const directory = temporaryDirectory();
+    const content = temporaryFile("content.json", {
+      schemaVersion: 1,
+      contentVersion: "baseline",
+      definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+    });
+    const scenario = temporaryFile("scenario.json", {
+      schemaVersion: 1,
+      id: "scenario.test.compare",
+      levelId: "level.empty",
+      seed: "1",
+      maximumTicks: 1,
+      commands: [{ atTick: 0, type: "confirmPreparation" }]
+    });
+    const baseline = resolve(directory, "baseline");
+    const candidate = resolve(directory, "candidate");
+    for (const output of [baseline, candidate]) {
+      expect(
+        runCli(
+          "run",
+          "--content",
+          content,
+          "--scenario",
+          scenario,
+          "--out",
+          output
+        ).status
+      ).toBe(0);
+    }
+    const manifestPath = resolve(candidate, "manifest.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as Record<
+      string,
+      unknown
+    > & {
+      repositoryDirty: boolean;
+      canonical: boolean;
+      metadataHash: string;
+    };
+    manifest.repositoryDirty = true;
+    manifest.canonical = false;
+    const {
+      metadataHash: _oldHash,
+      complete: _complete,
+      files: _files,
+      ...metadata
+    } = manifest;
+    manifest.metadataHash = await canonicalHash(metadata);
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const equivalent = runCli(
+      "compare",
+      "--baseline",
+      baseline,
+      "--candidate",
+      candidate
+    );
+    expect(equivalent.status).toBe(0);
+    expect(JSON.parse(equivalent.stdout)).toMatchObject({
+      ok: true,
+      compared: true,
+      schemaVersion: 1,
+      equivalent: true
+    });
+
+    writeFileSync(
+      content,
+      JSON.stringify({
+        schemaVersion: 1,
+        contentVersion: "candidate",
+        definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+      })
+    );
+    const changed = resolve(directory, "changed");
+    expect(
+      runCli(
+        "run",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        changed
+      ).status
+    ).toBe(0);
+    const different = runCli(
+      "compare",
+      "--baseline",
+      baseline,
+      "--candidate",
+      changed
+    );
+    expect(different.status).toBe(0);
+    expect(JSON.parse(different.stdout)).toMatchObject({
+      equivalent: false,
+      firstDivergence: {
+        category: "content",
+        tick: 0,
+        path: "$/contentVersion"
+      }
+    });
+  });
+
   it("publishes the completion manifest after a successful run", () => {
     const content = temporaryFile("content.json", {
       schemaVersion: 1,

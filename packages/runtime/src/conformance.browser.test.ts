@@ -23,6 +23,7 @@ import stableTablesInput from "../../../scenarios/conformance/stable-tables.json
   type: "json"
 };
 import {
+  compareRunEvidence,
   createLifecycleDiagnostics,
   createReplayDefinition,
   createTimelineRecords,
@@ -46,6 +47,37 @@ const expected = {
 };
 
 describe("cross-runtime deterministic conformance", () => {
+  it("matches canonical first-divergence evidence", async () => {
+    const content = await compileContent(contentInput);
+    const scenario = compileScenario(scenarioInput, content);
+    const result = await runScenario(scenario, content);
+    const replay = createReplayDefinition(result, scenario, content);
+    const baseline = {
+      content: content.bundle,
+      scenario,
+      commands: result.commands,
+      checkpoints: replay.checkpoints,
+      events: result.events,
+      finalState: result.finalState
+    };
+    expect(
+      compareRunEvidence(baseline, {
+        ...baseline,
+        events: result.events.map((event, index) =>
+          index === 0 ? { ...event, ruleId: "SIM-CHANGED" } : event
+        )
+      })
+    ).toEqual({
+      schemaVersion: 1,
+      equivalent: false,
+      firstDivergence: {
+        category: "event",
+        tick: 0,
+        path: "$/0/ruleId"
+      }
+    });
+  });
+
   it.each([
     ["1", [270369, 67634689, 2647435461, 307599695]],
     ["4294967295", [253983, 4228382207, 1958451267, 4056713434]]

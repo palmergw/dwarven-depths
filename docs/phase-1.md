@@ -34,6 +34,18 @@ pnpm sim inspect \
 
 `inspect` emits one JSON object containing revision, content/scenario/replay identity, ordered events, checkpoints, terminal state evidence when present, lifecycle diagnostics, and the versioned timeline records in the requested window. Omitted `--tick`, `--before`, or `--after` values default to zero. Window arguments are canonical nonnegative integers; before/after spans are bounded to 100,000 ticks. Windows with no evidence return empty arrays.
 
+Compare two independently verified bundles:
+
+```bash
+pnpm sim compare \
+  --baseline .ddh/runs/baseline \
+  --candidate .ddh/runs/candidate
+```
+
+`compare` verifies both bundles before comparing only authoritative content, scenario, accepted-input, event, and terminal-state evidence. Repository revision, dirty/canonical status, and other provenance metadata do not affect equivalence. The versioned JSON result is either `equivalent: true` or identifies the stable first divergence category, tick, and path. Category precedence is content, scenario, input, event, then state, so input mismatches are not mislabeled as downstream runtime output changes.
+
+Comparison paths use an RFC 6901-style JSON Pointer rooted at `$`. Object keys are visited in code-point order, `~` and `/` segments are escaped as `~0` and `~1`, and array segments are zero-based indexes (for example `$/entities/0/id`). The shared runtime rejects unsupported values, accessors, sparse arrays, cycles, and non-plain objects before emitting comparison evidence.
+
 ## Version 1 replay contract
 
 `replay.json` binds:
@@ -44,7 +56,7 @@ pnpm sim inspect \
 - one terminal checkpoint containing the final-state and cumulative event-stream checksums;
 - expected terminal result and terminal tick.
 
-Replay schema version 1 intentionally supports exactly one terminal checkpoint. Terminal state and event artifact mismatches report the first differing canonical JSON path. Intermediate checkpoint capture, seeking, and earlier-tick divergence localization are later Phase 1 slices; accepting but ignoring such checkpoints would create false verification confidence.
+Replay schema version 1 intentionally supports exactly one terminal checkpoint. Terminal state and event artifact mismatches report the first differing canonical JSON path. Comparing completed runs localizes differences to authoritative inputs, events, and terminal state; intermediate checkpoint capture and seeking remain deferred rather than accepting unsupported checkpoints with false verification confidence.
 
 ## Timeline and lifecycle diagnostics
 

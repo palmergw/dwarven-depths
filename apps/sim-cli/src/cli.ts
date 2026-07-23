@@ -35,6 +35,7 @@ import {
   type TimelineRecord
 } from "@dwarven-depths/contracts";
 import {
+  compareRunEvidence,
   createLifecycleDiagnostics,
   createReplayDefinition,
   createTimelineRecords,
@@ -115,6 +116,8 @@ interface VerifiedRunBundle {
   readonly timeline: readonly TimelineRecord[];
   readonly diagnostics: readonly LifecycleDiagnosticRecord[];
   readonly replayIdentityHash: string;
+  readonly content: Awaited<ReturnType<typeof compileContent>>;
+  readonly scenario: ReturnType<typeof compileScenario>;
 }
 
 class CliInputError extends Error {
@@ -943,6 +946,43 @@ async function inspect(args: ParsedArgs): Promise<void> {
   );
 }
 
+async function compare(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["baseline", "candidate"]));
+  const baselineDirectory = resolve(requiredFlag(args, "baseline"));
+  const candidateDirectory = resolve(requiredFlag(args, "candidate"));
+  const [baseline, candidate] = await Promise.all([
+    verifyRunDirectory(baselineDirectory, false),
+    verifyRunDirectory(candidateDirectory, false)
+  ]);
+  const comparison = compareRunEvidence(
+    {
+      content: baseline.content.bundle,
+      scenario: baseline.scenario,
+      commands: baseline.result.commands,
+      checkpoints: baseline.replay.checkpoints,
+      events: baseline.result.events,
+      finalState: baseline.result.finalState
+    },
+    {
+      content: candidate.content.bundle,
+      scenario: candidate.scenario,
+      commands: candidate.result.commands,
+      checkpoints: candidate.replay.checkpoints,
+      events: candidate.result.events,
+      finalState: candidate.result.finalState
+    }
+  );
+  process.stdout.write(
+    `${JSON.stringify({
+      ok: true,
+      compared: true,
+      baselineDirectory,
+      candidateDirectory,
+      ...comparison
+    })}\n`
+  );
+}
+
 async function verifyReplayBundle(
   runDirectory: string,
   artifactDirectory: string,
@@ -1326,7 +1366,9 @@ async function verifyReplayBundle(
     replay: compiledReplay,
     timeline: expectedTimeline,
     diagnostics: expectedDiagnostics,
-    replayIdentityHash
+    replayIdentityHash,
+    content,
+    scenario
   };
 }
 
@@ -1345,9 +1387,12 @@ async function main(): Promise<void> {
     case "inspect":
       await inspect(args);
       break;
+    case "compare":
+      await compare(args);
+      break;
     default:
       throw new CliInputError(
-        "Usage: dwarven-depths-sim <validate|run|replay|inspect> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>]"
+        "Usage: dwarven-depths-sim <validate|run|replay|inspect|compare> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--baseline <bundle> --candidate <bundle>]"
       );
   }
 }

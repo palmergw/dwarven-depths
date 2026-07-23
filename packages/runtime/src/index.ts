@@ -4,9 +4,12 @@ import {
 } from "@dwarven-depths/content-runtime";
 import {
   type CommandEnvelope,
+  type ContentBundle,
   canonicalHash,
+  canonicalStringify,
   type DiagnosticCause,
   type LifecycleDiagnosticRecord,
+  type ReplayCheckpoint,
   type ReplayDefinition,
   type ScenarioDefinition,
   type SimulationEvent,
@@ -29,6 +32,185 @@ export interface RuntimeResult {
   readonly commands: readonly CommandEnvelope[];
   readonly events: readonly SimulationEvent[];
   readonly eventStreamChecksum: string;
+}
+
+export interface RunComparisonEvidence {
+  readonly content: ContentBundle;
+  readonly scenario: ScenarioDefinition;
+  readonly commands: readonly CommandEnvelope[];
+  readonly checkpoints: readonly ReplayCheckpoint[];
+  readonly events: readonly SimulationEvent[];
+  readonly finalState: SimulationState;
+}
+
+export type DivergenceCategory =
+  | "content"
+  | "scenario"
+  | "input"
+  | "event"
+  | "state";
+
+export interface FirstDivergenceEvidence {
+  readonly category: DivergenceCategory;
+  readonly tick: number;
+  readonly path: string;
+}
+
+export type RunComparisonResult =
+  | { readonly schemaVersion: 1; readonly equivalent: true }
+  | {
+      readonly schemaVersion: 1;
+      readonly equivalent: false;
+      readonly firstDivergence: FirstDivergenceEvidence;
+    };
+
+function comparisonPointerSegment(value: string): string {
+  return value.replaceAll("~", "~0").replaceAll("/", "~1");
+}
+
+function firstCanonicalDifference(
+  baseline: unknown,
+  candidate: unknown,
+  path = "$"
+): string | undefined {
+  if (Object.is(baseline, candidate)) return undefined;
+  if (
+    typeof baseline !== "object" ||
+    baseline === null ||
+    typeof candidate !== "object" ||
+    candidate === null
+  ) {
+    return path;
+  }
+  if (Array.isArray(baseline) || Array.isArray(candidate)) {
+    if (!Array.isArray(baseline) || !Array.isArray(candidate)) return path;
+    const length = Math.max(baseline.length, candidate.length);
+    for (let index = 0; index < length; index += 1) {
+      if (index >= baseline.length || index >= candidate.length)
+        return `${path}/${index}`;
+      const difference = firstCanonicalDifference(
+        baseline[index],
+        candidate[index],
+        `${path}/${index}`
+      );
+      if (difference !== undefined) return difference;
+    }
+    return path;
+  }
+  const baselineRecord = baseline as Record<string, unknown>;
+  const candidateRecord = candidate as Record<string, unknown>;
+  const keys = [
+    ...new Set([
+      ...Object.keys(baselineRecord),
+      ...Object.keys(candidateRecord)
+    ])
+  ].sort();
+  for (const key of keys) {
+    const childPath = `${path}/${comparisonPointerSegment(key)}`;
+    if (
+      !Object.hasOwn(baselineRecord, key) ||
+      !Object.hasOwn(candidateRecord, key)
+    ) {
+      return childPath;
+    }
+    const difference = firstCanonicalDifference(
+      baselineRecord[key],
+      candidateRecord[key],
+      childPath
+    );
+    if (difference !== undefined) return difference;
+  }
+  return path;
+}
+
+function changedTick(
+  baseline: readonly { readonly tick: number }[],
+  candidate: readonly { readonly tick: number }[],
+  path: string
+): number {
+  const match = /^\$\/(\d+)/.exec(path);
+  const index = match === null ? 0 : Number(match[1]);
+  return Math.min(
+    baseline[index]?.tick ?? candidate[index]?.tick ?? 0,
+    candidate[index]?.tick ?? baseline[index]?.tick ?? 0
+  );
+}
+
+/**
+ * Compares only authoritative evidence. Paths use an RFC 6901-style JSON
+ * Pointer rooted at `$`; object keys are code-point sorted and array segments
+ * are zero-based indexes. Provenance and other manifest metadata are excluded.
+ */
+export function compareRunEvidence(
+  baseline: RunComparisonEvidence,
+  candidate: RunComparisonEvidence
+): RunComparisonResult {
+  // Validate the complete boundary before emitting partial comparison evidence.
+  canonicalStringify(baseline);
+  canonicalStringify(candidate);
+
+  const { commands: _baselineCommands, ...baselineScenario } =
+    baseline.scenario;
+  const { commands: _candidateCommands, ...candidateScenario } =
+    candidate.scenario;
+  const comparisons: readonly {
+    category: DivergenceCategory;
+    baseline: unknown;
+    candidate: unknown;
+    tick: (path: string) => number;
+  }[] = [
+    {
+      category: "content",
+      baseline: baseline.content,
+      candidate: candidate.content,
+      tick: () => 0
+    },
+    {
+      category: "scenario",
+      baseline: baselineScenario,
+      candidate: candidateScenario,
+      tick: () => 0
+    },
+    {
+      category: "input",
+      baseline: baseline.commands,
+      candidate: candidate.commands,
+      tick: (path) => changedTick(baseline.commands, candidate.commands, path)
+    },
+    {
+      category: "event",
+      baseline: baseline.events,
+      candidate: candidate.events,
+      tick: (path) => changedTick(baseline.events, candidate.events, path)
+    },
+    {
+      category: "state",
+      baseline: baseline.finalState,
+      candidate: candidate.finalState,
+      tick: () => Math.min(baseline.finalState.tick, candidate.finalState.tick)
+    }
+  ];
+  for (const comparison of comparisons) {
+    if (
+      canonicalStringify(comparison.baseline) ===
+      canonicalStringify(comparison.candidate)
+    ) {
+      continue;
+    }
+    const path =
+      firstCanonicalDifference(comparison.baseline, comparison.candidate) ??
+      "$";
+    return Object.freeze({
+      schemaVersion: 1,
+      equivalent: false,
+      firstDivergence: Object.freeze({
+        category: comparison.category,
+        tick: comparison.tick(path),
+        path
+      })
+    });
+  }
+  return Object.freeze({ schemaVersion: 1, equivalent: true });
 }
 
 export function createTimelineRecords(
