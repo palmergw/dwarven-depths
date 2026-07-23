@@ -2,7 +2,8 @@ import {
   compileContent,
   compileReplay,
   compileScenario,
-  findShortestRoute
+  findShortestRoute,
+  validateStaticPlacement
 } from "@dwarven-depths/content-runtime";
 import { canonicalHash } from "@dwarven-depths/contracts";
 import {
@@ -120,6 +121,16 @@ describe("cross-runtime deterministic conformance", () => {
       nodeIds: ["node.entry", "node.south", "node.goal"],
       totalCost: 20
     });
+    expect(
+      map === undefined
+        ? undefined
+        : validateStaticPlacement(map, [
+            {
+              entityId: "entity.dwarf_goal" as never,
+              placementPointId: "placement.goal" as never
+            }
+          ])
+    ).toEqual({ valid: true, issues: [] });
   });
 
   it("matches the golden nonempty entity/effect table", async () => {

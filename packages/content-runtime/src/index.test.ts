@@ -8,12 +8,18 @@ import {
   compileContent,
   compileReplay,
   compileScenario,
-  findShortestRoute
+  findShortestRoute,
+  validateStaticPlacement
 } from "./index.js";
 
 interface MutableMapFixture {
   readonly kind: "map";
-  nodes: Array<{ neighborNodeIds: string[] }>;
+  nodes: Array<{
+    id: string;
+    x: number;
+    y: number;
+    neighborNodeIds: string[];
+  }>;
   connections: Array<{ id: string; nodeIds: string[]; cost: number }>;
   placementPoints: unknown[];
   enemyEntrances: unknown[];
@@ -221,6 +227,126 @@ describe("content compilation", () => {
     expect(() =>
       findShortestRoute(map, "node.missing" as never, "node.goal" as never)
     ).toThrowError("unknown start navigation node ID (node.missing)");
+  });
+
+  it("accepts placements when every entrance can approach a placed dwarf", async () => {
+    const content = await compileContent(mapContentInput);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing compiled map fixture");
+
+    const result = validateStaticPlacement(map, [
+      {
+        entityId: "entity.dwarf_a" as never,
+        placementPointId: "placement.goal" as never
+      },
+      {
+        entityId: "entity.dwarf_b" as never,
+        placementPointId: "placement.east" as never
+      }
+    ]);
+
+    expect(result).toEqual({ valid: true, issues: [] });
+    expect(Object.isFrozen(result)).toBe(true);
+    expect(Object.isFrozen(result.issues)).toBe(true);
+  });
+
+  it("reports duplicate dwarves, unknown points, and capacity violations", async () => {
+    const content = await compileContent(mapContentInput);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing compiled map fixture");
+
+    const result = validateStaticPlacement(map, [
+      {
+        entityId: "entity.dwarf_a" as never,
+        placementPointId: "placement.goal" as never
+      },
+      {
+        entityId: "entity.dwarf_a" as never,
+        placementPointId: "placement.goal" as never
+      },
+      {
+        entityId: "entity.dwarf_c" as never,
+        placementPointId: "placement.missing" as never
+      }
+    ]);
+
+    expect(result.valid).toBe(false);
+    expect(result.issues.slice(0, 3)).toEqual([
+      {
+        path: "$/placements/1/entityId",
+        code: "duplicate_dwarf",
+        message: "dwarf entity entity.dwarf_a is placed more than once",
+        relatedPaths: ["$/placements/0/entityId"]
+      },
+      {
+        path: "$/placements/1/placementPointId",
+        code: "placement_capacity_exceeded",
+        message: "placement point placement.goal exceeds capacity 1",
+        relatedPaths: ["$/placements/0/placementPointId"]
+      },
+      {
+        path: "$/placements/2/placementPointId",
+        code: "unknown_placement_point",
+        message: "references unknown placement point ID (placement.missing)"
+      }
+    ]);
+  });
+
+  it("rejects entrances disconnected from every attack-valid approach", async () => {
+    const source = structuredClone(mapContentInput);
+    const mapInput = source.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (mapInput === undefined) throw new Error("missing map fixture");
+    mapInput.nodes.push({
+      id: "node.isolated",
+      x: 10,
+      y: 10,
+      neighborNodeIds: []
+    });
+    mapInput.placementPoints.push({
+      id: "placement.isolated",
+      nodeId: "node.isolated",
+      capacity: 1,
+      adjacentPlacementPointIds: []
+    });
+
+    const content = await compileContent(source);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing compiled map fixture");
+    const result = validateStaticPlacement(map, [
+      {
+        entityId: "entity.dwarf_isolated" as never,
+        placementPointId: "placement.isolated" as never
+      }
+    ]);
+
+    expect(result).toEqual({
+      valid: false,
+      issues: [
+        {
+          path: "$/enemyEntrances/0",
+          code: "entrance_has_no_attack_route",
+          message:
+            "entrance entrance.west has no static attack route to a placed dwarf"
+        }
+      ]
+    });
+  });
+
+  it("permits an intentional wall with a reachable attack approach", async () => {
+    const content = await compileContent(mapContentInput);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing compiled map fixture");
+
+    expect(
+      validateStaticPlacement(map, [
+        {
+          entityId: "entity.dwarf_east" as never,
+          placementPointId: "placement.east" as never
+        }
+      ])
+    ).toEqual({ valid: true, issues: [] });
   });
 
   it("freezes replay commands and checkpoints", () => {

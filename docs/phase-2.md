@@ -24,10 +24,15 @@ surface currently present on the Phase 2 implementation branch.
   goals return no route, and returned routes are immutable.
 - `content/fixtures/conformance-map.json` is the nonempty golden Node/browser
   fixture.
+- Static placement validation rejects duplicate dwarf assignments, unknown or
+  over-capacity placement points, and any entrance that cannot traverse static
+  authored connectivity to an unoccupied node adjacent to a placed dwarf. A
+  placed dwarf blocks its own navigation node, so intentional walls remain
+  legal when enemies can still reach an attack-valid approach.
 
 ## Not implemented yet
 
-This checkpoint does not expose placement occupancy/route-legality validation,
-movement proposals, reservations, spawn queues, targeting, combat, or
+This checkpoint does not expose movement proposals, reservations, spawn queues,
+targeting, combat, or
 map-specific CLI commands. Existing `validate`, `run`, `replay --verify`,
 `inspect`, and `compare` behavior remains the supported simulation surface.

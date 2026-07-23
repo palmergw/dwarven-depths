@@ -84,6 +84,29 @@ export interface BattlefieldMapDefinition {
   readonly enemyEntrances: readonly EnemyEntranceDefinition[];
 }
 
+export interface StaticDwarfPlacement {
+  readonly entityId: EntityId;
+  readonly placementPointId: PlacementPointId;
+}
+
+export type StaticPlacementIssueCode =
+  | "duplicate_dwarf"
+  | "unknown_placement_point"
+  | "placement_capacity_exceeded"
+  | "entrance_has_no_attack_route";
+
+export interface StaticPlacementIssue {
+  readonly path: string;
+  readonly code: StaticPlacementIssueCode;
+  readonly message: string;
+  readonly relatedPaths?: readonly string[];
+}
+
+export interface StaticPlacementValidation {
+  readonly valid: boolean;
+  readonly issues: readonly StaticPlacementIssue[];
+}
+
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition

@@ -16,7 +16,12 @@ import {
   type LevelDefinition,
   type NavigationNodeDefinition,
   type NavigationNodeId,
+  type PlacementPointDefinition,
+  type PlacementPointId,
   type StableId,
+  type StaticDwarfPlacement,
+  type StaticPlacementIssue,
+  type StaticPlacementValidation,
   type WaveDefinition
 } from "@dwarven-depths/contracts";
 
@@ -291,6 +296,122 @@ export function findShortestRoute(
   }
 
   return undefined;
+}
+
+function freezePlacementValidation(
+  issues: readonly StaticPlacementIssue[]
+): StaticPlacementValidation {
+  const frozenIssues = Object.freeze(
+    issues.map((issue) =>
+      Object.freeze({
+        ...issue,
+        ...(issue.relatedPaths === undefined
+          ? {}
+          : { relatedPaths: Object.freeze([...issue.relatedPaths]) })
+      })
+    )
+  );
+  return Object.freeze({
+    valid: frozenIssues.length === 0,
+    issues: frozenIssues
+  });
+}
+
+function entranceHasAttackRoute(
+  entranceNodeId: NavigationNodeId,
+  occupiedNodeIds: ReadonlySet<NavigationNodeId>,
+  nodes: ReadonlyMap<NavigationNodeId, NavigationNodeDefinition>
+): boolean {
+  if (occupiedNodeIds.has(entranceNodeId)) return false;
+  const visited = new Set<NavigationNodeId>([entranceNodeId]);
+  const pending: NavigationNodeId[] = [entranceNodeId];
+  let cursor = 0;
+
+  while (cursor < pending.length) {
+    const nodeId = pending[cursor];
+    cursor += 1;
+    if (nodeId === undefined) continue;
+    const node = nodes.get(nodeId);
+    if (node === undefined) continue;
+    for (const neighborNodeId of node.neighborNodeIds) {
+      if (occupiedNodeIds.has(neighborNodeId)) return true;
+      if (visited.has(neighborNodeId)) continue;
+      visited.add(neighborNodeId);
+      pending.push(neighborNodeId);
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks preparation occupancy against immutable authored map connectivity.
+ * Placed dwarves block their navigation nodes; an entrance is legal when it can
+ * reach an unoccupied node directly connected to at least one placed dwarf.
+ */
+export function validateStaticPlacement(
+  map: BattlefieldMapDefinition,
+  placements: readonly StaticDwarfPlacement[]
+): StaticPlacementValidation {
+  const issues: StaticPlacementIssue[] = [];
+  const placementPoints = new Map<PlacementPointId, PlacementPointDefinition>(
+    map.placementPoints.map((point) => [point.id, point])
+  );
+  const firstDwarfIndex = new Map<string, number>();
+  const placementIndexes = new Map<PlacementPointId, number[]>();
+
+  placements.forEach((placement, index) => {
+    const previousDwarfIndex = firstDwarfIndex.get(placement.entityId);
+    if (previousDwarfIndex === undefined)
+      firstDwarfIndex.set(placement.entityId, index);
+    else
+      issues.push({
+        path: `$/placements/${index}/entityId`,
+        code: "duplicate_dwarf",
+        message: `dwarf entity ${placement.entityId} is placed more than once`,
+        relatedPaths: [`$/placements/${previousDwarfIndex}/entityId`]
+      });
+
+    const point = placementPoints.get(placement.placementPointId);
+    if (point === undefined) {
+      issues.push({
+        path: `$/placements/${index}/placementPointId`,
+        code: "unknown_placement_point",
+        message: `references unknown placement point ID (${placement.placementPointId})`
+      });
+      return;
+    }
+
+    const indexes = placementIndexes.get(point.id) ?? [];
+    if (indexes.length >= point.capacity)
+      issues.push({
+        path: `$/placements/${index}/placementPointId`,
+        code: "placement_capacity_exceeded",
+        message: `placement point ${point.id} exceeds capacity ${point.capacity}`,
+        relatedPaths: indexes.map(
+          (previousIndex) => `$/placements/${previousIndex}/placementPointId`
+        )
+      });
+    indexes.push(index);
+    placementIndexes.set(point.id, indexes);
+  });
+
+  const occupiedNodeIds = new Set<NavigationNodeId>();
+  for (const pointId of placementIndexes.keys()) {
+    const point = placementPoints.get(pointId);
+    if (point !== undefined) occupiedNodeIds.add(point.nodeId);
+  }
+  const nodes = new Map(map.nodes.map((node) => [node.id, node]));
+  map.enemyEntrances.forEach((entrance, index) => {
+    if (!entranceHasAttackRoute(entrance.nodeId, occupiedNodeIds, nodes))
+      issues.push({
+        path: `$/enemyEntrances/${index}`,
+        code: "entrance_has_no_attack_route",
+        message: `entrance ${entrance.id} has no static attack route to a placed dwarf`
+      });
+  });
+
+  return freezePlacementValidation(issues);
 }
 
 export async function compileContent(input: unknown): Promise<CompiledContent> {
