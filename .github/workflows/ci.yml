@@ -1,4 +1,4 @@
-name: Milestone 0 verification
+name: Deterministic runtime verification
 
 on:
   pull_request:

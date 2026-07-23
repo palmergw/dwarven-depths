@@ -14,8 +14,9 @@ A pixel-art roguelite about assembling, placing, and upgrading a company of dwar
 
 ## Current phase
 
-The project is in **Milestone 0 implementation**. The first deterministic TypeScript workspace, content/scenario validation, canonical checksums, headless CLI run bundles, and Node/Chromium/Firefox/WebKit parity fixture are now under active development.
+The project is in **Phase 1 deterministic harness implementation**. Milestone 0 established the strict TypeScript workspace, content/scenario validation, canonical checksums, headless run bundles, and Node/Chromium/Firefox/WebKit parity. Phase 1 is adding versioned, independently verifiable replay and diagnostic evidence before broader gameplay state is introduced.
 
+- [Phase 1 Deterministic Replay Foundation](docs/phase-1.md)
 - [Milestone 0 Implementation and Commands](docs/milestone-0.md)
 
 - [Concept Art Direction](docs/concept-art.md)

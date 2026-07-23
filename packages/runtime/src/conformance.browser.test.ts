@@ -10,7 +10,7 @@ import contentInput from "../../../content/fixtures/empty-content.json" with {
 import scenarioInput from "../../../scenarios/conformance/empty-level.json" with {
   type: "json"
 };
-import { runScenario } from "./index.js";
+import { createReplayDefinition, runScenario, verifyReplay } from "./index.js";
 
 const expected = {
   contentManifestHash:
@@ -44,11 +44,15 @@ describe("cross-runtime deterministic conformance", () => {
     const content = await compileContent(contentInput);
     const scenario = compileScenario(scenarioInput, content);
     const result = await runScenario(scenario, content);
+    const replay = createReplayDefinition(result, scenario, content);
+    const verified = await verifyReplay(replay, scenario, content);
 
     expect(content.manifestHash).toBe(expected.contentManifestHash);
     expect(result.scenarioHash).toBe(expected.scenarioHash);
     expect(result.finalStateChecksum).toBe(expected.finalStateChecksum);
     expect(result.eventStreamChecksum).toBe(expected.eventStreamChecksum);
+    expect(verified.finalStateChecksum).toBe(result.finalStateChecksum);
+    expect(verified.eventStreamChecksum).toBe(result.eventStreamChecksum);
     expect(result.events.map((event) => event.type)).toEqual([
       "round.started",
       "final_cleanup.entered",

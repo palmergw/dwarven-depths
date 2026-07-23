@@ -103,7 +103,9 @@ const replayDefinitionSchema = z
     seed: seedSchema,
     rngAlgorithm: z.literal("xorshift32-v1"),
     commands: z.array(commandEnvelopeSchema),
-    checkpoints: z.array(replayCheckpointSchema).min(1),
+    checkpoints: z
+      .array(replayCheckpointSchema)
+      .length(1, "version 1 requires exactly one terminal checkpoint"),
     expectedTerminalResult: z.enum(["victory", "defeat"]),
     expectedTerminalTick: z.int().nonnegative()
   })

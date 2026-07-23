@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@dwarven-depths/content-runtime": "workspace:*",
+    "@dwarven-depths/contracts": "workspace:*",
     "@dwarven-depths/runtime": "workspace:*"
   }
 }

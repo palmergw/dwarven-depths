@@ -1,9 +1,13 @@
 import {
   ContentValidationError,
   validateContentBundle,
+  validateReplay,
   validateScenario
 } from "@dwarven-depths/content-schema";
-import type { ScenarioDefinition } from "@dwarven-depths/contracts";
+import type {
+  ReplayDefinition,
+  ScenarioDefinition
+} from "@dwarven-depths/contracts";
 import {
   type ContentBundle,
   type ContentDefinition,
@@ -126,4 +130,24 @@ export function compileScenario(
     ]);
   }
   return scenario;
+}
+
+export function compileReplay(input: unknown): ReplayDefinition {
+  const validated = validateReplay(input);
+  return Object.freeze({
+    ...validated,
+    commands: Object.freeze(
+      validated.commands.map((envelope) =>
+        Object.freeze({
+          ...envelope,
+          command: Object.freeze({ ...envelope.command })
+        })
+      )
+    ),
+    checkpoints: Object.freeze(
+      validated.checkpoints.map((checkpoint) =>
+        Object.freeze({ ...checkpoint })
+      )
+    )
+  });
 }

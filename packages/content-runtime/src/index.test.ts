@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ContentValidationError,
   compileContent,
+  compileReplay,
   compileScenario
 } from "./index.js";
 
@@ -40,6 +41,44 @@ describe("content compilation", () => {
     expect(Object.isFrozen(scenario)).toBe(true);
     expect(Object.isFrozen(scenario.commands)).toBe(true);
     expect(Object.isFrozen(scenario.commands[0])).toBe(true);
+  });
+
+  it("freezes replay commands and checkpoints", () => {
+    const checksum = "0".repeat(64);
+    const replay = compileReplay({
+      schemaVersion: 1,
+      simulationSchemaVersion: 1,
+      contentVersion: "test",
+      contentManifestHash: checksum,
+      scenarioId: "scenario.test.replay",
+      scenarioHash: checksum,
+      levelId: "level.test",
+      seed: "1",
+      rngAlgorithm: "xorshift32-v1",
+      commands: [
+        {
+          tick: 0,
+          sequence: 0,
+          command: { atTick: 0, type: "confirmPreparation" }
+        }
+      ],
+      checkpoints: [
+        {
+          tick: 0,
+          stateChecksum: checksum,
+          eventStreamChecksum: checksum
+        }
+      ],
+      expectedTerminalResult: "victory",
+      expectedTerminalTick: 0
+    });
+
+    expect(Object.isFrozen(replay)).toBe(true);
+    expect(Object.isFrozen(replay.commands)).toBe(true);
+    expect(Object.isFrozen(replay.commands[0])).toBe(true);
+    expect(Object.isFrozen(replay.commands[0]?.command)).toBe(true);
+    expect(Object.isFrozen(replay.checkpoints)).toBe(true);
+    expect(Object.isFrozen(replay.checkpoints[0])).toBe(true);
   });
 
   it("reports unknown scenario levels as validation issues", async () => {

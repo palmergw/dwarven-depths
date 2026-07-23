@@ -32,6 +32,9 @@ importers:
       '@dwarven-depths/content-runtime':
         specifier: workspace:*
         version: link:../../packages/content-runtime
+      '@dwarven-depths/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@dwarven-depths/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime

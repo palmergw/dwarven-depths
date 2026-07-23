@@ -80,13 +80,18 @@ describe("simulation CLI", () => {
         harness: 1,
         contentSchema: 1,
         scenarioSchema: 1,
+        replaySchema: 1,
         stateSchema: 1
       },
       controller: { type: "scenario.commands", version: 1 },
       scenarioHash: expect.stringMatching(/^[a-f0-9]{64}$/),
       files: [
+        "checkpoints.ndjson",
+        "commands.ndjson",
+        "content.compiled.json",
         "content-manifest.json",
         "events.ndjson",
+        "replay.json",
         "scenario.compiled.json",
         "state.final.json",
         "summary.json"
@@ -205,6 +210,108 @@ describe("simulation CLI", () => {
         code: "unexpected_terminal_result"
       }
     });
+  });
+
+  it("verifies a self-contained replay and rejects tampered artifacts", () => {
+    const content = temporaryFile("content.json", {
+      schemaVersion: 1,
+      contentVersion: "test",
+      definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+    });
+    const scenario = temporaryFile("scenario.json", {
+      schemaVersion: 1,
+      id: "scenario.test.replay",
+      levelId: "level.empty",
+      seed: "1",
+      maximumTicks: 1,
+      commands: [{ atTick: 0, type: "confirmPreparation" }],
+      expectedTerminalResult: "victory"
+    });
+    const output = resolve(dirname(content), "replay-run");
+    expect(
+      runCli(
+        "run",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        output
+      ).status
+    ).toBe(0);
+
+    const verified = runCli("replay", "--run", output, "--verify");
+    expect(verified.status).toBe(0);
+    expect(JSON.parse(verified.stdout)).toMatchObject({
+      ok: true,
+      verified: true,
+      scenarioId: "scenario.test.replay",
+      terminalResult: "victory"
+    });
+
+    const tamperCases: ReadonlyArray<{
+      readonly file: string;
+      readonly code: string;
+      readonly mutate: (original: string) => string;
+    }> = [
+      {
+        file: "state.final.json",
+        code: "state_artifact_checksum_mismatch",
+        mutate: (original) => original.replace('"rngState": 1', '"rngState": 2')
+      },
+      {
+        file: "events.ndjson",
+        code: "event_artifact_checksum_mismatch",
+        mutate: (original) =>
+          original.replace("round.started", "round.tampered")
+      },
+      {
+        file: "commands.ndjson",
+        code: "command_artifact_checksum_mismatch",
+        mutate: () => ""
+      },
+      {
+        file: "content.compiled.json",
+        code: "content_manifest_mismatch",
+        mutate: (original) =>
+          original.replace(
+            '"contentVersion": "test"',
+            '"contentVersion": "tampered"'
+          )
+      },
+      {
+        file: "scenario.compiled.json",
+        code: "seed_mismatch",
+        mutate: (original) => original.replace('"seed": "1"', '"seed": "2"')
+      },
+      {
+        file: "replay.json",
+        code: "command_artifact_checksum_mismatch",
+        mutate: (original) =>
+          original.replace(
+            /"commands": \[[\s\S]*?\],\n {2}"checkpoints"/,
+            '"commands": [],\n  "checkpoints"'
+          )
+      }
+    ];
+
+    for (const tamperCase of tamperCases) {
+      const path = resolve(output, tamperCase.file);
+      const original = readFileSync(path, "utf8");
+      const mutated = tamperCase.mutate(original);
+      expect(mutated).not.toBe(original);
+      writeFileSync(path, mutated, "utf8");
+      const rejected = runCli("replay", "--run", output, "--verify");
+      expect(rejected.status, tamperCase.file).toBe(4);
+      expect(JSON.parse(rejected.stderr), tamperCase.file).toMatchObject({
+        ok: false,
+        error: {
+          type: "replay_divergence",
+          code: tamperCase.code
+        }
+      });
+      writeFileSync(path, original, "utf8");
+    }
   });
 
   it("atomically replaces bundles without following artifact symlinks", () => {

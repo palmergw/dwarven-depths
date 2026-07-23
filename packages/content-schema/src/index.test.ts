@@ -223,16 +223,25 @@ describe("replay validation", () => {
     }
   });
 
-  it("requires ordered checkpoints ending at the terminal tick", () => {
+  it("requires exactly one checkpoint ending at the terminal tick", () => {
     expect(() =>
       validateReplay({
         ...validReplay,
         checkpoints: [
-          { tick: 1, stateChecksum: checksum, eventStreamChecksum: checksum },
+          { tick: 0, stateChecksum: checksum, eventStreamChecksum: checksum },
+          { tick: 1, stateChecksum: checksum, eventStreamChecksum: checksum }
+        ]
+      })
+    ).toThrow(/exactly one terminal checkpoint/);
+
+    expect(() =>
+      validateReplay({
+        ...validReplay,
+        checkpoints: [
           { tick: 1, stateChecksum: checksum, eventStreamChecksum: checksum }
         ],
         expectedTerminalTick: 2
       })
-    ).toThrow(/strictly greater.*final checkpoint tick/s);
+    ).toThrow(/final checkpoint tick/);
   });
 });

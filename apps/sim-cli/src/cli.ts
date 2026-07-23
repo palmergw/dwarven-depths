@@ -21,18 +21,27 @@ import { promisify } from "node:util";
 import {
   ContentValidationError,
   compileContent,
+  compileReplay,
   compileScenario
 } from "@dwarven-depths/content-runtime";
+import { canonicalHash } from "@dwarven-depths/contracts";
 import {
+  createReplayDefinition,
+  ReplayDivergenceError,
   RuntimeAssertionError,
   RuntimeSafetyStopError,
-  runScenario
+  runScenario,
+  verifyReplay
 } from "@dwarven-depths/runtime";
 
 const execFileAsync = promisify(execFile);
 const runBundleFiles = [
+  "checkpoints.ndjson",
+  "commands.ndjson",
+  "content.compiled.json",
   "content-manifest.json",
   "events.ndjson",
+  "replay.json",
   "scenario.compiled.json",
   "state.final.json",
   "summary.json"
@@ -41,6 +50,26 @@ const runBundleFiles = [
 interface ParsedArgs {
   readonly command: string | undefined;
   readonly flags: ReadonlyMap<string, string>;
+}
+
+interface RunManifestArtifact {
+  readonly complete?: unknown;
+  readonly harnessVersion?: unknown;
+  readonly files?: unknown;
+  readonly contentManifestHash?: unknown;
+  readonly scenarioId?: unknown;
+  readonly scenarioHash?: unknown;
+}
+
+interface ContentManifestArtifact {
+  readonly contentManifestHash?: unknown;
+}
+
+interface SummaryArtifact {
+  readonly finalStateChecksum?: unknown;
+  readonly eventStreamChecksum?: unknown;
+  readonly terminalResult?: unknown;
+  readonly terminalTick?: unknown;
 }
 
 class CliInputError extends Error {
@@ -61,13 +90,24 @@ class ReportGenerationError extends Error {
   }
 }
 
+class ReplayArtifactError extends Error {
+  readonly code: string;
+  readonly artifact: string;
+
+  constructor(code: string, artifact: string, message: string) {
+    super(message);
+    this.name = "ReplayArtifactError";
+    this.code = code;
+    this.artifact = artifact;
+  }
+}
+
 function parseArgs(argv: readonly string[]): ParsedArgs {
   const [command, ...rest] = argv;
   const flags = new Map<string, string>();
-  for (let index = 0; index < rest.length; index += 2) {
+  for (let index = 0; index < rest.length; index += 1) {
     const key = rest[index];
-    const value = rest[index + 1];
-    if (!key?.startsWith("--") || value === undefined) {
+    if (!key?.startsWith("--")) {
       throw new CliInputError(
         `Expected --name value arguments, received: ${rest.slice(index).join(" ")}`
       );
@@ -75,7 +115,20 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
     const name = key.slice(2);
     if (flags.has(name))
       throw new CliInputError(`Duplicate --${name} argument`);
+
+    if (
+      name === "verify" &&
+      (rest[index + 1] === undefined || rest[index + 1]?.startsWith("--"))
+    ) {
+      flags.set(name, "true");
+      continue;
+    }
+    const value = rest[index + 1];
+    if (value === undefined || value.startsWith("--")) {
+      throw new CliInputError(`Missing value for --${name}`);
+    }
     flags.set(name, value);
+    index += 1;
   }
   return { command, flags };
 }
@@ -122,12 +175,119 @@ async function readJson(path: string): Promise<unknown> {
   }
 }
 
+async function readArtifactText(
+  directory: string,
+  name: string
+): Promise<string> {
+  const path = resolve(directory, name);
+  const status = await pathStatus(path);
+  if (status === undefined || status.isSymbolicLink() || !status.isFile()) {
+    throw new ReplayArtifactError(
+      "missing_or_unsafe_artifact",
+      name,
+      `${name} must be a regular file inside the run bundle`
+    );
+  }
+  return readFile(path, "utf8");
+}
+
+async function readArtifactJson(
+  directory: string,
+  name: string
+): Promise<unknown> {
+  try {
+    return JSON.parse(await readArtifactText(directory, name)) as unknown;
+  } catch (error) {
+    if (error instanceof ReplayArtifactError) throw error;
+    const message = error instanceof Error ? error.message : String(error);
+    throw new ReplayArtifactError(
+      "invalid_json_artifact",
+      name,
+      `${name} is not valid JSON: ${message}`
+    );
+  }
+}
+
+async function readArtifactNdjson(
+  directory: string,
+  name: string
+): Promise<unknown[]> {
+  const text = await readArtifactText(directory, name);
+  if (text.length === 0) return [];
+  if (!text.endsWith("\n")) {
+    throw new ReplayArtifactError(
+      "invalid_ndjson_artifact",
+      name,
+      `${name} must end with a newline`
+    );
+  }
+  try {
+    return text
+      .slice(0, -1)
+      .split("\n")
+      .map((line) => JSON.parse(line) as unknown);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new ReplayArtifactError(
+      "invalid_ndjson_artifact",
+      name,
+      `${name} contains invalid JSON: ${message}`
+    );
+  }
+}
+
+function requireRecord<Value extends object = Record<string, unknown>>(
+  value: unknown,
+  artifact: string
+): Value {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new ReplayArtifactError(
+      "invalid_artifact_shape",
+      artifact,
+      `${artifact} must contain a JSON object`
+    );
+  }
+  return { ...value } as Value;
+}
+
+function requireArtifactMatch(
+  condition: boolean,
+  code: string,
+  artifact: string,
+  message: string
+): void {
+  if (condition) return;
+  throw new ReplayArtifactError(code, artifact, message);
+}
+
+async function canonicalArtifactHash(
+  value: unknown,
+  artifact: string
+): Promise<string> {
+  try {
+    return await canonicalHash(value);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new ReplayArtifactError(
+      "noncanonical_artifact",
+      artifact,
+      `${artifact} is outside the canonical JSON domain: ${message}`
+    );
+  }
+}
+
 async function writeNewFile(path: string, content: string): Promise<void> {
   await writeFile(path, content, { encoding: "utf8", flag: "wx" });
 }
 
 async function writeJson(path: string, value: unknown): Promise<void> {
   await writeNewFile(path, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function toNdjson(values: readonly unknown[]): string {
+  return values.length === 0
+    ? ""
+    : `${values.map((value) => JSON.stringify(value)).join("\n")}\n`;
 }
 
 async function collectProvenance(): Promise<{
@@ -200,9 +360,10 @@ async function assertReplaceableRunBundle(
     };
     if (
       manifest.complete !== true ||
-      manifest.harnessVersion !== "milestone-0"
+      (manifest.harnessVersion !== "milestone-0" &&
+        manifest.harnessVersion !== "phase-1")
     ) {
-      throw new Error("completion manifest is not a Milestone 0 run bundle");
+      throw new Error("completion manifest is not a supported run bundle");
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -328,21 +489,24 @@ async function run(args: ParsedArgs): Promise<void> {
     runScenario(scenario, content),
     collectProvenance()
   ]);
+  const replay = createReplayDefinition(result, scenario, content);
   const summary = {
     scenarioId: result.scenarioId,
     scenarioHash: result.scenarioHash,
     terminalResult: result.terminalResult,
     terminalTick: result.terminalTick,
+    commandCount: result.commands.length,
     eventCount: result.events.length,
     finalStateChecksum: result.finalStateChecksum,
     eventStreamChecksum: result.eventStreamChecksum
   };
   const manifest = {
-    harnessVersion: "milestone-0",
+    harnessVersion: "phase-1",
     protocolVersions: {
       harness: 1,
       contentSchema: content.bundle.schemaVersion,
       scenarioSchema: scenario.schemaVersion,
+      replaySchema: replay.schemaVersion,
       stateSchema: result.finalState.schemaVersion
     },
     runtime: { name: "@dwarven-depths/runtime", version: "0.0.0" },
@@ -366,9 +530,14 @@ async function run(args: ParsedArgs): Promise<void> {
       async (stagingDirectory) => {
         await Promise.all([
           writeJson(
+            resolve(stagingDirectory, "content.compiled.json"),
+            content.bundle
+          ),
+          writeJson(
             resolve(stagingDirectory, "scenario.compiled.json"),
             scenario
           ),
+          writeJson(resolve(stagingDirectory, "replay.json"), replay),
           writeJson(resolve(stagingDirectory, "content-manifest.json"), {
             contentVersion: content.bundle.contentVersion,
             contentManifestHash: content.manifestHash,
@@ -383,10 +552,16 @@ async function run(args: ParsedArgs): Promise<void> {
           ),
           writeJson(resolve(stagingDirectory, "summary.json"), summary),
           writeNewFile(
+            resolve(stagingDirectory, "commands.ndjson"),
+            toNdjson(result.commands)
+          ),
+          writeNewFile(
+            resolve(stagingDirectory, "checkpoints.ndjson"),
+            toNdjson(replay.checkpoints)
+          ),
+          writeNewFile(
             resolve(stagingDirectory, "events.ndjson"),
-            result.events.length === 0
-              ? ""
-              : `${result.events.map((event) => JSON.stringify(event)).join("\n")}\n`
+            toNdjson(result.events)
           )
         ]);
         await writeJson(resolve(stagingDirectory, "manifest.json"), manifest);
@@ -404,6 +579,153 @@ async function run(args: ParsedArgs): Promise<void> {
   );
 }
 
+async function replay(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["run", "verify"]));
+  if (!booleanFlag(args, "verify")) {
+    throw new CliInputError("replay currently requires --verify");
+  }
+  const runDirectory = resolve(requiredFlag(args, "run"));
+  const [
+    manifestInput,
+    replayInput,
+    contentInput,
+    contentManifestInput,
+    scenarioInput,
+    finalStateInput,
+    summaryInput,
+    commandsInput,
+    checkpointsInput,
+    eventsInput
+  ] = await Promise.all([
+    readArtifactJson(runDirectory, "manifest.json"),
+    readArtifactJson(runDirectory, "replay.json"),
+    readArtifactJson(runDirectory, "content.compiled.json"),
+    readArtifactJson(runDirectory, "content-manifest.json"),
+    readArtifactJson(runDirectory, "scenario.compiled.json"),
+    readArtifactJson(runDirectory, "state.final.json"),
+    readArtifactJson(runDirectory, "summary.json"),
+    readArtifactNdjson(runDirectory, "commands.ndjson"),
+    readArtifactNdjson(runDirectory, "checkpoints.ndjson"),
+    readArtifactNdjson(runDirectory, "events.ndjson")
+  ]);
+
+  const manifest = requireRecord<RunManifestArtifact>(
+    manifestInput,
+    "manifest.json"
+  );
+  const listedFiles = manifest.files;
+  requireArtifactMatch(
+    manifest.complete === true && manifest.harnessVersion === "phase-1",
+    "incomplete_or_unsupported_bundle",
+    "manifest.json",
+    "manifest must mark a completed Phase 1 run bundle"
+  );
+  requireArtifactMatch(
+    Array.isArray(listedFiles) &&
+      listedFiles.length === runBundleFiles.length &&
+      runBundleFiles.every((name, index) => listedFiles[index] === name),
+    "manifest_file_list_mismatch",
+    "manifest.json",
+    "manifest file list does not match the required replay bundle"
+  );
+
+  const content = await compileContent(contentInput);
+  const scenario = compileScenario(scenarioInput, content);
+  const compiledReplay = compileReplay(replayInput);
+  const contentManifest = requireRecord<ContentManifestArtifact>(
+    contentManifestInput,
+    "content-manifest.json"
+  );
+  const summary = requireRecord<SummaryArtifact>(summaryInput, "summary.json");
+  const finalCheckpoint = compiledReplay.checkpoints[0];
+  if (finalCheckpoint === undefined) {
+    throw new ReplayArtifactError(
+      "missing_terminal_checkpoint",
+      "replay.json",
+      "replay must contain its terminal checkpoint"
+    );
+  }
+
+  requireArtifactMatch(
+    manifest.contentManifestHash === compiledReplay.contentManifestHash &&
+      contentManifest.contentManifestHash ===
+        compiledReplay.contentManifestHash,
+    "content_manifest_binding_mismatch",
+    "content-manifest.json",
+    "manifest and replay content hashes must agree"
+  );
+  requireArtifactMatch(
+    manifest.scenarioHash === compiledReplay.scenarioHash &&
+      manifest.scenarioId === compiledReplay.scenarioId,
+    "scenario_binding_mismatch",
+    "manifest.json",
+    "manifest and replay scenario identity must agree"
+  );
+
+  const [
+    finalStateArtifactHash,
+    eventArtifactHash,
+    commandArtifactHash,
+    replayCommandHash,
+    checkpointArtifactHash,
+    replayCheckpointHash
+  ] = await Promise.all([
+    canonicalArtifactHash(finalStateInput, "state.final.json"),
+    canonicalArtifactHash(eventsInput, "events.ndjson"),
+    canonicalArtifactHash(commandsInput, "commands.ndjson"),
+    canonicalArtifactHash(compiledReplay.commands, "replay.json"),
+    canonicalArtifactHash(checkpointsInput, "checkpoints.ndjson"),
+    canonicalArtifactHash(compiledReplay.checkpoints, "replay.json")
+  ]);
+  requireArtifactMatch(
+    finalStateArtifactHash === finalCheckpoint.stateChecksum,
+    "state_artifact_checksum_mismatch",
+    "state.final.json",
+    `expected ${finalCheckpoint.stateChecksum}, received ${finalStateArtifactHash}`
+  );
+  requireArtifactMatch(
+    eventArtifactHash === finalCheckpoint.eventStreamChecksum,
+    "event_artifact_checksum_mismatch",
+    "events.ndjson",
+    `expected ${finalCheckpoint.eventStreamChecksum}, received ${eventArtifactHash}`
+  );
+  requireArtifactMatch(
+    commandArtifactHash === replayCommandHash,
+    "command_artifact_checksum_mismatch",
+    "commands.ndjson",
+    `expected ${replayCommandHash}, received ${commandArtifactHash}`
+  );
+  requireArtifactMatch(
+    checkpointArtifactHash === replayCheckpointHash,
+    "checkpoint_artifact_checksum_mismatch",
+    "checkpoints.ndjson",
+    `expected ${replayCheckpointHash}, received ${checkpointArtifactHash}`
+  );
+  requireArtifactMatch(
+    summary.finalStateChecksum === finalCheckpoint.stateChecksum &&
+      summary.eventStreamChecksum === finalCheckpoint.eventStreamChecksum &&
+      summary.terminalResult === compiledReplay.expectedTerminalResult &&
+      summary.terminalTick === compiledReplay.expectedTerminalTick,
+    "summary_binding_mismatch",
+    "summary.json",
+    "summary does not match replay terminal evidence"
+  );
+
+  const result = await verifyReplay(compiledReplay, scenario, content);
+  process.stdout.write(
+    `${JSON.stringify({
+      ok: true,
+      verified: true,
+      runDirectory,
+      scenarioId: result.scenarioId,
+      terminalResult: result.terminalResult,
+      terminalTick: result.terminalTick,
+      finalStateChecksum: result.finalStateChecksum,
+      eventStreamChecksum: result.eventStreamChecksum
+    })}\n`
+  );
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   switch (args.command) {
@@ -413,9 +735,12 @@ async function main(): Promise<void> {
     case "run":
       await run(args);
       break;
+    case "replay":
+      await replay(args);
+      break;
     default:
       throw new CliInputError(
-        "Usage: dwarven-depths-sim <validate|run> --content <file> --scenario <file> [--out <dir>] [--replace true|false]"
+        "Usage: dwarven-depths-sim <validate|run|replay> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify]"
       );
   }
 }
@@ -433,6 +758,32 @@ main().catch((error: unknown) => {
       `${JSON.stringify({ ok: false, error: { type: "input", code: error.code, message: error.message } })}\n`
     );
     process.exitCode = 2;
+    return;
+  }
+  if (
+    error instanceof ReplayDivergenceError ||
+    error instanceof ReplayArtifactError
+  ) {
+    process.stderr.write(
+      `${JSON.stringify({
+        ok: false,
+        error: {
+          type: "replay_divergence",
+          code: error.code,
+          message: error.message,
+          ...(error instanceof ReplayDivergenceError
+            ? {
+                expected: error.expected,
+                actual: error.actual,
+                ...(error.checkpointTick === undefined
+                  ? {}
+                  : { checkpointTick: error.checkpointTick })
+              }
+            : { artifact: error.artifact })
+        }
+      })}\n`
+    );
+    process.exitCode = 4;
     return;
   }
   if (error instanceof RuntimeAssertionError) {
