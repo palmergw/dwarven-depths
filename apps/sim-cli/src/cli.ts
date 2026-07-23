@@ -6,6 +6,7 @@ import {
   mkdir,
   mkdtemp,
   open,
+  readdir,
   readFile,
   rename,
   rm,
@@ -633,6 +634,27 @@ async function replay(args: ParsedArgs): Promise<void> {
     throw new CliInputError("replay currently requires --verify");
   }
   const runDirectory = resolve(requiredFlag(args, "run"));
+  const runStatus = await pathStatus(runDirectory);
+  if (
+    runStatus === undefined ||
+    runStatus.isSymbolicLink() ||
+    !runStatus.isDirectory()
+  ) {
+    throw new ReplayArtifactError(
+      "missing_or_unsafe_bundle",
+      "manifest.json",
+      "--run must identify a non-symlink run-bundle directory"
+    );
+  }
+  const actualEntries = (await readdir(runDirectory)).sort();
+  const expectedEntries = [...runBundleFiles, "manifest.json"].sort();
+  requireArtifactMatch(
+    actualEntries.length === expectedEntries.length &&
+      expectedEntries.every((name, index) => actualEntries[index] === name),
+    "bundle_file_set_mismatch",
+    "manifest.json",
+    "run-bundle directory contains missing or unlisted files"
+  );
   const [
     manifestInput,
     replayInput,

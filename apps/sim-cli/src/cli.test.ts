@@ -330,6 +330,18 @@ describe("simulation CLI", () => {
       writeFileSync(path, original, "utf8");
     }
 
+    const unexpectedPath = resolve(output, "unexpected.txt");
+    writeFileSync(unexpectedPath, "unexpected\n", "utf8");
+    const extraArtifact = runCli("replay", "--run", output, "--verify");
+    expect(extraArtifact.status).toBe(4);
+    expect(JSON.parse(extraArtifact.stderr)).toMatchObject({
+      error: {
+        type: "replay_divergence",
+        code: "bundle_file_set_mismatch"
+      }
+    });
+    rmSync(unexpectedPath);
+
     const summaryPath = resolve(output, "summary.json");
     const summary = readFileSync(summaryPath, "utf8");
     const externalSummary = resolve(dirname(output), "external-summary.json");
