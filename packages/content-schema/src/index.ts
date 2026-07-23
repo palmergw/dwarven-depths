@@ -72,6 +72,7 @@ export interface ValidationIssue {
   readonly path: string;
   readonly code: string;
   readonly message: string;
+  readonly relatedPaths?: readonly string[];
 }
 
 export class ContentValidationError extends Error {
@@ -81,7 +82,14 @@ export class ContentValidationError extends Error {
     super(issues.map((issue) => `${issue.path}: ${issue.message}`).join("\n"));
     this.name = "ContentValidationError";
     this.issues = Object.freeze(
-      issues.map((issue) => Object.freeze({ ...issue }))
+      issues.map((issue) =>
+        Object.freeze({
+          ...issue,
+          ...(issue.relatedPaths === undefined
+            ? {}
+            : { relatedPaths: Object.freeze([...issue.relatedPaths]) })
+        })
+      )
     );
   }
 }
@@ -110,7 +118,8 @@ export function validateContentBundle(input: unknown): ContentBundle {
       issues.push({
         path: `$/definitions/${index}/id`,
         code: "duplicate_stable_id",
-        message: `duplicates $/definitions/${previous.index}/id (${definition.id})`
+        message: `duplicates ${definition.id}`,
+        relatedPaths: [`$/definitions/${previous.index}/id`]
       });
     } else {
       seen.set(definition.id, { index, kind: definition.kind });
@@ -132,7 +141,8 @@ export function validateContentBundle(input: unknown): ContentBundle {
         issues.push({
           path: `$/definitions/${definitionIndex}/waveIds/${waveIndex}`,
           code: "wrong_reference_kind",
-          message: `references ${target.kind} at $/definitions/${target.index}/id; expected wave`
+          message: `references ${target.kind}; expected wave`,
+          relatedPaths: [`$/definitions/${target.index}/id`]
         });
       }
     });
@@ -166,6 +176,13 @@ export function validateScenario(input: unknown): ScenarioDefinition {
   const issues: ValidationIssue[] = [];
   const commands = new Set<string>();
   parsed.data.commands.forEach((command, index) => {
+    if (command.type === "confirmPreparation" && command.atTick !== 0) {
+      issues.push({
+        path: `$/commands/${index}/atTick`,
+        code: "invalid_preparation_tick",
+        message: "confirmPreparation must be scheduled at gameplay tick 0"
+      });
+    }
     if (command.atTick >= parsed.data.maximumTicks) {
       issues.push({
         path: `$/commands/${index}/atTick`,

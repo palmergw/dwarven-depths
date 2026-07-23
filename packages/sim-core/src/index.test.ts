@@ -29,6 +29,17 @@ describe("deterministic kernel", () => {
     );
   });
 
+  it("does not advance gameplay time or RNG while waiting in preparation", async () => {
+    const content = await compileContent(bundle);
+    const state = createInitialState(content, "level.empty" as never, "1");
+    const result = stepSimulation(state, [], content);
+
+    expect(result.state).toBe(state);
+    expect(result.state.tick).toBe(0);
+    expect(result.state.rngState).toBe(1);
+    expect(result.events).toEqual([]);
+  });
+
   it("advances past a preparation command exactly once", async () => {
     const content = await compileContent({
       schemaVersion: 1,

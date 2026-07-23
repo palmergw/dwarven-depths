@@ -30,9 +30,12 @@ describe("content validation", () => {
         definitions: [...validBundle.definitions, validBundle.definitions[0]]
       });
     } catch (error) {
-      expect((error as ContentValidationError).issues[0]?.path).toBe(
-        "$/definitions/1/id"
-      );
+      const issue = (error as ContentValidationError).issues[0];
+      expect(issue).toMatchObject({
+        path: "$/definitions/1/id",
+        relatedPaths: ["$/definitions/0/id"]
+      });
+      expect(Object.isFrozen(issue?.relatedPaths)).toBe(true);
     }
   });
 
@@ -109,6 +112,19 @@ describe("scenario validation", () => {
       ).toThrow(/between 1 and 4294967295/);
     }
   );
+
+  it("rejects preparation commands after gameplay tick zero", () => {
+    expect(() =>
+      validateScenario({
+        schemaVersion: 1,
+        id: "scenario.conformance.late_preparation",
+        levelId: "level.empty",
+        seed: "1",
+        maximumTicks: 2,
+        commands: [{ atTick: 1, type: "confirmPreparation" }]
+      })
+    ).toThrow(/must be scheduled at gameplay tick 0/);
+  });
 
   it("rejects commands outside the tick budget and duplicate commands", () => {
     expect(() =>

@@ -24,14 +24,23 @@ export interface RuntimeResult {
 }
 
 export class RuntimeAssertionError extends Error {
-  readonly code: "scenario_nontermination" | "unexpected_terminal_result";
+  readonly code = "unexpected_terminal_result";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "RuntimeAssertionError";
+  }
+}
+
+export class RuntimeSafetyStopError extends Error {
+  readonly code: "simulation_stalled" | "tick_budget_exhausted";
 
   constructor(
-    code: "scenario_nontermination" | "unexpected_terminal_result",
+    code: "simulation_stalled" | "tick_budget_exhausted",
     message: string
   ) {
     super(message);
-    this.name = "RuntimeAssertionError";
+    this.name = "RuntimeSafetyStopError";
     this.code = code;
   }
 }
@@ -52,14 +61,21 @@ export async function runScenario(
         sequence: commandSequence++,
         command
       }));
+    const previousState = state;
     const result = stepSimulation(state, commands, content);
+    if (result.state === previousState) {
+      throw new RuntimeSafetyStopError(
+        "simulation_stalled",
+        `Scenario ${scenario.id} made no progress at tick ${state.tick}`
+      );
+    }
     state = result.state;
     events.push(...result.events);
   }
 
   if (state.phase !== "TERMINAL" || !state.terminalResult) {
-    throw new RuntimeAssertionError(
-      "scenario_nontermination",
+    throw new RuntimeSafetyStopError(
+      "tick_budget_exhausted",
       `Scenario ${scenario.id} did not terminate within ${scenario.maximumTicks} ticks`
     );
   }
@@ -68,7 +84,6 @@ export async function runScenario(
     state.terminalResult !== scenario.expectedTerminalResult
   ) {
     throw new RuntimeAssertionError(
-      "unexpected_terminal_result",
       `Scenario ${scenario.id} expected ${scenario.expectedTerminalResult} but produced ${state.terminalResult}`
     );
   }

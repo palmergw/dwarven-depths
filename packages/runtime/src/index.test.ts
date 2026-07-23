@@ -9,10 +9,10 @@ import contentInput from "../../../content/fixtures/empty-content.json" with {
 import scenarioInput from "../../../scenarios/conformance/empty-level.json" with {
   type: "json"
 };
-import { type RuntimeAssertionError, runScenario } from "./index.js";
+import { type RuntimeSafetyStopError, runScenario } from "./index.js";
 
 describe("shared runtime", () => {
-  it("reports nontermination as a scenario assertion", async () => {
+  it("reports tick-budget exhaustion as a safety stop", async () => {
     const content = await compileContent({
       schemaVersion: 1,
       contentVersion: "milestone-0",
@@ -34,9 +34,30 @@ describe("shared runtime", () => {
     );
 
     await expect(runScenario(scenario, content)).rejects.toMatchObject({
-      name: "RuntimeAssertionError",
-      code: "scenario_nontermination"
-    } satisfies Partial<RuntimeAssertionError>);
+      name: "RuntimeSafetyStopError",
+      code: "tick_budget_exhausted"
+    } satisfies Partial<RuntimeSafetyStopError>);
+  });
+
+  it("stops without advancing gameplay time when preparation has no command", async () => {
+    const content = await compileContent(contentInput);
+    const scenario = compileScenario(
+      {
+        schemaVersion: 1,
+        id: "scenario.conformance.stalled_preparation",
+        levelId: "level.empty",
+        seed: "1",
+        maximumTicks: 1,
+        commands: []
+      },
+      content
+    );
+
+    await expect(runScenario(scenario, content)).rejects.toMatchObject({
+      name: "RuntimeSafetyStopError",
+      code: "simulation_stalled",
+      message: expect.stringContaining("tick 0")
+    } satisfies Partial<RuntimeSafetyStopError>);
   });
 
   it("produces identical events and checksums for repeated runs", async () => {

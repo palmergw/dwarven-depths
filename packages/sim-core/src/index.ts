@@ -119,6 +119,8 @@ export function stepSimulation(
     };
   }
 
+  if (state.phase === "PREPARATION") return { state, events: [] };
+
   return {
     state: {
       ...state,
