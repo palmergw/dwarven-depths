@@ -9,10 +9,12 @@ import type {
   ScenarioDefinition
 } from "@dwarven-depths/contracts";
 import {
+  type BattlefieldMapDefinition,
   type ContentBundle,
   type ContentDefinition,
   canonicalHash,
   type LevelDefinition,
+  type NavigationNodeId,
   type StableId,
   type WaveDefinition
 } from "@dwarven-depths/contracts";
@@ -64,7 +66,65 @@ class ReadonlyMapView<Key, Value> implements ReadonlyMap<Key, Value> {
   }
 }
 
+function compareIds(
+  left: { readonly id: string },
+  right: { readonly id: string }
+): number {
+  return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+}
+
+function freezeMap(
+  definition: BattlefieldMapDefinition
+): BattlefieldMapDefinition {
+  return Object.freeze({
+    kind: "map",
+    id: definition.id,
+    nodes: Object.freeze(
+      definition.nodes
+        .map((node) =>
+          Object.freeze({
+            ...node,
+            neighborNodeIds: Object.freeze([...node.neighborNodeIds])
+          })
+        )
+        .sort(compareIds)
+    ),
+    connections: Object.freeze(
+      definition.connections
+        .map((connection) => {
+          const nodeIds = [...connection.nodeIds].sort() as [
+            NavigationNodeId,
+            NavigationNodeId
+          ];
+          return Object.freeze({
+            ...connection,
+            nodeIds: Object.freeze(nodeIds)
+          });
+        })
+        .sort(compareIds)
+    ),
+    placementPoints: Object.freeze(
+      definition.placementPoints
+        .map((point) =>
+          Object.freeze({
+            ...point,
+            adjacentPlacementPointIds: Object.freeze(
+              [...point.adjacentPlacementPointIds].sort()
+            )
+          })
+        )
+        .sort(compareIds)
+    ),
+    enemyEntrances: Object.freeze(
+      definition.enemyEntrances
+        .map((entrance) => Object.freeze({ ...entrance }))
+        .sort(compareIds)
+    )
+  });
+}
+
 function freezeDefinition(definition: ContentDefinition): ContentDefinition {
+  if (definition.kind === "map") return freezeMap(definition);
   return definition.kind === "level"
     ? Object.freeze({
         ...definition,
@@ -78,6 +138,7 @@ export interface CompiledContent {
   readonly manifestHash: string;
   readonly levels: ReadonlyMap<StableId, LevelDefinition>;
   readonly waves: ReadonlyMap<StableId, WaveDefinition>;
+  readonly maps: ReadonlyMap<StableId, BattlefieldMapDefinition>;
 }
 
 export async function compileContent(input: unknown): Promise<CompiledContent> {
@@ -96,17 +157,20 @@ export async function compileContent(input: unknown): Promise<CompiledContent> {
   });
   const levels = new Map<StableId, LevelDefinition>();
   const waves = new Map<StableId, WaveDefinition>();
+  const maps = new Map<StableId, BattlefieldMapDefinition>();
   for (const definition of definitions) {
     if (definition.kind === "level") levels.set(definition.id, definition);
-    else waves.set(definition.id, definition);
+    else if (definition.kind === "wave") waves.set(definition.id, definition);
+    else maps.set(definition.id, definition);
   }
 
-  return {
+  return Object.freeze({
     bundle,
     manifestHash: await canonicalHash(bundle),
     levels: Object.freeze(new ReadonlyMapView(levels)),
-    waves: Object.freeze(new ReadonlyMapView(waves))
-  };
+    waves: Object.freeze(new ReadonlyMapView(waves)),
+    maps: Object.freeze(new ReadonlyMapView(maps))
+  });
 }
 
 export function compileScenario(

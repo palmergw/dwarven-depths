@@ -10,6 +10,9 @@ import {
   seedToUint32
 } from "@dwarven-depths/sim-core";
 import { describe, expect, it } from "vitest";
+import mapContentInput from "../../../content/fixtures/conformance-map.json" with {
+  type: "json"
+};
 import contentInput from "../../../content/fixtures/empty-content.json" with {
   type: "json"
 };
@@ -93,6 +96,22 @@ describe("cross-runtime deterministic conformance", () => {
       expect(sequence).toEqual(expectedSequence);
     }
   );
+
+  it("matches the golden nonempty authored battlefield map", async () => {
+    const content = await compileContent(mapContentInput);
+    const map = content.maps.get("map.conformance_diamond" as never);
+
+    expect(content.manifestHash).toBe(
+      "38b3ddd8c676f1c05e3fb0de8d1f08f74712d14a4523b0801b28110540fedca1"
+    );
+    expect(
+      map?.nodes.find((node) => node.id === "node.entry")?.neighborNodeIds
+    ).toEqual(["node.south", "node.east"]);
+    expect(map?.placementPoints.map((point) => point.id)).toEqual([
+      "placement.east",
+      "placement.goal"
+    ]);
+  });
 
   it("matches the golden nonempty entity/effect table", async () => {
     const tables = AuthoritativeTables.fromSnapshot(stableTablesInput);

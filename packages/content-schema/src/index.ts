@@ -1,5 +1,10 @@
 import type {
+  BattlefieldMapDefinition,
   ContentBundle,
+  EnemyEntranceId,
+  NavigationConnectionId,
+  NavigationNodeId,
+  PlacementPointId,
   ReplayDefinition,
   ScenarioDefinition,
   StableId
@@ -31,7 +36,8 @@ const levelDefinitionSchema = z
   .object({
     kind: z.literal("level"),
     id: stableIdSchema,
-    waveIds: z.array(stableIdSchema)
+    waveIds: z.array(stableIdSchema),
+    mapId: stableIdSchema.optional()
   })
   .strict();
 
@@ -43,9 +49,51 @@ const waveDefinitionSchema = z
   })
   .strict();
 
+const navigationNodeSchema = z
+  .object({
+    id: stableIdSchema,
+    x: z.int(),
+    y: z.int(),
+    neighborNodeIds: z.array(stableIdSchema)
+  })
+  .strict();
+
+const navigationConnectionSchema = z
+  .object({
+    id: stableIdSchema,
+    nodeIds: z.tuple([stableIdSchema, stableIdSchema]),
+    cost: z.int().positive()
+  })
+  .strict();
+
+const placementPointSchema = z
+  .object({
+    id: stableIdSchema,
+    nodeId: stableIdSchema,
+    capacity: z.int().positive(),
+    adjacentPlacementPointIds: z.array(stableIdSchema)
+  })
+  .strict();
+
+const enemyEntranceSchema = z
+  .object({ id: stableIdSchema, nodeId: stableIdSchema })
+  .strict();
+
+const battlefieldMapSchema = z
+  .object({
+    kind: z.literal("map"),
+    id: stableIdSchema,
+    nodes: z.array(navigationNodeSchema),
+    connections: z.array(navigationConnectionSchema),
+    placementPoints: z.array(placementPointSchema),
+    enemyEntrances: z.array(enemyEntranceSchema)
+  })
+  .strict();
+
 const contentDefinitionSchema = z.discriminatedUnion("kind", [
   levelDefinitionSchema,
-  waveDefinitionSchema
+  waveDefinitionSchema,
+  battlefieldMapSchema
 ]);
 
 const contentBundleSchema = z
@@ -145,6 +193,202 @@ function formatZodIssues(error: z.ZodError): ValidationIssue[] {
   }));
 }
 
+type ParsedMap = z.infer<typeof battlefieldMapSchema>;
+
+function recordUniqueIds(
+  records: readonly { readonly id: string }[],
+  basePath: string,
+  issues: ValidationIssue[]
+): Map<string, number> {
+  const seen = new Map<string, number>();
+  records.forEach((record, index) => {
+    const previous = seen.get(record.id);
+    if (previous === undefined) seen.set(record.id, index);
+    else
+      issues.push({
+        path: `${basePath}/${index}/id`,
+        code: "duplicate_stable_id",
+        message: `duplicates ${record.id}`,
+        relatedPaths: [`${basePath}/${previous}/id`]
+      });
+  });
+  return seen;
+}
+
+function validateUniqueReferences(
+  values: readonly string[],
+  basePath: string,
+  issues: ValidationIssue[]
+): void {
+  const seen = new Map<string, number>();
+  values.forEach((value, index) => {
+    const previous = seen.get(value);
+    if (previous === undefined) seen.set(value, index);
+    else
+      issues.push({
+        path: `${basePath}/${index}`,
+        code: "duplicate_reference",
+        message: `duplicates ${value}`,
+        relatedPaths: [`${basePath}/${previous}`]
+      });
+  });
+}
+
+function validateBattlefieldMap(
+  map: ParsedMap,
+  definitionIndex: number,
+  issues: ValidationIssue[]
+): void {
+  const base = `$/definitions/${definitionIndex}`;
+  const nodes = recordUniqueIds(map.nodes, `${base}/nodes`, issues);
+  recordUniqueIds(map.connections, `${base}/connections`, issues);
+  const placements = recordUniqueIds(
+    map.placementPoints,
+    `${base}/placementPoints`,
+    issues
+  );
+  recordUniqueIds(map.enemyEntrances, `${base}/enemyEntrances`, issues);
+
+  const connectionPairs = new Map<string, number>();
+  map.connections.forEach((connection, connectionIndex) => {
+    const connectionPath = `${base}/connections/${connectionIndex}`;
+    const [leftId, rightId] = connection.nodeIds;
+    if (leftId === rightId) {
+      issues.push({
+        path: `${connectionPath}/nodeIds/1`,
+        code: "self_reference",
+        message: "connection endpoints must be different"
+      });
+    }
+    connection.nodeIds.forEach((nodeId, endpointIndex) => {
+      if (!nodes.has(nodeId))
+        issues.push({
+          path: `${connectionPath}/nodeIds/${endpointIndex}`,
+          code: "unknown_reference",
+          message: `references unknown navigation node ID (${nodeId})`
+        });
+    });
+    const pair =
+      leftId < rightId
+        ? `${leftId}\u0000${rightId}`
+        : `${rightId}\u0000${leftId}`;
+    const previousPair = connectionPairs.get(pair);
+    if (previousPair === undefined) connectionPairs.set(pair, connectionIndex);
+    else
+      issues.push({
+        path: `${connectionPath}/nodeIds`,
+        code: "duplicate_connection",
+        message: `duplicates the connection between ${leftId} and ${rightId}`,
+        relatedPaths: [`${base}/connections/${previousPair}/nodeIds`]
+      });
+
+    const leftIndex = nodes.get(leftId);
+    const rightIndex = nodes.get(rightId);
+    if (leftIndex !== undefined && rightIndex !== undefined) {
+      const left = map.nodes[leftIndex];
+      const right = map.nodes[rightIndex];
+      if (
+        left !== undefined &&
+        right !== undefined &&
+        (left.x === right.x) === (left.y === right.y)
+      ) {
+        issues.push({
+          path: `${connectionPath}/nodeIds`,
+          code: "non_orthogonal_connection",
+          message: "connected nodes must differ on exactly one coordinate"
+        });
+      }
+    }
+  });
+
+  map.nodes.forEach((node, nodeIndex) => {
+    const neighborPath = `${base}/nodes/${nodeIndex}/neighborNodeIds`;
+    validateUniqueReferences(node.neighborNodeIds, neighborPath, issues);
+    node.neighborNodeIds.forEach((neighborId, neighborIndex) => {
+      if (neighborId === node.id)
+        issues.push({
+          path: `${neighborPath}/${neighborIndex}`,
+          code: "self_reference",
+          message: "a node cannot be its own neighbor"
+        });
+      if (!nodes.has(neighborId))
+        issues.push({
+          path: `${neighborPath}/${neighborIndex}`,
+          code: "unknown_reference",
+          message: `references unknown navigation node ID (${neighborId})`
+        });
+      const pair =
+        node.id < neighborId
+          ? `${node.id}\u0000${neighborId}`
+          : `${neighborId}\u0000${node.id}`;
+      if (!connectionPairs.has(pair))
+        issues.push({
+          path: `${neighborPath}/${neighborIndex}`,
+          code: "missing_connection",
+          message: `has no authored connection to ${neighborId}`
+        });
+    });
+  });
+
+  map.connections.forEach((connection, connectionIndex) => {
+    const [leftId, rightId] = connection.nodeIds;
+    for (const [nodeId, neighborId] of [
+      [leftId, rightId],
+      [rightId, leftId]
+    ] as const) {
+      const nodeIndex = nodes.get(nodeId);
+      if (
+        nodeIndex !== undefined &&
+        !map.nodes[nodeIndex]?.neighborNodeIds.includes(neighborId)
+      )
+        issues.push({
+          path: `${base}/connections/${connectionIndex}/nodeIds`,
+          code: "missing_neighbor_order",
+          message: `${nodeId} must explicitly order neighbor ${neighborId}`,
+          relatedPaths: [`${base}/nodes/${nodeIndex}/neighborNodeIds`]
+        });
+    }
+  });
+
+  map.placementPoints.forEach((point, pointIndex) => {
+    const pointPath = `${base}/placementPoints/${pointIndex}`;
+    if (!nodes.has(point.nodeId))
+      issues.push({
+        path: `${pointPath}/nodeId`,
+        code: "unknown_reference",
+        message: `references unknown navigation node ID (${point.nodeId})`
+      });
+    validateUniqueReferences(
+      point.adjacentPlacementPointIds,
+      `${pointPath}/adjacentPlacementPointIds`,
+      issues
+    );
+    point.adjacentPlacementPointIds.forEach((adjacentId, adjacentIndex) => {
+      if (adjacentId === point.id)
+        issues.push({
+          path: `${pointPath}/adjacentPlacementPointIds/${adjacentIndex}`,
+          code: "self_reference",
+          message: "a placement point cannot be adjacent to itself"
+        });
+      if (!placements.has(adjacentId))
+        issues.push({
+          path: `${pointPath}/adjacentPlacementPointIds/${adjacentIndex}`,
+          code: "unknown_reference",
+          message: `references unknown placement point ID (${adjacentId})`
+        });
+    });
+  });
+
+  map.enemyEntrances.forEach((entrance, entranceIndex) => {
+    if (!nodes.has(entrance.nodeId))
+      issues.push({
+        path: `${base}/enemyEntrances/${entranceIndex}/nodeId`,
+        code: "unknown_reference",
+        message: `references unknown navigation node ID (${entrance.nodeId})`
+      });
+  });
+}
+
 export function validateContentBundle(input: unknown): ContentBundle {
   const parsed = contentBundleSchema.safeParse(input);
   if (!parsed.success)
@@ -152,7 +396,7 @@ export function validateContentBundle(input: unknown): ContentBundle {
 
   const seen = new Map<
     string,
-    { readonly index: number; readonly kind: "level" | "wave" }
+    { readonly index: number; readonly kind: "level" | "wave" | "map" }
   >();
   const issues: ValidationIssue[] = [];
   parsed.data.definitions.forEach((definition, index) => {
@@ -170,9 +414,12 @@ export function validateContentBundle(input: unknown): ContentBundle {
   });
 
   parsed.data.definitions.forEach((definition, definitionIndex) => {
+    if (definition.kind === "map") {
+      validateBattlefieldMap(definition, definitionIndex, issues);
+      return;
+    }
     if (definition.kind !== "level") return;
-    const waveIds = definition.waveIds;
-    waveIds.forEach((waveId, waveIndex) => {
+    definition.waveIds.forEach((waveId, waveIndex) => {
       const target = seen.get(waveId);
       if (target === undefined) {
         issues.push({
@@ -189,25 +436,76 @@ export function validateContentBundle(input: unknown): ContentBundle {
         });
       }
     });
+    if (definition.mapId !== undefined) {
+      const target = seen.get(definition.mapId);
+      if (target === undefined)
+        issues.push({
+          path: `$/definitions/${definitionIndex}/mapId`,
+          code: "unknown_reference",
+          message: `references unknown map ID (${definition.mapId})`
+        });
+      else if (target.kind !== "map")
+        issues.push({
+          path: `$/definitions/${definitionIndex}/mapId`,
+          code: "wrong_reference_kind",
+          message: `references ${target.kind}; expected map`,
+          relatedPaths: [`$/definitions/${target.index}/id`]
+        });
+    }
   });
 
   if (issues.length > 0) throw new ContentValidationError(issues);
   return {
     schemaVersion: 1,
     contentVersion: parsed.data.contentVersion,
-    definitions: parsed.data.definitions.map((definition) =>
-      definition.kind === "level"
-        ? {
-            kind: "level",
-            id: definition.id as StableId,
-            waveIds: definition.waveIds.map((waveId) => waveId as StableId)
-          }
-        : {
-            kind: "wave",
-            id: definition.id as StableId,
-            durationTicks: definition.durationTicks
-          }
-    )
+    definitions: parsed.data.definitions.map((definition) => {
+      if (definition.kind === "level")
+        return {
+          kind: "level",
+          id: definition.id as StableId,
+          waveIds: definition.waveIds.map((waveId) => waveId as StableId),
+          ...(definition.mapId === undefined
+            ? {}
+            : { mapId: definition.mapId as StableId })
+        };
+      if (definition.kind === "wave")
+        return {
+          kind: "wave",
+          id: definition.id as StableId,
+          durationTicks: definition.durationTicks
+        };
+      return {
+        kind: "map",
+        id: definition.id as StableId,
+        nodes: definition.nodes.map((node) => ({
+          id: node.id as NavigationNodeId,
+          x: node.x,
+          y: node.y,
+          neighborNodeIds: node.neighborNodeIds.map(
+            (neighborId) => neighborId as NavigationNodeId
+          )
+        })),
+        connections: definition.connections.map((connection) => ({
+          id: connection.id as NavigationConnectionId,
+          nodeIds: connection.nodeIds.map(
+            (nodeId) => nodeId as NavigationNodeId
+          ) as [NavigationNodeId, NavigationNodeId],
+          cost: connection.cost
+        })),
+        placementPoints: definition.placementPoints.map((point) => ({
+          id: point.id as PlacementPointId,
+          nodeId: point.nodeId as NavigationNodeId,
+          capacity: point.capacity,
+          adjacentPlacementPointIds: point.adjacentPlacementPointIds.map(
+            (adjacentId) => adjacentId as PlacementPointId
+          )
+        })),
+        enemyEntrances: definition.enemyEntrances.map((entrance) => ({
+          id: entrance.id as EnemyEntranceId,
+          nodeId: entrance.nodeId as NavigationNodeId
+        }))
+      } satisfies BattlefieldMapDefinition;
+    })
   };
 }
 

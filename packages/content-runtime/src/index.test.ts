@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
+import mapContentInput from "../../../content/fixtures/conformance-map.json" with {
+  type: "json"
+};
 import {
   ContentValidationError,
   compileContent,
   compileReplay,
   compileScenario
 } from "./index.js";
+
+interface MutableMapFixture {
+  readonly kind: "map";
+  nodes: Array<{ neighborNodeIds: string[] }>;
+  connections: Array<{ nodeIds: string[]; cost: number }>;
+  placementPoints: unknown[];
+  enemyEntrances: unknown[];
+}
 
 describe("content compilation", () => {
   it("sorts definitions and builds kind-specific indexes", async () => {
@@ -41,6 +52,67 @@ describe("content compilation", () => {
     expect(Object.isFrozen(scenario)).toBe(true);
     expect(Object.isFrozen(scenario.commands)).toBe(true);
     expect(Object.isFrozen(scenario.commands[0])).toBe(true);
+  });
+
+  it("canonicalizes map source ordering while preserving authored neighbor order", async () => {
+    const reordered = structuredClone(mapContentInput);
+    reordered.definitions.reverse();
+    const map = reordered.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (map === undefined) throw new Error("missing map fixture");
+    map.nodes.reverse();
+    map.connections.reverse();
+    map.placementPoints.reverse();
+    map.enemyEntrances.reverse();
+    for (const connection of map.connections) connection.nodeIds.reverse();
+
+    const [canonical, permuted] = await Promise.all([
+      compileContent(mapContentInput),
+      compileContent(reordered)
+    ]);
+    const compiledMap = canonical.maps.get("map.conformance_diamond" as never);
+
+    expect(permuted.bundle).toEqual(canonical.bundle);
+    expect(permuted.manifestHash).toBe(canonical.manifestHash);
+    expect(compiledMap?.nodes.map((node) => node.id)).toEqual([
+      "node.east",
+      "node.entry",
+      "node.goal",
+      "node.south"
+    ]);
+    expect(
+      compiledMap?.nodes.find((node) => node.id === "node.entry")
+        ?.neighborNodeIds
+    ).toEqual(["node.south", "node.east"]);
+  });
+
+  it("returns deeply immutable map records detached from caller input", async () => {
+    const source = structuredClone(mapContentInput);
+    const content = await compileContent(source);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    const sourceMap = source.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (sourceMap === undefined) throw new Error("missing map fixture");
+    sourceMap.nodes[0]?.neighborNodeIds.reverse();
+    const sourceConnection = sourceMap.connections[0];
+    if (sourceConnection === undefined)
+      throw new Error("missing connection fixture");
+    sourceConnection.cost = 999;
+
+    expect(content.manifestHash).toBe(
+      "38b3ddd8c676f1c05e3fb0de8d1f08f74712d14a4523b0801b28110540fedca1"
+    );
+    expect(map?.connections[0]?.cost).toBe(10);
+    expect(Object.isFrozen(content)).toBe(true);
+    expect(Object.isFrozen(map)).toBe(true);
+    expect(Object.isFrozen(map?.nodes)).toBe(true);
+    expect(Object.isFrozen(map?.nodes[0]?.neighborNodeIds)).toBe(true);
+    expect(Object.isFrozen(map?.connections[0]?.nodeIds)).toBe(true);
+    expect(
+      Object.isFrozen(map?.placementPoints[0]?.adjacentPlacementPointIds)
+    ).toBe(true);
   });
 
   it("freezes replay commands and checkpoints", () => {
