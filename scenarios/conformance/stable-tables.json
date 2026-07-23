@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "entities": [
+    {
+      "id": "entity.dwarf.alpha"
+    },
+    {
+      "id": "entity.enemy.beta"
+    },
+    {
+      "id": "entity.tower.gamma"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.guard.alpha",
+      "sourceEntityId": "entity.tower.gamma",
+      "targetEntityId": "entity.dwarf.alpha"
+    },
+    {
+      "id": "effect.mark.beta",
+      "sourceEntityId": "entity.dwarf.alpha",
+      "targetEntityId": "entity.enemy.beta"
+    }
+  ]
+}

@@ -1,4 +1,7 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
+
+export * from "./stable-tables.js";
+
 import {
   type CommandEnvelope,
   canonicalHash,
