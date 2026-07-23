@@ -14,7 +14,8 @@ export type StableTableErrorCode =
   | "duplicate_entity_id"
   | "duplicate_effect_id"
   | "missing_source_entity"
-  | "missing_target_entity";
+  | "missing_target_entity"
+  | "table_capacity_exceeded";
 
 export class StableTableError extends Error {
   readonly code: StableTableErrorCode;
@@ -38,6 +39,7 @@ export class StableTableError extends Error {
 const entityIdPattern = /^entity(?:\.[a-z][a-z0-9_]*){2,}$/;
 const effectIdPattern = /^effect(?:\.[a-z][a-z0-9_]*){2,}$/;
 const maximumIdLength = 128;
+const maximumTableRecords = 100_000;
 
 function parseId<Id extends EntityId | EffectId>(
   value: unknown,
@@ -147,6 +149,13 @@ function requireExactKeys(
 function requireDenseArray(value: unknown, path: string): readonly unknown[] {
   if (!Array.isArray(value)) {
     throw new StableTableError("invalid_snapshot", path, "must be an array");
+  }
+  if (value.length > maximumTableRecords) {
+    throw new StableTableError(
+      "invalid_snapshot",
+      path,
+      `must contain at most ${maximumTableRecords} records`
+    );
   }
   if (Reflect.ownKeys(value).length !== value.length + 1) {
     throw new StableTableError(
@@ -340,6 +349,13 @@ export class AuthoritativeTables {
         `duplicates entity ID ${id}`
       );
     }
+    if (this.#snapshot.entities.length >= maximumTableRecords) {
+      throw new StableTableError(
+        "table_capacity_exceeded",
+        "$",
+        `entity table cannot exceed ${maximumTableRecords} records`
+      );
+    }
     return new AuthoritativeTables(
       buildSnapshot(
         [...this.#snapshot.entities, freezeEntity(id)],
@@ -357,6 +373,13 @@ export class AuthoritativeTables {
         "duplicate_effect_id",
         "$/id",
         `duplicates effect ID ${id}`
+      );
+    }
+    if (this.#snapshot.effects.length >= maximumTableRecords) {
+      throw new StableTableError(
+        "table_capacity_exceeded",
+        "$",
+        `effect table cannot exceed ${maximumTableRecords} records`
       );
     }
     const sourceEntityId = parseId<EntityId>(

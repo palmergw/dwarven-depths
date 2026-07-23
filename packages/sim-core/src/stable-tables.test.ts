@@ -161,6 +161,18 @@ describe("stable authoritative entity/effect tables", () => {
         path: "$/entities"
       } satisfies Partial<StableTableError>)
     );
+    expect(() =>
+      AuthoritativeTables.fromSnapshot({
+        schemaVersion: 1,
+        entities: new Array(100_001),
+        effects: []
+      })
+    ).toThrowError(
+      expect.objectContaining({
+        code: "invalid_snapshot",
+        path: "$/entities"
+      } satisfies Partial<StableTableError>)
+    );
 
     const tables = AuthoritativeTables.empty().withEntity(entityRecords[0]);
     expect(() =>
