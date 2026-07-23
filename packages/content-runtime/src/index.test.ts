@@ -25,6 +25,15 @@ interface MutableMapFixture {
   enemyEntrances: unknown[];
 }
 
+function permutations<Value>(values: readonly Value[]): Value[][] {
+  if (values.length < 2) return [[...values]];
+  return values.flatMap((value, index) =>
+    permutations(
+      values.filter((_, candidateIndex) => candidateIndex !== index)
+    ).map((remainder) => [value, ...remainder])
+  );
+}
+
 describe("content compilation", () => {
   it("sorts definitions and builds kind-specific indexes", async () => {
     const content = await compileContent({
@@ -93,6 +102,67 @@ describe("content compilation", () => {
       compiledMap?.nodes.find((node) => node.id === "node.entry")
         ?.neighborNodeIds
     ).toEqual(["node.south", "node.east"]);
+  });
+
+  it("keeps canonical maps and routes stable across exhaustive record permutations", async () => {
+    const canonical = await compileContent(mapContentInput);
+    const canonicalMap = canonical.maps.get("map.conformance_diamond" as never);
+    if (canonicalMap === undefined) throw new Error("missing map fixture");
+    const expectedRoute = findShortestRoute(
+      canonicalMap,
+      "node.entry" as never,
+      "node.goal" as never
+    );
+    const source = structuredClone(mapContentInput);
+    const sourceMap = source.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (sourceMap === undefined) throw new Error("missing source map fixture");
+
+    const candidates: (typeof source)[] = [];
+    for (const nodes of permutations(sourceMap.nodes)) {
+      const candidate = structuredClone(source);
+      const map = candidate.definitions.find(
+        (definition) => definition.kind === "map"
+      ) as MutableMapFixture;
+      map.nodes = nodes;
+      candidates.push(candidate);
+    }
+    for (const connections of permutations(sourceMap.connections)) {
+      const candidate = structuredClone(source);
+      const map = candidate.definitions.find(
+        (definition) => definition.kind === "map"
+      ) as MutableMapFixture;
+      map.connections = connections;
+      candidates.push(candidate);
+    }
+    for (const placementPoints of permutations(sourceMap.placementPoints)) {
+      const candidate = structuredClone(source);
+      const map = candidate.definitions.find(
+        (definition) => definition.kind === "map"
+      ) as MutableMapFixture;
+      map.placementPoints = placementPoints;
+      candidates.push(candidate);
+    }
+    sourceMap.connections.forEach((_, connectionIndex) => {
+      const candidate = structuredClone(source);
+      const map = candidate.definitions.find(
+        (definition) => definition.kind === "map"
+      ) as MutableMapFixture;
+      map.connections[connectionIndex]?.nodeIds.reverse();
+      candidates.push(candidate);
+    });
+
+    for (const candidate of candidates) {
+      const compiled = await compileContent(candidate);
+      const map = compiled.maps.get("map.conformance_diamond" as never);
+      if (map === undefined) throw new Error("missing permuted map fixture");
+      expect(compiled.bundle).toEqual(canonical.bundle);
+      expect(compiled.manifestHash).toBe(canonical.manifestHash);
+      expect(
+        findShortestRoute(map, "node.entry" as never, "node.goal" as never)
+      ).toEqual(expectedRoute);
+    }
   });
 
   it("returns deeply immutable map records detached from caller input", async () => {
@@ -347,6 +417,69 @@ describe("content compilation", () => {
         }
       ])
     ).toEqual({ valid: true, issues: [] });
+  });
+
+  it("validates multiple entrances and placements independently of source order", async () => {
+    const source = structuredClone(mapContentInput);
+    const mapInput = source.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (mapInput === undefined) throw new Error("missing map fixture");
+    mapInput.nodes.push({
+      id: "node.north",
+      x: 1,
+      y: -1,
+      neighborNodeIds: ["node.east"]
+    });
+    const east = mapInput.nodes.find((node) => node.id === "node.east");
+    if (east === undefined) throw new Error("missing east node");
+    east.neighborNodeIds.push("node.north");
+    mapInput.connections.push({
+      id: "connection.north_east",
+      nodeIds: ["node.north", "node.east"],
+      cost: 10
+    });
+    mapInput.enemyEntrances.push({
+      id: "entrance.north",
+      nodeId: "node.north"
+    });
+
+    const reordered = structuredClone(source);
+    const reorderedMap = reordered.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture;
+    reorderedMap.nodes.reverse();
+    reorderedMap.connections.reverse();
+    reorderedMap.placementPoints.reverse();
+    reorderedMap.enemyEntrances.reverse();
+    const [canonical, permuted] = await Promise.all([
+      compileContent(source),
+      compileContent(reordered)
+    ]);
+    expect(permuted.manifestHash).toBe(canonical.manifestHash);
+
+    const placements = [
+      {
+        entityId: "entity.dwarf_goal" as never,
+        placementPointId: "placement.goal" as never
+      },
+      {
+        entityId: "entity.dwarf_east" as never,
+        placementPointId: "placement.east" as never
+      }
+    ] as const;
+    for (const content of [canonical, permuted]) {
+      const map = content.maps.get("map.conformance_diamond" as never);
+      if (map === undefined) throw new Error("missing compiled map fixture");
+      expect(validateStaticPlacement(map, placements)).toEqual({
+        valid: true,
+        issues: []
+      });
+      expect(validateStaticPlacement(map, [...placements].reverse())).toEqual({
+        valid: true,
+        issues: []
+      });
+    }
   });
 
   it("freezes replay commands and checkpoints", () => {
