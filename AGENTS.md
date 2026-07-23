@@ -2,7 +2,7 @@
 
 ## Project status
 
-Dwarven Depths is currently in technical design. No gameplay implementation or simulation CLI exists yet. Commands documented in `docs/simulation-harness.md` are required interfaces for implementation, not currently runnable tools.
+Dwarven Depths is in Milestone 0 implementation. The repository now contains the first deterministic TypeScript workspace and a runnable `validate`/`run` simulation CLI for the empty conformance scenario. The broader command surface in `docs/simulation-harness.md` remains an implementation contract unless listed as available in `docs/milestone-0.md`.
 
 ## Source-of-truth order
 

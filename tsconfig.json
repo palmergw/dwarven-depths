@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/contracts" },
+    { "path": "./packages/content-schema" },
+    { "path": "./packages/content-runtime" },
+    { "path": "./packages/sim-core" },
+    { "path": "./packages/progression" },
+    { "path": "./packages/runtime" },
+    { "path": "./apps/sim-cli" }
+  ]
+}
