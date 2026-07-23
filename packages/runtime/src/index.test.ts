@@ -21,6 +21,7 @@ import nonterminatingScenarioInput from "../../../scenarios/conformance/nontermi
   type: "json"
 };
 import {
+  compareRunEvidence,
   createLifecycleDiagnostics,
   createReplayDefinition,
   createTimelineRecords,
@@ -30,7 +31,140 @@ import {
   verifyReplay
 } from "./index.js";
 
+function comparisonEvidence(overrides: Record<string, unknown> = {}) {
+  return {
+    content: {
+      schemaVersion: 1 as const,
+      contentVersion: "test",
+      definitions: []
+    },
+    scenario: {
+      schemaVersion: 1 as const,
+      id: "scenario.compare" as never,
+      levelId: "level.empty" as never,
+      seed: "1",
+      maximumTicks: 10,
+      commands: [{ atTick: 2, type: "confirmPreparation" as const }]
+    },
+    commands: [
+      {
+        tick: 2,
+        sequence: 0,
+        command: { atTick: 2, type: "confirmPreparation" as const }
+      }
+    ],
+    checkpoints: [
+      {
+        tick: 3,
+        stateChecksum: "a".repeat(64),
+        eventStreamChecksum: "b".repeat(64)
+      }
+    ],
+    events: [
+      {
+        id: "event.000000",
+        tick: 2,
+        sequence: 0,
+        type: "round.started" as const,
+        ruleId: "SIM-LIFECYCLE-001"
+      }
+    ],
+    finalState: {
+      schemaVersion: 1 as const,
+      contentVersion: "test",
+      tick: 3,
+      seed: "1",
+      rngState: 1,
+      levelId: "level.empty" as never,
+      phase: "TERMINAL" as const,
+      eventSequence: 1,
+      terminalResult: "victory" as const
+    },
+    ...overrides
+  };
+}
+
 describe("shared runtime", () => {
+  it("reports stable first-divergence categories, ticks, and canonical paths", () => {
+    const baseline = comparisonEvidence();
+    expect(compareRunEvidence(baseline, comparisonEvidence())).toEqual({
+      schemaVersion: 1,
+      equivalent: true
+    });
+
+    const cases = [
+      [
+        "content",
+        { content: { ...baseline.content, contentVersion: "changed" } },
+        0,
+        "$/contentVersion"
+      ],
+      [
+        "scenario",
+        { scenario: { ...baseline.scenario, seed: "2" } },
+        0,
+        "$/seed"
+      ],
+      [
+        "input",
+        { commands: [{ ...baseline.commands[0], tick: 1 }] },
+        1,
+        "$/0/tick"
+      ],
+      [
+        "event",
+        { events: [{ ...baseline.events[0], ruleId: "SIM-CHANGED" }] },
+        2,
+        "$/0/ruleId"
+      ],
+      [
+        "state",
+        { finalState: { ...baseline.finalState, rngState: 2 } },
+        3,
+        "$/rngState"
+      ]
+    ] as const;
+    for (const [category, override, tick, path] of cases) {
+      const first = compareRunEvidence(baseline, comparisonEvidence(override));
+      expect(first).toMatchObject({
+        schemaVersion: 1,
+        equivalent: false,
+        firstDivergence: { category, tick, path }
+      });
+      expect(
+        compareRunEvidence(baseline, comparisonEvidence(override))
+      ).toEqual(first);
+    }
+  });
+
+  it("uses canonical key ordering and rejects unsupported comparison values", () => {
+    const baseline = comparisonEvidence();
+    for (const candidate of [
+      { z: 1, a: 2 },
+      Object.assign(Object.create(null), { a: 2, z: 1 })
+    ]) {
+      const compared = compareRunEvidence(
+        comparisonEvidence({
+          content: { ...baseline.content, metadata: { z: 1, a: 1 } }
+        } as never),
+        comparisonEvidence({
+          content: { ...baseline.content, metadata: candidate }
+        } as never)
+      );
+      if (!("firstDivergence" in compared))
+        throw new Error("expected divergence");
+      expect(compared.firstDivergence.path).toBe("$/metadata/a");
+    }
+    expect(() =>
+      compareRunEvidence(
+        baseline,
+        comparisonEvidence({
+          finalState: { ...baseline.finalState, invalid: undefined }
+        } as never)
+      )
+    ).toThrow(/unsupported undefined/);
+  });
+
   it("reports tick-budget exhaustion as a safety stop", async () => {
     const content = await compileContent(nonterminatingContentInput);
     const scenario = compileScenario(nonterminatingScenarioInput, content);
