@@ -1,12 +1,17 @@
 import {
   compileContent,
+  compileReplay,
   compileScenario
 } from "@dwarven-depths/content-runtime";
+import { canonicalHash } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import contentInput from "../../../content/fixtures/empty-content.json" with {
   type: "json"
 };
 import scenarioInput from "../../../scenarios/conformance/empty-level.json" with {
+  type: "json"
+};
+import replayInput from "../../../scenarios/conformance/empty-level.replay.json" with {
   type: "json"
 };
 import {
@@ -100,8 +105,10 @@ describe("shared runtime", () => {
     const content = await compileContent(contentInput);
     const scenario = compileScenario(scenarioInput, content);
     const result = await runScenario(scenario, content);
-    const replay = createReplayDefinition(result, scenario, content);
+    const generatedReplay = createReplayDefinition(result, scenario, content);
+    const replay = compileReplay(replayInput);
 
+    expect(generatedReplay).toEqual(replay);
     await expect(
       verifyReplay(replay, scenario, content)
     ).resolves.toMatchObject({
@@ -130,6 +137,21 @@ describe("shared runtime", () => {
       name: "ReplayDivergenceError",
       code: "state_checksum_mismatch",
       checkpointTick: 0
+    } satisfies Partial<ReplayDivergenceError>);
+
+    const mismatchedScenario = compileScenario(
+      { ...scenarioInput, expectedTerminalResult: "defeat" },
+      content
+    );
+    const mismatchedScenarioReplay = {
+      ...replay,
+      scenarioHash: await canonicalHash(mismatchedScenario)
+    };
+    await expect(
+      verifyReplay(mismatchedScenarioReplay, mismatchedScenario, content)
+    ).rejects.toMatchObject({
+      name: "ReplayDivergenceError",
+      code: "scenario_expectation_mismatch"
     } satisfies Partial<ReplayDivergenceError>);
   });
 });

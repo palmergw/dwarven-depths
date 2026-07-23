@@ -85,6 +85,7 @@ describe("simulation CLI", () => {
       },
       controller: { type: "scenario.commands", version: 1 },
       scenarioHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+      metadataHash: expect.stringMatching(/^[a-f0-9]{64}$/),
       files: [
         "checkpoints.ndjson",
         "commands.ndjson",
@@ -252,16 +253,19 @@ describe("simulation CLI", () => {
     const tamperCases: ReadonlyArray<{
       readonly file: string;
       readonly code: string;
+      readonly path?: string;
       readonly mutate: (original: string) => string;
     }> = [
       {
         file: "state.final.json",
         code: "state_artifact_checksum_mismatch",
+        path: "$/rngState",
         mutate: (original) => original.replace('"rngState": 1', '"rngState": 2')
       },
       {
         file: "events.ndjson",
         code: "event_artifact_checksum_mismatch",
+        path: "$/0/type",
         mutate: (original) =>
           original.replace("round.started", "round.tampered")
       },
@@ -292,14 +296,29 @@ describe("simulation CLI", () => {
       },
       {
         file: "manifest.json",
-        code: "manifest_metadata_mismatch",
+        code: "manifest_metadata_hash_mismatch",
         mutate: (original) =>
           original.replace('"replaySchema": 1', '"replaySchema": 2')
+      },
+      {
+        file: "manifest.json",
+        code: "manifest_metadata_hash_mismatch",
+        mutate: (original) =>
+          original.replace(
+            /"repositoryRevision": "[^"]+"/,
+            `"repositoryRevision": "${"f".repeat(40)}"`
+          )
       },
       {
         file: "scenario.compiled.json",
         code: "seed_mismatch",
         mutate: (original) => original.replace('"seed": "1"', '"seed": "2"')
+      },
+      {
+        file: "replay.json",
+        code: "invalid_replay_artifact",
+        mutate: (original) =>
+          original.replace('"schemaVersion": 1', '"schemaVersion": 2')
       },
       {
         file: "replay.json",
@@ -324,7 +343,8 @@ describe("simulation CLI", () => {
         ok: false,
         error: {
           type: "replay_divergence",
-          code: tamperCase.code
+          code: tamperCase.code,
+          ...(tamperCase.path === undefined ? {} : { path: tamperCase.path })
         }
       });
       writeFileSync(path, original, "utf8");

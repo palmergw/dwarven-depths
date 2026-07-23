@@ -32,13 +32,13 @@ A successful verification emits one JSON object with `ok: true` and `verified: t
 - one terminal checkpoint containing the final-state and cumulative event-stream checksums;
 - expected terminal result and terminal tick.
 
-Replay schema version 1 intentionally supports exactly one terminal checkpoint. Intermediate checkpoints and first-divergence seeking are a later Phase 1 slice; accepting but ignoring such checkpoints would create false verification confidence.
+Replay schema version 1 intentionally supports exactly one terminal checkpoint. Terminal state and event artifact mismatches report the first differing canonical JSON path. Intermediate checkpoint capture, seeking, and earlier-tick divergence localization are later Phase 1 slices; accepting but ignoring such checkpoints would create false verification confidence.
 
 ## Completed run bundle
 
 The Phase 1 bundle contains:
 
-- `manifest.json` — completion, provenance, versions, bindings, and exact file list;
+- `manifest.json` — completion, provenance, versions, bindings, a checksum over its metadata, and the exact file list;
 - `content.compiled.json` — strict self-contained content input;
 - `content-manifest.json` — content identity summary;
 - `scenario.compiled.json` — strict scenario input;
@@ -60,4 +60,4 @@ The completion manifest remains the final publication signal. Runs are still ass
 - content, scenario, seed, level, command, summary, state, event, or checkpoint mismatches;
 - authoritative replay results that differ from the recorded terminal evidence.
 
-Node, Chromium, Firefox, and WebKit execute the same replay construction and verification functions from `@dwarven-depths/runtime`. Filesystem and publication behavior remains isolated to the Node CLI.
+`sim replay --verify` executes the validated replay command envelopes directly; scenario commands remain cross-bound metadata and are not the execution source. Node, Chromium, Firefox, and WebKit parse and verify the same checked-in replay fixture through `@dwarven-depths/runtime`. Filesystem and publication behavior remains isolated to the Node CLI.

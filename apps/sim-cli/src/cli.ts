@@ -70,6 +70,7 @@ interface RunManifestArtifact {
   readonly scenarioId?: unknown;
   readonly scenarioHash?: unknown;
   readonly seed?: unknown;
+  readonly metadataHash?: unknown;
 }
 
 interface ContentManifestArtifact {
@@ -110,12 +111,14 @@ class ReportGenerationError extends Error {
 class ReplayArtifactError extends Error {
   readonly code: string;
   readonly artifact: string;
+  readonly path: string | undefined;
 
-  constructor(code: string, artifact: string, message: string) {
+  constructor(code: string, artifact: string, message: string, path?: string) {
     super(message);
     this.name = "ReplayArtifactError";
     this.code = code;
     this.artifact = artifact;
+    this.path = path;
   }
 }
 
@@ -299,6 +302,63 @@ function requireExactKeys(
   );
 }
 
+function pointerSegment(value: string): string {
+  return value.replaceAll("~", "~0").replaceAll("/", "~1");
+}
+
+function firstDifferencePath(
+  expected: unknown,
+  actual: unknown,
+  path = "$"
+): string | undefined {
+  if (Object.is(expected, actual)) return undefined;
+  if (
+    expected === null ||
+    actual === null ||
+    typeof expected !== "object" ||
+    typeof actual !== "object"
+  ) {
+    return path;
+  }
+  if (Array.isArray(expected) || Array.isArray(actual)) {
+    if (!Array.isArray(expected) || !Array.isArray(actual)) return path;
+    const length = Math.max(expected.length, actual.length);
+    for (let index = 0; index < length; index += 1) {
+      if (index >= expected.length || index >= actual.length)
+        return `${path}/${index}`;
+      const difference = firstDifferencePath(
+        expected[index],
+        actual[index],
+        `${path}/${index}`
+      );
+      if (difference !== undefined) return difference;
+    }
+    return undefined;
+  }
+
+  const expectedRecord = expected as Record<string, unknown>;
+  const actualRecord = actual as Record<string, unknown>;
+  const keys = [
+    ...new Set([...Object.keys(expected), ...Object.keys(actual)])
+  ].sort();
+  for (const key of keys) {
+    const childPath = `${path}/${pointerSegment(key)}`;
+    if (
+      !Object.hasOwn(expectedRecord, key) ||
+      !Object.hasOwn(actualRecord, key)
+    ) {
+      return childPath;
+    }
+    const difference = firstDifferencePath(
+      expectedRecord[key],
+      actualRecord[key],
+      childPath
+    );
+    if (difference !== undefined) return difference;
+  }
+  return undefined;
+}
+
 function requireArtifactMatch(
   condition: boolean,
   code: string,
@@ -322,6 +382,24 @@ async function canonicalArtifactHash(
       artifact,
       `${artifact} is outside the canonical JSON domain: ${message}`
     );
+  }
+}
+
+async function validateReplayArtifact<Value>(
+  artifact: string,
+  operation: () => Value | Promise<Value>
+): Promise<Value> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof ContentValidationError) {
+      throw new ReplayArtifactError(
+        "invalid_replay_artifact",
+        artifact,
+        `${artifact} failed strict validation: ${JSON.stringify(error.issues)}`
+      );
+    }
+    throw error;
   }
 }
 
@@ -390,20 +468,10 @@ async function pathStatus(
 async function assertReplaceableRunBundle(
   outputDirectory: string
 ): Promise<void> {
-  const manifestPath = resolve(outputDirectory, "manifest.json");
-  const manifestStatus = await pathStatus(manifestPath);
-  if (
-    manifestStatus === undefined ||
-    manifestStatus.isSymbolicLink() ||
-    !manifestStatus.isFile()
-  ) {
-    throw new Error(
-      "refusing to replace a directory without a regular completion manifest"
-    );
-  }
-
   try {
-    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+    const manifest = JSON.parse(
+      await readArtifactText(outputDirectory, "manifest.json")
+    ) as {
       readonly complete?: unknown;
       readonly harnessVersion?: unknown;
     };
@@ -549,7 +617,7 @@ async function run(args: ParsedArgs): Promise<void> {
     finalStateChecksum: result.finalStateChecksum,
     eventStreamChecksum: result.eventStreamChecksum
   };
-  const manifest = {
+  const manifestMetadata = {
     harnessVersion: "phase-1",
     protocolVersions: {
       harness: 1,
@@ -567,7 +635,11 @@ async function run(args: ParsedArgs): Promise<void> {
     scenarioId: scenario.id,
     scenarioHash: result.scenarioHash,
     seed: scenario.seed,
-    canonical: provenance.revisionKnown && !provenance.repositoryDirty,
+    canonical: provenance.revisionKnown && !provenance.repositoryDirty
+  };
+  const manifest = {
+    ...manifestMetadata,
+    metadataHash: await canonicalHash(manifestMetadata),
     complete: true,
     files: runBundleFiles
   };
@@ -699,9 +771,15 @@ async function replay(args: ParsedArgs): Promise<void> {
     "manifest file list does not match the required replay bundle"
   );
 
-  const content = await compileContent(contentInput);
-  const scenario = compileScenario(scenarioInput, content);
-  const compiledReplay = compileReplay(replayInput);
+  const content = await validateReplayArtifact("content.compiled.json", () =>
+    compileContent(contentInput)
+  );
+  const scenario = await validateReplayArtifact("scenario.compiled.json", () =>
+    compileScenario(scenarioInput, content)
+  );
+  const compiledReplay = await validateReplayArtifact("replay.json", () =>
+    compileReplay(replayInput)
+  );
   const contentManifest = requireRecord<ContentManifestArtifact>(
     contentManifestInput,
     "content-manifest.json"
@@ -722,6 +800,7 @@ async function replay(args: ParsedArgs): Promise<void> {
       "scenarioHash",
       "seed",
       "canonical",
+      "metadataHash",
       "complete",
       "files"
     ],
@@ -790,7 +869,22 @@ async function replay(args: ParsedArgs): Promise<void> {
   const expectedContentDefinitions = content.bundle.definitions.map(
     (definition) => ({ kind: definition.kind, id: definition.id })
   );
+  const manifestMetadataEvidence = {
+    harnessVersion: manifest.harnessVersion,
+    protocolVersions: manifest.protocolVersions,
+    runtime: manifest.runtime,
+    controller: manifest.controller,
+    repositoryRevision: manifest.repositoryRevision,
+    repositoryDirty: manifest.repositoryDirty,
+    contentManifestHash: manifest.contentManifestHash,
+    contentVersion: manifest.contentVersion,
+    scenarioId: manifest.scenarioId,
+    scenarioHash: manifest.scenarioHash,
+    seed: manifest.seed,
+    canonical: manifest.canonical
+  };
   const [
+    expectedManifestMetadataHash,
     protocolHash,
     expectedProtocolHash,
     runtimeHash,
@@ -800,6 +894,7 @@ async function replay(args: ParsedArgs): Promise<void> {
     contentDefinitionsHash,
     expectedContentDefinitionsHash
   ] = await Promise.all([
+    canonicalArtifactHash(manifestMetadataEvidence, "manifest.json"),
     canonicalArtifactHash(manifest.protocolVersions, "manifest.json"),
     canonicalArtifactHash(
       {
@@ -824,6 +919,12 @@ async function replay(args: ParsedArgs): Promise<void> {
     canonicalArtifactHash(contentManifest.definitions, "content-manifest.json"),
     canonicalArtifactHash(expectedContentDefinitions, "content-manifest.json")
   ]);
+  requireArtifactMatch(
+    manifest.metadataHash === expectedManifestMetadataHash,
+    "manifest_metadata_hash_mismatch",
+    "manifest.json",
+    `expected metadata hash ${expectedManifestMetadataHash}, received ${String(manifest.metadataHash)}`
+  );
   requireArtifactMatch(
     protocolHash === expectedProtocolHash &&
       runtimeHash === expectedRuntimeHash &&
@@ -855,18 +956,6 @@ async function replay(args: ParsedArgs): Promise<void> {
     canonicalArtifactHash(compiledReplay.checkpoints, "replay.json")
   ]);
   requireArtifactMatch(
-    finalStateArtifactHash === finalCheckpoint.stateChecksum,
-    "state_artifact_checksum_mismatch",
-    "state.final.json",
-    `expected ${finalCheckpoint.stateChecksum}, received ${finalStateArtifactHash}`
-  );
-  requireArtifactMatch(
-    eventArtifactHash === finalCheckpoint.eventStreamChecksum,
-    "event_artifact_checksum_mismatch",
-    "events.ndjson",
-    `expected ${finalCheckpoint.eventStreamChecksum}, received ${eventArtifactHash}`
-  );
-  requireArtifactMatch(
     commandArtifactHash === replayCommandHash,
     "command_artifact_checksum_mismatch",
     "commands.ndjson",
@@ -878,21 +967,36 @@ async function replay(args: ParsedArgs): Promise<void> {
     "checkpoints.ndjson",
     `expected ${replayCheckpointHash}, received ${checkpointArtifactHash}`
   );
+  const result = await verifyReplay(compiledReplay, scenario, content);
+  if (finalStateArtifactHash !== finalCheckpoint.stateChecksum) {
+    throw new ReplayArtifactError(
+      "state_artifact_checksum_mismatch",
+      "state.final.json",
+      `expected ${finalCheckpoint.stateChecksum}, received ${finalStateArtifactHash}`,
+      firstDifferencePath(result.finalState, finalStateInput) ?? "$"
+    );
+  }
+  if (eventArtifactHash !== finalCheckpoint.eventStreamChecksum) {
+    throw new ReplayArtifactError(
+      "event_artifact_checksum_mismatch",
+      "events.ndjson",
+      `expected ${finalCheckpoint.eventStreamChecksum}, received ${eventArtifactHash}`,
+      firstDifferencePath(result.events, eventsInput) ?? "$"
+    );
+  }
   requireArtifactMatch(
-    summary.scenarioId === compiledReplay.scenarioId &&
-      summary.scenarioHash === compiledReplay.scenarioHash &&
-      summary.finalStateChecksum === finalCheckpoint.stateChecksum &&
-      summary.eventStreamChecksum === finalCheckpoint.eventStreamChecksum &&
-      summary.terminalResult === compiledReplay.expectedTerminalResult &&
-      summary.terminalTick === compiledReplay.expectedTerminalTick &&
-      summary.commandCount === commandsInput.length &&
-      summary.eventCount === eventsInput.length,
+    summary.scenarioId === result.scenarioId &&
+      summary.scenarioHash === result.scenarioHash &&
+      summary.finalStateChecksum === result.finalStateChecksum &&
+      summary.eventStreamChecksum === result.eventStreamChecksum &&
+      summary.terminalResult === result.terminalResult &&
+      summary.terminalTick === result.terminalTick &&
+      summary.commandCount === result.commands.length &&
+      summary.eventCount === result.events.length,
     "summary_binding_mismatch",
     "summary.json",
     "summary does not match replay terminal evidence"
   );
-
-  const result = await verifyReplay(compiledReplay, scenario, content);
   process.stdout.write(
     `${JSON.stringify({
       ok: true,
@@ -960,7 +1064,10 @@ main().catch((error: unknown) => {
                   ? {}
                   : { checkpointTick: error.checkpointTick })
               }
-            : { artifact: error.artifact })
+            : {
+                artifact: error.artifact,
+                ...(error.path === undefined ? {} : { path: error.path })
+              })
         }
       })}\n`
     );

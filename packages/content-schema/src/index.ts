@@ -218,7 +218,16 @@ export function validateScenario(input: unknown): ScenarioDefinition {
 
   const issues: ValidationIssue[] = [];
   const commands = new Set<string>();
+  let previousCommandTick = -1;
   parsed.data.commands.forEach((command, index) => {
+    if (command.atTick < previousCommandTick) {
+      issues.push({
+        path: `$/commands/${index}/atTick`,
+        code: "commands_out_of_order",
+        message: "must not precede the previous command tick"
+      });
+    }
+    previousCommandTick = command.atTick;
     if (command.type === "confirmPreparation" && command.atTick !== 0) {
       issues.push({
         path: `$/commands/${index}/atTick`,

@@ -54,11 +54,13 @@ export type ReplayDivergenceCode =
   | "content_manifest_mismatch"
   | "content_version_mismatch"
   | "scenario_hash_mismatch"
+  | "scenario_expectation_mismatch"
   | "scenario_id_mismatch"
   | "level_id_mismatch"
   | "seed_mismatch"
   | "simulation_schema_mismatch"
   | "rng_algorithm_mismatch"
+  | "execution_failed"
   | "commands_mismatch"
   | "terminal_result_mismatch"
   | "terminal_tick_mismatch"
@@ -87,9 +89,11 @@ export class ReplayDivergenceError extends Error {
   }
 }
 
-export async function runScenario(
+async function executeScenario(
   scenario: ScenarioDefinition,
-  content: CompiledContent
+  content: CompiledContent,
+  replayCommands: readonly CommandEnvelope[] | undefined,
+  enforceScenarioExpectation: boolean
 ): Promise<RuntimeResult> {
   let state = createInitialState(content, scenario.levelId, scenario.seed);
   const events: SimulationEvent[] = [];
@@ -97,13 +101,18 @@ export async function runScenario(
   let commandSequence = 0;
 
   while (state.phase !== "TERMINAL" && state.tick < scenario.maximumTicks) {
-    const commands: CommandEnvelope[] = scenario.commands
-      .filter((command) => command.atTick === state.tick)
-      .map((command) => ({
-        tick: state.tick,
-        sequence: commandSequence++,
-        command
-      }));
+    const commands: CommandEnvelope[] =
+      replayCommands === undefined
+        ? scenario.commands
+            .filter((command) => command.atTick === state.tick)
+            .map((command) => ({
+              tick: state.tick,
+              sequence: commandSequence++,
+              command
+            }))
+        : replayCommands
+            .filter((envelope) => envelope.tick === state.tick)
+            .map((envelope) => ({ ...envelope }));
     const previousState = state;
     executedCommands.push(...commands);
     const result = stepSimulation(state, commands, content);
@@ -124,6 +133,7 @@ export async function runScenario(
     );
   }
   if (
+    enforceScenarioExpectation &&
     scenario.expectedTerminalResult &&
     state.terminalResult !== scenario.expectedTerminalResult
   ) {
@@ -162,6 +172,13 @@ export async function runScenario(
     events: immutableEvents,
     eventStreamChecksum
   });
+}
+
+export async function runScenario(
+  scenario: ScenarioDefinition,
+  content: CompiledContent
+): Promise<RuntimeResult> {
+  return executeScenario(scenario, content, undefined, true);
 }
 
 export function createReplayDefinition(
@@ -264,8 +281,48 @@ export async function verifyReplay(
     replay.scenarioHash,
     scenarioHash
   );
+  if (scenario.expectedTerminalResult !== undefined) {
+    requireMatch(
+      scenario.expectedTerminalResult === replay.expectedTerminalResult,
+      "scenario_expectation_mismatch",
+      replay.expectedTerminalResult,
+      scenario.expectedTerminalResult
+    );
+  }
+  const authoredCommands = scenario.commands.map((command, sequence) => ({
+    tick: command.atTick,
+    sequence,
+    command
+  }));
+  const [authoredCommandsHash, replayCommandsHash] = await Promise.all([
+    canonicalHash(authoredCommands),
+    canonicalHash(replay.commands)
+  ]);
+  requireMatch(
+    authoredCommandsHash === replayCommandsHash,
+    "commands_mismatch",
+    authoredCommandsHash,
+    replayCommandsHash
+  );
 
-  const result = await runScenario(scenario, content);
+  let result: RuntimeResult;
+  try {
+    result = await executeScenario(scenario, content, replay.commands, false);
+  } catch (error) {
+    if (
+      error instanceof RuntimeAssertionError ||
+      error instanceof RuntimeSafetyStopError
+    ) {
+      throw new ReplayDivergenceError(
+        "execution_failed",
+        `Replay execution failed: ${error.code}`,
+        replay.expectedTerminalResult,
+        error.code,
+        replay.expectedTerminalTick
+      );
+    }
+    throw error;
+  }
   const [expectedCommandsHash, actualCommandsHash] = await Promise.all([
     canonicalHash(replay.commands),
     canonicalHash(result.commands)
