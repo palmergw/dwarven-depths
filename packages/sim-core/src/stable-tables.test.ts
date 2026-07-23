@@ -125,6 +125,18 @@ describe("stable authoritative entity/effect tables", () => {
         path: "$"
       })
     );
+    expect(() => entityId("entity.kind.instance.extra")).toThrowError(
+      expect.objectContaining({
+        code: "invalid_entity_id",
+        path: "$"
+      })
+    );
+    expect(() => effectId("effect.kind.instance.extra")).toThrowError(
+      expect.objectContaining({
+        code: "invalid_effect_id",
+        path: "$"
+      })
+    );
 
     expect(() =>
       AuthoritativeTables.fromSnapshot({
@@ -191,6 +203,18 @@ describe("stable authoritative entity/effect tables", () => {
       } satisfies Partial<StableTableError>)
     );
 
+    const customPrototypeEntities = [{ id: "entity.dwarf.prototype" }];
+    Object.setPrototypeOf(customPrototypeEntities, {
+      forEach: () => undefined
+    });
+    expect(
+      AuthoritativeTables.fromSnapshot({
+        schemaVersion: 1,
+        entities: customPrototypeEntities,
+        effects: []
+      }).entities()
+    ).toEqual([{ id: "entity.dwarf.prototype" }]);
+
     const tables = AuthoritativeTables.empty().withEntity(entityRecords[0]);
     expect(() =>
       tables.withEffect({
@@ -212,14 +236,109 @@ describe("stable authoritative entity/effect tables", () => {
     );
   });
 
+  it("enforces entity capacity at snapshot and insertion boundaries", () => {
+    const entities = Array.from({ length: 100_000 }, (_, index) => ({
+      id: `entity.unit.u${index}`
+    }));
+    const full = AuthoritativeTables.fromSnapshot({
+      schemaVersion: 1,
+      entities,
+      effects: []
+    });
+
+    expect(full.entities()).toHaveLength(100_000);
+    expect(() =>
+      full.withEntity({ id: entityId("entity.unit.overflow") })
+    ).toThrowError(
+      expect.objectContaining({
+        code: "table_capacity_exceeded",
+        path: "$"
+      } satisfies Partial<StableTableError>)
+    );
+    expect(() =>
+      AuthoritativeTables.fromSnapshot({
+        schemaVersion: 1,
+        entities: [...entities, { id: "entity.unit.overflow" }],
+        effects: []
+      })
+    ).toThrowError(
+      expect.objectContaining({
+        code: "invalid_snapshot",
+        path: "$/entities"
+      } satisfies Partial<StableTableError>)
+    );
+  });
+
+  it("enforces effect capacity at snapshot and insertion boundaries", () => {
+    const effects = Array.from({ length: 100_000 }, (_, index) => ({
+      id: `effect.aura.e${index}`,
+      sourceEntityId: "entity.dwarf.alpha",
+      targetEntityId: "entity.dwarf.alpha"
+    }));
+    const full = AuthoritativeTables.fromSnapshot({
+      schemaVersion: 1,
+      entities: [{ id: "entity.dwarf.alpha" }],
+      effects
+    });
+
+    expect(full.effects()).toHaveLength(100_000);
+    expect(() =>
+      full.withEffect({
+        id: effectId("effect.aura.overflow"),
+        sourceEntityId: entityId("entity.dwarf.alpha"),
+        targetEntityId: entityId("entity.dwarf.alpha")
+      })
+    ).toThrowError(
+      expect.objectContaining({
+        code: "table_capacity_exceeded",
+        path: "$"
+      } satisfies Partial<StableTableError>)
+    );
+    expect(() =>
+      AuthoritativeTables.fromSnapshot({
+        schemaVersion: 1,
+        entities: [{ id: "entity.dwarf.alpha" }],
+        effects: [...effects, effects[0]]
+      })
+    ).toThrowError(
+      expect.objectContaining({
+        code: "invalid_snapshot",
+        path: "$/effects"
+      } satisfies Partial<StableTableError>)
+    );
+  });
+
   it("removes entities, effects, and all related index entries immutably", async () => {
     const original = populatedTables();
     const dwarfId = entityId("entity.dwarf.alpha");
     const markId = effectId("effect.mark.beta");
 
+    expect(Object.isFrozen(original.entity(dwarfId))).toBe(true);
+    expect(Object.isFrozen(original.effect(markId))).toBe(true);
+    expect(Object.isFrozen(original.effectsForEntity(dwarfId))).toBe(true);
     expect(
       original.effectsForEntity(dwarfId).map((record) => record.id)
     ).toEqual(["effect.guard.alpha", "effect.mark.beta"]);
+
+    const withUnrelated = original.withEffect({
+      id: effectId("effect.aura.gamma"),
+      sourceEntityId: entityId("entity.tower.gamma"),
+      targetEntityId: entityId("entity.enemy.beta")
+    });
+    const survivor = withUnrelated.withoutEntity(dwarfId);
+    expect(survivor.effects().map((record) => record.id)).toEqual([
+      "effect.aura.gamma"
+    ]);
+    expect(
+      survivor
+        .effectsForEntity(entityId("entity.tower.gamma"))
+        .map((record) => record.id)
+    ).toEqual(["effect.aura.gamma"]);
+    expect(
+      survivor
+        .effectsForEntity(entityId("entity.enemy.beta"))
+        .map((record) => record.id)
+    ).toEqual(["effect.aura.gamma"]);
 
     const withoutDwarf = original.withoutEntity(dwarfId);
     expect(withoutDwarf.entity(dwarfId)).toBeUndefined();

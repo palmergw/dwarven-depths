@@ -36,8 +36,8 @@ export class StableTableError extends Error {
   }
 }
 
-const entityIdPattern = /^entity(?:\.[a-z][a-z0-9_]*){2,}$/;
-const effectIdPattern = /^effect(?:\.[a-z][a-z0-9_]*){2,}$/;
+const entityIdPattern = /^entity\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/;
+const effectIdPattern = /^effect\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/;
 const maximumIdLength = 128;
 const maximumTableRecords = 100_000;
 
@@ -267,7 +267,8 @@ export class AuthoritativeTables {
 
     const entities = new Map<EntityId, StableEntityRecord>();
     const entityPaths = new Map<EntityId, string>();
-    entityInputs.forEach((value, index) => {
+    for (let index = 0; index < entityInputs.length; index += 1) {
+      const value = entityInputs[index];
       const path = `$/entities/${index}`;
       const record = requirePlainRecord<RawEntityRecord>(value, path);
       requireExactKeys(record, ["id"], path);
@@ -283,11 +284,12 @@ export class AuthoritativeTables {
       }
       entities.set(id, freezeEntity(id));
       entityPaths.set(id, path);
-    });
+    }
 
     const effects = new Map<EffectId, StableEffectRecord>();
     const effectPaths = new Map<EffectId, string>();
-    effectInputs.forEach((value, index) => {
+    for (let index = 0; index < effectInputs.length; index += 1) {
+      const value = effectInputs[index];
       const path = `$/effects/${index}`;
       const record = requirePlainRecord<RawEffectRecord>(value, path);
       requireExactKeys(
@@ -331,7 +333,7 @@ export class AuthoritativeTables {
       }
       effects.set(id, freezeEffect(id, sourceEntityId, targetEntityId));
       effectPaths.set(id, path);
-    });
+    }
 
     return new AuthoritativeTables(
       buildSnapshot(entities.values(), effects.values())
