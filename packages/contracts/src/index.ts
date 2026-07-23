@@ -12,7 +12,13 @@ export interface LevelDefinition {
   readonly waveIds: readonly StableId[];
 }
 
-export type ContentDefinition = LevelDefinition;
+export interface WaveDefinition {
+  readonly kind: "wave";
+  readonly id: StableId;
+  readonly durationTicks: number;
+}
+
+export type ContentDefinition = LevelDefinition | WaveDefinition;
 
 export interface ContentBundle {
   readonly schemaVersion: 1;
@@ -64,7 +70,11 @@ export interface CommandEnvelope {
   readonly command: ScenarioCommand;
 }
 
-function serialize(value: unknown, path: string): string {
+function serialize(
+  value: unknown,
+  path: string,
+  ancestors: WeakSet<object>
+): string {
   if (value === null) return "null";
 
   switch (typeof value) {
@@ -74,27 +84,73 @@ function serialize(value: unknown, path: string): string {
       return JSON.stringify(value);
     case "number":
       if (!Number.isSafeInteger(value) || Object.is(value, -0)) {
-        throw new TypeError(`${path} must be a safe non-negative-zero integer`);
+        throw new TypeError(
+          `${path} must be a safe integer other than negative zero`
+        );
       }
       return String(value);
     case "object": {
       if (Array.isArray(value)) {
-        return `[${value.map((item, index) => serialize(item, `${path}/${index}`)).join(",")}]`;
+        if (ancestors.has(value))
+          throw new TypeError(`${path} contains a cycle`);
+        ancestors.add(value);
+        try {
+          if (Reflect.ownKeys(value).length !== value.length + 1) {
+            throw new TypeError(
+              `${path} contains unsupported array properties`
+            );
+          }
+          const items: string[] = [];
+          for (let index = 0; index < value.length; index += 1) {
+            const descriptor = Object.getOwnPropertyDescriptor(value, index);
+            if (
+              descriptor === undefined ||
+              !descriptor.enumerable ||
+              !("value" in descriptor)
+            ) {
+              throw new TypeError(`${path}/${index} is not an array data item`);
+            }
+            items.push(
+              serialize(descriptor.value, `${path}/${index}`, ancestors)
+            );
+          }
+          return `[${items.join(",")}]`;
+        } finally {
+          ancestors.delete(value);
+        }
       }
 
       const prototype = Object.getPrototypeOf(value);
       if (prototype !== Object.prototype && prototype !== null) {
         throw new TypeError(`${path} must contain only plain objects`);
       }
+      if (ancestors.has(value)) throw new TypeError(`${path} contains a cycle`);
 
-      const record = value as Record<string, unknown>;
-      const keys = Object.keys(record).sort();
-      return `{${keys
-        .map(
-          (key) =>
-            `${JSON.stringify(key)}:${serialize(record[key], `${path}/${key}`)}`
-        )
-        .join(",")}}`;
+      const descriptors = Object.getOwnPropertyDescriptors(value);
+      for (const [key, descriptor] of Object.entries(descriptors)) {
+        if (!descriptor.enumerable || !("value" in descriptor)) {
+          throw new TypeError(
+            `${path}/${key} must be an enumerable data property`
+          );
+        }
+      }
+      if (Object.getOwnPropertySymbols(value).length > 0) {
+        throw new TypeError(`${path} contains unsupported symbol keys`);
+      }
+
+      ancestors.add(value);
+      try {
+        const record = value as Record<string, unknown>;
+        const keys = Object.keys(record).sort();
+        return `{${keys
+          .map(
+            (key) =>
+              `${JSON.stringify(key)}:${serialize(record[key], `${path}/${key}`, ancestors)}`
+          )
+          .join(",")}}`;
+      } finally {
+        ancestors.delete(value);
+      }
     }
     default:
       throw new TypeError(`${path} contains unsupported ${typeof value}`);
@@ -102,7 +158,7 @@ function serialize(value: unknown, path: string): string {
 }
 
 export function canonicalStringify(value: unknown): string {
-  return serialize(value, "$");
+  return serialize(value, "$", new WeakSet());
 }
 
 export async function sha256Hex(text: string): Promise<string> {

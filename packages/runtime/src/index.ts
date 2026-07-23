@@ -14,12 +14,26 @@ import {
 
 export interface RuntimeResult {
   readonly scenarioId: string;
+  readonly scenarioHash: string;
   readonly terminalResult: "victory" | "defeat";
   readonly terminalTick: number;
   readonly finalState: SimulationState;
   readonly finalStateChecksum: string;
   readonly events: readonly SimulationEvent[];
   readonly eventStreamChecksum: string;
+}
+
+export class RuntimeAssertionError extends Error {
+  readonly code: "scenario_nontermination" | "unexpected_terminal_result";
+
+  constructor(
+    code: "scenario_nontermination" | "unexpected_terminal_result",
+    message: string
+  ) {
+    super(message);
+    this.name = "RuntimeAssertionError";
+    this.code = code;
+  }
 }
 
 export async function runScenario(
@@ -44,7 +58,8 @@ export async function runScenario(
   }
 
   if (state.phase !== "TERMINAL" || !state.terminalResult) {
-    throw new Error(
+    throw new RuntimeAssertionError(
+      "scenario_nontermination",
       `Scenario ${scenario.id} did not terminate within ${scenario.maximumTicks} ticks`
     );
   }
@@ -52,18 +67,31 @@ export async function runScenario(
     scenario.expectedTerminalResult &&
     state.terminalResult !== scenario.expectedTerminalResult
   ) {
-    throw new Error(
+    throw new RuntimeAssertionError(
+      "unexpected_terminal_result",
       `Scenario ${scenario.id} expected ${scenario.expectedTerminalResult} but produced ${state.terminalResult}`
     );
   }
 
-  return {
+  const terminalResult = state.terminalResult;
+  const finalState = Object.freeze({ ...state });
+  const immutableEvents = Object.freeze(
+    events.map((simulationEvent) => Object.freeze({ ...simulationEvent }))
+  );
+  const [scenarioHash, finalStateChecksum, eventStreamChecksum] =
+    await Promise.all([
+      canonicalHash(scenario),
+      stateChecksum(finalState),
+      canonicalHash(immutableEvents)
+    ]);
+  return Object.freeze({
     scenarioId: scenario.id,
-    terminalResult: state.terminalResult,
-    terminalTick: state.tick,
-    finalState: state,
-    finalStateChecksum: await stateChecksum(state),
-    events,
-    eventStreamChecksum: await canonicalHash(events)
-  };
+    scenarioHash,
+    terminalResult,
+    terminalTick: finalState.tick,
+    finalState,
+    finalStateChecksum,
+    events: immutableEvents,
+    eventStreamChecksum
+  });
 }

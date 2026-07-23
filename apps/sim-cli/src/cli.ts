@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import {
+  ContentValidationError,
   compileContent,
   compileScenario
 } from "@dwarven-depths/content-runtime";
-import { runScenario } from "@dwarven-depths/runtime";
+import { RuntimeAssertionError, runScenario } from "@dwarven-depths/runtime";
 
 interface ParsedArgs {
   readonly command: string | undefined;
@@ -23,7 +24,9 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
         `Expected --name value arguments, received: ${rest.slice(index).join(" ")}`
       );
     }
-    flags.set(key.slice(2), value);
+    const name = key.slice(2);
+    if (flags.has(name)) throw new Error(`Duplicate --${name} argument`);
+    flags.set(name, value);
   }
   return { command, flags };
 }
@@ -34,13 +37,47 @@ function requiredFlag(args: ParsedArgs, name: string): string {
   return value;
 }
 
+function rejectUnknownFlags(
+  args: ParsedArgs,
+  allowed: ReadonlySet<string>
+): void {
+  for (const name of args.flags.keys()) {
+    if (!allowed.has(name)) throw new Error(`Unknown --${name} argument`);
+  }
+}
+
 async function readJson(path: string): Promise<unknown> {
-  return JSON.parse(await readFile(resolve(path), "utf8")) as unknown;
+  const resolvedPath = resolve(path);
+  try {
+    return JSON.parse(await readFile(resolvedPath, "utf8")) as unknown;
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new ContentValidationError([
+        {
+          path: "$",
+          code: "invalid_json",
+          message: `${resolvedPath}: ${error.message}`
+        }
+      ]);
+    }
+    throw error;
+  }
 }
 
 async function writeJson(path: string, value: unknown): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+async function writeJsonAtomic(path: string, value: unknown): Promise<void> {
+  const temporaryPath = `${path}.tmp-${process.pid}`;
+  await rm(temporaryPath, { force: true });
+  try {
+    await writeJson(temporaryPath, value);
+    await rename(temporaryPath, path);
+  } finally {
+    await rm(temporaryPath, { force: true });
+  }
 }
 
 async function load(args: ParsedArgs) {
@@ -55,6 +92,7 @@ async function load(args: ParsedArgs) {
 }
 
 async function validate(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["content", "scenario"]));
   const { content, scenario } = await load(args);
   process.stdout.write(
     `${JSON.stringify({ ok: true, contentManifestHash: content.manifestHash, scenarioId: scenario.id })}\n`
@@ -62,21 +100,36 @@ async function validate(args: ParsedArgs): Promise<void> {
 }
 
 async function run(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["content", "scenario", "out"]));
   const { content, scenario } = await load(args);
-  const result = await runScenario(scenario, content);
   const outputDirectory = resolve(
     args.flags.get("out") ?? `.ddh/runs/${scenario.id}`
   );
+  await mkdir(outputDirectory, { recursive: true });
+  const manifestPath = resolve(outputDirectory, "manifest.json");
+  await rm(manifestPath, { force: true });
+
+  const result = await runScenario(scenario, content);
   const manifest = {
     harnessVersion: "milestone-0",
     contentManifestHash: content.manifestHash,
     contentVersion: content.bundle.contentVersion,
     scenarioId: scenario.id,
+    scenarioHash: result.scenarioHash,
     seed: scenario.seed,
-    canonical: true
+    canonical: true,
+    complete: true,
+    files: [
+      "content-manifest.json",
+      "events.ndjson",
+      "scenario.compiled.json",
+      "state.final.json",
+      "summary.json"
+    ]
   };
   const summary = {
     scenarioId: result.scenarioId,
+    scenarioHash: result.scenarioHash,
     terminalResult: result.terminalResult,
     terminalTick: result.terminalTick,
     eventCount: result.events.length,
@@ -84,9 +137,7 @@ async function run(args: ParsedArgs): Promise<void> {
     eventStreamChecksum: result.eventStreamChecksum
   };
 
-  await mkdir(outputDirectory, { recursive: true });
   await Promise.all([
-    writeJson(resolve(outputDirectory, "manifest.json"), manifest),
     writeJson(resolve(outputDirectory, "scenario.compiled.json"), scenario),
     writeJson(resolve(outputDirectory, "content-manifest.json"), {
       contentVersion: content.bundle.contentVersion,
@@ -96,10 +147,13 @@ async function run(args: ParsedArgs): Promise<void> {
     writeJson(resolve(outputDirectory, "summary.json"), summary),
     writeFile(
       resolve(outputDirectory, "events.ndjson"),
-      `${result.events.map((event) => JSON.stringify(event)).join("\n")}\n`,
+      result.events.length === 0
+        ? ""
+        : `${result.events.map((event) => JSON.stringify(event)).join("\n")}\n`,
       "utf8"
     )
   ]);
+  await writeJsonAtomic(manifestPath, manifest);
 
   process.stdout.write(
     `${JSON.stringify({ ok: true, outputDirectory, ...summary })}\n`
@@ -123,7 +177,23 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
+  if (error instanceof ContentValidationError) {
+    process.stderr.write(
+      `${JSON.stringify({ ok: false, error: { type: "validation", issues: error.issues } })}\n`
+    );
+    process.exitCode = 2;
+    return;
+  }
+  if (error instanceof RuntimeAssertionError) {
+    process.stderr.write(
+      `${JSON.stringify({ ok: false, error: { type: "assertion", code: error.code, message: error.message } })}\n`
+    );
+    process.exitCode = 1;
+    return;
+  }
   const message = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`${JSON.stringify({ ok: false, error: message })}\n`);
+  process.stderr.write(
+    `${JSON.stringify({ ok: false, error: { type: "execution", message } })}\n`
+  );
   process.exitCode = 2;
 });

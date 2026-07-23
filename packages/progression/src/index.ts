@@ -9,11 +9,11 @@ export interface ProfileState {
 }
 
 export function createInitialProfile(ironWardenId: StableId): ProfileState {
-  return {
+  return Object.freeze({
     schemaVersion: 1,
     revision: 0,
     forgeOre: 0,
-    unlockedCharacterIds: [ironWardenId],
-    claimedRewardIds: []
-  };
+    unlockedCharacterIds: Object.freeze([ironWardenId]),
+    claimedRewardIds: Object.freeze([])
+  });
 }

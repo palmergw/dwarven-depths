@@ -26,6 +26,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm validate
+      - run: pnpm verify:scenario
 
   browser-parity:
     runs-on: ubuntu-latest

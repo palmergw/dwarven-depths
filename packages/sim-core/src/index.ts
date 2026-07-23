@@ -12,8 +12,18 @@ export interface StepResult {
 }
 
 export function seedToUint32(seed: string): number {
-  const value = BigInt(seed) & 0xffff_ffffn;
-  return Number(value === 0n ? 1n : value);
+  if (seed.length > 10 || !/^[1-9]\d*$/.test(seed)) {
+    throw new RangeError(
+      "seed must be a canonical integer between 1 and 4294967295"
+    );
+  }
+  const value = BigInt(seed);
+  if (value > 0xffff_ffffn) {
+    throw new RangeError(
+      "seed must be a canonical integer between 1 and 4294967295"
+    );
+  }
+  return Number(value);
 }
 
 export function nextUint32(state: number): number {
@@ -70,6 +80,7 @@ export function stepSimulation(
     .filter(
       (envelope) =>
         envelope.tick === state.tick &&
+        envelope.command.atTick === envelope.tick &&
         envelope.command.type === "confirmPreparation"
     )
     .sort((left, right) => left.sequence - right.sequence);
@@ -100,6 +111,7 @@ export function stepSimulation(
     return {
       state: {
         ...state,
+        tick: state.tick + 1,
         phase: "COMBAT_RUNNING",
         eventSequence: state.eventSequence + events.length
       },
@@ -110,8 +122,7 @@ export function stepSimulation(
   return {
     state: {
       ...state,
-      tick: state.tick + 1,
-      rngState: nextUint32(state.rngState)
+      tick: state.tick + 1
     },
     events: []
   };

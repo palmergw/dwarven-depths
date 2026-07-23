@@ -3,12 +3,14 @@
 The first implementation checkpoint provides a deterministic TypeScript workspace with:
 
 - Stable versioned content and scenario contracts
-- Strict content/scenario validation with precise paths
-- Canonical JSON serialization and SHA-256 checksums
-- Seeded integer PRNG state
+- Strict content/scenario validation with precise reference paths
+- Canonical JSON serialization with SHA-256 content, scenario, state, and event checksums
+- A bounded 32-bit integer seed contract and seeded PRNG state
+- Minimal level and wave descriptors, with authored-reference validation
 - An empty-level deterministic lifecycle reaching victory
 - Shared runtime used by the CLI
-- Machine-readable validation and run output
+- Immutable initial progression-profile contract
+- Machine-readable validation, assertion, and run output with explicit exit codes
 
 ## Commands
 
@@ -26,7 +28,9 @@ corepack pnpm sim run \
   --out .ddh/runs/empty
 ```
 
-Generated run bundles are written beneath `.ddh/` and are ignored by Git.
+Generated run bundles are written beneath `.ddh/` and are ignored by Git. `manifest.json` is written last and marked `complete: true`, so agents can reject interrupted or partially written bundles.
+
+CLI exit codes are `0` for success, `1` for a scenario assertion failure, and `2` for validation, usage, or execution errors. Validation failures include structured issue paths and codes.
 
 `pnpm test:browser` runs directly on hosts with Playwright browser dependencies. `pnpm test:browser:docker` uses the pinned Playwright image and is the portable local parity command used by `pnpm verify`.
 

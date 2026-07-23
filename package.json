@@ -17,7 +17,8 @@
     "format:check": "biome format . --check",
     "sim": "pnpm build && node apps/sim-cli/dist/cli.js",
     "validate": "pnpm sim validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:browser:docker && pnpm validate"
+    "verify:scenario": "pnpm sim run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:browser:docker && pnpm validate && pnpm verify:scenario"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.5",
