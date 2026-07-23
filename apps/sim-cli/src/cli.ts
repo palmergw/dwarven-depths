@@ -651,6 +651,9 @@ async function publishRunBundle(
     }
 
     try {
+      if (previousBundle !== undefined) {
+        await assertReplaceableRunBundle(previousBundle);
+      }
       await rename(stagingDirectory, outputDirectory);
     } catch (error) {
       if (previousBundle !== undefined) {
