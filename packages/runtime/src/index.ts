@@ -34,19 +34,36 @@ export function createTimelineRecords(
   events: readonly SimulationEvent[],
   replay: ReplayDefinition
 ): readonly TimelineRecord[] {
-  const records: TimelineRecord[] = events.map((event) => {
+  const records: TimelineRecord[] = [];
+  for (let index = 0; index < events.length; index += 1) {
+    const event = events[index];
+    if (event === undefined) throw new TypeError(`events/${index} is missing`);
     const eventEvidence = Object.freeze({ ...event });
-    return Object.freeze({
-      schemaVersion: 1,
-      kind: "event",
-      tick: eventEvidence.tick,
-      sequence: eventEvidence.sequence,
-      event: eventEvidence
-    });
-  });
-  for (const checkpoint of replay.checkpoints) {
+    records.push(
+      Object.freeze({
+        schemaVersion: 1,
+        kind: "event",
+        tick: eventEvidence.tick,
+        sequence: eventEvidence.sequence,
+        event: eventEvidence
+      })
+    );
+  }
+  for (
+    let checkpointIndex = 0;
+    checkpointIndex < replay.checkpoints.length;
+    checkpointIndex += 1
+  ) {
+    const checkpoint = replay.checkpoints[checkpointIndex];
+    if (checkpoint === undefined) {
+      throw new TypeError(`replay/checkpoints/${checkpointIndex} is missing`);
+    }
     let sequence = 0;
-    for (const event of events) {
+    for (let eventIndex = 0; eventIndex < events.length; eventIndex += 1) {
+      const event = events[eventIndex];
+      if (event === undefined) {
+        throw new TypeError(`events/${eventIndex} is missing`);
+      }
       if (event.tick === checkpoint.tick && event.sequence >= sequence) {
         sequence = event.sequence + 1;
       }
@@ -73,8 +90,11 @@ export function createTimelineRecords(
 export function createLifecycleDiagnostics(
   events: readonly SimulationEvent[]
 ): readonly LifecycleDiagnosticRecord[] {
-  return Object.freeze(
-    events.map((event, index) =>
+  const diagnostics: LifecycleDiagnosticRecord[] = [];
+  for (let index = 0; index < events.length; index += 1) {
+    const event = events[index];
+    if (event === undefined) throw new TypeError(`events/${index} is missing`);
+    diagnostics.push(
       Object.freeze({
         schemaVersion: 1,
         id: `diagnostic.${String(index).padStart(6, "0")}`,
@@ -85,8 +105,9 @@ export function createLifecycleDiagnostics(
         ruleId: event.ruleId,
         eventId: event.id
       })
-    )
-  );
+    );
+  }
+  return Object.freeze(diagnostics);
 }
 
 export class RuntimeAssertionError extends Error {
