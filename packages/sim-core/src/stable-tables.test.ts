@@ -75,6 +75,23 @@ describe("stable authoritative entity/effect tables", () => {
         value: { id: "entity.bad.id" }
       })
     ).toThrow();
+
+    const mutableRecord = { id: entityId("entity.dwarf.mutable") };
+    const copied = AuthoritativeTables.empty().withEntity(mutableRecord);
+    mutableRecord.id = entityId("entity.dwarf.changed");
+    expect(copied.entities().map((record) => record.id)).toEqual([
+      "entity.dwarf.mutable"
+    ]);
+
+    const mutableSnapshot = JSON.parse(JSON.stringify(fixture)) as {
+      entities: Array<{ id: string }>;
+    };
+    const copiedSnapshot = AuthoritativeTables.fromSnapshot(mutableSnapshot);
+    const firstMutableEntity = mutableSnapshot.entities[0];
+    if (firstMutableEntity === undefined)
+      throw new Error("missing fixture entity");
+    firstMutableEntity.id = "entity.dwarf.changed";
+    expect(copiedSnapshot.entities()[0]?.id).toBe("entity.dwarf.alpha");
   });
 
   it("serializes and hashes every insertion permutation identically", async () => {
