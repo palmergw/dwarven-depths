@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "simulationSchemaVersion": 1,
+  "contentVersion": "milestone-0",
+  "contentManifestHash": "3166e781fc4cce29240c01099919f4475ebe03294a76987706214eb24e398abe",
+  "scenarioId": "scenario.conformance.empty",
+  "scenarioHash": "7b51d2008c37b6ee79d4b41b17767e41441f8f86cbeddfe761db399fe45c1139",
+  "levelId": "level.empty",
+  "seed": "1",
+  "rngAlgorithm": "xorshift32-v1",
+  "commands": [
+    {
+      "tick": 0,
+      "sequence": 0,
+      "command": {
+        "atTick": 0,
+        "type": "confirmPreparation"
+      }
+    }
+  ],
+  "checkpoints": [
+    {
+      "tick": 0,
+      "stateChecksum": "3273b044b92e0941e35341de5aaef023db045af7c97983a7bd947c040e60fb33",
+      "eventStreamChecksum": "d081b5fbde5b7d474a38545e401939cbd0b63ecc6ad2558aedeaea0be4fb0d59"
+    }
+  ],
+  "expectedTerminalResult": "victory",
+  "expectedTerminalTick": 0
+}

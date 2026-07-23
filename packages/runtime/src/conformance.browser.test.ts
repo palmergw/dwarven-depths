@@ -1,5 +1,6 @@
 import {
   compileContent,
+  compileReplay,
   compileScenario
 } from "@dwarven-depths/content-runtime";
 import { nextUint32, seedToUint32 } from "@dwarven-depths/sim-core";
@@ -10,7 +11,10 @@ import contentInput from "../../../content/fixtures/empty-content.json" with {
 import scenarioInput from "../../../scenarios/conformance/empty-level.json" with {
   type: "json"
 };
-import { runScenario } from "./index.js";
+import replayInput from "../../../scenarios/conformance/empty-level.replay.json" with {
+  type: "json"
+};
+import { createReplayDefinition, runScenario, verifyReplay } from "./index.js";
 
 const expected = {
   contentManifestHash:
@@ -44,11 +48,17 @@ describe("cross-runtime deterministic conformance", () => {
     const content = await compileContent(contentInput);
     const scenario = compileScenario(scenarioInput, content);
     const result = await runScenario(scenario, content);
+    const generatedReplay = createReplayDefinition(result, scenario, content);
+    const recordedReplay = compileReplay(replayInput);
+    const verified = await verifyReplay(recordedReplay, scenario, content);
 
+    expect(generatedReplay).toEqual(recordedReplay);
     expect(content.manifestHash).toBe(expected.contentManifestHash);
     expect(result.scenarioHash).toBe(expected.scenarioHash);
     expect(result.finalStateChecksum).toBe(expected.finalStateChecksum);
     expect(result.eventStreamChecksum).toBe(expected.eventStreamChecksum);
+    expect(verified.finalStateChecksum).toBe(result.finalStateChecksum);
+    expect(verified.eventStreamChecksum).toBe(result.eventStreamChecksum);
     expect(result.events.map((event) => event.type)).toEqual([
       "round.started",
       "final_cleanup.entered",

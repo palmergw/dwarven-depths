@@ -1,5 +1,6 @@
 import type {
   ContentBundle,
+  ReplayDefinition,
   ScenarioDefinition,
   StableId
 } from "@dwarven-depths/contracts";
@@ -11,6 +12,20 @@ const stableIdSchema = z
     /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/,
     "must be a stable nonlocalized ID"
   );
+
+const checksumSchema = z
+  .string()
+  .regex(/^[a-f0-9]{64}$/, "must be a lowercase SHA-256 checksum");
+
+const seedSchema = z
+  .string()
+  .max(10)
+  .regex(/^[1-9]\d*$/, "must be a canonical positive decimal integer")
+  .refine((value) => {
+    if (value.length > 10 || !/^[1-9]\d*$/.test(value)) return false;
+    const parsed = BigInt(value);
+    return parsed >= 1n && parsed <= 0xffff_ffffn;
+  }, "must be between 1 and 4294967295");
 
 const levelDefinitionSchema = z
   .object({
@@ -53,18 +68,46 @@ const scenarioDefinitionSchema = z
     schemaVersion: z.literal(1),
     id: stableIdSchema,
     levelId: stableIdSchema,
-    seed: z
-      .string()
-      .max(10)
-      .regex(/^[1-9]\d*$/, "must be a canonical positive decimal integer")
-      .refine((value) => {
-        if (value.length > 10 || !/^[1-9]\d*$/.test(value)) return false;
-        const parsed = BigInt(value);
-        return parsed >= 1n && parsed <= 0xffff_ffffn;
-      }, "must be between 1 and 4294967295"),
+    seed: seedSchema,
     maximumTicks: z.int().positive().max(10_000_000),
     commands: z.array(scenarioCommandSchema),
     expectedTerminalResult: z.enum(["victory", "defeat"]).optional()
+  })
+  .strict();
+
+const commandEnvelopeSchema = z
+  .object({
+    tick: z.int().nonnegative(),
+    sequence: z.int().nonnegative(),
+    command: scenarioCommandSchema
+  })
+  .strict();
+
+const replayCheckpointSchema = z
+  .object({
+    tick: z.int().nonnegative(),
+    stateChecksum: checksumSchema,
+    eventStreamChecksum: checksumSchema
+  })
+  .strict();
+
+const replayDefinitionSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    simulationSchemaVersion: z.literal(1),
+    contentVersion: z.string().min(1),
+    contentManifestHash: checksumSchema,
+    scenarioId: stableIdSchema,
+    scenarioHash: checksumSchema,
+    levelId: stableIdSchema,
+    seed: seedSchema,
+    rngAlgorithm: z.literal("xorshift32-v1"),
+    commands: z.array(commandEnvelopeSchema),
+    checkpoints: z
+      .array(replayCheckpointSchema)
+      .length(1, "version 1 requires exactly one terminal checkpoint"),
+    expectedTerminalResult: z.enum(["victory", "defeat"]),
+    expectedTerminalTick: z.int().nonnegative()
   })
   .strict();
 
@@ -175,7 +218,16 @@ export function validateScenario(input: unknown): ScenarioDefinition {
 
   const issues: ValidationIssue[] = [];
   const commands = new Set<string>();
+  let previousCommandTick = -1;
   parsed.data.commands.forEach((command, index) => {
+    if (command.atTick < previousCommandTick) {
+      issues.push({
+        path: `$/commands/${index}/atTick`,
+        code: "commands_out_of_order",
+        message: "must not precede the previous command tick"
+      });
+    }
+    previousCommandTick = command.atTick;
     if (command.type === "confirmPreparation" && command.atTick !== 0) {
       issues.push({
         path: `$/commands/${index}/atTick`,
@@ -212,6 +264,82 @@ export function validateScenario(input: unknown): ScenarioDefinition {
     ...(parsed.data.expectedTerminalResult === undefined
       ? {}
       : { expectedTerminalResult: parsed.data.expectedTerminalResult })
+  };
+}
+
+export function validateReplay(input: unknown): ReplayDefinition {
+  const parsed = replayDefinitionSchema.safeParse(input);
+  if (!parsed.success)
+    throw new ContentValidationError(formatZodIssues(parsed.error));
+
+  const issues: ValidationIssue[] = [];
+  let previousCommandTick = -1;
+  parsed.data.commands.forEach((envelope, index) => {
+    if (envelope.sequence !== index) {
+      issues.push({
+        path: `$/commands/${index}/sequence`,
+        code: "invalid_command_sequence",
+        message: `must equal its ordered replay index (${index})`
+      });
+    }
+    if (envelope.tick !== envelope.command.atTick) {
+      issues.push({
+        path: `$/commands/${index}/tick`,
+        code: "command_tick_mismatch",
+        message: "must match command.atTick"
+      });
+    }
+    if (envelope.tick > parsed.data.expectedTerminalTick) {
+      issues.push({
+        path: `$/commands/${index}/tick`,
+        code: "command_after_terminal",
+        message: "accepted replay command cannot occur after the terminal tick"
+      });
+    }
+    if (envelope.tick < previousCommandTick) {
+      issues.push({
+        path: `$/commands/${index}/tick`,
+        code: "commands_out_of_order",
+        message: "must not precede the previous command tick"
+      });
+    }
+    if (envelope.command.type === "confirmPreparation" && envelope.tick !== 0) {
+      issues.push({
+        path: `$/commands/${index}/tick`,
+        code: "invalid_preparation_tick",
+        message: "confirmPreparation must be recorded at gameplay tick 0"
+      });
+    }
+    previousCommandTick = envelope.tick;
+  });
+
+  let previousCheckpointTick = -1;
+  parsed.data.checkpoints.forEach((checkpoint, index) => {
+    if (checkpoint.tick <= previousCheckpointTick) {
+      issues.push({
+        path: `$/checkpoints/${index}/tick`,
+        code: "checkpoints_out_of_order",
+        message: "must be strictly greater than the previous checkpoint tick"
+      });
+    }
+    previousCheckpointTick = checkpoint.tick;
+  });
+  const finalCheckpoint = parsed.data.checkpoints.at(-1);
+  if (finalCheckpoint?.tick !== parsed.data.expectedTerminalTick) {
+    issues.push({
+      path: "$/expectedTerminalTick",
+      code: "terminal_checkpoint_mismatch",
+      message: "must match the final checkpoint tick"
+    });
+  }
+
+  if (issues.length > 0) throw new ContentValidationError(issues);
+  return {
+    ...parsed.data,
+    scenarioId: parsed.data.scenarioId as StableId,
+    levelId: parsed.data.levelId as StableId,
+    commands: parsed.data.commands,
+    checkpoints: parsed.data.checkpoints
   };
 }
 

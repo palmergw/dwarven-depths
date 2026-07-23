@@ -80,13 +80,19 @@ describe("simulation CLI", () => {
         harness: 1,
         contentSchema: 1,
         scenarioSchema: 1,
+        replaySchema: 1,
         stateSchema: 1
       },
       controller: { type: "scenario.commands", version: 1 },
       scenarioHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+      metadataHash: expect.stringMatching(/^[a-f0-9]{64}$/),
       files: [
+        "checkpoints.ndjson",
+        "commands.ndjson",
+        "content.compiled.json",
         "content-manifest.json",
         "events.ndjson",
+        "replay.json",
         "scenario.compiled.json",
         "state.final.json",
         "summary.json"
@@ -207,7 +213,219 @@ describe("simulation CLI", () => {
     });
   });
 
-  it("atomically replaces bundles without following artifact symlinks", () => {
+  it("verifies a self-contained replay and rejects tampered artifacts", () => {
+    const content = temporaryFile("content.json", {
+      schemaVersion: 1,
+      contentVersion: "test",
+      definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+    });
+    const scenario = temporaryFile("scenario.json", {
+      schemaVersion: 1,
+      id: "scenario.test.replay",
+      levelId: "level.empty",
+      seed: "1",
+      maximumTicks: 1,
+      commands: [{ atTick: 0, type: "confirmPreparation" }],
+      expectedTerminalResult: "victory"
+    });
+    const output = resolve(dirname(content), "replay-run");
+    expect(
+      runCli(
+        "run",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        output
+      ).status
+    ).toBe(0);
+
+    const verified = runCli("replay", "--run", output, "--verify");
+    expect(verified.status).toBe(0);
+    expect(JSON.parse(verified.stdout)).toMatchObject({
+      ok: true,
+      verified: true,
+      scenarioId: "scenario.test.replay",
+      terminalResult: "victory"
+    });
+
+    const tamperCases: ReadonlyArray<{
+      readonly file: string;
+      readonly code: string;
+      readonly path?: string;
+      readonly mutate: (original: string) => string;
+    }> = [
+      {
+        file: "state.final.json",
+        code: "state_artifact_checksum_mismatch",
+        path: "$/rngState",
+        mutate: (original) => original.replace('"rngState": 1', '"rngState": 2')
+      },
+      {
+        file: "events.ndjson",
+        code: "event_artifact_checksum_mismatch",
+        path: "$/0/type",
+        mutate: (original) =>
+          original.replace("round.started", "round.tampered")
+      },
+      {
+        file: "commands.ndjson",
+        code: "command_artifact_checksum_mismatch",
+        mutate: () => ""
+      },
+      {
+        file: "content.compiled.json",
+        code: "content_manifest_mismatch",
+        mutate: (original) =>
+          original.replace(
+            '"contentVersion": "test"',
+            '"contentVersion": "tampered"'
+          )
+      },
+      {
+        file: "content-manifest.json",
+        code: "content_manifest_binding_mismatch",
+        mutate: (original) => original.replace("level.empty", "level.tampered")
+      },
+      {
+        file: "summary.json",
+        code: "summary_binding_mismatch",
+        mutate: (original) =>
+          original.replace('"eventCount": 3', '"eventCount": 4')
+      },
+      {
+        file: "manifest.json",
+        code: "manifest_metadata_hash_mismatch",
+        mutate: (original) =>
+          original.replace('"replaySchema": 1', '"replaySchema": 2')
+      },
+      {
+        file: "manifest.json",
+        code: "manifest_metadata_hash_mismatch",
+        mutate: (original) =>
+          original.replace(
+            /"repositoryRevision": "[^"]+"/,
+            `"repositoryRevision": "${"f".repeat(40)}"`
+          )
+      },
+      {
+        file: "scenario.compiled.json",
+        code: "seed_mismatch",
+        mutate: (original) => original.replace('"seed": "1"', '"seed": "2"')
+      },
+      {
+        file: "replay.json",
+        code: "invalid_replay_artifact",
+        mutate: (original) =>
+          original.replace('"schemaVersion": 1', '"schemaVersion": 2')
+      },
+      {
+        file: "replay.json",
+        code: "command_artifact_checksum_mismatch",
+        mutate: (original) =>
+          original.replace(
+            /"commands": \[[\s\S]*?\],\n {2}"checkpoints"/,
+            '"commands": [],\n  "checkpoints"'
+          )
+      }
+    ];
+
+    for (const tamperCase of tamperCases) {
+      const path = resolve(output, tamperCase.file);
+      const original = readFileSync(path, "utf8");
+      const mutated = tamperCase.mutate(original);
+      expect(mutated).not.toBe(original);
+      writeFileSync(path, mutated, "utf8");
+      const rejected = runCli("replay", "--run", output, "--verify");
+      expect(rejected.status, tamperCase.file).toBe(4);
+      expect(JSON.parse(rejected.stderr), tamperCase.file).toMatchObject({
+        ok: false,
+        error: {
+          type: "replay_divergence",
+          code: tamperCase.code,
+          ...(tamperCase.path === undefined ? {} : { path: tamperCase.path })
+        }
+      });
+      writeFileSync(path, original, "utf8");
+    }
+
+    const oversizedSummaryPath = resolve(output, "summary.json");
+    const originalSummary = readFileSync(oversizedSummaryPath, "utf8");
+    writeFileSync(
+      oversizedSummaryPath,
+      " ".repeat(4 * 1024 * 1024 + 1),
+      "utf8"
+    );
+    const oversizedArtifact = runCli("replay", "--run", output, "--verify");
+    expect(oversizedArtifact.status).toBe(4);
+    expect(JSON.parse(oversizedArtifact.stderr)).toMatchObject({
+      ok: false,
+      error: {
+        type: "replay_divergence",
+        code: "artifact_size_limit_exceeded",
+        artifact: "summary.json"
+      }
+    });
+    writeFileSync(oversizedSummaryPath, originalSummary, "utf8");
+
+    const eventsPath = resolve(output, "events.ndjson");
+    const originalEvents = readFileSync(eventsPath, "utf8");
+    writeFileSync(eventsPath, "{}\n".repeat(100_001), "utf8");
+    const excessiveRecords = runCli("replay", "--run", output, "--verify");
+    expect(excessiveRecords.status).toBe(4);
+    expect(JSON.parse(excessiveRecords.stderr)).toMatchObject({
+      ok: false,
+      error: {
+        type: "replay_divergence",
+        code: "artifact_record_limit_exceeded",
+        artifact: "events.ndjson"
+      }
+    });
+    writeFileSync(eventsPath, originalEvents, "utf8");
+
+    const unexpectedPath = resolve(output, "unexpected.txt");
+    writeFileSync(unexpectedPath, "unexpected\n", "utf8");
+    const extraArtifact = runCli("replay", "--run", output, "--verify");
+    expect(extraArtifact.status).toBe(4);
+    expect(JSON.parse(extraArtifact.stderr)).toMatchObject({
+      error: {
+        type: "replay_divergence",
+        code: "bundle_file_set_mismatch"
+      }
+    });
+    rmSync(unexpectedPath);
+
+    const bundleLink = resolve(dirname(output), "bundle-link");
+    symlinkSync(output, bundleLink, "dir");
+    const symlinkedBundle = runCli("replay", "--run", bundleLink, "--verify");
+    expect(symlinkedBundle.status).toBe(4);
+    expect(JSON.parse(symlinkedBundle.stderr)).toMatchObject({
+      error: {
+        type: "replay_divergence",
+        code: "missing_or_unsafe_bundle"
+      }
+    });
+    rmSync(bundleLink);
+
+    const summaryPath = resolve(output, "summary.json");
+    const summary = readFileSync(summaryPath, "utf8");
+    const externalSummary = resolve(dirname(output), "external-summary.json");
+    writeFileSync(externalSummary, summary, "utf8");
+    rmSync(summaryPath);
+    symlinkSync(externalSummary, summaryPath);
+    const symlinked = runCli("replay", "--run", output, "--verify");
+    expect(symlinked.status).toBe(4);
+    expect(JSON.parse(symlinked.stderr)).toMatchObject({
+      error: {
+        type: "replay_divergence",
+        code: "missing_or_unsafe_artifact",
+        artifact: "summary.json"
+      }
+    });
+  });
+
+  it("safely replaces bundles without following artifact symlinks", () => {
     const content = temporaryFile("content.json", {
       schemaVersion: 1,
       contentVersion: "test",

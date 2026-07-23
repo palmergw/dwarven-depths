@@ -18,7 +18,7 @@
     "check:artifacts": "node scripts/check-generated-artifacts.mjs",
     "sim": "pnpm build && node apps/sim-cli/dist/cli.js",
     "validate": "pnpm sim validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
-    "verify:scenario": "pnpm sim run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true",
+    "verify:scenario": "pnpm sim run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify",
     "verify": "pnpm lint && pnpm check:artifacts && pnpm typecheck && pnpm test && pnpm test:browser:docker && pnpm validate && pnpm verify:scenario"
   },
   "devDependencies": {

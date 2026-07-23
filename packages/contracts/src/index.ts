@@ -70,6 +70,28 @@ export interface CommandEnvelope {
   readonly command: ScenarioCommand;
 }
 
+export interface ReplayCheckpoint {
+  readonly tick: number;
+  readonly stateChecksum: string;
+  readonly eventStreamChecksum: string;
+}
+
+export interface ReplayDefinition {
+  readonly schemaVersion: 1;
+  readonly simulationSchemaVersion: 1;
+  readonly contentVersion: string;
+  readonly contentManifestHash: string;
+  readonly scenarioId: StableId;
+  readonly scenarioHash: string;
+  readonly levelId: StableId;
+  readonly seed: string;
+  readonly rngAlgorithm: "xorshift32-v1";
+  readonly commands: readonly CommandEnvelope[];
+  readonly checkpoints: readonly ReplayCheckpoint[];
+  readonly expectedTerminalResult: TerminalResult;
+  readonly expectedTerminalTick: number;
+}
+
 function serialize(
   value: unknown,
   path: string,

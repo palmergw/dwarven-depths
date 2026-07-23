@@ -1,7 +1,9 @@
 import {
   compileContent,
+  compileReplay,
   compileScenario
 } from "@dwarven-depths/content-runtime";
+import { canonicalHash } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import contentInput from "../../../content/fixtures/empty-content.json" with {
   type: "json"
@@ -9,7 +11,16 @@ import contentInput from "../../../content/fixtures/empty-content.json" with {
 import scenarioInput from "../../../scenarios/conformance/empty-level.json" with {
   type: "json"
 };
-import { type RuntimeSafetyStopError, runScenario } from "./index.js";
+import replayInput from "../../../scenarios/conformance/empty-level.replay.json" with {
+  type: "json"
+};
+import {
+  createReplayDefinition,
+  type ReplayDivergenceError,
+  type RuntimeSafetyStopError,
+  runScenario,
+  verifyReplay
+} from "./index.js";
 
 describe("shared runtime", () => {
   it("reports tick-budget exhaustion as a safety stop", async () => {
@@ -86,5 +97,61 @@ describe("shared runtime", () => {
     expect(Object.isFrozen(left.finalState)).toBe(true);
     expect(Object.isFrozen(left.events)).toBe(true);
     expect(Object.isFrozen(left.events[0])).toBe(true);
+    expect(Object.isFrozen(left.commands)).toBe(true);
+    expect(Object.isFrozen(left.commands[0])).toBe(true);
+  });
+
+  it("creates and verifies replay evidence with stable divergence codes", async () => {
+    const content = await compileContent(contentInput);
+    const scenario = compileScenario(scenarioInput, content);
+    const result = await runScenario(scenario, content);
+    const generatedReplay = createReplayDefinition(result, scenario, content);
+    const replay = compileReplay(replayInput);
+
+    expect(generatedReplay).toEqual(replay);
+    await expect(
+      verifyReplay(replay, scenario, content)
+    ).resolves.toMatchObject({
+      finalStateChecksum: result.finalStateChecksum,
+      eventStreamChecksum: result.eventStreamChecksum
+    });
+    expect(Object.isFrozen(replay)).toBe(true);
+    expect(Object.isFrozen(replay.checkpoints)).toBe(true);
+    expect(Object.isFrozen(replay.checkpoints[0])).toBe(true);
+
+    const checkpoint = replay.checkpoints[0];
+    if (checkpoint === undefined)
+      throw new Error("expected terminal checkpoint");
+    const tamperedReplay = {
+      ...replay,
+      checkpoints: [
+        {
+          ...checkpoint,
+          stateChecksum: "0".repeat(64)
+        }
+      ]
+    };
+    await expect(
+      verifyReplay(tamperedReplay, scenario, content)
+    ).rejects.toMatchObject({
+      name: "ReplayDivergenceError",
+      code: "state_checksum_mismatch",
+      checkpointTick: 0
+    } satisfies Partial<ReplayDivergenceError>);
+
+    const mismatchedScenario = compileScenario(
+      { ...scenarioInput, expectedTerminalResult: "defeat" },
+      content
+    );
+    const mismatchedScenarioReplay = {
+      ...replay,
+      scenarioHash: await canonicalHash(mismatchedScenario)
+    };
+    await expect(
+      verifyReplay(mismatchedScenarioReplay, mismatchedScenario, content)
+    ).rejects.toMatchObject({
+      name: "ReplayDivergenceError",
+      code: "scenario_expectation_mismatch"
+    } satisfies Partial<ReplayDivergenceError>);
   });
 });
