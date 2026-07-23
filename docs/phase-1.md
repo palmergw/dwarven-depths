@@ -22,6 +22,18 @@ pnpm sim replay --run .ddh/runs/empty --verify
 
 A successful verification emits one JSON object with `ok: true` and `verified: true`. Schema or authored-input errors use exit code `2`. Replay or artifact divergence uses exit code `4` with a stable code, expected and actual evidence where available, and the terminal checkpoint tick where applicable.
 
+Inspect an inclusive tick window only after verifying the complete bundle:
+
+```bash
+pnpm sim inspect \
+  --run .ddh/runs/empty \
+  --tick 0 \
+  --before 0 \
+  --after 0
+```
+
+`inspect` emits one JSON object containing revision, content/scenario/replay identity, ordered events, checkpoints, terminal state evidence when present, lifecycle diagnostics, and the versioned timeline records in the requested window. Omitted `--tick`, `--before`, or `--after` values default to zero. Window arguments are canonical nonnegative integers; before/after spans are bounded to 100,000 ticks. Windows with no evidence return empty arrays.
+
 ## Version 1 replay contract
 
 `replay.json` binds:
@@ -33,6 +45,10 @@ A successful verification emits one JSON object with `ok: true` and `verified: t
 - expected terminal result and terminal tick.
 
 Replay schema version 1 intentionally supports exactly one terminal checkpoint. Terminal state and event artifact mismatches report the first differing canonical JSON path. Intermediate checkpoint capture, seeking, and earlier-tick divergence localization are later Phase 1 slices; accepting but ignoring such checkpoints would create false verification confidence.
+
+## Timeline and lifecycle diagnostics
+
+Timeline schema version 1 merges each ordered simulation event with each replay checkpoint by tick and sequence. Diagnostic schema version 1 emits one reason-coded lifecycle record per event, binding a stable diagnostic ID to the event ID, event type, rule ID, tick, and sequence. `sim replay --verify` reconstructs both streams from authoritative replay execution and rejects any missing, extra, reordered, or changed record before `inspect` can present it. The compact `empty-level.json` and `nonterminating.json` conformance scenarios cover completed and safety-stopped lifecycle boundaries without introducing gameplay mechanics.
 
 ## Stable entity/effect tables
 
@@ -52,6 +68,8 @@ The Phase 1 bundle contains:
 - `commands.ndjson` — ordered accepted command envelopes;
 - `checkpoints.ndjson` — versioned checkpoint evidence;
 - `events.ndjson` — ordered event stream;
+- `timeline.ndjson` — versioned event/checkpoint chronology;
+- `diagnostics.ndjson` — reason-coded lifecycle evidence;
 - `state.final.json` — terminal authoritative state;
 - `summary.json` — terminal summary.
 

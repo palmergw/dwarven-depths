@@ -110,6 +110,35 @@ export interface ReplayDefinition {
   readonly expectedTerminalTick: number;
 }
 
+export interface TimelineEventRecord {
+  readonly schemaVersion: 1;
+  readonly kind: "event";
+  readonly tick: number;
+  readonly sequence: number;
+  readonly event: SimulationEvent;
+}
+
+export interface TimelineCheckpointRecord {
+  readonly schemaVersion: 1;
+  readonly kind: "checkpoint";
+  readonly tick: number;
+  readonly sequence: number;
+  readonly checkpoint: ReplayCheckpoint;
+}
+
+export type TimelineRecord = TimelineEventRecord | TimelineCheckpointRecord;
+
+export interface LifecycleDiagnosticRecord {
+  readonly schemaVersion: 1;
+  readonly id: string;
+  readonly kind: "lifecycle";
+  readonly tick: number;
+  readonly sequence: number;
+  readonly code: SimulationEvent["type"];
+  readonly ruleId: string;
+  readonly eventId: string;
+}
+
 function serialize(
   value: unknown,
   path: string,

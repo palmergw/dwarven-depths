@@ -8,10 +8,16 @@ import { describe, expect, it } from "vitest";
 import contentInput from "../../../content/fixtures/empty-content.json" with {
   type: "json"
 };
+import nonterminatingContentInput from "../../../content/fixtures/nonterminating-content.json" with {
+  type: "json"
+};
 import scenarioInput from "../../../scenarios/conformance/empty-level.json" with {
   type: "json"
 };
 import replayInput from "../../../scenarios/conformance/empty-level.replay.json" with {
+  type: "json"
+};
+import nonterminatingScenarioInput from "../../../scenarios/conformance/nonterminating.json" with {
   type: "json"
 };
 import {
@@ -24,25 +30,8 @@ import {
 
 describe("shared runtime", () => {
   it("reports tick-budget exhaustion as a safety stop", async () => {
-    const content = await compileContent({
-      schemaVersion: 1,
-      contentVersion: "milestone-0",
-      definitions: [
-        { kind: "level", id: "level.wave", waveIds: ["wave.first"] },
-        { kind: "wave", id: "wave.first", durationTicks: 30 }
-      ]
-    });
-    const scenario = compileScenario(
-      {
-        schemaVersion: 1,
-        id: "scenario.conformance.nonterminating",
-        levelId: "level.wave",
-        seed: "1",
-        maximumTicks: 2,
-        commands: [{ atTick: 0, type: "confirmPreparation" }]
-      },
-      content
-    );
+    const content = await compileContent(nonterminatingContentInput);
+    const scenario = compileScenario(nonterminatingScenarioInput, content);
 
     await expect(runScenario(scenario, content)).rejects.toMatchObject({
       name: "RuntimeSafetyStopError",

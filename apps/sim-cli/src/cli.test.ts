@@ -23,6 +23,12 @@ function temporaryFile(name: string, value: unknown): string {
   return path;
 }
 
+function temporaryDirectory(): string {
+  const directory = mkdtempSync(resolve(tmpdir(), "dwarven-depths-cli-"));
+  temporaryDirectories.push(directory);
+  return directory;
+}
+
 function runCli(...args: string[]) {
   return spawnSync(
     process.execPath,
@@ -81,7 +87,9 @@ describe("simulation CLI", () => {
         contentSchema: 1,
         scenarioSchema: 1,
         replaySchema: 1,
-        stateSchema: 1
+        stateSchema: 1,
+        timelineSchema: 1,
+        diagnosticSchema: 1
       },
       controller: { type: "scenario.commands", version: 1 },
       scenarioHash: expect.stringMatching(/^[a-f0-9]{64}$/),
@@ -91,16 +99,167 @@ describe("simulation CLI", () => {
         "commands.ndjson",
         "content.compiled.json",
         "content-manifest.json",
+        "diagnostics.ndjson",
         "events.ndjson",
         "replay.json",
         "scenario.compiled.json",
         "state.final.json",
-        "summary.json"
+        "summary.json",
+        "timeline.ndjson"
       ]
     });
     expect(manifest.canonical).toBe(
       manifest.repositoryRevision !== "unknown" && !manifest.repositoryDirty
     );
+  });
+
+  it("inspects verified timeline windows and rejects invalid or tampered evidence", () => {
+    const content = temporaryFile("content.json", {
+      schemaVersion: 1,
+      contentVersion: "test",
+      definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+    });
+    const scenario = temporaryFile("scenario.json", {
+      schemaVersion: 1,
+      id: "scenario.test.inspect",
+      levelId: "level.empty",
+      seed: "1",
+      maximumTicks: 1,
+      commands: [{ atTick: 0, type: "confirmPreparation" }],
+      expectedTerminalResult: "victory"
+    });
+    const output = resolve(dirname(content), "inspect-run");
+    expect(
+      runCli(
+        "run",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        output
+      ).status
+    ).toBe(0);
+
+    const inspected = runCli(
+      "inspect",
+      "--run",
+      output,
+      "--tick",
+      "0",
+      "--before",
+      "0",
+      "--after",
+      "0"
+    );
+    expect(inspected.status).toBe(0);
+    expect(JSON.parse(inspected.stdout)).toMatchObject({
+      ok: true,
+      inspected: true,
+      identity: {
+        repositoryRevision: expect.stringMatching(/^(unknown|[a-f0-9]{40})$/),
+        contentManifestHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        scenarioId: "scenario.test.inspect",
+        scenarioHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        seed: "1",
+        replayIdentityHash: expect.stringMatching(/^[a-f0-9]{64}$/)
+      },
+      window: { tick: 0, before: 0, after: 0, startTick: 0, endTick: 0 },
+      events: [
+        { type: "round.started", tick: 0 },
+        { type: "final_cleanup.entered", tick: 0 },
+        { type: "round.victory", tick: 0 }
+      ],
+      checkpoints: [{ tick: 0 }],
+      stateEvidence: [{ tick: 0 }],
+      diagnostics: [
+        { code: "round.started", ruleId: "SIM-LIFECYCLE-001" },
+        { code: "final_cleanup.entered", ruleId: "SIM-FINAL-CLEANUP-001" },
+        { code: "round.victory", ruleId: "SIM-VICTORY-001" }
+      ]
+    });
+
+    const emptyWindow = runCli("inspect", "--run", output, "--tick", "1");
+    expect(emptyWindow.status).toBe(0);
+    expect(JSON.parse(emptyWindow.stdout)).toMatchObject({
+      events: [],
+      checkpoints: [],
+      stateEvidence: [],
+      diagnostics: [],
+      timeline: []
+    });
+
+    const invalidWindow = runCli("inspect", "--run", output, "--tick", "-1");
+    expect(invalidWindow.status).toBe(2);
+    expect(JSON.parse(invalidWindow.stderr)).toMatchObject({
+      error: { type: "input", code: "invalid_cli_input" }
+    });
+
+    const timelinePath = resolve(output, "timeline.ndjson");
+    const originalTimeline = readFileSync(timelinePath, "utf8");
+    const timeline = originalTimeline
+      .trimEnd()
+      .split("\n")
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const firstTimelineRecord = timeline[0];
+    if (firstTimelineRecord === undefined)
+      throw new Error("missing timeline record");
+    Object.assign(firstTimelineRecord, { tick: 1 });
+    writeFileSync(
+      timelinePath,
+      `${timeline.map((record) => JSON.stringify(record)).join("\n")}\n`,
+      "utf8"
+    );
+    const tampered = runCli("inspect", "--run", output, "--tick", "0");
+    expect(tampered.status).toBe(4);
+    expect(JSON.parse(tampered.stderr)).toMatchObject({
+      error: {
+        type: "replay_divergence",
+        code: "timeline_artifact_mismatch",
+        artifact: "timeline.ndjson",
+        path: "$/0/tick"
+      }
+    });
+    writeFileSync(timelinePath, originalTimeline, "utf8");
+
+    const diagnosticsPath = resolve(output, "diagnostics.ndjson");
+    const originalDiagnostics = readFileSync(diagnosticsPath, "utf8");
+    const diagnostics = originalDiagnostics
+      .trimEnd()
+      .split("\n")
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const firstDiagnostic = diagnostics[0];
+    if (firstDiagnostic === undefined)
+      throw new Error("missing diagnostic record");
+    Object.assign(firstDiagnostic, { ruleId: "SIM-TAMPERED-001" });
+    writeFileSync(
+      diagnosticsPath,
+      `${diagnostics.map((record) => JSON.stringify(record)).join("\n")}\n`,
+      "utf8"
+    );
+    const tamperedDiagnostic = runCli(
+      "inspect",
+      "--run",
+      output,
+      "--tick",
+      "0"
+    );
+    expect(tamperedDiagnostic.status).toBe(4);
+    expect(JSON.parse(tamperedDiagnostic.stderr)).toMatchObject({
+      error: {
+        code: "diagnostic_artifact_mismatch",
+        artifact: "diagnostics.ndjson",
+        path: "$/0/ruleId"
+      }
+    });
+    writeFileSync(diagnosticsPath, originalDiagnostics, "utf8");
+
+    rmSync(resolve(output, "manifest.json"));
+    const incomplete = runCli("inspect", "--run", output, "--tick", "0");
+    expect(incomplete.status).toBe(4);
+    expect(JSON.parse(incomplete.stderr)).toMatchObject({
+      error: { code: "bundle_file_set_mismatch" }
+    });
   });
 
   it("emits machine-readable validation issues with exit code 2", () => {
@@ -143,24 +302,9 @@ describe("simulation CLI", () => {
   });
 
   it("classifies tick-budget exhaustion as a safety stop", () => {
-    const content = temporaryFile("content.json", {
-      schemaVersion: 1,
-      contentVersion: "test",
-      definitions: [
-        { kind: "level", id: "level.test", waveIds: ["wave.first"] },
-        { kind: "wave", id: "wave.first", durationTicks: 30 }
-      ]
-    });
-    const scenario = temporaryFile("scenario.json", {
-      schemaVersion: 1,
-      id: "scenario.test.nonterminating",
-      levelId: "level.test",
-      seed: "1",
-      maximumTicks: 2,
-      commands: [{ atTick: 0, type: "confirmPreparation" }]
-    });
-
-    const output = resolve(dirname(content), "failed-run");
+    const content = resolve("content/fixtures/nonterminating-content.json");
+    const scenario = resolve("scenarios/conformance/nonterminating.json");
+    const output = resolve(temporaryDirectory(), "failed-run");
     mkdirSync(output);
     writeFileSync(resolve(output, "manifest.json"), '{"complete":true}\n');
 

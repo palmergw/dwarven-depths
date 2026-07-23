@@ -14,7 +14,7 @@ A pixel-art roguelite about assembling, placing, and upgrading a company of dwar
 
 ## Current phase
 
-The project is in **Phase 1 deterministic harness implementation**. Milestone 0 established the strict TypeScript workspace, content/scenario validation, canonical checksums, headless run bundles, and Node/Chromium/Firefox/WebKit parity. Phase 1 now includes independently verifiable replay bundles and stable immutable entity/effect table primitives; timeline diagnostics and checkpoint comparison remain before broader gameplay state.
+The project is in **Phase 1 deterministic harness implementation**. Milestone 0 established the strict TypeScript workspace, content/scenario validation, canonical checksums, headless run bundles, and Node/Chromium/Firefox/WebKit parity. Phase 1 now includes independently verifiable replay bundles, stable immutable entity/effect tables, and verified timeline inspection; intermediate checkpoint comparison and first-divergence reporting remain before broader gameplay state.
 
 - [Phase 1 Deterministic Replay Foundation](docs/phase-1.md)
 - [Milestone 0 Implementation and Commands](docs/milestone-0.md)
