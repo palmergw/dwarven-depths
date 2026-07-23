@@ -56,20 +56,34 @@ interface RunManifestArtifact {
   readonly complete?: unknown;
   readonly harnessVersion?: unknown;
   readonly files?: unknown;
+  readonly protocolVersions?: unknown;
+  readonly runtime?: unknown;
+  readonly controller?: unknown;
+  readonly repositoryRevision?: unknown;
+  readonly repositoryDirty?: unknown;
+  readonly canonical?: unknown;
   readonly contentManifestHash?: unknown;
+  readonly contentVersion?: unknown;
   readonly scenarioId?: unknown;
   readonly scenarioHash?: unknown;
+  readonly seed?: unknown;
 }
 
 interface ContentManifestArtifact {
+  readonly contentVersion?: unknown;
   readonly contentManifestHash?: unknown;
+  readonly definitions?: unknown;
 }
 
 interface SummaryArtifact {
-  readonly finalStateChecksum?: unknown;
-  readonly eventStreamChecksum?: unknown;
+  readonly scenarioId?: unknown;
+  readonly scenarioHash?: unknown;
   readonly terminalResult?: unknown;
   readonly terminalTick?: unknown;
+  readonly commandCount?: unknown;
+  readonly eventCount?: unknown;
+  readonly finalStateChecksum?: unknown;
+  readonly eventStreamChecksum?: unknown;
 }
 
 class CliInputError extends Error {
@@ -248,6 +262,24 @@ function requireRecord<Value extends object = Record<string, unknown>>(
     );
   }
   return { ...value } as Value;
+}
+
+function requireExactKeys(
+  value: object,
+  allowedKeys: readonly string[],
+  artifact: string
+): void {
+  const actualKeys = Object.keys(value);
+  const unexpected = actualKeys.find((key) => !allowedKeys.includes(key));
+  const missing = allowedKeys.find((key) => !actualKeys.includes(key));
+  if (unexpected === undefined && missing === undefined) return;
+  throw new ReplayArtifactError(
+    "invalid_artifact_shape",
+    artifact,
+    unexpected === undefined
+      ? `${artifact} is missing required property ${missing}`
+      : `${artifact} contains unknown property ${unexpected}`
+  );
 }
 
 function requireArtifactMatch(
@@ -637,6 +669,45 @@ async function replay(args: ParsedArgs): Promise<void> {
     "content-manifest.json"
   );
   const summary = requireRecord<SummaryArtifact>(summaryInput, "summary.json");
+  requireExactKeys(
+    manifest,
+    [
+      "harnessVersion",
+      "protocolVersions",
+      "runtime",
+      "controller",
+      "repositoryRevision",
+      "repositoryDirty",
+      "contentManifestHash",
+      "contentVersion",
+      "scenarioId",
+      "scenarioHash",
+      "seed",
+      "canonical",
+      "complete",
+      "files"
+    ],
+    "manifest.json"
+  );
+  requireExactKeys(
+    contentManifest,
+    ["contentVersion", "contentManifestHash", "definitions"],
+    "content-manifest.json"
+  );
+  requireExactKeys(
+    summary,
+    [
+      "scenarioId",
+      "scenarioHash",
+      "terminalResult",
+      "terminalTick",
+      "commandCount",
+      "eventCount",
+      "finalStateChecksum",
+      "eventStreamChecksum"
+    ],
+    "summary.json"
+  );
   const finalCheckpoint = compiledReplay.checkpoints[0];
   if (finalCheckpoint === undefined) {
     throw new ReplayArtifactError(
@@ -648,18 +719,86 @@ async function replay(args: ParsedArgs): Promise<void> {
 
   requireArtifactMatch(
     manifest.contentManifestHash === compiledReplay.contentManifestHash &&
+      manifest.contentVersion === compiledReplay.contentVersion &&
       contentManifest.contentManifestHash ===
-        compiledReplay.contentManifestHash,
+        compiledReplay.contentManifestHash &&
+      contentManifest.contentVersion === compiledReplay.contentVersion,
     "content_manifest_binding_mismatch",
     "content-manifest.json",
     "manifest and replay content hashes must agree"
   );
   requireArtifactMatch(
     manifest.scenarioHash === compiledReplay.scenarioHash &&
-      manifest.scenarioId === compiledReplay.scenarioId,
+      manifest.scenarioId === compiledReplay.scenarioId &&
+      manifest.seed === compiledReplay.seed,
     "scenario_binding_mismatch",
     "manifest.json",
     "manifest and replay scenario identity must agree"
+  );
+
+  requireArtifactMatch(
+    typeof manifest.repositoryRevision === "string" &&
+      (manifest.repositoryRevision === "unknown" ||
+        /^[a-f0-9]{40}$/.test(manifest.repositoryRevision)) &&
+      typeof manifest.repositoryDirty === "boolean" &&
+      typeof manifest.canonical === "boolean" &&
+      manifest.canonical ===
+        (manifest.repositoryRevision !== "unknown" &&
+          !manifest.repositoryDirty),
+    "invalid_provenance_metadata",
+    "manifest.json",
+    "manifest provenance and canonical status are inconsistent"
+  );
+  const expectedContentDefinitions = content.bundle.definitions.map(
+    (definition) => ({ kind: definition.kind, id: definition.id })
+  );
+  const [
+    protocolHash,
+    expectedProtocolHash,
+    runtimeHash,
+    expectedRuntimeHash,
+    controllerHash,
+    expectedControllerHash,
+    contentDefinitionsHash,
+    expectedContentDefinitionsHash
+  ] = await Promise.all([
+    canonicalArtifactHash(manifest.protocolVersions, "manifest.json"),
+    canonicalArtifactHash(
+      {
+        harness: 1,
+        contentSchema: content.bundle.schemaVersion,
+        scenarioSchema: scenario.schemaVersion,
+        replaySchema: compiledReplay.schemaVersion,
+        stateSchema: 1
+      },
+      "manifest.json"
+    ),
+    canonicalArtifactHash(manifest.runtime, "manifest.json"),
+    canonicalArtifactHash(
+      { name: "@dwarven-depths/runtime", version: "0.0.0" },
+      "manifest.json"
+    ),
+    canonicalArtifactHash(manifest.controller, "manifest.json"),
+    canonicalArtifactHash(
+      { type: "scenario.commands", version: 1 },
+      "manifest.json"
+    ),
+    canonicalArtifactHash(contentManifest.definitions, "content-manifest.json"),
+    canonicalArtifactHash(expectedContentDefinitions, "content-manifest.json")
+  ]);
+  requireArtifactMatch(
+    protocolHash === expectedProtocolHash &&
+      runtimeHash === expectedRuntimeHash &&
+      controllerHash === expectedControllerHash,
+    "manifest_metadata_mismatch",
+    "manifest.json",
+    "manifest protocol, runtime, or controller metadata is inconsistent"
+  );
+  requireArtifactMatch(
+    contentDefinitionsHash === expectedContentDefinitionsHash,
+    "content_manifest_binding_mismatch",
+    "content-manifest.json",
+    "content manifest definitions do not match compiled content"
   );
 
   const [
@@ -702,10 +841,14 @@ async function replay(args: ParsedArgs): Promise<void> {
     `expected ${replayCheckpointHash}, received ${checkpointArtifactHash}`
   );
   requireArtifactMatch(
-    summary.finalStateChecksum === finalCheckpoint.stateChecksum &&
+    summary.scenarioId === compiledReplay.scenarioId &&
+      summary.scenarioHash === compiledReplay.scenarioHash &&
+      summary.finalStateChecksum === finalCheckpoint.stateChecksum &&
       summary.eventStreamChecksum === finalCheckpoint.eventStreamChecksum &&
       summary.terminalResult === compiledReplay.expectedTerminalResult &&
-      summary.terminalTick === compiledReplay.expectedTerminalTick,
+      summary.terminalTick === compiledReplay.expectedTerminalTick &&
+      summary.commandCount === commandsInput.length &&
+      summary.eventCount === eventsInput.length,
     "summary_binding_mismatch",
     "summary.json",
     "summary does not match replay terminal evidence"

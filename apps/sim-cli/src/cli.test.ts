@@ -280,6 +280,23 @@ describe("simulation CLI", () => {
           )
       },
       {
+        file: "content-manifest.json",
+        code: "content_manifest_binding_mismatch",
+        mutate: (original) => original.replace("level.empty", "level.tampered")
+      },
+      {
+        file: "summary.json",
+        code: "summary_binding_mismatch",
+        mutate: (original) =>
+          original.replace('"eventCount": 3', '"eventCount": 4')
+      },
+      {
+        file: "manifest.json",
+        code: "manifest_metadata_mismatch",
+        mutate: (original) =>
+          original.replace('"replaySchema": 1', '"replaySchema": 2')
+      },
+      {
         file: "scenario.compiled.json",
         code: "seed_mismatch",
         mutate: (original) => original.replace('"seed": "1"', '"seed": "2"')

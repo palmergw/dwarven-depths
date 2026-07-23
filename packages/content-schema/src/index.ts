@@ -280,6 +280,13 @@ export function validateReplay(input: unknown): ReplayDefinition {
         message: "must match command.atTick"
       });
     }
+    if (envelope.tick > parsed.data.expectedTerminalTick) {
+      issues.push({
+        path: `$/commands/${index}/tick`,
+        code: "command_after_terminal",
+        message: "accepted replay command cannot occur after the terminal tick"
+      });
+    }
     if (envelope.tick < previousCommandTick) {
       issues.push({
         path: `$/commands/${index}/tick`,

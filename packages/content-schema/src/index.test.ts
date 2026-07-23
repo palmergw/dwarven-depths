@@ -217,6 +217,10 @@ describe("replay validation", () => {
           expect.objectContaining({
             path: "$/commands/0/tick",
             code: "command_tick_mismatch"
+          }),
+          expect.objectContaining({
+            path: "$/commands/0/tick",
+            code: "command_after_terminal"
           })
         ])
       );
