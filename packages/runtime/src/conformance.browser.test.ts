@@ -3,7 +3,11 @@ import {
   compileReplay,
   compileScenario
 } from "@dwarven-depths/content-runtime";
-import { nextUint32, seedToUint32 } from "@dwarven-depths/sim-core";
+import {
+  AuthoritativeTables,
+  nextUint32,
+  seedToUint32
+} from "@dwarven-depths/sim-core";
 import { describe, expect, it } from "vitest";
 import contentInput from "../../../content/fixtures/empty-content.json" with {
   type: "json"
@@ -12,6 +16,9 @@ import scenarioInput from "../../../scenarios/conformance/empty-level.json" with
   type: "json"
 };
 import replayInput from "../../../scenarios/conformance/empty-level.replay.json" with {
+  type: "json"
+};
+import stableTablesInput from "../../../scenarios/conformance/stable-tables.json" with {
   type: "json"
 };
 import { createReplayDefinition, runScenario, verifyReplay } from "./index.js";
@@ -43,6 +50,23 @@ describe("cross-runtime deterministic conformance", () => {
       expect(sequence).toEqual(expectedSequence);
     }
   );
+
+  it("matches the golden nonempty entity/effect table", async () => {
+    const tables = AuthoritativeTables.fromSnapshot(stableTablesInput);
+
+    expect(await tables.checksum()).toBe(
+      "6ea32a50c655cfe02f6c08ef08c3a742b65f6be310d35b41069ea61595e580ba"
+    );
+    expect(tables.entities().map((record) => record.id)).toEqual([
+      "entity.dwarf.alpha",
+      "entity.enemy.beta",
+      "entity.tower.gamma"
+    ]);
+    expect(tables.effects().map((record) => record.id)).toEqual([
+      "effect.guard.alpha",
+      "effect.mark.beta"
+    ]);
+  });
 
   it("matches the canonical Node hashes and ordered event stream", async () => {
     const content = await compileContent(contentInput);

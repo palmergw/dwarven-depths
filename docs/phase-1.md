@@ -34,6 +34,12 @@ A successful verification emits one JSON object with `ok: true` and `verified: t
 
 Replay schema version 1 intentionally supports exactly one terminal checkpoint. Terminal state and event artifact mismatches report the first differing canonical JSON path. Intermediate checkpoint capture, seeking, and earlier-tick divergence localization are later Phase 1 slices; accepting but ignoring such checkpoints would create false verification confidence.
 
+## Stable entity/effect tables
+
+`@dwarven-depths/sim-core` exposes versioned, mechanic-neutral `AuthoritativeTables` primitives before dynamic map or combat state is introduced. Entity IDs use `entity.<kind>.<instance>` and effect IDs use `effect.<kind>.<instance>`. Records are normalized by code-point ID order, copied and frozen at the boundary, and exposed only through immutable snapshots and lookup methods.
+
+Insertion returns a new table and rejects duplicates. Effects require existing source and target entities. Removing an entity deterministically cascades every effect that references it and rebuilds the private effect index; removing an effect leaves the prior table unchanged. The checked-in nonempty fixture `scenarios/conformance/stable-tables.json` has canonical checksum `6ea32a50c655cfe02f6c08ef08c3a742b65f6be310d35b41069ea61595e580ba` in Node, Chromium, Firefox, and WebKit.
+
 ## Completed run bundle
 
 The Phase 1 bundle contains:

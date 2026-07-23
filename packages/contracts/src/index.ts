@@ -1,4 +1,22 @@
 export type StableId = string & { readonly __stableId: unique symbol };
+export type EntityId = StableId & { readonly __entityId: unique symbol };
+export type EffectId = StableId & { readonly __effectId: unique symbol };
+
+export interface StableEntityRecord {
+  readonly id: EntityId;
+}
+
+export interface StableEffectRecord {
+  readonly id: EffectId;
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId: EntityId;
+}
+
+export interface StableTablesSnapshot {
+  readonly schemaVersion: 1;
+  readonly entities: readonly StableEntityRecord[];
+  readonly effects: readonly StableEffectRecord[];
+}
 
 export type JsonPrimitive = null | boolean | number | string;
 export type JsonValue =
