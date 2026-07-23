@@ -183,6 +183,23 @@ function addRouteCost(total: number, cost: number): number {
   return result;
 }
 
+function compareRoutePriority(
+  left: readonly number[],
+  right: readonly number[]
+): number {
+  const length = Math.min(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftRank = left[index];
+    const rightRank = right[index];
+    if (leftRank !== rightRank)
+      return (
+        (leftRank ?? Number.MAX_SAFE_INTEGER) -
+        (rightRank ?? Number.MAX_SAFE_INTEGER)
+      );
+  }
+  return left.length - right.length;
+}
+
 export function calculateRouteCost(
   map: BattlefieldMapDefinition,
   nodeIds: readonly NavigationNodeId[]
@@ -228,13 +245,16 @@ export function findShortestRoute(
     throw new RangeError(`unknown goal navigation node ID (${goalNodeId})`);
 
   const distances = new Map<NavigationNodeId, number>([[startNodeId, 0]]);
+  const startRoutePriority: readonly number[] = [];
+  const routePriorities = new Map<NavigationNodeId, readonly number[]>([
+    [startNodeId, startRoutePriority]
+  ]);
   const previous = new Map<NavigationNodeId, NavigationNodeId>();
   const pending: Array<{
     readonly nodeId: NavigationNodeId;
     readonly cost: number;
-    readonly discoveryOrder: number;
-  }> = [{ nodeId: startNodeId, cost: 0, discoveryOrder: 0 }];
-  let nextDiscoveryOrder = 1;
+    readonly routePriority: readonly number[];
+  }> = [{ nodeId: startNodeId, cost: 0, routePriority: startRoutePriority }];
 
   while (pending.length > 0) {
     let selectedIndex = 0;
@@ -246,13 +266,20 @@ export function findShortestRoute(
         selected !== undefined &&
         (candidate.cost < selected.cost ||
           (candidate.cost === selected.cost &&
-            candidate.discoveryOrder < selected.discoveryOrder))
+            compareRoutePriority(
+              candidate.routePriority,
+              selected.routePriority
+            ) < 0))
       )
         selectedIndex = index;
     }
     const [current] = pending.splice(selectedIndex, 1);
     if (current === undefined) break;
-    if (distances.get(current.nodeId) !== current.cost) continue;
+    if (
+      distances.get(current.nodeId) !== current.cost ||
+      routePriorities.get(current.nodeId) !== current.routePriority
+    )
+      continue;
 
     if (current.nodeId === goalNodeId) {
       const route = [goalNodeId];
@@ -273,7 +300,7 @@ export function findShortestRoute(
 
     const node = nodes.get(current.nodeId);
     if (node === undefined) continue;
-    for (const neighborNodeId of node.neighborNodeIds) {
+    node.neighborNodeIds.forEach((neighborNodeId, neighborIndex) => {
       const edgeCost = connectionCosts.get(
         connectionKey(current.nodeId, neighborNodeId)
       );
@@ -282,17 +309,26 @@ export function findShortestRoute(
           `neighbor step ${current.nodeId} -> ${neighborNodeId} has no authored connection`
         );
       const candidateCost = addRouteCost(current.cost, edgeCost);
+      const candidatePriority = [...current.routePriority, neighborIndex];
       const knownCost = distances.get(neighborNodeId);
-      if (knownCost !== undefined && candidateCost >= knownCost) continue;
+      const knownPriority = routePriorities.get(neighborNodeId);
+      if (
+        knownCost !== undefined &&
+        (candidateCost > knownCost ||
+          (candidateCost === knownCost &&
+            knownPriority !== undefined &&
+            compareRoutePriority(candidatePriority, knownPriority) >= 0))
+      )
+        return;
       distances.set(neighborNodeId, candidateCost);
+      routePriorities.set(neighborNodeId, candidatePriority);
       previous.set(neighborNodeId, current.nodeId);
       pending.push({
         nodeId: neighborNodeId,
         cost: candidateCost,
-        discoveryOrder: nextDiscoveryOrder
+        routePriority: candidatePriority
       });
-      nextDiscoveryOrder += 1;
-    }
+    });
   }
 
   return undefined;

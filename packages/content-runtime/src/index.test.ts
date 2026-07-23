@@ -213,6 +213,31 @@ describe("content compilation", () => {
     expect(calculateRouteCost(map, route?.nodeIds ?? [])).toBe(20);
   });
 
+  it("preserves authored route priority when equal-cost branches have uneven edge costs", async () => {
+    const source = structuredClone(mapContentInput);
+    const mapInput = source.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (mapInput === undefined) throw new Error("missing map fixture");
+    for (const connection of mapInput.connections) {
+      if (connection.id === "connection.entry_south") connection.cost = 15;
+      if (connection.id === "connection.south_goal") connection.cost = 5;
+      if (connection.id === "connection.entry_east") connection.cost = 5;
+      if (connection.id === "connection.east_goal") connection.cost = 15;
+    }
+
+    const content = await compileContent(source);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing compiled map fixture");
+
+    expect(
+      findShortestRoute(map, "node.entry" as never, "node.goal" as never)
+    ).toEqual({
+      nodeIds: ["node.entry", "node.south", "node.goal"],
+      totalCost: 20
+    });
+  });
+
   it("chooses lower cost before authored equal-cost order", async () => {
     const source = structuredClone(mapContentInput);
     const mapInput = source.definitions.find(
