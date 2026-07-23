@@ -19,12 +19,15 @@ surface currently present on the Phase 2 implementation branch.
 - Compilation sorts records whose source order is not gameplay data, preserves
   authored neighbor order, canonicalizes undirected endpoints, deep-freezes all
   returned map records, and includes maps in the content-manifest checksum.
+- The content runtime exposes deterministic minimum-cost route and route-cost
+  primitives. Equal-cost choices follow authored neighbor order, disconnected
+  goals return no route, and returned routes are immutable.
 - `content/fixtures/conformance-map.json` is the nonempty golden Node/browser
   fixture.
 
 ## Not implemented yet
 
-This checkpoint does not expose pathfinding, placement occupancy/route-legality
-validation, movement proposals, reservations, spawn queues, targeting, combat,
-or map-specific CLI commands. Existing `validate`, `run`, `replay --verify`,
+This checkpoint does not expose placement occupancy/route-legality validation,
+movement proposals, reservations, spawn queues, targeting, combat, or
+map-specific CLI commands. Existing `validate`, `run`, `replay --verify`,
 `inspect`, and `compare` behavior remains the supported simulation surface.

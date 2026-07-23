@@ -14,6 +14,7 @@ import {
   type ContentDefinition,
   canonicalHash,
   type LevelDefinition,
+  type NavigationNodeDefinition,
   type NavigationNodeId,
   type StableId,
   type WaveDefinition
@@ -139,6 +140,157 @@ export interface CompiledContent {
   readonly levels: ReadonlyMap<StableId, LevelDefinition>;
   readonly waves: ReadonlyMap<StableId, WaveDefinition>;
   readonly maps: ReadonlyMap<StableId, BattlefieldMapDefinition>;
+}
+
+export interface NavigationRoute {
+  readonly nodeIds: readonly NavigationNodeId[];
+  readonly totalCost: number;
+}
+
+function connectionKey(
+  leftId: NavigationNodeId,
+  rightId: NavigationNodeId
+): string {
+  return leftId < rightId
+    ? `${leftId}\u0000${rightId}`
+    : `${rightId}\u0000${leftId}`;
+}
+
+function indexMap(map: BattlefieldMapDefinition): {
+  readonly nodes: ReadonlyMap<NavigationNodeId, NavigationNodeDefinition>;
+  readonly connectionCosts: ReadonlyMap<string, number>;
+} {
+  return {
+    nodes: new Map(map.nodes.map((node) => [node.id, node])),
+    connectionCosts: new Map(
+      map.connections.map((connection) => [
+        connectionKey(connection.nodeIds[0], connection.nodeIds[1]),
+        connection.cost
+      ])
+    )
+  };
+}
+
+function addRouteCost(total: number, cost: number): number {
+  const result = total + cost;
+  if (!Number.isSafeInteger(result))
+    throw new RangeError("route cost exceeds the safe-integer range");
+  return result;
+}
+
+export function calculateRouteCost(
+  map: BattlefieldMapDefinition,
+  nodeIds: readonly NavigationNodeId[]
+): number {
+  const { nodes, connectionCosts } = indexMap(map);
+  for (const nodeId of nodeIds) {
+    if (!nodes.has(nodeId))
+      throw new RangeError(
+        `route references unknown navigation node ID (${nodeId})`
+      );
+  }
+
+  let totalCost = 0;
+  for (let index = 1; index < nodeIds.length; index += 1) {
+    const previousId = nodeIds[index - 1];
+    const nodeId = nodeIds[index];
+    if (previousId === undefined || nodeId === undefined)
+      throw new RangeError("route contains a missing navigation node ID");
+    const cost = connectionCosts.get(connectionKey(previousId, nodeId));
+    if (cost === undefined)
+      throw new RangeError(
+        `route step ${previousId} -> ${nodeId} has no authored connection`
+      );
+    totalCost = addRouteCost(totalCost, cost);
+  }
+  return totalCost;
+}
+
+/**
+ * Finds a minimum-cost route through an authored undirected graph. Equal-cost
+ * candidates retain first discovery order, which is derived exclusively from
+ * each node's authored neighbor order.
+ */
+export function findShortestRoute(
+  map: BattlefieldMapDefinition,
+  startNodeId: NavigationNodeId,
+  goalNodeId: NavigationNodeId
+): NavigationRoute | undefined {
+  const { nodes, connectionCosts } = indexMap(map);
+  if (!nodes.has(startNodeId))
+    throw new RangeError(`unknown start navigation node ID (${startNodeId})`);
+  if (!nodes.has(goalNodeId))
+    throw new RangeError(`unknown goal navigation node ID (${goalNodeId})`);
+
+  const distances = new Map<NavigationNodeId, number>([[startNodeId, 0]]);
+  const previous = new Map<NavigationNodeId, NavigationNodeId>();
+  const pending: Array<{
+    readonly nodeId: NavigationNodeId;
+    readonly cost: number;
+    readonly discoveryOrder: number;
+  }> = [{ nodeId: startNodeId, cost: 0, discoveryOrder: 0 }];
+  let nextDiscoveryOrder = 1;
+
+  while (pending.length > 0) {
+    let selectedIndex = 0;
+    for (let index = 1; index < pending.length; index += 1) {
+      const candidate = pending[index];
+      const selected = pending[selectedIndex];
+      if (
+        candidate !== undefined &&
+        selected !== undefined &&
+        (candidate.cost < selected.cost ||
+          (candidate.cost === selected.cost &&
+            candidate.discoveryOrder < selected.discoveryOrder))
+      )
+        selectedIndex = index;
+    }
+    const [current] = pending.splice(selectedIndex, 1);
+    if (current === undefined) break;
+    if (distances.get(current.nodeId) !== current.cost) continue;
+
+    if (current.nodeId === goalNodeId) {
+      const route = [goalNodeId];
+      let cursor = goalNodeId;
+      while (cursor !== startNodeId) {
+        const predecessor = previous.get(cursor);
+        if (predecessor === undefined)
+          throw new Error("shortest-route predecessor chain is incomplete");
+        route.push(predecessor);
+        cursor = predecessor;
+      }
+      route.reverse();
+      return Object.freeze({
+        nodeIds: Object.freeze(route),
+        totalCost: current.cost
+      });
+    }
+
+    const node = nodes.get(current.nodeId);
+    if (node === undefined) continue;
+    for (const neighborNodeId of node.neighborNodeIds) {
+      const edgeCost = connectionCosts.get(
+        connectionKey(current.nodeId, neighborNodeId)
+      );
+      if (edgeCost === undefined)
+        throw new RangeError(
+          `neighbor step ${current.nodeId} -> ${neighborNodeId} has no authored connection`
+        );
+      const candidateCost = addRouteCost(current.cost, edgeCost);
+      const knownCost = distances.get(neighborNodeId);
+      if (knownCost !== undefined && candidateCost >= knownCost) continue;
+      distances.set(neighborNodeId, candidateCost);
+      previous.set(neighborNodeId, current.nodeId);
+      pending.push({
+        nodeId: neighborNodeId,
+        cost: candidateCost,
+        discoveryOrder: nextDiscoveryOrder
+      });
+      nextDiscoveryOrder += 1;
+    }
+  }
+
+  return undefined;
 }
 
 export async function compileContent(input: unknown): Promise<CompiledContent> {

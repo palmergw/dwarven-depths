@@ -1,7 +1,8 @@
 import {
   compileContent,
   compileReplay,
-  compileScenario
+  compileScenario,
+  findShortestRoute
 } from "@dwarven-depths/content-runtime";
 import { canonicalHash } from "@dwarven-depths/contracts";
 import {
@@ -111,6 +112,14 @@ describe("cross-runtime deterministic conformance", () => {
       "placement.east",
       "placement.goal"
     ]);
+    expect(
+      map === undefined
+        ? undefined
+        : findShortestRoute(map, "node.entry" as never, "node.goal" as never)
+    ).toEqual({
+      nodeIds: ["node.entry", "node.south", "node.goal"],
+      totalCost: 20
+    });
   });
 
   it("matches the golden nonempty entity/effect table", async () => {

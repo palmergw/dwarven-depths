@@ -4,15 +4,17 @@ import mapContentInput from "../../../content/fixtures/conformance-map.json" wit
 };
 import {
   ContentValidationError,
+  calculateRouteCost,
   compileContent,
   compileReplay,
-  compileScenario
+  compileScenario,
+  findShortestRoute
 } from "./index.js";
 
 interface MutableMapFixture {
   readonly kind: "map";
   nodes: Array<{ neighborNodeIds: string[] }>;
-  connections: Array<{ nodeIds: string[]; cost: number }>;
+  connections: Array<{ id: string; nodeIds: string[]; cost: number }>;
   placementPoints: unknown[];
   enemyEntrances: unknown[];
 }
@@ -113,6 +115,112 @@ describe("content compilation", () => {
     expect(
       Object.isFrozen(map?.placementPoints[0]?.adjacentPlacementPointIds)
     ).toBe(true);
+  });
+
+  it("uses authored neighbor order to resolve equal-cost shortest routes", async () => {
+    const content = await compileContent(mapContentInput);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing map fixture");
+
+    const route = findShortestRoute(
+      map,
+      "node.entry" as never,
+      "node.goal" as never
+    );
+
+    expect(route).toEqual({
+      nodeIds: ["node.entry", "node.south", "node.goal"],
+      totalCost: 20
+    });
+    expect(Object.isFrozen(route)).toBe(true);
+    expect(Object.isFrozen(route?.nodeIds)).toBe(true);
+    expect(calculateRouteCost(map, route?.nodeIds ?? [])).toBe(20);
+  });
+
+  it("chooses lower cost before authored equal-cost order", async () => {
+    const source = structuredClone(mapContentInput);
+    const mapInput = source.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (mapInput === undefined) throw new Error("missing map fixture");
+    for (const connection of mapInput.connections) {
+      if (connection.id.includes("south")) connection.cost = 11;
+    }
+
+    const content = await compileContent(source);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing compiled map fixture");
+
+    expect(
+      findShortestRoute(map, "node.entry" as never, "node.goal" as never)
+    ).toEqual({
+      nodeIds: ["node.entry", "node.east", "node.goal"],
+      totalCost: 20
+    });
+  });
+
+  it("keeps routing independent of canonical record insertion order", async () => {
+    const reordered = structuredClone(mapContentInput);
+    const mapInput = reordered.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (mapInput === undefined) throw new Error("missing map fixture");
+    mapInput.nodes.reverse();
+    mapInput.connections.reverse();
+    for (const connection of mapInput.connections) connection.nodeIds.reverse();
+
+    const [canonical, permuted] = await Promise.all([
+      compileContent(mapContentInput),
+      compileContent(reordered)
+    ]);
+    const canonicalMap = canonical.maps.get("map.conformance_diamond" as never);
+    const permutedMap = permuted.maps.get("map.conformance_diamond" as never);
+    if (canonicalMap === undefined || permutedMap === undefined)
+      throw new Error("missing compiled map fixture");
+
+    expect(
+      findShortestRoute(
+        permutedMap,
+        "node.entry" as never,
+        "node.goal" as never
+      )
+    ).toEqual(
+      findShortestRoute(
+        canonicalMap,
+        "node.entry" as never,
+        "node.goal" as never
+      )
+    );
+  });
+
+  it("returns no route for disconnected nodes and rejects invalid route steps", async () => {
+    const source = structuredClone(mapContentInput);
+    const mapInput = source.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (mapInput === undefined) throw new Error("missing map fixture");
+    mapInput.nodes.push({
+      id: "node.isolated",
+      x: 10,
+      y: 10,
+      neighborNodeIds: []
+    } as never);
+
+    const content = await compileContent(source);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing compiled map fixture");
+
+    expect(
+      findShortestRoute(map, "node.entry" as never, "node.isolated" as never)
+    ).toBeUndefined();
+    expect(() =>
+      calculateRouteCost(map, ["node.entry", "node.goal"] as never)
+    ).toThrowError(
+      "route step node.entry -> node.goal has no authored connection"
+    );
+    expect(() =>
+      findShortestRoute(map, "node.missing" as never, "node.goal" as never)
+    ).toThrowError("unknown start navigation node ID (node.missing)");
   });
 
   it("freezes replay commands and checkpoints", () => {
