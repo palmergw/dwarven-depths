@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ContentValidationError,
   validateContentBundle,
+  validateReplay,
   validateScenario
 } from "./index.js";
 
@@ -140,5 +141,98 @@ describe("scenario validation", () => {
         ]
       })
     ).toThrow(/less than maximumTicks.*duplicates an earlier/s);
+  });
+});
+
+const checksum = "0".repeat(64);
+const validReplay = {
+  schemaVersion: 1,
+  simulationSchemaVersion: 1,
+  contentVersion: "milestone-0",
+  contentManifestHash: checksum,
+  scenarioId: "scenario.conformance.empty",
+  scenarioHash: checksum,
+  levelId: "level.empty",
+  seed: "1",
+  rngAlgorithm: "xorshift32-v1",
+  commands: [
+    {
+      tick: 0,
+      sequence: 0,
+      command: { atTick: 0, type: "confirmPreparation" }
+    }
+  ],
+  checkpoints: [
+    {
+      tick: 0,
+      stateChecksum: checksum,
+      eventStreamChecksum: checksum
+    }
+  ],
+  expectedTerminalResult: "victory",
+  expectedTerminalTick: 0
+};
+
+describe("replay validation", () => {
+  it("accepts the minimal versioned replay contract", () => {
+    const replay = validateReplay(validReplay);
+    expect(replay).toMatchObject({
+      schemaVersion: 1,
+      rngAlgorithm: "xorshift32-v1",
+      expectedTerminalResult: "victory"
+    });
+  });
+
+  it("rejects malformed checksums and unknown fields", () => {
+    expect(() =>
+      validateReplay({
+        ...validReplay,
+        contentManifestHash: "ABC",
+        unexpected: true
+      })
+    ).toThrow(/SHA-256.*Unrecognized key/s);
+  });
+
+  it("rejects command-envelope mismatches with exact paths", () => {
+    try {
+      validateReplay({
+        ...validReplay,
+        commands: [
+          {
+            tick: 1,
+            sequence: 4,
+            command: { atTick: 0, type: "confirmPreparation" }
+          }
+        ]
+      });
+      throw new Error("expected validation to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ContentValidationError);
+      expect((error as ContentValidationError).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "$/commands/0/sequence",
+            code: "invalid_command_sequence"
+          }),
+          expect.objectContaining({
+            path: "$/commands/0/tick",
+            code: "command_tick_mismatch"
+          })
+        ])
+      );
+    }
+  });
+
+  it("requires ordered checkpoints ending at the terminal tick", () => {
+    expect(() =>
+      validateReplay({
+        ...validReplay,
+        checkpoints: [
+          { tick: 1, stateChecksum: checksum, eventStreamChecksum: checksum },
+          { tick: 1, stateChecksum: checksum, eventStreamChecksum: checksum }
+        ],
+        expectedTerminalTick: 2
+      })
+    ).toThrow(/strictly greater.*final checkpoint tick/s);
   });
 });
