@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  linkSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
@@ -34,6 +35,14 @@ function runCli(...args: string[]) {
     process.execPath,
     [resolve("apps/sim-cli/dist/cli.js"), ...args],
     { encoding: "utf8" }
+  );
+}
+
+function runCliFrom(cwd: string, ...args: string[]) {
+  return spawnSync(
+    process.execPath,
+    [resolve("apps/sim-cli/dist/cli.js"), ...args],
+    { cwd, encoding: "utf8" }
   );
 }
 
@@ -83,7 +92,7 @@ describe("simulation CLI", () => {
       repositoryRevision: expect.stringMatching(/^(unknown|[a-f0-9]{40})$/),
       repositoryDirty: expect.any(Boolean),
       protocolVersions: {
-        harness: 1,
+        harness: 2,
         contentSchema: 1,
         scenarioSchema: 1,
         replaySchema: 1,
@@ -111,6 +120,33 @@ describe("simulation CLI", () => {
     expect(manifest.canonical).toBe(
       manifest.repositoryRevision !== "unknown" && !manifest.repositoryDirty
     );
+  });
+
+  it("records the executing checkout revision independently of caller cwd", () => {
+    const callerDirectory = temporaryDirectory();
+    const output = resolve(callerDirectory, "run");
+    const expectedRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+      encoding: "utf8"
+    }).stdout.trim();
+    const result = runCliFrom(
+      callerDirectory,
+      "run",
+      "--content",
+      resolve("content/fixtures/empty-content.json"),
+      "--scenario",
+      resolve("scenarios/conformance/empty-level.json"),
+      "--out",
+      output
+    );
+
+    expect(result.status).toBe(0);
+    expect(
+      JSON.parse(readFileSync(resolve(output, "manifest.json"), "utf8"))
+    ).toMatchObject({
+      repositoryRevision: expectedRevision,
+      replayIdentityHash:
+        "2775dc989013a317bca8984b8f2466171311f03fc1ce8d2b606c5e8eb3e9a402"
+    });
   });
 
   it("inspects verified timeline windows and rejects invalid or tampered evidence", () => {
@@ -173,9 +209,21 @@ describe("simulation CLI", () => {
       checkpoints: [{ tick: 0 }],
       stateEvidence: [{ tick: 0 }],
       diagnostics: [
-        { code: "round.started", ruleId: "SIM-LIFECYCLE-001" },
-        { code: "final_cleanup.entered", ruleId: "SIM-FINAL-CLEANUP-001" },
-        { code: "round.victory", ruleId: "SIM-VICTORY-001" }
+        {
+          eventType: "round.started",
+          reasonCode: "SIM-LIFECYCLE-001",
+          causes: [{ kind: "command", sequence: 0 }]
+        },
+        {
+          eventType: "final_cleanup.entered",
+          reasonCode: "SIM-FINAL-CLEANUP-001",
+          causes: [{ kind: "event", eventId: "event.000000" }]
+        },
+        {
+          eventType: "round.victory",
+          reasonCode: "SIM-VICTORY-001",
+          causes: [{ kind: "event", eventId: "event.000001" }]
+        }
       ]
     });
 
@@ -231,7 +279,7 @@ describe("simulation CLI", () => {
     const firstDiagnostic = diagnostics[0];
     if (firstDiagnostic === undefined)
       throw new Error("missing diagnostic record");
-    Object.assign(firstDiagnostic, { ruleId: "SIM-TAMPERED-001" });
+    Object.assign(firstDiagnostic, { reasonCode: "SIM-TAMPERED-001" });
     writeFileSync(
       diagnosticsPath,
       `${diagnostics.map((record) => JSON.stringify(record)).join("\n")}\n`,
@@ -249,7 +297,7 @@ describe("simulation CLI", () => {
       error: {
         code: "diagnostic_artifact_mismatch",
         artifact: "diagnostics.ndjson",
-        path: "$/0/ruleId"
+        path: "$/0/reasonCode"
       }
     });
     writeFileSync(diagnosticsPath, originalDiagnostics, "utf8");
@@ -260,6 +308,76 @@ describe("simulation CLI", () => {
     expect(JSON.parse(incomplete.stderr)).toMatchObject({
       error: { code: "bundle_file_set_mismatch" }
     });
+  });
+
+  it("rejects ambiguous JSON, hardlinked artifacts, and forged replacement targets", () => {
+    const directory = temporaryDirectory();
+    const output = resolve(directory, "run");
+    const content = resolve("content/fixtures/empty-content.json");
+    const scenario = resolve("scenarios/conformance/empty-level.json");
+    expect(
+      runCli(
+        "run",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        output
+      ).status
+    ).toBe(0);
+
+    const manifestPath = resolve(output, "manifest.json");
+    const originalManifest = readFileSync(manifestPath, "utf8");
+    writeFileSync(
+      manifestPath,
+      originalManifest.replace(
+        '  "repositoryRevision": ',
+        `  "repositoryRevision": "${"f".repeat(40)}",\n  "repositoryRevision": `
+      )
+    );
+    const duplicateKey = runCli("replay", "--run", output, "--verify");
+    expect(duplicateKey.status).toBe(4);
+    expect(JSON.parse(duplicateKey.stderr)).toMatchObject({
+      error: {
+        code: "noncanonical_json_artifact",
+        artifact: "manifest.json"
+      }
+    });
+    writeFileSync(manifestPath, originalManifest);
+
+    const externalSummary = resolve(directory, "external-summary.json");
+    linkSync(resolve(output, "summary.json"), externalSummary);
+    const hardlinked = runCli("inspect", "--run", output, "--tick", "0");
+    expect(hardlinked.status).toBe(4);
+    expect(JSON.parse(hardlinked.stderr)).toMatchObject({
+      error: {
+        code: "missing_or_unsafe_artifact",
+        artifact: "summary.json"
+      }
+    });
+    rmSync(externalSummary);
+
+    const victim = resolve(directory, "victim");
+    mkdirSync(victim);
+    writeFileSync(resolve(victim, "keeper.txt"), "keep\n");
+    writeFileSync(
+      resolve(victim, "manifest.json"),
+      '{"complete":true,"harnessVersion":"phase-1"}\n'
+    );
+    const replacement = runCli(
+      "run",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      victim,
+      "--replace",
+      "true"
+    );
+    expect(replacement.status).toBe(3);
+    expect(readFileSync(resolve(victim, "keeper.txt"), "utf8")).toBe("keep\n");
   });
 
   it("emits machine-readable validation issues with exit code 2", () => {
@@ -466,7 +584,7 @@ describe("simulation CLI", () => {
       },
       {
         file: "replay.json",
-        code: "command_artifact_checksum_mismatch",
+        code: "scenario_binding_mismatch",
         mutate: (original) =>
           original.replace(
             /"commands": \[[\s\S]*?\],\n {2}"checkpoints"/,
@@ -569,7 +687,7 @@ describe("simulation CLI", () => {
     });
   });
 
-  it("safely replaces bundles without following artifact symlinks", () => {
+  it("replaces verified bundles and refuses tampered artifact symlinks", () => {
     const content = temporaryFile("content.json", {
       schemaVersion: 1,
       contentVersion: "test",
@@ -611,6 +729,18 @@ describe("simulation CLI", () => {
         output
       ).status
     ).toBe(0);
+    const validReplacement = runCli(
+      "run",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(validReplacement.status).toBe(0);
     writeFileSync(victim, "do-not-touch\n");
     writeFileSync(resolve(output, "stale.txt"), "stale\n");
     rmSync(resolve(output, "summary.json"));
@@ -639,11 +769,11 @@ describe("simulation CLI", () => {
       "--replace",
       "true"
     );
-    expect(replaced.status).toBe(0);
+    expect(replaced.status).toBe(3);
     expect(readFileSync(victim, "utf8")).toBe("do-not-touch\n");
-    expect(existsSync(resolve(output, "stale.txt"))).toBe(false);
+    expect(existsSync(resolve(output, "stale.txt"))).toBe(true);
     expect(lstatSync(resolve(output, "summary.json")).isSymbolicLink()).toBe(
-      false
+      true
     );
   });
 });

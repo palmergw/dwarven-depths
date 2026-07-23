@@ -5,6 +5,7 @@ import {
 import {
   type CommandEnvelope,
   canonicalHash,
+  type DiagnosticCause,
   type LifecycleDiagnosticRecord,
   type ReplayDefinition,
   type ScenarioDefinition,
@@ -88,12 +89,39 @@ export function createTimelineRecords(
 }
 
 export function createLifecycleDiagnostics(
-  events: readonly SimulationEvent[]
+  events: readonly SimulationEvent[],
+  commands: readonly CommandEnvelope[]
 ): readonly LifecycleDiagnosticRecord[] {
   const diagnostics: LifecycleDiagnosticRecord[] = [];
   for (let index = 0; index < events.length; index += 1) {
     const event = events[index];
     if (event === undefined) throw new TypeError(`events/${index} is missing`);
+    const causes: DiagnosticCause[] = [];
+    const priorEvent = index === 0 ? undefined : events[index - 1];
+    if (priorEvent !== undefined) {
+      causes.push(Object.freeze({ kind: "event", eventId: priorEvent.id }));
+    } else {
+      for (
+        let commandIndex = 0;
+        commandIndex < commands.length;
+        commandIndex += 1
+      ) {
+        const command = commands[commandIndex];
+        if (command === undefined) {
+          throw new TypeError(`commands/${commandIndex} is missing`);
+        }
+        if (command.tick === event.tick) {
+          causes.push(
+            Object.freeze({
+              kind: "command",
+              sequence: command.sequence,
+              atTick: command.tick,
+              commandType: command.command.type
+            })
+          );
+        }
+      }
+    }
     diagnostics.push(
       Object.freeze({
         schemaVersion: 1,
@@ -101,9 +129,10 @@ export function createLifecycleDiagnostics(
         kind: "lifecycle",
         tick: event.tick,
         sequence: event.sequence,
-        code: event.type,
-        ruleId: event.ruleId,
-        eventId: event.id
+        eventType: event.type,
+        reasonCode: event.ruleId,
+        eventId: event.id,
+        causes: Object.freeze(causes)
       })
     );
   }

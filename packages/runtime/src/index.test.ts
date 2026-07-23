@@ -98,14 +98,17 @@ describe("shared runtime", () => {
     const result = await runScenario(scenario, content);
     const generatedReplay = createReplayDefinition(result, scenario, content);
     const timeline = createTimelineRecords(result.events, generatedReplay);
-    const diagnostics = createLifecycleDiagnostics(result.events);
+    const diagnostics = createLifecycleDiagnostics(
+      result.events,
+      result.commands
+    );
     const replay = compileReplay(replayInput);
 
     expect(await canonicalHash(timeline)).toBe(
       "04e1044de1adf6ba571172f83dddeffc05e5fc2a0c015f05f4ec35d522b6d2c3"
     );
     expect(await canonicalHash(diagnostics)).toBe(
-      "9382c5a1d0943c6c1fec137ef21b79f9f1fe4ae82811fe71c8db0c00bfea0256"
+      "b1a1f8638a600cce2b880d3071f7608864dc018d18c6480a5f1191fd2db1e247"
     );
     expect(Object.isFrozen(timeline)).toBe(true);
     expect(Object.isFrozen(timeline[0])).toBe(true);

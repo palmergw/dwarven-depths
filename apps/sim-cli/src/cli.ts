@@ -20,6 +20,7 @@ import {
   resolve,
   sep
 } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import {
   ContentValidationError,
@@ -45,6 +46,10 @@ import {
 } from "@dwarven-depths/runtime";
 
 const execFileAsync = promisify(execFile);
+const runtimeRepositoryRoot = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../.."
+);
 const runBundleFiles = [
   "checkpoints.ndjson",
   "commands.ndjson",
@@ -82,6 +87,7 @@ interface RunManifestArtifact {
   readonly scenarioId?: unknown;
   readonly scenarioHash?: unknown;
   readonly seed?: unknown;
+  readonly replayIdentityHash?: unknown;
   readonly metadataHash?: unknown;
 }
 
@@ -246,11 +252,11 @@ async function readArtifactText(
   try {
     handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
     const status = await handle.stat();
-    if (!status.isFile()) {
+    if (!status.isFile() || status.nlink !== 1) {
       throw new ReplayArtifactError(
         "missing_or_unsafe_artifact",
         name,
-        `${name} must be a regular file inside the run bundle`
+        `${name} must be a regular file with exactly one hard link`
       );
     }
     if (status.size > maximumArtifactBytes) {
@@ -290,9 +296,16 @@ async function readArtifactJson(
   budget?: { bytes: number }
 ): Promise<unknown> {
   try {
-    return JSON.parse(
-      await readArtifactText(directory, name, budget)
-    ) as unknown;
+    const text = await readArtifactText(directory, name, budget);
+    const value = JSON.parse(text) as unknown;
+    if (text !== `${JSON.stringify(value, null, 2)}\n`) {
+      throw new ReplayArtifactError(
+        "noncanonical_json_artifact",
+        name,
+        `${name} must use the canonical run-bundle JSON encoding`
+      );
+    }
+    return value;
   } catch (error) {
     if (error instanceof ReplayArtifactError) throw error;
     const message = error instanceof Error ? error.message : String(error);
@@ -334,11 +347,21 @@ async function readArtifactNdjson(
     }
   }
   try {
-    return text
-      .slice(0, -1)
-      .split("\n")
-      .map((line) => JSON.parse(line) as unknown);
+    const values: unknown[] = [];
+    for (const line of text.slice(0, -1).split("\n")) {
+      const value = JSON.parse(line) as unknown;
+      if (line !== JSON.stringify(value)) {
+        throw new ReplayArtifactError(
+          "noncanonical_ndjson_artifact",
+          name,
+          `${name} must use canonical JSON on every line`
+        );
+      }
+      values.push(value);
+    }
+    return values;
   } catch (error) {
+    if (error instanceof ReplayArtifactError) throw error;
     const message = error instanceof Error ? error.message : String(error);
     throw new ReplayArtifactError(
       "invalid_ndjson_artifact",
@@ -502,12 +525,14 @@ async function collectProvenance(): Promise<{
 }> {
   try {
     const [{ stdout: revision }, { stdout: status }] = await Promise.all([
-      execFileAsync("git", ["rev-parse", "HEAD"], { cwd: process.cwd() }),
+      execFileAsync("git", ["rev-parse", "HEAD"], {
+        cwd: runtimeRepositoryRoot
+      }),
       execFileAsync(
         "git",
         ["status", "--porcelain", "--untracked-files=normal"],
         {
-          cwd: process.cwd()
+          cwd: runtimeRepositoryRoot
         }
       )
     ]);
@@ -547,22 +572,13 @@ async function assertReplaceableRunBundle(
   outputDirectory: string
 ): Promise<void> {
   try {
-    const manifest = JSON.parse(
-      await readArtifactText(outputDirectory, "manifest.json")
-    ) as {
-      readonly complete?: unknown;
-      readonly harnessVersion?: unknown;
-    };
-    if (
-      manifest.complete !== true ||
-      (manifest.harnessVersion !== "milestone-0" &&
-        manifest.harnessVersion !== "phase-1")
-    ) {
-      throw new Error("completion manifest is not a supported run bundle");
-    }
+    await verifyRunDirectory(outputDirectory, false);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`refusing to replace invalid run bundle: ${message}`);
+    throw new Error(
+      `refusing to replace a bundle that does not pass full replay verification: ${message}`,
+      { cause: error }
+    );
   }
 }
 
@@ -706,7 +722,11 @@ async function run(args: ParsedArgs): Promise<void> {
   ]);
   const replay = createReplayDefinition(result, scenario, content);
   const timeline = createTimelineRecords(result.events, replay);
-  const diagnostics = createLifecycleDiagnostics(result.events);
+  const diagnostics = createLifecycleDiagnostics(
+    result.events,
+    result.commands
+  );
+  const replayIdentityHash = await canonicalHash(replay);
   const summary = {
     scenarioId: result.scenarioId,
     scenarioHash: result.scenarioHash,
@@ -720,7 +740,7 @@ async function run(args: ParsedArgs): Promise<void> {
   const manifestMetadata = {
     harnessVersion: "phase-1",
     protocolVersions: {
-      harness: 1,
+      harness: 2,
       contentSchema: content.bundle.schemaVersion,
       scenarioSchema: scenario.schemaVersion,
       replaySchema: replay.schemaVersion,
@@ -737,6 +757,7 @@ async function run(args: ParsedArgs): Promise<void> {
     scenarioId: scenario.id,
     scenarioHash: result.scenarioHash,
     seed: scenario.seed,
+    replayIdentityHash,
     canonical: provenance.revisionKnown && !provenance.repositoryDirty
   };
   const manifest = {
@@ -1024,6 +1045,10 @@ async function verifyReplayBundle(
   const compiledReplay = await validateReplayArtifact("replay.json", () =>
     compileReplay(replayInput)
   );
+  const replayIdentityHash = await canonicalArtifactHash(
+    compiledReplay,
+    "replay.json"
+  );
   const contentManifest = requireRecord<ContentManifestArtifact>(
     contentManifestInput,
     "content-manifest.json"
@@ -1043,6 +1068,7 @@ async function verifyReplayBundle(
       "scenarioId",
       "scenarioHash",
       "seed",
+      "replayIdentityHash",
       "canonical",
       "metadataHash",
       "complete",
@@ -1091,7 +1117,8 @@ async function verifyReplayBundle(
   requireArtifactMatch(
     manifest.scenarioHash === compiledReplay.scenarioHash &&
       manifest.scenarioId === compiledReplay.scenarioId &&
-      manifest.seed === compiledReplay.seed,
+      manifest.seed === compiledReplay.seed &&
+      manifest.replayIdentityHash === replayIdentityHash,
     "scenario_binding_mismatch",
     "manifest.json",
     "manifest and replay scenario identity must agree"
@@ -1125,6 +1152,7 @@ async function verifyReplayBundle(
     scenarioId: manifest.scenarioId,
     scenarioHash: manifest.scenarioHash,
     seed: manifest.seed,
+    replayIdentityHash: manifest.replayIdentityHash,
     canonical: manifest.canonical
   };
   const [
@@ -1142,7 +1170,7 @@ async function verifyReplayBundle(
     canonicalArtifactHash(manifest.protocolVersions, "manifest.json"),
     canonicalArtifactHash(
       {
-        harness: 1,
+        harness: 2,
         contentSchema: content.bundle.schemaVersion,
         scenarioSchema: scenario.schemaVersion,
         replaySchema: compiledReplay.schemaVersion,
@@ -1244,19 +1272,20 @@ async function verifyReplayBundle(
     "summary does not match replay terminal evidence"
   );
   const expectedTimeline = createTimelineRecords(result.events, compiledReplay);
-  const expectedDiagnostics = createLifecycleDiagnostics(result.events);
+  const expectedDiagnostics = createLifecycleDiagnostics(
+    result.events,
+    result.commands
+  );
   const [
     timelineArtifactHash,
     expectedTimelineHash,
     diagnosticArtifactHash,
-    expectedDiagnosticHash,
-    replayIdentityHash
+    expectedDiagnosticHash
   ] = await Promise.all([
     canonicalArtifactHash(timelineInput, "timeline.ndjson"),
     canonicalArtifactHash(expectedTimeline, "timeline.ndjson"),
     canonicalArtifactHash(diagnosticsInput, "diagnostics.ndjson"),
-    canonicalArtifactHash(expectedDiagnostics, "diagnostics.ndjson"),
-    canonicalArtifactHash(compiledReplay, "replay.json")
+    canonicalArtifactHash(expectedDiagnostics, "diagnostics.ndjson")
   ]);
   if (timelineArtifactHash !== expectedTimelineHash) {
     throw new ReplayArtifactError(

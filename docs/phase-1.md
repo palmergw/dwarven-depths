@@ -48,7 +48,7 @@ Replay schema version 1 intentionally supports exactly one terminal checkpoint. 
 
 ## Timeline and lifecycle diagnostics
 
-Timeline schema version 1 merges each ordered simulation event with each replay checkpoint by tick and sequence. Diagnostic schema version 1 emits one reason-coded lifecycle record per event, binding a stable diagnostic ID to the event ID, event type, rule ID, tick, and sequence. The shared `@dwarven-depths/runtime` derivation has pinned timeline and diagnostic hashes in Node, Chromium, Firefox, and WebKit. `sim replay --verify` reconstructs both streams from authoritative replay execution and rejects any missing, extra, reordered, or changed record before `inspect` can present it. The compact `empty-level.json` and `nonterminating.json` conformance scenarios cover completed and safety-stopped lifecycle boundaries without introducing gameplay mechanics.
+Timeline schema version 1 merges each ordered simulation event with each replay checkpoint by tick and sequence. Diagnostic schema version 1 emits one lifecycle record per event, separating the event type from a stable reason code and linking the initiating command or preceding causal event. The shared `@dwarven-depths/runtime` derivation has pinned timeline and diagnostic hashes in Node, Chromium, Firefox, and WebKit. `sim replay --verify` reconstructs both streams from authoritative replay execution and rejects any missing, extra, reordered, or changed record before `inspect` can present it. The compact `empty-level.json` fixture covers completed lifecycle evidence; `nonterminating.json` separately covers deterministic safety-stop classification without publishing an incomplete bundle.
 
 ## Stable entity/effect tables
 
@@ -58,7 +58,7 @@ Insertion returns a new table and rejects duplicates; each table is bounded to 1
 
 ## Completed run bundle
 
-The Phase 1 bundle contains:
+The Phase 1 harness protocol is version 2; it adds replay-bound provenance plus versioned timeline and diagnostic evidence to the sealed bundle. The Phase 1 bundle contains:
 
 - `manifest.json` — completion, provenance, versions, bindings, a checksum over its metadata, and the exact file list;
 - `content.compiled.json` — strict self-contained content input;
@@ -73,17 +73,19 @@ The Phase 1 bundle contains:
 - `state.final.json` — terminal authoritative state;
 - `summary.json` — terminal summary.
 
-The completion manifest remains the final publication signal. Runs are assembled in a fresh sibling staging directory, and new destinations are published with one atomic directory rename. Existing destinations require `--replace true`, must be recognizable completed bundles, and use a validated rollback-safe two-rename replacement; consumers must treat a transiently missing destination as incomplete and retry rather than assuming a completed bundle disappeared permanently. Replacement rechecks the moved directory identity before any backup removal.
+The completion manifest remains the final publication signal. Runs are assembled in a fresh sibling staging directory, and new destinations are published with one atomic directory rename. Existing destinations require `--replace true`, must pass complete replay verification under the current bundle protocol, and use a validated rollback-safe two-rename replacement; a forged completion marker is never sufficient authorization to delete a directory. Consumers must treat a transiently missing destination as incomplete and retry rather than assuming a completed bundle disappeared permanently. Replacement rechecks the moved directory identity before any backup removal.
 
 ## Verification boundaries
 
 `sim replay --verify` rejects:
 
-- missing, symlinked, malformed, noncanonical, or unlisted artifacts;
+- missing, symlinked, hardlinked, malformed, noncanonical, ambiguously encoded, or unlisted artifacts;
 - unsupported replay versions, unknown fields, malformed hashes, and invalid command/checkpoint ordering;
 - content, scenario, seed, level, command, summary, state, event, or checkpoint mismatches;
 - authoritative replay results that differ from the recorded terminal evidence.
 
-Replay verification opens the run directory once and resolves every artifact through that stable Linux directory descriptor; final artifact components are opened with `O_NOFOLLOW`. Each artifact is limited to 4 MiB, the aggregate bundle payload to 16 MiB, and each NDJSON stream to 100,000 records before parsing. These bounds turn oversized untrusted evidence into structured replay-divergence errors rather than process-level memory failures.
+Replay verification opens the run directory once and resolves every artifact through that stable Linux directory descriptor; final artifact components are opened with `O_NOFOLLOW` and must have exactly one hard link. JSON artifacts must match the unambiguous run-bundle byte encoding, which rejects duplicate object keys after parsing. Each artifact is limited to 4 MiB, the aggregate bundle payload to 16 MiB, and each NDJSON stream to 100,000 records before parsing. These bounds turn oversized untrusted evidence into structured replay-divergence errors rather than process-level memory failures.
+
+Provenance is collected from the checkout containing the executing CLI module rather than the caller's working directory. The canonical replay identity hash is stored inside the manifest's hashed metadata and checked against `replay.json` before inspection.
 
 `sim replay --verify` executes the validated replay command envelopes directly; scenario commands remain cross-bound metadata and are not the execution source. Node, Chromium, Firefox, and WebKit parse and verify the same checked-in replay fixture through `@dwarven-depths/runtime`. Filesystem and publication behavior remains isolated to the Linux Node CLI.

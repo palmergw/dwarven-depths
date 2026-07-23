@@ -128,15 +128,28 @@ export interface TimelineCheckpointRecord {
 
 export type TimelineRecord = TimelineEventRecord | TimelineCheckpointRecord;
 
+export type DiagnosticCause =
+  | {
+      readonly kind: "command";
+      readonly sequence: number;
+      readonly atTick: number;
+      readonly commandType: ScenarioCommand["type"];
+    }
+  | {
+      readonly kind: "event";
+      readonly eventId: string;
+    };
+
 export interface LifecycleDiagnosticRecord {
   readonly schemaVersion: 1;
   readonly id: string;
   readonly kind: "lifecycle";
   readonly tick: number;
   readonly sequence: number;
-  readonly code: SimulationEvent["type"];
-  readonly ruleId: string;
+  readonly eventType: SimulationEvent["type"];
+  readonly reasonCode: string;
   readonly eventId: string;
+  readonly causes: readonly DiagnosticCause[];
 }
 
 function serialize(
