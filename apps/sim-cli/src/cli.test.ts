@@ -329,6 +329,22 @@ describe("simulation CLI", () => {
       });
       writeFileSync(path, original, "utf8");
     }
+
+    const summaryPath = resolve(output, "summary.json");
+    const summary = readFileSync(summaryPath, "utf8");
+    const externalSummary = resolve(dirname(output), "external-summary.json");
+    writeFileSync(externalSummary, summary, "utf8");
+    rmSync(summaryPath);
+    symlinkSync(externalSummary, summaryPath);
+    const symlinked = runCli("replay", "--run", output, "--verify");
+    expect(symlinked.status).toBe(4);
+    expect(JSON.parse(symlinked.stderr)).toMatchObject({
+      error: {
+        type: "replay_divergence",
+        code: "missing_or_unsafe_artifact",
+        artifact: "summary.json"
+      }
+    });
   });
 
   it("atomically replaces bundles without following artifact symlinks", () => {

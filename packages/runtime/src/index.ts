@@ -1,4 +1,7 @@
-import type { CompiledContent } from "@dwarven-depths/content-runtime";
+import {
+  type CompiledContent,
+  compileReplay
+} from "@dwarven-depths/content-runtime";
 import {
   type CommandEnvelope,
   canonicalHash,
@@ -207,10 +210,11 @@ function requireMatch(
 }
 
 export async function verifyReplay(
-  replay: ReplayDefinition,
+  replayInput: ReplayDefinition,
   scenario: ScenarioDefinition,
   content: CompiledContent
 ): Promise<RuntimeResult> {
+  const replay = compileReplay(replayInput);
   requireMatch(
     content.manifestHash === replay.contentManifestHash,
     "content_manifest_mismatch",
