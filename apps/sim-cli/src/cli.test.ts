@@ -350,6 +350,40 @@ describe("simulation CLI", () => {
       writeFileSync(path, original, "utf8");
     }
 
+    const oversizedSummaryPath = resolve(output, "summary.json");
+    const originalSummary = readFileSync(oversizedSummaryPath, "utf8");
+    writeFileSync(
+      oversizedSummaryPath,
+      " ".repeat(4 * 1024 * 1024 + 1),
+      "utf8"
+    );
+    const oversizedArtifact = runCli("replay", "--run", output, "--verify");
+    expect(oversizedArtifact.status).toBe(4);
+    expect(JSON.parse(oversizedArtifact.stderr)).toMatchObject({
+      ok: false,
+      error: {
+        type: "replay_divergence",
+        code: "artifact_size_limit_exceeded",
+        artifact: "summary.json"
+      }
+    });
+    writeFileSync(oversizedSummaryPath, originalSummary, "utf8");
+
+    const eventsPath = resolve(output, "events.ndjson");
+    const originalEvents = readFileSync(eventsPath, "utf8");
+    writeFileSync(eventsPath, "{}\n".repeat(100_001), "utf8");
+    const excessiveRecords = runCli("replay", "--run", output, "--verify");
+    expect(excessiveRecords.status).toBe(4);
+    expect(JSON.parse(excessiveRecords.stderr)).toMatchObject({
+      ok: false,
+      error: {
+        type: "replay_divergence",
+        code: "artifact_record_limit_exceeded",
+        artifact: "events.ndjson"
+      }
+    });
+    writeFileSync(eventsPath, originalEvents, "utf8");
+
     const unexpectedPath = resolve(output, "unexpected.txt");
     writeFileSync(unexpectedPath, "unexpected\n", "utf8");
     const extraArtifact = runCli("replay", "--run", output, "--verify");
@@ -361,6 +395,18 @@ describe("simulation CLI", () => {
       }
     });
     rmSync(unexpectedPath);
+
+    const bundleLink = resolve(dirname(output), "bundle-link");
+    symlinkSync(output, bundleLink, "dir");
+    const symlinkedBundle = runCli("replay", "--run", bundleLink, "--verify");
+    expect(symlinkedBundle.status).toBe(4);
+    expect(JSON.parse(symlinkedBundle.stderr)).toMatchObject({
+      error: {
+        type: "replay_divergence",
+        code: "missing_or_unsafe_bundle"
+      }
+    });
+    rmSync(bundleLink);
 
     const summaryPath = resolve(output, "summary.json");
     const summary = readFileSync(summaryPath, "utf8");
@@ -379,7 +425,7 @@ describe("simulation CLI", () => {
     });
   });
 
-  it("atomically replaces bundles without following artifact symlinks", () => {
+  it("safely replaces bundles without following artifact symlinks", () => {
     const content = temporaryFile("content.json", {
       schemaVersion: 1,
       contentVersion: "test",

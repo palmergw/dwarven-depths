@@ -49,7 +49,7 @@ The Phase 1 bundle contains:
 - `state.final.json` — terminal authoritative state;
 - `summary.json` — terminal summary.
 
-The completion manifest remains the final publication signal. Runs are still assembled in a fresh sibling staging directory and atomically renamed into place. Existing destinations require `--replace true` and must be recognizable completed run bundles.
+The completion manifest remains the final publication signal. Runs are assembled in a fresh sibling staging directory, and new destinations are published with one atomic directory rename. Existing destinations require `--replace true`, must be recognizable completed bundles, and use a validated rollback-safe two-rename replacement; consumers must treat a transiently missing destination as incomplete and retry rather than assuming a completed bundle disappeared permanently. Replacement rechecks the moved directory identity before any backup removal.
 
 ## Verification boundaries
 
@@ -60,4 +60,6 @@ The completion manifest remains the final publication signal. Runs are still ass
 - content, scenario, seed, level, command, summary, state, event, or checkpoint mismatches;
 - authoritative replay results that differ from the recorded terminal evidence.
 
-`sim replay --verify` executes the validated replay command envelopes directly; scenario commands remain cross-bound metadata and are not the execution source. Node, Chromium, Firefox, and WebKit parse and verify the same checked-in replay fixture through `@dwarven-depths/runtime`. Filesystem and publication behavior remains isolated to the Node CLI.
+Replay verification opens the run directory once and resolves every artifact through that stable Linux directory descriptor; final artifact components are opened with `O_NOFOLLOW`. Each artifact is limited to 4 MiB, the aggregate bundle payload to 16 MiB, and each NDJSON stream to 100,000 records before parsing. These bounds turn oversized untrusted evidence into structured replay-divergence errors rather than process-level memory failures.
+
+`sim replay --verify` executes the validated replay command envelopes directly; scenario commands remain cross-bound metadata and are not the execution source. Node, Chromium, Firefox, and WebKit parse and verify the same checked-in replay fixture through `@dwarven-depths/runtime`. Filesystem and publication behavior remains isolated to the Linux Node CLI.

@@ -49,6 +49,9 @@ const runBundleFiles = [
   "state.final.json",
   "summary.json"
 ] as const;
+const maximumArtifactBytes = 4 * 1024 * 1024;
+const maximumBundleBytes = 16 * 1024 * 1024;
+const maximumNdjsonRecords = 100_000;
 
 interface ParsedArgs {
   readonly command: string | undefined;
@@ -197,7 +200,8 @@ async function readJson(path: string): Promise<unknown> {
 
 async function readArtifactText(
   directory: string,
-  name: string
+  name: string,
+  budget?: { bytes: number }
 ): Promise<string> {
   const path = resolve(directory, name);
   let handle: Awaited<ReturnType<typeof open>> | undefined;
@@ -210,6 +214,23 @@ async function readArtifactText(
         name,
         `${name} must be a regular file inside the run bundle`
       );
+    }
+    if (status.size > maximumArtifactBytes) {
+      throw new ReplayArtifactError(
+        "artifact_size_limit_exceeded",
+        name,
+        `${name} exceeds the ${maximumArtifactBytes}-byte artifact limit`
+      );
+    }
+    if (budget !== undefined) {
+      budget.bytes += status.size;
+      if (budget.bytes > maximumBundleBytes) {
+        throw new ReplayArtifactError(
+          "bundle_size_limit_exceeded",
+          name,
+          `run bundle exceeds the ${maximumBundleBytes}-byte aggregate artifact limit`
+        );
+      }
     }
     return await handle.readFile("utf8");
   } catch (error) {
@@ -227,10 +248,13 @@ async function readArtifactText(
 
 async function readArtifactJson(
   directory: string,
-  name: string
+  name: string,
+  budget?: { bytes: number }
 ): Promise<unknown> {
   try {
-    return JSON.parse(await readArtifactText(directory, name)) as unknown;
+    return JSON.parse(
+      await readArtifactText(directory, name, budget)
+    ) as unknown;
   } catch (error) {
     if (error instanceof ReplayArtifactError) throw error;
     const message = error instanceof Error ? error.message : String(error);
@@ -244,9 +268,10 @@ async function readArtifactJson(
 
 async function readArtifactNdjson(
   directory: string,
-  name: string
+  name: string,
+  budget?: { bytes: number }
 ): Promise<unknown[]> {
-  const text = await readArtifactText(directory, name);
+  const text = await readArtifactText(directory, name, budget);
   if (text.length === 0) return [];
   if (!text.endsWith("\n")) {
     throw new ReplayArtifactError(
@@ -254,6 +279,21 @@ async function readArtifactNdjson(
       name,
       `${name} must end with a newline`
     );
+  }
+  let recordCount = 0;
+  for (
+    let index = text.indexOf("\n");
+    index !== -1;
+    index = text.indexOf("\n", index + 1)
+  ) {
+    recordCount += 1;
+    if (recordCount > maximumNdjsonRecords) {
+      throw new ReplayArtifactError(
+        "artifact_record_limit_exceeded",
+        name,
+        `${name} exceeds the ${maximumNdjsonRecords}-record NDJSON limit`
+      );
+    }
   }
   try {
     return text
@@ -525,15 +565,35 @@ async function publishRunBundle(
       }
       if (!replace) {
         throw new Error(
-          "output directory already exists; pass --replace true to replace it atomically"
+          "output directory already exists; pass --replace true to perform a validated rollback-safe replacement"
         );
       }
+      const expectedDevice = existing.dev;
+      const expectedInode = existing.ino;
       await assertReplaceableRunBundle(outputDirectory);
       backupRoot = await mkdtemp(
         resolve(parentDirectory, `.${outputName}.backup-`)
       );
       previousBundle = resolve(backupRoot, "previous");
       await rename(outputDirectory, previousBundle);
+      const movedBundle = await lstat(previousBundle);
+      if (
+        movedBundle.dev !== expectedDevice ||
+        movedBundle.ino !== expectedInode
+      ) {
+        const unexpectedBundle = previousBundle;
+        if ((await pathStatus(outputDirectory)) === undefined) {
+          await rename(unexpectedBundle, outputDirectory);
+          previousBundle = undefined;
+          throw new Error(
+            "output directory identity changed during replacement; the unexpected directory was restored and publication was aborted"
+          );
+        }
+        backupRoot = undefined;
+        throw new Error(
+          `output directory identity changed during replacement; publication was aborted and the unexpected directory was preserved at ${unexpectedBundle}`
+        );
+      }
     }
 
     try {
@@ -706,19 +766,43 @@ async function replay(args: ParsedArgs): Promise<void> {
     throw new CliInputError("replay currently requires --verify");
   }
   const runDirectory = resolve(requiredFlag(args, "run"));
-  const runStatus = await pathStatus(runDirectory);
-  if (
-    runStatus === undefined ||
-    runStatus.isSymbolicLink() ||
-    !runStatus.isDirectory()
-  ) {
+  let runHandle: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    runHandle = await open(
+      runDirectory,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    const runStatus = await runHandle.stat();
+    if (!runStatus.isDirectory()) {
+      throw new ReplayArtifactError(
+        "missing_or_unsafe_bundle",
+        "manifest.json",
+        "--run must identify a non-symlink run-bundle directory"
+      );
+    }
+  } catch (error) {
+    await runHandle?.close().catch(() => undefined);
+    if (error instanceof ReplayArtifactError) throw error;
+    const message = error instanceof Error ? error.message : String(error);
     throw new ReplayArtifactError(
       "missing_or_unsafe_bundle",
       "manifest.json",
-      "--run must identify a non-symlink run-bundle directory"
+      `unable to open --run as a stable non-symlink directory: ${message}`
     );
   }
-  const actualEntries = (await readdir(runDirectory)).sort();
+
+  try {
+    await verifyReplayBundle(runDirectory, `/proc/self/fd/${runHandle.fd}`);
+  } finally {
+    await runHandle.close().catch(() => undefined);
+  }
+}
+
+async function verifyReplayBundle(
+  runDirectory: string,
+  artifactDirectory: string
+): Promise<void> {
+  const actualEntries = (await readdir(artifactDirectory)).sort();
   const expectedEntries = [...runBundleFiles, "manifest.json"].sort();
   requireArtifactMatch(
     actualEntries.length === expectedEntries.length &&
@@ -727,29 +811,57 @@ async function replay(args: ParsedArgs): Promise<void> {
     "manifest.json",
     "run-bundle directory contains missing or unlisted files"
   );
-  const [
-    manifestInput,
-    replayInput,
-    contentInput,
-    contentManifestInput,
-    scenarioInput,
-    finalStateInput,
-    summaryInput,
-    commandsInput,
-    checkpointsInput,
-    eventsInput
-  ] = await Promise.all([
-    readArtifactJson(runDirectory, "manifest.json"),
-    readArtifactJson(runDirectory, "replay.json"),
-    readArtifactJson(runDirectory, "content.compiled.json"),
-    readArtifactJson(runDirectory, "content-manifest.json"),
-    readArtifactJson(runDirectory, "scenario.compiled.json"),
-    readArtifactJson(runDirectory, "state.final.json"),
-    readArtifactJson(runDirectory, "summary.json"),
-    readArtifactNdjson(runDirectory, "commands.ndjson"),
-    readArtifactNdjson(runDirectory, "checkpoints.ndjson"),
-    readArtifactNdjson(runDirectory, "events.ndjson")
-  ]);
+  const budget = { bytes: 0 };
+  const manifestInput = await readArtifactJson(
+    artifactDirectory,
+    "manifest.json",
+    budget
+  );
+  const replayInput = await readArtifactJson(
+    artifactDirectory,
+    "replay.json",
+    budget
+  );
+  const contentInput = await readArtifactJson(
+    artifactDirectory,
+    "content.compiled.json",
+    budget
+  );
+  const contentManifestInput = await readArtifactJson(
+    artifactDirectory,
+    "content-manifest.json",
+    budget
+  );
+  const scenarioInput = await readArtifactJson(
+    artifactDirectory,
+    "scenario.compiled.json",
+    budget
+  );
+  const finalStateInput = await readArtifactJson(
+    artifactDirectory,
+    "state.final.json",
+    budget
+  );
+  const summaryInput = await readArtifactJson(
+    artifactDirectory,
+    "summary.json",
+    budget
+  );
+  const commandsInput = await readArtifactNdjson(
+    artifactDirectory,
+    "commands.ndjson",
+    budget
+  );
+  const checkpointsInput = await readArtifactNdjson(
+    artifactDirectory,
+    "checkpoints.ndjson",
+    budget
+  );
+  const eventsInput = await readArtifactNdjson(
+    artifactDirectory,
+    "events.ndjson",
+    budget
+  );
 
   const manifest = requireRecord<RunManifestArtifact>(
     manifestInput,
