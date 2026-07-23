@@ -8,14 +8,22 @@ import { describe, expect, it } from "vitest";
 import contentInput from "../../../content/fixtures/empty-content.json" with {
   type: "json"
 };
+import nonterminatingContentInput from "../../../content/fixtures/nonterminating-content.json" with {
+  type: "json"
+};
 import scenarioInput from "../../../scenarios/conformance/empty-level.json" with {
   type: "json"
 };
 import replayInput from "../../../scenarios/conformance/empty-level.replay.json" with {
   type: "json"
 };
+import nonterminatingScenarioInput from "../../../scenarios/conformance/nonterminating.json" with {
+  type: "json"
+};
 import {
+  createLifecycleDiagnostics,
   createReplayDefinition,
+  createTimelineRecords,
   type ReplayDivergenceError,
   type RuntimeSafetyStopError,
   runScenario,
@@ -24,25 +32,8 @@ import {
 
 describe("shared runtime", () => {
   it("reports tick-budget exhaustion as a safety stop", async () => {
-    const content = await compileContent({
-      schemaVersion: 1,
-      contentVersion: "milestone-0",
-      definitions: [
-        { kind: "level", id: "level.wave", waveIds: ["wave.first"] },
-        { kind: "wave", id: "wave.first", durationTicks: 30 }
-      ]
-    });
-    const scenario = compileScenario(
-      {
-        schemaVersion: 1,
-        id: "scenario.conformance.nonterminating",
-        levelId: "level.wave",
-        seed: "1",
-        maximumTicks: 2,
-        commands: [{ atTick: 0, type: "confirmPreparation" }]
-      },
-      content
-    );
+    const content = await compileContent(nonterminatingContentInput);
+    const scenario = compileScenario(nonterminatingScenarioInput, content);
 
     await expect(runScenario(scenario, content)).rejects.toMatchObject({
       name: "RuntimeSafetyStopError",
@@ -106,7 +97,23 @@ describe("shared runtime", () => {
     const scenario = compileScenario(scenarioInput, content);
     const result = await runScenario(scenario, content);
     const generatedReplay = createReplayDefinition(result, scenario, content);
+    const timeline = createTimelineRecords(result.events, generatedReplay);
+    const diagnostics = createLifecycleDiagnostics(
+      result.events,
+      result.commands
+    );
     const replay = compileReplay(replayInput);
+
+    expect(await canonicalHash(timeline)).toBe(
+      "04e1044de1adf6ba571172f83dddeffc05e5fc2a0c015f05f4ec35d522b6d2c3"
+    );
+    expect(await canonicalHash(diagnostics)).toBe(
+      "b1a1f8638a600cce2b880d3071f7608864dc018d18c6480a5f1191fd2db1e247"
+    );
+    expect(Object.isFrozen(timeline)).toBe(true);
+    expect(Object.isFrozen(timeline[0])).toBe(true);
+    expect(Object.isFrozen(diagnostics)).toBe(true);
+    expect(Object.isFrozen(diagnostics[0])).toBe(true);
 
     expect(generatedReplay).toEqual(replay);
     await expect(

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "scenario.conformance.nonterminating",
+  "levelId": "level.nonterminating",
+  "seed": "1",
+  "maximumTicks": 2,
+  "commands": [
+    {
+      "atTick": 0,
+      "type": "confirmPreparation"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import {
   compileReplay,
   compileScenario
 } from "@dwarven-depths/content-runtime";
+import { canonicalHash } from "@dwarven-depths/contracts";
 import {
   AuthoritativeTables,
   nextUint32,
@@ -21,7 +22,13 @@ import replayInput from "../../../scenarios/conformance/empty-level.replay.json"
 import stableTablesInput from "../../../scenarios/conformance/stable-tables.json" with {
   type: "json"
 };
-import { createReplayDefinition, runScenario, verifyReplay } from "./index.js";
+import {
+  createLifecycleDiagnostics,
+  createReplayDefinition,
+  createTimelineRecords,
+  runScenario,
+  verifyReplay
+} from "./index.js";
 
 const expected = {
   contentManifestHash:
@@ -31,7 +38,11 @@ const expected = {
   finalStateChecksum:
     "3273b044b92e0941e35341de5aaef023db045af7c97983a7bd947c040e60fb33",
   eventStreamChecksum:
-    "d081b5fbde5b7d474a38545e401939cbd0b63ecc6ad2558aedeaea0be4fb0d59"
+    "d081b5fbde5b7d474a38545e401939cbd0b63ecc6ad2558aedeaea0be4fb0d59",
+  timelineChecksum:
+    "04e1044de1adf6ba571172f83dddeffc05e5fc2a0c015f05f4ec35d522b6d2c3",
+  diagnosticChecksum:
+    "b1a1f8638a600cce2b880d3071f7608864dc018d18c6480a5f1191fd2db1e247"
 };
 
 describe("cross-runtime deterministic conformance", () => {
@@ -73,6 +84,11 @@ describe("cross-runtime deterministic conformance", () => {
     const scenario = compileScenario(scenarioInput, content);
     const result = await runScenario(scenario, content);
     const generatedReplay = createReplayDefinition(result, scenario, content);
+    const timeline = createTimelineRecords(result.events, generatedReplay);
+    const diagnostics = createLifecycleDiagnostics(
+      result.events,
+      result.commands
+    );
     const recordedReplay = compileReplay(replayInput);
     const verified = await verifyReplay(recordedReplay, scenario, content);
 
@@ -81,6 +97,8 @@ describe("cross-runtime deterministic conformance", () => {
     expect(result.scenarioHash).toBe(expected.scenarioHash);
     expect(result.finalStateChecksum).toBe(expected.finalStateChecksum);
     expect(result.eventStreamChecksum).toBe(expected.eventStreamChecksum);
+    expect(await canonicalHash(timeline)).toBe(expected.timelineChecksum);
+    expect(await canonicalHash(diagnostics)).toBe(expected.diagnosticChecksum);
     expect(verified.finalStateChecksum).toBe(result.finalStateChecksum);
     expect(verified.eventStreamChecksum).toBe(result.eventStreamChecksum);
     expect(result.events.map((event) => event.type)).toEqual([

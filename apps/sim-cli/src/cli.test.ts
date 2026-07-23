@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  linkSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
@@ -23,11 +24,25 @@ function temporaryFile(name: string, value: unknown): string {
   return path;
 }
 
+function temporaryDirectory(): string {
+  const directory = mkdtempSync(resolve(tmpdir(), "dwarven-depths-cli-"));
+  temporaryDirectories.push(directory);
+  return directory;
+}
+
 function runCli(...args: string[]) {
   return spawnSync(
     process.execPath,
     [resolve("apps/sim-cli/dist/cli.js"), ...args],
     { encoding: "utf8" }
+  );
+}
+
+function runCliFrom(cwd: string, ...args: string[]) {
+  return spawnSync(
+    process.execPath,
+    [resolve("apps/sim-cli/dist/cli.js"), ...args],
+    { cwd, encoding: "utf8" }
   );
 }
 
@@ -77,11 +92,13 @@ describe("simulation CLI", () => {
       repositoryRevision: expect.stringMatching(/^(unknown|[a-f0-9]{40})$/),
       repositoryDirty: expect.any(Boolean),
       protocolVersions: {
-        harness: 1,
+        harness: 2,
         contentSchema: 1,
         scenarioSchema: 1,
         replaySchema: 1,
-        stateSchema: 1
+        stateSchema: 1,
+        timelineSchema: 1,
+        diagnosticSchema: 1
       },
       controller: { type: "scenario.commands", version: 1 },
       scenarioHash: expect.stringMatching(/^[a-f0-9]{64}$/),
@@ -91,16 +108,276 @@ describe("simulation CLI", () => {
         "commands.ndjson",
         "content.compiled.json",
         "content-manifest.json",
+        "diagnostics.ndjson",
         "events.ndjson",
         "replay.json",
         "scenario.compiled.json",
         "state.final.json",
-        "summary.json"
+        "summary.json",
+        "timeline.ndjson"
       ]
     });
     expect(manifest.canonical).toBe(
       manifest.repositoryRevision !== "unknown" && !manifest.repositoryDirty
     );
+  });
+
+  it("records the executing checkout revision independently of caller cwd", () => {
+    const callerDirectory = temporaryDirectory();
+    const output = resolve(callerDirectory, "run");
+    const expectedRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+      encoding: "utf8"
+    }).stdout.trim();
+    const result = runCliFrom(
+      callerDirectory,
+      "run",
+      "--content",
+      resolve("content/fixtures/empty-content.json"),
+      "--scenario",
+      resolve("scenarios/conformance/empty-level.json"),
+      "--out",
+      output
+    );
+
+    expect(result.status).toBe(0);
+    expect(
+      JSON.parse(readFileSync(resolve(output, "manifest.json"), "utf8"))
+    ).toMatchObject({
+      repositoryRevision: expectedRevision,
+      replayIdentityHash:
+        "2775dc989013a317bca8984b8f2466171311f03fc1ce8d2b606c5e8eb3e9a402"
+    });
+  });
+
+  it("inspects verified timeline windows and rejects invalid or tampered evidence", () => {
+    const content = temporaryFile("content.json", {
+      schemaVersion: 1,
+      contentVersion: "test",
+      definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+    });
+    const scenario = temporaryFile("scenario.json", {
+      schemaVersion: 1,
+      id: "scenario.test.inspect",
+      levelId: "level.empty",
+      seed: "1",
+      maximumTicks: 1,
+      commands: [{ atTick: 0, type: "confirmPreparation" }],
+      expectedTerminalResult: "victory"
+    });
+    const output = resolve(dirname(content), "inspect-run");
+    expect(
+      runCli(
+        "run",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        output
+      ).status
+    ).toBe(0);
+
+    const inspected = runCli(
+      "inspect",
+      "--run",
+      output,
+      "--tick",
+      "0",
+      "--before",
+      "0",
+      "--after",
+      "0"
+    );
+    expect(inspected.status).toBe(0);
+    expect(JSON.parse(inspected.stdout)).toMatchObject({
+      ok: true,
+      inspected: true,
+      identity: {
+        repositoryRevision: expect.stringMatching(/^(unknown|[a-f0-9]{40})$/),
+        contentManifestHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        scenarioId: "scenario.test.inspect",
+        scenarioHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        seed: "1",
+        replayIdentityHash: expect.stringMatching(/^[a-f0-9]{64}$/)
+      },
+      window: { tick: 0, before: 0, after: 0, startTick: 0, endTick: 0 },
+      events: [
+        { type: "round.started", tick: 0 },
+        { type: "final_cleanup.entered", tick: 0 },
+        { type: "round.victory", tick: 0 }
+      ],
+      checkpoints: [{ tick: 0 }],
+      stateEvidence: [{ tick: 0 }],
+      diagnostics: [
+        {
+          eventType: "round.started",
+          reasonCode: "SIM-LIFECYCLE-001",
+          causes: [{ kind: "command", sequence: 0 }]
+        },
+        {
+          eventType: "final_cleanup.entered",
+          reasonCode: "SIM-FINAL-CLEANUP-001",
+          causes: [{ kind: "event", eventId: "event.000000" }]
+        },
+        {
+          eventType: "round.victory",
+          reasonCode: "SIM-VICTORY-001",
+          causes: [{ kind: "event", eventId: "event.000001" }]
+        }
+      ]
+    });
+
+    const emptyWindow = runCli("inspect", "--run", output, "--tick", "1");
+    expect(emptyWindow.status).toBe(0);
+    expect(JSON.parse(emptyWindow.stdout)).toMatchObject({
+      events: [],
+      checkpoints: [],
+      stateEvidence: [],
+      diagnostics: [],
+      timeline: []
+    });
+
+    const invalidWindow = runCli("inspect", "--run", output, "--tick", "-1");
+    expect(invalidWindow.status).toBe(2);
+    expect(JSON.parse(invalidWindow.stderr)).toMatchObject({
+      error: { type: "input", code: "invalid_cli_input" }
+    });
+
+    const timelinePath = resolve(output, "timeline.ndjson");
+    const originalTimeline = readFileSync(timelinePath, "utf8");
+    const timeline = originalTimeline
+      .trimEnd()
+      .split("\n")
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const firstTimelineRecord = timeline[0];
+    if (firstTimelineRecord === undefined)
+      throw new Error("missing timeline record");
+    Object.assign(firstTimelineRecord, { tick: 1 });
+    writeFileSync(
+      timelinePath,
+      `${timeline.map((record) => JSON.stringify(record)).join("\n")}\n`,
+      "utf8"
+    );
+    const tampered = runCli("inspect", "--run", output, "--tick", "0");
+    expect(tampered.status).toBe(4);
+    expect(JSON.parse(tampered.stderr)).toMatchObject({
+      error: {
+        type: "replay_divergence",
+        code: "timeline_artifact_mismatch",
+        artifact: "timeline.ndjson",
+        path: "$/0/tick"
+      }
+    });
+    writeFileSync(timelinePath, originalTimeline, "utf8");
+
+    const diagnosticsPath = resolve(output, "diagnostics.ndjson");
+    const originalDiagnostics = readFileSync(diagnosticsPath, "utf8");
+    const diagnostics = originalDiagnostics
+      .trimEnd()
+      .split("\n")
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    const firstDiagnostic = diagnostics[0];
+    if (firstDiagnostic === undefined)
+      throw new Error("missing diagnostic record");
+    Object.assign(firstDiagnostic, { reasonCode: "SIM-TAMPERED-001" });
+    writeFileSync(
+      diagnosticsPath,
+      `${diagnostics.map((record) => JSON.stringify(record)).join("\n")}\n`,
+      "utf8"
+    );
+    const tamperedDiagnostic = runCli(
+      "inspect",
+      "--run",
+      output,
+      "--tick",
+      "0"
+    );
+    expect(tamperedDiagnostic.status).toBe(4);
+    expect(JSON.parse(tamperedDiagnostic.stderr)).toMatchObject({
+      error: {
+        code: "diagnostic_artifact_mismatch",
+        artifact: "diagnostics.ndjson",
+        path: "$/0/reasonCode"
+      }
+    });
+    writeFileSync(diagnosticsPath, originalDiagnostics, "utf8");
+
+    rmSync(resolve(output, "manifest.json"));
+    const incomplete = runCli("inspect", "--run", output, "--tick", "0");
+    expect(incomplete.status).toBe(4);
+    expect(JSON.parse(incomplete.stderr)).toMatchObject({
+      error: { code: "bundle_file_set_mismatch" }
+    });
+  });
+
+  it("rejects ambiguous JSON, hardlinked artifacts, and forged replacement targets", () => {
+    const directory = temporaryDirectory();
+    const output = resolve(directory, "run");
+    const content = resolve("content/fixtures/empty-content.json");
+    const scenario = resolve("scenarios/conformance/empty-level.json");
+    expect(
+      runCli(
+        "run",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        output
+      ).status
+    ).toBe(0);
+
+    const manifestPath = resolve(output, "manifest.json");
+    const originalManifest = readFileSync(manifestPath, "utf8");
+    writeFileSync(
+      manifestPath,
+      originalManifest.replace(
+        '  "repositoryRevision": ',
+        `  "repositoryRevision": "${"f".repeat(40)}",\n  "repositoryRevision": `
+      )
+    );
+    const duplicateKey = runCli("replay", "--run", output, "--verify");
+    expect(duplicateKey.status).toBe(4);
+    expect(JSON.parse(duplicateKey.stderr)).toMatchObject({
+      error: {
+        code: "noncanonical_json_artifact",
+        artifact: "manifest.json"
+      }
+    });
+    writeFileSync(manifestPath, originalManifest);
+
+    const externalSummary = resolve(directory, "external-summary.json");
+    linkSync(resolve(output, "summary.json"), externalSummary);
+    const hardlinked = runCli("inspect", "--run", output, "--tick", "0");
+    expect(hardlinked.status).toBe(4);
+    expect(JSON.parse(hardlinked.stderr)).toMatchObject({
+      error: {
+        code: "missing_or_unsafe_artifact",
+        artifact: "summary.json"
+      }
+    });
+    rmSync(externalSummary);
+
+    const victim = resolve(directory, "victim");
+    mkdirSync(victim);
+    writeFileSync(resolve(victim, "keeper.txt"), "keep\n");
+    writeFileSync(
+      resolve(victim, "manifest.json"),
+      '{"complete":true,"harnessVersion":"phase-1"}\n'
+    );
+    const replacement = runCli(
+      "run",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      victim,
+      "--replace",
+      "true"
+    );
+    expect(replacement.status).toBe(3);
+    expect(readFileSync(resolve(victim, "keeper.txt"), "utf8")).toBe("keep\n");
   });
 
   it("emits machine-readable validation issues with exit code 2", () => {
@@ -143,24 +420,9 @@ describe("simulation CLI", () => {
   });
 
   it("classifies tick-budget exhaustion as a safety stop", () => {
-    const content = temporaryFile("content.json", {
-      schemaVersion: 1,
-      contentVersion: "test",
-      definitions: [
-        { kind: "level", id: "level.test", waveIds: ["wave.first"] },
-        { kind: "wave", id: "wave.first", durationTicks: 30 }
-      ]
-    });
-    const scenario = temporaryFile("scenario.json", {
-      schemaVersion: 1,
-      id: "scenario.test.nonterminating",
-      levelId: "level.test",
-      seed: "1",
-      maximumTicks: 2,
-      commands: [{ atTick: 0, type: "confirmPreparation" }]
-    });
-
-    const output = resolve(dirname(content), "failed-run");
+    const content = resolve("content/fixtures/nonterminating-content.json");
+    const scenario = resolve("scenarios/conformance/nonterminating.json");
+    const output = resolve(temporaryDirectory(), "failed-run");
     mkdirSync(output);
     writeFileSync(resolve(output, "manifest.json"), '{"complete":true}\n');
 
@@ -322,7 +584,7 @@ describe("simulation CLI", () => {
       },
       {
         file: "replay.json",
-        code: "command_artifact_checksum_mismatch",
+        code: "scenario_binding_mismatch",
         mutate: (original) =>
           original.replace(
             /"commands": \[[\s\S]*?\],\n {2}"checkpoints"/,
@@ -425,7 +687,7 @@ describe("simulation CLI", () => {
     });
   });
 
-  it("safely replaces bundles without following artifact symlinks", () => {
+  it("replaces verified bundles and refuses tampered artifact symlinks", () => {
     const content = temporaryFile("content.json", {
       schemaVersion: 1,
       contentVersion: "test",
@@ -467,6 +729,18 @@ describe("simulation CLI", () => {
         output
       ).status
     ).toBe(0);
+    const validReplacement = runCli(
+      "run",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(validReplacement.status).toBe(0);
     writeFileSync(victim, "do-not-touch\n");
     writeFileSync(resolve(output, "stale.txt"), "stale\n");
     rmSync(resolve(output, "summary.json"));
@@ -495,11 +769,11 @@ describe("simulation CLI", () => {
       "--replace",
       "true"
     );
-    expect(replaced.status).toBe(0);
+    expect(replaced.status).toBe(3);
     expect(readFileSync(victim, "utf8")).toBe("do-not-touch\n");
-    expect(existsSync(resolve(output, "stale.txt"))).toBe(false);
+    expect(existsSync(resolve(output, "stale.txt"))).toBe(true);
     expect(lstatSync(resolve(output, "summary.json")).isSymbolicLink()).toBe(
-      false
+      true
     );
   });
 });

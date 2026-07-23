@@ -20,6 +20,7 @@ import {
   resolve,
   sep
 } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import {
   ContentValidationError,
@@ -27,9 +28,16 @@ import {
   compileReplay,
   compileScenario
 } from "@dwarven-depths/content-runtime";
-import { canonicalHash } from "@dwarven-depths/contracts";
 import {
+  canonicalHash,
+  type LifecycleDiagnosticRecord,
+  type ReplayDefinition,
+  type TimelineRecord
+} from "@dwarven-depths/contracts";
+import {
+  createLifecycleDiagnostics,
   createReplayDefinition,
+  createTimelineRecords,
   ReplayDivergenceError,
   RuntimeAssertionError,
   RuntimeSafetyStopError,
@@ -38,16 +46,22 @@ import {
 } from "@dwarven-depths/runtime";
 
 const execFileAsync = promisify(execFile);
+const runtimeRepositoryRoot = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../.."
+);
 const runBundleFiles = [
   "checkpoints.ndjson",
   "commands.ndjson",
   "content.compiled.json",
   "content-manifest.json",
+  "diagnostics.ndjson",
   "events.ndjson",
   "replay.json",
   "scenario.compiled.json",
   "state.final.json",
-  "summary.json"
+  "summary.json",
+  "timeline.ndjson"
 ] as const;
 const maximumArtifactBytes = 4 * 1024 * 1024;
 const maximumBundleBytes = 16 * 1024 * 1024;
@@ -73,6 +87,7 @@ interface RunManifestArtifact {
   readonly scenarioId?: unknown;
   readonly scenarioHash?: unknown;
   readonly seed?: unknown;
+  readonly replayIdentityHash?: unknown;
   readonly metadataHash?: unknown;
 }
 
@@ -91,6 +106,15 @@ interface SummaryArtifact {
   readonly eventCount?: unknown;
   readonly finalStateChecksum?: unknown;
   readonly eventStreamChecksum?: unknown;
+}
+
+interface VerifiedRunBundle {
+  readonly result: Awaited<ReturnType<typeof verifyReplay>>;
+  readonly manifest: RunManifestArtifact;
+  readonly replay: ReplayDefinition;
+  readonly timeline: readonly TimelineRecord[];
+  readonly diagnostics: readonly LifecycleDiagnosticRecord[];
+  readonly replayIdentityHash: string;
 }
 
 class CliInputError extends Error {
@@ -169,6 +193,26 @@ function booleanFlag(args: ParsedArgs, name: string): boolean {
   throw new CliInputError(`--${name} must be true or false`);
 }
 
+function integerFlag(
+  args: ParsedArgs,
+  name: string,
+  defaultValue: number,
+  maximum: number
+): number {
+  const value = args.flags.get(name);
+  if (value === undefined) return defaultValue;
+  if (!/^(0|[1-9][0-9]*)$/.test(value)) {
+    throw new CliInputError(
+      `--${name} must be a canonical nonnegative integer`
+    );
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed > maximum) {
+    throw new CliInputError(`--${name} must not exceed ${maximum}`);
+  }
+  return parsed;
+}
+
 function rejectUnknownFlags(
   args: ParsedArgs,
   allowed: ReadonlySet<string>
@@ -208,11 +252,11 @@ async function readArtifactText(
   try {
     handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
     const status = await handle.stat();
-    if (!status.isFile()) {
+    if (!status.isFile() || status.nlink !== 1) {
       throw new ReplayArtifactError(
         "missing_or_unsafe_artifact",
         name,
-        `${name} must be a regular file inside the run bundle`
+        `${name} must be a regular file with exactly one hard link`
       );
     }
     if (status.size > maximumArtifactBytes) {
@@ -252,9 +296,16 @@ async function readArtifactJson(
   budget?: { bytes: number }
 ): Promise<unknown> {
   try {
-    return JSON.parse(
-      await readArtifactText(directory, name, budget)
-    ) as unknown;
+    const text = await readArtifactText(directory, name, budget);
+    const value = JSON.parse(text) as unknown;
+    if (text !== `${JSON.stringify(value, null, 2)}\n`) {
+      throw new ReplayArtifactError(
+        "noncanonical_json_artifact",
+        name,
+        `${name} must use the canonical run-bundle JSON encoding`
+      );
+    }
+    return value;
   } catch (error) {
     if (error instanceof ReplayArtifactError) throw error;
     const message = error instanceof Error ? error.message : String(error);
@@ -296,11 +347,21 @@ async function readArtifactNdjson(
     }
   }
   try {
-    return text
-      .slice(0, -1)
-      .split("\n")
-      .map((line) => JSON.parse(line) as unknown);
+    const values: unknown[] = [];
+    for (const line of text.slice(0, -1).split("\n")) {
+      const value = JSON.parse(line) as unknown;
+      if (line !== JSON.stringify(value)) {
+        throw new ReplayArtifactError(
+          "noncanonical_ndjson_artifact",
+          name,
+          `${name} must use canonical JSON on every line`
+        );
+      }
+      values.push(value);
+    }
+    return values;
   } catch (error) {
+    if (error instanceof ReplayArtifactError) throw error;
     const message = error instanceof Error ? error.message : String(error);
     throw new ReplayArtifactError(
       "invalid_ndjson_artifact",
@@ -464,12 +525,14 @@ async function collectProvenance(): Promise<{
 }> {
   try {
     const [{ stdout: revision }, { stdout: status }] = await Promise.all([
-      execFileAsync("git", ["rev-parse", "HEAD"], { cwd: process.cwd() }),
+      execFileAsync("git", ["rev-parse", "HEAD"], {
+        cwd: runtimeRepositoryRoot
+      }),
       execFileAsync(
         "git",
         ["status", "--porcelain", "--untracked-files=normal"],
         {
-          cwd: process.cwd()
+          cwd: runtimeRepositoryRoot
         }
       )
     ]);
@@ -509,22 +572,13 @@ async function assertReplaceableRunBundle(
   outputDirectory: string
 ): Promise<void> {
   try {
-    const manifest = JSON.parse(
-      await readArtifactText(outputDirectory, "manifest.json")
-    ) as {
-      readonly complete?: unknown;
-      readonly harnessVersion?: unknown;
-    };
-    if (
-      manifest.complete !== true ||
-      (manifest.harnessVersion !== "milestone-0" &&
-        manifest.harnessVersion !== "phase-1")
-    ) {
-      throw new Error("completion manifest is not a supported run bundle");
-    }
+    await verifyRunDirectory(outputDirectory, false);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`refusing to replace invalid run bundle: ${message}`);
+    throw new Error(
+      `refusing to replace a bundle that does not pass full replay verification: ${message}`,
+      { cause: error }
+    );
   }
 }
 
@@ -597,6 +651,9 @@ async function publishRunBundle(
     }
 
     try {
+      if (previousBundle !== undefined) {
+        await assertReplaceableRunBundle(previousBundle);
+      }
       await rename(stagingDirectory, outputDirectory);
     } catch (error) {
       if (previousBundle !== undefined) {
@@ -667,6 +724,12 @@ async function run(args: ParsedArgs): Promise<void> {
     collectProvenance()
   ]);
   const replay = createReplayDefinition(result, scenario, content);
+  const timeline = createTimelineRecords(result.events, replay);
+  const diagnostics = createLifecycleDiagnostics(
+    result.events,
+    result.commands
+  );
+  const replayIdentityHash = await canonicalHash(replay);
   const summary = {
     scenarioId: result.scenarioId,
     scenarioHash: result.scenarioHash,
@@ -680,11 +743,13 @@ async function run(args: ParsedArgs): Promise<void> {
   const manifestMetadata = {
     harnessVersion: "phase-1",
     protocolVersions: {
-      harness: 1,
+      harness: 2,
       contentSchema: content.bundle.schemaVersion,
       scenarioSchema: scenario.schemaVersion,
       replaySchema: replay.schemaVersion,
-      stateSchema: result.finalState.schemaVersion
+      stateSchema: result.finalState.schemaVersion,
+      timelineSchema: 1,
+      diagnosticSchema: 1
     },
     runtime: { name: "@dwarven-depths/runtime", version: "0.0.0" },
     controller: { type: "scenario.commands", version: 1 },
@@ -695,6 +760,7 @@ async function run(args: ParsedArgs): Promise<void> {
     scenarioId: scenario.id,
     scenarioHash: result.scenarioHash,
     seed: scenario.seed,
+    replayIdentityHash,
     canonical: provenance.revisionKnown && !provenance.repositoryDirty
   };
   const manifest = {
@@ -743,6 +809,14 @@ async function run(args: ParsedArgs): Promise<void> {
           writeNewFile(
             resolve(stagingDirectory, "events.ndjson"),
             toNdjson(result.events)
+          ),
+          writeNewFile(
+            resolve(stagingDirectory, "timeline.ndjson"),
+            toNdjson(timeline)
+          ),
+          writeNewFile(
+            resolve(stagingDirectory, "diagnostics.ndjson"),
+            toNdjson(diagnostics)
           )
         ]);
         await writeJson(resolve(stagingDirectory, "manifest.json"), manifest);
@@ -760,12 +834,10 @@ async function run(args: ParsedArgs): Promise<void> {
   );
 }
 
-async function replay(args: ParsedArgs): Promise<void> {
-  rejectUnknownFlags(args, new Set(["run", "verify"]));
-  if (!booleanFlag(args, "verify")) {
-    throw new CliInputError("replay currently requires --verify");
-  }
-  const runDirectory = resolve(requiredFlag(args, "run"));
+async function verifyRunDirectory(
+  runDirectory: string,
+  emitVerification: boolean
+): Promise<VerifiedRunBundle> {
   let runHandle: Awaited<ReturnType<typeof open>> | undefined;
   try {
     runHandle = await open(
@@ -792,16 +864,90 @@ async function replay(args: ParsedArgs): Promise<void> {
   }
 
   try {
-    await verifyReplayBundle(runDirectory, `/proc/self/fd/${runHandle.fd}`);
+    return await verifyReplayBundle(
+      runDirectory,
+      `/proc/self/fd/${runHandle.fd}`,
+      emitVerification
+    );
   } finally {
     await runHandle.close().catch(() => undefined);
   }
 }
 
+async function replay(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["run", "verify"]));
+  if (!booleanFlag(args, "verify")) {
+    throw new CliInputError("replay currently requires --verify");
+  }
+  await verifyRunDirectory(resolve(requiredFlag(args, "run")), true);
+}
+
+async function inspect(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["run", "tick", "before", "after"]));
+  const tick = integerFlag(args, "tick", 0, 4_294_967_295);
+  const before = integerFlag(args, "before", 0, 100_000);
+  const after = integerFlag(args, "after", 0, 100_000);
+  if (tick + after > 4_294_967_295) {
+    throw new CliInputError(
+      "inspection window exceeds maximum tick 4294967295"
+    );
+  }
+  const startTick = Math.max(0, tick - before);
+  const endTick = tick + after;
+  const runDirectory = resolve(requiredFlag(args, "run"));
+  const evidence = await verifyRunDirectory(runDirectory, false);
+  const inWindow = (value: { readonly tick: number }) =>
+    value.tick >= startTick && value.tick <= endTick;
+  const timeline = evidence.timeline.filter(inWindow);
+  const events = timeline
+    .filter((record) => record.kind === "event")
+    .map((record) => record.event);
+  const checkpoints = evidence.replay.checkpoints.filter(inWindow);
+  const diagnostics = evidence.diagnostics.filter(inWindow);
+  const stateEvidence =
+    inWindow(evidence.result.finalState) &&
+    checkpoints.some(
+      (checkpoint) =>
+        checkpoint.tick === evidence.result.finalState.tick &&
+        checkpoint.stateChecksum === evidence.result.finalStateChecksum
+    )
+      ? [
+          {
+            tick: evidence.result.finalState.tick,
+            stateChecksum: evidence.result.finalStateChecksum,
+            state: evidence.result.finalState
+          }
+        ]
+      : [];
+
+  process.stdout.write(
+    `${JSON.stringify({
+      ok: true,
+      inspected: true,
+      runDirectory,
+      identity: {
+        repositoryRevision: evidence.manifest.repositoryRevision,
+        contentManifestHash: evidence.replay.contentManifestHash,
+        scenarioId: evidence.replay.scenarioId,
+        scenarioHash: evidence.replay.scenarioHash,
+        seed: evidence.replay.seed,
+        replayIdentityHash: evidence.replayIdentityHash
+      },
+      window: { tick, before, after, startTick, endTick },
+      events,
+      checkpoints,
+      stateEvidence,
+      diagnostics,
+      timeline
+    })}\n`
+  );
+}
+
 async function verifyReplayBundle(
   runDirectory: string,
-  artifactDirectory: string
-): Promise<void> {
+  artifactDirectory: string,
+  emitVerification = true
+): Promise<VerifiedRunBundle> {
   const actualEntries = (await readdir(artifactDirectory)).sort();
   const expectedEntries = [...runBundleFiles, "manifest.json"].sort();
   requireArtifactMatch(
@@ -862,6 +1008,16 @@ async function verifyReplayBundle(
     "events.ndjson",
     budget
   );
+  const timelineInput = await readArtifactNdjson(
+    artifactDirectory,
+    "timeline.ndjson",
+    budget
+  );
+  const diagnosticsInput = await readArtifactNdjson(
+    artifactDirectory,
+    "diagnostics.ndjson",
+    budget
+  );
 
   const manifest = requireRecord<RunManifestArtifact>(
     manifestInput,
@@ -892,6 +1048,10 @@ async function verifyReplayBundle(
   const compiledReplay = await validateReplayArtifact("replay.json", () =>
     compileReplay(replayInput)
   );
+  const replayIdentityHash = await canonicalArtifactHash(
+    compiledReplay,
+    "replay.json"
+  );
   const contentManifest = requireRecord<ContentManifestArtifact>(
     contentManifestInput,
     "content-manifest.json"
@@ -911,6 +1071,7 @@ async function verifyReplayBundle(
       "scenarioId",
       "scenarioHash",
       "seed",
+      "replayIdentityHash",
       "canonical",
       "metadataHash",
       "complete",
@@ -959,7 +1120,8 @@ async function verifyReplayBundle(
   requireArtifactMatch(
     manifest.scenarioHash === compiledReplay.scenarioHash &&
       manifest.scenarioId === compiledReplay.scenarioId &&
-      manifest.seed === compiledReplay.seed,
+      manifest.seed === compiledReplay.seed &&
+      manifest.replayIdentityHash === replayIdentityHash,
     "scenario_binding_mismatch",
     "manifest.json",
     "manifest and replay scenario identity must agree"
@@ -993,6 +1155,7 @@ async function verifyReplayBundle(
     scenarioId: manifest.scenarioId,
     scenarioHash: manifest.scenarioHash,
     seed: manifest.seed,
+    replayIdentityHash: manifest.replayIdentityHash,
     canonical: manifest.canonical
   };
   const [
@@ -1010,11 +1173,13 @@ async function verifyReplayBundle(
     canonicalArtifactHash(manifest.protocolVersions, "manifest.json"),
     canonicalArtifactHash(
       {
-        harness: 1,
+        harness: 2,
         contentSchema: content.bundle.schemaVersion,
         scenarioSchema: scenario.schemaVersion,
         replaySchema: compiledReplay.schemaVersion,
-        stateSchema: 1
+        stateSchema: 1,
+        timelineSchema: 1,
+        diagnosticSchema: 1
       },
       "manifest.json"
     ),
@@ -1109,18 +1274,60 @@ async function verifyReplayBundle(
     "summary.json",
     "summary does not match replay terminal evidence"
   );
-  process.stdout.write(
-    `${JSON.stringify({
-      ok: true,
-      verified: true,
-      runDirectory,
-      scenarioId: result.scenarioId,
-      terminalResult: result.terminalResult,
-      terminalTick: result.terminalTick,
-      finalStateChecksum: result.finalStateChecksum,
-      eventStreamChecksum: result.eventStreamChecksum
-    })}\n`
+  const expectedTimeline = createTimelineRecords(result.events, compiledReplay);
+  const expectedDiagnostics = createLifecycleDiagnostics(
+    result.events,
+    result.commands
   );
+  const [
+    timelineArtifactHash,
+    expectedTimelineHash,
+    diagnosticArtifactHash,
+    expectedDiagnosticHash
+  ] = await Promise.all([
+    canonicalArtifactHash(timelineInput, "timeline.ndjson"),
+    canonicalArtifactHash(expectedTimeline, "timeline.ndjson"),
+    canonicalArtifactHash(diagnosticsInput, "diagnostics.ndjson"),
+    canonicalArtifactHash(expectedDiagnostics, "diagnostics.ndjson")
+  ]);
+  if (timelineArtifactHash !== expectedTimelineHash) {
+    throw new ReplayArtifactError(
+      "timeline_artifact_mismatch",
+      "timeline.ndjson",
+      `expected ${expectedTimelineHash}, received ${timelineArtifactHash}`,
+      firstDifferencePath(expectedTimeline, timelineInput) ?? "$"
+    );
+  }
+  if (diagnosticArtifactHash !== expectedDiagnosticHash) {
+    throw new ReplayArtifactError(
+      "diagnostic_artifact_mismatch",
+      "diagnostics.ndjson",
+      `expected ${expectedDiagnosticHash}, received ${diagnosticArtifactHash}`,
+      firstDifferencePath(expectedDiagnostics, diagnosticsInput) ?? "$"
+    );
+  }
+  if (emitVerification) {
+    process.stdout.write(
+      `${JSON.stringify({
+        ok: true,
+        verified: true,
+        runDirectory,
+        scenarioId: result.scenarioId,
+        terminalResult: result.terminalResult,
+        terminalTick: result.terminalTick,
+        finalStateChecksum: result.finalStateChecksum,
+        eventStreamChecksum: result.eventStreamChecksum
+      })}\n`
+    );
+  }
+  return {
+    result,
+    manifest,
+    replay: compiledReplay,
+    timeline: expectedTimeline,
+    diagnostics: expectedDiagnostics,
+    replayIdentityHash
+  };
 }
 
 async function main(): Promise<void> {
@@ -1135,9 +1342,12 @@ async function main(): Promise<void> {
     case "replay":
       await replay(args);
       break;
+    case "inspect":
+      await inspect(args);
+      break;
     default:
       throw new CliInputError(
-        "Usage: dwarven-depths-sim <validate|run|replay> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify]"
+        "Usage: dwarven-depths-sim <validate|run|replay|inspect> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>]"
       );
   }
 }

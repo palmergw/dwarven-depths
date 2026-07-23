@@ -5,10 +5,13 @@ import {
 import {
   type CommandEnvelope,
   canonicalHash,
+  type DiagnosticCause,
+  type LifecycleDiagnosticRecord,
   type ReplayDefinition,
   type ScenarioDefinition,
   type SimulationEvent,
-  type SimulationState
+  type SimulationState,
+  type TimelineRecord
 } from "@dwarven-depths/contracts";
 import {
   createInitialState,
@@ -26,6 +29,114 @@ export interface RuntimeResult {
   readonly commands: readonly CommandEnvelope[];
   readonly events: readonly SimulationEvent[];
   readonly eventStreamChecksum: string;
+}
+
+export function createTimelineRecords(
+  events: readonly SimulationEvent[],
+  replay: ReplayDefinition
+): readonly TimelineRecord[] {
+  const records: TimelineRecord[] = [];
+  for (let index = 0; index < events.length; index += 1) {
+    const event = events[index];
+    if (event === undefined) throw new TypeError(`events/${index} is missing`);
+    const eventEvidence = Object.freeze({ ...event });
+    records.push(
+      Object.freeze({
+        schemaVersion: 1,
+        kind: "event",
+        tick: eventEvidence.tick,
+        sequence: eventEvidence.sequence,
+        event: eventEvidence
+      })
+    );
+  }
+  for (
+    let checkpointIndex = 0;
+    checkpointIndex < replay.checkpoints.length;
+    checkpointIndex += 1
+  ) {
+    const checkpoint = replay.checkpoints[checkpointIndex];
+    if (checkpoint === undefined) {
+      throw new TypeError(`replay/checkpoints/${checkpointIndex} is missing`);
+    }
+    let sequence = 0;
+    for (let eventIndex = 0; eventIndex < events.length; eventIndex += 1) {
+      const event = events[eventIndex];
+      if (event === undefined) {
+        throw new TypeError(`events/${eventIndex} is missing`);
+      }
+      if (event.tick === checkpoint.tick && event.sequence >= sequence) {
+        sequence = event.sequence + 1;
+      }
+    }
+    records.push(
+      Object.freeze({
+        schemaVersion: 1,
+        kind: "checkpoint",
+        tick: checkpoint.tick,
+        sequence,
+        checkpoint: Object.freeze({ ...checkpoint })
+      })
+    );
+  }
+  records.sort(
+    (left, right) =>
+      left.tick - right.tick ||
+      left.sequence - right.sequence ||
+      (left.kind < right.kind ? -1 : left.kind > right.kind ? 1 : 0)
+  );
+  return Object.freeze(records);
+}
+
+export function createLifecycleDiagnostics(
+  events: readonly SimulationEvent[],
+  commands: readonly CommandEnvelope[]
+): readonly LifecycleDiagnosticRecord[] {
+  const diagnostics: LifecycleDiagnosticRecord[] = [];
+  for (let index = 0; index < events.length; index += 1) {
+    const event = events[index];
+    if (event === undefined) throw new TypeError(`events/${index} is missing`);
+    const causes: DiagnosticCause[] = [];
+    const priorEvent = index === 0 ? undefined : events[index - 1];
+    if (priorEvent !== undefined) {
+      causes.push(Object.freeze({ kind: "event", eventId: priorEvent.id }));
+    } else {
+      for (
+        let commandIndex = 0;
+        commandIndex < commands.length;
+        commandIndex += 1
+      ) {
+        const command = commands[commandIndex];
+        if (command === undefined) {
+          throw new TypeError(`commands/${commandIndex} is missing`);
+        }
+        if (command.tick === event.tick) {
+          causes.push(
+            Object.freeze({
+              kind: "command",
+              sequence: command.sequence,
+              atTick: command.tick,
+              commandType: command.command.type
+            })
+          );
+        }
+      }
+    }
+    diagnostics.push(
+      Object.freeze({
+        schemaVersion: 1,
+        id: `diagnostic.${String(index).padStart(6, "0")}`,
+        kind: "lifecycle",
+        tick: event.tick,
+        sequence: event.sequence,
+        eventType: event.type,
+        reasonCode: event.ruleId,
+        eventId: event.id,
+        causes: Object.freeze(causes)
+      })
+    );
+  }
+  return Object.freeze(diagnostics);
 }
 
 export class RuntimeAssertionError extends Error {

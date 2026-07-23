@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "phase-1-diagnostics",
+  "definitions": [
+    {
+      "kind": "level",
+      "id": "level.nonterminating",
+      "waveIds": ["wave.nonterminating"]
+    },
+    {
+      "kind": "wave",
+      "id": "wave.nonterminating",
+      "durationTicks": 30
+    }
+  ]
+}
