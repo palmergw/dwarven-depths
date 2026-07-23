@@ -29,7 +29,7 @@ Enemy waves mix numerous light creatures, armored attackers, disruptive monsters
 
 ### Progression
 
-The interface suggests two resources, unit levels, branching forge upgrades, cooldowns, fortress durability, and wave objectives. These are exploratory elements rather than finalized systems.
+The interface direction now maps to a defined loop: individual character XP, persistent character levels and skill trees, spendable upgrade resources, durable items, wave objectives, and boss-gated character unlocks. Exact currency values, item rules, and upgrade costs remain balance-tunable rather than fixed by the artwork.
 
 ## Visual principles
 

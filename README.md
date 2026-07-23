@@ -18,6 +18,9 @@ The project is in **gameplay definition and implementation planning**. The initi
 
 - [Concept Art Direction](docs/concept-art.md)
 - [Core Progression and Round Structure](docs/gameplay-loop.md)
+- [First-Pass Systems and Content Decisions](docs/first-pass-systems.md)
+- [Independent Design Review Synthesis](docs/design-review-synthesis.md)
+- [Technical Design Readiness Rules](docs/technical-design-readiness.md)
 
 ## Working title
 
