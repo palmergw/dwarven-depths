@@ -1,6 +1,7 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
 
 export * from "./stable-tables.js";
+export * from "./target-selection.js";
 
 import {
   type BattlefieldMapDefinition,
