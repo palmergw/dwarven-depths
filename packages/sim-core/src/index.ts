@@ -52,7 +52,10 @@ import {
   type WaveDefinition,
   type WaveSpawnEvent
 } from "@dwarven-depths/contracts";
-import type { BattlefieldDwarfDeploymentAuthority } from "./battlefield-attack-impact.js";
+import {
+  type BattlefieldDwarfDeploymentAuthority,
+  normalizeBattlefieldDwarves
+} from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import {
@@ -109,7 +112,19 @@ function freezeBattlefieldState(
       )
     ),
     dwarfCombatants: Object.freeze(
-      dwarfCombatants.map((combatant) => Object.freeze({ ...combatant }))
+      dwarfCombatants.map((combatant) =>
+        Object.freeze({
+          ...combatant,
+          basicAttack: Object.freeze({ ...combatant.basicAttack }),
+          actionState: Object.freeze({
+            ...combatant.actionState,
+            activeBasicAttack:
+              combatant.actionState.activeBasicAttack === null
+                ? null
+                : Object.freeze({ ...combatant.actionState.activeBasicAttack })
+          })
+        })
+      )
     ),
     pendingCommittedAttacks: Object.freeze(
       [...pendingCommittedAttacks]
@@ -124,6 +139,19 @@ function freezeBattlefieldState(
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function normalizePersistedDwarves(
+  battlefield: BattlefieldState,
+  content: CompiledContent,
+  authority?: BattlefieldDwarfDeploymentAuthority
+): BattlefieldState["dwarfCombatants"] {
+  if (battlefield.dwarfCombatants.length === 0) return Object.freeze([]);
+  if (authority === undefined)
+    throw new RangeError(
+      "persisted battlefield dwarves require deployment authority"
+    );
+  return normalizeBattlefieldDwarves(battlefield, authority, content);
 }
 
 const stableIdPattern = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
@@ -1268,6 +1296,11 @@ export function resolveEnemyMovementPhase(
   const pendingSpawns = [...request.battlefield.pendingSpawns].sort(
     comparePendingSpawns
   );
+  const dwarfCombatants = normalizePersistedDwarves(
+    request.battlefield,
+    content,
+    dwarfAuthority
+  );
   const battlefield = freezeBattlefieldState(
     request.battlefield.mapId,
     reservations.occupancy,
@@ -1277,9 +1310,7 @@ export function resolveEnemyMovementPhase(
     enemyCombatants,
     enemyAdmissions,
     request.battlefield.pendingCommittedAttacks,
-    [...request.battlefield.dwarfCombatants].sort((left, right) =>
-      compareText(left.entityId, right.entityId)
-    ),
+    dwarfCombatants,
     request.battlefield
   );
   return Object.freeze({
@@ -1348,7 +1379,8 @@ export function resolveBattlefieldPhase(
   content: CompiledContent,
   scheduledSpawns: readonly PendingSpawn[],
   proposals: readonly MovementProposal[],
-  limits?: SpawnAdmissionLimits
+  limits?: SpawnAdmissionLimits,
+  dwarfAuthority?: BattlefieldDwarfDeploymentAuthority
 ): StepResult {
   const level = content.levels.get(state.levelId);
   if (level === undefined)
@@ -1362,6 +1394,11 @@ export function resolveBattlefieldPhase(
   }
   const map = content.maps.get(level.mapId);
   if (map === undefined) throw new Error(`Unknown map ID: ${level.mapId}`);
+  const persistedDwarfCombatants = normalizePersistedDwarves(
+    state.battlefield,
+    content,
+    dwarfAuthority
+  );
   const admissionLimits = normalizeSpawnAdmissionLimits(limits);
   const persistedPendingSpawns = normalizePendingSpawns(
     state.battlefield.pendingSpawns,
@@ -1689,7 +1726,7 @@ export function resolveBattlefieldPhase(
         movedEnemyCombatants,
         enemyAdmissions,
         persistedCommittedAttacks,
-        state.battlefield.dwarfCombatants,
+        persistedDwarfCombatants,
         state.battlefield
       )
     }),
@@ -1706,7 +1743,8 @@ export function resolveScheduledBattlefieldPhase(
   state: SimulationState,
   content: CompiledContent,
   proposals: readonly MovementProposal[],
-  limits?: SpawnAdmissionLimits
+  limits?: SpawnAdmissionLimits,
+  dwarfAuthority?: BattlefieldDwarfDeploymentAuthority
 ): StepResult {
   const level = content.levels.get(state.levelId);
   if (level === undefined)
@@ -1718,6 +1756,11 @@ export function resolveScheduledBattlefieldPhase(
       `battlefield map ${state.battlefield.mapId} does not match level map`
     );
   }
+  const persistedDwarfCombatants = normalizePersistedDwarves(
+    state.battlefield,
+    content,
+    dwarfAuthority
+  );
 
   const waves = level.waveIds.map((waveId) => {
     const wave = content.waves.get(waveId);
@@ -1860,7 +1903,7 @@ export function resolveScheduledBattlefieldPhase(
       persistedEnemyCombatants,
       persistedEnemyAdmissions,
       persistedCommittedAttacks,
-      state.battlefield.dwarfCombatants,
+      persistedDwarfCombatants,
       state.battlefield
     )
   });
@@ -1869,7 +1912,8 @@ export function resolveScheduledBattlefieldPhase(
     content,
     scheduled.pendingSpawns,
     proposals,
-    limits
+    limits,
+    dwarfAuthority
   );
   if (battlefield.state.battlefield === undefined)
     throw new Error("resolved battlefield state is missing");

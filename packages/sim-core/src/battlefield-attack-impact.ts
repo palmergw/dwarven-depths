@@ -80,7 +80,19 @@ function freezeBattlefield(
       )
     ),
     dwarfCombatants: Object.freeze(
-      dwarfCombatants.map((item) => Object.freeze({ ...item }))
+      dwarfCombatants.map((item) =>
+        Object.freeze({
+          ...item,
+          basicAttack: Object.freeze({ ...item.basicAttack }),
+          actionState: Object.freeze({
+            ...item.actionState,
+            activeBasicAttack:
+              item.actionState.activeBasicAttack === null
+                ? null
+                : Object.freeze({ ...item.actionState.activeBasicAttack })
+          })
+        })
+      )
     ),
     pendingCommittedAttacks: Object.freeze(
       pendingCommittedAttacks.map((item) => Object.freeze({ ...item }))
@@ -769,7 +781,9 @@ export function normalizeBattlefieldDwarves(
           "placementPointId",
           "currentHealth",
           "maximumHealth",
-          "lifecycleState"
+          "lifecycleState",
+          "basicAttack",
+          "actionState"
         ],
         description
       );
@@ -828,6 +842,50 @@ export function normalizeBattlefieldDwarves(
         throw new RangeError(
           `${description} health and lifecycleState are inconsistent`
         );
+      const basicAttack = requireRecord(
+        record["basicAttack"],
+        [
+          "id",
+          "windupTicks",
+          "impactDelayTicks",
+          "cooldownTicks",
+          "damage",
+          "range",
+          "requiresLineOfSight"
+        ],
+        `${description} basicAttack`
+      );
+      for (const key of [
+        "id",
+        "windupTicks",
+        "impactDelayTicks",
+        "cooldownTicks",
+        "damage",
+        "range",
+        "requiresLineOfSight"
+      ] as const)
+        if (basicAttack[key] !== character.basicAttack[key])
+          throw new RangeError(`${description} basicAttack is not authored`);
+      const actionStateRecord = requireRecord(
+        record["actionState"],
+        [
+          "schemaVersion",
+          "currentTargetEntityId",
+          "activeBasicAttack",
+          "cooldownCompleteAtTick"
+        ],
+        `${description} actionState`
+      );
+      if (actionStateRecord["schemaVersion"] !== 1)
+        throw new RangeError(`${description} actionState is not version 1`);
+      if (
+        actionStateRecord["currentTargetEntityId"] !== null ||
+        actionStateRecord["activeBasicAttack"] !== null ||
+        actionStateRecord["cooldownCompleteAtTick"] !== null
+      )
+        throw new RangeError(
+          `${description} actionState must remain idle before the authoritative dwarf action phase`
+        );
       const expectedNode = placementNodes.get(placementPointId);
       if (expectedNode === undefined)
         throw new RangeError(
@@ -858,7 +916,14 @@ export function normalizeBattlefieldDwarves(
         placementPointId,
         currentHealth,
         maximumHealth,
-        lifecycleState
+        lifecycleState,
+        basicAttack: Object.freeze({ ...character.basicAttack }),
+        actionState: Object.freeze({
+          schemaVersion: 1,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        })
       });
     }
   );
@@ -942,7 +1007,14 @@ export function deployBattlefieldDwarves(
         placementPointId,
         currentHealth: character.maximumHealth,
         maximumHealth: character.maximumHealth,
-        lifecycleState: "active"
+        lifecycleState: "active",
+        basicAttack: Object.freeze({ ...character.basicAttack }),
+        actionState: Object.freeze({
+          schemaVersion: 1,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        })
       })
     );
   }
@@ -1027,16 +1099,25 @@ export function resolveBattlefieldAttackImpacts(
     lifecycle.combatants.map((item) => [item.entityId, item])
   );
   const nextDwarves = Object.freeze(
-    dwarves.map((dwarf) =>
-      Object.freeze({
+    dwarves.map((dwarf) => {
+      const resolved = lifecycleById.get(dwarf.entityId);
+      const lifecycleState = (resolved?.lifecycleState ??
+        dwarf.lifecycleState) as "active" | "downed";
+      return Object.freeze({
         ...dwarf,
-        currentHealth:
-          lifecycleById.get(dwarf.entityId)?.currentHealth ??
-          dwarf.currentHealth,
-        lifecycleState: (lifecycleById.get(dwarf.entityId)?.lifecycleState ??
-          dwarf.lifecycleState) as "active" | "downed"
-      })
-    )
+        currentHealth: resolved?.currentHealth ?? dwarf.currentHealth,
+        lifecycleState,
+        actionState:
+          lifecycleState === "downed"
+            ? Object.freeze({
+                schemaVersion: 1 as const,
+                currentTargetEntityId: null,
+                activeBasicAttack: null,
+                cooldownCompleteAtTick: null
+              })
+            : dwarf.actionState
+      });
+    })
   );
   const activeDwarfIds = new Set(
     nextDwarves
