@@ -71,22 +71,22 @@ const expectedSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 36
 <line data-connection-id="connection.south_goal" x1="240" y1="220" x2="80" y2="220" class="route" stroke="#f59e0b" stroke-width="10"/>
 </g>
 <g font-family="monospace" font-size="12">
-<g data-node-id="node.east" class="node placement occupied">
+<g data-node-id="node.east" data-authored-x="1" data-authored-y="0" class="node placement occupied">
 <circle cx="240" cy="80" r="24" fill="#0f766e" stroke="#0f172a" stroke-width="4"/>
 <text x="240" y="122" text-anchor="middle">node.east</text>
 <text x="240" y="46" text-anchor="middle">placement:placement.east occupant:entity.enemy.alpha</text>
 </g>
-<g data-node-id="node.entry" class="node entrance route">
+<g data-node-id="node.entry" data-authored-x="0" data-authored-y="0" class="node entrance route">
 <circle cx="80" cy="80" r="24" fill="#f8fafc" stroke="#f59e0b" stroke-width="4"/>
 <text x="80" y="122" text-anchor="middle">node.entry</text>
 <text x="80" y="46" text-anchor="middle">entrance:entrance.west</text>
 </g>
-<g data-node-id="node.goal" class="node placement route">
+<g data-node-id="node.goal" data-authored-x="1" data-authored-y="1" class="node placement route">
 <circle cx="240" cy="220" r="24" fill="#f8fafc" stroke="#f59e0b" stroke-width="4"/>
 <text x="240" y="262" text-anchor="middle">node.goal</text>
 <text x="240" y="186" text-anchor="middle">placement:placement.goal</text>
 </g>
-<g data-node-id="node.south" class="node route">
+<g data-node-id="node.south" data-authored-x="0" data-authored-y="1" class="node route">
 <circle cx="80" cy="220" r="24" fill="#f8fafc" stroke="#f59e0b" stroke-width="4"/>
 <text x="80" y="262" text-anchor="middle">node.south</text>
 </g>
@@ -136,6 +136,10 @@ describe("battlefield diagnostics", () => {
   it("escapes SVG labels even when called with unchecked input", async () => {
     const request = await renderRequest();
     const { route: _route, ...requestWithoutRoute } = request;
+    const text = renderBattlefieldText({
+      ...requestWithoutRoute,
+      layers: ["map"]
+    });
     const svg = renderBattlefieldSvg({
       ...requestWithoutRoute,
       layers: ["map"],
@@ -144,5 +148,11 @@ describe("battlefield diagnostics", () => {
     });
     expect(svg).toContain("map.a&amp;b&lt;unsafe&gt;");
     expect(svg).not.toContain("map.a&b<unsafe>");
+    expect(svg).not.toContain("occupied nodes");
+    expect(svg).not.toContain("queued spawns");
+    expect(svg).not.toContain("data-queued-spawns");
+    expect(svg).not.toContain("entity.enemy.alpha");
+    expect(text).not.toContain("queued-spawns");
+    expect(text).not.toContain("entity.enemy.alpha");
   });
 });

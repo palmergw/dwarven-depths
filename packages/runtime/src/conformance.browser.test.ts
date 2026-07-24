@@ -174,7 +174,7 @@ describe("cross-runtime deterministic conformance", () => {
       "57497f3d36a8ecc3e9510badcc2ff39c8961e3c77a84bb3ae1f67f737de6aa2e"
     );
     await expect(canonicalHash(renderBattlefieldSvg(request))).resolves.toBe(
-      "f955aafc8f3d28c82803e7d599f5413cea2dcd6d04576e8be7addf23141a5e77"
+      "3efd08eb8ee22a8194c4b58f4a9e46c506c9481f2430dc77b995e790829e08c8"
     );
   });
 

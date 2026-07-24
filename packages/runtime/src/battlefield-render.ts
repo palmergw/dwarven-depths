@@ -268,11 +268,14 @@ export function renderBattlefieldSvg(
         `${spawn.authoredOrder}:${spawn.id}:${spawn.entityId}:${spawn.entranceId}`
     )
     .join(",");
+  const occupancyDescription = layers.has("occupancy")
+    ? `; ${state.occupancy.length} occupied nodes; ${state.pendingSpawns.length} queued spawns`
+    : "";
   const lines = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="battlefield-title battlefield-description">`,
     `<title id="battlefield-title">Battlefield ${escapeXml(map.id)}</title>`,
-    `<desc id="battlefield-description">Layers ${layerOrder.filter((layer) => layers.has(layer)).join(",")}; ${state.occupancy.length} occupied nodes; ${state.pendingSpawns.length} queued spawns${route === undefined ? "" : `; route ${escapeXml(route.fromNodeId)} to ${escapeXml(route.toNodeId)} cost ${route.totalCost}`}</desc>`,
-    `<metadata data-map-id="${escapeXml(map.id)}" data-queued-spawns="${escapeXml(queueSummary)}"/>`,
+    `<desc id="battlefield-description">Layers ${layerOrder.filter((layer) => layers.has(layer)).join(",")}${occupancyDescription}${route === undefined ? "" : `; route ${escapeXml(route.fromNodeId)} to ${escapeXml(route.toNodeId)} cost ${route.totalCost}`}</desc>`,
+    `<metadata data-map-id="${escapeXml(map.id)}"${layers.has("occupancy") ? ` data-queued-spawns="${escapeXml(queueSummary)}"` : ""}/>`,
     '<g fill="none" stroke="#64748b" stroke-width="4">'
   ];
   for (const connection of [...map.connections].sort((left, right) =>
@@ -309,7 +312,7 @@ export function renderBattlefieldSvg(
       .filter((value): value is string => value !== undefined)
       .join(" ");
     lines.push(
-      `<g data-node-id="${escapeXml(node.id)}" class="${classes}">`,
+      `<g data-node-id="${escapeXml(node.id)}" data-authored-x="${node.x}" data-authored-y="${node.y}" class="${classes}">`,
       `<circle cx="${point.x}" cy="${point.y}" r="24" fill="${occupant === undefined ? "#f8fafc" : "#0f766e"}" stroke="${routeNodes.has(node.id) && layers.has("path") ? "#f59e0b" : "#0f172a"}" stroke-width="4"/>`,
       `<text x="${point.x}" y="${point.y + 42}" text-anchor="middle">${escapeXml(node.id)}</text>`
     );
