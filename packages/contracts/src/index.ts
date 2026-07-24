@@ -179,6 +179,13 @@ export interface SpawnAdmissionResolution {
   readonly decisions: readonly SpawnAdmissionDecision[];
 }
 
+export interface BattlefieldState {
+  readonly schemaVersion: 1;
+  readonly mapId: StableId;
+  readonly occupancy: readonly NavigationOccupant[];
+  readonly pendingSpawns: readonly PendingSpawn[];
+}
+
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition
@@ -217,16 +224,42 @@ export interface SimulationState {
   readonly levelId: StableId;
   readonly phase: SimulationPhase;
   readonly eventSequence: number;
+  readonly battlefield?: BattlefieldState;
   readonly terminalResult?: TerminalResult;
 }
 
-export interface SimulationEvent {
+export interface SimulationEventBase {
   readonly id: string;
   readonly tick: number;
   readonly sequence: number;
-  readonly type: "round.started" | "final_cleanup.entered" | "round.victory";
   readonly ruleId: string;
 }
+
+export interface LifecycleSimulationEvent extends SimulationEventBase {
+  readonly type: "round.started" | "final_cleanup.entered" | "round.victory";
+}
+
+export interface SpawnSimulationEvent extends SimulationEventBase {
+  readonly type: "spawn.admitted" | "spawn.queued";
+  readonly spawnId: StableId;
+  readonly entityId: EntityId;
+  readonly entranceId: EnemyEntranceId;
+  readonly reasonCode: SpawnAdmissionDecisionReason;
+}
+
+export interface MovementSimulationEvent extends SimulationEventBase {
+  readonly type: "movement.moved" | "movement.waited" | "movement.rejected";
+  readonly proposalId: StableId;
+  readonly entityId: EntityId;
+  readonly fromNodeId: NavigationNodeId;
+  readonly toNodeId: NavigationNodeId;
+  readonly reasonCode: MovementDecisionReason;
+}
+
+export type SimulationEvent =
+  | LifecycleSimulationEvent
+  | SpawnSimulationEvent
+  | MovementSimulationEvent;
 
 export interface CommandEnvelope {
   readonly tick: number;

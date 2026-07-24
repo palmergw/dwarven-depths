@@ -41,11 +41,23 @@ surface currently present on the Phase 2 implementation branch.
   off-map queue, and independent free entrances continue admitting. An optional
   positive live-enemy cap keeps excess spawns queued without discarding or
   reordering them. Results include canonical reason-coded decisions.
+- Map-backed simulations initialize immutable authoritative battlefield state
+  bound to the level's compiled map. A battlefield phase enqueues scheduled
+  spawns, admits queues, and then resolves movement reservations in the fixed
+  same-step order. Canonical occupancy and retained queues persist in state.
+- Every spawn and movement decision emits an immutable simulation event with a
+  stable event sequence, source spawn or proposal ID, entity and map-point IDs,
+  rule ID, status-specific event type, and machine-readable reason code.
+- The authoritative battlefield phase rejects map/state mismatches and invalid
+  queue identities before returning a replacement state. Blocked queues resume
+  deterministically when an entrance becomes free. Node and browser parity pin
+  the resulting state and event evidence to a literal checksum.
 
 ## Not implemented yet
 
-This checkpoint does not yet integrate spawn queues, movement proposals, or
-reservations into dynamic simulation state and does not expose authored spawn
-schedules, targeting, combat, or map-specific CLI commands. Existing
-`validate`, `run`, `replay --verify`, `inspect`, and `compare` behavior remains
-the supported simulation surface.
+This checkpoint does not yet expose authored wave spawn schedules, automatic
+movement-proposal generation, targeting, combat, or map-specific CLI commands.
+The authoritative battlefield phase accepts validated scheduled-spawn and
+movement-proposal inputs so those later systems can share one state transition.
+The existing `validate`, `run`, `replay --verify`, `inspect`, and `compare`
+behavior remains the supported simulation surface.

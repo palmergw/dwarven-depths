@@ -9,7 +9,9 @@ import { canonicalHash } from "@dwarven-depths/contracts";
 import {
   AuthoritativeTables,
   admitQueuedSpawns,
+  createInitialState,
   nextUint32,
+  resolveBattlefieldPhase,
   resolveMovementReservations,
   seedToUint32
 } from "@dwarven-depths/sim-core";
@@ -239,6 +241,55 @@ describe("cross-runtime deterministic conformance", () => {
           reason: "live_enemy_cap_reached"
         }
       ]
+    });
+  });
+
+  it("matches authoritative battlefield state and reason-coded events", async () => {
+    const content = await compileContent(mapContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    const first = resolveBattlefieldPhase(
+      initial,
+      content,
+      [
+        {
+          id: "spawn.first",
+          authoredOrder: 0,
+          entityId: "entity.enemy.first",
+          entranceId: "entrance.west"
+        },
+        {
+          id: "spawn.second",
+          authoredOrder: 1,
+          entityId: "entity.enemy.second",
+          entranceId: "entrance.west"
+        }
+      ] as never,
+      [
+        {
+          id: "movement.first",
+          entityId: "entity.enemy.first",
+          fromNodeId: "node.entry",
+          toNodeId: "node.south"
+        }
+      ] as never
+    );
+    const resumed = resolveBattlefieldPhase(first.state, content, [], []);
+
+    expect(await canonicalHash({ first, resumed })).toBe(
+      "b4ebcef677035968fcc90cee5916a99aa1f886038880344d5a7e2cee970d6120"
+    );
+    expect(resumed.state.battlefield).toEqual({
+      schemaVersion: 1,
+      mapId: "map.conformance_diamond",
+      occupancy: [
+        { entityId: "entity.enemy.first", nodeId: "node.south" },
+        { entityId: "entity.enemy.second", nodeId: "node.entry" }
+      ],
+      pendingSpawns: []
     });
   });
 
