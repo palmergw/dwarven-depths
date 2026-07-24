@@ -61,6 +61,32 @@ async function runShuttergateTickSequence(reverseEntries: boolean) {
     phase: "COMBAT_RUNNING" as const,
     battlefield: deployed
   });
+  const validationErrors: string[] = [];
+  for (const invalidState of [
+    { ...state, phase: "PREPARATION" as const },
+    Object.defineProperty({ ...state }, "tick", {
+      enumerable: true,
+      get: () => {
+        throw new Error("state tick accessor must not execute");
+      }
+    })
+  ]) {
+    try {
+      resolveAuthoritativeCombatTick(
+        {
+          schemaVersion: 1,
+          state: invalidState as SimulationState,
+          dwarfActionEntries
+        },
+        content,
+        authority
+      );
+    } catch (error) {
+      validationErrors.push(
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  }
   const checkpoints: unknown[] = [];
   for (let tick = 0; tick <= 23; tick += 1) {
     state = Object.freeze({ ...state, tick });
@@ -90,7 +116,11 @@ async function runShuttergateTickSequence(reverseEntries: boolean) {
       );
     }
   }
-  return Object.freeze({ state, checkpoints: Object.freeze(checkpoints) });
+  return Object.freeze({
+    state,
+    checkpoints: Object.freeze(checkpoints),
+    validationErrors: Object.freeze(validationErrors)
+  });
 }
 
 export async function authoritativeCombatTickParityEvidence() {

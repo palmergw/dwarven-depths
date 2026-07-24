@@ -3,12 +3,16 @@ import { describe, expect, it } from "vitest";
 import { authoritativeCombatTickParityEvidence } from "./authoritative-combat-tick.fixture.js";
 
 const EXPECTED_CHECKSUM =
-  "b0584d6a23df0ecede8f310d444e8b325aa0db9f53c40e5e3c4276532eb9ed79";
+  "867f7e72390cf770c9e553fe460558981c2f876d86861114be5d642a62a8f1d9";
 
 describe("authoritative combat tick", () => {
   it("composes Shuttergate scheduling, actions, movement, and impacts", async () => {
     const evidence = await authoritativeCombatTickParityEvidence();
     expect(evidence.reversed).toEqual(evidence.forward);
+    expect(evidence.forward.validationErrors).toEqual([
+      "combat state phase must be COMBAT_RUNNING",
+      "authoritative combat tick state.tick must be own enumerable data"
+    ]);
     expect(
       evidence.forward.state.battlefield?.enemyCombatants[0]
     ).toMatchObject({
@@ -32,6 +36,10 @@ describe("authoritative combat tick", () => {
         expect.objectContaining({ type: "spawn.enqueued" }),
         expect.objectContaining({ type: "spawn.admitted" })
       ]
+    });
+    expect(evidence.forward.checkpoints[1]).toMatchObject({
+      tick: 6,
+      events: [expect.objectContaining({ type: "movement.moved", sequence: 3 })]
     });
     expect(evidence.forward.checkpoints[2]).toMatchObject({
       tick: 12,
@@ -64,6 +72,7 @@ describe("authoritative combat tick", () => {
     });
     expect(Object.isFrozen(evidence.forward.state)).toBe(true);
     expect(Object.isFrozen(evidence.forward.state.battlefield)).toBe(true);
+    expect(evidence.forward.state.eventSequence).toBe(5);
     expect(await canonicalHash(evidence)).toBe(EXPECTED_CHECKSUM);
   });
 });
