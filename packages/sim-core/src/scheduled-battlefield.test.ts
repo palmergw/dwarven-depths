@@ -3,6 +3,7 @@ import { canonicalHash, type SimulationEvent } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import {
   createInitialState,
+  resolveBattlefieldPhase,
   resolveScheduledBattlefieldPhase
 } from "./index.js";
 import {
@@ -143,6 +144,32 @@ describe("authored wave battlefield composition", () => {
       resolveScheduledBattlefieldPhase(malformed, content, [])
     ).toThrow("wave that is not marked started");
     expect(malformed).toEqual(before);
+  });
+
+  it("rejects authored definition tampering at direct battlefield admission", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const initial = createInitialState(
+      content,
+      "level.scheduled_battlefield" as never,
+      "1"
+    );
+
+    expect(() =>
+      resolveBattlefieldPhase(
+        initial,
+        content,
+        [
+          {
+            id: "spawn.first" as never,
+            authoredOrder: 0,
+            entityId: "entity.enemy.first" as never,
+            enemyDefinitionId: "enemy.goblin_slinger" as never,
+            entranceId: "entrance.west" as never
+          }
+        ],
+        []
+      )
+    ).toThrow("does not match authored schedule");
   });
 
   it("pins the composed Node evidence checksum", async () => {

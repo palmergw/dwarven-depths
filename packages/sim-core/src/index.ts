@@ -500,6 +500,33 @@ export function resolveBattlefieldPhase(
   const map = content.maps.get(level.mapId);
   if (map === undefined) throw new Error(`Unknown map ID: ${level.mapId}`);
 
+  if (level.waveIds.length > 0) {
+    const authoredSpawns = new Map(
+      level.waveIds.flatMap((waveId) => {
+        const wave = content.waves.get(waveId);
+        if (wave === undefined) throw new Error(`Unknown wave ID: ${waveId}`);
+        return wave.spawnEvents.map((spawn) => [spawn.id, spawn] as const);
+      })
+    );
+    for (const spawn of [
+      ...state.battlefield.pendingSpawns,
+      ...scheduledSpawns
+    ]) {
+      const authored = authoredSpawns.get(spawn.id);
+      if (
+        authored === undefined ||
+        authored.authoredOrder !== spawn.authoredOrder ||
+        authored.entityId !== spawn.entityId ||
+        authored.enemyDefinitionId !== spawn.enemyDefinitionId ||
+        authored.entranceId !== spawn.entranceId
+      ) {
+        throw new RangeError(
+          `pending spawn ${spawn.id} does not match authored schedule`
+        );
+      }
+    }
+  }
+
   const admitted = admitQueuedSpawns(
     map,
     state.battlefield.occupancy,
