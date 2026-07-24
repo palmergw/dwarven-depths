@@ -279,6 +279,39 @@ export interface EnemyMovementPlanningResolution {
   readonly decisions: readonly EnemyMovementPlanningDecision[];
 }
 
+export type EnemyActionPhaseRequest = EnemyMovementPlanningRequest;
+
+export type EnemyActionPhaseReason =
+  | "no_eligible_target"
+  | "target_acquired_for_movement"
+  | "cooldown_in_progress"
+  | "basic_attack_started"
+  | "basic_attack_winding_up"
+  | "basic_attack_cancelled"
+  | "basic_attack_committed";
+
+export interface EnemyActionPhaseDecision {
+  readonly schemaVersion: 1;
+  readonly enemyEntityId: EntityId;
+  readonly status:
+    | "unlocked"
+    | "tracking"
+    | "cooling_down"
+    | "winding_up"
+    | "cancelled"
+    | "committed";
+  readonly reason: EnemyActionPhaseReason;
+  readonly targetLock: EnemyTargetLockDecision;
+  readonly attackId?: StableId;
+}
+
+export interface EnemyActionPhaseResolution {
+  readonly schemaVersion: 1;
+  readonly enemyCombatants: readonly BattlefieldEnemyCombatant[];
+  readonly committedAttacks: readonly CommittedAttack[];
+  readonly decisions: readonly EnemyActionPhaseDecision[];
+}
+
 export interface PendingSpawn {
   /** Stable authored spawn-event ID. */
   readonly id: StableId;

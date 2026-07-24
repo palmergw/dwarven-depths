@@ -239,7 +239,10 @@ describe("deterministic enemy movement proposal planning", () => {
                 currentTargetEntityId: "entity.dwarf.warden" as never,
                 activeBasicAttack: {
                   schemaVersion: 1,
-                  attackId: combatant.basicAttack.id,
+                  attackId: (combatant.basicAttack.id +
+                    "." +
+                    combatant.entityId.slice("entity.".length) +
+                    ".tick_0") as never,
                   sourceEntityId: combatant.entityId,
                   targetEntityId: "entity.dwarf.warden" as never,
                   startedAtTick: 0,
@@ -272,7 +275,10 @@ describe("deterministic enemy movement proposal planning", () => {
                 currentTargetEntityId: "entity.dwarf.warden" as never,
                 activeBasicAttack: {
                   schemaVersion: 1,
-                  attackId: combatant.basicAttack.id,
+                  attackId: (combatant.basicAttack.id +
+                    "." +
+                    combatant.entityId.slice("entity.".length) +
+                    `.tick_${lateCommit - 6}`) as never,
                   sourceEntityId: combatant.entityId,
                   targetEntityId: "entity.dwarf.warden" as never,
                   startedAtTick: lateCommit - 6,

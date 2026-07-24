@@ -538,9 +538,10 @@ function normalizeCombatants(
           active.impactAtTick,
           `${description} attack impactAtTick`
         );
+        const expectedAttackId = `${definition.basicAttack.id}.${entityId.slice("entity.".length)}.tick_${startedAtTick}`;
         if (
           active.schemaVersion !== 1 ||
-          active.attackId !== definition.basicAttack.id ||
+          active.attackId !== expectedAttackId ||
           active.sourceEntityId !== entityId ||
           active.targetEntityId !== action.currentTargetEntityId ||
           startedAtTick < admittedAtTick ||

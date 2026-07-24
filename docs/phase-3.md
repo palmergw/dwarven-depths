@@ -175,6 +175,16 @@ Phase 3 surface currently present in the repository.
   Not-due, unlocked, already attack-valid, unreachable, and routed outcomes are
   reason-coded, immutable, input-order independent, and checksum-pinned across
   Node and all three browser engines.
+- Fixed-step target validation now persists those authoritative enemy locks into
+  admitted action state independently of movement cadence. Idle enemies start
+  an authored basic-attack windup only from range/line-of-sight-valid geometry;
+  active windups retain, cancel, or commit under the existing lock and commit
+  rules without retargeting started work. Commitment clears the windup, starts
+  the authored cooldown, and emits a detached committed attack. Attack-instance
+  IDs combine authored attack identity, source identity, and start tick so
+  repeated attacks and multiple enemies sharing one definition remain distinct.
+  Moving, starting, winding, cancelled, committed, cooling-down, and restarted
+  evidence is immutable and checksum-pinned across Node and all three browsers.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
@@ -229,7 +239,8 @@ Phase 3 surface currently present in the repository.
 
 ## Not implemented yet
 
-Battlefield target-lock persistence and attack action execution,
+Applying generated enemy proposals through reservations and broader attack
+impact execution in the authored encounter,
 armor reduction,
 attack-windup status semantics,
 non-damage trigger variants,
