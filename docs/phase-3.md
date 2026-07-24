@@ -21,10 +21,22 @@ Phase 3 surface currently present in the repository.
   policies, duplicate identities, nonliving candidates, and malformed metrics
   are rejected before selection.
 - Returned decisions are immutable and inputs remain detached and unchanged.
+- Version 1 battlefield maps author stable `aim.*` integer-coordinate centers
+  and `opaque.*` inclusive axis-aligned rectangles. Navigation nodes reference
+  their aim point explicitly. Coordinates are bounded to -1,000,000 through
+  1,000,000 so all geometry arithmetic remains within JavaScript safe integers.
+- Range uses squared Euclidean distance between authored aim-point centers.
+  Authored range is a nonnegative integer no greater than 94,906,265; equality
+  counts as in range, and queries reject malformed ranges or unknown aim IDs.
+- Ranged visibility tests the closed segment between aim points against closed
+  opaque rectangles. Crossing, edge contact, corner contact, and an endpoint on
+  or inside opaque terrain are blocked. A clear segment remains visible.
+- Line-of-sight queries consume only immutable authored map geometry. Units do
+  not participate in blocking at this boundary.
 
 ## Not implemented yet
 
-Authored range and line-of-sight geometry, candidate filtering, enemy target
+Candidate filtering and integration with target selection, enemy target
 acquisition, target locking, attack commitment, damage, armor, cooldowns,
 statuses, death resolution, authored spawn schedules, boss behavior, and combat
 event integration remain later Phase 3 checkpoints.
