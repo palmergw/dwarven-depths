@@ -11,6 +11,8 @@ const windup = {
   commitAtTick: 12,
   impactAtTick: 15,
   cooldownDurationTicks: 30,
+  damage: 12,
+  range: 1_000,
   targetIsValid: true
 };
 
@@ -30,7 +32,7 @@ describe("attack commitment browser parity", () => {
       "committed"
     ]);
     expect(await canonicalHash(decisions)).toBe(
-      "dbe7a41901798bca39f6991bc03fec3d6e34bfb0e502ff40f4e62daca0c7652e"
+      "44d3dd59c4d7bcaaf720cc66e3f3449beab3ea86795d5d502a1bebec6fdcc4c6"
     );
   });
 

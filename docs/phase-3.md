@@ -41,8 +41,9 @@ Phase 3 surface currently present in the repository.
 - Attack windups resolve at explicit integer commit and impact ticks. Invalid
   targets cancel before or at commitment without starting cooldown; valid
   attacks commit exactly at the authored tick and pin both impact and cooldown
-  completion timing. Batch decisions use stable attack-ID order and are
-  immutable, detached, and reason-coded.
+  completion timing plus the resolved damage and range values then in force.
+  Batch decisions use stable attack-ID order and are immutable, detached,
+  versioned, and reason-coded.
 
 ## Not implemented yet
 

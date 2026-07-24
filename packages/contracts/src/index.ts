@@ -287,6 +287,9 @@ export interface AttackWindup {
   readonly commitAtTick: number;
   readonly impactAtTick: number;
   readonly cooldownDurationTicks: number;
+  /** Resolved values in force for this windup; snapshotted at commitment. */
+  readonly damage: number;
+  readonly range: number;
   /** Target validity after the current tick's target-validation phase. */
   readonly targetIsValid: boolean;
 }
@@ -309,9 +312,12 @@ export interface CommittedAttack {
   readonly committedAtTick: number;
   readonly impactAtTick: number;
   readonly cooldownCompleteAtTick: number;
+  readonly damage: number;
+  readonly range: number;
 }
 
 export interface AttackCommitmentDecision {
+  readonly schemaVersion: 1;
   readonly attackId: StableId;
   readonly status: "winding_up" | "cancelled" | "committed";
   readonly reason: AttackCommitmentReason;

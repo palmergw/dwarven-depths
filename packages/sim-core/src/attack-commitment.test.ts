@@ -1,4 +1,4 @@
-import type { AttackWindup } from "@dwarven-depths/contracts";
+import { type AttackWindup, canonicalHash } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import { resolveAttackCommitments } from "./index.js";
 
@@ -12,6 +12,8 @@ function windup(overrides: Partial<AttackWindup> = {}): AttackWindup {
     commitAtTick: 12,
     impactAtTick: 15,
     cooldownDurationTicks: 30,
+    damage: 12,
+    range: 1_000,
     targetIsValid: true,
     ...overrides
   };
@@ -24,6 +26,7 @@ describe("deterministic attack commitment", () => {
     ).toEqual({
       decisions: [
         {
+          schemaVersion: 1,
           attackId: "attack.warden.basic",
           status: "winding_up",
           reason: "waiting_for_commit"
@@ -41,6 +44,7 @@ describe("deterministic attack commitment", () => {
     ).toEqual({
       decisions: [
         {
+          schemaVersion: 1,
           attackId: "attack.warden.basic",
           status: "cancelled",
           reason: "target_invalid_before_commit"
@@ -55,6 +59,7 @@ describe("deterministic attack commitment", () => {
     ).toEqual({
       decisions: [
         {
+          schemaVersion: 1,
           attackId: "attack.warden.basic",
           status: "committed",
           reason: "committed",
@@ -65,10 +70,26 @@ describe("deterministic attack commitment", () => {
             targetEntityId: "entity.enemy.cutter",
             committedAtTick: 12,
             impactAtTick: 15,
-            cooldownCompleteAtTick: 42
+            cooldownCompleteAtTick: 42,
+            damage: 12,
+            range: 1_000
           }
         }
       ]
+    });
+  });
+
+  it("snapshots resolved damage and range at commitment", () => {
+    const input = { ...windup({ damage: 20, range: 2_000 }) };
+    const result = resolveAttackCommitments({
+      currentTick: 12,
+      windups: [input]
+    });
+    input.damage = 99;
+    input.range = 99;
+    expect(result.decisions[0]?.committedAttack).toMatchObject({
+      damage: 20,
+      range: 2_000
     });
   });
 
@@ -99,7 +120,9 @@ describe("deterministic attack commitment", () => {
       windup({ startedAtTick: -1 }),
       windup({ commitAtTick: 9 }),
       windup({ impactAtTick: 11 }),
-      windup({ cooldownDurationTicks: -1 })
+      windup({ cooldownDurationTicks: -1 }),
+      windup({ damage: -1 }),
+      windup({ range: 94_906_266 })
     ]) {
       expect(() =>
         resolveAttackCommitments({ currentTick: 10, windups: [invalid] })
@@ -119,10 +142,10 @@ describe("deterministic attack commitment", () => {
     ).toThrow("passed its commit tick");
     expect(() =>
       resolveAttackCommitments({
-        currentTick: Number.MAX_SAFE_INTEGER,
+        currentTick: 0,
         windups: [
           windup({
-            startedAtTick: Number.MAX_SAFE_INTEGER,
+            startedAtTick: 0,
             commitAtTick: Number.MAX_SAFE_INTEGER,
             impactAtTick: Number.MAX_SAFE_INTEGER,
             cooldownDurationTicks: 1
@@ -130,6 +153,20 @@ describe("deterministic attack commitment", () => {
         ]
       })
     ).toThrow("cooldown completion exceeds");
+  });
+
+  it("pins the canonical decision checksum used by browser parity", async () => {
+    const decisions = [
+      resolveAttackCommitments({ currentTick: 11, windups: [windup()] }),
+      resolveAttackCommitments({
+        currentTick: 12,
+        windups: [windup({ targetIsValid: false })]
+      }),
+      resolveAttackCommitments({ currentTick: 12, windups: [windup()] })
+    ];
+    expect(await canonicalHash(decisions)).toBe(
+      "44d3dd59c4d7bcaaf720cc66e3f3449beab3ea86795d5d502a1bebec6fdcc4c6"
+    );
   });
 
   it("rejects sparse arrays and accessors without invoking caller code", () => {

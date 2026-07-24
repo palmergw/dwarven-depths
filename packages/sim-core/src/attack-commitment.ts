@@ -8,6 +8,7 @@ import type {
 
 const stableIdPattern = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 const entityIdPattern = /^entity\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
+const maximumSafeRange = Math.floor(Math.sqrt(Number.MAX_SAFE_INTEGER));
 
 function requireDataRecord<const Keys extends readonly string[]>(
   value: unknown,
@@ -89,6 +90,8 @@ function validateWindup(value: unknown, index: number): AttackWindup {
       "commitAtTick",
       "impactAtTick",
       "cooldownDurationTicks",
+      "damage",
+      "range",
       "targetIsValid"
     ],
     description
@@ -122,6 +125,8 @@ function validateWindup(value: unknown, index: number): AttackWindup {
     record.cooldownDurationTicks,
     `${description} cooldownDurationTicks`
   );
+  const damage = requireTick(record.damage, `${description} damage`);
+  const range = requireTick(record.range, `${description} range`);
   if (commitAtTick < startedAtTick)
     throw new RangeError(
       `${description} commitAtTick cannot precede startedAtTick`
@@ -129,6 +134,14 @@ function validateWindup(value: unknown, index: number): AttackWindup {
   if (impactAtTick < commitAtTick)
     throw new RangeError(
       `${description} impactAtTick cannot precede commitAtTick`
+    );
+  if (range > maximumSafeRange)
+    throw new RangeError(
+      `${description} range cannot exceed ${maximumSafeRange}`
+    );
+  if (!Number.isSafeInteger(commitAtTick + cooldownDurationTicks))
+    throw new RangeError(
+      `${description} cooldown completion exceeds the safe-integer range`
     );
   if (typeof record.targetIsValid !== "boolean")
     throw new TypeError(`${description} targetIsValid must be boolean`);
@@ -141,6 +154,8 @@ function validateWindup(value: unknown, index: number): AttackWindup {
     commitAtTick,
     impactAtTick,
     cooldownDurationTicks,
+    damage,
+    range,
     targetIsValid: record.targetIsValid
   });
 }
@@ -156,6 +171,7 @@ function decision(
   committedAttack?: CommittedAttack
 ): AttackCommitmentDecision {
   return Object.freeze({
+    schemaVersion: 1,
     attackId: windup.attackId,
     status,
     reason,
@@ -199,10 +215,6 @@ export function resolveAttackCommitments(
         return decision(windup, "winding_up", "waiting_for_commit");
       const cooldownCompleteAtTick =
         windup.commitAtTick + windup.cooldownDurationTicks;
-      if (!Number.isSafeInteger(cooldownCompleteAtTick))
-        throw new RangeError(
-          `attack windup cooldown completion exceeds the safe-integer range (${windup.attackId})`
-        );
       const committedAttack: CommittedAttack = Object.freeze({
         schemaVersion: 1,
         attackId: windup.attackId,
@@ -210,7 +222,9 @@ export function resolveAttackCommitments(
         targetEntityId: windup.targetEntityId,
         committedAtTick: windup.commitAtTick,
         impactAtTick: windup.impactAtTick,
-        cooldownCompleteAtTick
+        cooldownCompleteAtTick,
+        damage: windup.damage,
+        range: windup.range
       });
       return decision(windup, "committed", "committed", committedAttack);
     });
