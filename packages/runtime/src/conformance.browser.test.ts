@@ -36,6 +36,8 @@ import {
   createLifecycleDiagnostics,
   createReplayDefinition,
   createTimelineRecords,
+  renderBattlefieldSvg,
+  renderBattlefieldText,
   runScenario,
   verifyReplay
 } from "./index.js";
@@ -135,6 +137,45 @@ describe("cross-runtime deterministic conformance", () => {
             }
           ])
     ).toEqual({ valid: true, issues: [] });
+  });
+
+  it("matches golden text and SVG battlefield diagnostics", async () => {
+    const content = await compileContent(mapContentInput);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing conformance map");
+    const request = {
+      map,
+      state: {
+        schemaVersion: 1 as const,
+        mapId: map.id,
+        occupancy: [
+          {
+            entityId: "entity.enemy.alpha" as never,
+            nodeId: "node.east" as never
+          }
+        ],
+        pendingSpawns: [
+          {
+            id: "spawn.second" as never,
+            authoredOrder: 1,
+            entityId: "entity.enemy.second" as never,
+            entranceId: "entrance.west" as never
+          }
+        ]
+      },
+      layers: ["map", "occupancy", "path"] as const,
+      route: {
+        fromNodeId: "node.entry" as never,
+        toNodeId: "node.goal" as never
+      }
+    };
+
+    await expect(canonicalHash(renderBattlefieldText(request))).resolves.toBe(
+      "57497f3d36a8ecc3e9510badcc2ff39c8961e3c77a84bb3ae1f67f737de6aa2e"
+    );
+    await expect(canonicalHash(renderBattlefieldSvg(request))).resolves.toBe(
+      "3efd08eb8ee22a8194c4b58f4a9e46c506c9481f2430dc77b995e790829e08c8"
+    );
   });
 
   it("matches deterministic movement reservation contention", async () => {

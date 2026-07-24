@@ -31,6 +31,7 @@ import {
 import {
   canonicalHash,
   type LifecycleDiagnosticRecord,
+  type NavigationNodeId,
   type ReplayDefinition,
   type TimelineRecord
 } from "@dwarven-depths/contracts";
@@ -42,6 +43,8 @@ import {
   ReplayDivergenceError,
   RuntimeAssertionError,
   RuntimeSafetyStopError,
+  renderBattlefieldSvg,
+  renderBattlefieldText,
   runScenario,
   verifyReplay
 } from "@dwarven-depths/runtime";
@@ -946,6 +949,70 @@ async function inspect(args: ParsedArgs): Promise<void> {
   );
 }
 
+async function render(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(
+    args,
+    new Set(["run", "format", "layers", "from-node", "to-node"])
+  );
+  const format = requiredFlag(args, "format");
+  if (format !== "text" && format !== "svg")
+    throw new CliInputError("--format must be text or svg");
+  const layerNames = requiredFlag(args, "layers").split(",");
+  if (
+    layerNames.some(
+      (layer) => layer !== "map" && layer !== "occupancy" && layer !== "path"
+    )
+  )
+    throw new CliInputError(
+      "--layers must be a comma-separated subset of map,occupancy,path"
+    );
+
+  const fromNodeId = args.flags.get("from-node");
+  const toNodeId = args.flags.get("to-node");
+  if ((fromNodeId === undefined) !== (toNodeId === undefined))
+    throw new CliInputError(
+      "--from-node and --to-node must be provided together"
+    );
+
+  const evidence = await verifyRunDirectory(
+    resolve(requiredFlag(args, "run")),
+    false
+  );
+  const level = evidence.content.levels.get(evidence.scenario.levelId);
+  const battlefield = evidence.result.finalState.battlefield;
+  if (level?.mapId === undefined || battlefield === undefined)
+    throw new CliInputError("verified run does not contain a battlefield map");
+  const map = evidence.content.maps.get(level.mapId);
+  if (map === undefined)
+    throw new CliInputError(
+      `verified run references missing battlefield map (${level.mapId})`
+    );
+
+  try {
+    const request = {
+      map,
+      state: battlefield,
+      layers: layerNames as Array<"map" | "occupancy" | "path">,
+      ...(fromNodeId === undefined || toNodeId === undefined
+        ? {}
+        : {
+            route: {
+              fromNodeId: fromNodeId as NavigationNodeId,
+              toNodeId: toNodeId as NavigationNodeId
+            }
+          })
+    };
+    process.stdout.write(
+      format === "text"
+        ? renderBattlefieldText(request)
+        : renderBattlefieldSvg(request)
+    );
+  } catch (error) {
+    if (error instanceof RangeError) throw new CliInputError(error.message);
+    throw error;
+  }
+}
+
 async function compare(args: ParsedArgs): Promise<void> {
   rejectUnknownFlags(args, new Set(["baseline", "candidate"]));
   const baselineDirectory = resolve(requiredFlag(args, "baseline"));
@@ -1387,12 +1454,15 @@ async function main(): Promise<void> {
     case "inspect":
       await inspect(args);
       break;
+    case "render":
+      await render(args);
+      break;
     case "compare":
       await compare(args);
       break;
     default:
       throw new CliInputError(
-        "Usage: dwarven-depths-sim <validate|run|replay|inspect|compare> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--baseline <bundle> --candidate <bundle>]"
+        "Usage: dwarven-depths-sim <validate|run|replay|inspect|render|compare> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>]"
       );
   }
 }

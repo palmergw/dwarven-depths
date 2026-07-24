@@ -52,12 +52,20 @@ surface currently present on the Phase 2 implementation branch.
   queue identities before returning a replacement state. Blocked queues resume
   deterministically when an entrance becomes free. Node and browser parity pin
   the resulting state and event evidence to a literal checksum.
+- The `render` CLI verifies a completed run bundle before emitting deterministic
+  text or SVG diagnostics for its terminal battlefield state. The shared runtime
+  renderer exposes authored connections and coordinates, stable node/entrance/
+  placement/entity IDs, occupancy, retained spawn queues, and an optional
+  deterministic shortest route with total cost. SVG labels and metadata are
+  escaped, and literal Node plus Chromium/Firefox/WebKit output checksums are
+  pinned against the nonempty conformance map.
 
 ## Not implemented yet
 
 This checkpoint does not yet expose authored wave spawn schedules, automatic
-movement-proposal generation, targeting, combat, or map-specific CLI commands.
+movement-proposal generation, targeting, combat, or arbitrary-tick battlefield
+snapshots. Battlefield rendering currently uses verified terminal state.
 The authoritative battlefield phase accepts validated scheduled-spawn and
 movement-proposal inputs so those later systems can share one state transition.
 The existing `validate`, `run`, `replay --verify`, `inspect`, and `compare`
-behavior remains the supported simulation surface.
+behavior remains supported alongside `render`.

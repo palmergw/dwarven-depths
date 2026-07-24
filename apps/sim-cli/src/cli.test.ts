@@ -253,6 +253,95 @@ describe("simulation CLI", () => {
     });
   });
 
+  it("renders verified battlefield map, occupancy, queue, and route evidence", () => {
+    const directory = temporaryDirectory();
+    const output = resolve(directory, "battlefield-run");
+    expect(
+      runCli(
+        "run",
+        "--content",
+        resolve("content/fixtures/conformance-map.json"),
+        "--scenario",
+        resolve("scenarios/conformance/battlefield-map.json"),
+        "--out",
+        output
+      ).status
+    ).toBe(0);
+
+    const text = runCli(
+      "render",
+      "--run",
+      output,
+      "--format",
+      "text",
+      "--layers",
+      "map,occupancy,path",
+      "--from-node",
+      "node.entry",
+      "--to-node",
+      "node.goal"
+    );
+    expect(text.status).toBe(0);
+    expect(text.stderr).toBe("");
+    expect(text.stdout).toBe(`battlefield map.conformance_diamond
+layers map,occupancy,path
+legend E=entrance P=placement O=occupied *=route
+route node.entry -> node.goal cost=20 nodes=node.entry,node.south,node.goal
+grid
+y=0 [E..*]-[.P..]
+y=1 [...*]-[.P.*]
+nodes
+- node.east coord=1,0 placement=placement.east
+- node.entry coord=0,0 entrance=entrance.west routeIndex=0
+- node.goal coord=1,1 placement=placement.goal routeIndex=2
+- node.south coord=0,1 routeIndex=1
+connections
+- connection.east_goal node.east <-> node.goal cost=10
+- connection.entry_east node.east <-> node.entry cost=10
+- connection.entry_south node.entry <-> node.south cost=10
+- connection.south_goal node.goal <-> node.south cost=10
+queued-spawns
+- none
+`);
+
+    const svg = runCli(
+      "render",
+      "--run",
+      output,
+      "--format",
+      "svg",
+      "--layers",
+      "map,path",
+      "--from-node",
+      "node.entry",
+      "--to-node",
+      "node.goal"
+    );
+    expect(svg.status).toBe(0);
+    expect(svg.stdout).toContain(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 360"'
+    );
+    expect(svg.stdout).toContain('data-connection-id="connection.entry_south"');
+    expect(svg.stdout).toContain('class="node entrance route"');
+
+    const incompletePath = runCli(
+      "render",
+      "--run",
+      output,
+      "--format",
+      "text",
+      "--layers",
+      "map,path",
+      "--from-node",
+      "node.entry"
+    );
+    expect(incompletePath.status).toBe(2);
+    expect(JSON.parse(incompletePath.stderr)).toMatchObject({
+      error: { type: "input", code: "invalid_cli_input" }
+    });
+    expect(incompletePath.stdout).toBe("");
+  });
+
   it("inspects verified timeline windows and rejects invalid or tampered evidence", () => {
     const content = temporaryFile("content.json", {
       schemaVersion: 1,
