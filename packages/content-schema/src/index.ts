@@ -36,6 +36,8 @@ const placementPointIdSchema = domainIdSchema("placement");
 const enemyEntranceIdSchema = domainIdSchema("entrance");
 const entityIdSchema = domainIdSchema("entity");
 const enemyDefinitionIdSchema = domainIdSchema("enemy");
+const characterDefinitionIdSchema = domainIdSchema("character");
+const attackDefinitionIdSchema = domainIdSchema("attack");
 const spawnIdSchema = domainIdSchema("spawn");
 const aimPointIdSchema = domainIdSchema("aim");
 const opaqueRegionIdSchema = domainIdSchema("opaque");
@@ -86,6 +88,49 @@ const waveDefinitionSchema = z
         })
         .strict()
     )
+  })
+  .strict();
+
+const boundedCombatIntegerSchema = z.int().nonnegative().max(10_000_000);
+const positiveCombatIntegerSchema = z.int().positive().max(10_000_000);
+const dwarfTargetPolicySchema = z.enum([
+  "nearest",
+  "lowest_health",
+  "highest_health",
+  "highest_armor",
+  "fastest",
+  "boss_or_elite_first"
+]);
+const authoredBasicAttackSchema = z
+  .object({
+    id: attackDefinitionIdSchema,
+    windupTicks: boundedCombatIntegerSchema,
+    impactDelayTicks: boundedCombatIntegerSchema,
+    cooldownTicks: positiveCombatIntegerSchema,
+    damage: positiveCombatIntegerSchema,
+    range: z.int().nonnegative().max(94_906_265),
+    requiresLineOfSight: z.boolean()
+  })
+  .strict();
+const characterDefinitionSchema = z
+  .object({
+    kind: z.literal("character"),
+    id: characterDefinitionIdSchema,
+    maximumHealth: positiveCombatIntegerSchema,
+    armor: boundedCombatIntegerSchema,
+    supportedTargetPolicies: z.array(dwarfTargetPolicySchema).nonempty(),
+    basicAttack: authoredBasicAttackSchema
+  })
+  .strict();
+const enemyDefinitionSchema = z
+  .object({
+    kind: z.literal("enemy"),
+    id: enemyDefinitionIdSchema,
+    classification: z.enum(["basic", "elite", "boss"]),
+    maximumHealth: positiveCombatIntegerSchema,
+    armor: boundedCombatIntegerSchema,
+    movementIntervalTicks: positiveCombatIntegerSchema,
+    basicAttack: authoredBasicAttackSchema
   })
   .strict();
 
@@ -154,7 +199,9 @@ const battlefieldMapSchema = z
 const contentDefinitionSchema = z.discriminatedUnion("kind", [
   levelDefinitionSchema,
   waveDefinitionSchema,
-  battlefieldMapSchema
+  battlefieldMapSchema,
+  characterDefinitionSchema,
+  enemyDefinitionSchema
 ]);
 
 const contentBundleSchema = z
@@ -527,9 +574,13 @@ export function validateContentBundle(input: unknown): ContentBundle {
 
   const seen = new Map<
     string,
-    { readonly index: number; readonly kind: "level" | "wave" | "map" }
+    {
+      readonly index: number;
+      readonly kind: "level" | "wave" | "map" | "character" | "enemy";
+    }
   >();
   const issues: ValidationIssue[] = [];
+  const globalAttackIds = new Map<string, string>();
   const globalMapIds = {
     nodes: new Map<string, string>(),
     connections: new Map<string, string>(),
@@ -553,6 +604,26 @@ export function validateContentBundle(input: unknown): ContentBundle {
   });
 
   parsed.data.definitions.forEach((definition, definitionIndex) => {
+    if (definition.kind === "character") {
+      validateUniqueReferences(
+        definition.supportedTargetPolicies,
+        `$/definitions/${definitionIndex}/supportedTargetPolicies`,
+        issues
+      );
+    }
+    if (definition.kind === "character" || definition.kind === "enemy") {
+      const attackPath = `$/definitions/${definitionIndex}/basicAttack/id`;
+      const previousAttackPath = globalAttackIds.get(definition.basicAttack.id);
+      if (previousAttackPath === undefined)
+        globalAttackIds.set(definition.basicAttack.id, attackPath);
+      else
+        issues.push({
+          path: attackPath,
+          code: "duplicate_stable_id",
+          message: `duplicates ${definition.basicAttack.id}`,
+          relatedPaths: [previousAttackPath]
+        });
+    }
     if (definition.kind === "map") {
       validateBattlefieldMap(definition, definitionIndex, issues, globalMapIds);
       return;
@@ -616,6 +687,20 @@ export function validateContentBundle(input: unknown): ContentBundle {
       });
     definition.spawnEvents.forEach((event, eventIndex) => {
       const eventPath = `$/definitions/${definitionIndex}/spawnEvents/${eventIndex}`;
+      const enemyTarget = seen.get(event.enemyDefinitionId);
+      if (enemyTarget === undefined)
+        issues.push({
+          path: `${eventPath}/enemyDefinitionId`,
+          code: "unknown_reference",
+          message: `references unknown enemy definition ID (${event.enemyDefinitionId})`
+        });
+      else if (enemyTarget.kind !== "enemy")
+        issues.push({
+          path: `${eventPath}/enemyDefinitionId`,
+          code: "wrong_reference_kind",
+          message: `references ${enemyTarget.kind}; expected enemy`,
+          relatedPaths: [`$/definitions/${enemyTarget.index}/id`]
+        });
       if (event.atTick < definition.startAtTick || event.atTick >= waveEnd)
         issues.push({
           path: `${eventPath}/atTick`,
@@ -715,6 +800,25 @@ export function validateContentBundle(input: unknown): ContentBundle {
             enemyDefinitionId: event.enemyDefinitionId as StableId,
             entranceId: event.entranceId as EnemyEntranceId
           }))
+        };
+      if (definition.kind === "character")
+        return {
+          ...definition,
+          id: definition.id as StableId,
+          supportedTargetPolicies: [...definition.supportedTargetPolicies],
+          basicAttack: {
+            ...definition.basicAttack,
+            id: definition.basicAttack.id as StableId
+          }
+        };
+      if (definition.kind === "enemy")
+        return {
+          ...definition,
+          id: definition.id as StableId,
+          basicAttack: {
+            ...definition.basicAttack,
+            id: definition.basicAttack.id as StableId
+          }
         };
       return {
         kind: "map",

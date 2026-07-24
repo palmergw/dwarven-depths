@@ -10,9 +10,11 @@ import type {
 } from "@dwarven-depths/contracts";
 import {
   type BattlefieldMapDefinition,
+  type CharacterDefinition,
   type ContentBundle,
   type ContentDefinition,
   canonicalHash,
+  type EnemyDefinition,
   type EnemyEntranceId,
   type LevelDefinition,
   type NavigationNodeDefinition,
@@ -142,6 +144,19 @@ function freezeMap(
 
 function freezeDefinition(definition: ContentDefinition): ContentDefinition {
   if (definition.kind === "map") return freezeMap(definition);
+  if (definition.kind === "character")
+    return Object.freeze({
+      ...definition,
+      supportedTargetPolicies: Object.freeze([
+        ...definition.supportedTargetPolicies
+      ]),
+      basicAttack: Object.freeze({ ...definition.basicAttack })
+    });
+  if (definition.kind === "enemy")
+    return Object.freeze({
+      ...definition,
+      basicAttack: Object.freeze({ ...definition.basicAttack })
+    });
   return definition.kind === "level"
     ? Object.freeze({
         ...definition,
@@ -167,6 +182,8 @@ export interface CompiledContent {
   readonly levels: ReadonlyMap<StableId, LevelDefinition>;
   readonly waves: ReadonlyMap<StableId, WaveDefinition>;
   readonly maps: ReadonlyMap<StableId, BattlefieldMapDefinition>;
+  readonly characters: ReadonlyMap<StableId, CharacterDefinition>;
+  readonly enemies: ReadonlyMap<StableId, EnemyDefinition>;
 }
 
 export interface NavigationRoute {
@@ -599,10 +616,15 @@ export async function compileContent(input: unknown): Promise<CompiledContent> {
   const levels = new Map<StableId, LevelDefinition>();
   const waves = new Map<StableId, WaveDefinition>();
   const maps = new Map<StableId, BattlefieldMapDefinition>();
+  const characters = new Map<StableId, CharacterDefinition>();
+  const enemies = new Map<StableId, EnemyDefinition>();
   for (const definition of definitions) {
     if (definition.kind === "level") levels.set(definition.id, definition);
     else if (definition.kind === "wave") waves.set(definition.id, definition);
-    else maps.set(definition.id, definition);
+    else if (definition.kind === "map") maps.set(definition.id, definition);
+    else if (definition.kind === "character")
+      characters.set(definition.id, definition);
+    else enemies.set(definition.id, definition);
   }
 
   return Object.freeze({
@@ -610,7 +632,9 @@ export async function compileContent(input: unknown): Promise<CompiledContent> {
     manifestHash: await canonicalHash(bundle),
     levels: Object.freeze(new ReadonlyMapView(levels)),
     waves: Object.freeze(new ReadonlyMapView(waves)),
-    maps: Object.freeze(new ReadonlyMapView(maps))
+    maps: Object.freeze(new ReadonlyMapView(maps)),
+    characters: Object.freeze(new ReadonlyMapView(characters)),
+    enemies: Object.freeze(new ReadonlyMapView(enemies))
   });
 }
 

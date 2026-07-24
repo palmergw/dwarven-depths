@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "phase-3-reference-combatants-v1",
+  "definitions": [
+    {
+      "kind": "character",
+      "id": "character.iron_warden",
+      "maximumHealth": 240,
+      "armor": 30,
+      "supportedTargetPolicies": [
+        "nearest",
+        "lowest_health",
+        "highest_health",
+        "highest_armor",
+        "fastest",
+        "boss_or_elite_first"
+      ],
+      "basicAttack": {
+        "id": "attack.iron_warden_basic",
+        "windupTicks": 8,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 24,
+        "damage": 18,
+        "range": 2,
+        "requiresLineOfSight": false
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_cutter",
+      "classification": "basic",
+      "maximumHealth": 50,
+      "armor": 0,
+      "movementIntervalTicks": 6,
+      "basicAttack": {
+        "id": "attack.goblin_cutter_basic",
+        "windupTicks": 6,
+        "impactDelayTicks": 1,
+        "cooldownTicks": 20,
+        "damage": 10,
+        "range": 1,
+        "requiresLineOfSight": false
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_slinger",
+      "classification": "basic",
+      "maximumHealth": 38,
+      "armor": 0,
+      "movementIntervalTicks": 7,
+      "basicAttack": {
+        "id": "attack.goblin_slinger_basic",
+        "windupTicks": 10,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 28,
+        "damage": 9,
+        "range": 6,
+        "requiresLineOfSight": true
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_bulwark",
+      "classification": "elite",
+      "maximumHealth": 120,
+      "armor": 25,
+      "movementIntervalTicks": 10,
+      "basicAttack": {
+        "id": "attack.goblin_bulwark_basic",
+        "windupTicks": 10,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 30,
+        "damage": 14,
+        "range": 1,
+        "requiresLineOfSight": false
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.gatebreaker_captain",
+      "classification": "boss",
+      "maximumHealth": 360,
+      "armor": 20,
+      "movementIntervalTicks": 8,
+      "basicAttack": {
+        "id": "attack.gatebreaker_captain_basic",
+        "windupTicks": 14,
+        "impactDelayTicks": 3,
+        "cooldownTicks": 36,
+        "damage": 24,
+        "range": 2,
+        "requiresLineOfSight": false
+      }
+    }
+  ]
+}

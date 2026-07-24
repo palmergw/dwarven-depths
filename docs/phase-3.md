@@ -160,9 +160,20 @@ Phase 3 surface currently present in the repository.
   report renders deterministic Markdown or JSON, and every entry cites its event
   ID, tick, sequence, rule code, and recorded event or command causes. The pure
   reducer is pinned across Node and all three browser engines.
+- Version 1 content now authors immutable base combatant records for the Iron
+  Warden, Goblin Cutter, Goblin Slinger, Goblin Bulwark, and Gatebreaker Captain.
+  Records carry bounded health, armor metrics, movement intervals, target-policy
+  support, and basic attack timing, damage, range, and line-of-sight data under
+  stable `character.*`, `enemy.*`, and `attack.*` IDs. Wave spawns must reference
+  an authored enemy definition. Compilation canonicalizes and indexes the records
+  through read-only maps, and the reference manifest checksum is pinned in Node,
+  Chromium, Firefox, and WebKit. Armor remains a targeting/content metric here;
+  no damage-reduction formula, Shield Slam stagger, Captain rally, or heavy-strike
+  behavior is inferred by this checkpoint.
 
 ## Not implemented yet
 
-Armor, attack-windup status semantics, non-damage trigger variants, authored
-enemy stat definitions, non-boss rewards, boss behavior, and broader combat
-event integration remain later checkpoints.
+Armor reduction, attack-windup status semantics, non-damage trigger variants,
+non-boss rewards, authored special abilities and boss behavior, reference map and
+five-wave composition, balance calibration, and broader combat event integration
+remain later checkpoints.

@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import mapContentInput from "../../../content/fixtures/conformance-map.json" with {
   type: "json"
 };
+import referenceCombatantsInput from "../../../content/fixtures/phase-3-reference-combatants.json" with {
+  type: "json"
+};
 import {
   ContentValidationError,
   validateContentBundle,
@@ -330,6 +333,88 @@ describe("content validation", () => {
     );
   });
 
+  it("accepts the authored Phase 3 reference combatants", () => {
+    const result = validateContentBundle(referenceCombatantsInput);
+    expect(result.definitions.map((definition) => definition.id)).toEqual([
+      "character.iron_warden",
+      "enemy.goblin_cutter",
+      "enemy.goblin_slinger",
+      "enemy.goblin_bulwark",
+      "enemy.gatebreaker_captain"
+    ]);
+  });
+
+  it("rejects malformed combatant definitions at precise paths", () => {
+    const invalid = structuredClone(referenceCombatantsInput);
+    const character = invalid.definitions[0];
+    const enemy = invalid.definitions[1];
+    if (
+      character?.kind !== "character" ||
+      character.supportedTargetPolicies === undefined ||
+      enemy?.kind !== "enemy"
+    )
+      throw new Error("incomplete combatant fixture");
+    const supportedTargetPolicies = character.supportedTargetPolicies;
+    supportedTargetPolicies.push("nearest");
+    enemy.basicAttack.id = character.basicAttack.id;
+    enemy.maximumHealth = 0;
+    expect(() => validateContentBundle(invalid)).toThrow(
+      "$/definitions/1/maximumHealth"
+    );
+
+    supportedTargetPolicies.pop();
+    enemy.maximumHealth = 1;
+    try {
+      validateContentBundle(invalid);
+      throw new Error("expected validation to fail");
+    } catch (error) {
+      expect((error as ContentValidationError).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "$/definitions/1/basicAttack/id",
+            code: "duplicate_stable_id",
+            relatedPaths: ["$/definitions/0/basicAttack/id"]
+          })
+        ])
+      );
+    }
+  });
+
+  it("rejects a missing enemy spawn reference", () => {
+    try {
+      validateContentBundle({
+        schemaVersion: 1,
+        contentVersion: "reference-test",
+        definitions: [
+          {
+            kind: "wave",
+            id: "wave.reference",
+            startAtTick: 0,
+            durationTicks: 1,
+            spawnEvents: [
+              {
+                id: "spawn.reference",
+                authoredOrder: 0,
+                atTick: 0,
+                entityId: "entity.enemy.reference",
+                enemyDefinitionId: "enemy.missing",
+                entranceId: "entrance.west"
+              }
+            ]
+          }
+        ]
+      });
+      throw new Error("expected validation to fail");
+    } catch (error) {
+      expect((error as ContentValidationError).issues).toEqual([
+        expect.objectContaining({
+          path: "$/definitions/0/spawnEvents/0/enemyDefinitionId",
+          code: "unknown_reference"
+        })
+      ]);
+    }
+  });
+
   it("accepts authored wave timestamps and spawn events against the level map", () => {
     const map = structuredClone(mapContentInput.definitions[1]);
     const result = validateContentBundle({
@@ -358,7 +443,10 @@ describe("content validation", () => {
             }
           ]
         },
-        map
+        map,
+        referenceCombatantsInput.definitions.find(
+          (definition) => definition.id === "enemy.goblin_cutter"
+        )
       ]
     });
     expect(result.definitions[1]).toMatchObject({
