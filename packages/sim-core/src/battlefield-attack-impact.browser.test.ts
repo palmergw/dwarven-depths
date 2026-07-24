@@ -11,7 +11,7 @@ import {
 } from "./index.js";
 
 const parityChecksum =
-  "f7afbb6dabe8ff679b776bd2fa6cb0dfdb7fe0ac0626a8b04f3a61f638277cb1";
+  "96e740814d345ca8430e9bd99151b17bdd59413282531c978c9ade570a7de0b2";
 
 describe("battlefield attack impact browser parity", () => {
   it("matches the Node evidence checksum", async () => {

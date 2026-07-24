@@ -8,6 +8,7 @@ import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js
 import { entry } from "./enemy-movement-planning.fixture.js";
 import {
   createInitialState,
+  resolveBattlefieldAttackImpacts,
   resolveBattlefieldPhase,
   resolveDwarfActionPhase,
   resolveEnemyActionPhase,
@@ -68,12 +69,38 @@ export async function dwarfActionPhaseFixture() {
     base.content,
     base.deploymentAuthority
   );
+  const simultaneousReady: BattlefieldState = {
+    ...coolingDown.battlefield,
+    enemyCombatants: coolingDown.battlefield.enemyCombatants.map((enemy) => ({
+      ...enemy,
+      actionState: {
+        ...enemy.actionState,
+        currentTargetEntityId: "entity.dwarf.warden" as never,
+        activeBasicAttack: {
+          schemaVersion: 1,
+          attackId:
+            "attack.goblin_cutter_basic.enemy.cutter.source_length_12.tick_9" as never,
+          sourceEntityId: enemy.entityId,
+          targetEntityId: "entity.dwarf.warden" as never,
+          startedAtTick: 9,
+          commitAtTick: 15,
+          impactAtTick: 16,
+          cooldownDurationTicks: 20,
+          damage: 10,
+          range: 1,
+          targetIsValid: true
+        },
+        cooldownCompleteAtTick: null
+      }
+    }))
+  };
+  propagateBattlefieldRoundLineage(coolingDown.battlefield, simultaneousReady);
   const enemyPhase = resolveEnemyActionPhase(
     {
       schemaVersion: 1,
       currentTick: 15,
       levelId: "level.conformance_map" as never,
-      battlefield: coolingDown.battlefield,
+      battlefield: simultaneousReady,
       entries: [entry("entity.enemy.cutter" as never)]
     },
     base.content,
@@ -170,6 +197,7 @@ export async function dwarfActionPhaseFixture() {
 
 export async function dwarfActionPhaseParityEvidence() {
   const {
+    base,
     started,
     winding,
     committed,
@@ -180,12 +208,34 @@ export async function dwarfActionPhaseParityEvidence() {
     substitutionError,
     sourceDowned
   } = await dwarfActionPhaseFixture();
+  const impactPending = resolveBattlefieldAttackImpacts(
+    {
+      schemaVersion: 1,
+      currentTick: 15,
+      levelId: "level.conformance_map" as never,
+      battlefield: enemyPhase.battlefield
+    },
+    base.content,
+    base.deploymentAuthority
+  );
+  const impacted = resolveBattlefieldAttackImpacts(
+    {
+      schemaVersion: 1,
+      currentTick: 16,
+      levelId: "level.conformance_map" as never,
+      battlefield: impactPending.battlefield
+    },
+    base.content,
+    base.deploymentAuthority
+  );
   return Object.freeze({
     started,
     winding,
     committed,
     coolingDown,
     enemyPhase,
+    impactPending,
+    impacted,
     battlefieldPhase,
     scheduledPhase,
     substitutionError,

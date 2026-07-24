@@ -16,7 +16,7 @@ import {
 } from "./index.js";
 
 const parityChecksum =
-  "f7afbb6dabe8ff679b776bd2fa6cb0dfdb7fe0ac0626a8b04f3a61f638277cb1";
+  "96e740814d345ca8430e9bd99151b17bdd59413282531c978c9ade570a7de0b2";
 
 function descendant<T extends BattlefieldState>(
   source: BattlefieldState,
@@ -67,13 +67,13 @@ describe("battlefield committed-attack impacts", () => {
         becameZeroHealth: true
       })
     ]);
-    expect(resolved.lifecycleDecisions).toEqual([
+    expect(resolved.lifecycleDecisions).toContainEqual(
       expect.objectContaining({
         entityId: "entity.dwarf.warden",
         status: "transitioned",
         reason: "dwarf_downed"
       })
-    ]);
+    );
     expect(resolved.battlefield.pendingCommittedAttacks).toEqual([]);
     expect(resolved.battlefield.dwarfCombatants[0]).toEqual(
       expect.objectContaining({
@@ -253,6 +253,31 @@ describe("battlefield committed-attack impacts", () => {
         deploymentAuthority
       )
     ).toThrow("do not match authoritative pending attacks");
+  });
+
+  it("rejects caller-substituted enemy health after authoritative impact", async () => {
+    const { content, deploymentAuthority, resolved } =
+      await battlefieldAttackImpactParityEvidence();
+    const forged = {
+      ...resolved.battlefield,
+      enemyCombatants: resolved.battlefield.enemyCombatants.map((enemy) => ({
+        ...enemy,
+        currentHealth: enemy.currentHealth - 1
+      }))
+    };
+    propagateBattlefieldRoundLineage(resolved.battlefield, forged);
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 8,
+          levelId: "level.conformance_map" as never,
+          battlefield: forged
+        },
+        content,
+        deploymentAuthority
+      )
+    ).toThrow("enemy health/lifecycle does not match authoritative evidence");
   });
 
   it("rejects malformed unrelated occupancy instead of preserving it", async () => {

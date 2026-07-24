@@ -502,7 +502,7 @@ export interface BattlefieldState {
   readonly enemyAdmissions: readonly BattlefieldEnemyAdmission[];
   readonly enemyCombatants: readonly BattlefieldEnemyCombatant[];
   readonly dwarfCombatants: readonly BattlefieldDwarfCombatant[];
-  /** Committed enemy attacks awaiting their exact authored impact tick. */
+  /** Committed basic attacks awaiting their exact authored impact tick. */
   readonly pendingCommittedAttacks: readonly CommittedAttack[];
 }
 

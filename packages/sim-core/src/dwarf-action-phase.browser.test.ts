@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { dwarfActionPhaseParityEvidence } from "./dwarf-action-phase.fixture.js";
 
 const checksum =
-  "6c6bbe2fc79b809a88dc32dd2bd166e52e39c96c633c3e0a24bc8dd286c40832";
+  "311c25a76be19e3b6cd920a66c884e14436cbc76c7c109c90612f80523ccc486";
 
 describe("dwarf action phase browser parity", () => {
   it("matches literal Node action evidence", async () => {
@@ -14,12 +14,18 @@ describe("dwarf action phase browser parity", () => {
     );
     expect(evidence.sourceDowned[0]?.impactAtTick).toBe(16);
     expect(
-      evidence.enemyPhase.battlefield.pendingCommittedAttacks[0]?.sourceEntityId
+      evidence.enemyPhase.battlefield.pendingCommittedAttacks.find(
+        (attack) => attack.sourceEntityId === "entity.dwarf.warden"
+      )?.sourceEntityId
     ).toBe("entity.dwarf.warden");
     expect(
-      evidence.scheduledPhase.state.battlefield?.pendingCommittedAttacks[0]
-        ?.sourceEntityId
+      evidence.scheduledPhase.state.battlefield?.pendingCommittedAttacks.find(
+        (attack) => attack.sourceEntityId === "entity.dwarf.warden"
+      )?.sourceEntityId
     ).toBe("entity.dwarf.warden");
+    expect(
+      evidence.impacted.battlefield.enemyCombatants[0]?.lifecycleState
+    ).toBe("destroyed");
     expect(evidence.substitutionError).toContain(
       "do not match authoritative pending attacks"
     );
