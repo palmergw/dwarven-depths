@@ -60,7 +60,10 @@ describe("generated enemy movement phase", () => {
         ...request,
         battlefield: {
           ...request.battlefield,
+          startedWaveIds: [...request.battlefield.startedWaveIds].reverse(),
+          firedSpawnIds: [...request.battlefield.firedSpawnIds].reverse(),
           occupancy: [...request.battlefield.occupancy].reverse(),
+          pendingSpawns: [...request.battlefield.pendingSpawns].reverse(),
           enemyAdmissions: [...request.battlefield.enemyAdmissions].reverse(),
           enemyCombatants: [...request.battlefield.enemyCombatants].reverse()
         },

@@ -1194,6 +1194,9 @@ export function resolveEnemyMovementPhase(
   content: CompiledContent
 ): EnemyMovementPhaseResolution {
   const planning = planEnemyMovement(request, content);
+  const level = content.levels.get(request.levelId);
+  if (level === undefined)
+    throw new Error("validated movement level is missing");
   const map = content.maps.get(request.battlefield.mapId);
   if (map === undefined)
     throw new Error("validated battlefield map is missing");
@@ -1220,12 +1223,28 @@ export function resolveEnemyMovementPhase(
   const enemyAdmissions = [...request.battlefield.enemyAdmissions].sort(
     (left, right) => compareText(left.entityId, right.entityId)
   );
+  const startedWaveIdSet = new Set(request.battlefield.startedWaveIds);
+  const startedWaveIds = level.waveIds.filter((waveId) =>
+    startedWaveIdSet.has(waveId)
+  );
+  const firedSpawnIdSet = new Set(request.battlefield.firedSpawnIds);
+  const firedSpawnIds = level.waveIds.flatMap((waveId) => {
+    const wave = content.waves.get(waveId);
+    if (wave === undefined)
+      throw new Error("validated movement wave is missing");
+    return wave.spawnEvents
+      .filter((spawn) => firedSpawnIdSet.has(spawn.id))
+      .map((spawn) => spawn.id);
+  });
+  const pendingSpawns = [...request.battlefield.pendingSpawns].sort(
+    comparePendingSpawns
+  );
   const battlefield = freezeBattlefieldState(
     request.battlefield.mapId,
     reservations.occupancy,
-    request.battlefield.pendingSpawns,
-    request.battlefield.startedWaveIds,
-    request.battlefield.firedSpawnIds,
+    pendingSpawns,
+    startedWaveIds,
+    firedSpawnIds,
     enemyCombatants,
     enemyAdmissions
   );
