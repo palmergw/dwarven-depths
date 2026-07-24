@@ -21,6 +21,7 @@ function spawn(
     id,
     authoredOrder,
     entityId,
+    enemyDefinitionId: "enemy.goblin_cutter",
     entranceId: "entrance.west"
   } as PendingSpawn;
 }
@@ -97,6 +98,7 @@ describe("authoritative battlefield state", () => {
           id: "spawn.second",
           authoredOrder: 1,
           entityId: "entity.enemy.second",
+          enemyDefinitionId: "enemy.goblin_cutter",
           entranceId: "entrance.west"
         }
       ]
@@ -111,7 +113,7 @@ describe("authoritative battlefield state", () => {
 
     const resumed = resolveBattlefieldPhase(first.state, content, [], []);
     expect(await canonicalHash({ first, resumed })).toBe(
-      "07dad1a5b7317426c1ad1f737b6aa97512dc14c31590744c0f45c4d108601911"
+      "348df4bceab92d33329f545240fd64cea0a1ec93aed05b6047dfbbddd12efc88"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,

@@ -180,6 +180,7 @@ describe("cross-runtime deterministic conformance", () => {
             id: "spawn.second" as never,
             authoredOrder: 1,
             entityId: "entity.enemy.second" as never,
+            enemyDefinitionId: "enemy.goblin_cutter" as never,
             entranceId: "entrance.west" as never
           }
         ]
@@ -192,10 +193,10 @@ describe("cross-runtime deterministic conformance", () => {
     };
 
     await expect(canonicalHash(renderBattlefieldText(request))).resolves.toBe(
-      "57497f3d36a8ecc3e9510badcc2ff39c8961e3c77a84bb3ae1f67f737de6aa2e"
+      "f27934cd6e8955eeaad9defc735cdc3a72fc0ded16b2f03965153fc2ef853884"
     );
     await expect(canonicalHash(renderBattlefieldSvg(request))).resolves.toBe(
-      "3efd08eb8ee22a8194c4b58f4a9e46c506c9481f2430dc77b995e790829e08c8"
+      "24d168444e7ee0f741162c1a328cd57fc81bb6cbfa9a5319be55194e7c4c215b"
     );
   });
 
@@ -266,12 +267,14 @@ describe("cross-runtime deterministic conformance", () => {
             id: "spawn.second",
             authoredOrder: 1,
             entityId: "entity.enemy.second",
+            enemyDefinitionId: "enemy.goblin_cutter",
             entranceId: "entrance.west"
           },
           {
             id: "spawn.first",
             authoredOrder: 0,
             entityId: "entity.enemy.first",
+            enemyDefinitionId: "enemy.goblin_cutter",
             entranceId: "entrance.west"
           }
         ] as never,
@@ -284,6 +287,7 @@ describe("cross-runtime deterministic conformance", () => {
           id: "spawn.second",
           authoredOrder: 1,
           entityId: "entity.enemy.second",
+          enemyDefinitionId: "enemy.goblin_cutter",
           entranceId: "entrance.west"
         }
       ],
@@ -291,6 +295,7 @@ describe("cross-runtime deterministic conformance", () => {
         {
           spawnId: "spawn.first",
           entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
           entranceId: "entrance.west",
           status: "admitted",
           reason: "admitted"
@@ -298,6 +303,7 @@ describe("cross-runtime deterministic conformance", () => {
         {
           spawnId: "spawn.second",
           entityId: "entity.enemy.second",
+          enemyDefinitionId: "enemy.goblin_cutter",
           entranceId: "entrance.west",
           status: "queued",
           reason: "live_enemy_cap_reached"
@@ -321,12 +327,14 @@ describe("cross-runtime deterministic conformance", () => {
           id: "spawn.first",
           authoredOrder: 0,
           entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
           entranceId: "entrance.west"
         },
         {
           id: "spawn.second",
           authoredOrder: 1,
           entityId: "entity.enemy.second",
+          enemyDefinitionId: "enemy.goblin_cutter",
           entranceId: "entrance.west"
         }
       ] as never,
@@ -342,7 +350,7 @@ describe("cross-runtime deterministic conformance", () => {
     const resumed = resolveBattlefieldPhase(first.state, content, [], []);
 
     expect(await canonicalHash({ first, resumed })).toBe(
-      "07dad1a5b7317426c1ad1f737b6aa97512dc14c31590744c0f45c4d108601911"
+      "348df4bceab92d33329f545240fd64cea0a1ec93aed05b6047dfbbddd12efc88"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -362,7 +370,7 @@ describe("cross-runtime deterministic conformance", () => {
     const evidence = createPhase2SystemScenarioEvidence(content);
 
     expect(await canonicalHash(evidence)).toBe(
-      "94b2a3b6090ac88f7dd4f4d2425d125afec8e5848627fe94292ef285c93d996b"
+      "7da8214a6d73f77ef4975b2b2eef859cb531e783a4dc4100f5df14a25f65b80a"
     );
     expect(evidence.placementRoutes.eastAttackRoute?.route.nodeIds).toEqual([
       "node.entry",

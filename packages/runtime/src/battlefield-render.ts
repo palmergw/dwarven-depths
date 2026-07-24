@@ -199,7 +199,7 @@ export function renderBattlefieldText(
         compareText(left.id, right.id)
     )) {
       lines.push(
-        `- order=${spawn.authoredOrder} ${spawn.id} entity=${spawn.entityId} entrance=${spawn.entranceId}`
+        `- order=${spawn.authoredOrder} ${spawn.id} entity=${spawn.entityId} definition=${spawn.enemyDefinitionId} entrance=${spawn.entranceId}`
       );
     }
     if (state.pendingSpawns.length === 0) lines.push("- none");
@@ -265,7 +265,7 @@ export function renderBattlefieldSvg(
     )
     .map(
       (spawn) =>
-        `${spawn.authoredOrder}:${spawn.id}:${spawn.entityId}:${spawn.entranceId}`
+        `${spawn.authoredOrder}:${spawn.id}:${spawn.entityId}:${spawn.enemyDefinitionId}:${spawn.entranceId}`
     )
     .join(",");
   const occupancyDescription = layers.has("occupancy")

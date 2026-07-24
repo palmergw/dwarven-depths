@@ -165,7 +165,7 @@ function validateWaveScheduleShape(
   for (let index = 0; index < schedule.pendingSpawns.length; index += 1) {
     requirePlainExactRecord(
       schedule.pendingSpawns[index],
-      ["id", "authoredOrder", "entityId", "entranceId"],
+      ["id", "authoredOrder", "entityId", "enemyDefinitionId", "entranceId"],
       `waveSchedule.pendingSpawns[${index}]`
     );
   }
@@ -234,6 +234,7 @@ export function evaluateTerminalState(
         spawn.id !== supplied.id ||
         spawn.authoredOrder !== supplied.authoredOrder ||
         spawn.entityId !== supplied.entityId ||
+        spawn.enemyDefinitionId !== supplied.enemyDefinitionId ||
         spawn.entranceId !== supplied.entranceId
       );
     })

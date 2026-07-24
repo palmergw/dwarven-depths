@@ -26,6 +26,7 @@ async function renderRequest() {
         id: "spawn.second" as never,
         authoredOrder: 1,
         entityId: "entity.enemy.second" as never,
+        enemyDefinitionId: "enemy.goblin_cutter" as never,
         entranceId: "entrance.west" as never
       }
     ]
@@ -59,13 +60,13 @@ connections
 - connection.entry_south node.entry <-> node.south cost=10
 - connection.south_goal node.goal <-> node.south cost=10
 queued-spawns
-- order=1 spawn.second entity=entity.enemy.second entrance=entrance.west
+- order=1 spawn.second entity=entity.enemy.second definition=enemy.goblin_cutter entrance=entrance.west
 `;
 
 const expectedSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 360" role="img" aria-labelledby="battlefield-title battlefield-description">
 <title id="battlefield-title">Battlefield map.conformance_diamond</title>
 <desc id="battlefield-description">Layers map,occupancy,path; 1 occupied nodes; 1 queued spawns; route node.entry to node.goal cost 20</desc>
-<metadata data-map-id="map.conformance_diamond" data-queued-spawns="1:spawn.second:entity.enemy.second:entrance.west"/>
+<metadata data-map-id="map.conformance_diamond" data-queued-spawns="1:spawn.second:entity.enemy.second:enemy.goblin_cutter:entrance.west"/>
 <g fill="none" stroke="#64748b" stroke-width="4">
 <line data-connection-id="connection.east_goal" x1="240" y1="80" x2="240" y2="220"/>
 <line data-connection-id="connection.entry_east" x1="240" y1="80" x2="80" y2="80"/>

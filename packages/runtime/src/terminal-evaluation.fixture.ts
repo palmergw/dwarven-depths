@@ -53,6 +53,7 @@ const captainPending = Object.freeze({
   id: "spawn.captain" as never,
   authoredOrder: 1,
   entityId: "entity.enemy.captain" as never,
+  enemyDefinitionId: "enemy.gatebreaker_captain" as never,
   entranceId: "entrance.west" as never
 }) satisfies PendingSpawn;
 
