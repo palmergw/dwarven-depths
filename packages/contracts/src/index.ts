@@ -314,6 +314,7 @@ export interface EnemyActionPhaseDecision {
 
 export interface EnemyActionPhaseResolution {
   readonly schemaVersion: 1;
+  readonly battlefield: BattlefieldState;
   readonly enemyCombatants: readonly BattlefieldEnemyCombatant[];
   readonly committedAttacks: readonly CommittedAttack[];
   readonly decisions: readonly EnemyActionPhaseDecision[];

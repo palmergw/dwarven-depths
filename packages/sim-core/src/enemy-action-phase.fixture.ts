@@ -46,10 +46,7 @@ export async function enemyActionPhaseParityEvidence() {
     "node.south" as NavigationNodeId
   );
   const started = resolveEnemyActionPhase(request(6, startState), content);
-  const startedState: BattlefieldState = {
-    ...startState,
-    enemyCombatants: started.enemyCombatants
-  };
+  const startedState = started.battlefield;
   const winding = resolveEnemyActionPhase(request(10, startedState), content);
 
   const cancelledState: BattlefieldState = {
@@ -64,10 +61,7 @@ export async function enemyActionPhaseParityEvidence() {
   );
 
   const committed = resolveEnemyActionPhase(request(12, startedState), content);
-  const cooldownState: BattlefieldState = {
-    ...startState,
-    enemyCombatants: committed.enemyCombatants
-  };
+  const cooldownState = committed.battlefield;
   const coolingDown = resolveEnemyActionPhase(
     request(20, cooldownState),
     content
