@@ -107,6 +107,8 @@ export async function battlefieldAttackImpactParityEvidence() {
   };
   const committed: BattlefieldState = {
     ...deployed,
+    startedWaveIds: ["wave.attack_impact" as never],
+    firedSpawnIds: ["spawn.attack_impact.cutter" as never],
     dwarfCombatants: deployed.dwarfCombatants.map((dwarf) => ({
       ...dwarf,
       currentHealth: cutterDefinition.basicAttack.damage

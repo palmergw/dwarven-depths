@@ -7,7 +7,7 @@ import {
 } from "./index.js";
 
 const parityChecksum =
-  "82a80d8276389748345755011c945e09e9f8bbae2243d11a0b59ae8c7ea94854";
+  "1928e21b3748bd7bc2381bcc1bf6d35fd55a61e2441bd241eb44048b26f5b78e";
 
 describe("battlefield committed-attack impacts", () => {
   it("persists before impact then consumes lethal damage into downed state", async () => {
@@ -163,6 +163,57 @@ describe("battlefield committed-attack impacts", () => {
         content
       )
     ).toThrow("basicAttack is not authored");
+  });
+
+  it("rejects admissions without exact fired authored-spawn evidence", async () => {
+    const { content, deployments, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    for (const battlefield of [
+      { ...committed, startedWaveIds: [] },
+      {
+        ...committed,
+        enemyAdmissions: committed.enemyAdmissions.map((admission) => ({
+          ...admission,
+          spawnId: "spawn.forged" as never
+        }))
+      }
+    ]) {
+      expect(() =>
+        resolveBattlefieldAttackImpacts(
+          {
+            schemaVersion: 1,
+            currentTick: 7,
+            levelId: "level.conformance_map" as never,
+            deployments,
+            battlefield
+          },
+          content
+        )
+      ).toThrow("authored wave evidence");
+    }
+  });
+
+  it("rejects malformed enemy action state before resolving impacts", async () => {
+    const { content, deployments, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 7,
+          levelId: "level.conformance_map" as never,
+          deployments,
+          battlefield: {
+            ...committed,
+            enemyCombatants: committed.enemyCombatants.map((enemy) => ({
+              ...enemy,
+              actionState: { ...enemy.actionState, nextMovementAtTick: "bad" }
+            })) as never
+          }
+        },
+        content
+      )
+    ).toThrow("nextMovementAtTick");
   });
 
   it("returns detached immutable parity evidence with one literal checksum", async () => {

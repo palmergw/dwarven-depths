@@ -192,28 +192,68 @@ function normalizeOccupancy(
 }
 
 function normalizeEnemyCombatants(
-  value: unknown,
-  admissionsValue: unknown,
+  battlefield: BattlefieldState,
   content: CompiledContent,
   levelId: StableId,
   currentTick: number
 ): readonly BattlefieldEnemyCombatant[] {
   const level = content.levels.get(levelId);
   if (level === undefined) throw new RangeError(`unknown level (${levelId})`);
-  const authoredDefinitions = new Map<EntityId, StableId>();
+  const authoredSpawns = new Map<
+    EntityId,
+    {
+      readonly definitionId: StableId;
+      readonly spawnId: StableId;
+      readonly waveId: StableId;
+      readonly atTick: number;
+    }
+  >();
   for (const waveId of level.waveIds) {
     const wave = content.waves.get(waveId);
     if (wave === undefined)
       throw new RangeError(`unknown level wave (${waveId})`);
     for (const spawn of wave.spawnEvents)
-      authoredDefinitions.set(spawn.entityId, spawn.enemyDefinitionId);
+      authoredSpawns.set(spawn.entityId, {
+        definitionId: spawn.enemyDefinitionId,
+        spawnId: spawn.id,
+        waveId,
+        atTick: wave.startAtTick + spawn.atTick
+      });
   }
+  const startedWaveIds = new Set(
+    requireArray(battlefield.startedWaveIds, "started wave IDs").map(
+      (value, index) => requireId(value, "wave", `started wave ID ${index}`)
+    )
+  );
+  const firedSpawnIds = new Set(
+    requireArray(battlefield.firedSpawnIds, "fired spawn IDs").map(
+      (value, index) => requireId(value, "spawn", `fired spawn ID ${index}`)
+    )
+  );
+  const pendingSpawnIds = new Set(
+    requireArray(battlefield.pendingSpawns, "pending spawns").map(
+      (item, index) => {
+        const record = requireRecord(
+          item,
+          [
+            "id",
+            "authoredOrder",
+            "entityId",
+            "enemyDefinitionId",
+            "entranceId"
+          ],
+          `pending spawn ${index}`
+        );
+        return requireId(record["id"], "spawn", `pending spawn ${index} id`);
+      }
+    )
+  );
   const admissions = new Map<
     EntityId,
     { definitionId: StableId; tick: number }
   >();
   for (const [index, item] of requireArray(
-    admissionsValue,
+    battlefield.enemyAdmissions,
     "battlefield enemy admissions"
   ).entries()) {
     const record = requireRecord(
@@ -243,9 +283,21 @@ function normalizeEnemyCombatants(
       record["admittedAtTick"],
       `battlefield enemy admission ${index} admittedAtTick`
     );
+    const spawnId = requireId(
+      record["spawnId"],
+      "spawn",
+      `battlefield enemy admission ${index} spawnId`
+    );
+    const authoredSpawn = authoredSpawns.get(entityId);
     if (
       admittedAtTick > currentTick ||
-      authoredDefinitions.get(entityId) !== definitionId ||
+      authoredSpawn === undefined ||
+      authoredSpawn.definitionId !== definitionId ||
+      authoredSpawn.spawnId !== spawnId ||
+      !startedWaveIds.has(authoredSpawn.waveId) ||
+      !firedSpawnIds.has(spawnId) ||
+      pendingSpawnIds.has(spawnId) ||
+      authoredSpawn.atTick > admittedAtTick ||
       admissions.has(entityId)
     )
       throw new RangeError(
@@ -253,68 +305,57 @@ function normalizeEnemyCombatants(
       );
     admissions.set(entityId, { definitionId, tick: admittedAtTick });
   }
-  const combatants = requireArray(value, "battlefield enemy combatants").map(
-    (item, index): BattlefieldEnemyCombatant => {
-      const description = `battlefield enemy combatant ${index}`;
-      const record = requireRecord(
-        item,
-        [
-          "schemaVersion",
-          "entityId",
-          "enemyDefinitionId",
-          "classification",
-          "currentHealth",
-          "maximumHealth",
-          "armor",
-          "movementIntervalTicks",
-          "admittedAtTick",
-          "lifecycleState",
-          "basicAttack",
-          "actionState"
-        ],
-        description
-      );
-      if (record["schemaVersion"] !== 1)
-        throw new RangeError(`${description} has unsupported schemaVersion`);
-      const entityId = requireId(
-        record["entityId"],
-        "entity",
-        `${description} entityId`
-      ) as EntityId;
-      const definitionId = requireId(
-        record["enemyDefinitionId"],
-        "enemy",
-        `${description} enemyDefinitionId`
-      );
-      const definition = content.enemies.get(definitionId);
-      const admission = admissions.get(entityId);
-      if (
-        definition === undefined ||
-        admission === undefined ||
-        admission.definitionId !== definitionId ||
-        admission.tick !== record["admittedAtTick"]
-      )
-        throw new RangeError(
-          `${description} does not match authored admission`
-        );
-      const currentHealth = requireHealth(
-        record["currentHealth"],
-        `${description} currentHealth`
-      );
-      const basicAttack = requireRecord(
-        record["basicAttack"],
-        [
-          "id",
-          "windupTicks",
-          "impactDelayTicks",
-          "cooldownTicks",
-          "damage",
-          "range",
-          "requiresLineOfSight"
-        ],
-        `${description} basicAttack`
-      );
-      for (const key of [
+  const combatants = requireArray(
+    battlefield.enemyCombatants,
+    "battlefield enemy combatants"
+  ).map((item, index): BattlefieldEnemyCombatant => {
+    const description = `battlefield enemy combatant ${index}`;
+    const record = requireRecord(
+      item,
+      [
+        "schemaVersion",
+        "entityId",
+        "enemyDefinitionId",
+        "classification",
+        "currentHealth",
+        "maximumHealth",
+        "armor",
+        "movementIntervalTicks",
+        "admittedAtTick",
+        "lifecycleState",
+        "basicAttack",
+        "actionState"
+      ],
+      description
+    );
+    if (record["schemaVersion"] !== 1)
+      throw new RangeError(`${description} has unsupported schemaVersion`);
+    const entityId = requireId(
+      record["entityId"],
+      "entity",
+      `${description} entityId`
+    ) as EntityId;
+    const definitionId = requireId(
+      record["enemyDefinitionId"],
+      "enemy",
+      `${description} enemyDefinitionId`
+    );
+    const definition = content.enemies.get(definitionId);
+    const admission = admissions.get(entityId);
+    if (
+      definition === undefined ||
+      admission === undefined ||
+      admission.definitionId !== definitionId ||
+      admission.tick !== record["admittedAtTick"]
+    )
+      throw new RangeError(`${description} does not match authored admission`);
+    const currentHealth = requireHealth(
+      record["currentHealth"],
+      `${description} currentHealth`
+    );
+    const basicAttack = requireRecord(
+      record["basicAttack"],
+      [
         "id",
         "windupTicks",
         "impactDelayTicks",
@@ -322,63 +363,156 @@ function normalizeEnemyCombatants(
         "damage",
         "range",
         "requiresLineOfSight"
-      ] as const)
-        if (basicAttack[key] !== definition.basicAttack[key])
-          throw new RangeError(`${description} basicAttack is not authored`);
-      if (
-        record["classification"] !== definition.classification ||
-        record["maximumHealth"] !== definition.maximumHealth ||
-        record["armor"] !== definition.armor ||
-        record["movementIntervalTicks"] !== definition.movementIntervalTicks ||
-        currentHealth > definition.maximumHealth ||
-        (record["lifecycleState"] !== "active" &&
-          record["lifecycleState"] !== "destroyed") ||
-        (record["lifecycleState"] === "active"
-          ? currentHealth === 0
-          : currentHealth !== 0)
-      )
-        throw new RangeError(
-          `${description} does not match authored enemy state`
-        );
-      const actionState = requireRecord(
-        record["actionState"],
+      ],
+      `${description} basicAttack`
+    );
+    for (const key of [
+      "id",
+      "windupTicks",
+      "impactDelayTicks",
+      "cooldownTicks",
+      "damage",
+      "range",
+      "requiresLineOfSight"
+    ] as const)
+      if (basicAttack[key] !== definition.basicAttack[key])
+        throw new RangeError(`${description} basicAttack is not authored`);
+    if (
+      record["classification"] !== definition.classification ||
+      record["maximumHealth"] !== definition.maximumHealth ||
+      record["armor"] !== definition.armor ||
+      record["movementIntervalTicks"] !== definition.movementIntervalTicks ||
+      currentHealth > definition.maximumHealth ||
+      (record["lifecycleState"] !== "active" &&
+        record["lifecycleState"] !== "destroyed") ||
+      (record["lifecycleState"] === "active"
+        ? currentHealth === 0
+        : currentHealth !== 0)
+    )
+      throw new RangeError(
+        `${description} does not match authored enemy state`
+      );
+    const actionState = requireRecord(
+      record["actionState"],
+      [
+        "schemaVersion",
+        "nextMovementAtTick",
+        "currentTargetEntityId",
+        "activeBasicAttack",
+        "cooldownCompleteAtTick"
+      ],
+      `${description} actionState`
+    );
+    if (actionState["schemaVersion"] !== 1)
+      throw new RangeError(`${description} actionState is not version 1`);
+    const nextMovementAtTick = requireHealth(
+      actionState["nextMovementAtTick"],
+      `${description} nextMovementAtTick`
+    );
+    const targetValue = actionState["currentTargetEntityId"];
+    const currentTargetEntityId =
+      targetValue === null
+        ? null
+        : (requireId(
+            targetValue,
+            "entity",
+            `${description} currentTargetEntityId`
+          ) as EntityId);
+    const cooldownValue = actionState["cooldownCompleteAtTick"];
+    const cooldownCompleteAtTick =
+      cooldownValue === null
+        ? null
+        : requireHealth(cooldownValue, `${description} cooldownCompleteAtTick`);
+    const activeValue = actionState["activeBasicAttack"];
+    let activeBasicAttack: BattlefieldEnemyCombatant["actionState"]["activeBasicAttack"] =
+      null;
+    if (activeValue !== null) {
+      const active = requireRecord(
+        activeValue,
         [
           "schemaVersion",
-          "nextMovementAtTick",
-          "currentTargetEntityId",
-          "activeBasicAttack",
-          "cooldownCompleteAtTick"
+          "attackId",
+          "sourceEntityId",
+          "targetEntityId",
+          "startedAtTick",
+          "commitAtTick",
+          "impactAtTick",
+          "cooldownDurationTicks",
+          "damage",
+          "range",
+          "targetIsValid"
         ],
-        `${description} actionState`
+        `${description} activeBasicAttack`
       );
-      if (actionState["schemaVersion"] !== 1)
-        throw new RangeError(`${description} actionState is not version 1`);
-      return Object.freeze({
+      const startedAtTick = requireHealth(
+        active["startedAtTick"],
+        `${description} activeBasicAttack startedAtTick`
+      );
+      const commitAtTick = requireHealth(
+        active["commitAtTick"],
+        `${description} activeBasicAttack commitAtTick`
+      );
+      const impactAtTick = requireHealth(
+        active["impactAtTick"],
+        `${description} activeBasicAttack impactAtTick`
+      );
+      const targetEntityId = requireId(
+        active["targetEntityId"],
+        "entity",
+        `${description} activeBasicAttack targetEntityId`
+      ) as EntityId;
+      if (
+        active["schemaVersion"] !== 1 ||
+        active["attackId"] !== definition.basicAttack.id ||
+        active["sourceEntityId"] !== entityId ||
+        startedAtTick < admission.tick ||
+        commitAtTick !== startedAtTick + definition.basicAttack.windupTicks ||
+        impactAtTick !==
+          commitAtTick + definition.basicAttack.impactDelayTicks ||
+        active["cooldownDurationTicks"] !==
+          definition.basicAttack.cooldownTicks ||
+        active["damage"] !== definition.basicAttack.damage ||
+        active["range"] !== definition.basicAttack.range ||
+        typeof active["targetIsValid"] !== "boolean"
+      )
+        throw new RangeError(
+          `${description} activeBasicAttack is not authored`
+        );
+      activeBasicAttack = Object.freeze({
         schemaVersion: 1,
-        entityId,
-        enemyDefinitionId: definitionId,
-        classification: definition.classification,
-        currentHealth,
-        maximumHealth: definition.maximumHealth,
-        armor: definition.armor,
-        movementIntervalTicks: definition.movementIntervalTicks,
-        admittedAtTick: admission.tick,
-        lifecycleState: record["lifecycleState"] as "active" | "destroyed",
-        basicAttack: Object.freeze({ ...definition.basicAttack }),
-        actionState: Object.freeze({
-          schemaVersion: 1,
-          nextMovementAtTick: actionState["nextMovementAtTick"] as number,
-          currentTargetEntityId: actionState[
-            "currentTargetEntityId"
-          ] as EntityId | null,
-          activeBasicAttack: actionState["activeBasicAttack"] as never,
-          cooldownCompleteAtTick: actionState["cooldownCompleteAtTick"] as
-            | number
-            | null
-        })
+        attackId: active["attackId"] as StableId,
+        sourceEntityId: entityId,
+        targetEntityId,
+        startedAtTick,
+        commitAtTick,
+        impactAtTick,
+        cooldownDurationTicks: definition.basicAttack.cooldownTicks,
+        damage: definition.basicAttack.damage,
+        range: definition.basicAttack.range,
+        targetIsValid: active["targetIsValid"] as boolean
       });
     }
-  );
+    return Object.freeze({
+      schemaVersion: 1,
+      entityId,
+      enemyDefinitionId: definitionId,
+      classification: definition.classification,
+      currentHealth,
+      maximumHealth: definition.maximumHealth,
+      armor: definition.armor,
+      movementIntervalTicks: definition.movementIntervalTicks,
+      admittedAtTick: admission.tick,
+      lifecycleState: record["lifecycleState"] as "active" | "destroyed",
+      basicAttack: Object.freeze({ ...definition.basicAttack }),
+      actionState: Object.freeze({
+        schemaVersion: 1,
+        nextMovementAtTick,
+        currentTargetEntityId,
+        activeBasicAttack,
+        cooldownCompleteAtTick
+      })
+    });
+  });
   if (combatants.length !== admissions.size)
     throw new RangeError("enemy combatants do not match authored admissions");
   return Object.freeze(
@@ -692,8 +826,7 @@ export function resolveBattlefieldAttackImpacts(
     occupancy
   );
   const enemyCombatants = normalizeEnemyCombatants(
-    battlefield.enemyCombatants,
-    battlefield.enemyAdmissions,
+    battlefield,
     content,
     levelId,
     currentTick
