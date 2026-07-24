@@ -4,10 +4,12 @@ export * from "./stable-tables.js";
 
 import {
   type BattlefieldMapDefinition,
+  type BattlefieldState,
   type CommandEnvelope,
   canonicalHash,
   type EnemyEntranceId,
   type EntityId,
+  type LifecycleSimulationEvent,
   type MovementDecision,
   type MovementProposal,
   type MovementReservationResolution,
@@ -24,6 +26,23 @@ import {
 export interface StepResult {
   readonly state: SimulationState;
   readonly events: readonly SimulationEvent[];
+}
+
+function freezeBattlefieldState(
+  mapId: BattlefieldState["mapId"],
+  occupancy: readonly NavigationOccupant[],
+  pendingSpawns: readonly PendingSpawn[]
+): BattlefieldState {
+  return Object.freeze({
+    schemaVersion: 1,
+    mapId,
+    occupancy: Object.freeze(
+      occupancy.map((occupant) => Object.freeze({ ...occupant }))
+    ),
+    pendingSpawns: Object.freeze(
+      pendingSpawns.map((spawn) => Object.freeze({ ...spawn }))
+    )
+  });
 }
 
 function compareText(left: string, right: string): number {
@@ -414,9 +433,13 @@ export function createInitialState(
   levelId: SimulationState["levelId"],
   seed: string
 ): SimulationState {
-  if (!content.levels.has(levelId))
-    throw new Error(`Unknown level ID: ${levelId}`);
-  return {
+  const level = content.levels.get(levelId);
+  if (level === undefined) throw new Error(`Unknown level ID: ${levelId}`);
+  const battlefield =
+    level.mapId === undefined
+      ? undefined
+      : freezeBattlefieldState(level.mapId, [], []);
+  return Object.freeze({
     schemaVersion: 1,
     contentVersion: content.bundle.contentVersion,
     tick: 0,
@@ -424,16 +447,104 @@ export function createInitialState(
     rngState: seedToUint32(seed),
     levelId,
     phase: "PREPARATION",
-    eventSequence: 0
-  };
+    eventSequence: 0,
+    ...(battlefield === undefined ? {} : { battlefield })
+  });
+}
+
+/**
+ * Resolves the battlefield portions of one simulation step in the fixed rule
+ * order: enqueue scheduled spawns, admit queues, then arbitrate movement.
+ */
+export function resolveBattlefieldPhase(
+  state: SimulationState,
+  content: CompiledContent,
+  scheduledSpawns: readonly PendingSpawn[],
+  proposals: readonly MovementProposal[],
+  limits?: SpawnAdmissionLimits
+): StepResult {
+  const level = content.levels.get(state.levelId);
+  if (level === undefined)
+    throw new Error(`Unknown level ID: ${state.levelId}`);
+  if (state.battlefield === undefined)
+    throw new Error(`level ${state.levelId} does not have battlefield state`);
+  if (level.mapId === undefined || state.battlefield.mapId !== level.mapId) {
+    throw new Error(
+      `battlefield map ${state.battlefield.mapId} does not match level map`
+    );
+  }
+  const map = content.maps.get(level.mapId);
+  if (map === undefined) throw new Error(`Unknown map ID: ${level.mapId}`);
+
+  const admitted = admitQueuedSpawns(
+    map,
+    state.battlefield.occupancy,
+    [...state.battlefield.pendingSpawns, ...scheduledSpawns],
+    limits
+  );
+  const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
+  const events: SimulationEvent[] = [];
+
+  for (const decision of admitted.decisions) {
+    const sequence = state.eventSequence + events.length;
+    events.push(
+      Object.freeze({
+        id: `event.${String(sequence).padStart(6, "0")}`,
+        tick: state.tick,
+        sequence,
+        type:
+          decision.status === "admitted" ? "spawn.admitted" : "spawn.queued",
+        ruleId: "SIM-SPAWN-ADMISSION-001",
+        spawnId: decision.spawnId,
+        entityId: decision.entityId,
+        entranceId: decision.entranceId,
+        reasonCode: decision.reason
+      })
+    );
+  }
+  for (const decision of moved.decisions) {
+    const sequence = state.eventSequence + events.length;
+    events.push(
+      Object.freeze({
+        id: `event.${String(sequence).padStart(6, "0")}`,
+        tick: state.tick,
+        sequence,
+        type:
+          decision.status === "moved"
+            ? "movement.moved"
+            : decision.status === "waited"
+              ? "movement.waited"
+              : "movement.rejected",
+        ruleId: "SIM-MOVEMENT-RESERVATION-001",
+        proposalId: decision.proposalId,
+        entityId: decision.entityId,
+        fromNodeId: decision.fromNodeId,
+        toNodeId: decision.toNodeId,
+        reasonCode: decision.reason
+      })
+    );
+  }
+
+  return Object.freeze({
+    state: Object.freeze({
+      ...state,
+      eventSequence: state.eventSequence + events.length,
+      battlefield: freezeBattlefieldState(
+        level.mapId,
+        moved.occupancy,
+        admitted.pendingSpawns
+      )
+    }),
+    events: Object.freeze(events)
+  });
 }
 
 function event(
   state: SimulationState,
   offset: number,
-  type: SimulationEvent["type"],
+  type: LifecycleSimulationEvent["type"],
   ruleId: string
-): SimulationEvent {
+): LifecycleSimulationEvent {
   const sequence = state.eventSequence + offset;
   return {
     id: `event.${String(sequence).padStart(6, "0")}`,
