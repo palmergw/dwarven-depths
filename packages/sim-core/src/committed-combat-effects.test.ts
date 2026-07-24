@@ -220,6 +220,35 @@ describe("committed healing and status effects", () => {
         statusEffects: [{ ...committedStatusEffect, durationTicks: 0 }]
       })
     ).toThrow("durationTicks must be positive");
+    expect(() =>
+      resolve({
+        currentTick: 0,
+        healingEffects: [],
+        statuses: [],
+        statusEffects: [
+          {
+            ...committedStatusEffect,
+            committedAtTick: 0,
+            impactAtTick: Number.MAX_SAFE_INTEGER,
+            durationTicks: 1
+          }
+        ]
+      })
+    ).toThrow("expiry exceeds the safe-integer range");
+  });
+
+  it("resolves large status batches without repeatedly sorting the status table", () => {
+    const statusEffects = Array.from(
+      { length: 2_000 },
+      (_, index): CommittedStatusEffect => ({
+        ...committedStatusEffect,
+        effectId: `effect.load.e${index}` as never,
+        statusId: `status.load.s${index}` as never
+      })
+    );
+    const result = resolve({ healingEffects: [], statusEffects, statuses: [] });
+    expect(result.decisions).toHaveLength(2_000);
+    expect(result.statuses).toHaveLength(2_000);
   });
 
   it("rejects sparse arrays and accessors without invoking caller code", () => {

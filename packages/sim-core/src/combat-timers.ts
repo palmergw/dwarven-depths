@@ -13,6 +13,7 @@ import type {
   StatusId,
   StatusTimerDecision
 } from "@dwarven-depths/contracts";
+import { applyStatusApplicationRule } from "./status-application-rule.js";
 
 const stableIdPattern = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 const entityIdPattern = /^entity\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
@@ -387,36 +388,13 @@ export function applyStatusApplications(
   for (const application of applications) {
     const key = statusKey(application);
     const previous = statusesByKey.get(key);
-    const expiresAtTick = currentTick + application.durationTicks;
-    const magnitude = Math.max(previous?.magnitude ?? 0, application.magnitude);
-    statusesByKey.set(
-      key,
-      Object.freeze({
-        schemaVersion: 1,
-        statusId: application.statusId,
-        ownerEntityId: application.ownerEntityId,
-        appliedAtTick: currentTick,
-        expiresAtTick,
-        magnitude
-      })
+    const applied = applyStatusApplicationRule(
+      currentTick,
+      previous,
+      application
     );
-    decisions.push(
-      Object.freeze({
-        schemaVersion: 1,
-        statusId: application.statusId,
-        ownerEntityId: application.ownerEntityId,
-        status: previous === undefined ? "applied" : "refreshed",
-        reason:
-          previous === undefined
-            ? "new_status"
-            : "duration_refreshed_stronger_magnitude_retained",
-        ...(previous === undefined
-          ? {}
-          : { previousMagnitude: previous.magnitude }),
-        resultingMagnitude: magnitude,
-        expiresAtTick
-      })
-    );
+    statusesByKey.set(key, applied.status);
+    decisions.push(applied.decision);
   }
 
   return Object.freeze({

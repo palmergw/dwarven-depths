@@ -13,6 +13,7 @@ import type {
   StatusId
 } from "@dwarven-depths/contracts";
 import { applyStatusApplications } from "./combat-timers.js";
+import { applyStatusApplicationRule } from "./status-application-rule.js";
 
 const effectIdPattern = /^effect\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 const entityIdPattern = /^entity\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
@@ -105,6 +106,13 @@ function requireId<Id extends string>(
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function activeStatusKey(status: {
+  readonly ownerEntityId: EntityId;
+  readonly statusId: StatusId;
+}): string {
+  return `${status.ownerEntityId}::${status.statusId}`;
 }
 
 function validateTiming(
@@ -214,7 +222,7 @@ function validateStatusEffect(
   );
   if (durationTicks === 0)
     throw new RangeError(`${description} durationTicks must be positive`);
-  if (!Number.isSafeInteger(currentTick + durationTicks))
+  if (!Number.isSafeInteger(timing.impactAtTick + durationTicks))
     throw new RangeError(
       `${description} expiry exceeds the safe-integer range`
     );
@@ -355,6 +363,9 @@ export function resolveCommittedCombatEffects(
     statuses: record.statuses as readonly ActiveStatus[],
     applications: []
   }).statuses;
+  const statusesByKey = new Map(
+    statuses.map((status) => [activeStatusKey(status), status])
+  );
   const orderedEffects: OrderedEffect[] = [
     ...healingEffects.map(
       (effect): OrderedHealingEffect => ({
@@ -425,21 +436,21 @@ export function resolveCommittedCombatEffects(
       continue;
     }
 
-    const applied = applyStatusApplications({
-      currentTick,
-      statuses,
-      applications: [
-        {
-          schemaVersion: 1,
-          statusId: ordered.effect.statusId,
-          ownerEntityId: ordered.effect.targetEntityId,
-          durationTicks: ordered.effect.durationTicks,
-          magnitude: ordered.effect.magnitude
-        }
-      ]
+    const application = Object.freeze({
+      schemaVersion: 1 as const,
+      statusId: ordered.effect.statusId,
+      ownerEntityId: ordered.effect.targetEntityId,
+      durationTicks: ordered.effect.durationTicks,
+      magnitude: ordered.effect.magnitude
     });
-    statuses = applied.statuses;
-    const statusApplication = applied.decisions[0] as StatusApplicationDecision;
+    const key = activeStatusKey(application);
+    const applied = applyStatusApplicationRule(
+      currentTick,
+      statusesByKey.get(key),
+      application
+    );
+    statusesByKey.set(key, applied.status);
+    const statusApplication: StatusApplicationDecision = applied.decision;
     decisions.push(
       Object.freeze({
         ...baseDecision(ordered),
@@ -476,6 +487,11 @@ export function resolveCommittedCombatEffects(
       maximumHealth: combatant.maximumHealth
     });
   });
+  statuses = [...statusesByKey.values()].sort(
+    (left, right) =>
+      compareText(left.ownerEntityId, right.ownerEntityId) ||
+      compareText(left.statusId, right.statusId)
+  );
 
   return Object.freeze({
     schemaVersion: 1,
