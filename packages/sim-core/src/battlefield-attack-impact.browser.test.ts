@@ -11,11 +11,26 @@ import {
 } from "./index.js";
 
 const parityChecksum =
-  "c197de6feed2dac3630389e508c546425960b544a1de23572e3a7912a9aa4895";
+  "e986f6531c68f65de7020502ce40d8da9fe240277136fd7f2def422bb8cc4804";
 
 describe("battlefield attack impact browser parity", () => {
   it("matches the Node evidence checksum", async () => {
     const evidence = await battlefieldAttackImpactParityEvidence();
+    expect(evidence.committed.dwarfCombatants[0]?.basicAttack.id).toBe(
+      "attack.iron_warden_basic"
+    );
+    expect(evidence.committed.dwarfCombatants[0]?.actionState).toEqual({
+      schemaVersion: 1,
+      currentTargetEntityId: null,
+      activeBasicAttack: null,
+      cooldownCompleteAtTick: null
+    });
+    expect(
+      Object.isFrozen(evidence.committed.dwarfCombatants[0]?.basicAttack)
+    ).toBe(true);
+    expect(
+      Object.isFrozen(evidence.committed.dwarfCombatants[0]?.actionState)
+    ).toBe(true);
     expect(
       await canonicalHash({
         pending: evidence.pending,

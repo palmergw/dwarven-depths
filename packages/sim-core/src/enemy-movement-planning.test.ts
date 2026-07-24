@@ -139,6 +139,7 @@ describe("deterministic enemy movement proposal planning", () => {
           ...base.battlefield,
           dwarfCombatants: [
             {
+              ...base.battlefield.dwarfCombatants[0],
               schemaVersion: 1,
               entityId: "entity.dwarf.forged",
               characterDefinitionId: "character.forged",

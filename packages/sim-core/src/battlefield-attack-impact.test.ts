@@ -14,7 +14,7 @@ import {
 } from "./index.js";
 
 const parityChecksum =
-  "c197de6feed2dac3630389e508c546425960b544a1de23572e3a7912a9aa4895";
+  "e986f6531c68f65de7020502ce40d8da9fe240277136fd7f2def422bb8cc4804";
 
 function descendant<T extends BattlefieldState>(
   source: BattlefieldState,
@@ -35,7 +35,19 @@ describe("battlefield committed-attack impacts", () => {
     ]);
     expect(pending.battlefield.pendingCommittedAttacks).toHaveLength(1);
     expect(pending.battlefield.dwarfCombatants[0]).toEqual(
-      expect.objectContaining({ currentHealth: 10, lifecycleState: "active" })
+      expect.objectContaining({
+        currentHealth: 10,
+        lifecycleState: "active",
+        basicAttack: expect.objectContaining({
+          id: "attack.iron_warden_basic"
+        }),
+        actionState: {
+          schemaVersion: 1,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        }
+      })
     );
 
     expect(resolved.impactDecisions).toEqual([
@@ -62,7 +74,16 @@ describe("battlefield committed-attack impacts", () => {
     ]);
     expect(resolved.battlefield.pendingCommittedAttacks).toEqual([]);
     expect(resolved.battlefield.dwarfCombatants[0]).toEqual(
-      expect.objectContaining({ currentHealth: 0, lifecycleState: "downed" })
+      expect.objectContaining({
+        currentHealth: 0,
+        lifecycleState: "downed",
+        actionState: {
+          schemaVersion: 1,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        }
+      })
     );
     expect(
       resolved.battlefield.occupancy.some(
@@ -95,6 +116,90 @@ describe("battlefield committed-attack impacts", () => {
         normalizeBattlefieldDwarves(candidate, deploymentAuthority, content)
       ).toThrow();
     }
+  });
+
+  it("rejects substituted dwarf attacks and malformed action state", async () => {
+    const { content, deploymentAuthority, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    const dwarf = committed.dwarfCombatants[0];
+    if (dwarf === undefined) throw new Error("missing dwarf fixture");
+    for (const changed of [
+      { ...dwarf, basicAttack: { ...dwarf.basicAttack, damage: 999 } },
+      {
+        ...dwarf,
+        actionState: { ...dwarf.actionState, cooldownCompleteAtTick: -1 }
+      },
+      {
+        ...dwarf,
+        actionState: {
+          schemaVersion: 1,
+          currentTargetEntityId: null,
+          activeBasicAttack: {
+            schemaVersion: 1,
+            attackId: "attack.iron_warden_basic.dwarf.warden.tick_0",
+            sourceEntityId: dwarf.entityId,
+            targetEntityId: "entity.enemy.cutter",
+            startedAtTick: 0,
+            commitAtTick: 8,
+            impactAtTick: 10,
+            cooldownDurationTicks: 24,
+            damage: 18,
+            range: 2,
+            targetIsValid: true
+          },
+          cooldownCompleteAtTick: null
+        }
+      }
+    ]) {
+      const candidate = {
+        ...committed,
+        dwarfCombatants: [changed]
+      } as unknown as typeof committed;
+      propagateBattlefieldRoundLineage(committed, candidate);
+      expect(() =>
+        normalizeBattlefieldDwarves(candidate, deploymentAuthority, content)
+      ).toThrow();
+    }
+  });
+
+  it("accepts authored active dwarf action state and detaches it", async () => {
+    const { content, deploymentAuthority, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    const dwarf = committed.dwarfCombatants[0];
+    if (dwarf === undefined) throw new Error("missing dwarf fixture");
+    const actionState = {
+      schemaVersion: 1 as const,
+      currentTargetEntityId: "entity.enemy.cutter" as never,
+      activeBasicAttack: {
+        schemaVersion: 1 as const,
+        attackId: "attack.iron_warden_basic.dwarf.warden.tick_0" as never,
+        sourceEntityId: dwarf.entityId,
+        targetEntityId: "entity.enemy.cutter" as never,
+        startedAtTick: 0,
+        commitAtTick: 8,
+        impactAtTick: 10,
+        cooldownDurationTicks: 24,
+        damage: 18,
+        range: 2,
+        targetIsValid: true
+      },
+      cooldownCompleteAtTick: null
+    };
+    const candidate = {
+      ...committed,
+      dwarfCombatants: [{ ...dwarf, actionState }]
+    };
+    propagateBattlefieldRoundLineage(committed, candidate);
+    const normalized = normalizeBattlefieldDwarves(
+      candidate,
+      deploymentAuthority,
+      content
+    );
+    actionState.activeBasicAttack.damage = 999;
+    expect(normalized[0]?.actionState.activeBasicAttack?.damage).toBe(18);
+    expect(Object.isFrozen(normalized[0]?.actionState.activeBasicAttack)).toBe(
+      true
+    );
   });
 
   it("rejects redirecting a committed attack to an absent target", async () => {
@@ -460,6 +565,16 @@ describe("battlefield committed-attack impacts", () => {
     );
     expect(
       Object.isFrozen(evidence.resolved.battlefield.dwarfCombatants[0])
+    ).toBe(true);
+    expect(
+      Object.isFrozen(
+        evidence.resolved.battlefield.dwarfCombatants[0]?.basicAttack
+      )
+    ).toBe(true);
+    expect(
+      Object.isFrozen(
+        evidence.resolved.battlefield.dwarfCombatants[0]?.actionState
+      )
     ).toBe(true);
   });
 });

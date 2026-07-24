@@ -431,7 +431,19 @@ export function resolveEnemyActionPhase(
     dwarfCombatants: Object.freeze(
       [...request.battlefield.dwarfCombatants]
         .sort((left, right) => compareText(left.entityId, right.entityId))
-        .map((dwarf) => Object.freeze({ ...dwarf }))
+        .map((dwarf) =>
+          Object.freeze({
+            ...dwarf,
+            basicAttack: Object.freeze({ ...dwarf.basicAttack }),
+            actionState: Object.freeze({
+              ...dwarf.actionState,
+              activeBasicAttack:
+                dwarf.actionState.activeBasicAttack === null
+                  ? null
+                  : Object.freeze({ ...dwarf.actionState.activeBasicAttack })
+            })
+          })
+        )
     ),
     pendingCommittedAttacks: Object.freeze(
       committedAttacks

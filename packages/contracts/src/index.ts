@@ -397,6 +397,15 @@ export interface BattlefieldDwarfCombatant {
   readonly currentHealth: number;
   readonly maximumHealth: number;
   readonly lifecycleState: "active" | "downed";
+  readonly basicAttack: AuthoredBasicAttackDefinition;
+  readonly actionState: BattlefieldDwarfActionState;
+}
+
+export interface BattlefieldDwarfActionState {
+  readonly schemaVersion: 1;
+  readonly currentTargetEntityId: EntityId | null;
+  readonly activeBasicAttack: AttackWindup | null;
+  readonly cooldownCompleteAtTick: number | null;
 }
 
 export interface DwarfDeployment {

@@ -146,7 +146,22 @@ function battlefield(
         placementPointId: "placement.goal",
         currentHealth: includeTarget ? 240 : 0,
         maximumHealth: 240,
-        lifecycleState: includeTarget ? "active" : "downed"
+        lifecycleState: includeTarget ? "active" : "downed",
+        basicAttack: {
+          id: "attack.iron_warden_basic",
+          windupTicks: 8,
+          impactDelayTicks: 2,
+          cooldownTicks: 24,
+          damage: 18,
+          range: 2,
+          requiresLineOfSight: false
+        },
+        actionState: {
+          schemaVersion: 1,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        }
       }
     ],
     pendingCommittedAttacks: []

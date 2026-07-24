@@ -109,7 +109,19 @@ function freezeBattlefieldState(
       )
     ),
     dwarfCombatants: Object.freeze(
-      dwarfCombatants.map((combatant) => Object.freeze({ ...combatant }))
+      dwarfCombatants.map((combatant) =>
+        Object.freeze({
+          ...combatant,
+          basicAttack: Object.freeze({ ...combatant.basicAttack }),
+          actionState: Object.freeze({
+            ...combatant.actionState,
+            activeBasicAttack:
+              combatant.actionState.activeBasicAttack === null
+                ? null
+                : Object.freeze({ ...combatant.actionState.activeBasicAttack })
+          })
+        })
+      )
     ),
     pendingCommittedAttacks: Object.freeze(
       [...pendingCommittedAttacks]
