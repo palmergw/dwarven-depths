@@ -17,6 +17,7 @@ async function renderRequest() {
     firedSpawnIds: [],
     enemyAdmissions: [],
     enemyCombatants: [],
+    dwarfCombatants: [],
     pendingCommittedAttacks: [],
     occupancy: [
       {

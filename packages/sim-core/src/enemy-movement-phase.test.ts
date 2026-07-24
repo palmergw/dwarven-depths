@@ -6,19 +6,57 @@ import {
 } from "@dwarven-depths/contracts";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
+  type BattlefieldDwarfDeploymentAuthority,
+  createBattlefieldDwarfDeploymentAuthority
+} from "./battlefield-attack-impact.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
+import {
   contentionRequest,
   enemyMovementPhaseContent,
   enemyMovementPhaseParityEvidence
 } from "./enemy-movement-phase.fixture.js";
-import { resolveEnemyMovementPhase } from "./index.js";
+import {
+  createInitialState,
+  resolveEnemyMovementPhase as executeEnemyMovementPhase
+} from "./index.js";
 
 let content: Awaited<ReturnType<typeof compileContent>>;
+let dwarfAuthority: BattlefieldDwarfDeploymentAuthority;
+let preparationBattlefield: NonNullable<
+  ReturnType<typeof createInitialState>["battlefield"]
+>;
 
 beforeAll(async () => {
   content = await compileContent(
     enemyMovementPhaseContent as unknown as ContentBundle
   );
+  const preparation = createInitialState(
+    content,
+    "level.conformance_map" as never,
+    "1"
+  ).battlefield;
+  if (preparation === undefined) throw new Error("missing fixture battlefield");
+  preparationBattlefield = preparation;
+  dwarfAuthority = createBattlefieldDwarfDeploymentAuthority(
+    [
+      {
+        entityId: "entity.dwarf.warden" as never,
+        characterDefinitionId: "character.iron_warden" as never,
+        placementPointId: "placement.goal" as never
+      }
+    ],
+    preparation,
+    content
+  );
 });
+
+function resolveEnemyMovementPhase(
+  request: Parameters<typeof executeEnemyMovementPhase>[0],
+  compiled: Parameters<typeof executeEnemyMovementPhase>[1]
+) {
+  propagateBattlefieldRoundLineage(preparationBattlefield, request.battlefield);
+  return executeEnemyMovementPhase(request, compiled, dwarfAuthority);
+}
 
 describe("generated enemy movement phase", () => {
   it("applies stable reservation winners and advances moved and waited cadence", async () => {
@@ -80,7 +118,7 @@ describe("generated enemy movement phase", () => {
       Object.isFrozen(forward.battlefield.enemyCombatants[0]?.actionState)
     ).toBe(true);
     expect(await canonicalHash(await enemyMovementPhaseParityEvidence())).toBe(
-      "ec56f1e8ec27f154249a07a4005297309ae8ee23dee1a6264cd72bd0518bc223"
+      "057ef3257a1871a0cb155870e41e448711b29a64c3812a38f82df7542403c835"
     );
   });
 });

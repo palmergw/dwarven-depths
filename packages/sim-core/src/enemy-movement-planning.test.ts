@@ -10,6 +10,11 @@ import {
 } from "@dwarven-depths/contracts";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
+  type BattlefieldDwarfDeploymentAuthority,
+  createBattlefieldDwarfDeploymentAuthority
+} from "./battlefield-attack-impact.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
+import {
   battlefield,
   combatant,
   enemyMovementPlanningContent,
@@ -17,17 +22,41 @@ import {
   entry
 } from "./enemy-movement-planning.fixture.js";
 import { planEnemyMovement as executeEnemyMovementPlanning } from "./enemy-movement-planning.js";
+import { createInitialState } from "./index.js";
 
 let content: CompiledContent;
+let dwarfAuthority: BattlefieldDwarfDeploymentAuthority;
+let preparationBattlefield: NonNullable<
+  ReturnType<typeof createInitialState>["battlefield"]
+>;
 
 beforeAll(async () => {
   content = await compileContent({
     ...enemyMovementPlanningContent
   } as unknown as ContentBundle);
+  const preparation = createInitialState(
+    content,
+    "level.conformance_map" as never,
+    "1"
+  ).battlefield;
+  if (preparation === undefined) throw new Error("missing fixture battlefield");
+  preparationBattlefield = preparation;
+  dwarfAuthority = createBattlefieldDwarfDeploymentAuthority(
+    [
+      {
+        entityId: "entity.dwarf.warden" as never,
+        characterDefinitionId: "character.iron_warden" as never,
+        placementPointId: "placement.goal" as never
+      }
+    ],
+    preparation,
+    content
+  );
 });
 
 function planEnemyMovement(request: EnemyMovementPlanningRequest) {
-  return executeEnemyMovementPlanning(request, content);
+  propagateBattlefieldRoundLineage(preparationBattlefield, request.battlefield);
+  return executeEnemyMovementPlanning(request, content, dwarfAuthority);
 }
 
 function request(): EnemyMovementPlanningRequest {
@@ -106,7 +135,31 @@ describe("deterministic enemy movement proposal planning", () => {
     expect(() =>
       planEnemyMovement({
         ...base,
-        battlefield: { ...base.battlefield, occupancy: [] }
+        battlefield: {
+          ...base.battlefield,
+          dwarfCombatants: [
+            {
+              schemaVersion: 1,
+              entityId: "entity.dwarf.forged",
+              characterDefinitionId: "character.forged",
+              placementPointId: "placement.target",
+              currentHealth: 1,
+              maximumHealth: 1,
+              lifecycleState: "active"
+            }
+          ] as never
+        }
+      })
+    ).toThrow("references unknown character definition");
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        battlefield: {
+          ...base.battlefield,
+          occupancy: base.battlefield.occupancy.filter(
+            (occupant) => occupant.entityId === "entity.dwarf.warden"
+          )
+        }
       })
     ).toThrow("active enemy is not occupied");
     expect(() => planEnemyMovement({ ...base, entries: [] })).toThrow(
@@ -124,7 +177,22 @@ describe("deterministic enemy movement proposal planning", () => {
           )
         }
       })
-    ).toThrow("target candidate occupancy does not match placement");
+    ).toThrow("active dwarf must occupy its authored placement");
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        entries: [
+          {
+            ...base.entries[0],
+            candidates: base.entries[0]?.candidates.map((candidate) => ({
+              ...candidate,
+              targetKind: "attackable_blocker" as const,
+              opensRoute: true
+            }))
+          }
+        ] as never
+      })
+    ).toThrow("authoritative dwarf cannot be a blocker target");
     expect(() =>
       planEnemyMovement({
         ...base,

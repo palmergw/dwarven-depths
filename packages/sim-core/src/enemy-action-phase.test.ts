@@ -6,23 +6,74 @@ import {
   type EnemyDefinition
 } from "@dwarven-depths/contracts";
 import { beforeAll, describe, expect, it } from "vitest";
+import {
+  type BattlefieldDwarfDeploymentAuthority,
+  createBattlefieldDwarfDeploymentAuthority
+} from "./battlefield-attack-impact.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import { enemyActionPhaseParityEvidence } from "./enemy-action-phase.fixture.js";
-import { resolveEnemyActionPhase } from "./enemy-action-phase.js";
+import { resolveEnemyActionPhase as executeEnemyActionPhase } from "./enemy-action-phase.js";
 import {
   battlefield,
   combatant,
   enemyMovementPlanningContent,
   entry
 } from "./enemy-movement-planning.fixture.js";
-import { resolveEnemyMovementPhase } from "./index.js";
+import { createInitialState, resolveEnemyMovementPhase } from "./index.js";
 
 let content: Awaited<ReturnType<typeof compileContent>>;
+const authorities = new WeakMap<
+  Parameters<typeof executeEnemyActionPhase>[1],
+  BattlefieldDwarfDeploymentAuthority
+>();
+const preparationBattlefields = new WeakMap<
+  Parameters<typeof executeEnemyActionPhase>[1],
+  NonNullable<ReturnType<typeof createInitialState>["battlefield"]>
+>();
 
 beforeAll(async () => {
   content = await compileContent(
     enemyMovementPlanningContent as unknown as ContentBundle
   );
 });
+
+function authorityFor(
+  compiled: Parameters<typeof executeEnemyActionPhase>[1]
+): BattlefieldDwarfDeploymentAuthority {
+  const existing = authorities.get(compiled);
+  if (existing !== undefined) return existing;
+  const preparation = createInitialState(
+    compiled,
+    "level.conformance_map" as never,
+    "1"
+  ).battlefield;
+  if (preparation === undefined) throw new Error("missing fixture battlefield");
+  const authority = createBattlefieldDwarfDeploymentAuthority(
+    [
+      {
+        entityId: "entity.dwarf.warden" as never,
+        characterDefinitionId: "character.iron_warden" as never,
+        placementPointId: "placement.goal" as never
+      }
+    ],
+    preparation,
+    compiled
+  );
+  authorities.set(compiled, authority);
+  preparationBattlefields.set(compiled, preparation);
+  return authority;
+}
+
+function resolveEnemyActionPhase(
+  request: Parameters<typeof executeEnemyActionPhase>[0],
+  compiled: Parameters<typeof executeEnemyActionPhase>[1]
+) {
+  const authority = authorityFor(compiled);
+  const preparation = preparationBattlefields.get(compiled);
+  if (preparation === undefined) throw new Error("missing fixture preparation");
+  propagateBattlefieldRoundLineage(preparation, request.battlefield);
+  return executeEnemyActionPhase(request, compiled, authority);
+}
 
 describe("enemy action phase", () => {
   it("persists targets independently of movement cadence and starts only in attack geometry", () => {
@@ -219,7 +270,8 @@ describe("enemy action phase", () => {
       throw new Error("missing committed attack fixture");
     const moved = resolveEnemyMovementPhase(
       { ...baseRequest, currentTick: 12, battlefield: committed.battlefield },
-      content
+      content,
+      authorityFor(content)
     );
     expect(moved.battlefield.pendingCommittedAttacks).toEqual([attack]);
     expect(moved.battlefield.pendingCommittedAttacks[0]).not.toBe(attack);
@@ -385,7 +437,7 @@ describe("enemy action phase", () => {
 
   it("pins action evidence for browser parity", async () => {
     expect(await canonicalHash(await enemyActionPhaseParityEvidence())).toBe(
-      "4fc89acfd5de1ebeda1ceef427e717c84b441704745949cadd1771495e4a8127"
+      "22616017f9c2478df01596fe93d732cf21649b228e11a12bdc420c78f134321a"
     );
   });
 });

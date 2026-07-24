@@ -13,7 +13,10 @@ import conformanceContent from "../../../content/fixtures/conformance-map.json" 
 import referenceCombatants from "../../../content/fixtures/phase-3-reference-combatants.json" with {
   type: "json"
 };
-import { planEnemyMovement } from "./enemy-movement-planning.js";
+import { createBattlefieldDwarfDeploymentAuthority } from "./battlefield-attack-impact.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
+import { planEnemyMovement as executeEnemyMovementPlanning } from "./enemy-movement-planning.js";
+import { createInitialState } from "./index.js";
 
 const authoredEnemyEntityIds = [
   "entity.enemy.proposed",
@@ -50,6 +53,7 @@ export const enemyMovementPlanningContent = {
     },
     ...referenceCombatants.definitions.filter(
       (definition) =>
+        definition.id === "character.iron_warden" ||
         definition.id === "enemy.goblin_cutter" ||
         definition.id === "enemy.goblin_slinger"
     )
@@ -134,6 +138,17 @@ function battlefield(
       }
     ],
     enemyCombatants: [enemy],
+    dwarfCombatants: [
+      {
+        schemaVersion: 1,
+        entityId: "entity.dwarf.warden",
+        characterDefinitionId: "character.iron_warden",
+        placementPointId: "placement.goal",
+        currentHealth: includeTarget ? 240 : 0,
+        maximumHealth: 240,
+        lifecycleState: includeTarget ? "active" : "downed"
+      }
+    ],
     pendingCommittedAttacks: []
   } as unknown as BattlefieldState;
 }
@@ -164,6 +179,31 @@ export async function enemyMovementPlanningParityEvidence() {
   const content = await compileContent(
     enemyMovementPlanningContent as unknown as ContentBundle
   );
+  const preparation = createInitialState(
+    content,
+    "level.conformance_map" as never,
+    "1"
+  ).battlefield;
+  if (preparation === undefined) throw new Error("missing fixture battlefield");
+  const dwarfAuthority = createBattlefieldDwarfDeploymentAuthority(
+    [
+      {
+        entityId: "entity.dwarf.warden" as never,
+        characterDefinitionId: "character.iron_warden" as never,
+        placementPointId: "placement.goal" as never
+      }
+    ],
+    preparation,
+    content
+  );
+  const planEnemyMovement = (
+    request: EnemyMovementPlanningRequest,
+    _content: typeof content,
+    _authority: typeof dwarfAuthority
+  ) => {
+    propagateBattlefieldRoundLineage(preparation, request.battlefield);
+    return executeEnemyMovementPlanning(request, content, dwarfAuthority);
+  };
   const proposedEnemy = combatant(
     "entity.enemy.proposed",
     6,
@@ -177,7 +217,8 @@ export async function enemyMovementPlanningParityEvidence() {
       battlefield: battlefield(proposedEnemy, "node.entry" as NavigationNodeId),
       entries: [entry(proposedEnemy.entityId)]
     },
-    content
+    content,
+    dwarfAuthority
   );
   const alreadyEnemy = combatant("entity.enemy.already", 6, null);
   const alreadyValid = planEnemyMovement(
@@ -188,7 +229,8 @@ export async function enemyMovementPlanningParityEvidence() {
       battlefield: battlefield(alreadyEnemy, "node.south" as NavigationNodeId),
       entries: [entry(alreadyEnemy.entityId)]
     },
-    content
+    content,
+    dwarfAuthority
   );
   const unreachableEnemy = combatant("entity.enemy.unreachable", 6, null);
   const unreachableBattlefield = battlefield(
@@ -215,7 +257,8 @@ export async function enemyMovementPlanningParityEvidence() {
         }
       ]
     } as unknown as EnemyMovementPlanningRequest,
-    content
+    content,
+    dwarfAuthority
   );
   const waitingEnemy = combatant("entity.enemy.waiting", 12, null);
   const notDue = planEnemyMovement(
@@ -226,7 +269,8 @@ export async function enemyMovementPlanningParityEvidence() {
       battlefield: battlefield(waitingEnemy, "node.entry" as NavigationNodeId),
       entries: [entry(waitingEnemy.entityId)]
     },
-    content
+    content,
+    dwarfAuthority
   );
   const unlockedEnemy = combatant("entity.enemy.unlocked", 6, null);
   const unlocked = planEnemyMovement(
@@ -241,7 +285,8 @@ export async function enemyMovementPlanningParityEvidence() {
       ),
       entries: [entry(unlockedEnemy.entityId, false)]
     },
-    content
+    content,
+    dwarfAuthority
   );
   return Object.freeze({
     proposed,
