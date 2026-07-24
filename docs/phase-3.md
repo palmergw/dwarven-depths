@@ -33,10 +33,15 @@ Phase 3 surface currently present in the repository.
   or inside opaque terrain are blocked. A clear segment remains visible.
 - Line-of-sight queries consume only immutable authored map geometry. Units do
   not participate in blocking at this boundary.
+- Basic-enemy target acquisition accepts route-analysis results for potential
+  living dwarves and attackable blockers. It admits only reachable living
+  dwarves and reachable, living blockers whose destruction opens the intended
+  route, then selects the lowest path cost with stable placement-point and
+  entity-ID ties. Decisions are immutable and reason-coded.
 
 ## Not implemented yet
 
-Candidate filtering and integration with target selection, enemy target
-acquisition, target locking, attack commitment, damage, armor, cooldowns,
+Integration of route analysis with enemy target acquisition, dwarf candidate
+filtering, target locking, attack commitment, damage, armor, cooldowns,
 statuses, death resolution, authored spawn schedules, boss behavior, and combat
 event integration remain later Phase 3 checkpoints.
