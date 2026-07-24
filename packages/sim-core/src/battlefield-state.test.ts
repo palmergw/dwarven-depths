@@ -354,6 +354,93 @@ describe("authoritative battlefield state", () => {
     expect(mismatched).toEqual(before);
   });
 
+  it("rejects extended records and custom combatant arrays", async () => {
+    const content = await compileContent(battlefieldContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    const admitted = resolveBattlefieldPhase(
+      initial,
+      content,
+      [spawn("spawn.strict", 0, "entity.enemy.strict")],
+      []
+    );
+    if (admitted.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const combatant = admitted.state.battlefield.enemyCombatants[0];
+    if (combatant === undefined) throw new Error("expected enemy combatant");
+    const extended: SimulationState = {
+      ...admitted.state,
+      battlefield: {
+        ...admitted.state.battlefield,
+        enemyCombatants: [
+          { ...combatant, extension: { mutable: true } }
+        ] as never
+      }
+    };
+    expect(() => resolveBattlefieldPhase(extended, content, [], [])).toThrow(
+      "must contain exactly the expected keys"
+    );
+
+    const customArray = [combatant];
+    Object.defineProperty(customArray, Symbol.iterator, {
+      value: () => [][Symbol.iterator](),
+      enumerable: false
+    });
+    const custom: SimulationState = {
+      ...admitted.state,
+      battlefield: {
+        ...admitted.state.battlefield,
+        enemyCombatants: customArray
+      }
+    };
+    expect(() => resolveBattlefieldPhase(custom, content, [], [])).toThrow(
+      "contains unsupported array properties"
+    );
+  });
+
+  it("rejects enemy lifecycle and occupancy mismatches", async () => {
+    const content = await compileContent(battlefieldContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    const admitted = resolveBattlefieldPhase(
+      initial,
+      content,
+      [spawn("spawn.occupancy", 0, "entity.enemy.occupancy")],
+      []
+    );
+    if (admitted.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const combatant = admitted.state.battlefield.enemyCombatants[0];
+    if (combatant === undefined) throw new Error("expected enemy combatant");
+
+    const activeMissing: SimulationState = {
+      ...admitted.state,
+      battlefield: { ...admitted.state.battlefield, occupancy: [] }
+    };
+    expect(() =>
+      resolveBattlefieldPhase(activeMissing, content, [], [])
+    ).toThrow("active battlefield enemy combatant is not occupied");
+
+    const destroyedOccupied: SimulationState = {
+      ...admitted.state,
+      battlefield: {
+        ...admitted.state.battlefield,
+        enemyCombatants: [
+          { ...combatant, currentHealth: 0, lifecycleState: "destroyed" }
+        ] as never
+      }
+    };
+    expect(() =>
+      resolveBattlefieldPhase(destroyedOccupied, content, [], [])
+    ).toThrow("destroyed battlefield enemy combatant remains occupied");
+  });
+
   it("rejects queued spawns whose enemy definition is unavailable", async () => {
     const content = await compileContent(battlefieldContentInput);
     const initial = createInitialState(

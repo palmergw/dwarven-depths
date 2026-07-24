@@ -110,13 +110,146 @@ function freezeSpawnDecision(
   });
 }
 
+function requireDenseDataArray(value: unknown, description: string): unknown[] {
+  if (
+    !Array.isArray(value) ||
+    Object.getPrototypeOf(value) !== Array.prototype
+  ) {
+    throw new TypeError(`${description} must be a standard array`);
+  }
+  if (Reflect.ownKeys(value).length !== value.length + 1) {
+    throw new TypeError(`${description} contains unsupported array properties`);
+  }
+  const items: unknown[] = [];
+  for (let index = 0; index < value.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, index);
+    if (
+      descriptor === undefined ||
+      !descriptor.enumerable ||
+      !("value" in descriptor)
+    ) {
+      throw new TypeError(`${description} item ${index} must be own data`);
+    }
+    items.push(descriptor.value);
+  }
+  return items;
+}
+
+function requireExactDataRecord(
+  value: unknown,
+  keys: readonly string[],
+  description: string
+): Record<string, unknown> {
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    (Object.getPrototypeOf(value) !== Object.prototype &&
+      Object.getPrototypeOf(value) !== null)
+  ) {
+    throw new TypeError(`${description} must be a plain object`);
+  }
+  if (Object.getOwnPropertySymbols(value).length > 0) {
+    throw new TypeError(`${description} contains unsupported symbol keys`);
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const actualKeys = Object.keys(descriptors).sort();
+  const expectedKeys = [...keys].sort();
+  if (
+    actualKeys.length !== expectedKeys.length ||
+    actualKeys.some((key, index) => key !== expectedKeys[index])
+  ) {
+    throw new TypeError(
+      `${description} must contain exactly the expected keys`
+    );
+  }
+  for (const key of expectedKeys) {
+    const descriptor = descriptors[key];
+    if (
+      descriptor === undefined ||
+      !descriptor.enumerable ||
+      !("value" in descriptor)
+    ) {
+      throw new TypeError(`${description}.${key} must be own enumerable data`);
+    }
+  }
+  return value as Record<string, unknown>;
+}
+
 function initializeAdmittedEnemyCombatants(
   content: CompiledContent,
   existingCombatants: readonly BattlefieldEnemyCombatant[],
   decisions: readonly SpawnAdmissionDecision[]
 ): readonly BattlefieldEnemyCombatant[] {
   const combatantsByEntity = new Map<EntityId, BattlefieldEnemyCombatant>();
-  for (const combatant of existingCombatants) {
+  const existingValues = requireDenseDataArray(
+    existingCombatants,
+    "battlefield enemy combatants"
+  );
+  for (const [index, value] of existingValues.entries()) {
+    const record = requireExactDataRecord(
+      value,
+      [
+        "schemaVersion",
+        "entityId",
+        "enemyDefinitionId",
+        "classification",
+        "currentHealth",
+        "maximumHealth",
+        "armor",
+        "movementIntervalTicks",
+        "lifecycleState",
+        "basicAttack"
+      ],
+      `battlefield enemy combatant ${index}`
+    );
+    const attack = requireExactDataRecord(
+      record["basicAttack"],
+      [
+        "id",
+        "windupTicks",
+        "impactDelayTicks",
+        "cooldownTicks",
+        "damage",
+        "range",
+        "requiresLineOfSight"
+      ],
+      `battlefield enemy combatant ${index} basic attack`
+    );
+    if (!isDomainStableId(record["entityId"], "entity")) {
+      throw new RangeError(
+        `battlefield enemy combatant ${index} entityId must be an entity.* stable ID`
+      );
+    }
+    if (!isDomainStableId(record["enemyDefinitionId"], "enemy")) {
+      throw new RangeError(
+        `battlefield enemy combatant ${index} enemyDefinitionId must be an enemy.* stable ID`
+      );
+    }
+    if (!isDomainStableId(attack["id"], "attack")) {
+      throw new RangeError(
+        `battlefield enemy combatant ${index} attack id must be an attack.* stable ID`
+      );
+    }
+    const combatant = {
+      schemaVersion: record["schemaVersion"],
+      entityId: record["entityId"],
+      enemyDefinitionId: record["enemyDefinitionId"],
+      classification: record["classification"],
+      currentHealth: record["currentHealth"],
+      maximumHealth: record["maximumHealth"],
+      armor: record["armor"],
+      movementIntervalTicks: record["movementIntervalTicks"],
+      lifecycleState: record["lifecycleState"],
+      basicAttack: {
+        id: attack["id"],
+        windupTicks: attack["windupTicks"],
+        impactDelayTicks: attack["impactDelayTicks"],
+        cooldownTicks: attack["cooldownTicks"],
+        damage: attack["damage"],
+        range: attack["range"],
+        requiresLineOfSight: attack["requiresLineOfSight"]
+      }
+    } as BattlefieldEnemyCombatant;
     if (combatantsByEntity.has(combatant.entityId)) {
       throw new RangeError(
         `duplicate battlefield enemy combatant entity ID (${combatant.entityId})`
@@ -679,6 +812,22 @@ export function resolveBattlefieldPhase(
     [...state.battlefield.pendingSpawns, ...scheduledSpawns],
     limits
   );
+  const occupiedEntityIds = new Set(
+    admitted.occupancy.map((occupant) => occupant.entityId)
+  );
+  for (const combatant of existingEnemyCombatants) {
+    const isOccupied = occupiedEntityIds.has(combatant.entityId);
+    if (combatant.lifecycleState === "active" && !isOccupied) {
+      throw new RangeError(
+        `active battlefield enemy combatant is not occupied (${combatant.entityId})`
+      );
+    }
+    if (combatant.lifecycleState === "destroyed" && isOccupied) {
+      throw new RangeError(
+        `destroyed battlefield enemy combatant remains occupied (${combatant.entityId})`
+      );
+    }
+  }
   const enemyCombatants = initializeAdmittedEnemyCombatants(
     content,
     existingEnemyCombatants,
