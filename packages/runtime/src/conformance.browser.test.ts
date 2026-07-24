@@ -114,7 +114,7 @@ describe("cross-runtime deterministic conformance", () => {
     const map = content.maps.get("map.conformance_diamond" as never);
 
     expect(content.manifestHash).toBe(
-      "38b3ddd8c676f1c05e3fb0de8d1f08f74712d14a4523b0801b28110540fedca1"
+      "acbbfb991269de9e2c6a5377951d8f40a1a142c74f8d94e3d9030d0c9f9d85c6"
     );
     expect(
       map?.nodes.find((node) => node.id === "node.entry")?.neighborNodeIds
@@ -122,6 +122,21 @@ describe("cross-runtime deterministic conformance", () => {
     expect(map?.placementPoints.map((point) => point.id)).toEqual([
       "placement.east",
       "placement.goal"
+    ]);
+    expect(map?.aimPoints.map((point) => point.id)).toEqual([
+      "aim.east",
+      "aim.entry",
+      "aim.goal",
+      "aim.south"
+    ]);
+    expect(map?.opaqueRegions).toEqual([
+      {
+        id: "opaque.conformance_wall",
+        minimumX: 4,
+        minimumY: 4,
+        maximumX: 6,
+        maximumY: 6
+      }
     ]);
     expect(
       map === undefined
