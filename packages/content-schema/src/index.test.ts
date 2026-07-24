@@ -113,7 +113,13 @@ describe("content validation", () => {
       contentVersion: "milestone-0",
       definitions: [
         { kind: "level", id: "level.test", waveIds: ["wave.first"] },
-        { kind: "wave", id: "wave.first", durationTicks: 30 }
+        {
+          kind: "wave",
+          id: "wave.first",
+          startAtTick: 0,
+          durationTicks: 30,
+          spawnEvents: []
+        }
       ]
     });
     expect(result.definitions).toHaveLength(2);
@@ -298,6 +304,112 @@ describe("content validation", () => {
     expect(() => validateContentBundle(negativeZero)).toThrow(
       "$/definitions/1/aimPoints/0/x: must not be negative zero"
     );
+  });
+
+  it("accepts authored wave timestamps and spawn events against the level map", () => {
+    const map = structuredClone(mapContentInput.definitions[1]);
+    const result = validateContentBundle({
+      schemaVersion: 1,
+      contentVersion: "phase-3-waves",
+      definitions: [
+        {
+          kind: "level",
+          id: "level.waves",
+          waveIds: ["wave.first"],
+          mapId: "map.conformance_diamond"
+        },
+        {
+          kind: "wave",
+          id: "wave.first",
+          startAtTick: 10,
+          durationTicks: 20,
+          spawnEvents: [
+            {
+              id: "spawn.cutter",
+              authoredOrder: 0,
+              atTick: 10,
+              entityId: "entity.enemy.cutter",
+              enemyDefinitionId: "enemy.goblin_cutter",
+              entranceId: "entrance.west"
+            }
+          ]
+        },
+        map
+      ]
+    });
+    expect(result.definitions[1]).toMatchObject({
+      kind: "wave",
+      startAtTick: 10,
+      spawnEvents: [{ id: "spawn.cutter" }]
+    });
+  });
+
+  it("rejects invalid wave windows, entrances, orders, and spawned entities", () => {
+    const map = structuredClone(mapContentInput.definitions[1]);
+    const spawn = {
+      id: "spawn.same",
+      authoredOrder: 0,
+      atTick: 9,
+      entityId: "entity.enemy.same",
+      enemyDefinitionId: "enemy.goblin_cutter",
+      entranceId: "entrance.missing"
+    };
+    try {
+      validateContentBundle({
+        schemaVersion: 1,
+        contentVersion: "phase-3-waves",
+        definitions: [
+          {
+            kind: "level",
+            id: "level.waves",
+            waveIds: ["wave.first", "wave.second"],
+            mapId: "map.conformance_diamond"
+          },
+          {
+            kind: "wave",
+            id: "wave.first",
+            startAtTick: 10,
+            durationTicks: 10,
+            spawnEvents: [spawn]
+          },
+          {
+            kind: "wave",
+            id: "wave.second",
+            startAtTick: 0,
+            durationTicks: 10,
+            spawnEvents: [{ ...spawn, atTick: 0 }]
+          },
+          map
+        ]
+      });
+      throw new Error("expected validation to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ContentValidationError);
+      expect((error as ContentValidationError).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "$/definitions/1/spawnEvents/0/atTick",
+            code: "spawn_outside_wave"
+          }),
+          expect.objectContaining({
+            path: "$/definitions/2/spawnEvents/0/id",
+            code: "duplicate_spawn_id"
+          }),
+          expect.objectContaining({
+            path: "$/definitions/2/spawnEvents/0/entityId",
+            code: "duplicate_spawn_entity"
+          }),
+          expect.objectContaining({
+            path: "$/definitions/2/spawnEvents/0/authoredOrder",
+            code: "duplicate_spawn_order"
+          }),
+          expect.objectContaining({
+            path: "$/definitions/1/spawnEvents/0/entranceId",
+            code: "unknown_reference"
+          })
+        ])
+      );
+    }
   });
 });
 

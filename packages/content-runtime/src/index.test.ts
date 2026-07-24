@@ -47,7 +47,13 @@ describe("content compilation", () => {
       schemaVersion: 1,
       contentVersion: "test",
       definitions: [
-        { kind: "wave", id: "wave.first", durationTicks: 30 },
+        {
+          kind: "wave",
+          id: "wave.first",
+          startAtTick: 0,
+          durationTicks: 30,
+          spawnEvents: []
+        },
         { kind: "level", id: "level.first", waveIds: ["wave.first"] }
       ]
     });
@@ -76,6 +82,58 @@ describe("content compilation", () => {
     expect(Object.isFrozen(scenario)).toBe(true);
     expect(Object.isFrozen(scenario.commands)).toBe(true);
     expect(Object.isFrozen(scenario.commands[0])).toBe(true);
+  });
+
+  it("sorts and deeply freezes authored spawn events", async () => {
+    const map = structuredClone(mapContentInput.definitions[1]);
+    const input = {
+      schemaVersion: 1 as const,
+      contentVersion: "wave-freeze",
+      definitions: [
+        {
+          kind: "level",
+          id: "level.wave_freeze",
+          waveIds: ["wave.freeze"],
+          mapId: "map.conformance_diamond"
+        },
+        {
+          kind: "wave",
+          id: "wave.freeze",
+          startAtTick: 0,
+          durationTicks: 10,
+          spawnEvents: [
+            {
+              id: "spawn.second",
+              authoredOrder: 1,
+              atTick: 1,
+              entityId: "entity.enemy.second",
+              enemyDefinitionId: "enemy.goblin_slinger",
+              entranceId: "entrance.west"
+            },
+            {
+              id: "spawn.first",
+              authoredOrder: 0,
+              atTick: 0,
+              entityId: "entity.enemy.first",
+              enemyDefinitionId: "enemy.goblin_cutter",
+              entranceId: "entrance.west"
+            }
+          ]
+        },
+        map
+      ]
+    };
+    const before = structuredClone(input);
+    const content = await compileContent(input);
+    const wave = content.waves.get("wave.freeze" as never);
+    expect(input).toEqual(before);
+    expect(wave?.spawnEvents.map((event) => event.id)).toEqual([
+      "spawn.first",
+      "spawn.second"
+    ]);
+    expect(Object.isFrozen(wave)).toBe(true);
+    expect(Object.isFrozen(wave?.spawnEvents)).toBe(true);
+    expect(Object.isFrozen(wave?.spawnEvents[0])).toBe(true);
   });
 
   it("canonicalizes map source ordering while preserving authored neighbor order", async () => {

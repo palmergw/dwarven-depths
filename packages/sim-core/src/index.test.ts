@@ -46,7 +46,13 @@ describe("deterministic kernel", () => {
       contentVersion: "milestone-0",
       definitions: [
         { kind: "level", id: "level.wave", waveIds: ["wave.first"] },
-        { kind: "wave", id: "wave.first", durationTicks: 30 }
+        {
+          kind: "wave",
+          id: "wave.first",
+          startAtTick: 0,
+          durationTicks: 30,
+          spawnEvents: []
+        }
       ]
     });
     const state = createInitialState(content, "level.wave" as never, "1");

@@ -10,7 +10,9 @@
     {
       "kind": "wave",
       "id": "wave.nonterminating",
-      "durationTicks": 30
+      "startAtTick": 0,
+      "durationTicks": 30,
+      "spawnEvents": []
     }
   ]
 }

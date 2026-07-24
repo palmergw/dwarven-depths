@@ -111,9 +111,20 @@ Phase 3 surface currently present in the repository.
   never retargets started attacks. Evidence is stable by attack ID, versioned,
   immutable, detached, reason-coded, and checksum-pinned across Node and all
   three browser engines.
+- Version 1 wave content authors explicit round-combat start ticks, durations,
+  and stable spawn events with timestamps, authored order, enemy definitions,
+  entity identities, and map entrance references. Validation rejects events
+  outside their wave interval, duplicate spawn IDs/entities/orders, and
+  entrances not owned by the level map.
+- Fixed-step phase 2 starts every due wave independently of unresolved earlier
+  enemies, enqueues each due spawn exactly once, and preserves future and
+  already-fired schedule state. Level wave order and explicit spawn order—not
+  caller array order—own gameplay ordering. Results are versioned, immutable,
+  detached, reason-coded, and pinned for overlapping waves across Node and all
+  three browser engines.
 
 ## Not implemented yet
 
-Armor, attack-windup status semantics, non-damage trigger variants, rewards,
-authored spawn schedules, boss behavior, terminal evaluation, and broader
-combat event integration remain later Phase 3 checkpoints.
+Armor, attack-windup status semantics, non-damage trigger variants, authored
+enemy stat definitions, rewards, boss behavior, terminal evaluation, and
+broader combat event integration remain later Phase 3 checkpoints.
