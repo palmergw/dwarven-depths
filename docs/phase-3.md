@@ -167,6 +167,14 @@ Phase 3 surface currently present in the repository.
   authored neighbor order. Already-valid, routed, and unreachable results carry
   immutable, reason-coded route evidence pinned across Node and all three
   browser engines.
+- Enemy movement planning now composes authoritative active-enemy occupancy,
+  persisted movement cadence and target locks, route-analyzed candidates, and
+  occupied solid-blocker identities. Due enemies retain or reacquire one target,
+  derive blocker nodes without treating moving enemies as route blockers, and
+  emit at most one stable next-node proposal for reservation arbitration.
+  Not-due, unlocked, already attack-valid, unreachable, and routed outcomes are
+  reason-coded, immutable, input-order independent, and checksum-pinned across
+  Node and all three browser engines.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
@@ -221,7 +229,7 @@ Phase 3 surface currently present in the repository.
 
 ## Not implemented yet
 
-Battlefield route-to-target composition and target/attack action execution,
+Battlefield target-lock persistence and attack action execution,
 armor reduction,
 attack-windup status semantics,
 non-damage trigger variants,
