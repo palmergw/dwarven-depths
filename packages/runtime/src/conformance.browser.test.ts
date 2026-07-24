@@ -9,6 +9,7 @@ import { canonicalHash } from "@dwarven-depths/contracts";
 import {
   AuthoritativeTables,
   nextUint32,
+  resolveMovementReservations,
   seedToUint32
 } from "@dwarven-depths/sim-core";
 import { describe, expect, it } from "vitest";
@@ -131,6 +132,59 @@ describe("cross-runtime deterministic conformance", () => {
             }
           ])
     ).toEqual({ valid: true, issues: [] });
+  });
+
+  it("matches deterministic movement reservation contention", async () => {
+    const content = await compileContent(mapContentInput);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing conformance map");
+
+    expect(
+      resolveMovementReservations(
+        map,
+        [
+          { entityId: "entity.enemy.beta", nodeId: "node.goal" },
+          { entityId: "entity.enemy.alpha", nodeId: "node.entry" }
+        ] as never,
+        [
+          {
+            id: "movement.beta",
+            entityId: "entity.enemy.beta",
+            fromNodeId: "node.goal",
+            toNodeId: "node.south"
+          },
+          {
+            id: "movement.alpha",
+            entityId: "entity.enemy.alpha",
+            fromNodeId: "node.entry",
+            toNodeId: "node.south"
+          }
+        ] as never
+      )
+    ).toEqual({
+      occupancy: [
+        { entityId: "entity.enemy.alpha", nodeId: "node.south" },
+        { entityId: "entity.enemy.beta", nodeId: "node.goal" }
+      ],
+      decisions: [
+        {
+          proposalId: "movement.alpha",
+          entityId: "entity.enemy.alpha",
+          fromNodeId: "node.entry",
+          toNodeId: "node.south",
+          status: "moved",
+          reason: "moved"
+        },
+        {
+          proposalId: "movement.beta",
+          entityId: "entity.enemy.beta",
+          fromNodeId: "node.goal",
+          toNodeId: "node.south",
+          status: "waited",
+          reason: "destination_reserved"
+        }
+      ]
+    });
   });
 
   it("matches the golden nonempty entity/effect table", async () => {

@@ -3,8 +3,15 @@ import type { CompiledContent } from "@dwarven-depths/content-runtime";
 export * from "./stable-tables.js";
 
 import {
+  type BattlefieldMapDefinition,
   type CommandEnvelope,
   canonicalHash,
+  type EntityId,
+  type MovementDecision,
+  type MovementProposal,
+  type MovementReservationResolution,
+  type NavigationNodeId,
+  type NavigationOccupant,
   type SimulationEvent,
   type SimulationState
 } from "@dwarven-depths/contracts";
@@ -12,6 +19,177 @@ import {
 export interface StepResult {
   readonly state: SimulationState;
   readonly events: readonly SimulationEvent[];
+}
+
+function compareText(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function freezeDecision(
+  proposal: MovementProposal,
+  status: MovementDecision["status"],
+  reason: MovementDecision["reason"]
+): MovementDecision {
+  return Object.freeze({
+    proposalId: proposal.id,
+    entityId: proposal.entityId,
+    fromNodeId: proposal.fromNodeId,
+    toNodeId: proposal.toNodeId,
+    status,
+    reason
+  });
+}
+
+/**
+ * Resolves one simultaneous movement-reservation phase against snapshot
+ * occupancy. An occupied node remains unavailable for the entire phase, so a
+ * proposal cannot follow, swap with, pass through, or push another occupant.
+ */
+export function resolveMovementReservations(
+  map: BattlefieldMapDefinition,
+  occupancy: readonly NavigationOccupant[],
+  proposals: readonly MovementProposal[]
+): MovementReservationResolution {
+  const nodes = new Map(map.nodes.map((node) => [node.id, node]));
+  const occupantsByEntity = new Map<EntityId, NavigationOccupant>();
+  const occupantsByNode = new Map<NavigationNodeId, NavigationOccupant>();
+
+  for (const occupant of occupancy) {
+    if (!nodes.has(occupant.nodeId))
+      throw new RangeError(
+        `occupancy references unknown navigation node ID (${occupant.nodeId})`
+      );
+    if (occupantsByEntity.has(occupant.entityId))
+      throw new RangeError(
+        `duplicate occupied entity ID (${occupant.entityId})`
+      );
+    if (occupantsByNode.has(occupant.nodeId))
+      throw new RangeError(
+        `duplicate occupied navigation node ID (${occupant.nodeId})`
+      );
+    occupantsByEntity.set(occupant.entityId, occupant);
+    occupantsByNode.set(occupant.nodeId, occupant);
+  }
+
+  const proposalIds = new Set<string>();
+  const proposalCountByEntity = new Map<EntityId, number>();
+  for (const proposal of proposals) {
+    if (proposalIds.has(proposal.id))
+      throw new RangeError(`duplicate movement proposal ID (${proposal.id})`);
+    proposalIds.add(proposal.id);
+    proposalCountByEntity.set(
+      proposal.entityId,
+      (proposalCountByEntity.get(proposal.entityId) ?? 0) + 1
+    );
+  }
+
+  const orderedProposals = [...proposals].sort(
+    (left, right) =>
+      compareText(left.entityId, right.entityId) ||
+      compareText(left.id, right.id)
+  );
+  const decisions = new Map<MovementProposal, MovementDecision>();
+  const candidatesByDestination = new Map<
+    NavigationNodeId,
+    MovementProposal[]
+  >();
+
+  for (const proposal of orderedProposals) {
+    if ((proposalCountByEntity.get(proposal.entityId) ?? 0) > 1) {
+      decisions.set(
+        proposal,
+        freezeDecision(proposal, "rejected", "duplicate_entity_proposal")
+      );
+      continue;
+    }
+    const occupant = occupantsByEntity.get(proposal.entityId);
+    if (occupant === undefined) {
+      decisions.set(
+        proposal,
+        freezeDecision(proposal, "rejected", "entity_not_occupied")
+      );
+      continue;
+    }
+    if (occupant.nodeId !== proposal.fromNodeId) {
+      decisions.set(
+        proposal,
+        freezeDecision(proposal, "rejected", "source_mismatch")
+      );
+      continue;
+    }
+    const fromNode = nodes.get(proposal.fromNodeId);
+    if (fromNode === undefined || !nodes.has(proposal.toNodeId)) {
+      decisions.set(
+        proposal,
+        freezeDecision(proposal, "rejected", "unknown_node")
+      );
+      continue;
+    }
+    if (proposal.fromNodeId === proposal.toNodeId) {
+      decisions.set(
+        proposal,
+        freezeDecision(proposal, "rejected", "same_node")
+      );
+      continue;
+    }
+    if (!fromNode.neighborNodeIds.includes(proposal.toNodeId)) {
+      decisions.set(
+        proposal,
+        freezeDecision(proposal, "rejected", "nodes_not_connected")
+      );
+      continue;
+    }
+    if (occupantsByNode.has(proposal.toNodeId)) {
+      decisions.set(
+        proposal,
+        freezeDecision(proposal, "waited", "destination_occupied")
+      );
+      continue;
+    }
+    const candidates = candidatesByDestination.get(proposal.toNodeId) ?? [];
+    candidates.push(proposal);
+    candidatesByDestination.set(proposal.toNodeId, candidates);
+  }
+
+  const movedNodeByEntity = new Map<EntityId, NavigationNodeId>();
+  for (const candidates of candidatesByDestination.values()) {
+    candidates.sort(
+      (left, right) =>
+        compareText(left.entityId, right.entityId) ||
+        compareText(left.id, right.id)
+    );
+    candidates.forEach((proposal, index) => {
+      if (index === 0) {
+        movedNodeByEntity.set(proposal.entityId, proposal.toNodeId);
+        decisions.set(proposal, freezeDecision(proposal, "moved", "moved"));
+      } else {
+        decisions.set(
+          proposal,
+          freezeDecision(proposal, "waited", "destination_reserved")
+        );
+      }
+    });
+  }
+
+  const resolvedOccupancy = [...occupantsByEntity.values()]
+    .sort((left, right) => compareText(left.entityId, right.entityId))
+    .map((occupant) =>
+      Object.freeze({
+        entityId: occupant.entityId,
+        nodeId: movedNodeByEntity.get(occupant.entityId) ?? occupant.nodeId
+      })
+    );
+  const resolvedDecisions = orderedProposals.map((proposal) => {
+    const decision = decisions.get(proposal);
+    if (decision === undefined)
+      throw new Error(`movement proposal ${proposal.id} was not resolved`);
+    return decision;
+  });
+
+  return Object.freeze({
+    occupancy: Object.freeze(resolvedOccupancy),
+    decisions: Object.freeze(resolvedDecisions)
+  });
 }
 
 export function seedToUint32(seed: string): number {
