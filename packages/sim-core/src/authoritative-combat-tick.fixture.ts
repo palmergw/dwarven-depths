@@ -69,7 +69,8 @@ async function runShuttergateTickSequence(reverseEntries: boolean) {
       get: () => {
         throw new Error("state tick accessor must not execute");
       }
-    })
+    }),
+    { ...state, eventSequence: Number.MAX_SAFE_INTEGER }
   ]) {
     try {
       resolveAuthoritativeCombatTick(

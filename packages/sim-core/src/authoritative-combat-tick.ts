@@ -198,6 +198,8 @@ export function resolveAuthoritativeCombatTick(
     undefined,
     dwarfAuthority
   );
+  if (!Number.isSafeInteger(scheduled.state.eventSequence))
+    throw new RangeError("scheduled combat events overflow eventSequence");
   const scheduledBattlefield = scheduled.state.battlefield;
   if (scheduledBattlefield === undefined)
     throw new Error("authoritative combat tick requires battlefield state");
@@ -243,6 +245,11 @@ export function resolveAuthoritativeCombatTick(
     content,
     dwarfAuthority
   );
+  if (
+    enemyMovement.reservations.decisions.length >
+    Number.MAX_SAFE_INTEGER - scheduled.state.eventSequence
+  )
+    throw new RangeError("movement events overflow eventSequence");
   const movementEvents: SimulationEvent[] =
     enemyMovement.reservations.decisions.map((decision, offset) => {
       const sequence = scheduled.state.eventSequence + offset;

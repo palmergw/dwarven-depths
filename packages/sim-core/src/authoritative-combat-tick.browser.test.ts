@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { authoritativeCombatTickParityEvidence } from "./authoritative-combat-tick.fixture.js";
 
 const EXPECTED_CHECKSUM =
-  "867f7e72390cf770c9e553fe460558981c2f876d86861114be5d642a62a8f1d9";
+  "49a26373a49cb8d6cbb739cb7bf422d36b0f4a8c336af05b74d9e88c92ced0cf";
 
 describe("authoritative combat tick browser parity", () => {
   it("matches the literal Node Shuttergate tick-sequence checksum", async () => {
