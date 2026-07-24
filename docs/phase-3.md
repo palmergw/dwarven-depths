@@ -104,10 +104,16 @@ Phase 3 surface currently present in the repository.
   retargets an already-started attack. Batch evidence is stable by attack ID,
   versioned, immutable, detached, reason-coded, and checksum-pinned across Node
   and all three browser engines.
+- Fixed-step phase 5 also composes basic-enemy target-lock validation with
+  active pre-commit windups. Eligible reachable dwarves and route-opening
+  blockers retain their locks; invalid locks cancel the original windup while
+  separately exposing deterministic acquisition for future work. Reacquisition
+  never retargets started attacks. Evidence is stable by attack ID, versioned,
+  immutable, detached, reason-coded, and checksum-pinned across Node and all
+  three browser engines.
 
 ## Not implemented yet
 
-Enemy target-lock/windup integration, armor, attack-windup status semantics,
-non-damage trigger variants, rewards, authored spawn schedules, boss behavior,
-terminal evaluation, and broader combat event integration remain later Phase 3
-checkpoints.
+Armor, attack-windup status semantics, non-damage trigger variants, rewards,
+authored spawn schedules, boss behavior, terminal evaluation, and broader
+combat event integration remain later Phase 3 checkpoints.
