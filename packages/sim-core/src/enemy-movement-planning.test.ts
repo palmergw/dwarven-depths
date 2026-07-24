@@ -146,6 +146,29 @@ describe("deterministic enemy movement proposal planning", () => {
         ...base,
         battlefield: {
           ...base.battlefield,
+          startedWaveIds: [],
+          firedSpawnIds: [],
+          pendingSpawns: [],
+          enemyAdmissions: [],
+          enemyCombatants: [],
+          occupancy: base.battlefield.occupancy.filter(
+            (occupant) => occupant.entityId !== "entity.enemy.test"
+          )
+        },
+        entries: []
+      })
+    ).toThrow("started waves do not match the authored due set");
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        battlefield: { ...base.battlefield, firedSpawnIds: [] }
+      })
+    ).toThrow("fired spawns do not match the authored due set");
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        battlefield: {
+          ...base.battlefield,
           enemyCombatants: base.battlefield.enemyCombatants.map(
             (combatant) => ({
               ...combatant,
@@ -159,7 +182,7 @@ describe("deterministic enemy movement proposal planning", () => {
       })
     ).toThrow("invalid health or movement cadence");
     const omittedEnemy = {
-      entityId: "entity.enemy.omitted" as never,
+      entityId: "entity.foe.pending" as never,
       nodeId: "node.south" as NavigationNodeId
     };
     expect(() =>
@@ -234,6 +257,38 @@ describe("deterministic enemy movement proposal planning", () => {
         }
       })
     ).toThrow("incoherent attack and cooldown");
+    const lateCommit = Number.MAX_SAFE_INTEGER - 10;
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        currentTick: lateCommit,
+        battlefield: {
+          ...base.battlefield,
+          enemyCombatants: base.battlefield.enemyCombatants.map(
+            (combatant) => ({
+              ...combatant,
+              actionState: {
+                ...combatant.actionState,
+                currentTargetEntityId: "entity.dwarf.warden" as never,
+                activeBasicAttack: {
+                  schemaVersion: 1,
+                  attackId: combatant.basicAttack.id,
+                  sourceEntityId: combatant.entityId,
+                  targetEntityId: "entity.dwarf.warden" as never,
+                  startedAtTick: lateCommit - 6,
+                  commitAtTick: lateCommit,
+                  impactAtTick: lateCommit + 1,
+                  cooldownDurationTicks: 20,
+                  damage: 10,
+                  range: 1,
+                  targetIsValid: true
+                }
+              }
+            })
+          )
+        }
+      })
+    ).toThrow("invalid active basic attack");
     expect(() =>
       planEnemyMovement({
         ...base,
@@ -291,10 +346,9 @@ describe("deterministic enemy movement proposal planning", () => {
           ...battlefield(second, "node.east" as NavigationNodeId)
             .enemyAdmissions
         ],
-        firedSpawnIds: [
-          ...base.battlefield.firedSpawnIds,
-          ...battlefield(second, "node.east" as NavigationNodeId).firedSpawnIds
-        ]
+        pendingSpawns: base.battlefield.pendingSpawns.filter(
+          (spawn) => spawn.entityId !== second.entityId
+        )
       },
       entries: [...base.entries, entry(second.entityId)]
     };

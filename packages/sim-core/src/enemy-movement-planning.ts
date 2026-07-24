@@ -239,7 +239,7 @@ function validateAuthoredAdmissionIdentity(
   currentTick: number,
   content: CompiledContent,
   admissions: ReturnType<typeof normalizeAdmissions>
-): void {
+): ReadonlySet<EntityId> {
   const level = content.levels.get(levelId as never);
   if (level === undefined)
     throw new RangeError(`unknown movement planning level (${levelId})`);
@@ -262,18 +262,28 @@ function validateAuthoredAdmissionIdentity(
     string,
     { readonly waveId: string; readonly spawn: WaveSpawnEvent }
   >();
+  const dueStartedIds = new Set<string>();
+  const authoredEnemyEntityIds = new Set<EntityId>();
   for (const waveId of level.waveIds) {
     const wave = content.waves.get(waveId);
     if (wave === undefined)
       throw new RangeError(`unknown authored wave (${waveId})`);
     if (startedIds.has(waveId) && wave.startAtTick > currentTick)
       throw new RangeError(`started wave is in the future (${waveId})`);
-    for (const spawn of wave.spawnEvents)
+    if (wave.startAtTick <= currentTick) dueStartedIds.add(waveId);
+    for (const spawn of wave.spawnEvents) {
       authoredSpawns.set(spawn.id, { waveId, spawn });
+      authoredEnemyEntityIds.add(spawn.entityId);
+    }
   }
   for (const startedId of startedIds)
     if (!level.waveIds.includes(startedId as never))
       throw new RangeError(`started wave is not authored (${startedId})`);
+  if (
+    startedIds.size !== dueStartedIds.size ||
+    [...dueStartedIds].some((waveId) => !startedIds.has(waveId))
+  )
+    throw new RangeError("started waves do not match the authored due set");
   const firedIds = new Set<string>();
   for (const [index, value] of requireArray(
     battlefield.firedSpawnIds,
@@ -294,6 +304,16 @@ function validateAuthoredAdmissionIdentity(
       );
     firedIds.add(value);
   }
+  const dueFiredIds = new Set(
+    [...authoredSpawns.entries()]
+      .filter(([, authored]) => authored.spawn.atTick <= currentTick)
+      .map(([spawnId]) => spawnId)
+  );
+  if (
+    firedIds.size !== dueFiredIds.size ||
+    [...dueFiredIds].some((spawnId) => !firedIds.has(spawnId))
+  )
+    throw new RangeError("fired spawns do not match the authored due set");
   const pendingIds = new Set<string>();
   for (const [index, item] of requireArray(
     battlefield.pendingSpawns,
@@ -344,6 +364,7 @@ function validateAuthoredAdmissionIdentity(
         `enemy admission does not match independently authored spawn (${entityId})`
       );
   }
+  return authoredEnemyEntityIds;
 }
 
 function normalizeCombatants(
@@ -534,6 +555,9 @@ function normalizeCombatants(
           ) ||
           impactAtTick !==
             commitAtTick + definition.basicAttack.impactDelayTicks ||
+          !Number.isSafeInteger(
+            commitAtTick + definition.basicAttack.cooldownTicks
+          ) ||
           active.cooldownDurationTicks !==
             definition.basicAttack.cooldownTicks ||
           active.damage !== definition.basicAttack.damage ||
@@ -673,7 +697,7 @@ export function planEnemyMovement(
     );
   const occupancy = normalizeOccupancy(battlefield.occupancy);
   const admissions = normalizeAdmissions(battlefield.enemyAdmissions);
-  validateAuthoredAdmissionIdentity(
+  const authoredEnemyEntityIds = validateAuthoredAdmissionIdentity(
     battlefield,
     input.levelId,
     currentTick,
@@ -705,7 +729,7 @@ export function planEnemyMovement(
   const enemyIds = new Set(combatants.map((combatant) => combatant.entityId));
   for (const occupant of occupancy) {
     if (
-      occupant.entityId.startsWith("entity.enemy.") &&
+      authoredEnemyEntityIds.has(occupant.entityId) &&
       !enemyIds.has(occupant.entityId)
     )
       throw new RangeError(
@@ -768,7 +792,7 @@ export function planEnemyMovement(
     }
     const blockedNodeIds: NavigationNodeId[] = [];
     for (const blockerId of entry.solidBlockerEntityIds) {
-      if (enemyIds.has(blockerId))
+      if (authoredEnemyEntityIds.has(blockerId))
         throw new RangeError(
           `moving enemy cannot be a solid route blocker (${blockerId})`
         );

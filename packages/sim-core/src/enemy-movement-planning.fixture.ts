@@ -22,7 +22,8 @@ const authoredEnemyEntityIds = [
   "entity.enemy.waiting",
   "entity.enemy.unlocked",
   "entity.enemy.test",
-  "entity.enemy.second"
+  "entity.enemy.second",
+  "entity.foe.pending"
 ];
 
 export const enemyMovementPlanningContent = {
@@ -100,7 +101,9 @@ function battlefield(
     schemaVersion: 1,
     mapId: "map.conformance_diamond",
     startedWaveIds: ["wave.movement_planning"],
-    firedSpawnIds: [`spawn.${enemy.entityId.slice("entity.".length)}`],
+    firedSpawnIds: authoredEnemyEntityIds.map(
+      (entityId) => `spawn.${entityId.slice("entity.".length)}`
+    ),
     occupancy: [
       { entityId: enemy.entityId, nodeId: enemyNodeId },
       ...(includeTarget
@@ -112,7 +115,15 @@ function battlefield(
           ]
         : [])
     ],
-    pendingSpawns: [],
+    pendingSpawns: authoredEnemyEntityIds
+      .filter((entityId) => entityId !== enemy.entityId)
+      .map((entityId) => ({
+        id: `spawn.${entityId.slice("entity.".length)}`,
+        authoredOrder: authoredEnemyEntityIds.indexOf(entityId),
+        entityId,
+        enemyDefinitionId: "enemy.goblin_cutter",
+        entranceId: "entrance.west"
+      })),
     enemyAdmissions: [
       {
         schemaVersion: 1,
