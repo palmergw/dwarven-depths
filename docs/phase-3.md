@@ -61,10 +61,20 @@ Phase 3 surface currently present in the repository.
   the same resolution. Inputs are strictly validated, immutable, and detached,
   and the mixed-kind simultaneous-death fixture is pinned across Node and all
   three browser engines.
+- Newly downed or destroyed entities enqueue direct-damage death triggers in
+  stable owner-entity and effect-ID order. Each effect executes at most once for
+  its owner's supplied death event; damage is aggregated before each recursion
+  round's simultaneous lifecycle transitions.
+- Trigger chains stop when exhausted or at the authored positive recursion-round
+  limit. A bounded result explicitly identifies pending death events, while
+  decisions, health evidence, transitions, and resulting combatants remain
+  versioned, immutable, detached, reason-coded, and input-order independent. A
+  recursive chain fixture is pinned across Node and all three browser engines.
 
 ## Not implemented yet
 
 Integration of route analysis with enemy target acquisition, dwarf candidate
 filtering, target locking, armor, cooldown state advancement, statuses, healing,
-death and destruction triggers, authored spawn schedules, boss behavior, and
-combat event integration remain later Phase 3 checkpoints.
+non-damage trigger variants, rewards, authored spawn schedules, boss behavior,
+terminal evaluation, and combat event integration remain later Phase 3
+checkpoints.
