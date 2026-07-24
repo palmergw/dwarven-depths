@@ -306,6 +306,36 @@ describe("deterministic enemy movement proposal planning", () => {
     ).toThrow("pending spawn 0 must contain exactly the expected keys");
   });
 
+  it("rejects authored enemies masquerading as target candidates", () => {
+    const enemy = combatant("entity.enemy.test", 6, null);
+    expect(() =>
+      planEnemyMovement({
+        schemaVersion: 1,
+        currentTick: 6,
+        levelId: "level.conformance_map" as never,
+        battlefield: battlefield(enemy, "node.goal" as never, false),
+        entries: [
+          {
+            schemaVersion: 1,
+            enemyEntityId: enemy.entityId,
+            candidates: [
+              {
+                entityId: enemy.entityId,
+                targetKind: "living_dwarf",
+                placementPointId: "placement.goal",
+                pathCost: 0,
+                isAlive: true,
+                isReachable: true,
+                opensRoute: false
+              }
+            ],
+            solidBlockerEntityIds: []
+          }
+        ]
+      } as never)
+    ).toThrow("moving enemy cannot be an enemy target");
+  });
+
   it("rejects extended/accessor records and custom arrays", () => {
     const base = request();
     expect(() => planEnemyMovement({ ...base, extra: true } as never)).toThrow(

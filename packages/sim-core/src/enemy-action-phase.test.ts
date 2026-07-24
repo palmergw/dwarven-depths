@@ -2,7 +2,8 @@ import { compileContent } from "@dwarven-depths/content-runtime";
 import {
   type BattlefieldState,
   type ContentBundle,
-  canonicalHash
+  canonicalHash,
+  type EnemyDefinition
 } from "@dwarven-depths/contracts";
 import { beforeAll, describe, expect, it } from "vitest";
 import { enemyActionPhaseParityEvidence } from "./enemy-action-phase.fixture.js";
@@ -104,6 +105,87 @@ describe("enemy action phase", () => {
     expect(evidence.restarted.decisions[0]?.attackId).not.toBe(
       evidence.started.decisions[0]?.attackId
     );
+  });
+
+  it("cancels retained windups that leave authored attack geometry", () => {
+    const enemy = combatant("entity.enemy.already", 6, null);
+    const initial = battlefield(enemy, "node.south" as never);
+    const started = resolveEnemyActionPhase(
+      {
+        schemaVersion: 1,
+        currentTick: 6,
+        levelId: "level.conformance_map" as never,
+        battlefield: initial,
+        entries: [entry(enemy.entityId)]
+      },
+      content
+    );
+    const moved: BattlefieldState = {
+      ...initial,
+      occupancy: initial.occupancy.map((occupant) =>
+        occupant.entityId === enemy.entityId
+          ? { ...occupant, nodeId: "node.entry" as never }
+          : occupant
+      ),
+      enemyCombatants: started.enemyCombatants
+    };
+    const result = resolveEnemyActionPhase(
+      {
+        schemaVersion: 1,
+        currentTick: 12,
+        levelId: "level.conformance_map" as never,
+        battlefield: moved,
+        entries: [entry(enemy.entityId)]
+      },
+      content
+    );
+    expect(result.decisions[0]).toMatchObject({
+      status: "cancelled",
+      reason: "basic_attack_cancelled",
+      targetLock: { status: "retained" }
+    });
+    expect(result.committedAttacks).toEqual([]);
+  });
+
+  it("commits zero-windup authored attacks in their start step", async () => {
+    const zeroWindupContent = await compileContent({
+      ...enemyMovementPlanningContent,
+      definitions: enemyMovementPlanningContent.definitions.map((definition) =>
+        definition.id === "enemy.goblin_cutter"
+          ? {
+              ...(definition as unknown as EnemyDefinition),
+              basicAttack: {
+                ...(definition as unknown as EnemyDefinition).basicAttack,
+                windupTicks: 0
+              }
+            }
+          : definition
+      )
+    } as unknown as ContentBundle);
+    const authored = combatant("entity.enemy.already", 6, null);
+    const enemy = {
+      ...authored,
+      basicAttack: { ...authored.basicAttack, windupTicks: 0 }
+    };
+    const result = resolveEnemyActionPhase(
+      {
+        schemaVersion: 1,
+        currentTick: 6,
+        levelId: "level.conformance_map" as never,
+        battlefield: battlefield(enemy, "node.south" as never),
+        entries: [entry(enemy.entityId)]
+      },
+      zeroWindupContent
+    );
+    expect(result.decisions[0]).toMatchObject({
+      status: "committed",
+      reason: "basic_attack_committed"
+    });
+    expect(result.committedAttacks[0]).toMatchObject({
+      committedAtTick: 6,
+      cooldownCompleteAtTick: 26
+    });
+    expect(result.enemyCombatants[0]?.actionState.activeBasicAttack).toBeNull();
   });
 
   it("returns detached deeply frozen stable evidence without mutating input", () => {

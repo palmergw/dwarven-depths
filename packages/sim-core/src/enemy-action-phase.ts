@@ -11,7 +11,7 @@ import type {
   EntityId,
   StableId
 } from "@dwarven-depths/contracts";
-import { resolveEnemyAttackTargeting } from "./enemy-attack-targeting.js";
+import { resolveAttackCommitments } from "./attack-commitment.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
 import { hasLineOfSight, isAimPointInRange } from "./range-line-of-sight.js";
 
@@ -112,29 +112,61 @@ export function resolveEnemyActionPhase(
       ...combatant.actionState,
       currentTargetEntityId: selectedTargetId
     };
+    const isAttackGeometryValid = (targetEntityId: EntityId): boolean => {
+      const candidate = entry.candidates.find(
+        (item) => item.entityId === targetEntityId
+      );
+      const sourceOccupant = occupancyByEntity.get(combatant.entityId);
+      const placement = candidate
+        ? placementsById.get(candidate.placementPointId)
+        : undefined;
+      const sourceNode = sourceOccupant
+        ? nodesById.get(sourceOccupant.nodeId)
+        : undefined;
+      const targetNode = placement
+        ? nodesById.get(placement.nodeId)
+        : undefined;
+      if (
+        candidate === undefined ||
+        !candidate.isAlive ||
+        sourceNode === undefined ||
+        targetNode === undefined
+      )
+        return false;
+      return (
+        isAimPointInRange(
+          map,
+          sourceNode.aimPointId,
+          targetNode.aimPointId,
+          combatant.basicAttack.range
+        ) &&
+        (!combatant.basicAttack.requiresLineOfSight ||
+          hasLineOfSight(map, sourceNode.aimPointId, targetNode.aimPointId))
+      );
+    };
 
     if (combatant.actionState.activeBasicAttack !== null) {
-      const targeting = resolveEnemyAttackTargeting({
-        schemaVersion: 1,
+      const targetLock = planned.targetLock;
+      const commitment = resolveAttackCommitments({
         currentTick,
-        entries: [
+        windups: [
           {
-            schemaVersion: 1,
-            sourceEntityId: combatant.entityId,
-            targetLock: {
-              currentTargetEntityId:
-                combatant.actionState.currentTargetEntityId,
-              candidates: entry.candidates
-            },
-            windup: combatant.actionState.activeBasicAttack
+            ...combatant.actionState.activeBasicAttack,
+            targetIsValid:
+              targetLock.status === "retained" &&
+              targetLock.targetEntityId ===
+                combatant.actionState.activeBasicAttack.targetEntityId &&
+              isAttackGeometryValid(
+                combatant.actionState.activeBasicAttack.targetEntityId
+              )
           }
         ]
       }).decisions[0];
-      if (targeting === undefined)
-        throw new Error("enemy targeting decision is missing");
-      const resolvedTargetId = targeting.targetLock.targetEntityId ?? null;
-      if (targeting.commitment.status === "committed") {
-        const committed = targeting.commitment.committedAttack;
+      if (commitment === undefined)
+        throw new Error("enemy attack commitment decision is missing");
+      const resolvedTargetId = targetLock.targetEntityId ?? null;
+      if (commitment.status === "committed") {
+        const committed = commitment.committedAttack;
         if (committed === undefined)
           throw new Error("committed enemy attack evidence is missing");
         committedAttacks.push(committed);
@@ -151,13 +183,13 @@ export function resolveEnemyActionPhase(
             combatant.entityId,
             "committed",
             "basic_attack_committed",
-            targeting.targetLock,
+            targetLock,
             committed.attackId
           )
         );
         continue;
       }
-      if (targeting.commitment.status === "cancelled") {
+      if (commitment.status === "cancelled") {
         combatants.push(
           freezeCombatant(combatant, {
             ...baseAction,
@@ -171,7 +203,7 @@ export function resolveEnemyActionPhase(
             combatant.entityId,
             "cancelled",
             "basic_attack_cancelled",
-            targeting.targetLock,
+            targetLock,
             combatant.actionState.activeBasicAttack.attackId
           )
         );
@@ -193,7 +225,7 @@ export function resolveEnemyActionPhase(
           combatant.entityId,
           "winding_up",
           "basic_attack_winding_up",
-          targeting.targetLock,
+          targetLock,
           combatant.actionState.activeBasicAttack.attackId
         )
       );
@@ -235,34 +267,7 @@ export function resolveEnemyActionPhase(
       continue;
     }
 
-    const candidate = entry.candidates.find(
-      (item) => item.entityId === selectedTargetId
-    );
-    const sourceOccupant = occupancyByEntity.get(combatant.entityId);
-    const placement = candidate
-      ? placementsById.get(candidate.placementPointId)
-      : undefined;
-    const sourceNode = sourceOccupant
-      ? nodesById.get(sourceOccupant.nodeId)
-      : undefined;
-    const targetNode = placement ? nodesById.get(placement.nodeId) : undefined;
-    if (
-      candidate === undefined ||
-      sourceNode === undefined ||
-      targetNode === undefined
-    )
-      throw new Error("validated enemy attack geometry is missing");
-
-    const inRange = isAimPointInRange(
-      map,
-      sourceNode.aimPointId,
-      targetNode.aimPointId,
-      combatant.basicAttack.range
-    );
-    const visible =
-      !combatant.basicAttack.requiresLineOfSight ||
-      hasLineOfSight(map, sourceNode.aimPointId, targetNode.aimPointId);
-    if (!inRange || !visible) {
+    if (!isAttackGeometryValid(selectedTargetId)) {
       combatants.push(
         freezeCombatant(combatant, {
           ...baseAction,
@@ -309,6 +314,32 @@ export function resolveEnemyActionPhase(
       range: combatant.basicAttack.range,
       targetIsValid: true
     });
+    if (commitAtTick === currentTick) {
+      const committed = resolveAttackCommitments({
+        currentTick,
+        windups: [windup]
+      }).decisions[0]?.committedAttack;
+      if (committed === undefined)
+        throw new Error("zero-windup enemy attack did not commit");
+      committedAttacks.push(committed);
+      combatants.push(
+        freezeCombatant(combatant, {
+          ...baseAction,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: committed.cooldownCompleteAtTick
+        })
+      );
+      decisions.push(
+        decision(
+          combatant.entityId,
+          "committed",
+          "basic_attack_committed",
+          planned.targetLock,
+          attackId
+        )
+      );
+      continue;
+    }
     combatants.push(
       freezeCombatant(combatant, {
         ...baseAction,

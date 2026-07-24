@@ -792,6 +792,12 @@ export function planEnemyMovement(
         );
     }
     const blockedNodeIds: NavigationNodeId[] = [];
+    for (const candidate of entry.candidates) {
+      if (authoredEnemyEntityIds.has(candidate.entityId))
+        throw new RangeError(
+          `moving enemy cannot be an enemy target (${candidate.entityId})`
+        );
+    }
     for (const blockerId of entry.solidBlockerEntityIds) {
       if (authoredEnemyEntityIds.has(blockerId))
         throw new RangeError(
