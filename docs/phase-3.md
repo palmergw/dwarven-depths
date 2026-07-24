@@ -143,6 +143,13 @@ Phase 3 surface currently present in the repository.
   Persisted definition-owned fields are checked against compiled content, and
   the Cutter-to-Slinger admission sequence is checksum-pinned across Node and
   all three browser engines.
+- Each admitted enemy also receives detached deterministic action state at its
+  exact admission tick: its first movement boundary derived from the authored
+  movement interval, no target lock, no active basic-attack windup, and no
+  cooldown. Persisted locks, windups, cooldown boundaries, and movement timing
+  are strict, versioned, safe-integer records that survive queue retries and
+  movement phases without reconstruction. The action-state admission sequence
+  is checksum-pinned across Node and all three browser engines.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
@@ -197,6 +204,7 @@ Phase 3 surface currently present in the repository.
 
 ## Not implemented yet
 
-Armor reduction, attack-windup status semantics, non-damage trigger variants,
+Enemy route/action execution, armor reduction, attack-windup status semantics,
+non-damage trigger variants,
 non-boss rewards, authored special abilities and boss behavior, balance
 calibration, and broader combat event integration remain later checkpoints.

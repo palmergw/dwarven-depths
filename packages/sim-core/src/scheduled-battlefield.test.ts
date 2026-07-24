@@ -53,6 +53,14 @@ describe("authored wave battlefield composition", () => {
             damage: 10,
             range: 1,
             requiresLineOfSight: false
+          },
+          actionState: {
+            schemaVersion: 1,
+            admittedAtTick: 0,
+            nextMovementAtTick: 6,
+            currentTargetEntityId: null,
+            activeBasicAttack: null,
+            cooldownCompleteAtTick: null
           }
         }
       ]
@@ -98,7 +106,15 @@ describe("authored wave battlefield composition", () => {
         enemyDefinitionId: "enemy.goblin_cutter",
         currentHealth: 50,
         movementIntervalTicks: 6,
-        basicAttack: expect.objectContaining({ damage: 10, range: 1 })
+        basicAttack: expect.objectContaining({ damage: 10, range: 1 }),
+        actionState: {
+          schemaVersion: 1,
+          admittedAtTick: 0,
+          nextMovementAtTick: 6,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        }
       }),
       expect.objectContaining({
         entityId: "entity.enemy.second",
@@ -109,7 +125,15 @@ describe("authored wave battlefield composition", () => {
           damage: 9,
           range: 6,
           requiresLineOfSight: true
-        })
+        }),
+        actionState: {
+          schemaVersion: 1,
+          admittedAtTick: 0,
+          nextMovementAtTick: 7,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        }
       })
     ]);
     expect(admitted?.state.battlefield?.occupancy).toEqual([
@@ -144,6 +168,9 @@ describe("authored wave battlefield composition", () => {
     );
     expect(
       Object.isFrozen(result.state.battlefield?.enemyCombatants[0]?.basicAttack)
+    ).toBe(true);
+    expect(
+      Object.isFrozen(result.state.battlefield?.enemyCombatants[0]?.actionState)
     ).toBe(true);
     expect(Object.isFrozen(result.events)).toBe(true);
     expect(Object.isFrozen(result.events[0])).toBe(true);
@@ -352,7 +379,15 @@ describe("authored wave battlefield composition", () => {
             armor: slinger.armor,
             movementIntervalTicks: slinger.movementIntervalTicks,
             lifecycleState: "active",
-            basicAttack: { ...slinger.basicAttack }
+            basicAttack: { ...slinger.basicAttack },
+            actionState: {
+              schemaVersion: 1,
+              admittedAtTick: 0,
+              nextMovementAtTick: slinger.movementIntervalTicks,
+              currentTargetEntityId: null,
+              activeBasicAttack: null,
+              cooldownCompleteAtTick: null
+            }
           }
         ] as never
       }
@@ -384,9 +419,63 @@ describe("authored wave battlefield composition", () => {
     );
   });
 
+  it("rejects malformed or incoherent persisted enemy action state", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const initial = createInitialState(
+      content,
+      "level.scheduled_battlefield" as never,
+      "1"
+    );
+    const due = resolveScheduledBattlefieldPhase(initial, content, []);
+    if (due.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const original = due.state.battlefield.enemyCombatants[0];
+    if (original === undefined) throw new Error("expected admitted enemy");
+    const withActionState = (actionState: unknown) => ({
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        enemyCombatants: [{ ...original, actionState }]
+      }
+    });
+    const accessorState = { ...original.actionState };
+    Object.defineProperty(accessorState, "nextMovementAtTick", {
+      get: () => 6,
+      enumerable: true
+    });
+
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          admittedAtTick: 1
+        }) as never,
+        content,
+        []
+      )
+    ).toThrow("invalid action state");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          cooldownCompleteAtTick: 20
+        }) as never,
+        content,
+        []
+      )
+    ).toThrow("incoherent action state");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState(accessorState) as never,
+        content,
+        []
+      )
+    ).toThrow("nextMovementAtTick must be own enumerable data");
+  });
+
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("99c041bd09947025a43ee9523a11dafd6d5d1f396ba825bd97aa023b4c72f2a1");
+    ).toBe("9f2d601e86e93f4135a1ddb8691cd85b184ca25c7e0028e68a65d3de3bb1746c");
   });
 });

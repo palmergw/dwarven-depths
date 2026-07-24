@@ -68,7 +68,14 @@ function freezeBattlefieldState(
       enemyCombatants.map((combatant) =>
         Object.freeze({
           ...combatant,
-          basicAttack: Object.freeze({ ...combatant.basicAttack })
+          basicAttack: Object.freeze({ ...combatant.basicAttack }),
+          actionState: Object.freeze({
+            ...combatant.actionState,
+            activeBasicAttack:
+              combatant.actionState.activeBasicAttack === null
+                ? null
+                : Object.freeze({ ...combatant.actionState.activeBasicAttack })
+          })
         })
       )
     )
@@ -305,11 +312,21 @@ function initializeAdmittedEnemyCombatants(
   content: CompiledContent,
   existingCombatants: readonly BattlefieldEnemyCombatant[],
   decisions: readonly SpawnAdmissionDecision[],
+  currentTick: number,
   expectedDefinitions?: ReadonlyMap<
     EntityId,
     BattlefieldEnemyCombatant["enemyDefinitionId"]
   >
 ): readonly BattlefieldEnemyCombatant[] {
+  if (
+    !Number.isSafeInteger(currentTick) ||
+    Object.is(currentTick, -0) ||
+    currentTick < 0
+  ) {
+    throw new RangeError(
+      "battlefield current tick must be a non-negative safe integer"
+    );
+  }
   const combatantsByEntity = new Map<EntityId, BattlefieldEnemyCombatant>();
   const existingValues = requireDenseDataArray(
     existingCombatants,
@@ -328,7 +345,8 @@ function initializeAdmittedEnemyCombatants(
         "armor",
         "movementIntervalTicks",
         "lifecycleState",
-        "basicAttack"
+        "basicAttack",
+        "actionState"
       ],
       `battlefield enemy combatant ${index}`
     );
@@ -345,6 +363,38 @@ function initializeAdmittedEnemyCombatants(
       ],
       `battlefield enemy combatant ${index} basic attack`
     );
+    const actionState = requireExactDataRecord(
+      record["actionState"],
+      [
+        "schemaVersion",
+        "admittedAtTick",
+        "nextMovementAtTick",
+        "currentTargetEntityId",
+        "activeBasicAttack",
+        "cooldownCompleteAtTick"
+      ],
+      `battlefield enemy combatant ${index} action state`
+    );
+    const activeAttackRecord =
+      actionState["activeBasicAttack"] === null
+        ? null
+        : requireExactDataRecord(
+            actionState["activeBasicAttack"],
+            [
+              "schemaVersion",
+              "attackId",
+              "sourceEntityId",
+              "targetEntityId",
+              "startedAtTick",
+              "commitAtTick",
+              "impactAtTick",
+              "cooldownDurationTicks",
+              "damage",
+              "range",
+              "targetIsValid"
+            ],
+            `battlefield enemy combatant ${index} active basic attack`
+          );
     if (!isDomainStableId(record["entityId"], "entity")) {
       throw new RangeError(
         `battlefield enemy combatant ${index} entityId must be an entity.* stable ID`
@@ -378,6 +428,30 @@ function initializeAdmittedEnemyCombatants(
         damage: attack["damage"],
         range: attack["range"],
         requiresLineOfSight: attack["requiresLineOfSight"]
+      },
+      actionState: {
+        schemaVersion: actionState["schemaVersion"],
+        admittedAtTick: actionState["admittedAtTick"],
+        nextMovementAtTick: actionState["nextMovementAtTick"],
+        currentTargetEntityId: actionState["currentTargetEntityId"],
+        activeBasicAttack:
+          activeAttackRecord === null
+            ? null
+            : {
+                schemaVersion: activeAttackRecord["schemaVersion"],
+                attackId: activeAttackRecord["attackId"],
+                sourceEntityId: activeAttackRecord["sourceEntityId"],
+                targetEntityId: activeAttackRecord["targetEntityId"],
+                startedAtTick: activeAttackRecord["startedAtTick"],
+                commitAtTick: activeAttackRecord["commitAtTick"],
+                impactAtTick: activeAttackRecord["impactAtTick"],
+                cooldownDurationTicks:
+                  activeAttackRecord["cooldownDurationTicks"],
+                damage: activeAttackRecord["damage"],
+                range: activeAttackRecord["range"],
+                targetIsValid: activeAttackRecord["targetIsValid"]
+              },
+        cooldownCompleteAtTick: actionState["cooldownCompleteAtTick"]
       }
     } as BattlefieldEnemyCombatant;
     if (combatantsByEntity.has(combatant.entityId)) {
@@ -431,6 +505,62 @@ function initializeAdmittedEnemyCombatants(
         `battlefield enemy ${combatant.entityId} has invalid current health`
       );
     }
+    const action = combatant.actionState;
+    if (
+      action.schemaVersion !== 1 ||
+      !Number.isSafeInteger(action.admittedAtTick) ||
+      Object.is(action.admittedAtTick, -0) ||
+      action.admittedAtTick < 0 ||
+      action.admittedAtTick > currentTick ||
+      !Number.isSafeInteger(action.nextMovementAtTick) ||
+      Object.is(action.nextMovementAtTick, -0) ||
+      action.nextMovementAtTick < action.admittedAtTick ||
+      (action.currentTargetEntityId !== null &&
+        !isDomainStableId(action.currentTargetEntityId, "entity")) ||
+      (action.cooldownCompleteAtTick !== null &&
+        (!Number.isSafeInteger(action.cooldownCompleteAtTick) ||
+          Object.is(action.cooldownCompleteAtTick, -0) ||
+          action.cooldownCompleteAtTick < action.admittedAtTick))
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} has invalid action state`
+      );
+    }
+    const activeAttack = action.activeBasicAttack;
+    if (
+      activeAttack !== null &&
+      (activeAttack.schemaVersion !== 1 ||
+        !isDomainStableId(activeAttack.attackId, "attack") ||
+        activeAttack.sourceEntityId !== combatant.entityId ||
+        !isDomainStableId(activeAttack.targetEntityId, "entity") ||
+        activeAttack.targetEntityId !== action.currentTargetEntityId ||
+        !Number.isSafeInteger(activeAttack.startedAtTick) ||
+        activeAttack.startedAtTick < action.admittedAtTick ||
+        !Number.isSafeInteger(activeAttack.commitAtTick) ||
+        activeAttack.commitAtTick < activeAttack.startedAtTick ||
+        !Number.isSafeInteger(activeAttack.impactAtTick) ||
+        activeAttack.impactAtTick < activeAttack.commitAtTick ||
+        !Number.isSafeInteger(activeAttack.cooldownDurationTicks) ||
+        activeAttack.cooldownDurationTicks <= 0 ||
+        !Number.isSafeInteger(activeAttack.damage) ||
+        activeAttack.damage < 0 ||
+        !Number.isSafeInteger(activeAttack.range) ||
+        activeAttack.range < 0 ||
+        typeof activeAttack.targetIsValid !== "boolean")
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} has invalid active basic attack`
+      );
+    }
+    if (
+      (action.currentTargetEntityId === null &&
+        (activeAttack !== null || action.cooldownCompleteAtTick !== null)) ||
+      (activeAttack !== null && action.cooldownCompleteAtTick !== null)
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} has incoherent action state`
+      );
+    }
     if (
       combatant.lifecycleState !== "active" &&
       combatant.lifecycleState !== "destroyed"
@@ -465,6 +595,12 @@ function initializeAdmittedEnemyCombatants(
         `admitted spawn references unknown enemy definition (${decision.enemyDefinitionId})`
       );
     }
+    const nextMovementAtTick = currentTick + definition.movementIntervalTicks;
+    if (!Number.isSafeInteger(nextMovementAtTick)) {
+      throw new RangeError(
+        `admitted spawn movement schedule exceeds safe integer bounds (${decision.entityId})`
+      );
+    }
     combatantsByEntity.set(
       decision.entityId,
       Object.freeze({
@@ -477,7 +613,15 @@ function initializeAdmittedEnemyCombatants(
         armor: definition.armor,
         movementIntervalTicks: definition.movementIntervalTicks,
         lifecycleState: "active",
-        basicAttack: Object.freeze({ ...definition.basicAttack })
+        basicAttack: Object.freeze({ ...definition.basicAttack }),
+        actionState: Object.freeze({
+          schemaVersion: 1,
+          admittedAtTick: currentTick,
+          nextMovementAtTick,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        })
       })
     );
   }
@@ -488,7 +632,14 @@ function initializeAdmittedEnemyCombatants(
       .map((combatant) =>
         Object.freeze({
           ...combatant,
-          basicAttack: Object.freeze({ ...combatant.basicAttack })
+          basicAttack: Object.freeze({ ...combatant.basicAttack }),
+          actionState: Object.freeze({
+            ...combatant.actionState,
+            activeBasicAttack:
+              combatant.actionState.activeBasicAttack === null
+                ? null
+                : Object.freeze({ ...combatant.actionState.activeBasicAttack })
+          })
         })
       )
   );
@@ -1020,6 +1171,7 @@ export function resolveBattlefieldPhase(
     content,
     state.battlefield.enemyCombatants,
     [],
+    state.tick,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
   const existingEnemyEntityIds = new Set(
@@ -1083,6 +1235,7 @@ export function resolveBattlefieldPhase(
     content,
     existingEnemyCombatants,
     admitted.decisions,
+    state.tick,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
   const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
@@ -1214,6 +1367,7 @@ export function resolveScheduledBattlefieldPhase(
     content,
     state.battlefield.enemyCombatants,
     [],
+    state.tick,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
   const scheduled = resolveWaveSchedule({

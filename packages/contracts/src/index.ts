@@ -261,6 +261,16 @@ export interface BattlefieldEnemyCombatant {
   readonly movementIntervalTicks: number;
   readonly lifecycleState: "active" | "destroyed";
   readonly basicAttack: AuthoredBasicAttackDefinition;
+  readonly actionState: BattlefieldEnemyActionState;
+}
+
+export interface BattlefieldEnemyActionState {
+  readonly schemaVersion: 1;
+  readonly admittedAtTick: number;
+  readonly nextMovementAtTick: number;
+  readonly currentTargetEntityId: EntityId | null;
+  readonly activeBasicAttack: AttackWindup | null;
+  readonly cooldownCompleteAtTick: number | null;
 }
 
 export interface WaveScheduleRequest {
