@@ -23,6 +23,11 @@ import {
 } from "@dwarven-depths/sim-core";
 
 export {
+  type AuthoritativeCombatCheckpointRequest,
+  type AuthoritativeCombatCheckpointResolution,
+  resolveAuthoritativeCombatCheckpoint
+} from "./authoritative-combat-checkpoint.js";
+export {
   type BattlefieldRenderFormat,
   type BattlefieldRenderLayer,
   type BattlefieldRenderRequest,

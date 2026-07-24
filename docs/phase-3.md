@@ -275,6 +275,15 @@ Phase 3 surface currently present in the repository.
   immutable, input-order independent, and literal-checksum-pinned across Node,
   Chromium, Firefox, and WebKit. Rewards, terminal evaluation, statuses, and
   death triggers remain separate integration checkpoints.
+- The runtime now composes that producer-backed combat tick with boss rewards
+  and terminal evaluation. Newly destroyed bosses are derived only from an
+  active-to-destroyed transition in the authoritative battlefield, while living
+  dwarf/enemy sets and wave progress come from the resolved battlefield and
+  compiled level rather than caller-provided summaries. Reward claims resolve
+  before terminal evaluation, preserving an unlock on a same-tick boss and
+  final-dwarf death. The versioned immutable checkpoint is checksum-pinned
+  across Node, Chromium, Firefox, and WebKit. Hostile deployables remain empty
+  until an authoritative battlefield deployable table is introduced.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
