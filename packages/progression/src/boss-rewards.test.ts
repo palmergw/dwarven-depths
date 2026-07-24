@@ -8,10 +8,10 @@ import {
 import { createInitialProfile, resolveBossDeathRewards } from "./index.js";
 
 const checksum =
-  "c9fc9b96c08093059ab54dc529d4a38aae744aac461b7ed818c2b6689e53bcac";
+  "9250512b00c69b2b478af521a95fa4076b294613214bdc96774a13a4f3ddce9f";
 
 describe("boss death rewards", () => {
-  it("atomically commits rewards in stable boss order before same-step defeat", async () => {
+  it("atomically commits rewards in stable boss order", async () => {
     const evidence = bossRewardParityEvidence();
     expect(
       evidence.committed.decisions.map((decision) => decision.bossEntityId)
@@ -32,13 +32,6 @@ describe("boss death rewards", () => {
         "reward.boss.ancient",
         "reward.boss.gatebreaker_captain"
       ]
-    });
-    expect(evidence.simultaneousTerminalOutcome).toMatchObject({
-      livingDwarves: 0,
-      terminalResult: "defeat",
-      profile: {
-        unlockedCharacterIds: expect.arrayContaining(["character.deep_ranger"])
-      }
     });
     expect(await canonicalHash(evidence)).toBe(checksum);
   });
@@ -112,6 +105,32 @@ describe("boss death rewards", () => {
       })
     ).toThrow("Forge Ore total exceeds safe integer range");
     expect(nearLimit).toEqual(before);
+  });
+
+  it("rejects a claim that would exceed bounded profile collections", () => {
+    const maximumRecords = 100_000;
+    const profile = {
+      schemaVersion: 1 as const,
+      revision: 0,
+      forgeOre: 0,
+      unlockedCharacterIds: Array.from(
+        { length: maximumRecords },
+        (_, index) => `character.existing_${index}` as never
+      ),
+      claimedRewardIds: Array.from(
+        { length: maximumRecords },
+        (_, index) => `reward.existing_${index}` as never
+      )
+    };
+
+    expect(() =>
+      resolveBossDeathRewards({
+        schemaVersion: 1,
+        profile,
+        bossDeaths: [bossDeaths[0]],
+        rewards: bossRewards
+      })
+    ).toThrow("resolved unlockedCharacterIds cannot exceed 100000 items");
   });
 
   it("strictly rejects unknown boss rewards and malformed records", () => {

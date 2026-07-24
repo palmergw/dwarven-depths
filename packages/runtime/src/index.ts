@@ -31,6 +31,11 @@ export {
   renderBattlefieldText
 } from "./battlefield-render.js";
 export {
+  type BossRewardCheckpointRequest,
+  type BossRewardCheckpointResult,
+  resolveBossRewardCheckpoint
+} from "./boss-reward-checkpoint.js";
+export {
   createPhase2SystemScenarioEvidence,
   type Phase2SystemScenarioEvidence
 } from "./phase-2-system-scenarios.js";

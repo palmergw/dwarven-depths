@@ -324,6 +324,14 @@ export function resolveBossDeathRewards(
   });
   if (changed && startingProfile.revision === Number.MAX_SAFE_INTEGER)
     throw new RangeError("profile revision exceeds safe integer range");
+  if (unlocked.size > maximumRecords)
+    throw new RangeError(
+      `resolved unlockedCharacterIds cannot exceed ${maximumRecords} items`
+    );
+  if (claimed.size > maximumRecords)
+    throw new RangeError(
+      `resolved claimedRewardIds cannot exceed ${maximumRecords} items`
+    );
   const resolvedProfile = Object.freeze({
     schemaVersion: 1 as const,
     revision: startingProfile.revision + (changed ? 1 : 0),

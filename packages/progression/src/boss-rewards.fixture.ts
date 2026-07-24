@@ -45,13 +45,5 @@ export function bossRewardParityEvidence() {
     bossDeaths: [bossDeaths[0]],
     rewards: bossRewards
   });
-  return Object.freeze({
-    committed,
-    replayed,
-    simultaneousTerminalOutcome: Object.freeze({
-      livingDwarves: 0,
-      terminalResult: "defeat" as const,
-      profile: committed.profile
-    })
-  });
+  return Object.freeze({ committed, replayed });
 }
