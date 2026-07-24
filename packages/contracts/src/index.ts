@@ -144,6 +144,41 @@ export interface MovementReservationResolution {
   readonly decisions: readonly MovementDecision[];
 }
 
+export interface PendingSpawn {
+  /** Stable authored spawn-event ID. */
+  readonly id: StableId;
+  /** Authored order within the level spawn schedule. */
+  readonly authoredOrder: number;
+  readonly entityId: EntityId;
+  readonly entranceId: EnemyEntranceId;
+}
+
+export type SpawnAdmissionDecisionReason =
+  | "admitted"
+  | "entrance_occupied"
+  | "earlier_spawn_pending"
+  | "live_enemy_cap_reached";
+
+export interface SpawnAdmissionDecision {
+  readonly spawnId: StableId;
+  readonly entityId: EntityId;
+  readonly entranceId: EnemyEntranceId;
+  readonly status: "admitted" | "queued";
+  readonly reason: SpawnAdmissionDecisionReason;
+}
+
+export interface SpawnAdmissionLimits {
+  readonly liveEnemyCap: number;
+  /** Existing live enemies, excluding non-enemy navigation blockers. */
+  readonly currentLiveEnemies: number;
+}
+
+export interface SpawnAdmissionResolution {
+  readonly occupancy: readonly NavigationOccupant[];
+  readonly pendingSpawns: readonly PendingSpawn[];
+  readonly decisions: readonly SpawnAdmissionDecision[];
+}
+
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition

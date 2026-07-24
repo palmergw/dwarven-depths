@@ -35,10 +35,17 @@ surface currently present on the Phase 2 implementation branch.
   enemy entity ID, and invalid proposals are rejected with reason-coded
   decisions. Snapshot occupancy prevents overlap, following, swapping,
   phase-through, and pushing within one movement phase.
+- The simulation core exposes an immutable spawn-admission primitive. Pending
+  spawn events are admitted in stable authored order, at most one enemy enters
+  through each free entrance per phase, occupied entrances retain enemies in an
+  off-map queue, and independent free entrances continue admitting. An optional
+  positive live-enemy cap keeps excess spawns queued without discarding or
+  reordering them. Results include canonical reason-coded decisions.
 
 ## Not implemented yet
 
-This checkpoint does not yet integrate movement proposals or reservations into
-dynamic simulation state and does not expose spawn queues, targeting, combat, or
-map-specific CLI commands. Existing `validate`, `run`, `replay --verify`,
-`inspect`, and `compare` behavior remains the supported simulation surface.
+This checkpoint does not yet integrate spawn queues, movement proposals, or
+reservations into dynamic simulation state and does not expose authored spawn
+schedules, targeting, combat, or map-specific CLI commands. Existing
+`validate`, `run`, `replay --verify`, `inspect`, and `compare` behavior remains
+the supported simulation surface.
