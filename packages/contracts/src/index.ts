@@ -409,6 +409,74 @@ export interface StatusApplicationResolution {
   readonly decisions: readonly StatusApplicationDecision[];
 }
 
+export interface CommittedHealingEffect {
+  readonly schemaVersion: 1;
+  readonly effectId: EffectId;
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId: EntityId;
+  readonly committedAtTick: number;
+  readonly impactAtTick: number;
+  readonly healing: number;
+}
+
+export interface CommittedStatusEffect {
+  readonly schemaVersion: 1;
+  readonly effectId: EffectId;
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId: EntityId;
+  readonly committedAtTick: number;
+  readonly impactAtTick: number;
+  readonly statusId: StatusId;
+  readonly durationTicks: number;
+  readonly magnitude: number;
+}
+
+export interface CommittedCombatEffectRequest {
+  readonly currentTick: number;
+  readonly healingEffects: readonly CommittedHealingEffect[];
+  readonly statusEffects: readonly CommittedStatusEffect[];
+  readonly combatants: readonly CombatantHealth[];
+  /** Active statuses after fixed-step phase 4 expiry resolution. */
+  readonly statuses: readonly ActiveStatus[];
+}
+
+export type CommittedCombatEffectReason =
+  | "waiting_for_impact"
+  | "target_not_living_at_impact"
+  | "healing_applied"
+  | "status_applied";
+
+export interface CommittedCombatEffectDecision {
+  readonly schemaVersion: 1;
+  readonly effectId: EffectId;
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId: EntityId;
+  readonly effectKind: "healing" | "status";
+  readonly status: "pending" | "discarded" | "resolved";
+  readonly reason: CommittedCombatEffectReason;
+  readonly healing?: number;
+  readonly statusApplication?: StatusApplicationDecision;
+}
+
+export interface CombatantHealingResolution {
+  readonly schemaVersion: 1;
+  readonly entityId: EntityId;
+  readonly healthBefore: number;
+  readonly incomingHealing: number;
+  readonly appliedHealing: number;
+  readonly healthAfter: number;
+}
+
+export interface CommittedCombatEffectResolution {
+  readonly schemaVersion: 1;
+  readonly pendingHealingEffects: readonly CommittedHealingEffect[];
+  readonly pendingStatusEffects: readonly CommittedStatusEffect[];
+  readonly decisions: readonly CommittedCombatEffectDecision[];
+  readonly health: readonly CombatantHealth[];
+  readonly healingResolutions: readonly CombatantHealingResolution[];
+  readonly statuses: readonly ActiveStatus[];
+}
+
 export interface CombatantHealth {
   readonly schemaVersion: 1;
   readonly entityId: EntityId;
