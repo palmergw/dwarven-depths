@@ -503,6 +503,71 @@ queued-spawns
     });
   });
 
+  it("explains a fully verified run as deterministic Markdown or JSON", () => {
+    const directory = temporaryDirectory();
+    const output = resolve(directory, "explain-run");
+    expect(
+      runCli(
+        "run",
+        "--content",
+        resolve("content/fixtures/empty-content.json"),
+        "--scenario",
+        resolve("scenarios/conformance/empty-level.json"),
+        "--out",
+        output
+      ).status
+    ).toBe(0);
+
+    const markdown = runCli("explain", "--run", output, "--format", "markdown");
+    expect(markdown.status).toBe(0);
+    expect(markdown.stderr).toBe("");
+    expect(markdown.stdout).toContain(
+      "# Run explanation: scenario.conformance.empty"
+    );
+    expect(markdown.stdout).toContain(
+      "`event.000000` emitted `round.started` under `SIM-LIFECYCLE-001`"
+    );
+
+    const json = runCli("explain", "--run", output, "--format", "json");
+    expect(json.status).toBe(0);
+    const report = JSON.parse(json.stdout) as {
+      readonly events: readonly unknown[];
+    };
+    expect(report).toMatchObject({
+      schemaVersion: 1,
+      identity: { scenarioId: "scenario.conformance.empty", seed: "1" },
+      outcome: { terminalResult: "victory", terminalTick: 0, eventCount: 3 }
+    });
+    expect(report.events[0]).toMatchObject({
+      eventId: "event.000000",
+      eventType: "round.started",
+      reasonCode: "SIM-LIFECYCLE-001"
+    });
+
+    const invalidFormat = runCli(
+      "explain",
+      "--run",
+      output,
+      "--format",
+      "text"
+    );
+    expect(invalidFormat.status).toBe(2);
+    expect(JSON.parse(invalidFormat.stderr)).toMatchObject({
+      error: { type: "input", code: "invalid_cli_input" }
+    });
+
+    const eventsPath = resolve(output, "events.ndjson");
+    writeFileSync(
+      eventsPath,
+      readFileSync(eventsPath, "utf8").replace("round.started", "round.changed")
+    );
+    const tampered = runCli("explain", "--run", output, "--format", "json");
+    expect(tampered.status).toBe(4);
+    expect(JSON.parse(tampered.stderr)).toMatchObject({
+      error: { code: "event_artifact_checksum_mismatch" }
+    });
+  });
+
   it("rejects ambiguous JSON, hardlinked artifacts, and forged replacement targets", () => {
     const directory = temporaryDirectory();
     const output = resolve(directory, "run");

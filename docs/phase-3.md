@@ -155,9 +155,14 @@ Phase 3 surface currently present in the repository.
   checksum in Node, Chromium, Firefox, and WebKit. It verifies the implemented
   combat boundaries together without introducing a second authoritative game
   loop or inventing unresolved mechanics.
+- `sim explain` fully verifies a run bundle before reducing its canonical events
+  and reason-coded diagnostics into one versioned explanation report. The same
+  report renders deterministic Markdown or JSON, and every entry cites its event
+  ID, tick, sequence, rule code, and recorded event or command causes. The pure
+  reducer is pinned across Node and all three browser engines.
 
 ## Not implemented yet
 
 Armor, attack-windup status semantics, non-damage trigger variants, authored
-enemy stat definitions, non-boss rewards, boss behavior, broader combat event
-integration, and the contracted `sim explain` surface remain later checkpoints.
+enemy stat definitions, non-boss rewards, boss behavior, and broader combat
+event integration remain later checkpoints.
