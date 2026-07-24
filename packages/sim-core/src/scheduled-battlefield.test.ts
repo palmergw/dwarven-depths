@@ -293,6 +293,33 @@ describe("authored wave battlefield composition", () => {
         )
       }
     };
+    const unstartedFiredSpawn = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        startedWaveIds: ["wave.opening"] as never
+      }
+    };
+    const duplicateFiredSpawn = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        firedSpawnIds: [
+          ...due.state.battlefield.firedSpawnIds,
+          "spawn.first"
+        ] as never
+      }
+    };
+    const unknownStartedWave = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        startedWaveIds: [
+          ...due.state.battlefield.startedWaveIds,
+          "wave.unknown"
+        ] as never
+      }
+    };
     const hiddenFiredSpawnIds = [...due.state.battlefield.firedSpawnIds];
     Object.defineProperty(hiddenFiredSpawnIds, Symbol.iterator, {
       value: () => [][Symbol.iterator](),
@@ -340,6 +367,15 @@ describe("authored wave battlefield composition", () => {
     expect(() =>
       resolveBattlefieldPhase(unfiredPending, content, [], [])
     ).toThrow("pending spawn spawn.second is not marked fired");
+    expect(() =>
+      resolveBattlefieldPhase(unstartedFiredSpawn, content, [], [])
+    ).toThrow("belongs to a wave that is not marked started");
+    expect(() =>
+      resolveBattlefieldPhase(duplicateFiredSpawn, content, [], [])
+    ).toThrow("fired spawn IDs contains duplicate ID (spawn.first)");
+    expect(() =>
+      resolveBattlefieldPhase(unknownStartedWave, content, [], [])
+    ).toThrow("unknown started wave ID (wave.unknown)");
     expect(() =>
       resolveScheduledBattlefieldPhase(hiddenProgress, content, [])
     ).toThrow("fired spawn IDs contains unsupported array properties");

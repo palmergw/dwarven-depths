@@ -34,7 +34,9 @@ import {
   type SimulationState,
   type SpawnAdmissionDecision,
   type SpawnAdmissionLimits,
-  type SpawnAdmissionResolution
+  type SpawnAdmissionResolution,
+  type WaveDefinition,
+  type WaveSpawnEvent
 } from "@dwarven-depths/contracts";
 import { resolveWaveSchedule } from "./wave-schedule.js";
 
@@ -917,15 +919,65 @@ export function resolveBattlefieldPhase(
     "fired spawn IDs"
   );
 
-  const authoredSpawns = new Map(
-    level.waveIds.flatMap((waveId) => {
-      const wave = content.waves.get(waveId);
-      if (wave === undefined) throw new Error(`Unknown wave ID: ${waveId}`);
-      return wave.spawnEvents.map((spawn) => [spawn.id, spawn] as const);
-    })
-  );
+  const authoredWaves = new Map<string, WaveDefinition>();
+  const authoredSpawns = new Map<string, WaveSpawnEvent>();
+  const waveIdBySpawnId = new Map<string, string>();
+  for (const waveId of level.waveIds) {
+    const wave = content.waves.get(waveId);
+    if (wave === undefined) throw new Error(`Unknown wave ID: ${waveId}`);
+    authoredWaves.set(waveId, wave);
+    for (const spawn of wave.spawnEvents) {
+      authoredSpawns.set(spawn.id, spawn);
+      waveIdBySpawnId.set(spawn.id, waveId);
+    }
+  }
   if (level.waveIds.length > 0) {
-    const firedSpawnIdSet = new Set(firedSpawnIds);
+    const startedWaveIdSet = new Set<string>();
+    for (const waveId of startedWaveIds) {
+      if (!isDomainStableId(waveId, "wave")) {
+        throw new RangeError("started wave IDs must contain wave.* stable IDs");
+      }
+      if (startedWaveIdSet.has(waveId)) {
+        throw new RangeError(
+          `started wave IDs contains duplicate ID (${waveId})`
+        );
+      }
+      const wave = authoredWaves.get(waveId);
+      if (wave === undefined) {
+        throw new RangeError(`unknown started wave ID (${waveId})`);
+      }
+      if (wave.startAtTick > state.tick) {
+        throw new RangeError(`started wave ${waveId} is in the future`);
+      }
+      startedWaveIdSet.add(waveId);
+    }
+
+    const firedSpawnIdSet = new Set<string>();
+    for (const spawnId of firedSpawnIds) {
+      if (!isDomainStableId(spawnId, "spawn")) {
+        throw new RangeError("fired spawn IDs must contain spawn.* stable IDs");
+      }
+      if (firedSpawnIdSet.has(spawnId)) {
+        throw new RangeError(
+          `fired spawn IDs contains duplicate ID (${spawnId})`
+        );
+      }
+      const spawn = authoredSpawns.get(spawnId);
+      if (spawn === undefined) {
+        throw new RangeError(`fired spawn ID is not authored (${spawnId})`);
+      }
+      if (spawn.atTick > state.tick) {
+        throw new RangeError(`fired spawn ${spawnId} is in the future`);
+      }
+      const waveId = waveIdBySpawnId.get(spawnId);
+      if (waveId === undefined || !startedWaveIdSet.has(waveId)) {
+        throw new RangeError(
+          `fired spawn ${spawnId} belongs to a wave that is not marked started`
+        );
+      }
+      firedSpawnIdSet.add(spawnId);
+    }
+
     for (const spawn of allPendingSpawns) {
       const authored = authoredSpawns.get(spawn.id);
       if (
