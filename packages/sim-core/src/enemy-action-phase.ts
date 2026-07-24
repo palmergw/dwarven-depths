@@ -120,7 +120,10 @@ export function resolveEnemyActionPhase(
     ...normalizePendingCommittedAttacks(
       request.battlefield.pendingCommittedAttacks,
       currentTick,
-      request.battlefield.enemyCombatants,
+      [
+        ...request.battlefield.enemyCombatants,
+        ...request.battlefield.dwarfCombatants
+      ],
       dwarfAuthority === undefined
         ? undefined
         : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)

@@ -55,6 +55,7 @@ import {
 } from "@dwarven-depths/contracts";
 import {
   type BattlefieldDwarfDeploymentAuthority,
+  getAuthorizedCommittedAttackTargets,
   normalizeBattlefieldDwarves
 } from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
@@ -1559,7 +1560,10 @@ export function resolveBattlefieldPhase(
   const persistedCommittedAttacks = normalizePendingCommittedAttacks(
     state.battlefield.pendingCommittedAttacks,
     state.tick,
-    existingEnemyCombatants
+    [...existingEnemyCombatants, ...persistedDwarfCombatants],
+    dwarfAuthority === undefined
+      ? undefined
+      : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)
   );
   const existingEnemyEntityIds = new Set(
     existingEnemyCombatants.map((combatant) => combatant.entityId)
@@ -1841,7 +1845,10 @@ export function resolveScheduledBattlefieldPhase(
   const persistedCommittedAttacks = normalizePendingCommittedAttacks(
     state.battlefield.pendingCommittedAttacks,
     state.tick,
-    persistedEnemyCombatants
+    [...persistedEnemyCombatants, ...persistedDwarfCombatants],
+    dwarfAuthority === undefined
+      ? undefined
+      : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)
   );
   const scheduled = resolveWaveSchedule({
     schemaVersion: 1,

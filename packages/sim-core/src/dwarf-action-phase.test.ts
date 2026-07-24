@@ -9,7 +9,7 @@ import {
 import { resolveDwarfActionPhase } from "./index.js";
 
 const checksum =
-  "acb9b6c9bd0a43adbf589bebcd84f17328bbccc24899e495862c69556578018d";
+  "19252f870ee9075d22c480920c7bbb78c75d8720ea0394cb26f48fc8ca632e17";
 
 describe("dwarf action phase", () => {
   it("starts, retains, commits, and cools down an authored basic attack", async () => {
@@ -52,6 +52,13 @@ describe("dwarf action phase", () => {
         impactAtTick: 16
       })
     ]);
+    expect(
+      evidence.enemyPhase.battlefield.pendingCommittedAttacks
+    ).toContainEqual(
+      expect.objectContaining({
+        attackId: "attack.iron_warden_basic.dwarf.warden.tick_6"
+      })
+    );
   });
 
   it("rejects caller-substituted action state before transition", async () => {

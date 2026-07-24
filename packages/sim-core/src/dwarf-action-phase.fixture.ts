@@ -5,7 +5,8 @@ import type {
 import { battlefieldAttackImpactParityEvidence } from "./battlefield-attack-impact.fixture.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
-import { resolveDwarfActionPhase } from "./index.js";
+import { entry } from "./enemy-movement-planning.fixture.js";
+import { resolveDwarfActionPhase, resolveEnemyActionPhase } from "./index.js";
 
 function request(
   currentTick: number,
@@ -53,6 +54,17 @@ export async function dwarfActionPhaseFixture() {
     base.content,
     base.deploymentAuthority
   );
+  const enemyPhase = resolveEnemyActionPhase(
+    {
+      schemaVersion: 1,
+      currentTick: 15,
+      levelId: "level.conformance_map" as never,
+      battlefield: coolingDown.battlefield,
+      entries: [entry("entity.enemy.cutter" as never)]
+    },
+    base.content,
+    base.deploymentAuthority
+  );
   const dwarfAttack = committed.committedAttacks.find(
     (attack) => attack.sourceEntityId === "entity.dwarf.warden"
   );
@@ -83,18 +95,20 @@ export async function dwarfActionPhaseFixture() {
     winding,
     committed,
     coolingDown,
+    enemyPhase,
     sourceDowned
   });
 }
 
 export async function dwarfActionPhaseParityEvidence() {
-  const { started, winding, committed, coolingDown, sourceDowned } =
+  const { started, winding, committed, coolingDown, enemyPhase, sourceDowned } =
     await dwarfActionPhaseFixture();
   return Object.freeze({
     started,
     winding,
     committed,
     coolingDown,
+    enemyPhase,
     sourceDowned
   });
 }
