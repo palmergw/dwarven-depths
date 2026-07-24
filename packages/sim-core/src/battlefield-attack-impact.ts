@@ -897,14 +897,7 @@ export function resolveBattlefieldAttackImpacts(
     levelId,
     currentTick,
     content,
-    (value, occupancy) =>
-      normalizeBattlefieldDwarves(
-        value,
-        authority,
-        content,
-        authority.mapId,
-        occupancy
-      )
+    authority
   );
   const battlefield = normalized.battlefield;
   if (battlefield.mapId !== level.mapId)

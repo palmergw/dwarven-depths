@@ -13,12 +13,10 @@ import type {
   StableId
 } from "@dwarven-depths/contracts";
 import { resolveAttackCommitments } from "./attack-commitment.js";
+import type { BattlefieldDwarfDeploymentAuthority } from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
-import {
-  type BattlefieldDwarfNormalizer,
-  planEnemyMovement
-} from "./enemy-movement-planning.js";
+import { planEnemyMovement } from "./enemy-movement-planning.js";
 import { hasLineOfSight, isAimPointInRange } from "./range-line-of-sight.js";
 
 function compareText(left: string, right: string): number {
@@ -87,9 +85,9 @@ function decision(
 export function resolveEnemyActionPhase(
   request: EnemyActionPhaseRequest,
   content: CompiledContent,
-  normalizeDwarves?: BattlefieldDwarfNormalizer
+  dwarfAuthority?: BattlefieldDwarfDeploymentAuthority
 ): EnemyActionPhaseResolution {
-  const planning = planEnemyMovement(request, content, normalizeDwarves);
+  const planning = planEnemyMovement(request, content, dwarfAuthority);
   const currentTick = request.currentTick;
   const map = content.maps.get(request.battlefield.mapId);
   if (map === undefined)
