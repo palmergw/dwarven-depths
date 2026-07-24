@@ -1,5 +1,6 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
 import type {
+  BattlefieldDwarfCombatant,
   BattlefieldEnemyCombatant,
   BattlefieldState,
   CommittedAttack,
@@ -45,6 +46,7 @@ interface ParsedDataRecord extends Record<string, unknown> {
   readonly mapId?: unknown;
   readonly occupancy?: unknown;
   readonly enemyCombatants?: unknown;
+  readonly dwarfCombatants?: unknown;
   readonly entries?: unknown;
   readonly spawnId?: unknown;
   readonly enemyDefinitionId?: unknown;
@@ -645,12 +647,18 @@ export interface NormalizedAuthoritativeBattlefieldEnemyState {
   readonly authoredEnemyEntityIds: ReadonlySet<EntityId>;
 }
 
+export type BattlefieldDwarfNormalizer = (
+  value: unknown,
+  occupancy: readonly NavigationOccupant[]
+) => readonly BattlefieldDwarfCombatant[];
+
 /** Shared validation boundary for persisted authored enemy battlefield state. */
 export function normalizeAuthoritativeBattlefieldEnemyState(
   value: unknown,
   levelId: StableId,
   currentTick: number,
-  content: CompiledContent
+  content: CompiledContent,
+  normalizeDwarves?: BattlefieldDwarfNormalizer
 ): NormalizedAuthoritativeBattlefieldEnemyState {
   const battlefield = requireRecord(
     value,
@@ -745,9 +753,21 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
   const firedSpawnIdSet = new Set(
     battlefield.firedSpawnIds as readonly StableId[]
   );
-  const dwarfCombatants = battlefield[
-    "dwarfCombatants"
-  ] as BattlefieldState["dwarfCombatants"];
+  const dwarfValues = requireArray(
+    battlefield.dwarfCombatants,
+    "battlefield dwarf combatants"
+  );
+  if (dwarfValues.length > 0 && normalizeDwarves === undefined)
+    throw new RangeError(
+      "battlefield dwarves require accepted preparation authority"
+    );
+  const dwarfCombatants = Object.freeze(
+    normalizeDwarves === undefined
+      ? []
+      : [...normalizeDwarves(battlefield.dwarfCombatants, occupancy)].sort(
+          (left, right) => compareText(left.entityId, right.entityId)
+        )
+  );
   const canonicalBattlefield = Object.freeze({
     schemaVersion: 1 as const,
     mapId: battlefield.mapId as StableId,
@@ -837,7 +857,8 @@ function normalizeEntry(
 /** Generates contention-ready proposals from authoritative enemy occupancy. */
 export function planEnemyMovement(
   request: EnemyMovementPlanningRequest,
-  content: CompiledContent
+  content: CompiledContent,
+  normalizeDwarves?: BattlefieldDwarfNormalizer
 ): EnemyMovementPlanningResolution {
   const input = requireRecord(
     request,
@@ -858,7 +879,8 @@ export function planEnemyMovement(
     input.battlefield,
     input.levelId as StableId,
     currentTick,
-    content
+    content,
+    normalizeDwarves
   );
   const battlefield = normalized.battlefield;
   const map = content.maps.get(battlefield.mapId);

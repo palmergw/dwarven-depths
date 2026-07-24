@@ -896,19 +896,21 @@ export function resolveBattlefieldAttackImpacts(
     requestRecord["battlefield"],
     levelId,
     currentTick,
-    content
+    content,
+    (value, occupancy) =>
+      normalizeBattlefieldDwarves(
+        value,
+        authority,
+        content,
+        authority.mapId,
+        occupancy
+      )
   );
   const battlefield = normalized.battlefield;
   if (battlefield.mapId !== level.mapId)
     throw new RangeError("battlefield map does not match level");
   const occupancy = normalized.occupancy;
-  const dwarves = normalizeBattlefieldDwarves(
-    battlefield.dwarfCombatants,
-    authority,
-    content,
-    battlefield.mapId,
-    occupancy
-  );
+  const dwarves = battlefield.dwarfCombatants;
   const enemyCombatants = normalized.enemyCombatants;
   const attacks = normalized.pendingCommittedAttacks;
   const impacts = resolveCommittedAttackImpacts({

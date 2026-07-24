@@ -106,6 +106,25 @@ describe("deterministic enemy movement proposal planning", () => {
     expect(() =>
       planEnemyMovement({
         ...base,
+        battlefield: {
+          ...base.battlefield,
+          dwarfCombatants: [
+            {
+              schemaVersion: 1,
+              entityId: "entity.dwarf.forged",
+              characterDefinitionId: "character.forged",
+              placementPointId: "placement.target",
+              currentHealth: 1,
+              maximumHealth: 1,
+              lifecycleState: "active"
+            }
+          ] as never
+        }
+      })
+    ).toThrow("require accepted preparation authority");
+    expect(() =>
+      planEnemyMovement({
+        ...base,
         battlefield: { ...base.battlefield, occupancy: [] }
       })
     ).toThrow("active enemy is not occupied");

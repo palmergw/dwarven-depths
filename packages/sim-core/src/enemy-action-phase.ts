@@ -15,7 +15,10 @@ import type {
 import { resolveAttackCommitments } from "./attack-commitment.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
-import { planEnemyMovement } from "./enemy-movement-planning.js";
+import {
+  type BattlefieldDwarfNormalizer,
+  planEnemyMovement
+} from "./enemy-movement-planning.js";
 import { hasLineOfSight, isAimPointInRange } from "./range-line-of-sight.js";
 
 function compareText(left: string, right: string): number {
@@ -83,9 +86,10 @@ function decision(
  */
 export function resolveEnemyActionPhase(
   request: EnemyActionPhaseRequest,
-  content: CompiledContent
+  content: CompiledContent,
+  normalizeDwarves?: BattlefieldDwarfNormalizer
 ): EnemyActionPhaseResolution {
-  const planning = planEnemyMovement(request, content);
+  const planning = planEnemyMovement(request, content, normalizeDwarves);
   const currentTick = request.currentTick;
   const map = content.maps.get(request.battlefield.mapId);
   if (map === undefined)
@@ -419,9 +423,9 @@ export function resolveEnemyActionPhase(
     ),
     enemyCombatants,
     dwarfCombatants: Object.freeze(
-      request.battlefield.dwarfCombatants.map((dwarf) =>
-        Object.freeze({ ...dwarf })
-      )
+      [...request.battlefield.dwarfCombatants]
+        .sort((left, right) => compareText(left.entityId, right.entityId))
+        .map((dwarf) => Object.freeze({ ...dwarf }))
     ),
     pendingCommittedAttacks: Object.freeze(
       committedAttacks

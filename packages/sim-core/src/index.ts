@@ -48,7 +48,10 @@ import {
 } from "@dwarven-depths/contracts";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
-import { planEnemyMovement } from "./enemy-movement-planning.js";
+import {
+  type BattlefieldDwarfNormalizer,
+  planEnemyMovement
+} from "./enemy-movement-planning.js";
 import { resolveWaveSchedule } from "./wave-schedule.js";
 
 export interface StepResult {
@@ -1205,9 +1208,10 @@ export function resolveMovementReservations(
  */
 export function resolveEnemyMovementPhase(
   request: EnemyMovementPlanningRequest,
-  content: CompiledContent
+  content: CompiledContent,
+  normalizeDwarves?: BattlefieldDwarfNormalizer
 ): EnemyMovementPhaseResolution {
-  const planning = planEnemyMovement(request, content);
+  const planning = planEnemyMovement(request, content, normalizeDwarves);
   const level = content.levels.get(request.levelId);
   if (level === undefined)
     throw new Error("validated movement level is missing");
@@ -1261,7 +1265,9 @@ export function resolveEnemyMovementPhase(
     enemyCombatants,
     enemyAdmissions,
     request.battlefield.pendingCommittedAttacks,
-    request.battlefield.dwarfCombatants
+    [...request.battlefield.dwarfCombatants].sort((left, right) =>
+      compareText(left.entityId, right.entityId)
+    )
   );
   return Object.freeze({
     schemaVersion: 1,
