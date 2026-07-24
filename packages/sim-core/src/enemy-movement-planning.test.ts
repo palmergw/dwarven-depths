@@ -9,6 +9,7 @@ import {
   type NavigationNodeId
 } from "@dwarven-depths/contracts";
 import { beforeAll, describe, expect, it } from "vitest";
+import { createAttackInstanceId } from "./attack-instance-id.js";
 import {
   type BattlefieldDwarfDeploymentAuthority,
   createBattlefieldDwarfDeploymentAuthority
@@ -308,10 +309,11 @@ describe("deterministic enemy movement proposal planning", () => {
                 currentTargetEntityId: "entity.dwarf.warden" as never,
                 activeBasicAttack: {
                   schemaVersion: 1,
-                  attackId: (combatant.basicAttack.id +
-                    "." +
-                    combatant.entityId.slice("entity.".length) +
-                    ".tick_0") as never,
+                  attackId: createAttackInstanceId(
+                    combatant.basicAttack.id,
+                    combatant.entityId,
+                    0
+                  ),
                   sourceEntityId: combatant.entityId,
                   targetEntityId: "entity.dwarf.warden" as never,
                   startedAtTick: 0,
@@ -344,10 +346,11 @@ describe("deterministic enemy movement proposal planning", () => {
                 currentTargetEntityId: "entity.dwarf.warden" as never,
                 activeBasicAttack: {
                   schemaVersion: 1,
-                  attackId: (combatant.basicAttack.id +
-                    "." +
-                    combatant.entityId.slice("entity.".length) +
-                    `.tick_${lateCommit - 6}`) as never,
+                  attackId: createAttackInstanceId(
+                    combatant.basicAttack.id,
+                    combatant.entityId,
+                    lateCommit - 6
+                  ),
                   sourceEntityId: combatant.entityId,
                   targetEntityId: "entity.dwarf.warden" as never,
                   startedAtTick: lateCommit - 6,

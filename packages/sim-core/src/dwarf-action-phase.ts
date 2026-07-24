@@ -12,6 +12,7 @@ import type {
   StableId
 } from "@dwarven-depths/contracts";
 import { resolveAttackCommitments } from "./attack-commitment.js";
+import { createAttackInstanceId } from "./attack-instance-id.js";
 import { resolveDwarfTargetLock } from "./target-locks.js";
 
 const policies = new Set([
@@ -101,14 +102,6 @@ function requireEntry(value: unknown, index: number): DwarfActionPhaseEntry {
       "requestedPolicy"
     ] as DwarfActionPhaseEntry["requestedPolicy"]
   });
-}
-
-function attackInstanceId(
-  authored: StableId,
-  source: EntityId,
-  tick: number
-): StableId {
-  return `${authored}.${source.slice("entity.".length)}.tick_${tick}` as StableId;
 }
 
 function freezeCombatant(
@@ -359,7 +352,7 @@ export function resolveNormalizedDwarfActions(
       throw new RangeError(
         `dwarf basic attack timing exceeds safe integer bounds (${dwarf.entityId})`
       );
-    const attackId = attackInstanceId(
+    const attackId = createAttackInstanceId(
       dwarf.basicAttack.id,
       dwarf.entityId,
       currentTick

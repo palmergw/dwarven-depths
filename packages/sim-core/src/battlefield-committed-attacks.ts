@@ -5,6 +5,7 @@ import type {
   EntityId,
   StableId
 } from "@dwarven-depths/contracts";
+import { createAttackInstanceId } from "./attack-instance-id.js";
 
 const stableIdPattern = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 const entityIdPattern = /^entity\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
@@ -185,9 +186,11 @@ export function normalizePendingCommittedAttacks(
     const startedAtTick = committedAtTick - source.basicAttack.windupTicks;
     const earliestStartTick =
       "admittedAtTick" in source ? source.admittedAtTick : 0;
-    const expectedAttackId = `${source.basicAttack.id}.${sourceEntityId.slice(
-      "entity.".length
-    )}.tick_${startedAtTick}`;
+    const expectedAttackId = createAttackInstanceId(
+      source.basicAttack.id,
+      sourceEntityId,
+      startedAtTick
+    );
     if (
       startedAtTick < earliestStartTick ||
       attackId !== expectedAttackId ||

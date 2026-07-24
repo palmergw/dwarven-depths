@@ -9,7 +9,7 @@ import {
 import { resolveDwarfActionPhase } from "./index.js";
 
 const checksum =
-  "19252f870ee9075d22c480920c7bbb78c75d8720ea0394cb26f48fc8ca632e17";
+  "a1989122047547229de4739cf815c3c5d6250733ba69eab83989cc1b0356513e";
 
 describe("dwarf action phase", () => {
   it("starts, retains, commits, and cools down an authored basic attack", async () => {
@@ -17,7 +17,7 @@ describe("dwarf action phase", () => {
     expect(evidence.started.decisions[0]).toMatchObject({
       status: "winding_up",
       reason: "basic_attack_started",
-      attackId: "attack.iron_warden_basic.dwarf.warden.tick_6",
+      attackId: "attack.iron_warden_basic.dwarf.warden.source_length_12.tick_6",
       targetLock: {
         status: "reacquired",
         targetEntityId: "entity.enemy.cutter"
@@ -37,7 +37,8 @@ describe("dwarf action phase", () => {
     );
     expect(evidence.committed.committedAttacks).toContainEqual(
       expect.objectContaining({
-        attackId: "attack.iron_warden_basic.dwarf.warden.tick_6",
+        attackId:
+          "attack.iron_warden_basic.dwarf.warden.source_length_12.tick_6",
         committedAtTick: 14,
         impactAtTick: 16,
         cooldownCompleteAtTick: 38
@@ -48,7 +49,8 @@ describe("dwarf action phase", () => {
     );
     expect(evidence.sourceDowned).toEqual([
       expect.objectContaining({
-        attackId: "attack.iron_warden_basic.dwarf.warden.tick_6",
+        attackId:
+          "attack.iron_warden_basic.dwarf.warden.source_length_12.tick_6",
         impactAtTick: 16
       })
     ]);
@@ -56,8 +58,18 @@ describe("dwarf action phase", () => {
       evidence.enemyPhase.battlefield.pendingCommittedAttacks
     ).toContainEqual(
       expect.objectContaining({
-        attackId: "attack.iron_warden_basic.dwarf.warden.tick_6"
+        attackId:
+          "attack.iron_warden_basic.dwarf.warden.source_length_12.tick_6"
       })
+    );
+    expect(
+      evidence.battlefieldPhase.state.battlefield?.pendingCommittedAttacks
+    ).toEqual(evidence.enemyPhase.battlefield.pendingCommittedAttacks);
+    expect(
+      evidence.scheduledPhase.state.battlefield?.pendingCommittedAttacks
+    ).toEqual(evidence.enemyPhase.battlefield.pendingCommittedAttacks);
+    expect(evidence.substitutionError).toContain(
+      "target does not match accepted commitment evidence"
     );
   });
 

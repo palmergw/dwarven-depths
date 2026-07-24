@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { dwarfActionPhaseParityEvidence } from "./dwarf-action-phase.fixture.js";
 
 const checksum =
-  "19252f870ee9075d22c480920c7bbb78c75d8720ea0394cb26f48fc8ca632e17";
+  "a1989122047547229de4739cf815c3c5d6250733ba69eab83989cc1b0356513e";
 
 describe("dwarf action phase browser parity", () => {
   it("matches literal Node action evidence", async () => {
@@ -16,6 +16,13 @@ describe("dwarf action phase browser parity", () => {
     expect(
       evidence.enemyPhase.battlefield.pendingCommittedAttacks[0]?.sourceEntityId
     ).toBe("entity.dwarf.warden");
+    expect(
+      evidence.scheduledPhase.state.battlefield?.pendingCommittedAttacks[0]
+        ?.sourceEntityId
+    ).toBe("entity.dwarf.warden");
+    expect(evidence.substitutionError).toContain(
+      "target does not match accepted commitment evidence"
+    );
     expect(await canonicalHash(evidence)).toBe(checksum);
   });
 });

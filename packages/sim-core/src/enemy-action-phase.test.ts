@@ -112,7 +112,8 @@ describe("enemy action phase", () => {
     expect(ready.decisions[0]).toMatchObject({
       status: "winding_up",
       reason: "basic_attack_started",
-      attackId: "attack.goblin_cutter_basic.enemy.already.tick_6"
+      attackId:
+        "attack.goblin_cutter_basic.enemy.already.source_length_13.tick_6"
     });
     expect(
       ready.enemyCombatants[0]?.actionState.activeBasicAttack
@@ -136,7 +137,8 @@ describe("enemy action phase", () => {
       targetLock: { status: "unlocked" }
     });
     expect(evidence.committed.committedAttacks[0]).toMatchObject({
-      attackId: "attack.goblin_cutter_basic.enemy.already.tick_6",
+      attackId:
+        "attack.goblin_cutter_basic.enemy.already.source_length_13.tick_6",
       committedAtTick: 12,
       impactAtTick: 13,
       cooldownCompleteAtTick: 32
@@ -158,7 +160,8 @@ describe("enemy action phase", () => {
     );
     expect(evidence.restarted.decisions[0]).toMatchObject({
       reason: "basic_attack_started",
-      attackId: "attack.goblin_cutter_basic.enemy.already.tick_32"
+      attackId:
+        "attack.goblin_cutter_basic.enemy.already.source_length_13.tick_32"
     });
     expect(evidence.restarted.decisions[0]?.attackId).not.toBe(
       evidence.started.decisions[0]?.attackId
@@ -437,7 +440,7 @@ describe("enemy action phase", () => {
 
   it("pins action evidence for browser parity", async () => {
     expect(await canonicalHash(await enemyActionPhaseParityEvidence())).toBe(
-      "17dfac44bdfdd85f0ed63e4cfff0af16a0dea58cde18b5dc303d881e5bdb5946"
+      "9b5b114b37d22c60307dc5c8d7c7d2112e9e1f08fc6b9f9b2f2ad9fc13e9cbf6"
     );
   });
 });

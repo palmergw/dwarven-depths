@@ -134,7 +134,8 @@ export async function battlefieldAttackImpactParityEvidence() {
           ...cutter.actionState,
           activeBasicAttack: {
             schemaVersion: 1,
-            attackId: "attack.goblin_cutter_basic.enemy.cutter.tick_0" as never,
+            attackId:
+              "attack.goblin_cutter_basic.enemy.cutter.source_length_12.tick_0" as never,
             sourceEntityId: cutter.entityId,
             targetEntityId: "entity.dwarf.warden" as never,
             startedAtTick: 0,

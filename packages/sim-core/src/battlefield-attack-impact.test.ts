@@ -16,7 +16,7 @@ import {
 } from "./index.js";
 
 const parityChecksum =
-  "e986f6531c68f65de7020502ce40d8da9fe240277136fd7f2def422bb8cc4804";
+  "f7afbb6dabe8ff679b776bd2fa6cb0dfdb7fe0ac0626a8b04f3a61f638277cb1";
 
 function descendant<T extends BattlefieldState>(
   source: BattlefieldState,
@@ -145,7 +145,8 @@ describe("battlefield committed-attack impacts", () => {
           currentTargetEntityId: null,
           activeBasicAttack: {
             schemaVersion: 1,
-            attackId: "attack.iron_warden_basic.dwarf.warden.tick_0",
+            attackId:
+              "attack.iron_warden_basic.dwarf.warden.source_length_12.tick_0",
             sourceEntityId: dwarf.entityId,
             targetEntityId: "entity.enemy.cutter",
             startedAtTick: 0,
@@ -449,7 +450,7 @@ describe("battlefield committed-attack impacts", () => {
             activeBasicAttack: {
               schemaVersion: 1,
               attackId:
-                "attack.goblin_cutter_basic.enemy.cutter.tick_6" as never,
+                "attack.goblin_cutter_basic.enemy.cutter.source_length_12.tick_6" as never,
               sourceEntityId: enemy.entityId,
               targetEntityId: "entity.dwarf.warden" as never,
               startedAtTick: 6,
@@ -513,7 +514,8 @@ describe("battlefield committed-attack impacts", () => {
 
     const overlapping = {
       ...first,
-      attackId: "attack.goblin_cutter_basic.enemy.cutter.tick_1" as never,
+      attackId:
+        "attack.goblin_cutter_basic.enemy.cutter.source_length_12.tick_1" as never,
       committedAtTick: 7,
       impactAtTick: 8,
       cooldownCompleteAtTick: 27

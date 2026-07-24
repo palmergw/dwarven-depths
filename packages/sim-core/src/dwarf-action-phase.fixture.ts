@@ -6,7 +6,13 @@ import { battlefieldAttackImpactParityEvidence } from "./battlefield-attack-impa
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import { entry } from "./enemy-movement-planning.fixture.js";
-import { resolveDwarfActionPhase, resolveEnemyActionPhase } from "./index.js";
+import {
+  createInitialState,
+  resolveBattlefieldPhase,
+  resolveDwarfActionPhase,
+  resolveEnemyActionPhase,
+  resolveScheduledBattlefieldPhase
+} from "./index.js";
 
 function request(
   currentTick: number,
@@ -65,6 +71,57 @@ export async function dwarfActionPhaseFixture() {
     base.content,
     base.deploymentAuthority
   );
+  const initialState = createInitialState(
+    base.content,
+    "level.conformance_map" as never,
+    "1"
+  );
+  const actionState = Object.freeze({
+    ...initialState,
+    tick: 15,
+    phase: "COMBAT_RUNNING" as const,
+    battlefield: enemyPhase.battlefield
+  });
+  const battlefieldPhase = resolveBattlefieldPhase(
+    actionState,
+    base.content,
+    [],
+    [],
+    undefined,
+    base.deploymentAuthority
+  );
+  const scheduledPhase = resolveScheduledBattlefieldPhase(
+    battlefieldPhase.state,
+    base.content,
+    [],
+    undefined,
+    base.deploymentAuthority
+  );
+  const scheduledBattlefield = scheduledPhase.state.battlefield;
+  if (scheduledBattlefield === undefined)
+    throw new Error("missing scheduled battlefield fixture");
+  const substituted: BattlefieldState = {
+    ...scheduledBattlefield,
+    pendingCommittedAttacks: scheduledBattlefield.pendingCommittedAttacks.map(
+      (attack) => ({
+        ...attack,
+        targetEntityId: "entity.enemy.substitute" as never
+      })
+    )
+  };
+  propagateBattlefieldRoundLineage(scheduledBattlefield, substituted);
+  let substitutionError = "";
+  try {
+    resolveScheduledBattlefieldPhase(
+      { ...scheduledPhase.state, battlefield: substituted },
+      base.content,
+      [],
+      undefined,
+      base.deploymentAuthority
+    );
+  } catch (error) {
+    substitutionError = error instanceof Error ? error.message : String(error);
+  }
   const dwarfAttack = committed.committedAttacks.find(
     (attack) => attack.sourceEntityId === "entity.dwarf.warden"
   );
@@ -96,19 +153,34 @@ export async function dwarfActionPhaseFixture() {
     committed,
     coolingDown,
     enemyPhase,
+    battlefieldPhase,
+    scheduledPhase,
+    substitutionError,
     sourceDowned
   });
 }
 
 export async function dwarfActionPhaseParityEvidence() {
-  const { started, winding, committed, coolingDown, enemyPhase, sourceDowned } =
-    await dwarfActionPhaseFixture();
+  const {
+    started,
+    winding,
+    committed,
+    coolingDown,
+    enemyPhase,
+    battlefieldPhase,
+    scheduledPhase,
+    substitutionError,
+    sourceDowned
+  } = await dwarfActionPhaseFixture();
   return Object.freeze({
     started,
     winding,
     committed,
     coolingDown,
     enemyPhase,
+    battlefieldPhase,
+    scheduledPhase,
+    substitutionError,
     sourceDowned
   });
 }

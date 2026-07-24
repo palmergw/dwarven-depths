@@ -15,6 +15,7 @@ import type {
   StableId,
   WaveSpawnEvent
 } from "@dwarven-depths/contracts";
+import { createAttackInstanceId } from "./attack-instance-id.js";
 import {
   type BattlefieldDwarfDeploymentAuthority,
   getAuthorizedCommittedAttackTargets,
@@ -553,7 +554,11 @@ function normalizeCombatants(
           active.impactAtTick,
           `${description} attack impactAtTick`
         );
-        const expectedAttackId = `${definition.basicAttack.id}.${entityId.slice("entity.".length)}.tick_${startedAtTick}`;
+        const expectedAttackId = createAttackInstanceId(
+          definition.basicAttack.id,
+          entityId,
+          startedAtTick
+        );
         if (
           active.schemaVersion !== 1 ||
           active.attackId !== expectedAttackId ||
