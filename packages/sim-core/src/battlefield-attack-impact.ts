@@ -143,8 +143,55 @@ function requireHealth(value: unknown, description: string): number {
   return value as number;
 }
 
+function normalizeOccupancy(
+  value: unknown,
+  content: CompiledContent,
+  mapId: StableId
+): readonly NavigationOccupant[] {
+  const map = content.maps.get(mapId);
+  if (map === undefined)
+    throw new RangeError(`unknown battlefield map (${mapId})`);
+  const knownNodes = new Set(map.nodes.map((node) => node.id));
+  const seenEntities = new Set<EntityId>();
+  const seenNodes = new Set<NavigationOccupant["nodeId"]>();
+  const occupancy = requireArray(value, "battlefield occupancy").map(
+    (item, index): NavigationOccupant => {
+      const record = requireRecord(
+        item,
+        ["entityId", "nodeId"],
+        `battlefield occupant ${index}`
+      );
+      const entityId = requireId(
+        record["entityId"],
+        "entity",
+        `battlefield occupant ${index} entityId`
+      ) as EntityId;
+      const nodeId = requireId(
+        record["nodeId"],
+        "node",
+        `battlefield occupant ${index} nodeId`
+      ) as NavigationOccupant["nodeId"];
+      if (!knownNodes.has(nodeId))
+        throw new RangeError(
+          `battlefield occupant ${index} references unknown node`
+        );
+      if (seenEntities.has(entityId) || seenNodes.has(nodeId))
+        throw new RangeError(
+          "battlefield occupancy contains a duplicate entity or node"
+        );
+      seenEntities.add(entityId);
+      seenNodes.add(nodeId);
+      return Object.freeze({ entityId, nodeId });
+    }
+  );
+  return Object.freeze(
+    occupancy.sort((left, right) => compareText(left.entityId, right.entityId))
+  );
+}
+
 export function normalizeBattlefieldDwarves(
   value: unknown,
+  deployments: readonly DwarfDeployment[],
   content: CompiledContent,
   mapId: StableId,
   occupancy: readonly NavigationOccupant[]
@@ -165,6 +212,37 @@ export function normalizeBattlefieldDwarves(
   }
   const seenEntities = new Set<EntityId>();
   const seenPlacements = new Set<PlacementPointId>();
+  const deploymentsByEntity = new Map<EntityId, DwarfDeployment>();
+  for (const [index, item] of requireArray(
+    deployments,
+    "authored dwarf deployments"
+  ).entries()) {
+    const record = requireRecord(
+      item,
+      ["entityId", "characterDefinitionId", "placementPointId"],
+      `authored dwarf deployment ${index}`
+    );
+    const deployment = Object.freeze({
+      entityId: requireId(
+        record["entityId"],
+        "entity",
+        `authored dwarf deployment ${index} entityId`
+      ) as EntityId,
+      characterDefinitionId: requireId(
+        record["characterDefinitionId"],
+        "character",
+        `authored dwarf deployment ${index} characterDefinitionId`
+      ),
+      placementPointId: requireId(
+        record["placementPointId"],
+        "placement",
+        `authored dwarf deployment ${index} placementPointId`
+      ) as PlacementPointId
+    });
+    if (deploymentsByEntity.has(deployment.entityId))
+      throw new RangeError("duplicate authored dwarf deployment entity ID");
+    deploymentsByEntity.set(deployment.entityId, deployment);
+  }
   const dwarves = requireArray(value, "battlefield dwarf combatants").map(
     (item, index): BattlefieldDwarfCombatant => {
       const description = `battlefield dwarf combatant ${index}`;
@@ -202,6 +280,15 @@ export function normalizeBattlefieldDwarves(
       if (character === undefined)
         throw new RangeError(
           `${description} references unknown character definition`
+        );
+      const deployment = deploymentsByEntity.get(entityId);
+      if (
+        deployment === undefined ||
+        deployment.characterDefinitionId !== characterDefinitionId ||
+        deployment.placementPointId !== placementPointId
+      )
+        throw new RangeError(
+          `${description} does not match authored deployment evidence`
         );
       const currentHealth = requireHealth(
         record["currentHealth"],
@@ -261,6 +348,10 @@ export function normalizeBattlefieldDwarves(
       });
     }
   );
+  if (dwarves.length !== deploymentsByEntity.size)
+    throw new RangeError(
+      "battlefield dwarves do not match authored deployments"
+    );
   return Object.freeze(
     dwarves.sort((left, right) => compareText(left.entityId, right.entityId))
   );
@@ -338,6 +429,7 @@ export function deployBattlefieldDwarves(
   }
   const normalized = normalizeBattlefieldDwarves(
     dwarfCombatants,
+    deployments,
     content,
     battlefield.mapId,
     occupancy
@@ -356,7 +448,7 @@ export function resolveBattlefieldAttackImpacts(
 ): BattlefieldAttackImpactResolution {
   const requestRecord = requireRecord(
     request,
-    ["schemaVersion", "currentTick", "levelId", "battlefield"],
+    ["schemaVersion", "currentTick", "levelId", "deployments", "battlefield"],
     "battlefield attack impact request"
   );
   if (requestRecord["schemaVersion"] !== 1)
@@ -390,11 +482,17 @@ export function resolveBattlefieldAttackImpacts(
     throw new RangeError("battlefield has unsupported schemaVersion");
   if (battlefield.mapId !== level.mapId)
     throw new RangeError("battlefield map does not match level");
+  const occupancy = normalizeOccupancy(
+    battlefield.occupancy,
+    content,
+    battlefield.mapId
+  );
   const dwarves = normalizeBattlefieldDwarves(
     battlefield.dwarfCombatants,
+    requestRecord["deployments"] as readonly DwarfDeployment[],
     content,
     battlefield.mapId,
-    battlefield.occupancy
+    occupancy
   );
   const attacks = normalizePendingCommittedAttacks(
     battlefield.pendingCommittedAttacks,
@@ -424,7 +522,7 @@ export function resolveBattlefieldAttackImpacts(
         healthById.get(dwarf.entityId)?.currentHealth ?? dwarf.currentHealth,
       lifecycleState: dwarf.lifecycleState
     })),
-    occupancy: battlefield.occupancy.filter((occupant) =>
+    occupancy: occupancy.filter((occupant) =>
       dwarfEntityIds.has(occupant.entityId)
     )
   });
@@ -449,7 +547,7 @@ export function resolveBattlefieldAttackImpacts(
       .map((dwarf) => dwarf.entityId)
   );
   const nextOccupancy = Object.freeze(
-    battlefield.occupancy
+    occupancy
       .filter(
         (occupant) =>
           !dwarfEntityIds.has(occupant.entityId) ||
@@ -476,6 +574,7 @@ export function resolveBattlefieldAttackImpacts(
   );
   normalizeBattlefieldDwarves(
     nextDwarves,
+    requestRecord["deployments"] as readonly DwarfDeployment[],
     content,
     battlefield.mapId,
     nextOccupancy

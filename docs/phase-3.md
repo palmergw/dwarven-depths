@@ -220,9 +220,10 @@ Phase 3 surface currently present in the repository.
   their navigation occupancy in the same phase. Absent or already-downed
   targets discard due impacts without disturbing unrelated battlefield state.
   Persisted dwarf identity, health, lifecycle, and placement occupancy are
-  strictly validated, and lethal Cutter-to-Warden evidence is immutable and
-  checksum-pinned across Node and all three browser engines. Armor reduction is
-  intentionally not inferred.
+  strictly validated against independently supplied authored deployment
+  evidence; the complete occupancy table is normalized before use. Lethal
+  Cutter-to-Warden evidence is immutable and checksum-pinned across Node and all
+  three browser engines. Armor reduction is intentionally not inferred.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are

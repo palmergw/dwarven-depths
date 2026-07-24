@@ -16,6 +16,12 @@ import {
   resolveBattlefieldAttackImpacts
 } from "./index.js";
 
+const authoredWarden = referenceCombatants.definitions.find(
+  (definition) => definition.id === "character.iron_warden"
+);
+if (authoredWarden?.kind !== "character")
+  throw new Error("missing authored Warden fixture");
+
 const contentInput = {
   ...conformanceContent,
   definitions: [
@@ -24,7 +30,13 @@ const contentInput = {
       (definition) =>
         definition.id === "character.iron_warden" ||
         definition.id === "enemy.goblin_cutter"
-    )
+    ),
+    {
+      ...authoredWarden,
+      id: "character.substitute",
+      maximumHealth: 999,
+      basicAttack: { ...authoredWarden.basicAttack, id: "attack.substitute" }
+    }
   ]
 };
 
@@ -38,15 +50,16 @@ export async function battlefieldAttackImpactParityEvidence() {
     "1"
   );
   if (initial.battlefield === undefined) throw new Error("missing battlefield");
+  const deployments = Object.freeze([
+    Object.freeze({
+      entityId: "entity.dwarf.warden" as never,
+      characterDefinitionId: "character.iron_warden" as never,
+      placementPointId: "placement.goal" as never
+    })
+  ]);
   const deployed = deployBattlefieldDwarves(
     initial.battlefield,
-    [
-      {
-        entityId: "entity.dwarf.warden" as never,
-        characterDefinitionId: "character.iron_warden" as never,
-        placementPointId: "placement.goal" as never
-      }
-    ],
+    deployments,
     content
   );
   const cutterDefinition = content.enemies.get("enemy.goblin_cutter" as never);
@@ -102,6 +115,7 @@ export async function battlefieldAttackImpactParityEvidence() {
       schemaVersion: 1,
       currentTick: 6,
       levelId: "level.conformance_map" as never,
+      deployments,
       battlefield: committed
     },
     content
@@ -111,9 +125,10 @@ export async function battlefieldAttackImpactParityEvidence() {
       schemaVersion: 1,
       currentTick: 7,
       levelId: "level.conformance_map" as never,
+      deployments,
       battlefield: pending.battlefield
     },
     content
   );
-  return Object.freeze({ content, committed, pending, resolved });
+  return Object.freeze({ content, deployments, committed, pending, resolved });
 }

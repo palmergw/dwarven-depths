@@ -57,12 +57,14 @@ describe("battlefield committed-attack impacts", () => {
   });
 
   it("rejects authored identity substitution and inconsistent lifecycle state", async () => {
-    const { content, committed } =
+    const { content, deployments, committed } =
       await battlefieldAttackImpactParityEvidence();
     for (const dwarfCombatants of [
       committed.dwarfCombatants.map((dwarf) => ({
         ...dwarf,
-        characterDefinitionId: "character.missing"
+        characterDefinitionId: "character.substitute",
+        currentHealth: 999,
+        maximumHealth: 999
       })),
       committed.dwarfCombatants.map((dwarf) => ({
         ...dwarf,
@@ -72,6 +74,7 @@ describe("battlefield committed-attack impacts", () => {
       expect(() =>
         normalizeBattlefieldDwarves(
           dwarfCombatants,
+          deployments,
           content,
           committed.mapId,
           committed.occupancy
@@ -81,19 +84,22 @@ describe("battlefield committed-attack impacts", () => {
   });
 
   it("discards a due impact when the target is already absent", async () => {
-    const { content, committed } =
+    const { content, deployments, committed } =
       await battlefieldAttackImpactParityEvidence();
     const result = resolveBattlefieldAttackImpacts(
       {
         schemaVersion: 1,
         currentTick: 7,
         levelId: "level.conformance_map" as never,
+        deployments,
         battlefield: {
           ...committed,
-          occupancy: committed.occupancy.filter(
-            (occupant) => occupant.entityId !== "entity.dwarf.warden"
-          ),
-          dwarfCombatants: []
+          pendingCommittedAttacks: committed.pendingCommittedAttacks.map(
+            (attack) => ({
+              ...attack,
+              targetEntityId: "entity.dwarf.absent" as never
+            })
+          )
         }
       },
       content
@@ -108,6 +114,29 @@ describe("battlefield committed-attack impacts", () => {
     expect(result.battlefield.enemyCombatants).toEqual(
       committed.enemyCombatants
     );
+  });
+
+  it("rejects malformed unrelated occupancy instead of preserving it", async () => {
+    const { content, deployments, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 7,
+          levelId: "level.conformance_map" as never,
+          deployments,
+          battlefield: {
+            ...committed,
+            occupancy: [
+              ...committed.occupancy,
+              { entityId: "not-an-entity", nodeId: "not-a-node" }
+            ] as never
+          }
+        },
+        content
+      )
+    ).toThrow("entity.* stable ID");
   });
 
   it("returns detached immutable parity evidence with one literal checksum", async () => {
