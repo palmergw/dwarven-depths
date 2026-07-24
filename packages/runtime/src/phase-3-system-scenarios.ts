@@ -186,6 +186,13 @@ export function createPhase3SystemScenarioEvidence() {
         kind: "deployable",
         currentHealth: 5,
         lifecycleState: "active"
+      },
+      {
+        schemaVersion: 1,
+        entityId: wardenId,
+        kind: "dwarf",
+        currentHealth: 20,
+        lifecycleState: "active"
       }
     ],
     occupancy: [
@@ -193,7 +200,8 @@ export function createPhase3SystemScenarioEvidence() {
       {
         entityId: "entity.deployable.boss_totem" as never,
         nodeId: "node.totem" as never
-      }
+      },
+      { entityId: wardenId, nodeId: "node.warden" as never }
     ]
   });
   const deathTriggers = resolveDeathTriggers({
@@ -211,6 +219,39 @@ export function createPhase3SystemScenarioEvidence() {
     recursionLimit: 2
   });
 
+  const destroyedBoss = bossLifecycle.decisions.find(
+    (decision) =>
+      decision.entityId === bossId &&
+      decision.status === "transitioned" &&
+      decision.lifecycleAfter === "destroyed"
+  );
+  if (destroyedBoss === undefined)
+    throw new Error("boss lifecycle did not produce a death event");
+  const livingDwarfIds = deathTriggers.combatants
+    .filter(
+      (combatant) =>
+        combatant.kind === "dwarf" &&
+        combatant.lifecycleState === "active" &&
+        combatant.currentHealth > 0
+    )
+    .map((combatant) => combatant.entityId);
+  const livingHostileEnemyIds = deathTriggers.combatants
+    .filter(
+      (combatant) =>
+        combatant.kind === "enemy" &&
+        combatant.lifecycleState === "active" &&
+        combatant.currentHealth > 0
+    )
+    .map((combatant) => combatant.entityId);
+  const livingHostileDeployableIds = deathTriggers.combatants
+    .filter(
+      (combatant) =>
+        combatant.kind === "deployable" &&
+        combatant.lifecycleState === "active" &&
+        combatant.currentHealth > 0
+    )
+    .map((combatant) => combatant.entityId);
+
   const rewardAndVictory = resolveBossRewardCheckpoint({
     schemaVersion: 1,
     bossRewards: {
@@ -219,8 +260,9 @@ export function createPhase3SystemScenarioEvidence() {
       bossDeaths: [
         {
           schemaVersion: 1,
-          eventId: "death.gatebreaker_captain" as never,
-          bossEntityId: bossId
+          eventId:
+            `death.${destroyedBoss.entityId.slice("entity.enemy.boss.".length)}` as never,
+          bossEntityId: destroyedBoss.entityId
         }
       ],
       rewards: [
@@ -236,9 +278,9 @@ export function createPhase3SystemScenarioEvidence() {
     terminalEvaluation: {
       schemaVersion: 1,
       waveSchedule: completeWaveSchedule,
-      livingDwarfIds: [wardenId],
-      livingHostileEnemyIds: [],
-      livingHostileDeployableIds: []
+      livingDwarfIds,
+      livingHostileEnemyIds,
+      livingHostileDeployableIds
     }
   });
 

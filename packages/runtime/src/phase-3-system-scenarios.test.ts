@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createPhase3SystemScenarioEvidence } from "./phase-3-system-scenarios.js";
 
 export const phase3SystemEvidenceChecksum =
-  "550181703d576d367fd1ae9dd748f0ee8f6eb806fd955b4910fcb9b4df2a84a4";
+  "41d406a0b441a55c09a221ebc39d6c4c53465b5ea436d8bff60457e69df3e507";
 
 describe("Phase 3 combat system scenarios", () => {
   it("composes targeting, combat, lifecycle, rewards, and terminal evidence", async () => {
@@ -34,6 +34,10 @@ describe("Phase 3 combat system scenarios", () => {
         reason: "living"
       }),
       expect.objectContaining({
+        entityId: "entity.dwarf.warden",
+        reason: "living"
+      }),
+      expect.objectContaining({
         entityId: "entity.enemy.boss.gatebreaker_captain",
         reason: "enemy_destroyed"
       })
@@ -49,6 +53,21 @@ describe("Phase 3 combat system scenarios", () => {
         }
       ]
     });
+    expect(evidence.bossPath.deathTriggers.combatants).toEqual([
+      expect.objectContaining({
+        entityId: "entity.deployable.boss_totem",
+        lifecycleState: "destroyed"
+      }),
+      expect.objectContaining({
+        entityId: "entity.dwarf.warden",
+        lifecycleState: "active",
+        currentHealth: 20
+      }),
+      expect.objectContaining({
+        entityId: "entity.enemy.boss.gatebreaker_captain",
+        lifecycleState: "destroyed"
+      })
+    ]);
     expect(evidence.bossPath.rewardAndVictory).toMatchObject({
       bossRewards: {
         profile: {
@@ -63,7 +82,10 @@ describe("Phase 3 combat system scenarios", () => {
       terminalEvaluation: {
         state: "terminal",
         terminalResult: "victory",
-        reason: "victory_conditions_met"
+        reason: "victory_conditions_met",
+        livingDwarves: 1,
+        livingHostileEnemies: 0,
+        livingHostileDeployables: 0
       }
     });
 
