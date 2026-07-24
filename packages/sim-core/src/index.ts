@@ -6,14 +6,19 @@ import {
   type BattlefieldMapDefinition,
   type CommandEnvelope,
   canonicalHash,
+  type EnemyEntranceId,
   type EntityId,
   type MovementDecision,
   type MovementProposal,
   type MovementReservationResolution,
   type NavigationNodeId,
   type NavigationOccupant,
+  type PendingSpawn,
   type SimulationEvent,
-  type SimulationState
+  type SimulationState,
+  type SpawnAdmissionDecision,
+  type SpawnAdmissionLimits,
+  type SpawnAdmissionResolution
 } from "@dwarven-depths/contracts";
 
 export interface StepResult {
@@ -23,6 +28,195 @@ export interface StepResult {
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
+}
+
+const stableIdPattern = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
+
+function isDomainStableId(value: unknown, domain?: string): value is string {
+  return (
+    typeof value === "string" &&
+    stableIdPattern.test(value) &&
+    (domain === undefined || value.startsWith(`${domain}.`))
+  );
+}
+
+function comparePendingSpawns(left: PendingSpawn, right: PendingSpawn): number {
+  return (
+    left.authoredOrder - right.authoredOrder ||
+    compareText(left.id, right.id) ||
+    compareText(left.entityId, right.entityId)
+  );
+}
+
+function freezeSpawnDecision(
+  spawn: PendingSpawn,
+  status: SpawnAdmissionDecision["status"],
+  reason: SpawnAdmissionDecision["reason"]
+): SpawnAdmissionDecision {
+  return Object.freeze({
+    spawnId: spawn.id,
+    entityId: spawn.entityId,
+    entranceId: spawn.entranceId,
+    status,
+    reason
+  });
+}
+
+/**
+ * Admits one deterministic spawn phase. Each authored entrance admits at most
+ * its oldest pending enemy; occupied entrances and a full live-enemy cap retain
+ * enemies off-map in canonical queue order.
+ */
+export function admitQueuedSpawns(
+  map: BattlefieldMapDefinition,
+  occupancy: readonly NavigationOccupant[],
+  pendingSpawns: readonly PendingSpawn[],
+  limits?: SpawnAdmissionLimits
+): SpawnAdmissionResolution {
+  if (
+    limits !== undefined &&
+    (!Number.isSafeInteger(limits.liveEnemyCap) || limits.liveEnemyCap <= 0)
+  ) {
+    throw new RangeError("live-enemy cap must be a positive safe integer");
+  }
+  if (
+    limits !== undefined &&
+    (!Number.isSafeInteger(limits.currentLiveEnemies) ||
+      limits.currentLiveEnemies < 0)
+  ) {
+    throw new RangeError(
+      "current live-enemy count must be a non-negative safe integer"
+    );
+  }
+
+  const nodes = new Set(map.nodes.map((node) => node.id));
+  const entrances = new Map(
+    map.enemyEntrances.map((entrance) => [entrance.id, entrance])
+  );
+  const occupantsByEntity = new Map<EntityId, NavigationOccupant>();
+  const occupantsByNode = new Map<NavigationNodeId, NavigationOccupant>();
+  for (const occupant of occupancy) {
+    if (!isDomainStableId(occupant.entityId, "entity")) {
+      throw new RangeError("occupancy entityId must be an entity.* stable ID");
+    }
+    if (!nodes.has(occupant.nodeId)) {
+      throw new RangeError(
+        `occupancy references unknown navigation node ID (${occupant.nodeId})`
+      );
+    }
+    if (occupantsByEntity.has(occupant.entityId)) {
+      throw new RangeError(
+        `duplicate occupied entity ID (${occupant.entityId})`
+      );
+    }
+    if (occupantsByNode.has(occupant.nodeId)) {
+      throw new RangeError(
+        `duplicate occupied navigation node ID (${occupant.nodeId})`
+      );
+    }
+    occupantsByEntity.set(occupant.entityId, occupant);
+    occupantsByNode.set(occupant.nodeId, occupant);
+  }
+  if (limits !== undefined && limits.currentLiveEnemies > occupancy.length) {
+    throw new RangeError(
+      "current live-enemy count cannot exceed occupied entity count"
+    );
+  }
+  if (limits !== undefined && limits.currentLiveEnemies > limits.liveEnemyCap) {
+    throw new RangeError("current live-enemy count exceeds live-enemy cap");
+  }
+
+  const spawnIds = new Set<string>();
+  const spawnEntityIds = new Set<EntityId>();
+  for (const spawn of pendingSpawns) {
+    if (!isDomainStableId(spawn.id)) {
+      throw new RangeError("pending spawn id must be a stable ID");
+    }
+    if (spawnIds.has(spawn.id)) {
+      throw new RangeError(`duplicate pending spawn ID (${spawn.id})`);
+    }
+    spawnIds.add(spawn.id);
+    if (!isDomainStableId(spawn.entityId, "entity")) {
+      throw new RangeError(
+        `pending spawn entityId must be an entity.* stable ID (${spawn.id})`
+      );
+    }
+    if (spawnEntityIds.has(spawn.entityId)) {
+      throw new RangeError(
+        `duplicate pending spawn entity ID (${spawn.entityId})`
+      );
+    }
+    spawnEntityIds.add(spawn.entityId);
+    if (occupantsByEntity.has(spawn.entityId)) {
+      throw new RangeError(
+        `pending spawn entity is already occupied (${spawn.entityId})`
+      );
+    }
+    if (!Number.isSafeInteger(spawn.authoredOrder) || spawn.authoredOrder < 0) {
+      throw new RangeError(
+        `pending spawn authoredOrder must be a non-negative safe integer (${spawn.id})`
+      );
+    }
+    if (!entrances.has(spawn.entranceId)) {
+      throw new RangeError(`unknown enemy entrance ID (${spawn.entranceId})`);
+    }
+  }
+
+  const orderedSpawns = [...pendingSpawns].sort(comparePendingSpawns);
+  const handledEntrances = new Set<EnemyEntranceId>();
+  const admittedOccupants: NavigationOccupant[] = [];
+  const remainingSpawns: PendingSpawn[] = [];
+  const decisions: SpawnAdmissionDecision[] = [];
+
+  for (const spawn of orderedSpawns) {
+    const entrance = entrances.get(spawn.entranceId);
+    if (entrance === undefined)
+      throw new Error("validated entrance is missing");
+
+    if (
+      limits !== undefined &&
+      limits.currentLiveEnemies + admittedOccupants.length >=
+        limits.liveEnemyCap
+    ) {
+      remainingSpawns.push(Object.freeze({ ...spawn }));
+      decisions.push(
+        freezeSpawnDecision(spawn, "queued", "live_enemy_cap_reached")
+      );
+      handledEntrances.add(spawn.entranceId);
+      continue;
+    }
+    if (handledEntrances.has(spawn.entranceId)) {
+      remainingSpawns.push(Object.freeze({ ...spawn }));
+      decisions.push(
+        freezeSpawnDecision(spawn, "queued", "earlier_spawn_pending")
+      );
+      continue;
+    }
+    handledEntrances.add(spawn.entranceId);
+    if (occupantsByNode.has(entrance.nodeId)) {
+      remainingSpawns.push(Object.freeze({ ...spawn }));
+      decisions.push(freezeSpawnDecision(spawn, "queued", "entrance_occupied"));
+      continue;
+    }
+
+    const admitted = Object.freeze({
+      entityId: spawn.entityId,
+      nodeId: entrance.nodeId
+    });
+    admittedOccupants.push(admitted);
+    occupantsByNode.set(entrance.nodeId, admitted);
+    decisions.push(freezeSpawnDecision(spawn, "admitted", "admitted"));
+  }
+
+  const resolvedOccupancy = [...occupancy, ...admittedOccupants]
+    .sort((left, right) => compareText(left.entityId, right.entityId))
+    .map((occupant) => Object.freeze({ ...occupant }));
+
+  return Object.freeze({
+    occupancy: Object.freeze(resolvedOccupancy),
+    pendingSpawns: Object.freeze(remainingSpawns),
+    decisions: Object.freeze(decisions)
+  });
 }
 
 function freezeDecision(
