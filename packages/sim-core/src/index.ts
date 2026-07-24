@@ -611,20 +611,32 @@ function initializeAdmittedEnemyCombatants(
         activeAttack.startedAtTick > currentTick ||
         !Number.isSafeInteger(activeAttack.commitAtTick) ||
         Object.is(activeAttack.commitAtTick, -0) ||
-        activeAttack.commitAtTick < activeAttack.startedAtTick ||
+        !Number.isSafeInteger(
+          activeAttack.startedAtTick + combatant.basicAttack.windupTicks
+        ) ||
+        activeAttack.commitAtTick !==
+          activeAttack.startedAtTick + combatant.basicAttack.windupTicks ||
         activeAttack.commitAtTick < currentTick ||
         !Number.isSafeInteger(activeAttack.impactAtTick) ||
         Object.is(activeAttack.impactAtTick, -0) ||
-        activeAttack.impactAtTick < activeAttack.commitAtTick ||
+        !Number.isSafeInteger(
+          activeAttack.commitAtTick + combatant.basicAttack.impactDelayTicks
+        ) ||
+        activeAttack.impactAtTick !==
+          activeAttack.commitAtTick + combatant.basicAttack.impactDelayTicks ||
         !Number.isSafeInteger(activeAttack.cooldownDurationTicks) ||
         activeAttack.cooldownDurationTicks <= 0 ||
+        activeAttack.cooldownDurationTicks !==
+          combatant.basicAttack.cooldownTicks ||
         !Number.isSafeInteger(
           activeAttack.commitAtTick + activeAttack.cooldownDurationTicks
         ) ||
         !Number.isSafeInteger(activeAttack.damage) ||
         activeAttack.damage < 0 ||
+        activeAttack.damage !== combatant.basicAttack.damage ||
         !Number.isSafeInteger(activeAttack.range) ||
         activeAttack.range < 0 ||
+        activeAttack.range !== combatant.basicAttack.range ||
         typeof activeAttack.targetIsValid !== "boolean")
     ) {
       throw new RangeError(
