@@ -57,6 +57,11 @@ export {
   renderRunExplanationMarkdown
 } from "./run-explanation.js";
 export {
+  runShuttergateReferenceCalibration,
+  type ShuttergateCalibrationMilestone,
+  type ShuttergateReferenceCalibrationEvidence
+} from "./shuttergate-reference-calibration.js";
+export {
   evaluateTerminalState,
   type TerminalEvaluationReason,
   type TerminalEvaluationRequest,
