@@ -43,4 +43,48 @@ describe("enemy target acquisition browser parity", () => {
       "f221c73b229b80ad5551ea234d60d03ca24e79acdd7a0cc94a7b9f9c6d683b8c"
     );
   });
+
+  it("pins eligibility, validation, and permutation boundaries", () => {
+    const valid = {
+      entityId: "entity.dwarf.alpha" as never,
+      targetKind: "living_dwarf" as const,
+      placementPointId: "placement.alpha" as never,
+      pathCost: 10,
+      isAlive: true,
+      isReachable: true,
+      opensRoute: false
+    };
+    const ineligible = [
+      { ...valid, entityId: "entity.dwarf.dead" as never, isAlive: false },
+      {
+        ...valid,
+        entityId: "entity.dwarf.unreachable" as never,
+        isReachable: false
+      },
+      {
+        ...valid,
+        entityId: "entity.deployable.closed" as never,
+        targetKind: "attackable_blocker" as const,
+        opensRoute: false
+      }
+    ];
+    expect(acquireEnemyTarget({ candidates: ineligible })).toEqual({
+      reason: "no_eligible_targets"
+    });
+
+    const tied = [{ ...valid, entityId: "entity.dwarf.zulu" as never }, valid];
+    expect(acquireEnemyTarget({ candidates: tied })).toEqual(
+      acquireEnemyTarget({ candidates: [...tied].reverse() })
+    );
+    expect(acquireEnemyTarget({ candidates: tied }).targetEntityId).toBe(
+      "entity.dwarf.alpha"
+    );
+
+    expect(() => acquireEnemyTarget({ candidates: [valid, valid] })).toThrow(
+      "duplicate enemy target candidate entity ID"
+    );
+    expect(() =>
+      acquireEnemyTarget({ candidates: [{ ...valid, pathCost: -1 }] })
+    ).toThrow("pathCost must be a non-negative safe integer");
+  });
 });
