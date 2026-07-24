@@ -44,6 +44,7 @@ describe("authored wave battlefield composition", () => {
           maximumHealth: 50,
           armor: 0,
           movementIntervalTicks: 6,
+          admittedAtTick: 0,
           lifecycleState: "active",
           basicAttack: {
             id: "attack.goblin_cutter_basic",
@@ -56,7 +57,6 @@ describe("authored wave battlefield composition", () => {
           },
           actionState: {
             schemaVersion: 1,
-            admittedAtTick: 0,
             nextMovementAtTick: 6,
             currentTargetEntityId: null,
             activeBasicAttack: null,
@@ -106,10 +106,10 @@ describe("authored wave battlefield composition", () => {
         enemyDefinitionId: "enemy.goblin_cutter",
         currentHealth: 50,
         movementIntervalTicks: 6,
+        admittedAtTick: 0,
         basicAttack: expect.objectContaining({ damage: 10, range: 1 }),
         actionState: {
           schemaVersion: 1,
-          admittedAtTick: 0,
           nextMovementAtTick: 6,
           currentTargetEntityId: null,
           activeBasicAttack: null,
@@ -121,6 +121,7 @@ describe("authored wave battlefield composition", () => {
         enemyDefinitionId: "enemy.goblin_slinger",
         currentHealth: 38,
         movementIntervalTicks: 7,
+        admittedAtTick: 0,
         basicAttack: expect.objectContaining({
           damage: 9,
           range: 6,
@@ -128,7 +129,6 @@ describe("authored wave battlefield composition", () => {
         }),
         actionState: {
           schemaVersion: 1,
-          admittedAtTick: 0,
           nextMovementAtTick: 7,
           currentTargetEntityId: null,
           activeBasicAttack: null,
@@ -378,11 +378,11 @@ describe("authored wave battlefield composition", () => {
             maximumHealth: slinger.maximumHealth,
             armor: slinger.armor,
             movementIntervalTicks: slinger.movementIntervalTicks,
+            admittedAtTick: 0,
             lifecycleState: "active",
             basicAttack: { ...slinger.basicAttack },
             actionState: {
               schemaVersion: 1,
-              admittedAtTick: 0,
               nextMovementAtTick: slinger.movementIntervalTicks,
               currentTargetEntityId: null,
               activeBasicAttack: null,
@@ -446,10 +446,13 @@ describe("authored wave battlefield composition", () => {
 
     expect(() =>
       resolveScheduledBattlefieldPhase(
-        withActionState({
-          ...original.actionState,
-          admittedAtTick: 1
-        }) as never,
+        {
+          ...due.state,
+          battlefield: {
+            ...due.state.battlefield,
+            enemyCombatants: [{ ...original, admittedAtTick: 1 }]
+          }
+        } as never,
         content,
         []
       )
@@ -471,11 +474,34 @@ describe("authored wave battlefield composition", () => {
         []
       )
     ).toThrow("nextMovementAtTick must be own enumerable data");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          currentTargetEntityId: "entity.dwarf.warden",
+          activeBasicAttack: {
+            schemaVersion: 1,
+            attackId: "attack.enemy.first.basic",
+            sourceEntityId: original.entityId,
+            targetEntityId: "entity.dwarf.warden",
+            startedAtTick: 0,
+            commitAtTick: Number.MAX_SAFE_INTEGER,
+            impactAtTick: Number.MAX_SAFE_INTEGER,
+            cooldownDurationTicks: 1,
+            damage: 10,
+            range: 1,
+            targetIsValid: true
+          }
+        }) as never,
+        content,
+        []
+      )
+    ).toThrow("invalid active basic attack");
   });
 
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("9f2d601e86e93f4135a1ddb8691cd85b184ca25c7e0028e68a65d3de3bb1746c");
+    ).toBe("5e82aecf2079de9f14866a497aa345671a1a6372ec83be8de498821f5607e029");
   });
 });

@@ -364,7 +364,7 @@ describe("cross-runtime deterministic conformance", () => {
     const resumed = resolveBattlefieldPhase(first.state, content, [], []);
 
     expect(await canonicalHash({ first, resumed })).toBe(
-      "cc193248fcfbd087a171a73e1d686d6e69807e072a71d700efb2ccabdaf09e4e"
+      "186ccc3230fc465211b58ecb827fd1d8b6ae39b7c635a73bf6bc5648cb94c5b1"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -396,7 +396,7 @@ describe("cross-runtime deterministic conformance", () => {
     const evidence = createPhase2SystemScenarioEvidence(content);
 
     expect(await canonicalHash(evidence)).toBe(
-      "40f677629b4c1b262a990adf48cd44e86f071275c5097278f850a92c2990c65c"
+      "37de140c9a646f30d473980ba54bb85f10a6bbef2a4f772c1063ff9432462503"
     );
     expect(evidence.placementRoutes.eastAttackRoute?.route.nodeIds).toEqual([
       "node.entry",

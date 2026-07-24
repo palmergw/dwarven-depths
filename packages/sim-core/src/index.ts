@@ -344,6 +344,7 @@ function initializeAdmittedEnemyCombatants(
         "maximumHealth",
         "armor",
         "movementIntervalTicks",
+        "admittedAtTick",
         "lifecycleState",
         "basicAttack",
         "actionState"
@@ -367,7 +368,6 @@ function initializeAdmittedEnemyCombatants(
       record["actionState"],
       [
         "schemaVersion",
-        "admittedAtTick",
         "nextMovementAtTick",
         "currentTargetEntityId",
         "activeBasicAttack",
@@ -419,6 +419,7 @@ function initializeAdmittedEnemyCombatants(
       maximumHealth: record["maximumHealth"],
       armor: record["armor"],
       movementIntervalTicks: record["movementIntervalTicks"],
+      admittedAtTick: record["admittedAtTick"],
       lifecycleState: record["lifecycleState"],
       basicAttack: {
         id: attack["id"],
@@ -431,7 +432,6 @@ function initializeAdmittedEnemyCombatants(
       },
       actionState: {
         schemaVersion: actionState["schemaVersion"],
-        admittedAtTick: actionState["admittedAtTick"],
         nextMovementAtTick: actionState["nextMovementAtTick"],
         currentTargetEntityId: actionState["currentTargetEntityId"],
         activeBasicAttack:
@@ -508,19 +508,19 @@ function initializeAdmittedEnemyCombatants(
     const action = combatant.actionState;
     if (
       action.schemaVersion !== 1 ||
-      !Number.isSafeInteger(action.admittedAtTick) ||
-      Object.is(action.admittedAtTick, -0) ||
-      action.admittedAtTick < 0 ||
-      action.admittedAtTick > currentTick ||
+      !Number.isSafeInteger(combatant.admittedAtTick) ||
+      Object.is(combatant.admittedAtTick, -0) ||
+      combatant.admittedAtTick < 0 ||
+      combatant.admittedAtTick > currentTick ||
       !Number.isSafeInteger(action.nextMovementAtTick) ||
       Object.is(action.nextMovementAtTick, -0) ||
-      action.nextMovementAtTick < action.admittedAtTick ||
+      action.nextMovementAtTick < combatant.admittedAtTick ||
       (action.currentTargetEntityId !== null &&
         !isDomainStableId(action.currentTargetEntityId, "entity")) ||
       (action.cooldownCompleteAtTick !== null &&
         (!Number.isSafeInteger(action.cooldownCompleteAtTick) ||
           Object.is(action.cooldownCompleteAtTick, -0) ||
-          action.cooldownCompleteAtTick < action.admittedAtTick))
+          (action.cooldownCompleteAtTick as number) < combatant.admittedAtTick))
     ) {
       throw new RangeError(
         `battlefield enemy ${combatant.entityId} has invalid action state`
@@ -535,13 +535,21 @@ function initializeAdmittedEnemyCombatants(
         !isDomainStableId(activeAttack.targetEntityId, "entity") ||
         activeAttack.targetEntityId !== action.currentTargetEntityId ||
         !Number.isSafeInteger(activeAttack.startedAtTick) ||
-        activeAttack.startedAtTick < action.admittedAtTick ||
+        Object.is(activeAttack.startedAtTick, -0) ||
+        activeAttack.startedAtTick < combatant.admittedAtTick ||
+        activeAttack.startedAtTick > currentTick ||
         !Number.isSafeInteger(activeAttack.commitAtTick) ||
+        Object.is(activeAttack.commitAtTick, -0) ||
         activeAttack.commitAtTick < activeAttack.startedAtTick ||
+        activeAttack.commitAtTick < currentTick ||
         !Number.isSafeInteger(activeAttack.impactAtTick) ||
+        Object.is(activeAttack.impactAtTick, -0) ||
         activeAttack.impactAtTick < activeAttack.commitAtTick ||
         !Number.isSafeInteger(activeAttack.cooldownDurationTicks) ||
         activeAttack.cooldownDurationTicks <= 0 ||
+        !Number.isSafeInteger(
+          activeAttack.commitAtTick + activeAttack.cooldownDurationTicks
+        ) ||
         !Number.isSafeInteger(activeAttack.damage) ||
         activeAttack.damage < 0 ||
         !Number.isSafeInteger(activeAttack.range) ||
@@ -612,11 +620,11 @@ function initializeAdmittedEnemyCombatants(
         maximumHealth: definition.maximumHealth,
         armor: definition.armor,
         movementIntervalTicks: definition.movementIntervalTicks,
+        admittedAtTick: currentTick,
         lifecycleState: "active",
         basicAttack: Object.freeze({ ...definition.basicAttack }),
         actionState: Object.freeze({
           schemaVersion: 1,
-          admittedAtTick: currentTick,
           nextMovementAtTick,
           currentTargetEntityId: null,
           activeBasicAttack: null,

@@ -259,6 +259,7 @@ export interface BattlefieldEnemyCombatant {
   /** Target-selection metric only; damage reduction is not yet contracted. */
   readonly armor: number;
   readonly movementIntervalTicks: number;
+  readonly admittedAtTick: number;
   readonly lifecycleState: "active" | "destroyed";
   readonly basicAttack: AuthoredBasicAttackDefinition;
   readonly actionState: BattlefieldEnemyActionState;
@@ -266,7 +267,6 @@ export interface BattlefieldEnemyCombatant {
 
 export interface BattlefieldEnemyActionState {
   readonly schemaVersion: 1;
-  readonly admittedAtTick: number;
   readonly nextMovementAtTick: number;
   readonly currentTargetEntityId: EntityId | null;
   readonly activeBasicAttack: AttackWindup | null;

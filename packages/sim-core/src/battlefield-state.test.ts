@@ -58,6 +58,7 @@ function cutterCombatant(entityId: string) {
     maximumHealth: 50,
     armor: 0,
     movementIntervalTicks: 6,
+    admittedAtTick: 0,
     lifecycleState: "active",
     basicAttack: {
       id: "attack.goblin_cutter_basic",
@@ -70,7 +71,6 @@ function cutterCombatant(entityId: string) {
     },
     actionState: {
       schemaVersion: 1,
-      admittedAtTick: 0,
       nextMovementAtTick: 6,
       currentTargetEntityId: null,
       activeBasicAttack: null,
@@ -159,7 +159,7 @@ describe("authoritative battlefield state", () => {
 
     const resumed = resolveBattlefieldPhase(first.state, content, [], []);
     expect(await canonicalHash({ first, resumed })).toBe(
-      "cc193248fcfbd087a171a73e1d686d6e69807e072a71d700efb2ccabdaf09e4e"
+      "186ccc3230fc465211b58ecb827fd1d8b6ae39b7c635a73bf6bc5648cb94c5b1"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
