@@ -185,6 +185,15 @@ Phase 3 surface currently present in the repository.
   repeated attacks and multiple enemies sharing one definition remain distinct.
   Moving, starting, winding, cancelled, committed, cooling-down, and restarted
   evidence is immutable and checksum-pinned across Node and all three browsers.
+- Fixed-step phase 6 applies only the proposals generated from authoritative
+  enemy routes through stable entity-ID reservation arbitration. Free-node
+  conflicts select the lowest enemy ID, while snapshot occupancy prevents
+  following, swapping, pushing, and bypassing. Successful and congestion-waited
+  attempts persist occupancy and advance to the first authored cadence boundary
+  after the current tick; stationary enemies preserve cadence. The composed
+  battlefield, planning, and reservation evidence is versioned, immutable,
+  detached, input-order independent, and checksum-pinned across Node and all
+  three browser engines.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
@@ -239,8 +248,7 @@ Phase 3 surface currently present in the repository.
 
 ## Not implemented yet
 
-Applying generated enemy proposals through reservations and broader attack
-impact execution in the authored encounter,
+Broader attack impact execution in the authored encounter,
 armor reduction,
 attack-windup status semantics,
 non-damage trigger variants,
