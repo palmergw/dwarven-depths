@@ -387,6 +387,32 @@ export interface AttackCommitmentResolution {
   readonly decisions: readonly AttackCommitmentDecision[];
 }
 
+/** One phase-5 dwarf target-lock evaluation paired with its active windup. */
+export interface DwarfAttackTargetingEntry {
+  readonly schemaVersion: 1;
+  readonly sourceEntityId: EntityId;
+  readonly targetLock: DwarfTargetLockRequest;
+  readonly windup: AttackWindup;
+}
+
+export interface DwarfAttackTargetingRequest {
+  readonly schemaVersion: 1;
+  readonly currentTick: number;
+  readonly entries: readonly DwarfAttackTargetingEntry[];
+}
+
+export interface DwarfAttackTargetingDecision {
+  readonly schemaVersion: 1;
+  readonly attackId: StableId;
+  readonly targetLock: DwarfTargetLockDecision;
+  readonly commitment: AttackCommitmentDecision;
+}
+
+export interface DwarfAttackTargetingResolution {
+  readonly schemaVersion: 1;
+  readonly decisions: readonly DwarfAttackTargetingDecision[];
+}
+
 export interface ActiveCooldown {
   readonly schemaVersion: 1;
   readonly cooldownId: StableId;

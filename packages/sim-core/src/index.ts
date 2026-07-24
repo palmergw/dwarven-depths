@@ -6,6 +6,7 @@ export * from "./committed-attack-impact.js";
 export * from "./committed-combat-effects.js";
 export * from "./death-resolution.js";
 export * from "./death-trigger-resolution.js";
+export * from "./dwarf-attack-targeting.js";
 export * from "./enemy-target-acquisition.js";
 export * from "./range-line-of-sight.js";
 export * from "./stable-tables.js";
