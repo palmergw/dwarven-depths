@@ -27,6 +27,15 @@ describe("run explanation", () => {
         diagnostics: runExplanationFixture.diagnostics.slice(1)
       })
     ).toThrow("missing diagnostic for event: event.000001");
+
+    const customEvents = [...runExplanationFixture.events];
+    Object.setPrototypeOf(customEvents, {
+      ...Array.prototype,
+      map: () => []
+    });
+    expect(() =>
+      createRunExplanation({ ...runExplanationFixture, events: customEvents })
+    ).toThrow("events must be a dense plain array");
   });
 
   it("renders deterministic Markdown from the versioned report", () => {

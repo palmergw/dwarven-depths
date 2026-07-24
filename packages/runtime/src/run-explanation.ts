@@ -47,6 +47,22 @@ function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+function requireDensePlainArray<T>(value: readonly T[], path: string): void {
+  if (
+    !Array.isArray(value) ||
+    Object.getPrototypeOf(value) !== Array.prototype ||
+    Object.getOwnPropertySymbols(value).length !== 0 ||
+    Object.keys(value).length !== value.length
+  ) {
+    throw new TypeError(`${path} must be a dense plain array`);
+  }
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
+      throw new TypeError(`${path} must be a dense plain array`);
+    }
+  }
+}
+
 function compareEventOrder(
   left: Pick<SimulationEvent, "tick" | "sequence" | "id">,
   right: Pick<SimulationEvent, "tick" | "sequence" | "id">
@@ -72,6 +88,15 @@ function cloneCause(cause: DiagnosticCause): DiagnosticCause {
 export function createRunExplanation(
   request: RunExplanationRequest
 ): RunExplanationReport {
+  requireDensePlainArray(request.events, "events");
+  requireDensePlainArray(request.diagnostics, "diagnostics");
+  for (let index = 0; index < request.diagnostics.length; index += 1) {
+    const diagnostic = request.diagnostics[index];
+    if (diagnostic === undefined) {
+      throw new TypeError(`diagnostics/${index} is missing`);
+    }
+    requireDensePlainArray(diagnostic.causes, `diagnostics/${index}/causes`);
+  }
   canonicalStringify(request);
   if (!Number.isSafeInteger(request.terminalTick) || request.terminalTick < 0) {
     throw new RangeError("terminalTick must be a non-negative safe integer");
