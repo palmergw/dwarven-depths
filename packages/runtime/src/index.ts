@@ -30,6 +30,10 @@ export {
   renderBattlefieldSvg,
   renderBattlefieldText
 } from "./battlefield-render.js";
+export {
+  createPhase2SystemScenarioEvidence,
+  type Phase2SystemScenarioEvidence
+} from "./phase-2-system-scenarios.js";
 
 export interface RuntimeResult {
   readonly scenarioId: string;

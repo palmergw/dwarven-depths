@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "phase-2-system-scenarios",
+  "definitions": [
+    {
+      "kind": "level",
+      "id": "level.phase_2_system",
+      "waveIds": [],
+      "mapId": "map.phase_2_system"
+    },
+    {
+      "kind": "map",
+      "id": "map.phase_2_system",
+      "nodes": [
+        {
+          "id": "node.entry",
+          "x": 0,
+          "y": 0,
+          "neighborNodeIds": ["node.south", "node.east"]
+        },
+        {
+          "id": "node.east",
+          "x": 1,
+          "y": 0,
+          "neighborNodeIds": ["node.entry", "node.east_approach"]
+        },
+        {
+          "id": "node.south",
+          "x": 0,
+          "y": 1,
+          "neighborNodeIds": ["node.entry", "node.south_approach"]
+        },
+        {
+          "id": "node.east_approach",
+          "x": 2,
+          "y": 0,
+          "neighborNodeIds": ["node.east", "node.east_warden"]
+        },
+        {
+          "id": "node.east_warden",
+          "x": 2,
+          "y": 1,
+          "neighborNodeIds": ["node.east_approach"]
+        },
+        {
+          "id": "node.south_approach",
+          "x": 0,
+          "y": 2,
+          "neighborNodeIds": ["node.south", "node.south_warden"]
+        },
+        {
+          "id": "node.south_warden",
+          "x": 1,
+          "y": 2,
+          "neighborNodeIds": ["node.south_approach"]
+        }
+      ],
+      "connections": [
+        {
+          "id": "connection.entry_east",
+          "nodeIds": ["node.entry", "node.east"],
+          "cost": 10
+        },
+        {
+          "id": "connection.entry_south",
+          "nodeIds": ["node.south", "node.entry"],
+          "cost": 10
+        },
+        {
+          "id": "connection.east_approach",
+          "nodeIds": ["node.east", "node.east_approach"],
+          "cost": 10
+        },
+        {
+          "id": "connection.east_warden",
+          "nodeIds": ["node.east_approach", "node.east_warden"],
+          "cost": 10
+        },
+        {
+          "id": "connection.south_approach",
+          "nodeIds": ["node.south", "node.south_approach"],
+          "cost": 10
+        },
+        {
+          "id": "connection.south_warden",
+          "nodeIds": ["node.south_approach", "node.south_warden"],
+          "cost": 10
+        }
+      ],
+      "placementPoints": [
+        {
+          "id": "placement.east",
+          "nodeId": "node.east_warden",
+          "capacity": 1,
+          "adjacentPlacementPointIds": []
+        },
+        {
+          "id": "placement.south",
+          "nodeId": "node.south_warden",
+          "capacity": 1,
+          "adjacentPlacementPointIds": []
+        }
+      ],
+      "enemyEntrances": [{ "id": "entrance.west", "nodeId": "node.entry" }]
+    }
+  ]
+}

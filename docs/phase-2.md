@@ -59,12 +59,24 @@ surface currently present on the Phase 2 implementation branch.
   deterministic shortest route with total cost. SVG labels and metadata are
   escaped, and literal Node plus Chromium/Firefox/WebKit output checksums are
   pinned against the nonempty conformance map.
+- Route queries may supply immutable blocked-node sets. Unknown blockers are
+  rejected, blocked start or goal nodes have no route, and authored equal-cost
+  tie-breaking remains authoritative among the unblocked alternatives.
+- Focused Phase 2 system evidence covers occupied-entrance and live-enemy-cap
+  queues through deterministic resume. Two legal Warden placements block
+  authored navigation nodes on opposite branches; routing derives each
+  attack-valid adjacent approach from the selected placement and produces
+  distinct, explainable minimum-cost routes. The complete evidence has one
+  literal hash pinned in Node and Chromium, Firefox, and WebKit.
 
 ## Not implemented yet
 
 This checkpoint does not yet expose authored wave spawn schedules, automatic
 movement-proposal generation, targeting, combat, or arbitrary-tick battlefield
 snapshots. Battlefield rendering currently uses verified terminal state.
+Route-opening blocker attacks remain a Phase 3 targeting/combat responsibility;
+Phase 2 establishes their legal placement, blocked routing, congestion, and
+deterministic-resume prerequisites.
 The authoritative battlefield phase accepts validated scheduled-spawn and
 movement-proposal inputs so those later systems can share one state transition.
 The existing `validate`, `run`, `replay --verify`, `inspect`, and `compare`
