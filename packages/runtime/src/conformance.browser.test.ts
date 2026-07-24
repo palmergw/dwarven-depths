@@ -377,6 +377,20 @@ describe("cross-runtime deterministic conformance", () => {
         { entityId: "entity.enemy.second", nodeId: "node.entry" }
       ],
       pendingSpawns: [],
+      enemyAdmissions: [
+        {
+          schemaVersion: 1,
+          spawnId: "spawn.first",
+          entityId: "entity.enemy.first",
+          admittedAtTick: 0
+        },
+        {
+          schemaVersion: 1,
+          spawnId: "spawn.second",
+          entityId: "entity.enemy.second",
+          admittedAtTick: 0
+        }
+      ],
       enemyCombatants: [
         expect.objectContaining({
           entityId: "entity.enemy.first",
