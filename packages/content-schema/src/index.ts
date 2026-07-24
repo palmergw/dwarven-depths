@@ -1,9 +1,11 @@
 import type {
+  AimPointId,
   BattlefieldMapDefinition,
   ContentBundle,
   EnemyEntranceId,
   NavigationConnectionId,
   NavigationNodeId,
+  OpaqueRegionId,
   PlacementPointId,
   ReplayDefinition,
   ScenarioDefinition,
@@ -29,6 +31,13 @@ const navigationNodeIdSchema = domainIdSchema("node");
 const navigationConnectionIdSchema = domainIdSchema("connection");
 const placementPointIdSchema = domainIdSchema("placement");
 const enemyEntranceIdSchema = domainIdSchema("entrance");
+const aimPointIdSchema = domainIdSchema("aim");
+const opaqueRegionIdSchema = domainIdSchema("opaque");
+const authoredCoordinateSchema = z
+  .int()
+  .min(-1_000_000)
+  .max(1_000_000)
+  .refine((value) => !Object.is(value, -0), "must not be negative zero");
 
 const checksumSchema = z
   .string()
@@ -64,8 +73,9 @@ const waveDefinitionSchema = z
 const navigationNodeSchema = z
   .object({
     id: navigationNodeIdSchema,
-    x: z.int(),
-    y: z.int(),
+    x: authoredCoordinateSchema,
+    y: authoredCoordinateSchema,
+    aimPointId: aimPointIdSchema,
     neighborNodeIds: z.array(navigationNodeIdSchema)
   })
   .strict();
@@ -91,6 +101,24 @@ const enemyEntranceSchema = z
   .object({ id: enemyEntranceIdSchema, nodeId: navigationNodeIdSchema })
   .strict();
 
+const aimPointSchema = z
+  .object({
+    id: aimPointIdSchema,
+    x: authoredCoordinateSchema,
+    y: authoredCoordinateSchema
+  })
+  .strict();
+
+const opaqueRegionSchema = z
+  .object({
+    id: opaqueRegionIdSchema,
+    minimumX: authoredCoordinateSchema,
+    minimumY: authoredCoordinateSchema,
+    maximumX: authoredCoordinateSchema,
+    maximumY: authoredCoordinateSchema
+  })
+  .strict();
+
 const battlefieldMapSchema = z
   .object({
     kind: z.literal("map"),
@@ -98,7 +126,9 @@ const battlefieldMapSchema = z
     nodes: z.array(navigationNodeSchema),
     connections: z.array(navigationConnectionSchema),
     placementPoints: z.array(placementPointSchema),
-    enemyEntrances: z.array(enemyEntranceSchema)
+    enemyEntrances: z.array(enemyEntranceSchema),
+    aimPoints: z.array(aimPointSchema),
+    opaqueRegions: z.array(opaqueRegionSchema)
   })
   .strict();
 
@@ -267,6 +297,8 @@ function validateBattlefieldMap(
     readonly connections: Map<string, string>;
     readonly placements: Map<string, string>;
     readonly entrances: Map<string, string>;
+    readonly aimPoints: Map<string, string>;
+    readonly opaqueRegions: Map<string, string>;
   }
 ): void {
   const base = `$/definitions/${definitionIndex}`;
@@ -294,6 +326,34 @@ function validateBattlefieldMap(
     issues,
     globalIds.entrances
   );
+  const aimPoints = recordUniqueIds(
+    map.aimPoints,
+    `${base}/aimPoints`,
+    issues,
+    globalIds.aimPoints
+  );
+  recordUniqueIds(
+    map.opaqueRegions,
+    `${base}/opaqueRegions`,
+    issues,
+    globalIds.opaqueRegions
+  );
+
+  map.opaqueRegions.forEach((region, regionIndex) => {
+    const regionPath = `${base}/opaqueRegions/${regionIndex}`;
+    if (region.minimumX >= region.maximumX)
+      issues.push({
+        path: `${regionPath}/maximumX`,
+        code: "invalid_geometry",
+        message: "must be greater than minimumX"
+      });
+    if (region.minimumY >= region.maximumY)
+      issues.push({
+        path: `${regionPath}/maximumY`,
+        code: "invalid_geometry",
+        message: "must be greater than minimumY"
+      });
+  });
 
   const connectionPairs = new Map<string, number>();
   map.connections.forEach((connection, connectionIndex) => {
@@ -348,6 +408,12 @@ function validateBattlefieldMap(
   });
 
   map.nodes.forEach((node, nodeIndex) => {
+    if (!aimPoints.has(node.aimPointId))
+      issues.push({
+        path: `${base}/nodes/${nodeIndex}/aimPointId`,
+        code: "unknown_reference",
+        message: `references unknown aim point ID (${node.aimPointId})`
+      });
     const neighborPath = `${base}/nodes/${nodeIndex}/neighborNodeIds`;
     validateUniqueReferences(node.neighborNodeIds, neighborPath, issues);
     node.neighborNodeIds.forEach((neighborId, neighborIndex) => {
@@ -449,7 +515,9 @@ export function validateContentBundle(input: unknown): ContentBundle {
     nodes: new Map<string, string>(),
     connections: new Map<string, string>(),
     placements: new Map<string, string>(),
-    entrances: new Map<string, string>()
+    entrances: new Map<string, string>(),
+    aimPoints: new Map<string, string>(),
+    opaqueRegions: new Map<string, string>()
   };
   parsed.data.definitions.forEach((definition, index) => {
     const previous = seen.get(definition.id);
@@ -533,6 +601,7 @@ export function validateContentBundle(input: unknown): ContentBundle {
           id: node.id as NavigationNodeId,
           x: node.x,
           y: node.y,
+          aimPointId: node.aimPointId as AimPointId,
           neighborNodeIds: node.neighborNodeIds.map(
             (neighborId) => neighborId as NavigationNodeId
           )
@@ -555,6 +624,18 @@ export function validateContentBundle(input: unknown): ContentBundle {
         enemyEntrances: definition.enemyEntrances.map((entrance) => ({
           id: entrance.id as EnemyEntranceId,
           nodeId: entrance.nodeId as NavigationNodeId
+        })),
+        aimPoints: definition.aimPoints.map((point) => ({
+          id: point.id as AimPointId,
+          x: point.x,
+          y: point.y
+        })),
+        opaqueRegions: definition.opaqueRegions.map((region) => ({
+          id: region.id as OpaqueRegionId,
+          minimumX: region.minimumX,
+          minimumY: region.minimumY,
+          maximumX: region.maximumX,
+          maximumY: region.maximumY
         }))
       } satisfies BattlefieldMapDefinition;
     })

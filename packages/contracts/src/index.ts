@@ -13,6 +13,10 @@ export type PlacementPointId = StableId & {
 export type EnemyEntranceId = StableId & {
   readonly __enemyEntranceId: unique symbol;
 };
+export type AimPointId = StableId & { readonly __aimPointId: unique symbol };
+export type OpaqueRegionId = StableId & {
+  readonly __opaqueRegionId: unique symbol;
+};
 
 export interface StableEntityRecord {
   readonly id: EntityId;
@@ -53,8 +57,24 @@ export interface NavigationNodeDefinition {
   readonly id: NavigationNodeId;
   readonly x: number;
   readonly y: number;
+  readonly aimPointId: AimPointId;
   /** Authored gameplay order used to break equal-cost route choices. */
   readonly neighborNodeIds: readonly NavigationNodeId[];
+}
+
+export interface AimPointDefinition {
+  readonly id: AimPointId;
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Inclusive axis-aligned opaque rectangle in authored integer coordinates. */
+export interface OpaqueRegionDefinition {
+  readonly id: OpaqueRegionId;
+  readonly minimumX: number;
+  readonly minimumY: number;
+  readonly maximumX: number;
+  readonly maximumY: number;
 }
 
 export interface NavigationConnectionDefinition {
@@ -82,6 +102,8 @@ export interface BattlefieldMapDefinition {
   readonly connections: readonly NavigationConnectionDefinition[];
   readonly placementPoints: readonly PlacementPointDefinition[];
   readonly enemyEntrances: readonly EnemyEntranceDefinition[];
+  readonly aimPoints: readonly AimPointDefinition[];
+  readonly opaqueRegions: readonly OpaqueRegionDefinition[];
 }
 
 export interface StaticDwarfPlacement {

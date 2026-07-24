@@ -22,11 +22,14 @@ interface MutableMapFixture {
     id: string;
     x: number;
     y: number;
+    aimPointId: string;
     neighborNodeIds: string[];
   }>;
   connections: Array<{ id: string; nodeIds: string[]; cost: number }>;
   placementPoints: unknown[];
   enemyEntrances: unknown[];
+  aimPoints: unknown[];
+  opaqueRegions: unknown[];
 }
 
 function permutations<Value>(values: readonly Value[]): Value[][] {
@@ -86,6 +89,8 @@ describe("content compilation", () => {
     map.connections.reverse();
     map.placementPoints.reverse();
     map.enemyEntrances.reverse();
+    map.aimPoints.reverse();
+    map.opaqueRegions.reverse();
     for (const connection of map.connections) connection.nodeIds.reverse();
 
     const [canonical, permuted] = await Promise.all([
@@ -184,7 +189,7 @@ describe("content compilation", () => {
     sourceConnection.cost = 999;
 
     expect(content.manifestHash).toBe(
-      "38b3ddd8c676f1c05e3fb0de8d1f08f74712d14a4523b0801b28110540fedca1"
+      "acbbfb991269de9e2c6a5377951d8f40a1a142c74f8d94e3d9030d0c9f9d85c6"
     );
     expect(map?.connections[0]?.cost).toBe(10);
     expect(Object.isFrozen(content)).toBe(true);
@@ -195,6 +200,9 @@ describe("content compilation", () => {
     expect(
       Object.isFrozen(map?.placementPoints[0]?.adjacentPlacementPointIds)
     ).toBe(true);
+    expect(Object.isFrozen(map?.aimPoints)).toBe(true);
+    expect(Object.isFrozen(map?.aimPoints[0])).toBe(true);
+    expect(Object.isFrozen(map?.opaqueRegions)).toBe(true);
   });
 
   it("uses authored neighbor order to resolve equal-cost shortest routes", async () => {
@@ -368,8 +376,10 @@ describe("content compilation", () => {
       id: "node.isolated",
       x: 10,
       y: 10,
+      aimPointId: "aim.isolated",
       neighborNodeIds: []
-    } as never);
+    });
+    mapInput.aimPoints.push({ id: "aim.isolated", x: 10, y: 10 });
 
     const content = await compileContent(source);
     const map = content.maps.get("map.conformance_diamond" as never);
@@ -398,14 +408,20 @@ describe("content compilation", () => {
       id: "node.dead_end",
       x: -1,
       y: 0,
+      aimPointId: "aim.dead_end",
       neighborNodeIds: ["node.entry", "node.overflow"]
     });
     mapInput.nodes.push({
       id: "node.overflow",
       x: -2,
       y: 0,
+      aimPointId: "aim.overflow",
       neighborNodeIds: ["node.dead_end"]
     });
+    mapInput.aimPoints.push(
+      { id: "aim.dead_end", x: -1, y: 0 },
+      { id: "aim.overflow", x: -2, y: 0 }
+    );
     const entry = mapInput.nodes.find((node) => node.id === "node.entry");
     if (entry === undefined) throw new Error("missing entry node");
     entry.neighborNodeIds.push("node.dead_end");
@@ -506,8 +522,10 @@ describe("content compilation", () => {
       id: "node.isolated",
       x: 10,
       y: 10,
+      aimPointId: "aim.isolated",
       neighborNodeIds: []
     });
+    mapInput.aimPoints.push({ id: "aim.isolated", x: 10, y: 10 });
     mapInput.placementPoints.push({
       id: "placement.isolated",
       nodeId: "node.isolated",
@@ -563,8 +581,10 @@ describe("content compilation", () => {
       id: "node.north",
       x: 1,
       y: -1,
+      aimPointId: "aim.north",
       neighborNodeIds: ["node.east"]
     });
+    mapInput.aimPoints.push({ id: "aim.north", x: 1, y: -1 });
     const east = mapInput.nodes.find((node) => node.id === "node.east");
     if (east === undefined) throw new Error("missing east node");
     east.neighborNodeIds.push("node.north");

@@ -16,42 +16,49 @@
           "id": "node.entry",
           "x": 0,
           "y": 0,
+          "aimPointId": "aim.entry",
           "neighborNodeIds": ["node.south", "node.east"]
         },
         {
           "id": "node.east",
           "x": 1,
           "y": 0,
+          "aimPointId": "aim.east",
           "neighborNodeIds": ["node.entry", "node.east_approach"]
         },
         {
           "id": "node.south",
           "x": 0,
           "y": 1,
+          "aimPointId": "aim.south",
           "neighborNodeIds": ["node.entry", "node.south_approach"]
         },
         {
           "id": "node.east_approach",
           "x": 2,
           "y": 0,
+          "aimPointId": "aim.east_approach",
           "neighborNodeIds": ["node.east", "node.east_warden"]
         },
         {
           "id": "node.east_warden",
           "x": 2,
           "y": 1,
+          "aimPointId": "aim.east_warden",
           "neighborNodeIds": ["node.east_approach"]
         },
         {
           "id": "node.south_approach",
           "x": 0,
           "y": 2,
+          "aimPointId": "aim.south_approach",
           "neighborNodeIds": ["node.south", "node.south_warden"]
         },
         {
           "id": "node.south_warden",
           "x": 1,
           "y": 2,
+          "aimPointId": "aim.south_warden",
           "neighborNodeIds": ["node.south_approach"]
         }
       ],
@@ -101,7 +108,17 @@
           "adjacentPlacementPointIds": []
         }
       ],
-      "enemyEntrances": [{ "id": "entrance.west", "nodeId": "node.entry" }]
+      "enemyEntrances": [{ "id": "entrance.west", "nodeId": "node.entry" }],
+      "aimPoints": [
+        { "id": "aim.entry", "x": 0, "y": 0 },
+        { "id": "aim.east", "x": 1, "y": 0 },
+        { "id": "aim.south", "x": 0, "y": 1 },
+        { "id": "aim.east_approach", "x": 2, "y": 0 },
+        { "id": "aim.east_warden", "x": 2, "y": 1 },
+        { "id": "aim.south_approach", "x": 0, "y": 2 },
+        { "id": "aim.south_warden", "x": 1, "y": 2 }
+      ],
+      "opaqueRegions": []
     }
   ]
 }

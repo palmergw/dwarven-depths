@@ -20,6 +20,7 @@ interface MutableSchemaMap {
     id: string;
     x: number;
     y: number;
+    aimPointId: string;
     neighborNodeIds: string[];
   }>;
   connections: Array<{ id: string; nodeIds: [string, string]; cost: number }>;
@@ -30,6 +31,14 @@ interface MutableSchemaMap {
     adjacentPlacementPointIds: string[];
   }>;
   enemyEntrances: Array<{ id: string; nodeId: string }>;
+  aimPoints: Array<{ id: string; x: number; y: number }>;
+  opaqueRegions: Array<{
+    id: string;
+    minimumX: number;
+    minimumY: number;
+    maximumX: number;
+    maximumY: number;
+  }>;
 }
 
 function mapFromFixture(bundle: typeof mapContentInput): MutableSchemaMap {
@@ -232,6 +241,63 @@ describe("content validation", () => {
         ])
       );
     }
+  });
+
+  it("validates aim-point references, coordinate bounds, and opaque geometry", () => {
+    const invalid = structuredClone(mapContentInput);
+    const map = mapFromFixture(invalid);
+    const node = map.nodes[0];
+    if (node === undefined) throw new Error("incomplete map fixture");
+    node.aimPointId = "aim.missing";
+    map.aimPoints.push({ id: "aim.goal", x: 0, y: 0 });
+    map.opaqueRegions.push({
+      id: "opaque.invalid",
+      minimumX: 4,
+      minimumY: 2,
+      maximumX: 4,
+      maximumY: 1
+    });
+
+    try {
+      validateContentBundle(invalid);
+      throw new Error("expected validation to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ContentValidationError);
+      expect((error as ContentValidationError).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "$/definitions/1/nodes/0/aimPointId",
+            code: "unknown_reference"
+          }),
+          expect.objectContaining({
+            path: "$/definitions/1/aimPoints/4/id",
+            code: "duplicate_stable_id"
+          }),
+          expect.objectContaining({
+            path: "$/definitions/1/opaqueRegions/1/maximumX",
+            code: "invalid_geometry"
+          }),
+          expect.objectContaining({
+            path: "$/definitions/1/opaqueRegions/1/maximumY",
+            code: "invalid_geometry"
+          })
+        ])
+      );
+    }
+
+    const outOfBounds = structuredClone(mapContentInput);
+    const firstAimPoint = mapFromFixture(outOfBounds).aimPoints[0];
+    if (firstAimPoint === undefined) throw new Error("missing aim point");
+    firstAimPoint.x = 1_000_001;
+    expect(() => validateContentBundle(outOfBounds)).toThrow(/<=1000000/);
+
+    const negativeZero = structuredClone(mapContentInput);
+    const negativeZeroPoint = mapFromFixture(negativeZero).aimPoints[0];
+    if (negativeZeroPoint === undefined) throw new Error("missing aim point");
+    negativeZeroPoint.x = -0;
+    expect(() => validateContentBundle(negativeZero)).toThrow(
+      "$/definitions/1/aimPoints/0/x: must not be negative zero"
+    );
   });
 });
 
