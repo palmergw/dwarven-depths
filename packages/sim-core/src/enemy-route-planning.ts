@@ -200,6 +200,10 @@ export function planEnemyRoute(
     throw new RangeError(
       "enemy route target placement references an unknown node"
     );
+  if (source.id === targetNode.id)
+    throw new RangeError(
+      "enemy route source cannot occupy the target placement"
+    );
 
   const blockedList = requireBlockedNodes(record.blockedNodeIds);
   const blocked = new Set<NavigationNodeId>();

@@ -130,6 +130,14 @@ describe("deterministic enemy attack-position route planning", () => {
   it("strictly validates route identity, blockers, shape, and bounds", () => {
     expect(() =>
       planEnemyRoute(
+        conformanceRequest({
+          sourceNodeId: "node.goal" as never,
+          blockedNodeIds: []
+        })
+      )
+    ).toThrow("source cannot occupy the target placement");
+    expect(() =>
+      planEnemyRoute(
         conformanceRequest({ blockedNodeIds: ["node.entry" as never] })
       )
     ).toThrow("source node cannot be blocked");
