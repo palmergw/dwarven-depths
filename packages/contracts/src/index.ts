@@ -411,6 +411,64 @@ export interface ZeroHealthLifecycleResolution {
   readonly decisions: readonly ZeroHealthLifecycleDecision[];
 }
 
+export interface DeathTriggerEffect {
+  readonly schemaVersion: 1;
+  readonly effectId: EffectId;
+  readonly ownerEntityId: EntityId;
+  readonly targetEntityId: EntityId;
+  readonly damage: number;
+}
+
+export interface DeathTriggerResolutionRequest {
+  readonly combatants: readonly CombatantLifecycle[];
+  /** Entities newly downed or destroyed by the preceding lifecycle phase. */
+  readonly deathEntityIds: readonly EntityId[];
+  readonly effects: readonly DeathTriggerEffect[];
+  /** Maximum number of trigger-damage/lifecycle recursion rounds. */
+  readonly recursionLimit: number;
+}
+
+export type DeathTriggerDecisionReason = "damage_applied" | "target_not_living";
+
+export interface DeathTriggerDecision {
+  readonly schemaVersion: 1;
+  readonly round: number;
+  readonly effectId: EffectId;
+  readonly ownerEntityId: EntityId;
+  readonly targetEntityId: EntityId;
+  readonly status: "executed" | "discarded";
+  readonly reason: DeathTriggerDecisionReason;
+  readonly damage?: number;
+}
+
+export interface DeathTriggerHealthResolution {
+  readonly schemaVersion: 1;
+  readonly round: number;
+  readonly entityId: EntityId;
+  readonly healthBefore: number;
+  readonly incomingDamage: number;
+  readonly appliedDamage: number;
+  readonly healthAfter: number;
+}
+
+export interface DeathTriggerLifecycleTransition {
+  readonly schemaVersion: 1;
+  readonly round: number;
+  readonly entityId: EntityId;
+  readonly lifecycleBefore: "active";
+  readonly lifecycleAfter: "downed" | "destroyed";
+}
+
+export interface DeathTriggerResolution {
+  readonly combatants: readonly CombatantLifecycle[];
+  readonly decisions: readonly DeathTriggerDecision[];
+  readonly healthResolutions: readonly DeathTriggerHealthResolution[];
+  readonly lifecycleTransitions: readonly DeathTriggerLifecycleTransition[];
+  readonly completedRounds: number;
+  readonly status: "complete" | "safety_limit_reached";
+  readonly pendingDeathEntityIds: readonly EntityId[];
+}
+
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition
