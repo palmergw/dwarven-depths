@@ -44,6 +44,14 @@ export {
   type Phase3SystemScenarioEvidence
 } from "./phase-3-system-scenarios.js";
 export {
+  createRunExplanation,
+  renderRunExplanationMarkdown,
+  type RunExplanationEntry,
+  type RunExplanationIdentity,
+  type RunExplanationReport,
+  type RunExplanationRequest
+} from "./run-explanation.js";
+export {
   evaluateTerminalState,
   type TerminalEvaluationReason,
   type TerminalEvaluationRequest,

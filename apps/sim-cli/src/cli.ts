@@ -39,12 +39,14 @@ import {
   compareRunEvidence,
   createLifecycleDiagnostics,
   createReplayDefinition,
+  createRunExplanation,
   createTimelineRecords,
   ReplayDivergenceError,
   RuntimeAssertionError,
   RuntimeSafetyStopError,
   renderBattlefieldSvg,
   renderBattlefieldText,
+  renderRunExplanationMarkdown,
   runScenario,
   verifyReplay
 } from "@dwarven-depths/runtime";
@@ -949,6 +951,35 @@ async function inspect(args: ParsedArgs): Promise<void> {
   );
 }
 
+async function explain(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["run", "format"]));
+  const format = requiredFlag(args, "format");
+  if (format !== "markdown" && format !== "json") {
+    throw new CliInputError("--format must be markdown or json");
+  }
+  const runDirectory = resolve(requiredFlag(args, "run"));
+  const evidence = await verifyRunDirectory(runDirectory, false);
+  const report = createRunExplanation({
+    identity: {
+      repositoryRevision: String(evidence.manifest.repositoryRevision),
+      contentManifestHash: evidence.replay.contentManifestHash,
+      scenarioId: evidence.replay.scenarioId,
+      scenarioHash: evidence.replay.scenarioHash,
+      seed: evidence.replay.seed,
+      replayIdentityHash: evidence.replayIdentityHash
+    },
+    terminalResult: evidence.result.terminalResult,
+    terminalTick: evidence.result.terminalTick,
+    events: evidence.result.events,
+    diagnostics: evidence.diagnostics
+  });
+  process.stdout.write(
+    format === "markdown"
+      ? renderRunExplanationMarkdown(report)
+      : `${JSON.stringify(report)}\n`
+  );
+}
+
 async function render(args: ParsedArgs): Promise<void> {
   rejectUnknownFlags(
     args,
@@ -1454,6 +1485,9 @@ async function main(): Promise<void> {
     case "inspect":
       await inspect(args);
       break;
+    case "explain":
+      await explain(args);
+      break;
     case "render":
       await render(args);
       break;
@@ -1462,7 +1496,7 @@ async function main(): Promise<void> {
       break;
     default:
       throw new CliInputError(
-        "Usage: dwarven-depths-sim <validate|run|replay|inspect|render|compare> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>]"
+        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>]"
       );
   }
 }
