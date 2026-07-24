@@ -8,6 +8,7 @@ export * from "./death-resolution.js";
 export * from "./death-trigger-resolution.js";
 export * from "./dwarf-attack-targeting.js";
 export * from "./enemy-attack-targeting.js";
+export * from "./enemy-movement-planning.js";
 export * from "./enemy-route-planning.js";
 export * from "./enemy-target-acquisition.js";
 export * from "./range-line-of-sight.js";

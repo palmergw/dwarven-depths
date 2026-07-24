@@ -240,6 +240,45 @@ export interface EnemyRoutePlanningDecision {
   readonly attackPositionNodeId: NavigationNodeId | null;
 }
 
+export interface EnemyMovementPlanningEntry {
+  readonly schemaVersion: 1;
+  readonly enemyEntityId: EntityId;
+  readonly candidates: readonly EnemyTargetCandidate[];
+  /** Occupied non-enemy entities whose nodes are solid for this route. */
+  readonly solidBlockerEntityIds: readonly EntityId[];
+}
+
+export interface EnemyMovementPlanningRequest {
+  readonly schemaVersion: 1;
+  readonly currentTick: number;
+  readonly levelId: StableId;
+  readonly battlefield: BattlefieldState;
+  readonly entries: readonly EnemyMovementPlanningEntry[];
+}
+
+export type EnemyMovementPlanningReason =
+  | "movement_not_due"
+  | "no_eligible_target"
+  | "already_attack_valid"
+  | "no_attack_position_reachable"
+  | "route_next_node_selected";
+
+export interface EnemyMovementPlanningDecision {
+  readonly schemaVersion: 1;
+  readonly enemyEntityId: EntityId;
+  readonly status: "not_due" | "stationary" | "proposed";
+  readonly reason: EnemyMovementPlanningReason;
+  readonly targetLock: EnemyTargetLockDecision;
+  readonly route?: EnemyRoutePlanningDecision;
+  readonly proposal?: MovementProposal;
+}
+
+export interface EnemyMovementPlanningResolution {
+  readonly schemaVersion: 1;
+  readonly proposals: readonly MovementProposal[];
+  readonly decisions: readonly EnemyMovementPlanningDecision[];
+}
+
 export interface PendingSpawn {
   /** Stable authored spawn-event ID. */
   readonly id: StableId;
