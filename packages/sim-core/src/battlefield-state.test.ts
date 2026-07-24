@@ -129,6 +129,31 @@ describe("authoritative battlefield state", () => {
       ],
       []
     );
+    const admittedBattlefield = admitted.state.battlefield;
+    if (admittedBattlefield === undefined)
+      throw new Error("expected battlefield state");
+    expect(() =>
+      resolveBattlefieldPhase(
+        {
+          ...admitted.state,
+          tick: 6,
+          battlefield: {
+            ...admittedBattlefield,
+            enemyCombatants: []
+          } as never
+        },
+        content,
+        [],
+        [
+          movement(
+            "movement.missing_combatant",
+            "entity.enemy.first",
+            "node.entry",
+            "node.south"
+          )
+        ]
+      )
+    ).toThrow("admitted battlefield enemy is missing combatant state");
     const first = resolveBattlefieldPhase(
       { ...admitted.state, tick: 6 },
       content,

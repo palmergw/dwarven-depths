@@ -175,6 +175,7 @@ describe("authored wave battlefield composition", () => {
     expect(() =>
       resolveScheduledBattlefieldPhase(due.state, content, [proposal])
     ).toThrow("movement is not due");
+
     expect(() =>
       resolveScheduledBattlefieldPhase({ ...due.state, tick: 6 }, content, [
         proposal,

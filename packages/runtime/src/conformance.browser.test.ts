@@ -355,6 +355,31 @@ describe("cross-runtime deterministic conformance", () => {
       ] as never,
       []
     );
+    const admittedBattlefield = admitted.state.battlefield;
+    if (admittedBattlefield === undefined)
+      throw new Error("expected battlefield state");
+    expect(() =>
+      resolveBattlefieldPhase(
+        {
+          ...admitted.state,
+          tick: 6,
+          battlefield: {
+            ...admittedBattlefield,
+            enemyCombatants: []
+          } as never
+        },
+        content,
+        [],
+        [
+          {
+            id: "movement.missing_combatant",
+            entityId: "entity.enemy.first",
+            fromNodeId: "node.entry",
+            toNodeId: "node.south"
+          }
+        ] as never
+      )
+    ).toThrow("admitted battlefield enemy is missing combatant state");
     const first = resolveBattlefieldPhase(
       { ...admitted.state, tick: 6 },
       content,

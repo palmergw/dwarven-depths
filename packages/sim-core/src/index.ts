@@ -1473,6 +1473,16 @@ export function resolveBattlefieldPhase(
     enemyAdmissionsByEntity,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
+  const combatantEntityIds = new Set(
+    enemyCombatants.map((combatant) => combatant.entityId)
+  );
+  for (const admittedEntityId of enemyAdmissionsByEntity.keys()) {
+    if (!combatantEntityIds.has(admittedEntityId)) {
+      throw new RangeError(
+        `admitted battlefield enemy is missing combatant state (${admittedEntityId})`
+      );
+    }
+  }
   validateEnemyMovementProposals(state.tick, enemyCombatants, proposals);
   const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
   const movedEnemyCombatants = advanceEnemyMovementCadence(
