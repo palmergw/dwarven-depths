@@ -20,6 +20,7 @@ function getAimPoint(
 function requireRange(value: unknown): number {
   if (
     !Number.isSafeInteger(value) ||
+    Object.is(value, -0) ||
     (value as number) < 0 ||
     (value as number) > maximumSafeRange
   )

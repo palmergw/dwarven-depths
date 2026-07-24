@@ -107,7 +107,7 @@ describe("authored range and line of sight", () => {
     expect(() =>
       hasLineOfSight(map, "aim.missing" as never, "aim.origin" as never)
     ).toThrowError("unknown aim point ID (aim.missing)");
-    for (const range of [-1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER]) {
+    for (const range of [-1, -0, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER]) {
       expect(() =>
         isAimPointInRange(
           map,

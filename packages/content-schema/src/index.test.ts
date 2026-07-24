@@ -290,6 +290,14 @@ describe("content validation", () => {
     if (firstAimPoint === undefined) throw new Error("missing aim point");
     firstAimPoint.x = 1_000_001;
     expect(() => validateContentBundle(outOfBounds)).toThrow(/<=1000000/);
+
+    const negativeZero = structuredClone(mapContentInput);
+    const negativeZeroPoint = mapFromFixture(negativeZero).aimPoints[0];
+    if (negativeZeroPoint === undefined) throw new Error("missing aim point");
+    negativeZeroPoint.x = -0;
+    expect(() => validateContentBundle(negativeZero)).toThrow(
+      "$/definitions/1/aimPoints/0/x: must not be negative zero"
+    );
   });
 });
 

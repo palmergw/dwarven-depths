@@ -33,7 +33,11 @@ const placementPointIdSchema = domainIdSchema("placement");
 const enemyEntranceIdSchema = domainIdSchema("entrance");
 const aimPointIdSchema = domainIdSchema("aim");
 const opaqueRegionIdSchema = domainIdSchema("opaque");
-const authoredCoordinateSchema = z.int().min(-1_000_000).max(1_000_000);
+const authoredCoordinateSchema = z
+  .int()
+  .min(-1_000_000)
+  .max(1_000_000)
+  .refine((value) => !Object.is(value, -0), "must not be negative zero");
 
 const checksumSchema = z
   .string()
