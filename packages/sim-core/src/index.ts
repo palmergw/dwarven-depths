@@ -175,6 +175,86 @@ function requireExactDataRecord(
   return value as Record<string, unknown>;
 }
 
+function normalizePendingSpawns(
+  value: unknown,
+  description: string
+): readonly PendingSpawn[] {
+  return Object.freeze(
+    requireDenseDataArray(value, description).map((item, index) => {
+      const record = requireExactDataRecord(
+        item,
+        ["id", "authoredOrder", "entityId", "enemyDefinitionId", "entranceId"],
+        `${description} item ${index}`
+      );
+      const id = record["id"];
+      const authoredOrder = record["authoredOrder"];
+      const entityId = record["entityId"];
+      const enemyDefinitionId = record["enemyDefinitionId"];
+      const entranceId = record["entranceId"];
+      if (!isDomainStableId(id))
+        throw new RangeError(`${description} item ${index} id must be stable`);
+      if (
+        !Number.isSafeInteger(authoredOrder) ||
+        (authoredOrder as number) < 0
+      ) {
+        throw new RangeError(
+          `${description} item ${index} authoredOrder must be a non-negative safe integer`
+        );
+      }
+      if (!isDomainStableId(entityId, "entity")) {
+        throw new RangeError(
+          `${description} item ${index} entityId must be an entity.* stable ID`
+        );
+      }
+      if (!isDomainStableId(enemyDefinitionId, "enemy")) {
+        throw new RangeError(
+          `${description} item ${index} enemyDefinitionId must be an enemy.* stable ID`
+        );
+      }
+      if (!isDomainStableId(entranceId, "entrance")) {
+        throw new RangeError(
+          `${description} item ${index} entranceId must be an entrance.* stable ID`
+        );
+      }
+      return Object.freeze({
+        id,
+        authoredOrder: authoredOrder as number,
+        entityId,
+        enemyDefinitionId,
+        entranceId
+      }) as PendingSpawn;
+    })
+  );
+}
+
+function normalizeOccupancy(
+  value: unknown,
+  description: string
+): readonly NavigationOccupant[] {
+  return Object.freeze(
+    requireDenseDataArray(value, description).map((item, index) => {
+      const record = requireExactDataRecord(
+        item,
+        ["entityId", "nodeId"],
+        `${description} item ${index}`
+      );
+      const entityId = record["entityId"];
+      const nodeId = record["nodeId"];
+      if (!isDomainStableId(entityId, "entity")) {
+        throw new RangeError(
+          `${description} item ${index} entityId must be an entity.* stable ID`
+        );
+      }
+      if (!isDomainStableId(nodeId, "node")) {
+        throw new RangeError(
+          `${description} item ${index} nodeId must be a node.* stable ID`
+        );
+      }
+      return Object.freeze({ entityId, nodeId }) as NavigationOccupant;
+    })
+  );
+}
+
 function initializeAdmittedEnemyCombatants(
   content: CompiledContent,
   existingCombatants: readonly BattlefieldEnemyCombatant[],
@@ -754,6 +834,22 @@ export function resolveBattlefieldPhase(
   }
   const map = content.maps.get(level.mapId);
   if (map === undefined) throw new Error(`Unknown map ID: ${level.mapId}`);
+  const persistedPendingSpawns = normalizePendingSpawns(
+    state.battlefield.pendingSpawns,
+    "persisted pending spawns"
+  );
+  const dueScheduledSpawns = normalizePendingSpawns(
+    scheduledSpawns,
+    "scheduled spawns"
+  );
+  const persistedOccupancy = normalizeOccupancy(
+    state.battlefield.occupancy,
+    "persisted occupancy"
+  );
+  const allPendingSpawns = Object.freeze([
+    ...persistedPendingSpawns,
+    ...dueScheduledSpawns
+  ]);
 
   if (level.waveIds.length > 0) {
     const authoredSpawns = new Map(
@@ -763,10 +859,7 @@ export function resolveBattlefieldPhase(
         return wave.spawnEvents.map((spawn) => [spawn.id, spawn] as const);
       })
     );
-    for (const spawn of [
-      ...state.battlefield.pendingSpawns,
-      ...scheduledSpawns
-    ]) {
+    for (const spawn of allPendingSpawns) {
       const authored = authoredSpawns.get(spawn.id);
       if (
         authored === undefined ||
@@ -790,10 +883,17 @@ export function resolveBattlefieldPhase(
   const existingEnemyEntityIds = new Set(
     existingEnemyCombatants.map((combatant) => combatant.entityId)
   );
-  for (const spawn of [
-    ...state.battlefield.pendingSpawns,
-    ...scheduledSpawns
-  ]) {
+  if (limits !== undefined) {
+    const activeEnemyCount = existingEnemyCombatants.filter(
+      (combatant) => combatant.lifecycleState === "active"
+    ).length;
+    if (limits.currentLiveEnemies !== activeEnemyCount) {
+      throw new RangeError(
+        `current live-enemy count ${limits.currentLiveEnemies} does not match authoritative active combatants ${activeEnemyCount}`
+      );
+    }
+  }
+  for (const spawn of allPendingSpawns) {
     if (!content.enemies.has(spawn.enemyDefinitionId)) {
       throw new RangeError(
         `pending spawn references unknown enemy definition (${spawn.enemyDefinitionId})`
@@ -808,8 +908,8 @@ export function resolveBattlefieldPhase(
 
   const admitted = admitQueuedSpawns(
     map,
-    state.battlefield.occupancy,
-    [...state.battlefield.pendingSpawns, ...scheduledSpawns],
+    persistedOccupancy,
+    allPendingSpawns,
     limits
   );
   const occupiedEntityIds = new Set(
@@ -921,6 +1021,19 @@ export function resolveScheduledBattlefieldPhase(
     if (wave === undefined) throw new Error(`Unknown wave ID: ${waveId}`);
     return wave;
   });
+  const persistedPendingSpawns = normalizePendingSpawns(
+    state.battlefield.pendingSpawns,
+    "persisted pending spawns"
+  );
+  const persistedOccupancy = normalizeOccupancy(
+    state.battlefield.occupancy,
+    "persisted occupancy"
+  );
+  const persistedEnemyCombatants = initializeAdmittedEnemyCombatants(
+    content,
+    state.battlefield.enemyCombatants,
+    []
+  );
   const scheduled = resolveWaveSchedule({
     schemaVersion: 1,
     currentTick: state.tick,
@@ -928,7 +1041,7 @@ export function resolveScheduledBattlefieldPhase(
     waves,
     startedWaveIds: state.battlefield.startedWaveIds,
     firedSpawnIds: state.battlefield.firedSpawnIds,
-    pendingSpawns: state.battlefield.pendingSpawns
+    pendingSpawns: persistedPendingSpawns
   });
 
   const scheduleEvents: SimulationEvent[] = scheduled.decisions.map(
@@ -975,11 +1088,11 @@ export function resolveScheduledBattlefieldPhase(
     eventSequence: state.eventSequence + scheduleEvents.length,
     battlefield: freezeBattlefieldState(
       level.mapId,
-      state.battlefield.occupancy,
+      persistedOccupancy,
       [],
       scheduled.startedWaveIds,
       scheduled.firedSpawnIds,
-      state.battlefield.enemyCombatants
+      persistedEnemyCombatants
     )
   });
   const battlefield = resolveBattlefieldPhase(

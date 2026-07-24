@@ -223,6 +223,31 @@ describe("authored wave battlefield composition", () => {
     ).toThrow("does not match authored schedule");
   });
 
+  it("validates persisted combatants before intermediate scheduled-state freezing", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const initial = createInitialState(
+      content,
+      "level.scheduled_battlefield" as never,
+      "1"
+    );
+    const due = resolveScheduledBattlefieldPhase(initial, content, []);
+    if (due.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const combatants = [...due.state.battlefield.enemyCombatants];
+    Object.defineProperty(combatants, "map", {
+      value: () => [],
+      enumerable: false
+    });
+    const custom = {
+      ...due.state,
+      battlefield: { ...due.state.battlefield, enemyCombatants: combatants }
+    };
+
+    expect(() => resolveScheduledBattlefieldPhase(custom, content, [])).toThrow(
+      "battlefield enemy combatants contains unsupported array properties"
+    );
+  });
+
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())

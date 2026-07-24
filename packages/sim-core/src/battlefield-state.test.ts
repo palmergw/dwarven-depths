@@ -401,6 +401,52 @@ describe("authoritative battlefield state", () => {
     );
   });
 
+  it("rejects custom pending queues before definition and identity checks", async () => {
+    const content = await compileContent(battlefieldContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    if (initial.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const pending = [spawn("spawn.custom_queue", 0, "entity.enemy.queued")];
+    Object.defineProperty(pending, Symbol.iterator, {
+      value: () => [][Symbol.iterator](),
+      enumerable: false
+    });
+    const custom: SimulationState = {
+      ...initial,
+      battlefield: { ...initial.battlefield, pendingSpawns: pending }
+    };
+
+    expect(() => resolveBattlefieldPhase(custom, content, [], [])).toThrow(
+      "persisted pending spawns contains unsupported array properties"
+    );
+  });
+
+  it("rejects live-enemy limits inconsistent with authoritative combatants", async () => {
+    const content = await compileContent(battlefieldContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    const admitted = resolveBattlefieldPhase(
+      initial,
+      content,
+      [spawn("spawn.counted", 0, "entity.enemy.counted")],
+      []
+    );
+
+    expect(() =>
+      resolveBattlefieldPhase(admitted.state, content, [], [], {
+        liveEnemyCap: 2,
+        currentLiveEnemies: 0
+      })
+    ).toThrow("does not match authoritative active combatants 1");
+  });
+
   it("rejects enemy lifecycle and occupancy mismatches", async () => {
     const content = await compileContent(battlefieldContentInput);
     const initial = createInitialState(
@@ -490,7 +536,9 @@ describe("authoritative battlefield state", () => {
       ...admitted.state,
       battlefield: {
         ...admitted.state.battlefield,
-        occupancy: [],
+        occupancy: [
+          { entityId: "entity.blocker", nodeId: "node.entry" }
+        ] as never,
         enemyCombatants: admitted.state.battlefield.enemyCombatants.map(
           (combatant) => ({
             ...combatant,
@@ -507,8 +555,7 @@ describe("authoritative battlefield state", () => {
         destroyed,
         content,
         [spawn("spawn.reused", 1, "entity.enemy.reused")],
-        [],
-        { liveEnemyCap: 1, currentLiveEnemies: 1 }
+        []
       )
     ).toThrow("already has battlefield enemy combatant state");
     expect(destroyed).toEqual(before);
