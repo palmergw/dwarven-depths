@@ -209,6 +209,39 @@ describe("deterministic dwarf target selection", () => {
     }
   });
 
+  it("rejects accessors and overridden array methods without invoking them", () => {
+    let getterCalls = 0;
+    const accessorCandidate = candidate("entity.enemy.accessor");
+    Object.defineProperty(accessorCandidate, "entityId", {
+      enumerable: true,
+      get() {
+        getterCalls += 1;
+        return "entity.enemy.accessor";
+      }
+    });
+    expect(() =>
+      selectDwarfTarget({
+        requestedPolicy: "nearest",
+        supportedPolicies: ["nearest"],
+        candidates: [accessorCandidate]
+      })
+    ).toThrow("entityId must be an enumerable data property");
+    expect(getterCalls).toBe(0);
+
+    const candidates = [candidate("entity.enemy.valid")];
+    Object.defineProperty(candidates, "map", {
+      enumerable: true,
+      value: () => []
+    });
+    expect(() =>
+      selectDwarfTarget({
+        requestedPolicy: "nearest",
+        supportedPolicies: ["nearest"],
+        candidates
+      })
+    ).toThrow("target candidates must be a dense data array");
+  });
+
   it("is permutation-invariant, detached, and deeply immutable", () => {
     const request = {
       requestedPolicy: "lowest_health" as const,

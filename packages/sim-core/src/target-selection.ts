@@ -16,6 +16,67 @@ const targetPolicies = new Set<DwarfTargetPolicy>([
 ]);
 const entityIdPattern = /^entity\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 
+function requireDataRecord<const Keys extends readonly string[]>(
+  value: unknown,
+  expectedKeys: Keys,
+  description: string
+): Readonly<Record<Keys[number], unknown>> {
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    throw new TypeError(`${description} must be a plain object`);
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null)
+    throw new TypeError(`${description} must be a plain object`);
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const keys = Reflect.ownKeys(value);
+  if (
+    keys.some((key) => typeof key !== "string") ||
+    keys.length !== expectedKeys.length ||
+    !expectedKeys.every((key) => Object.hasOwn(descriptors, key))
+  )
+    throw new TypeError(
+      `${description} must contain exactly ${expectedKeys.join(", ")}`
+    );
+  for (const key of expectedKeys) {
+    const descriptor = descriptors[key];
+    if (
+      descriptor === undefined ||
+      !descriptor.enumerable ||
+      !("value" in descriptor)
+    )
+      throw new TypeError(
+        `${description}.${key} must be an enumerable data property`
+      );
+  }
+  return Object.fromEntries(
+    expectedKeys.map((key) => [key, descriptors[key]?.value])
+  ) as Record<Keys[number], unknown>;
+}
+
+function requireDenseDataArray(
+  value: unknown,
+  description: string
+): readonly unknown[] {
+  if (!Array.isArray(value))
+    throw new TypeError(`${description} must be an array`);
+  if (Reflect.ownKeys(value).length !== value.length + 1)
+    throw new TypeError(`${description} must be a dense data array`);
+  const items: unknown[] = [];
+  for (let index = 0; index < value.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, index);
+    if (
+      descriptor === undefined ||
+      !descriptor.enumerable ||
+      !("value" in descriptor)
+    )
+      throw new TypeError(
+        `${description}[${index}] must be an enumerable data item`
+      );
+    items.push(descriptor.value);
+  }
+  return items;
+}
+
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
@@ -41,27 +102,41 @@ function requireNonNegativeSafeInteger(
 }
 
 function validateCandidate(
-  candidate: DwarfTargetCandidate,
+  candidate: unknown,
   index: number
 ): DwarfTargetCandidate {
   const description = `target candidate ${index}`;
+  const record = requireDataRecord(
+    candidate,
+    [
+      "entityId",
+      "distanceSquared",
+      "currentHealth",
+      "maximumHealth",
+      "armor",
+      "speed",
+      "isBoss",
+      "isElite"
+    ],
+    description
+  );
   if (
-    typeof candidate.entityId !== "string" ||
-    !entityIdPattern.test(candidate.entityId)
+    typeof record.entityId !== "string" ||
+    !entityIdPattern.test(record.entityId)
   )
     throw new RangeError(
       `${description} entityId must be an entity.* stable ID`
     );
   const distanceSquared = requireNonNegativeSafeInteger(
-    candidate.distanceSquared,
+    record.distanceSquared,
     `${description} distanceSquared`
   );
   const maximumHealth = requireNonNegativeSafeInteger(
-    candidate.maximumHealth,
+    record.maximumHealth,
     `${description} maximumHealth`
   );
   const currentHealth = requireNonNegativeSafeInteger(
-    candidate.currentHealth,
+    record.currentHealth,
     `${description} currentHealth`
   );
   if (maximumHealth === 0)
@@ -71,27 +146,27 @@ function validateCandidate(
       `${description} currentHealth must be between 1 and maximumHealth`
     );
   const armor = requireNonNegativeSafeInteger(
-    candidate.armor,
+    record.armor,
     `${description} armor`
   );
   const speed = requireNonNegativeSafeInteger(
-    candidate.speed,
+    record.speed,
     `${description} speed`
   );
-  if (typeof candidate.isBoss !== "boolean")
+  if (typeof record.isBoss !== "boolean")
     throw new TypeError(`${description} isBoss must be boolean`);
-  if (typeof candidate.isElite !== "boolean")
+  if (typeof record.isElite !== "boolean")
     throw new TypeError(`${description} isElite must be boolean`);
 
   return Object.freeze({
-    entityId: candidate.entityId,
+    entityId: record.entityId as DwarfTargetCandidate["entityId"],
     distanceSquared,
     currentHealth,
     maximumHealth,
     armor,
     speed,
-    isBoss: candidate.isBoss,
-    isElite: candidate.isElite
+    isBoss: record.isBoss,
+    isElite: record.isElite
   });
 }
 
@@ -152,9 +227,17 @@ function decision(
 export function selectDwarfTarget(
   request: DwarfTargetSelectionRequest
 ): DwarfTargetSelectionDecision {
-  const requestedPolicy = requirePolicy(request.requestedPolicy, "requested");
+  const record = requireDataRecord(
+    request,
+    ["requestedPolicy", "supportedPolicies", "candidates"],
+    "target selection request"
+  );
+  const requestedPolicy = requirePolicy(record.requestedPolicy, "requested");
   const supportedPolicies = new Set<DwarfTargetPolicy>();
-  for (const value of request.supportedPolicies) {
+  for (const value of requireDenseDataArray(
+    record.supportedPolicies,
+    "supported target policies"
+  )) {
     const policy = requirePolicy(value, "supported");
     if (supportedPolicies.has(policy))
       throw new RangeError(`duplicate supported target policy (${policy})`);
@@ -162,15 +245,21 @@ export function selectDwarfTarget(
   }
 
   const entityIds = new Set<string>();
-  const candidates = request.candidates.map((candidate, index) => {
+  const candidates: DwarfTargetCandidate[] = [];
+  const candidateInputs = requireDenseDataArray(
+    record.candidates,
+    "target candidates"
+  );
+  for (let index = 0; index < candidateInputs.length; index += 1) {
+    const candidate = candidateInputs[index];
     const validated = validateCandidate(candidate, index);
     if (entityIds.has(validated.entityId))
       throw new RangeError(
         `duplicate target candidate entity ID (${validated.entityId})`
       );
     entityIds.add(validated.entityId);
-    return validated;
-  });
+    candidates.push(validated);
+  }
 
   const supported = supportedPolicies.has(requestedPolicy);
   let appliedPolicy: DwarfTargetPolicy = supported
