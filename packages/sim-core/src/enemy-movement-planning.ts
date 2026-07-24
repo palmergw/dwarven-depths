@@ -1,3 +1,4 @@
+import type { CompiledContent } from "@dwarven-depths/content-runtime";
 import type {
   BattlefieldEnemyCombatant,
   EnemyMovementPlanningDecision,
@@ -38,6 +39,31 @@ interface ParsedDataRecord extends Record<string, unknown> {
   readonly occupancy?: unknown;
   readonly enemyCombatants?: unknown;
   readonly entries?: unknown;
+  readonly spawnId?: unknown;
+  readonly enemyDefinitionId?: unknown;
+  readonly admittedAtTick?: unknown;
+  readonly movementIntervalTicks?: unknown;
+  readonly classification?: unknown;
+  readonly armor?: unknown;
+  readonly id?: unknown;
+  readonly windupTicks?: unknown;
+  readonly impactDelayTicks?: unknown;
+  readonly cooldownTicks?: unknown;
+  readonly damage?: unknown;
+  readonly activeBasicAttack?: unknown;
+  readonly startedAtTick?: unknown;
+  readonly commitAtTick?: unknown;
+  readonly impactAtTick?: unknown;
+  readonly attackId?: unknown;
+  readonly sourceEntityId?: unknown;
+  readonly targetEntityId?: unknown;
+  readonly cooldownDurationTicks?: unknown;
+  readonly targetIsValid?: unknown;
+  readonly cooldownCompleteAtTick?: unknown;
+  readonly startedWaveIds?: unknown;
+  readonly firedSpawnIds?: unknown;
+  readonly pendingSpawns?: unknown;
+  readonly enemyAdmissions?: unknown;
 }
 
 function requireRecord(
@@ -147,8 +173,65 @@ function normalizeOccupancy(value: unknown): readonly NavigationOccupant[] {
   });
 }
 
+function normalizeAdmissions(value: unknown) {
+  const byEntity = new Map<
+    EntityId,
+    {
+      readonly enemyDefinitionId: string;
+      readonly admittedAtTick: number;
+    }
+  >();
+  for (const [index, item] of requireArray(
+    value,
+    "battlefield enemy admissions"
+  ).entries()) {
+    const data = requireRecord(
+      item,
+      [
+        "schemaVersion",
+        "spawnId",
+        "entityId",
+        "enemyDefinitionId",
+        "admittedAtTick"
+      ],
+      `enemy admission ${index}`
+    );
+    if (data.schemaVersion !== 1)
+      throw new RangeError(
+        `enemy admission ${index} has unsupported schemaVersion`
+      );
+    const entityId = requireEntityId(
+      data.entityId,
+      `enemy admission ${index} entityId`
+    );
+    if (typeof data.spawnId !== "string" || !data.spawnId.startsWith("spawn."))
+      throw new RangeError(`enemy admission ${index} spawnId must be spawn.*`);
+    if (
+      typeof data.enemyDefinitionId !== "string" ||
+      !data.enemyDefinitionId.startsWith("enemy.")
+    )
+      throw new RangeError(
+        `enemy admission ${index} enemyDefinitionId must be enemy.*`
+      );
+    const admittedAtTick = requireNonNegativeInteger(
+      data.admittedAtTick,
+      `enemy admission ${index} admittedAtTick`
+    );
+    if (byEntity.has(entityId))
+      throw new RangeError(`duplicate enemy admission (${entityId})`);
+    byEntity.set(entityId, {
+      enemyDefinitionId: data.enemyDefinitionId,
+      admittedAtTick
+    });
+  }
+  return byEntity;
+}
+
 function normalizeCombatants(
-  value: unknown
+  value: unknown,
+  currentTick: number,
+  content: CompiledContent,
+  admissions: ReturnType<typeof normalizeAdmissions>
 ): readonly BattlefieldEnemyCombatant[] {
   const seen = new Set<EntityId>();
   return requireArray(value, "battlefield enemy combatants").map(
@@ -210,27 +293,144 @@ function normalizeCombatants(
         data.lifecycleState !== "destroyed"
       )
         throw new RangeError(`${description} has invalid lifecycleState`);
-      requireNonNegativeInteger(
+      const currentHealth = requireNonNegativeInteger(
         data.currentHealth,
         `${description} currentHealth`
       );
-      requireNonNegativeInteger(
+      const maximumHealth = requireNonNegativeInteger(
         data.maximumHealth,
         `${description} maximumHealth`
       );
-      requireNonNegativeInteger(attack.range, `${description} range`);
-      requireNonNegativeInteger(
+      const movementIntervalTicks = requireNonNegativeInteger(
+        data.movementIntervalTicks,
+        `${description} movementIntervalTicks`
+      );
+      const admittedAtTick = requireNonNegativeInteger(
+        data.admittedAtTick,
+        `${description} admittedAtTick`
+      );
+      const nextMovementAtTick = requireNonNegativeInteger(
         action.nextMovementAtTick,
         `${description} nextMovementAtTick`
       );
-      if (typeof attack.requiresLineOfSight !== "boolean")
-        throw new TypeError(
-          `${description} requiresLineOfSight must be boolean`
+      const definitionId = data.enemyDefinitionId;
+      if (
+        typeof definitionId !== "string" ||
+        !definitionId.startsWith("enemy.")
+      )
+        throw new RangeError(
+          `${description} enemyDefinitionId must be enemy.*`
+        );
+      const definition = content.enemies.get(definitionId as never);
+      if (definition === undefined)
+        throw new RangeError(
+          `${description} references unknown compiled enemy definition`
+        );
+      const admission = admissions.get(entityId);
+      if (
+        admission === undefined ||
+        admission.enemyDefinitionId !== definitionId ||
+        admission.admittedAtTick !== admittedAtTick ||
+        admittedAtTick > currentTick
+      )
+        throw new RangeError(
+          `${description} does not match authoritative admission evidence`
+        );
+      if (
+        data.classification !== definition.classification ||
+        maximumHealth !== definition.maximumHealth ||
+        data.armor !== definition.armor ||
+        movementIntervalTicks !== definition.movementIntervalTicks ||
+        attack.id !== definition.basicAttack.id ||
+        attack.windupTicks !== definition.basicAttack.windupTicks ||
+        attack.impactDelayTicks !== definition.basicAttack.impactDelayTicks ||
+        attack.cooldownTicks !== definition.basicAttack.cooldownTicks ||
+        attack.damage !== definition.basicAttack.damage ||
+        attack.range !== definition.basicAttack.range ||
+        attack.requiresLineOfSight !==
+          definition.basicAttack.requiresLineOfSight
+      )
+        throw new RangeError(
+          `${description} does not match compiled enemy definition`
+        );
+      if (
+        maximumHealth === 0 ||
+        currentHealth > maximumHealth ||
+        movementIntervalTicks === 0 ||
+        nextMovementAtTick - admittedAtTick < movementIntervalTicks ||
+        (nextMovementAtTick - admittedAtTick) % movementIntervalTicks !== 0
+      )
+        throw new RangeError(
+          `${description} has invalid health or movement cadence`
         );
       if (action.currentTargetEntityId !== null)
         requireEntityId(
           action.currentTargetEntityId,
           `${description} currentTargetEntityId`
+        );
+      if (action.activeBasicAttack !== null) {
+        const active = requireRecord(
+          action.activeBasicAttack,
+          [
+            "schemaVersion",
+            "attackId",
+            "sourceEntityId",
+            "targetEntityId",
+            "startedAtTick",
+            "commitAtTick",
+            "impactAtTick",
+            "cooldownDurationTicks",
+            "damage",
+            "range",
+            "targetIsValid"
+          ],
+          `${description} activeBasicAttack`
+        );
+        const startedAtTick = requireNonNegativeInteger(
+          active.startedAtTick,
+          `${description} attack startedAtTick`
+        );
+        const commitAtTick = requireNonNegativeInteger(
+          active.commitAtTick,
+          `${description} attack commitAtTick`
+        );
+        const impactAtTick = requireNonNegativeInteger(
+          active.impactAtTick,
+          `${description} attack impactAtTick`
+        );
+        if (
+          active.schemaVersion !== 1 ||
+          active.attackId !== definition.basicAttack.id ||
+          active.sourceEntityId !== entityId ||
+          active.targetEntityId !== action.currentTargetEntityId ||
+          startedAtTick > currentTick ||
+          commitAtTick !== startedAtTick + definition.basicAttack.windupTicks ||
+          impactAtTick !==
+            commitAtTick + definition.basicAttack.impactDelayTicks ||
+          active.cooldownDurationTicks !==
+            definition.basicAttack.cooldownTicks ||
+          active.damage !== definition.basicAttack.damage ||
+          active.range !== definition.basicAttack.range ||
+          typeof active.targetIsValid !== "boolean"
+        )
+          throw new RangeError(
+            `${description} has invalid active basic attack`
+          );
+      }
+      if (
+        action.cooldownCompleteAtTick !== null &&
+        requireNonNegativeInteger(
+          action.cooldownCompleteAtTick,
+          `${description} cooldownCompleteAtTick`
+        ) < currentTick
+      )
+        throw new RangeError(`${description} has invalid cooldown boundary`);
+      if (
+        (data.lifecycleState === "active" && currentHealth === 0) ||
+        (data.lifecycleState === "destroyed" && currentHealth !== 0)
+      )
+        throw new RangeError(
+          `${description} health disagrees with lifecycleState`
         );
       return Object.freeze({
         ...(data as unknown as BattlefieldEnemyCombatant),
@@ -289,11 +489,12 @@ function normalizeEntry(
 
 /** Generates contention-ready proposals from authoritative enemy occupancy. */
 export function planEnemyMovement(
-  request: EnemyMovementPlanningRequest
+  request: EnemyMovementPlanningRequest,
+  content: CompiledContent
 ): EnemyMovementPlanningResolution {
   const input = requireRecord(
     request,
-    ["schemaVersion", "currentTick", "map", "battlefield", "entries"],
+    ["schemaVersion", "currentTick", "battlefield", "entries"],
     "enemy movement planning request"
   );
   if (input.schemaVersion !== 1)
@@ -320,13 +521,26 @@ export function planEnemyMovement(
   );
   if (battlefield.schemaVersion !== 1)
     throw new RangeError("battlefield has unsupported schemaVersion");
-  const map = input.map as EnemyMovementPlanningRequest["map"];
-  if (typeof map !== "object" || map === null || battlefield.mapId !== map.id)
+  if (typeof battlefield.mapId !== "string")
+    throw new RangeError("battlefield mapId must be stable");
+  const map = content.maps.get(battlefield.mapId as never);
+  if (map === undefined)
     throw new RangeError(
-      "battlefield map does not match movement planning map"
+      "battlefield map is not available in compiled content"
     );
   const occupancy = normalizeOccupancy(battlefield.occupancy);
-  const combatants = normalizeCombatants(battlefield.enemyCombatants);
+  requireArray(battlefield.startedWaveIds, "battlefield startedWaveIds");
+  requireArray(battlefield.firedSpawnIds, "battlefield firedSpawnIds");
+  requireArray(battlefield.pendingSpawns, "battlefield pendingSpawns");
+  const admissions = normalizeAdmissions(battlefield.enemyAdmissions);
+  const combatants = normalizeCombatants(
+    battlefield.enemyCombatants,
+    currentTick,
+    content,
+    admissions
+  );
+  if (admissions.size !== combatants.length)
+    throw new RangeError("enemy admissions do not match enemy combatants");
   const entries = requireArray(input.entries, "movement planning entries").map(
     normalizeEntry
   );
@@ -342,6 +556,15 @@ export function planEnemyMovement(
     occupancy.map((item) => [item.entityId, item] as const)
   );
   const enemyIds = new Set(combatants.map((combatant) => combatant.entityId));
+  for (const occupant of occupancy) {
+    if (
+      occupant.entityId.startsWith("entity.enemy.") &&
+      !enemyIds.has(occupant.entityId)
+    )
+      throw new RangeError(
+        `occupied enemy is missing authoritative combatant state (${occupant.entityId})`
+      );
+  }
   for (const combatant of combatants) {
     const occupied = occupancyByEntity.has(combatant.entityId);
     if (combatant.lifecycleState === "active" && !occupied)

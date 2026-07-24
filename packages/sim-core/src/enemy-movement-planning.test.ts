@@ -1,4 +1,7 @@
-import { compileContent } from "@dwarven-depths/content-runtime";
+import {
+  type CompiledContent,
+  compileContent
+} from "@dwarven-depths/content-runtime";
 import {
   type ContentBundle,
   canonicalHash,
@@ -9,31 +12,40 @@ import { beforeAll, describe, expect, it } from "vitest";
 import conformanceContent from "../../../content/fixtures/conformance-map.json" with {
   type: "json"
 };
+import referenceCombatants from "../../../content/fixtures/phase-3-reference-combatants.json" with {
+  type: "json"
+};
 import {
   battlefield,
   combatant,
   enemyMovementPlanningParityEvidence,
   entry
 } from "./enemy-movement-planning.fixture.js";
-import { planEnemyMovement } from "./enemy-movement-planning.js";
+import { planEnemyMovement as executeEnemyMovementPlanning } from "./enemy-movement-planning.js";
 
-let map: EnemyMovementPlanningRequest["map"];
+let content: CompiledContent;
 
 beforeAll(async () => {
-  const content = await compileContent(
-    conformanceContent as unknown as ContentBundle
-  );
-  const compiled = content.maps.get("map.conformance_diamond" as never);
-  if (compiled === undefined) throw new Error("missing conformance map");
-  map = compiled;
+  content = await compileContent({
+    ...conformanceContent,
+    definitions: [
+      ...conformanceContent.definitions,
+      ...referenceCombatants.definitions.filter(
+        (definition) => definition.id === "enemy.goblin_cutter"
+      )
+    ]
+  } as unknown as ContentBundle);
 });
+
+function planEnemyMovement(request: EnemyMovementPlanningRequest) {
+  return executeEnemyMovementPlanning(request, content);
+}
 
 function request(): EnemyMovementPlanningRequest {
   const enemy = combatant("entity.enemy.test", 6, null);
   return {
     schemaVersion: 1,
     currentTick: 6,
-    map,
     battlefield: battlefield(enemy, "node.entry" as NavigationNodeId),
     entries: [entry(enemy.entityId)]
   };
@@ -131,6 +143,46 @@ describe("deterministic enemy movement proposal planning", () => {
     ).toThrow("duplicate movement planning enemy");
   });
 
+  it("binds enemy state to admissions, definitions, cadence, and occupancy", () => {
+    const base = request();
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        battlefield: { ...base.battlefield, enemyAdmissions: [] }
+      })
+    ).toThrow("does not match authoritative admission evidence");
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        battlefield: {
+          ...base.battlefield,
+          enemyCombatants: base.battlefield.enemyCombatants.map(
+            (combatant) => ({
+              ...combatant,
+              actionState: {
+                ...combatant.actionState,
+                nextMovementAtTick: combatant.admittedAtTick
+              }
+            })
+          )
+        }
+      })
+    ).toThrow("invalid health or movement cadence");
+    const omittedEnemy = {
+      entityId: "entity.enemy.omitted" as never,
+      nodeId: "node.south" as NavigationNodeId
+    };
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        battlefield: {
+          ...base.battlefield,
+          occupancy: [...base.battlefield.occupancy, omittedEnemy]
+        }
+      })
+    ).toThrow("occupied enemy is missing authoritative combatant state");
+  });
+
   it("rejects extended/accessor records and custom arrays", () => {
     const base = request();
     expect(() => planEnemyMovement({ ...base, extra: true } as never)).toThrow(
@@ -171,7 +223,12 @@ describe("deterministic enemy movement proposal planning", () => {
           ...base.battlefield.occupancy,
           { entityId: second.entityId, nodeId: "node.east" as NavigationNodeId }
         ],
-        enemyCombatants: [...base.battlefield.enemyCombatants, second]
+        enemyCombatants: [...base.battlefield.enemyCombatants, second],
+        enemyAdmissions: [
+          ...base.battlefield.enemyAdmissions,
+          ...battlefield(second, "node.east" as NavigationNodeId)
+            .enemyAdmissions
+        ]
       },
       entries: [...base.entries, entry(second.entityId)]
     };

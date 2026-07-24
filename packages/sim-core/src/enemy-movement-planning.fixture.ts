@@ -4,9 +4,13 @@ import type {
   BattlefieldState,
   ContentBundle,
   EnemyMovementPlanningEntry,
+  EnemyMovementPlanningRequest,
   NavigationNodeId
 } from "@dwarven-depths/contracts";
 import conformanceContent from "../../../content/fixtures/conformance-map.json" with {
+  type: "json"
+};
+import referenceCombatants from "../../../content/fixtures/phase-3-reference-combatants.json" with {
   type: "json"
 };
 import { planEnemyMovement } from "./enemy-movement-planning.js";
@@ -69,7 +73,15 @@ function battlefield(
         : [])
     ],
     pendingSpawns: [],
-    enemyAdmissions: [],
+    enemyAdmissions: [
+      {
+        schemaVersion: 1,
+        spawnId: `spawn.${enemy.entityId.slice("entity.".length)}`,
+        entityId: enemy.entityId,
+        enemyDefinitionId: enemy.enemyDefinitionId,
+        admittedAtTick: enemy.admittedAtTick
+      }
+    ],
     enemyCombatants: [enemy]
   } as unknown as BattlefieldState;
 }
@@ -97,62 +109,89 @@ function entry(
 }
 
 export async function enemyMovementPlanningParityEvidence() {
-  const content = await compileContent(
-    conformanceContent as unknown as ContentBundle
-  );
-  const map = content.maps.get("map.conformance_diamond" as never);
-  if (map === undefined) throw new Error("missing conformance map");
+  const content = await compileContent({
+    ...conformanceContent,
+    definitions: [
+      ...conformanceContent.definitions,
+      ...referenceCombatants.definitions.filter(
+        (definition) => definition.id === "enemy.goblin_cutter"
+      )
+    ]
+  } as unknown as ContentBundle);
   const proposedEnemy = combatant(
     "entity.enemy.proposed",
     6,
     "entity.dwarf.warden"
   );
-  const proposed = planEnemyMovement({
-    schemaVersion: 1,
-    currentTick: 6,
-    map,
-    battlefield: battlefield(proposedEnemy, "node.entry" as NavigationNodeId),
-    entries: [entry(proposedEnemy.entityId)]
-  });
+  const proposed = planEnemyMovement(
+    {
+      schemaVersion: 1,
+      currentTick: 6,
+      battlefield: battlefield(proposedEnemy, "node.entry" as NavigationNodeId),
+      entries: [entry(proposedEnemy.entityId)]
+    },
+    content
+  );
   const alreadyEnemy = combatant("entity.enemy.already", 6, null);
-  const alreadyValid = planEnemyMovement({
-    schemaVersion: 1,
-    currentTick: 6,
-    map,
-    battlefield: battlefield(alreadyEnemy, "node.south" as NavigationNodeId),
-    entries: [entry(alreadyEnemy.entityId)]
-  });
-  const unreachableEnemy = combatant("entity.enemy.unreachable", 6, null, 0);
-  const unreachable = planEnemyMovement({
-    schemaVersion: 1,
-    currentTick: 6,
-    map,
-    battlefield: battlefield(
-      unreachableEnemy,
-      "node.entry" as NavigationNodeId
-    ),
-    entries: [entry(unreachableEnemy.entityId)]
-  });
+  const alreadyValid = planEnemyMovement(
+    {
+      schemaVersion: 1,
+      currentTick: 6,
+      battlefield: battlefield(alreadyEnemy, "node.south" as NavigationNodeId),
+      entries: [entry(alreadyEnemy.entityId)]
+    },
+    content
+  );
+  const unreachableEnemy = combatant("entity.enemy.unreachable", 6, null);
+  const unreachableBattlefield = battlefield(
+    unreachableEnemy,
+    "node.entry" as NavigationNodeId
+  );
+  const unreachable = planEnemyMovement(
+    {
+      schemaVersion: 1,
+      currentTick: 6,
+      battlefield: {
+        ...unreachableBattlefield,
+        occupancy: [
+          ...unreachableBattlefield.occupancy,
+          { entityId: "entity.blocker.south", nodeId: "node.south" },
+          { entityId: "entity.blocker.east", nodeId: "node.east" }
+        ]
+      },
+      entries: [
+        {
+          ...entry(unreachableEnemy.entityId),
+          solidBlockerEntityIds: ["entity.blocker.south", "entity.blocker.east"]
+        }
+      ]
+    } as unknown as EnemyMovementPlanningRequest,
+    content
+  );
   const waitingEnemy = combatant("entity.enemy.waiting", 12, null);
-  const notDue = planEnemyMovement({
-    schemaVersion: 1,
-    currentTick: 6,
-    map,
-    battlefield: battlefield(waitingEnemy, "node.entry" as NavigationNodeId),
-    entries: [entry(waitingEnemy.entityId)]
-  });
+  const notDue = planEnemyMovement(
+    {
+      schemaVersion: 1,
+      currentTick: 6,
+      battlefield: battlefield(waitingEnemy, "node.entry" as NavigationNodeId),
+      entries: [entry(waitingEnemy.entityId)]
+    },
+    content
+  );
   const unlockedEnemy = combatant("entity.enemy.unlocked", 6, null);
-  const unlocked = planEnemyMovement({
-    schemaVersion: 1,
-    currentTick: 6,
-    map,
-    battlefield: battlefield(
-      unlockedEnemy,
-      "node.entry" as NavigationNodeId,
-      false
-    ),
-    entries: [entry(unlockedEnemy.entityId, false)]
-  });
+  const unlocked = planEnemyMovement(
+    {
+      schemaVersion: 1,
+      currentTick: 6,
+      battlefield: battlefield(
+        unlockedEnemy,
+        "node.entry" as NavigationNodeId,
+        false
+      ),
+      entries: [entry(unlockedEnemy.entityId, false)]
+    },
+    content
+  );
   return Object.freeze({
     proposed,
     alreadyValid,

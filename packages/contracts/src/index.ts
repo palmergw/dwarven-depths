@@ -251,7 +251,6 @@ export interface EnemyMovementPlanningEntry {
 export interface EnemyMovementPlanningRequest {
   readonly schemaVersion: 1;
   readonly currentTick: number;
-  readonly map: BattlefieldMapDefinition;
   readonly battlefield: BattlefieldState;
   readonly entries: readonly EnemyMovementPlanningEntry[];
 }
