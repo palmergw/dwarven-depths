@@ -585,12 +585,27 @@ function initializeAdmittedEnemyCombatants(
       !Number.isSafeInteger(action.nextMovementAtTick) ||
       Object.is(action.nextMovementAtTick, -0) ||
       action.nextMovementAtTick < combatant.admittedAtTick ||
+      action.nextMovementAtTick - combatant.admittedAtTick <
+        combatant.movementIntervalTicks ||
+      (action.nextMovementAtTick - combatant.admittedAtTick) %
+        combatant.movementIntervalTicks !==
+        0 ||
       (action.currentTargetEntityId !== null &&
         !isDomainStableId(action.currentTargetEntityId, "entity")) ||
       (action.cooldownCompleteAtTick !== null &&
         (!Number.isSafeInteger(action.cooldownCompleteAtTick) ||
           Object.is(action.cooldownCompleteAtTick, -0) ||
-          (action.cooldownCompleteAtTick as number) < currentTick))
+          (action.cooldownCompleteAtTick as number) < currentTick ||
+          !Number.isSafeInteger(
+            (action.cooldownCompleteAtTick as number) -
+              combatant.basicAttack.cooldownTicks
+          ) ||
+          (action.cooldownCompleteAtTick as number) -
+            combatant.basicAttack.cooldownTicks <
+            combatant.admittedAtTick ||
+          (action.cooldownCompleteAtTick as number) -
+            combatant.basicAttack.cooldownTicks >
+            currentTick))
     ) {
       throw new RangeError(
         `battlefield enemy ${combatant.entityId} has invalid action state`

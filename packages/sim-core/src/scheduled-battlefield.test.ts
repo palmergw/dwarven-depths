@@ -494,6 +494,26 @@ describe("authored wave battlefield composition", () => {
     ).not.toThrow();
     expect(() =>
       resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          nextMovementAtTick: 7
+        }) as never,
+        content,
+        []
+      )
+    ).toThrow("invalid action state");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          cooldownCompleteAtTick: Number.MAX_SAFE_INTEGER
+        }) as never,
+        content,
+        []
+      )
+    ).toThrow("invalid action state");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
         withActionState(accessorState) as never,
         content,
         []
