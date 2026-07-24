@@ -29,10 +29,16 @@ surface currently present on the Phase 2 implementation branch.
   authored connectivity to an unoccupied node adjacent to a placed dwarf. A
   placed dwarf blocks its own navigation node, so intentional walls remain
   legal when enemies can still reach an attack-valid approach.
+- The simulation core exposes an immutable movement-reservation primitive.
+  Proposals are checked against authored adjacency and snapshot occupancy;
+  occupied destinations wait, free-destination conflicts resolve by stable
+  enemy entity ID, and invalid proposals are rejected with reason-coded
+  decisions. Snapshot occupancy prevents overlap, following, swapping,
+  phase-through, and pushing within one movement phase.
 
 ## Not implemented yet
 
-This checkpoint does not expose movement proposals, reservations, spawn queues,
-targeting, combat, or
+This checkpoint does not yet integrate movement proposals or reservations into
+dynamic simulation state and does not expose spawn queues, targeting, combat, or
 map-specific CLI commands. Existing `validate`, `run`, `replay --verify`,
 `inspect`, and `compare` behavior remains the supported simulation surface.

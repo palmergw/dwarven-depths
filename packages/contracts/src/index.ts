@@ -107,6 +107,43 @@ export interface StaticPlacementValidation {
   readonly issues: readonly StaticPlacementIssue[];
 }
 
+export interface NavigationOccupant {
+  readonly entityId: EntityId;
+  readonly nodeId: NavigationNodeId;
+}
+
+export interface MovementProposal {
+  readonly id: StableId;
+  readonly entityId: EntityId;
+  readonly fromNodeId: NavigationNodeId;
+  readonly toNodeId: NavigationNodeId;
+}
+
+export type MovementDecisionReason =
+  | "moved"
+  | "destination_occupied"
+  | "destination_reserved"
+  | "duplicate_entity_proposal"
+  | "entity_not_occupied"
+  | "source_mismatch"
+  | "unknown_node"
+  | "same_node"
+  | "nodes_not_connected";
+
+export interface MovementDecision {
+  readonly proposalId: StableId;
+  readonly entityId: EntityId;
+  readonly fromNodeId: NavigationNodeId;
+  readonly toNodeId: NavigationNodeId;
+  readonly status: "moved" | "waited" | "rejected";
+  readonly reason: MovementDecisionReason;
+}
+
+export interface MovementReservationResolution {
+  readonly occupancy: readonly NavigationOccupant[];
+  readonly decisions: readonly MovementDecision[];
+}
+
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition
