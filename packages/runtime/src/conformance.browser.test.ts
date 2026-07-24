@@ -358,6 +358,38 @@ describe("cross-runtime deterministic conformance", () => {
     const admittedBattlefield = admitted.state.battlefield;
     if (admittedBattlefield === undefined)
       throw new Error("expected battlefield state");
+    const slinger = content.enemies.get("enemy.goblin_slinger" as never);
+    if (slinger === undefined) throw new Error("expected slinger definition");
+    expect(() =>
+      resolveBattlefieldPhase(
+        {
+          ...admitted.state,
+          tick: 7,
+          battlefield: {
+            ...admittedBattlefield,
+            enemyCombatants: admittedBattlefield.enemyCombatants.map(
+              (combatant) => ({
+                ...combatant,
+                enemyDefinitionId: slinger.id,
+                classification: slinger.classification,
+                maximumHealth: slinger.maximumHealth,
+                currentHealth: slinger.maximumHealth,
+                armor: slinger.armor,
+                movementIntervalTicks: slinger.movementIntervalTicks,
+                basicAttack: { ...slinger.basicAttack },
+                actionState: {
+                  ...combatant.actionState,
+                  nextMovementAtTick: 7
+                }
+              })
+            )
+          }
+        } as never,
+        content,
+        [],
+        []
+      )
+    ).toThrow("does not match authoritative admission timing");
     expect(() =>
       resolveBattlefieldPhase(
         {
@@ -401,7 +433,7 @@ describe("cross-runtime deterministic conformance", () => {
     );
 
     expect(await canonicalHash({ first, resumed })).toBe(
-      "84f05a6dae04a48e9e8703a1b556d5026f27e40fdc96a05bb433fa7aef4cefc9"
+      "16942e4a0ec81fa8d3e4dad7fbaa3a38e4e4a8eca3f27d1d0c28ce3aafe0f308"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -418,12 +450,14 @@ describe("cross-runtime deterministic conformance", () => {
           schemaVersion: 1,
           spawnId: "spawn.first",
           entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
           admittedAtTick: 0
         },
         {
           schemaVersion: 1,
           spawnId: "spawn.second",
           entityId: "entity.enemy.second",
+          enemyDefinitionId: "enemy.goblin_cutter",
           admittedAtTick: 7
         }
       ],
@@ -447,7 +481,7 @@ describe("cross-runtime deterministic conformance", () => {
     const evidence = createPhase2SystemScenarioEvidence(content);
 
     expect(await canonicalHash(evidence)).toBe(
-      "2123cff202f548e1c7c9cf6588baad91c37735456d97b1620e38c2924c14133a"
+      "e65284a844e2c4c0c73b0d8699db3cffb59000853f64d6d382664d4eace6edba"
     );
     expect(evidence.placementRoutes.eastAttackRoute?.route.nodeIds).toEqual([
       "node.entry",

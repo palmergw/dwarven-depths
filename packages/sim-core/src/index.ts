@@ -324,12 +324,19 @@ function normalizeEnemyAdmissions(
       .map((item, index) => {
         const record = requireExactDataRecord(
           item,
-          ["schemaVersion", "spawnId", "entityId", "admittedAtTick"],
+          [
+            "schemaVersion",
+            "spawnId",
+            "entityId",
+            "enemyDefinitionId",
+            "admittedAtTick"
+          ],
           `battlefield enemy admission ${index}`
         );
         const schemaVersion = record["schemaVersion"];
         const spawnId = record["spawnId"];
         const entityId = record["entityId"];
+        const enemyDefinitionId = record["enemyDefinitionId"];
         const admittedAtTick = record["admittedAtTick"];
         if (schemaVersion !== 1)
           throw new RangeError(
@@ -342,6 +349,10 @@ function normalizeEnemyAdmissions(
         if (!isDomainStableId(entityId, "entity"))
           throw new RangeError(
             "battlefield enemy admission entityId must be entity.*"
+          );
+        if (!isDomainStableId(enemyDefinitionId, "enemy"))
+          throw new RangeError(
+            "battlefield enemy admission enemyDefinitionId must be enemy.*"
           );
         if (
           !Number.isSafeInteger(admittedAtTick) ||
@@ -361,6 +372,7 @@ function normalizeEnemyAdmissions(
           schemaVersion: 1,
           spawnId,
           entityId,
+          enemyDefinitionId,
           admittedAtTick: admittedAtTick as number
         }) as BattlefieldEnemyAdmission;
       })
@@ -538,7 +550,8 @@ function initializeAdmittedEnemyCombatants(
     const admission = authoritativeAdmissions.get(combatant.entityId);
     if (
       admission === undefined ||
-      admission.admittedAtTick !== combatant.admittedAtTick
+      admission.admittedAtTick !== combatant.admittedAtTick ||
+      admission.enemyDefinitionId !== combatant.enemyDefinitionId
     ) {
       throw new RangeError(
         `battlefield enemy ${combatant.entityId} does not match authoritative admission timing`
@@ -1440,6 +1453,7 @@ export function resolveBattlefieldPhase(
         schemaVersion: 1,
         spawnId: decision.spawnId,
         entityId: decision.entityId,
+        enemyDefinitionId: decision.enemyDefinitionId,
         admittedAtTick: state.tick
       })
     );

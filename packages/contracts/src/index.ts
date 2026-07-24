@@ -277,6 +277,7 @@ export interface BattlefieldEnemyAdmission {
   readonly schemaVersion: 1;
   readonly spawnId: StableId;
   readonly entityId: EntityId;
+  readonly enemyDefinitionId: StableId;
   readonly admittedAtTick: number;
 }
 

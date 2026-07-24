@@ -146,8 +146,9 @@ Phase 3 surface currently present in the repository.
 - Each admitted enemy also receives detached deterministic action state at its
   exact admission tick: its first movement boundary derived from the authored
   movement interval, no target lock, no active basic-attack windup, and no
-  cooldown. A separate authoritative spawn/entity admission ledger binds that
-  immutable tick against later action-state validation. Persisted locks,
+  cooldown. A separate authoritative spawn/entity/definition admission ledger
+  binds that immutable tick and compiled definition identity against later
+  action-state validation. Persisted locks,
   windups, cooldown boundaries, and movement timing are strict, versioned,
   safe-integer records that survive queue retries and movement phases without
   reconstruction. The action-state admission sequence is checksum-pinned

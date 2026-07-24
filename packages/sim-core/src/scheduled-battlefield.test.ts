@@ -43,6 +43,7 @@ describe("authored wave battlefield composition", () => {
           schemaVersion: 1,
           spawnId: "spawn.first",
           entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
           admittedAtTick: 0
         }
       ],
@@ -656,6 +657,6 @@ describe("authored wave battlefield composition", () => {
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("be26b7b3313fed615cae8e33220bc574400f728bc28be351e577e28100d4a3d2");
+    ).toBe("d5f819b4b028ebeca9c19f9619a3dfee1e35156287a39158e2a1e844e3dfa33e");
   });
 });
