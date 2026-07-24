@@ -29,6 +29,8 @@ function domainIdSchema(domain: string) {
 }
 
 const navigationNodeIdSchema = domainIdSchema("node");
+const levelIdSchema = domainIdSchema("level");
+const waveIdSchema = domainIdSchema("wave");
 const navigationConnectionIdSchema = domainIdSchema("connection");
 const placementPointIdSchema = domainIdSchema("placement");
 const enemyEntranceIdSchema = domainIdSchema("entrance");
@@ -60,8 +62,8 @@ const seedSchema = z
 const levelDefinitionSchema = z
   .object({
     kind: z.literal("level"),
-    id: stableIdSchema,
-    waveIds: z.array(stableIdSchema),
+    id: levelIdSchema,
+    waveIds: z.array(waveIdSchema),
     mapId: stableIdSchema.optional()
   })
   .strict();
@@ -69,7 +71,7 @@ const levelDefinitionSchema = z
 const waveDefinitionSchema = z
   .object({
     kind: z.literal("wave"),
-    id: stableIdSchema,
+    id: waveIdSchema,
     startAtTick: z.int().nonnegative().max(10_000_000),
     durationTicks: z.int().positive().max(10_000_000),
     spawnEvents: z.array(

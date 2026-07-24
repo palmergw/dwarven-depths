@@ -92,6 +92,14 @@ describe("authored wave scheduling", () => {
       resolveWaveSchedule({
         ...initialRequest(),
         waves: waveScheduleWaves.map((wave, index) =>
+          index === 0 ? ({ ...wave, kind: "level" } as never) : wave
+        )
+      })
+    ).toThrow("kind must be wave");
+    expect(() =>
+      resolveWaveSchedule({
+        ...initialRequest(),
+        waves: waveScheduleWaves.map((wave, index) =>
           index === 1
             ? {
                 ...wave,
@@ -117,6 +125,12 @@ describe("authored wave scheduling", () => {
         firedSpawnIds: ["spawn.missing" as never]
       })
     ).toThrow("unknown fired spawn ID");
+    expect(() =>
+      resolveWaveSchedule({
+        ...initialRequest(),
+        firedSpawnIds: ["spawn.cutter" as never]
+      })
+    ).toThrow("wave that is not marked started");
   });
 
   it("pins the overlapping-wave Node evidence checksum", async () => {

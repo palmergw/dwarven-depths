@@ -52,6 +52,8 @@ function freezeSpawn(event: WaveSpawnEvent): PendingSpawn {
 }
 
 function validateWave(wave: WaveDefinition): void {
+  if (wave.kind !== "wave")
+    throw new RangeError("wave definition kind must be wave");
   requireStableId(wave.id, "wave.id", "wave");
   requireTick(wave.startAtTick, `wave ${wave.id} startAtTick`);
   if (!Number.isSafeInteger(wave.durationTicks) || wave.durationTicks <= 0)
@@ -116,6 +118,7 @@ export function resolveWaveSchedule(
 
   const waveById = new Map<StableId, WaveDefinition>();
   const spawnById = new Map<StableId, WaveSpawnEvent>();
+  const waveIdBySpawnId = new Map<StableId, StableId>();
   const spawnedEntityIds = new Set<StableId>();
   const authoredOrders = new Set<number>();
   for (const wave of request.waves) {
@@ -135,6 +138,7 @@ export function resolveWaveSchedule(
           `duplicate authored spawn order (${event.authoredOrder})`
         );
       spawnById.set(event.id, event);
+      waveIdBySpawnId.set(event.id, wave.id);
       spawnedEntityIds.add(event.entityId);
       authoredOrders.add(event.authoredOrder);
     }
@@ -171,6 +175,11 @@ export function resolveWaveSchedule(
       throw new RangeError(`unknown fired spawn ID (${spawnId})`);
     if (event.atTick > request.currentTick)
       throw new RangeError(`fired spawn ${spawnId} is in the future`);
+    const waveId = waveIdBySpawnId.get(spawnId);
+    if (waveId === undefined || !started.has(waveId))
+      throw new RangeError(
+        `fired spawn ${spawnId} belongs to a wave that is not marked started`
+      );
   }
 
   const pendingById = new Map<StableId, PendingSpawn>();

@@ -83,6 +83,30 @@ describe("content validation", () => {
     ).toThrow(/Unrecognized key/);
   });
 
+  it("enforces level and wave stable-ID domains", () => {
+    expect(() =>
+      validateContentBundle({
+        ...validBundle,
+        definitions: [{ kind: "level", id: "map.not_a_level", waveIds: [] }]
+      })
+    ).toThrow("must be a level.* stable ID");
+    expect(() =>
+      validateContentBundle({
+        ...validBundle,
+        definitions: [
+          { kind: "level", id: "level.test", waveIds: ["level.not_a_wave"] },
+          {
+            kind: "wave",
+            id: "level.not_a_wave",
+            startAtTick: 0,
+            durationTicks: 1,
+            spawnEvents: []
+          }
+        ]
+      })
+    ).toThrow("must be a wave.* stable ID");
+  });
+
   it("rejects missing and wrong-kind wave references with exact paths", () => {
     for (const definitions of [
       [{ kind: "level", id: "level.test", waveIds: ["wave.missing"] }],
