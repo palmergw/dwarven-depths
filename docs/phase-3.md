@@ -284,6 +284,14 @@ Phase 3 surface currently present in the repository.
   final-dwarf death. The versioned immutable checkpoint is checksum-pinned
   across Node, Chromium, Firefox, and WebKit. Hostile deployables remain empty
   until an authoritative battlefield deployable table is introduced.
+- The documented unupgraded Shuttergate reference setup now runs one Iron
+  Warden at the north/center gate with nearest targeting and seed `1` through
+  every authoritative combat, reward, and terminal checkpoint. Its bounded,
+  versioned calibration artifact records a Wave 3 defeat before the boss spawn,
+  with no boss reward or Deep Ranger unlock. Broad outcome bands and one literal
+  checksum are pinned across Node, Chromium, Firefox, and WebKit. This baseline
+  intentionally measures only implemented basic attacks; armor reduction,
+  Shield Slam, and Captain special behavior remain uninferred.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
