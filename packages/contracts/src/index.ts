@@ -320,6 +320,50 @@ export interface EnemyActionPhaseResolution {
   readonly decisions: readonly EnemyActionPhaseDecision[];
 }
 
+export interface DwarfActionPhaseEntry {
+  readonly schemaVersion: 1;
+  readonly dwarfEntityId: EntityId;
+  readonly requestedPolicy: DwarfTargetPolicy;
+}
+
+export interface DwarfActionPhaseRequest {
+  readonly schemaVersion: 1;
+  readonly currentTick: number;
+  readonly levelId: StableId;
+  readonly battlefield: BattlefieldState;
+  readonly entries: readonly DwarfActionPhaseEntry[];
+}
+
+export type DwarfActionPhaseReason =
+  | "no_eligible_target"
+  | "cooldown_in_progress"
+  | "basic_attack_started"
+  | "basic_attack_winding_up"
+  | "basic_attack_cancelled"
+  | "basic_attack_committed";
+
+export interface DwarfActionPhaseDecision {
+  readonly schemaVersion: 1;
+  readonly dwarfEntityId: EntityId;
+  readonly status:
+    | "unlocked"
+    | "cooling_down"
+    | "winding_up"
+    | "cancelled"
+    | "committed";
+  readonly reason: DwarfActionPhaseReason;
+  readonly targetLock: DwarfTargetLockDecision;
+  readonly attackId?: StableId;
+}
+
+export interface DwarfActionPhaseResolution {
+  readonly schemaVersion: 1;
+  readonly battlefield: BattlefieldState;
+  readonly dwarfCombatants: readonly BattlefieldDwarfCombatant[];
+  readonly committedAttacks: readonly CommittedAttack[];
+  readonly decisions: readonly DwarfActionPhaseDecision[];
+}
+
 export interface PendingSpawn {
   /** Stable authored spawn-event ID. */
   readonly id: StableId;

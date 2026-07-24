@@ -731,7 +731,7 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
   const pendingCommittedAttacks = normalizePendingCommittedAttacks(
     battlefield.pendingCommittedAttacks,
     currentTick,
-    enemyCombatants,
+    [...enemyCombatants, ...dwarfCombatants],
     dwarfAuthority === undefined
       ? undefined
       : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)

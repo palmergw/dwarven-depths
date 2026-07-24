@@ -1,4 +1,5 @@
 import type {
+  BattlefieldDwarfCombatant,
   BattlefieldEnemyCombatant,
   CommittedAttack,
   EntityId,
@@ -97,12 +98,16 @@ function requireNonNegativeSafeInteger(
 export function normalizePendingCommittedAttacks(
   value: unknown,
   currentTick: number,
-  combatants: readonly BattlefieldEnemyCombatant[],
+  combatants: readonly (
+    | BattlefieldEnemyCombatant
+    | BattlefieldDwarfCombatant
+  )[],
   authorizedTargets?: ReadonlyMap<StableId, EntityId>
 ): readonly CommittedAttack[] {
-  const combatantsById = new Map<EntityId, BattlefieldEnemyCombatant>(
-    combatants.map((combatant) => [combatant.entityId, combatant])
-  );
+  const combatantsById = new Map<
+    EntityId,
+    BattlefieldEnemyCombatant | BattlefieldDwarfCombatant
+  >(combatants.map((combatant) => [combatant.entityId, combatant]));
   const seen = new Set<StableId>();
   const attacks = requireArray(value).map((item, index): CommittedAttack => {
     const description = `pending committed attack ${index}`;
@@ -155,7 +160,7 @@ export function normalizePendingCommittedAttacks(
     const source = combatantsById.get(sourceEntityId);
     if (source === undefined)
       throw new RangeError(
-        `${description} source must be an admitted enemy (${sourceEntityId})`
+        `${description} source must be an authored combatant (${sourceEntityId})`
       );
     const committedAtTick = requireNonNegativeSafeInteger(
       data.committedAtTick,
@@ -178,11 +183,13 @@ export function normalizePendingCommittedAttacks(
       `${description} range`
     );
     const startedAtTick = committedAtTick - source.basicAttack.windupTicks;
+    const earliestStartTick =
+      "admittedAtTick" in source ? source.admittedAtTick : 0;
     const expectedAttackId = `${source.basicAttack.id}.${sourceEntityId.slice(
       "entity.".length
     )}.tick_${startedAtTick}`;
     if (
-      startedAtTick < source.admittedAtTick ||
+      startedAtTick < earliestStartTick ||
       attackId !== expectedAttackId ||
       impactAtTick !== committedAtTick + source.basicAttack.impactDelayTicks ||
       cooldownCompleteAtTick !==
@@ -192,7 +199,7 @@ export function normalizePendingCommittedAttacks(
       range > maximumSafeRange
     )
       throw new RangeError(
-        `${description} does not match its authored enemy basic attack`
+        `${description} does not match its authored basic attack`
       );
     if (committedAtTick > currentTick)
       throw new RangeError(`${description} is before its commit tick`);

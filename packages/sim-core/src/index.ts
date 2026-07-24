@@ -6,7 +6,8 @@ export {
   createBattlefieldDwarfDeploymentAuthority,
   deployBattlefieldDwarves,
   normalizeBattlefieldDwarves,
-  resolveBattlefieldAttackImpacts
+  resolveBattlefieldAttackImpacts,
+  resolveDwarfActionPhase
 } from "./battlefield-attack-impact.js";
 export * from "./combat-timers.js";
 export * from "./committed-attack-impact.js";
