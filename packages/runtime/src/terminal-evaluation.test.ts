@@ -142,5 +142,15 @@ describe("final cleanup and terminal evaluation", () => {
         }
       } as never)
     ).toThrow("waveSchedule.level must contain exactly");
+
+    expect(() =>
+      evaluateTerminalState({
+        ...request,
+        waveSchedule: {
+          ...request.waveSchedule,
+          level: { ...request.waveSchedule.level, mapId: "not-a-map-id" }
+        }
+      } as never)
+    ).toThrow("mapId must be a map.* stable ID");
   });
 });

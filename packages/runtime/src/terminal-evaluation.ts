@@ -120,6 +120,13 @@ function validateWaveScheduleShape(
       : ["kind", "id", "waveIds"],
     "terminal evaluation waveSchedule.level"
   );
+  if (
+    schedule.level.mapId !== undefined &&
+    (typeof schedule.level.mapId !== "string" ||
+      !stableIdPattern.test(schedule.level.mapId) ||
+      !schedule.level.mapId.startsWith("map."))
+  )
+    throw new RangeError("waveSchedule.level.mapId must be a map.* stable ID");
   requireStandardArray(schedule.level.waveIds, "waveSchedule.level.waveIds");
   requireStandardArray(schedule.waves, "waveSchedule.waves");
   for (let waveIndex = 0; waveIndex < schedule.waves.length; waveIndex += 1) {
