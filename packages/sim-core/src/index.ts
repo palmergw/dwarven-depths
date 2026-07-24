@@ -30,6 +30,16 @@ function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+const stableIdPattern = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
+
+function isDomainStableId(value: unknown, domain?: string): value is string {
+  return (
+    typeof value === "string" &&
+    stableIdPattern.test(value) &&
+    (domain === undefined || value.startsWith(`${domain}.`))
+  );
+}
+
 function comparePendingSpawns(left: PendingSpawn, right: PendingSpawn): number {
   return (
     left.authoredOrder - right.authoredOrder ||
@@ -86,6 +96,9 @@ export function admitQueuedSpawns(
   const occupantsByEntity = new Map<EntityId, NavigationOccupant>();
   const occupantsByNode = new Map<NavigationNodeId, NavigationOccupant>();
   for (const occupant of occupancy) {
+    if (!isDomainStableId(occupant.entityId, "entity")) {
+      throw new RangeError("occupancy entityId must be an entity.* stable ID");
+    }
     if (!nodes.has(occupant.nodeId)) {
       throw new RangeError(
         `occupancy references unknown navigation node ID (${occupant.nodeId})`
@@ -116,10 +129,18 @@ export function admitQueuedSpawns(
   const spawnIds = new Set<string>();
   const spawnEntityIds = new Set<EntityId>();
   for (const spawn of pendingSpawns) {
+    if (!isDomainStableId(spawn.id)) {
+      throw new RangeError("pending spawn id must be a stable ID");
+    }
     if (spawnIds.has(spawn.id)) {
       throw new RangeError(`duplicate pending spawn ID (${spawn.id})`);
     }
     spawnIds.add(spawn.id);
+    if (!isDomainStableId(spawn.entityId, "entity")) {
+      throw new RangeError(
+        `pending spawn entityId must be an entity.* stable ID (${spawn.id})`
+      );
+    }
     if (spawnEntityIds.has(spawn.entityId)) {
       throw new RangeError(
         `duplicate pending spawn entity ID (${spawn.entityId})`

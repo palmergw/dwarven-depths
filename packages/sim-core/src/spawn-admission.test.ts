@@ -151,6 +151,19 @@ describe("deterministic spawn admission", () => {
     expect(() =>
       admitQueuedSpawns(
         map,
+        [{ entityId: "", nodeId: "node.goal" }] as NavigationOccupant[],
+        []
+      )
+    ).toThrow("entity.* stable ID");
+    expect(() =>
+      admitQueuedSpawns(map, [], [pendingSpawn("", 0, "entity.enemy.invalid")])
+    ).toThrow("id must be a stable ID");
+    expect(() =>
+      admitQueuedSpawns(map, [], [pendingSpawn("spawn.invalid", 0, "")])
+    ).toThrow("entity.* stable ID");
+    expect(() =>
+      admitQueuedSpawns(
+        map,
         [],
         [
           pendingSpawn(

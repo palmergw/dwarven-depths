@@ -8,6 +8,7 @@ import {
 import { canonicalHash } from "@dwarven-depths/contracts";
 import {
   AuthoritativeTables,
+  admitQueuedSpawns,
   nextUint32,
   resolveMovementReservations,
   seedToUint32
@@ -182,6 +183,60 @@ describe("cross-runtime deterministic conformance", () => {
           toNodeId: "node.south",
           status: "waited",
           reason: "destination_reserved"
+        }
+      ]
+    });
+  });
+
+  it("matches deterministic spawn admission and live-enemy caps", async () => {
+    const content = await compileContent(mapContentInput);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing conformance map");
+
+    expect(
+      admitQueuedSpawns(
+        map,
+        [],
+        [
+          {
+            id: "spawn.second",
+            authoredOrder: 1,
+            entityId: "entity.enemy.second",
+            entranceId: "entrance.west"
+          },
+          {
+            id: "spawn.first",
+            authoredOrder: 0,
+            entityId: "entity.enemy.first",
+            entranceId: "entrance.west"
+          }
+        ] as never,
+        { liveEnemyCap: 1, currentLiveEnemies: 0 }
+      )
+    ).toEqual({
+      occupancy: [{ entityId: "entity.enemy.first", nodeId: "node.entry" }],
+      pendingSpawns: [
+        {
+          id: "spawn.second",
+          authoredOrder: 1,
+          entityId: "entity.enemy.second",
+          entranceId: "entrance.west"
+        }
+      ],
+      decisions: [
+        {
+          spawnId: "spawn.first",
+          entityId: "entity.enemy.first",
+          entranceId: "entrance.west",
+          status: "admitted",
+          reason: "admitted"
+        },
+        {
+          spawnId: "spawn.second",
+          entityId: "entity.enemy.second",
+          entranceId: "entrance.west",
+          status: "queued",
+          reason: "live_enemy_cap_reached"
         }
       ]
     });
