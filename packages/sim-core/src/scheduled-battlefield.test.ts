@@ -1,5 +1,9 @@
 import { compileContent } from "@dwarven-depths/content-runtime";
-import { canonicalHash, type SimulationEvent } from "@dwarven-depths/contracts";
+import {
+  canonicalHash,
+  type MovementProposal,
+  type SimulationEvent
+} from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import {
   createInitialState,
@@ -39,6 +43,7 @@ describe("authored wave battlefield composition", () => {
           schemaVersion: 1,
           spawnId: "spawn.first",
           entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
           admittedAtTick: 0
         }
       ],
@@ -118,7 +123,7 @@ describe("authored wave battlefield composition", () => {
         basicAttack: expect.objectContaining({ damage: 10, range: 1 }),
         actionState: {
           schemaVersion: 1,
-          nextMovementAtTick: 6,
+          nextMovementAtTick: 12,
           currentTargetEntityId: null,
           activeBasicAttack: null,
           cooldownCompleteAtTick: null
@@ -129,7 +134,7 @@ describe("authored wave battlefield composition", () => {
         enemyDefinitionId: "enemy.goblin_slinger",
         currentHealth: 38,
         movementIntervalTicks: 7,
-        admittedAtTick: 0,
+        admittedAtTick: 7,
         basicAttack: expect.objectContaining({
           damage: 9,
           range: 6,
@@ -137,7 +142,7 @@ describe("authored wave battlefield composition", () => {
         }),
         actionState: {
           schemaVersion: 1,
-          nextMovementAtTick: 7,
+          nextMovementAtTick: 14,
           currentTargetEntityId: null,
           activeBasicAttack: null,
           cooldownCompleteAtTick: null
@@ -148,6 +153,74 @@ describe("authored wave battlefield composition", () => {
       { entityId: "entity.enemy.first", nodeId: "node.south" },
       { entityId: "entity.enemy.second", nodeId: "node.entry" }
     ]);
+  });
+
+  it("gates enemy proposals by cadence and advances moved or waited attempts", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const initial = createInitialState(
+      content,
+      "level.scheduled_battlefield" as never,
+      "1"
+    );
+    const due = resolveScheduledBattlefieldPhase(initial, content, []);
+    if (due.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const proposal = {
+      id: "movement.first",
+      entityId: "entity.enemy.first",
+      fromNodeId: "node.entry",
+      toNodeId: "node.south"
+    } as MovementProposal;
+    const before = structuredClone(due.state);
+
+    expect(() =>
+      resolveScheduledBattlefieldPhase(due.state, content, [proposal])
+    ).toThrow("movement is not due");
+
+    expect(() =>
+      resolveScheduledBattlefieldPhase({ ...due.state, tick: 6 }, content, [
+        proposal,
+        { ...proposal, id: "movement.duplicate" as never }
+      ])
+    ).toThrow("duplicate movement proposals");
+    expect(due.state).toEqual(before);
+
+    const waited = resolveScheduledBattlefieldPhase(
+      {
+        ...due.state,
+        tick: 6,
+        battlefield: {
+          ...due.state.battlefield,
+          occupancy: [
+            ...due.state.battlefield.occupancy,
+            {
+              entityId: "entity.dwarf.blocker",
+              nodeId: "node.south"
+            } as never
+          ]
+        }
+      },
+      content,
+      [proposal]
+    );
+    expect(waited.events.at(-1)).toEqual(
+      expect.objectContaining({
+        type: "movement.waited",
+        reasonCode: "destination_occupied"
+      })
+    );
+    expect(
+      waited.state.battlefield?.enemyCombatants[0]?.actionState
+        .nextMovementAtTick
+    ).toBe(12);
+
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        { ...due.state, tick: Number.MAX_SAFE_INTEGER },
+        content,
+        [proposal]
+      )
+    ).toThrow("movement schedule exceeds safe integer bounds");
   });
 
   it("returns detached deeply immutable state and evidence", async () => {
@@ -584,6 +657,6 @@ describe("authored wave battlefield composition", () => {
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("3d519cac0f9133b4ccf18f24677cc215a045ef149538ffd068b26251571380a0");
+    ).toBe("d5f819b4b028ebeca9c19f9619a3dfee1e35156287a39158e2a1e844e3dfa33e");
   });
 });

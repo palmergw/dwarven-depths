@@ -48,7 +48,11 @@ function movement(
   return { id, entityId, fromNodeId, toNodeId } as MovementProposal;
 }
 
-function cutterCombatant(entityId: string) {
+function cutterCombatant(
+  entityId: string,
+  admittedAtTick = 0,
+  nextMovementAtTick = 6
+) {
   return {
     schemaVersion: 1,
     entityId,
@@ -58,7 +62,7 @@ function cutterCombatant(entityId: string) {
     maximumHealth: 50,
     armor: 0,
     movementIntervalTicks: 6,
-    admittedAtTick: 0,
+    admittedAtTick,
     lifecycleState: "active",
     basicAttack: {
       id: "attack.goblin_cutter_basic",
@@ -71,7 +75,7 @@ function cutterCombatant(entityId: string) {
     },
     actionState: {
       schemaVersion: 1,
-      nextMovementAtTick: 6,
+      nextMovementAtTick,
       currentTargetEntityId: null,
       activeBasicAttack: null,
       cooldownCompleteAtTick: null
@@ -116,17 +120,118 @@ describe("authoritative battlefield state", () => {
       "level.conformance_map" as never,
       "1"
     );
-    const first = resolveBattlefieldPhase(
+    const admitted = resolveBattlefieldPhase(
       initial,
       content,
       [
         spawn("spawn.first", 0, "entity.enemy.first"),
         spawn("spawn.second", 1, "entity.enemy.second")
       ],
+      []
+    );
+    const admittedBattlefield = admitted.state.battlefield;
+    if (admittedBattlefield === undefined)
+      throw new Error("expected battlefield state");
+    const slinger = content.enemies.get("enemy.goblin_slinger" as never);
+    if (slinger === undefined) throw new Error("expected slinger definition");
+    expect(() =>
+      resolveBattlefieldPhase(
+        {
+          ...admitted.state,
+          tick: 7,
+          battlefield: {
+            ...admittedBattlefield,
+            enemyAdmissions: admittedBattlefield.enemyAdmissions.map(
+              (admission) => ({
+                ...admission,
+                enemyDefinitionId: slinger.id
+              })
+            ),
+            enemyCombatants: admittedBattlefield.enemyCombatants.map(
+              (combatant) => ({
+                ...combatant,
+                enemyDefinitionId: slinger.id,
+                classification: slinger.classification,
+                maximumHealth: slinger.maximumHealth,
+                currentHealth: slinger.maximumHealth,
+                armor: slinger.armor,
+                movementIntervalTicks: slinger.movementIntervalTicks,
+                basicAttack: { ...slinger.basicAttack },
+                actionState: {
+                  ...combatant.actionState,
+                  nextMovementAtTick: 7
+                }
+              })
+            )
+          }
+        } as never,
+        content,
+        [],
+        [
+          movement(
+            "movement.swapped_definition",
+            "entity.enemy.first",
+            "node.entry",
+            "node.south"
+          )
+        ]
+      )
+    ).toThrow("movement requires authored admission evidence");
+    expect(() =>
+      resolveBattlefieldPhase(
+        {
+          ...admitted.state,
+          tick: 6,
+          battlefield: {
+            ...admittedBattlefield,
+            enemyCombatants: []
+          } as never
+        },
+        content,
+        [],
+        [
+          movement(
+            "movement.missing_combatant",
+            "entity.enemy.first",
+            "node.entry",
+            "node.south"
+          )
+        ]
+      )
+    ).toThrow("admitted battlefield enemy is missing combatant state");
+    expect(() =>
+      resolveBattlefieldPhase(
+        { ...admitted.state, tick: 6 },
+        content,
+        [],
+        [
+          movement(
+            "movement.direct_enemy",
+            "entity.enemy.first",
+            "node.entry",
+            "node.south"
+          )
+        ]
+      )
+    ).toThrow("movement requires authored admission evidence");
+    const first = resolveBattlefieldPhase(
+      {
+        ...admitted.state,
+        tick: 6,
+        battlefield: {
+          ...admittedBattlefield,
+          occupancy: [
+            { entityId: "entity.enemy.first", nodeId: "node.east" },
+            { entityId: "entity.blocker", nodeId: "node.entry" }
+          ]
+        } as never
+      },
+      content,
+      [],
       [
         movement(
-          "movement.first",
-          "entity.enemy.first",
+          "movement.blocker",
+          "entity.blocker",
           "node.entry",
           "node.south"
         )
@@ -138,7 +243,10 @@ describe("authoritative battlefield state", () => {
       mapId: "map.conformance_diamond",
       startedWaveIds: [],
       firedSpawnIds: [],
-      occupancy: [{ entityId: "entity.enemy.first", nodeId: "node.south" }],
+      occupancy: [
+        { entityId: "entity.blocker", nodeId: "node.south" },
+        { entityId: "entity.enemy.first", nodeId: "node.east" }
+      ],
       pendingSpawns: [
         {
           id: "spawn.second",
@@ -153,22 +261,27 @@ describe("authoritative battlefield state", () => {
           schemaVersion: 1,
           spawnId: "spawn.first",
           entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
           admittedAtTick: 0
         }
       ],
       enemyCombatants: [cutterCombatant("entity.enemy.first")]
     });
     expect(first.events.map(decisionEvidence)).toEqual([
-      ["spawn.admitted", "admitted"],
-      ["spawn.queued", "earlier_spawn_pending"],
+      ["spawn.queued", "entrance_occupied"],
       ["movement.moved", "moved"]
     ]);
-    expect(first.events.map((event) => event.sequence)).toEqual([0, 1, 2]);
-    expect(first.state.eventSequence).toBe(3);
+    expect(first.events.map((event) => event.sequence)).toEqual([2, 3]);
+    expect(first.state.eventSequence).toBe(4);
 
-    const resumed = resolveBattlefieldPhase(first.state, content, [], []);
+    const resumed = resolveBattlefieldPhase(
+      { ...first.state, tick: 7 },
+      content,
+      [],
+      []
+    );
     expect(await canonicalHash({ first, resumed })).toBe(
-      "e42daf2db927a97bcd8649312f67d79b1aa33295d0a36592feef98a2f5abf04d"
+      "1cfdb70a116eb07e75abe3288fad6acae8fc68c83a7796dac92f65ea79a5cf0d"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -176,7 +289,8 @@ describe("authoritative battlefield state", () => {
       startedWaveIds: [],
       firedSpawnIds: [],
       occupancy: [
-        { entityId: "entity.enemy.first", nodeId: "node.south" },
+        { entityId: "entity.blocker", nodeId: "node.south" },
+        { entityId: "entity.enemy.first", nodeId: "node.east" },
         { entityId: "entity.enemy.second", nodeId: "node.entry" }
       ],
       pendingSpawns: [],
@@ -185,24 +299,26 @@ describe("authoritative battlefield state", () => {
           schemaVersion: 1,
           spawnId: "spawn.first",
           entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
           admittedAtTick: 0
         },
         {
           schemaVersion: 1,
           spawnId: "spawn.second",
           entityId: "entity.enemy.second",
-          admittedAtTick: 0
+          enemyDefinitionId: "enemy.goblin_cutter",
+          admittedAtTick: 7
         }
       ],
       enemyCombatants: [
         cutterCombatant("entity.enemy.first"),
-        cutterCombatant("entity.enemy.second")
+        cutterCombatant("entity.enemy.second", 7, 13)
       ]
     });
     expect(resumed.events.map(decisionEvidence)).toEqual([
       ["spawn.admitted", "admitted"]
     ]);
-    expect(resumed.events[0]?.sequence).toBe(3);
+    expect(resumed.events[0]?.sequence).toBe(4);
     expect(Object.isFrozen(resumed.state)).toBe(true);
     expect(Object.isFrozen(resumed.events)).toBe(true);
     expect(Object.isFrozen(resumed.events[0])).toBe(true);

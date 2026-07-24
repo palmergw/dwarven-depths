@@ -324,12 +324,19 @@ function normalizeEnemyAdmissions(
       .map((item, index) => {
         const record = requireExactDataRecord(
           item,
-          ["schemaVersion", "spawnId", "entityId", "admittedAtTick"],
+          [
+            "schemaVersion",
+            "spawnId",
+            "entityId",
+            "enemyDefinitionId",
+            "admittedAtTick"
+          ],
           `battlefield enemy admission ${index}`
         );
         const schemaVersion = record["schemaVersion"];
         const spawnId = record["spawnId"];
         const entityId = record["entityId"];
+        const enemyDefinitionId = record["enemyDefinitionId"];
         const admittedAtTick = record["admittedAtTick"];
         if (schemaVersion !== 1)
           throw new RangeError(
@@ -342,6 +349,10 @@ function normalizeEnemyAdmissions(
         if (!isDomainStableId(entityId, "entity"))
           throw new RangeError(
             "battlefield enemy admission entityId must be entity.*"
+          );
+        if (!isDomainStableId(enemyDefinitionId, "enemy"))
+          throw new RangeError(
+            "battlefield enemy admission enemyDefinitionId must be enemy.*"
           );
         if (
           !Number.isSafeInteger(admittedAtTick) ||
@@ -361,6 +372,7 @@ function normalizeEnemyAdmissions(
           schemaVersion: 1,
           spawnId,
           entityId,
+          enemyDefinitionId,
           admittedAtTick: admittedAtTick as number
         }) as BattlefieldEnemyAdmission;
       })
@@ -538,7 +550,8 @@ function initializeAdmittedEnemyCombatants(
     const admission = authoritativeAdmissions.get(combatant.entityId);
     if (
       admission === undefined ||
-      admission.admittedAtTick !== combatant.admittedAtTick
+      admission.admittedAtTick !== combatant.admittedAtTick ||
+      admission.enemyDefinitionId !== combatant.enemyDefinitionId
     ) {
       throw new RangeError(
         `battlefield enemy ${combatant.entityId} does not match authoritative admission timing`
@@ -757,6 +770,83 @@ function initializeAdmittedEnemyCombatants(
           })
         })
       )
+  );
+}
+
+function validateEnemyMovementProposals(
+  currentTick: number,
+  combatants: readonly BattlefieldEnemyCombatant[],
+  proposals: readonly MovementProposal[],
+  hasAuthoredAdmissionEvidence: boolean
+): void {
+  const combatantsByEntity = new Map(
+    combatants.map((combatant) => [combatant.entityId, combatant] as const)
+  );
+  const proposedEnemyIds = new Set<EntityId>();
+  for (const proposal of proposals) {
+    const combatant = combatantsByEntity.get(proposal.entityId);
+    if (combatant === undefined) continue;
+    if (!hasAuthoredAdmissionEvidence) {
+      throw new RangeError(
+        `battlefield enemy movement requires authored admission evidence (${proposal.entityId})`
+      );
+    }
+    if (combatant.lifecycleState !== "active") {
+      throw new RangeError(
+        `destroyed battlefield enemy cannot propose movement (${proposal.entityId})`
+      );
+    }
+    if (proposedEnemyIds.has(proposal.entityId)) {
+      throw new RangeError(
+        `battlefield enemy has duplicate movement proposals (${proposal.entityId})`
+      );
+    }
+    if (currentTick < combatant.actionState.nextMovementAtTick) {
+      throw new RangeError(
+        `battlefield enemy movement is not due (${proposal.entityId})`
+      );
+    }
+    proposedEnemyIds.add(proposal.entityId);
+  }
+}
+
+function advanceEnemyMovementCadence(
+  currentTick: number,
+  combatants: readonly BattlefieldEnemyCombatant[],
+  decisions: readonly MovementDecision[]
+): readonly BattlefieldEnemyCombatant[] {
+  const consumedEntityIds = new Set(
+    decisions
+      .filter(
+        (decision) =>
+          decision.status === "moved" || decision.status === "waited"
+      )
+      .map((decision) => decision.entityId)
+  );
+  return Object.freeze(
+    combatants.map((combatant) => {
+      if (!consumedEntityIds.has(combatant.entityId)) return combatant;
+      const completedIntervals =
+        Math.floor(
+          (currentTick - combatant.admittedAtTick) /
+            combatant.movementIntervalTicks
+        ) + 1;
+      const nextMovementAtTick =
+        combatant.admittedAtTick +
+        completedIntervals * combatant.movementIntervalTicks;
+      if (!Number.isSafeInteger(nextMovementAtTick)) {
+        throw new RangeError(
+          `battlefield enemy movement schedule exceeds safe integer bounds (${combatant.entityId})`
+        );
+      }
+      return Object.freeze({
+        ...combatant,
+        actionState: Object.freeze({
+          ...combatant.actionState,
+          nextMovementAtTick
+        })
+      });
+    })
   );
 }
 
@@ -1369,6 +1459,7 @@ export function resolveBattlefieldPhase(
         schemaVersion: 1,
         spawnId: decision.spawnId,
         entityId: decision.entityId,
+        enemyDefinitionId: decision.enemyDefinitionId,
         admittedAtTick: state.tick
       })
     );
@@ -1402,7 +1493,28 @@ export function resolveBattlefieldPhase(
     enemyAdmissionsByEntity,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
+  const combatantEntityIds = new Set(
+    enemyCombatants.map((combatant) => combatant.entityId)
+  );
+  for (const admittedEntityId of enemyAdmissionsByEntity.keys()) {
+    if (!combatantEntityIds.has(admittedEntityId)) {
+      throw new RangeError(
+        `admitted battlefield enemy is missing combatant state (${admittedEntityId})`
+      );
+    }
+  }
+  validateEnemyMovementProposals(
+    state.tick,
+    enemyCombatants,
+    proposals,
+    level.waveIds.length > 0
+  );
   const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
+  const movedEnemyCombatants = advanceEnemyMovementCadence(
+    state.tick,
+    enemyCombatants,
+    moved.decisions
+  );
   const events: SimulationEvent[] = [];
 
   for (const decision of admitted.decisions) {
@@ -1456,7 +1568,7 @@ export function resolveBattlefieldPhase(
         admitted.pendingSpawns,
         startedWaveIds as BattlefieldState["startedWaveIds"],
         firedSpawnIds as BattlefieldState["firedSpawnIds"],
-        enemyCombatants,
+        movedEnemyCombatants,
         enemyAdmissions
       )
     }),

@@ -334,7 +334,7 @@ describe("cross-runtime deterministic conformance", () => {
       "level.conformance_map" as never,
       "1"
     );
-    const first = resolveBattlefieldPhase(
+    const admitted = resolveBattlefieldPhase(
       initial,
       content,
       [
@@ -353,19 +353,120 @@ describe("cross-runtime deterministic conformance", () => {
           entranceId: "entrance.west"
         }
       ] as never,
+      []
+    );
+    const admittedBattlefield = admitted.state.battlefield;
+    if (admittedBattlefield === undefined)
+      throw new Error("expected battlefield state");
+    const slinger = content.enemies.get("enemy.goblin_slinger" as never);
+    if (slinger === undefined) throw new Error("expected slinger definition");
+    expect(() =>
+      resolveBattlefieldPhase(
+        {
+          ...admitted.state,
+          tick: 7,
+          battlefield: {
+            ...admittedBattlefield,
+            enemyAdmissions: admittedBattlefield.enemyAdmissions.map(
+              (admission) => ({
+                ...admission,
+                enemyDefinitionId: slinger.id
+              })
+            ),
+            enemyCombatants: admittedBattlefield.enemyCombatants.map(
+              (combatant) => ({
+                ...combatant,
+                enemyDefinitionId: slinger.id,
+                classification: slinger.classification,
+                maximumHealth: slinger.maximumHealth,
+                currentHealth: slinger.maximumHealth,
+                armor: slinger.armor,
+                movementIntervalTicks: slinger.movementIntervalTicks,
+                basicAttack: { ...slinger.basicAttack },
+                actionState: {
+                  ...combatant.actionState,
+                  nextMovementAtTick: 7
+                }
+              })
+            )
+          }
+        } as never,
+        content,
+        [],
+        [
+          {
+            id: "movement.swapped_definition",
+            entityId: "entity.enemy.first",
+            fromNodeId: "node.entry",
+            toNodeId: "node.south"
+          }
+        ] as never
+      )
+    ).toThrow("movement requires authored admission evidence");
+    expect(() =>
+      resolveBattlefieldPhase(
+        {
+          ...admitted.state,
+          tick: 6,
+          battlefield: {
+            ...admittedBattlefield,
+            enemyCombatants: []
+          } as never
+        },
+        content,
+        [],
+        [
+          {
+            id: "movement.missing_combatant",
+            entityId: "entity.enemy.first",
+            fromNodeId: "node.entry",
+            toNodeId: "node.south"
+          }
+        ] as never
+      )
+    ).toThrow("admitted battlefield enemy is missing combatant state");
+    expect(() =>
+      resolveBattlefieldPhase({ ...admitted.state, tick: 6 }, content, [], [
+        {
+          id: "movement.direct_enemy",
+          entityId: "entity.enemy.first",
+          fromNodeId: "node.entry",
+          toNodeId: "node.south"
+        }
+      ] as never)
+    ).toThrow("movement requires authored admission evidence");
+    const first = resolveBattlefieldPhase(
+      {
+        ...admitted.state,
+        tick: 6,
+        battlefield: {
+          ...admittedBattlefield,
+          occupancy: [
+            { entityId: "entity.enemy.first", nodeId: "node.east" },
+            { entityId: "entity.blocker", nodeId: "node.entry" }
+          ]
+        } as never
+      },
+      content,
+      [],
       [
         {
-          id: "movement.first",
-          entityId: "entity.enemy.first",
+          id: "movement.blocker",
+          entityId: "entity.blocker",
           fromNodeId: "node.entry",
           toNodeId: "node.south"
         }
       ] as never
     );
-    const resumed = resolveBattlefieldPhase(first.state, content, [], []);
+    const resumed = resolveBattlefieldPhase(
+      { ...first.state, tick: 7 },
+      content,
+      [],
+      []
+    );
 
     expect(await canonicalHash({ first, resumed })).toBe(
-      "e42daf2db927a97bcd8649312f67d79b1aa33295d0a36592feef98a2f5abf04d"
+      "1cfdb70a116eb07e75abe3288fad6acae8fc68c83a7796dac92f65ea79a5cf0d"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -373,7 +474,8 @@ describe("cross-runtime deterministic conformance", () => {
       startedWaveIds: [],
       firedSpawnIds: [],
       occupancy: [
-        { entityId: "entity.enemy.first", nodeId: "node.south" },
+        { entityId: "entity.blocker", nodeId: "node.south" },
+        { entityId: "entity.enemy.first", nodeId: "node.east" },
         { entityId: "entity.enemy.second", nodeId: "node.entry" }
       ],
       pendingSpawns: [],
@@ -382,13 +484,15 @@ describe("cross-runtime deterministic conformance", () => {
           schemaVersion: 1,
           spawnId: "spawn.first",
           entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
           admittedAtTick: 0
         },
         {
           schemaVersion: 1,
           spawnId: "spawn.second",
           entityId: "entity.enemy.second",
-          admittedAtTick: 0
+          enemyDefinitionId: "enemy.goblin_cutter",
+          admittedAtTick: 7
         }
       ],
       enemyCombatants: [
@@ -411,7 +515,7 @@ describe("cross-runtime deterministic conformance", () => {
     const evidence = createPhase2SystemScenarioEvidence(content);
 
     expect(await canonicalHash(evidence)).toBe(
-      "2123cff202f548e1c7c9cf6588baad91c37735456d97b1620e38c2924c14133a"
+      "e65284a844e2c4c0c73b0d8699db3cffb59000853f64d6d382664d4eace6edba"
     );
     expect(evidence.placementRoutes.eastAttackRoute?.route.nodeIds).toEqual([
       "node.entry",
