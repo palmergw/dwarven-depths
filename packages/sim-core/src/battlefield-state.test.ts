@@ -48,7 +48,11 @@ function movement(
   return { id, entityId, fromNodeId, toNodeId } as MovementProposal;
 }
 
-function cutterCombatant(entityId: string) {
+function cutterCombatant(
+  entityId: string,
+  admittedAtTick = 0,
+  nextMovementAtTick = 6
+) {
   return {
     schemaVersion: 1,
     entityId,
@@ -58,7 +62,7 @@ function cutterCombatant(entityId: string) {
     maximumHealth: 50,
     armor: 0,
     movementIntervalTicks: 6,
-    admittedAtTick: 0,
+    admittedAtTick,
     lifecycleState: "active",
     basicAttack: {
       id: "attack.goblin_cutter_basic",
@@ -71,7 +75,7 @@ function cutterCombatant(entityId: string) {
     },
     actionState: {
       schemaVersion: 1,
-      nextMovementAtTick: 6,
+      nextMovementAtTick,
       currentTargetEntityId: null,
       activeBasicAttack: null,
       cooldownCompleteAtTick: null
@@ -116,13 +120,19 @@ describe("authoritative battlefield state", () => {
       "level.conformance_map" as never,
       "1"
     );
-    const first = resolveBattlefieldPhase(
+    const admitted = resolveBattlefieldPhase(
       initial,
       content,
       [
         spawn("spawn.first", 0, "entity.enemy.first"),
         spawn("spawn.second", 1, "entity.enemy.second")
       ],
+      []
+    );
+    const first = resolveBattlefieldPhase(
+      { ...admitted.state, tick: 6 },
+      content,
+      [],
       [
         movement(
           "movement.first",
@@ -156,19 +166,23 @@ describe("authoritative battlefield state", () => {
           admittedAtTick: 0
         }
       ],
-      enemyCombatants: [cutterCombatant("entity.enemy.first")]
+      enemyCombatants: [cutterCombatant("entity.enemy.first", 0, 12)]
     });
     expect(first.events.map(decisionEvidence)).toEqual([
-      ["spawn.admitted", "admitted"],
-      ["spawn.queued", "earlier_spawn_pending"],
+      ["spawn.queued", "entrance_occupied"],
       ["movement.moved", "moved"]
     ]);
-    expect(first.events.map((event) => event.sequence)).toEqual([0, 1, 2]);
-    expect(first.state.eventSequence).toBe(3);
+    expect(first.events.map((event) => event.sequence)).toEqual([2, 3]);
+    expect(first.state.eventSequence).toBe(4);
 
-    const resumed = resolveBattlefieldPhase(first.state, content, [], []);
+    const resumed = resolveBattlefieldPhase(
+      { ...first.state, tick: 7 },
+      content,
+      [],
+      []
+    );
     expect(await canonicalHash({ first, resumed })).toBe(
-      "e42daf2db927a97bcd8649312f67d79b1aa33295d0a36592feef98a2f5abf04d"
+      "84f05a6dae04a48e9e8703a1b556d5026f27e40fdc96a05bb433fa7aef4cefc9"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -191,18 +205,18 @@ describe("authoritative battlefield state", () => {
           schemaVersion: 1,
           spawnId: "spawn.second",
           entityId: "entity.enemy.second",
-          admittedAtTick: 0
+          admittedAtTick: 7
         }
       ],
       enemyCombatants: [
-        cutterCombatant("entity.enemy.first"),
-        cutterCombatant("entity.enemy.second")
+        cutterCombatant("entity.enemy.first", 0, 12),
+        cutterCombatant("entity.enemy.second", 7, 13)
       ]
     });
     expect(resumed.events.map(decisionEvidence)).toEqual([
       ["spawn.admitted", "admitted"]
     ]);
-    expect(resumed.events[0]?.sequence).toBe(3);
+    expect(resumed.events[0]?.sequence).toBe(4);
     expect(Object.isFrozen(resumed.state)).toBe(true);
     expect(Object.isFrozen(resumed.events)).toBe(true);
     expect(Object.isFrozen(resumed.events[0])).toBe(true);

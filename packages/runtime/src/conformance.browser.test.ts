@@ -334,7 +334,7 @@ describe("cross-runtime deterministic conformance", () => {
       "level.conformance_map" as never,
       "1"
     );
-    const first = resolveBattlefieldPhase(
+    const admitted = resolveBattlefieldPhase(
       initial,
       content,
       [
@@ -353,6 +353,12 @@ describe("cross-runtime deterministic conformance", () => {
           entranceId: "entrance.west"
         }
       ] as never,
+      []
+    );
+    const first = resolveBattlefieldPhase(
+      { ...admitted.state, tick: 6 },
+      content,
+      [],
       [
         {
           id: "movement.first",
@@ -362,10 +368,15 @@ describe("cross-runtime deterministic conformance", () => {
         }
       ] as never
     );
-    const resumed = resolveBattlefieldPhase(first.state, content, [], []);
+    const resumed = resolveBattlefieldPhase(
+      { ...first.state, tick: 7 },
+      content,
+      [],
+      []
+    );
 
     expect(await canonicalHash({ first, resumed })).toBe(
-      "e42daf2db927a97bcd8649312f67d79b1aa33295d0a36592feef98a2f5abf04d"
+      "84f05a6dae04a48e9e8703a1b556d5026f27e40fdc96a05bb433fa7aef4cefc9"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -388,7 +399,7 @@ describe("cross-runtime deterministic conformance", () => {
           schemaVersion: 1,
           spawnId: "spawn.second",
           entityId: "entity.enemy.second",
-          admittedAtTick: 0
+          admittedAtTick: 7
         }
       ],
       enemyCombatants: [

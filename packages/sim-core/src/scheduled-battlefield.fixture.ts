@@ -86,9 +86,15 @@ export async function scheduledBattlefieldParityEvidence(): Promise<
     "1"
   );
   const due = resolveScheduledBattlefieldPhase(initial, content, []);
-  const moved = resolveScheduledBattlefieldPhase(due.state, content, [
+  const movementDueState = Object.freeze({ ...due.state, tick: 6 });
+  const moved = resolveScheduledBattlefieldPhase(movementDueState, content, [
     moveFirst
   ]);
-  const admitted = resolveScheduledBattlefieldPhase(moved.state, content, []);
+  const admissionState = Object.freeze({ ...moved.state, tick: 7 });
+  const admitted = resolveScheduledBattlefieldPhase(
+    admissionState,
+    content,
+    []
+  );
   return Object.freeze([due, moved, admitted]);
 }

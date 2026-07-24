@@ -760,6 +760,77 @@ function initializeAdmittedEnemyCombatants(
   );
 }
 
+function validateEnemyMovementProposals(
+  currentTick: number,
+  combatants: readonly BattlefieldEnemyCombatant[],
+  proposals: readonly MovementProposal[]
+): void {
+  const combatantsByEntity = new Map(
+    combatants.map((combatant) => [combatant.entityId, combatant] as const)
+  );
+  const proposedEnemyIds = new Set<EntityId>();
+  for (const proposal of proposals) {
+    const combatant = combatantsByEntity.get(proposal.entityId);
+    if (combatant === undefined) continue;
+    if (combatant.lifecycleState !== "active") {
+      throw new RangeError(
+        `destroyed battlefield enemy cannot propose movement (${proposal.entityId})`
+      );
+    }
+    if (proposedEnemyIds.has(proposal.entityId)) {
+      throw new RangeError(
+        `battlefield enemy has duplicate movement proposals (${proposal.entityId})`
+      );
+    }
+    if (currentTick < combatant.actionState.nextMovementAtTick) {
+      throw new RangeError(
+        `battlefield enemy movement is not due (${proposal.entityId})`
+      );
+    }
+    proposedEnemyIds.add(proposal.entityId);
+  }
+}
+
+function advanceEnemyMovementCadence(
+  currentTick: number,
+  combatants: readonly BattlefieldEnemyCombatant[],
+  decisions: readonly MovementDecision[]
+): readonly BattlefieldEnemyCombatant[] {
+  const consumedEntityIds = new Set(
+    decisions
+      .filter(
+        (decision) =>
+          decision.status === "moved" || decision.status === "waited"
+      )
+      .map((decision) => decision.entityId)
+  );
+  return Object.freeze(
+    combatants.map((combatant) => {
+      if (!consumedEntityIds.has(combatant.entityId)) return combatant;
+      const completedIntervals =
+        Math.floor(
+          (currentTick - combatant.admittedAtTick) /
+            combatant.movementIntervalTicks
+        ) + 1;
+      const nextMovementAtTick =
+        combatant.admittedAtTick +
+        completedIntervals * combatant.movementIntervalTicks;
+      if (!Number.isSafeInteger(nextMovementAtTick)) {
+        throw new RangeError(
+          `battlefield enemy movement schedule exceeds safe integer bounds (${combatant.entityId})`
+        );
+      }
+      return Object.freeze({
+        ...combatant,
+        actionState: Object.freeze({
+          ...combatant.actionState,
+          nextMovementAtTick
+        })
+      });
+    })
+  );
+}
+
 /**
  * Admits one deterministic spawn phase. Each authored entrance admits at most
  * its oldest pending enemy; occupied entrances and a full live-enemy cap retain
@@ -1402,7 +1473,13 @@ export function resolveBattlefieldPhase(
     enemyAdmissionsByEntity,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
+  validateEnemyMovementProposals(state.tick, enemyCombatants, proposals);
   const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
+  const movedEnemyCombatants = advanceEnemyMovementCadence(
+    state.tick,
+    enemyCombatants,
+    moved.decisions
+  );
   const events: SimulationEvent[] = [];
 
   for (const decision of admitted.decisions) {
@@ -1456,7 +1533,7 @@ export function resolveBattlefieldPhase(
         admitted.pendingSpawns,
         startedWaveIds as BattlefieldState["startedWaveIds"],
         firedSpawnIds as BattlefieldState["firedSpawnIds"],
-        enemyCombatants,
+        movedEnemyCombatants,
         enemyAdmissions
       )
     }),

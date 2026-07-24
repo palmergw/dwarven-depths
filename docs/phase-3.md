@@ -152,6 +152,12 @@ Phase 3 surface currently present in the repository.
   safe-integer records that survive queue retries and movement phases without
   reconstruction. The action-state admission sequence is checksum-pinned
   across Node and all three browser engines.
+- The battlefield movement phase consumes that persisted cadence. An active
+  enemy can submit at most one movement proposal only when its authored boundary
+  is due; moved and congestion-waited attempts advance to the first cadence
+  boundary after the current tick, while rejected malformed attempts do not.
+  Early, duplicate, destroyed, and overflowed enemy movement attempts are
+  rejected without mutation, and queued spawn retries retain stable event order.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
@@ -206,7 +212,8 @@ Phase 3 surface currently present in the repository.
 
 ## Not implemented yet
 
-Enemy route/action execution, armor reduction, attack-windup status semantics,
+Enemy route generation and target/attack action execution, armor reduction,
+attack-windup status semantics,
 non-damage trigger variants,
 non-boss rewards, authored special abilities and boss behavior, balance
 calibration, and broader combat event integration remain later checkpoints.
