@@ -445,6 +445,19 @@ describe("authoritative battlefield state", () => {
         currentLiveEnemies: 0
       })
     ).toThrow("does not match authoritative active combatants 1");
+
+    const getterLimits = Object.defineProperties(
+      {},
+      {
+        liveEnemyCap: { enumerable: true, get: () => 1 },
+        currentLiveEnemies: { enumerable: true, get: () => 0 }
+      }
+    ) as never;
+    expect(() =>
+      resolveBattlefieldPhase(initial, content, [], [], getterLimits)
+    ).toThrow(
+      "spawn admission limits.currentLiveEnemies must be own enumerable data"
+    );
   });
 
   it("rejects enemy lifecycle and occupancy mismatches", async () => {

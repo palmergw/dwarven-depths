@@ -255,6 +255,34 @@ function normalizeOccupancy(
   );
 }
 
+function normalizeSpawnAdmissionLimits(
+  value: unknown
+): SpawnAdmissionLimits | undefined {
+  if (value === undefined) return undefined;
+  const record = requireExactDataRecord(
+    value,
+    ["liveEnemyCap", "currentLiveEnemies"],
+    "spawn admission limits"
+  );
+  const liveEnemyCap = record["liveEnemyCap"];
+  const currentLiveEnemies = record["currentLiveEnemies"];
+  if (!Number.isSafeInteger(liveEnemyCap) || (liveEnemyCap as number) <= 0) {
+    throw new RangeError("live-enemy cap must be a positive safe integer");
+  }
+  if (
+    !Number.isSafeInteger(currentLiveEnemies) ||
+    (currentLiveEnemies as number) < 0
+  ) {
+    throw new RangeError(
+      "current live-enemy count must be a non-negative safe integer"
+    );
+  }
+  return Object.freeze({
+    liveEnemyCap: liveEnemyCap as number,
+    currentLiveEnemies: currentLiveEnemies as number
+  });
+}
+
 function initializeAdmittedEnemyCombatants(
   content: CompiledContent,
   existingCombatants: readonly BattlefieldEnemyCombatant[],
@@ -834,6 +862,7 @@ export function resolveBattlefieldPhase(
   }
   const map = content.maps.get(level.mapId);
   if (map === undefined) throw new Error(`Unknown map ID: ${level.mapId}`);
+  const admissionLimits = normalizeSpawnAdmissionLimits(limits);
   const persistedPendingSpawns = normalizePendingSpawns(
     state.battlefield.pendingSpawns,
     "persisted pending spawns"
@@ -883,13 +912,13 @@ export function resolveBattlefieldPhase(
   const existingEnemyEntityIds = new Set(
     existingEnemyCombatants.map((combatant) => combatant.entityId)
   );
-  if (limits !== undefined) {
+  if (admissionLimits !== undefined) {
     const activeEnemyCount = existingEnemyCombatants.filter(
       (combatant) => combatant.lifecycleState === "active"
     ).length;
-    if (limits.currentLiveEnemies !== activeEnemyCount) {
+    if (admissionLimits.currentLiveEnemies !== activeEnemyCount) {
       throw new RangeError(
-        `current live-enemy count ${limits.currentLiveEnemies} does not match authoritative active combatants ${activeEnemyCount}`
+        `current live-enemy count ${admissionLimits.currentLiveEnemies} does not match authoritative active combatants ${activeEnemyCount}`
       );
     }
   }
@@ -910,7 +939,7 @@ export function resolveBattlefieldPhase(
     map,
     persistedOccupancy,
     allPendingSpawns,
-    limits
+    admissionLimits
   );
   const occupiedEntityIds = new Set(
     admitted.occupancy.map((occupant) => occupant.entityId)
