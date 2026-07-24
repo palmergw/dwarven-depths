@@ -273,6 +273,13 @@ export interface BattlefieldEnemyActionState {
   readonly cooldownCompleteAtTick: number | null;
 }
 
+export interface BattlefieldEnemyAdmission {
+  readonly schemaVersion: 1;
+  readonly spawnId: StableId;
+  readonly entityId: EntityId;
+  readonly admittedAtTick: number;
+}
+
 export interface WaveScheduleRequest {
   readonly schemaVersion: 1;
   readonly currentTick: number;
@@ -314,6 +321,7 @@ export interface BattlefieldState {
   readonly firedSpawnIds: readonly StableId[];
   readonly occupancy: readonly NavigationOccupant[];
   readonly pendingSpawns: readonly PendingSpawn[];
+  readonly enemyAdmissions: readonly BattlefieldEnemyAdmission[];
   readonly enemyCombatants: readonly BattlefieldEnemyCombatant[];
 }
 

@@ -34,6 +34,14 @@ describe("authored wave battlefield composition", () => {
           entranceId: "entrance.west"
         }
       ],
+      enemyAdmissions: [
+        {
+          schemaVersion: 1,
+          spawnId: "spawn.first",
+          entityId: "entity.enemy.first",
+          admittedAtTick: 0
+        }
+      ],
       enemyCombatants: [
         {
           schemaVersion: 1,
@@ -456,7 +464,7 @@ describe("authored wave battlefield composition", () => {
         content,
         []
       )
-    ).toThrow("invalid action state");
+    ).toThrow("does not match authoritative admission timing");
     expect(() =>
       resolveScheduledBattlefieldPhase(
         withActionState({
@@ -481,7 +489,7 @@ describe("authored wave battlefield composition", () => {
           currentTargetEntityId: "entity.dwarf.warden",
           activeBasicAttack: {
             schemaVersion: 1,
-            attackId: "attack.enemy.first.basic",
+            attackId: original.basicAttack.id,
             sourceEntityId: original.entityId,
             targetEntityId: "entity.dwarf.warden",
             startedAtTick: 0,
@@ -497,11 +505,48 @@ describe("authored wave battlefield composition", () => {
         []
       )
     ).toThrow("invalid active basic attack");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        {
+          ...withActionState({
+            ...original.actionState,
+            currentTargetEntityId: "entity.dwarf.warden",
+            cooldownCompleteAtTick: 5
+          }),
+          tick: 10
+        } as never,
+        content,
+        []
+      )
+    ).toThrow("invalid action state");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          currentTargetEntityId: "entity.dwarf.warden",
+          activeBasicAttack: {
+            schemaVersion: 1,
+            attackId: "attack.unrelated",
+            sourceEntityId: original.entityId,
+            targetEntityId: "entity.dwarf.warden",
+            startedAtTick: 0,
+            commitAtTick: 1,
+            impactAtTick: 2,
+            cooldownDurationTicks: 20,
+            damage: 10,
+            range: 1,
+            targetIsValid: true
+          }
+        }) as never,
+        content,
+        []
+      )
+    ).toThrow("invalid active basic attack");
   });
 
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("5e82aecf2079de9f14866a497aa345671a1a6372ec83be8de498821f5607e029");
+    ).toBe("3d519cac0f9133b4ccf18f24677cc215a045ef149538ffd068b26251571380a0");
   });
 });

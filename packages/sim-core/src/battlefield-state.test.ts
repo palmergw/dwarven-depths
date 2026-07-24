@@ -100,6 +100,7 @@ describe("authoritative battlefield state", () => {
       firedSpawnIds: [],
       occupancy: [],
       pendingSpawns: [],
+      enemyAdmissions: [],
       enemyCombatants: []
     });
     expect(Object.isFrozen(state)).toBe(true);
@@ -147,6 +148,14 @@ describe("authoritative battlefield state", () => {
           entranceId: "entrance.west"
         }
       ],
+      enemyAdmissions: [
+        {
+          schemaVersion: 1,
+          spawnId: "spawn.first",
+          entityId: "entity.enemy.first",
+          admittedAtTick: 0
+        }
+      ],
       enemyCombatants: [cutterCombatant("entity.enemy.first")]
     });
     expect(first.events.map(decisionEvidence)).toEqual([
@@ -159,7 +168,7 @@ describe("authoritative battlefield state", () => {
 
     const resumed = resolveBattlefieldPhase(first.state, content, [], []);
     expect(await canonicalHash({ first, resumed })).toBe(
-      "186ccc3230fc465211b58ecb827fd1d8b6ae39b7c635a73bf6bc5648cb94c5b1"
+      "e42daf2db927a97bcd8649312f67d79b1aa33295d0a36592feef98a2f5abf04d"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -171,6 +180,20 @@ describe("authoritative battlefield state", () => {
         { entityId: "entity.enemy.second", nodeId: "node.entry" }
       ],
       pendingSpawns: [],
+      enemyAdmissions: [
+        {
+          schemaVersion: 1,
+          spawnId: "spawn.first",
+          entityId: "entity.enemy.first",
+          admittedAtTick: 0
+        },
+        {
+          schemaVersion: 1,
+          spawnId: "spawn.second",
+          entityId: "entity.enemy.second",
+          admittedAtTick: 0
+        }
+      ],
       enemyCombatants: [
         cutterCombatant("entity.enemy.first"),
         cutterCombatant("entity.enemy.second")

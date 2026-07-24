@@ -146,10 +146,12 @@ Phase 3 surface currently present in the repository.
 - Each admitted enemy also receives detached deterministic action state at its
   exact admission tick: its first movement boundary derived from the authored
   movement interval, no target lock, no active basic-attack windup, and no
-  cooldown. Persisted locks, windups, cooldown boundaries, and movement timing
-  are strict, versioned, safe-integer records that survive queue retries and
-  movement phases without reconstruction. The action-state admission sequence
-  is checksum-pinned across Node and all three browser engines.
+  cooldown. A separate authoritative spawn/entity admission ledger binds that
+  immutable tick against later action-state validation. Persisted locks,
+  windups, cooldown boundaries, and movement timing are strict, versioned,
+  safe-integer records that survive queue retries and movement phases without
+  reconstruction. The action-state admission sequence is checksum-pinned
+  across Node and all three browser engines.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
