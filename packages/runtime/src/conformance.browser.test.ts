@@ -367,6 +367,12 @@ describe("cross-runtime deterministic conformance", () => {
           tick: 7,
           battlefield: {
             ...admittedBattlefield,
+            enemyAdmissions: admittedBattlefield.enemyAdmissions.map(
+              (admission) => ({
+                ...admission,
+                enemyDefinitionId: slinger.id
+              })
+            ),
             enemyCombatants: admittedBattlefield.enemyCombatants.map(
               (combatant) => ({
                 ...combatant,
@@ -387,9 +393,16 @@ describe("cross-runtime deterministic conformance", () => {
         } as never,
         content,
         [],
-        []
+        [
+          {
+            id: "movement.swapped_definition",
+            entityId: "entity.enemy.first",
+            fromNodeId: "node.entry",
+            toNodeId: "node.south"
+          }
+        ] as never
       )
-    ).toThrow("does not match authoritative admission timing");
+    ).toThrow("movement requires authored admission evidence");
     expect(() =>
       resolveBattlefieldPhase(
         {
@@ -412,14 +425,34 @@ describe("cross-runtime deterministic conformance", () => {
         ] as never
       )
     ).toThrow("admitted battlefield enemy is missing combatant state");
+    expect(() =>
+      resolveBattlefieldPhase({ ...admitted.state, tick: 6 }, content, [], [
+        {
+          id: "movement.direct_enemy",
+          entityId: "entity.enemy.first",
+          fromNodeId: "node.entry",
+          toNodeId: "node.south"
+        }
+      ] as never)
+    ).toThrow("movement requires authored admission evidence");
     const first = resolveBattlefieldPhase(
-      { ...admitted.state, tick: 6 },
+      {
+        ...admitted.state,
+        tick: 6,
+        battlefield: {
+          ...admittedBattlefield,
+          occupancy: [
+            { entityId: "entity.enemy.first", nodeId: "node.east" },
+            { entityId: "entity.blocker", nodeId: "node.entry" }
+          ]
+        } as never
+      },
       content,
       [],
       [
         {
-          id: "movement.first",
-          entityId: "entity.enemy.first",
+          id: "movement.blocker",
+          entityId: "entity.blocker",
           fromNodeId: "node.entry",
           toNodeId: "node.south"
         }
@@ -433,7 +466,7 @@ describe("cross-runtime deterministic conformance", () => {
     );
 
     expect(await canonicalHash({ first, resumed })).toBe(
-      "16942e4a0ec81fa8d3e4dad7fbaa3a38e4e4a8eca3f27d1d0c28ce3aafe0f308"
+      "1cfdb70a116eb07e75abe3288fad6acae8fc68c83a7796dac92f65ea79a5cf0d"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -441,7 +474,8 @@ describe("cross-runtime deterministic conformance", () => {
       startedWaveIds: [],
       firedSpawnIds: [],
       occupancy: [
-        { entityId: "entity.enemy.first", nodeId: "node.south" },
+        { entityId: "entity.blocker", nodeId: "node.south" },
+        { entityId: "entity.enemy.first", nodeId: "node.east" },
         { entityId: "entity.enemy.second", nodeId: "node.entry" }
       ],
       pendingSpawns: [],

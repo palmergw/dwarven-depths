@@ -141,6 +141,12 @@ describe("authoritative battlefield state", () => {
           tick: 7,
           battlefield: {
             ...admittedBattlefield,
+            enemyAdmissions: admittedBattlefield.enemyAdmissions.map(
+              (admission) => ({
+                ...admission,
+                enemyDefinitionId: slinger.id
+              })
+            ),
             enemyCombatants: admittedBattlefield.enemyCombatants.map(
               (combatant) => ({
                 ...combatant,
@@ -161,9 +167,16 @@ describe("authoritative battlefield state", () => {
         } as never,
         content,
         [],
-        []
+        [
+          movement(
+            "movement.swapped_definition",
+            "entity.enemy.first",
+            "node.entry",
+            "node.south"
+          )
+        ]
       )
-    ).toThrow("does not match authoritative admission timing");
+    ).toThrow("movement requires authored admission evidence");
     expect(() =>
       resolveBattlefieldPhase(
         {
@@ -186,14 +199,39 @@ describe("authoritative battlefield state", () => {
         ]
       )
     ).toThrow("admitted battlefield enemy is missing combatant state");
+    expect(() =>
+      resolveBattlefieldPhase(
+        { ...admitted.state, tick: 6 },
+        content,
+        [],
+        [
+          movement(
+            "movement.direct_enemy",
+            "entity.enemy.first",
+            "node.entry",
+            "node.south"
+          )
+        ]
+      )
+    ).toThrow("movement requires authored admission evidence");
     const first = resolveBattlefieldPhase(
-      { ...admitted.state, tick: 6 },
+      {
+        ...admitted.state,
+        tick: 6,
+        battlefield: {
+          ...admittedBattlefield,
+          occupancy: [
+            { entityId: "entity.enemy.first", nodeId: "node.east" },
+            { entityId: "entity.blocker", nodeId: "node.entry" }
+          ]
+        } as never
+      },
       content,
       [],
       [
         movement(
-          "movement.first",
-          "entity.enemy.first",
+          "movement.blocker",
+          "entity.blocker",
           "node.entry",
           "node.south"
         )
@@ -205,7 +243,10 @@ describe("authoritative battlefield state", () => {
       mapId: "map.conformance_diamond",
       startedWaveIds: [],
       firedSpawnIds: [],
-      occupancy: [{ entityId: "entity.enemy.first", nodeId: "node.south" }],
+      occupancy: [
+        { entityId: "entity.blocker", nodeId: "node.south" },
+        { entityId: "entity.enemy.first", nodeId: "node.east" }
+      ],
       pendingSpawns: [
         {
           id: "spawn.second",
@@ -224,7 +265,7 @@ describe("authoritative battlefield state", () => {
           admittedAtTick: 0
         }
       ],
-      enemyCombatants: [cutterCombatant("entity.enemy.first", 0, 12)]
+      enemyCombatants: [cutterCombatant("entity.enemy.first")]
     });
     expect(first.events.map(decisionEvidence)).toEqual([
       ["spawn.queued", "entrance_occupied"],
@@ -240,7 +281,7 @@ describe("authoritative battlefield state", () => {
       []
     );
     expect(await canonicalHash({ first, resumed })).toBe(
-      "16942e4a0ec81fa8d3e4dad7fbaa3a38e4e4a8eca3f27d1d0c28ce3aafe0f308"
+      "1cfdb70a116eb07e75abe3288fad6acae8fc68c83a7796dac92f65ea79a5cf0d"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -248,7 +289,8 @@ describe("authoritative battlefield state", () => {
       startedWaveIds: [],
       firedSpawnIds: [],
       occupancy: [
-        { entityId: "entity.enemy.first", nodeId: "node.south" },
+        { entityId: "entity.blocker", nodeId: "node.south" },
+        { entityId: "entity.enemy.first", nodeId: "node.east" },
         { entityId: "entity.enemy.second", nodeId: "node.entry" }
       ],
       pendingSpawns: [],
@@ -269,7 +311,7 @@ describe("authoritative battlefield state", () => {
         }
       ],
       enemyCombatants: [
-        cutterCombatant("entity.enemy.first", 0, 12),
+        cutterCombatant("entity.enemy.first"),
         cutterCombatant("entity.enemy.second", 7, 13)
       ]
     });

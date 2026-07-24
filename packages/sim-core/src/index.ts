@@ -776,7 +776,8 @@ function initializeAdmittedEnemyCombatants(
 function validateEnemyMovementProposals(
   currentTick: number,
   combatants: readonly BattlefieldEnemyCombatant[],
-  proposals: readonly MovementProposal[]
+  proposals: readonly MovementProposal[],
+  hasAuthoredAdmissionEvidence: boolean
 ): void {
   const combatantsByEntity = new Map(
     combatants.map((combatant) => [combatant.entityId, combatant] as const)
@@ -785,6 +786,11 @@ function validateEnemyMovementProposals(
   for (const proposal of proposals) {
     const combatant = combatantsByEntity.get(proposal.entityId);
     if (combatant === undefined) continue;
+    if (!hasAuthoredAdmissionEvidence) {
+      throw new RangeError(
+        `battlefield enemy movement requires authored admission evidence (${proposal.entityId})`
+      );
+    }
     if (combatant.lifecycleState !== "active") {
       throw new RangeError(
         `destroyed battlefield enemy cannot propose movement (${proposal.entityId})`
@@ -1497,7 +1503,12 @@ export function resolveBattlefieldPhase(
       );
     }
   }
-  validateEnemyMovementProposals(state.tick, enemyCombatants, proposals);
+  validateEnemyMovementProposals(
+    state.tick,
+    enemyCombatants,
+    proposals,
+    level.waveIds.length > 0
+  );
   const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
   const movedEnemyCombatants = advanceEnemyMovementCadence(
     state.tick,
