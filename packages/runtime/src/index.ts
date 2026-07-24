@@ -40,6 +40,10 @@ export {
   type Phase2SystemScenarioEvidence
 } from "./phase-2-system-scenarios.js";
 export {
+  createPhase3SystemScenarioEvidence,
+  type Phase3SystemScenarioEvidence
+} from "./phase-3-system-scenarios.js";
+export {
   evaluateTerminalState,
   type TerminalEvaluationReason,
   type TerminalEvaluationRequest,
