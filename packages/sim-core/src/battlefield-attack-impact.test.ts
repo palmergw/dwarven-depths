@@ -7,7 +7,7 @@ import {
 } from "./index.js";
 
 const parityChecksum =
-  "0167bc16246d6fa4a2f6bad8ed6daad9e794bb756ee99a1802d5e97e64c2e0d5";
+  "82a80d8276389748345755011c945e09e9f8bbae2243d11a0b59ae8c7ea94854";
 
 describe("battlefield committed-attack impacts", () => {
   it("persists before impact then consumes lethal damage into downed state", async () => {
@@ -137,6 +137,32 @@ describe("battlefield committed-attack impacts", () => {
         content
       )
     ).toThrow("entity.* stable ID");
+  });
+
+  it("rejects paired enemy basic-attack and pending-damage substitution", async () => {
+    const { content, deployments, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 7,
+          levelId: "level.conformance_map" as never,
+          deployments,
+          battlefield: {
+            ...committed,
+            enemyCombatants: committed.enemyCombatants.map((enemy) => ({
+              ...enemy,
+              basicAttack: { ...enemy.basicAttack, damage: 999 }
+            })),
+            pendingCommittedAttacks: committed.pendingCommittedAttacks.map(
+              (attack) => ({ ...attack, damage: 999 })
+            )
+          }
+        },
+        content
+      )
+    ).toThrow("basicAttack is not authored");
   });
 
   it("returns detached immutable parity evidence with one literal checksum", async () => {

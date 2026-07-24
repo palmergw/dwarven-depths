@@ -4,7 +4,7 @@ import { battlefieldAttackImpactParityEvidence } from "./battlefield-attack-impa
 import { normalizeBattlefieldDwarves } from "./index.js";
 
 const parityChecksum =
-  "0167bc16246d6fa4a2f6bad8ed6daad9e794bb756ee99a1802d5e97e64c2e0d5";
+  "82a80d8276389748345755011c945e09e9f8bbae2243d11a0b59ae8c7ea94854";
 
 describe("battlefield attack impact browser parity", () => {
   it("matches the Node evidence checksum", async () => {

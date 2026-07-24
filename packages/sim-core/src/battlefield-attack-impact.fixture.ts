@@ -25,7 +25,11 @@ if (authoredWarden?.kind !== "character")
 const contentInput = {
   ...conformanceContent,
   definitions: [
-    ...conformanceContent.definitions,
+    ...conformanceContent.definitions.map((definition) =>
+      definition.kind === "level"
+        ? { ...definition, waveIds: ["wave.attack_impact"] }
+        : definition
+    ),
     ...referenceCombatants.definitions.filter(
       (definition) =>
         definition.id === "character.iron_warden" ||
@@ -36,6 +40,22 @@ const contentInput = {
       id: "character.substitute",
       maximumHealth: 999,
       basicAttack: { ...authoredWarden.basicAttack, id: "attack.substitute" }
+    },
+    {
+      kind: "wave",
+      id: "wave.attack_impact",
+      startAtTick: 0,
+      durationTicks: 100,
+      spawnEvents: [
+        {
+          id: "spawn.attack_impact.cutter",
+          authoredOrder: 0,
+          atTick: 0,
+          entityId: "entity.enemy.cutter",
+          enemyDefinitionId: "enemy.goblin_cutter",
+          entranceId: "entrance.west"
+        }
+      ]
     }
   ]
 };
@@ -96,6 +116,15 @@ export async function battlefieldAttackImpactParityEvidence() {
       ...deployed.occupancy
     ],
     enemyCombatants: [cutter],
+    enemyAdmissions: [
+      {
+        schemaVersion: 1,
+        spawnId: "spawn.attack_impact.cutter" as never,
+        entityId: cutter.entityId,
+        enemyDefinitionId: cutter.enemyDefinitionId,
+        admittedAtTick: 0
+      }
+    ],
     pendingCommittedAttacks: [
       {
         schemaVersion: 1,
