@@ -159,6 +159,14 @@ Phase 3 surface currently present in the repository.
   boundary after the current tick, while rejected malformed attempts do not.
   Early, duplicate, destroyed, and overflowed enemy movement attempts are
   rejected without mutation, and queued spawn retries retain stable event order.
+- Deterministic enemy route planning finds the minimum weighted path from an
+  occupied navigation node to an attack-valid position for one selected dwarf
+  placement. It reuses inclusive range and authored line-of-sight geometry,
+  never traverses the target placement or explicit solid blockers, and leaves
+  moving-enemy congestion to the reservation phase. Equal-cost choices follow
+  authored neighbor order. Already-valid, routed, and unreachable results carry
+  immutable, reason-coded route evidence pinned across Node and all three
+  browser engines.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
@@ -213,7 +221,8 @@ Phase 3 surface currently present in the repository.
 
 ## Not implemented yet
 
-Enemy route generation and target/attack action execution, armor reduction,
+Battlefield route-to-target composition and target/attack action execution,
+armor reduction,
 attack-windup status semantics,
 non-damage trigger variants,
 non-boss rewards, authored special abilities and boss behavior, balance
