@@ -283,10 +283,30 @@ function normalizeSpawnAdmissionLimits(
   });
 }
 
+function normalizeStableIdArray(
+  value: unknown,
+  description: string
+): readonly string[] {
+  return Object.freeze(
+    requireDenseDataArray(value, description).map((item, index) => {
+      if (!isDomainStableId(item)) {
+        throw new RangeError(
+          `${description} item ${index} must be a stable ID`
+        );
+      }
+      return item;
+    })
+  );
+}
+
 function initializeAdmittedEnemyCombatants(
   content: CompiledContent,
   existingCombatants: readonly BattlefieldEnemyCombatant[],
-  decisions: readonly SpawnAdmissionDecision[]
+  decisions: readonly SpawnAdmissionDecision[],
+  expectedDefinitions?: ReadonlyMap<
+    EntityId,
+    BattlefieldEnemyCombatant["enemyDefinitionId"]
+  >
 ): readonly BattlefieldEnemyCombatant[] {
   const combatantsByEntity = new Map<EntityId, BattlefieldEnemyCombatant>();
   const existingValues = requireDenseDataArray(
@@ -367,6 +387,15 @@ function initializeAdmittedEnemyCombatants(
     if (definition === undefined) {
       throw new RangeError(
         `battlefield enemy ${combatant.entityId} references unknown enemy definition (${combatant.enemyDefinitionId})`
+      );
+    }
+    const expectedDefinitionId = expectedDefinitions?.get(combatant.entityId);
+    if (
+      expectedDefinitions !== undefined &&
+      expectedDefinitionId !== combatant.enemyDefinitionId
+    ) {
+      throw new RangeError(
+        `battlefield enemy combatant definition does not match authored spawn identity (${combatant.entityId})`
       );
     }
     if (
@@ -879,15 +908,28 @@ export function resolveBattlefieldPhase(
     ...persistedPendingSpawns,
     ...dueScheduledSpawns
   ]);
+  const startedWaveIds = normalizeStableIdArray(
+    state.battlefield.startedWaveIds,
+    "started wave IDs"
+  );
+  const firedSpawnIds = normalizeStableIdArray(
+    state.battlefield.firedSpawnIds,
+    "fired spawn IDs"
+  );
 
+  const authoredSpawns = new Map(
+    level.waveIds.flatMap((waveId) => {
+      const wave = content.waves.get(waveId);
+      if (wave === undefined) throw new Error(`Unknown wave ID: ${waveId}`);
+      return wave.spawnEvents.map((spawn) => [spawn.id, spawn] as const);
+    })
+  );
+  const expectedDefinitions = new Map(
+    [...authoredSpawns.values()].map(
+      (spawn) => [spawn.entityId, spawn.enemyDefinitionId] as const
+    )
+  );
   if (level.waveIds.length > 0) {
-    const authoredSpawns = new Map(
-      level.waveIds.flatMap((waveId) => {
-        const wave = content.waves.get(waveId);
-        if (wave === undefined) throw new Error(`Unknown wave ID: ${waveId}`);
-        return wave.spawnEvents.map((spawn) => [spawn.id, spawn] as const);
-      })
-    );
     for (const spawn of allPendingSpawns) {
       const authored = authoredSpawns.get(spawn.id);
       if (
@@ -907,11 +949,27 @@ export function resolveBattlefieldPhase(
   const existingEnemyCombatants = initializeAdmittedEnemyCombatants(
     content,
     state.battlefield.enemyCombatants,
-    []
+    [],
+    level.waveIds.length > 0 ? expectedDefinitions : undefined
   );
   const existingEnemyEntityIds = new Set(
     existingEnemyCombatants.map((combatant) => combatant.entityId)
   );
+  if (level.waveIds.length > 0) {
+    const pendingSpawnIds = new Set(allPendingSpawns.map((spawn) => spawn.id));
+    for (const firedSpawnId of firedSpawnIds) {
+      const authored = authoredSpawns.get(firedSpawnId as never);
+      if (
+        authored !== undefined &&
+        !pendingSpawnIds.has(firedSpawnId as never) &&
+        !existingEnemyEntityIds.has(authored.entityId)
+      ) {
+        throw new RangeError(
+          `admitted authored spawn is missing battlefield enemy combatant state (${firedSpawnId})`
+        );
+      }
+    }
+  }
   if (admissionLimits !== undefined) {
     const activeEnemyCount = existingEnemyCombatants.filter(
       (combatant) => combatant.lifecycleState === "active"
@@ -960,7 +1018,8 @@ export function resolveBattlefieldPhase(
   const enemyCombatants = initializeAdmittedEnemyCombatants(
     content,
     existingEnemyCombatants,
-    admitted.decisions
+    admitted.decisions,
+    level.waveIds.length > 0 ? expectedDefinitions : undefined
   );
   const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
   const events: SimulationEvent[] = [];
@@ -1014,8 +1073,8 @@ export function resolveBattlefieldPhase(
         level.mapId,
         moved.occupancy,
         admitted.pendingSpawns,
-        state.battlefield.startedWaveIds,
-        state.battlefield.firedSpawnIds,
+        startedWaveIds as BattlefieldState["startedWaveIds"],
+        firedSpawnIds as BattlefieldState["firedSpawnIds"],
         enemyCombatants
       )
     }),
@@ -1050,6 +1109,13 @@ export function resolveScheduledBattlefieldPhase(
     if (wave === undefined) throw new Error(`Unknown wave ID: ${waveId}`);
     return wave;
   });
+  const expectedDefinitions = new Map(
+    waves.flatMap((wave) =>
+      wave.spawnEvents.map(
+        (spawn) => [spawn.entityId, spawn.enemyDefinitionId] as const
+      )
+    )
+  );
   const persistedPendingSpawns = normalizePendingSpawns(
     state.battlefield.pendingSpawns,
     "persisted pending spawns"
@@ -1061,7 +1127,8 @@ export function resolveScheduledBattlefieldPhase(
   const persistedEnemyCombatants = initializeAdmittedEnemyCombatants(
     content,
     state.battlefield.enemyCombatants,
-    []
+    [],
+    level.waveIds.length > 0 ? expectedDefinitions : undefined
   );
   const scheduled = resolveWaveSchedule({
     schemaVersion: 1,

@@ -248,6 +248,49 @@ describe("authored wave battlefield composition", () => {
     );
   });
 
+  it("binds persisted combatants to fired authored spawn identities", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const initial = createInitialState(
+      content,
+      "level.scheduled_battlefield" as never,
+      "1"
+    );
+    const due = resolveScheduledBattlefieldPhase(initial, content, []);
+    if (due.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const slinger = content.enemies.get("enemy.goblin_slinger" as never);
+    if (slinger === undefined) throw new Error("expected slinger definition");
+    const swapped = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        enemyCombatants: due.state.battlefield.enemyCombatants.map(
+          (combatant) => ({
+            ...combatant,
+            enemyDefinitionId: slinger.id,
+            classification: slinger.classification,
+            currentHealth: slinger.maximumHealth,
+            maximumHealth: slinger.maximumHealth,
+            armor: slinger.armor,
+            movementIntervalTicks: slinger.movementIntervalTicks,
+            basicAttack: { ...slinger.basicAttack }
+          })
+        )
+      }
+    };
+    const missing = {
+      ...due.state,
+      battlefield: { ...due.state.battlefield, enemyCombatants: [] }
+    };
+
+    expect(() =>
+      resolveScheduledBattlefieldPhase(swapped, content, [])
+    ).toThrow("does not match authored spawn identity");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(missing, content, [])
+    ).toThrow("is missing battlefield enemy combatant state");
+  });
+
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
