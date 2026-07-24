@@ -145,6 +145,8 @@ function normalizedEntry(
     throw new RangeError(
       `${description} current target does not match windup target`
     );
+  if (typeof windup.targetIsValid !== "boolean")
+    throw new TypeError(`${description} windup targetIsValid must be boolean`);
   return {
     sourceEntityId,
     targetLock: entry.targetLock as DwarfTargetLockRequest,
@@ -174,8 +176,6 @@ export function resolveDwarfAttackTargeting(
   const seen = new Set<string>();
   const decisions = entries
     .map((entry): DwarfAttackTargetingDecision => {
-      // Validate the complete input before replacing phase-derived validity.
-      resolveAttackCommitments({ currentTick, windups: [entry.windup] });
       const targetLock = resolveDwarfTargetLock(entry.targetLock);
       if (entry.targetLock.range !== entry.windup.range)
         throw new RangeError(
