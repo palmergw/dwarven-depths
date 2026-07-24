@@ -45,11 +45,11 @@ export {
 } from "./phase-3-system-scenarios.js";
 export {
   createRunExplanation,
-  renderRunExplanationMarkdown,
   type RunExplanationEntry,
   type RunExplanationIdentity,
   type RunExplanationReport,
-  type RunExplanationRequest
+  type RunExplanationRequest,
+  renderRunExplanationMarkdown
 } from "./run-explanation.js";
 export {
   evaluateTerminalState,
