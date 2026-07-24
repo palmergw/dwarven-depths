@@ -134,6 +134,15 @@ Phase 3 surface currently present in the repository.
   events. Queued records validate their `enemy.*` definition ID against the
   authored schedule, providing the deterministic content link required to
   initialize admitted combatants in the executable encounter path.
+- Spawn admission now initializes one authoritative enemy combatant from the
+  immutable compiled enemy definition. The record carries stable entity and
+  definition identity, classification, current and maximum health, armor target
+  metric, movement interval, lifecycle state, and detached basic-attack timing,
+  damage, range, and line-of-sight data. Queued spawns create no combatant;
+  retries preserve existing mutable health without duplicate initialization.
+  Persisted definition-owned fields are checked against compiled content, and
+  the Cutter-to-Slinger admission sequence is checksum-pinned across Node and
+  all three browser engines.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are

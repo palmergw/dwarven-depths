@@ -123,7 +123,16 @@ export function createPhase2SystemScenarioEvidence(
     ...capWaiting.state,
     battlefield: Object.freeze({
       ...capBattlefield,
-      occupancy: Object.freeze([])
+      occupancy: Object.freeze([]),
+      enemyCombatants: Object.freeze(
+        capBattlefield.enemyCombatants.map((combatant) =>
+          Object.freeze({
+            ...combatant,
+            currentHealth: 0,
+            lifecycleState: "destroyed" as const
+          })
+        )
+      )
     })
   });
   const capResumed = resolveBattlefieldPhase(

@@ -33,6 +33,28 @@ describe("authored wave battlefield composition", () => {
           enemyDefinitionId: "enemy.goblin_slinger",
           entranceId: "entrance.west"
         }
+      ],
+      enemyCombatants: [
+        {
+          schemaVersion: 1,
+          entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
+          classification: "basic",
+          currentHealth: 50,
+          maximumHealth: 50,
+          armor: 0,
+          movementIntervalTicks: 6,
+          lifecycleState: "active",
+          basicAttack: {
+            id: "attack.goblin_cutter_basic",
+            windupTicks: 6,
+            impactDelayTicks: 1,
+            cooldownTicks: 20,
+            damage: 10,
+            range: 1,
+            requiresLineOfSight: false
+          }
+        }
       ]
     });
     expect(due?.events.map(eventEvidence)).toEqual([
@@ -70,6 +92,26 @@ describe("authored wave battlefield composition", () => {
       ["spawn.admitted", "admitted"]
     ]);
     expect(admitted?.state.battlefield?.pendingSpawns).toEqual([]);
+    expect(admitted?.state.battlefield?.enemyCombatants).toEqual([
+      expect.objectContaining({
+        entityId: "entity.enemy.first",
+        enemyDefinitionId: "enemy.goblin_cutter",
+        currentHealth: 50,
+        movementIntervalTicks: 6,
+        basicAttack: expect.objectContaining({ damage: 10, range: 1 })
+      }),
+      expect.objectContaining({
+        entityId: "entity.enemy.second",
+        enemyDefinitionId: "enemy.goblin_slinger",
+        currentHealth: 38,
+        movementIntervalTicks: 7,
+        basicAttack: expect.objectContaining({
+          damage: 9,
+          range: 6,
+          requiresLineOfSight: true
+        })
+      })
+    ]);
     expect(admitted?.state.battlefield?.occupancy).toEqual([
       { entityId: "entity.enemy.first", nodeId: "node.south" },
       { entityId: "entity.enemy.second", nodeId: "node.entry" }
@@ -94,6 +136,15 @@ describe("authored wave battlefield composition", () => {
       true
     );
     expect(Object.isFrozen(result.state.battlefield?.firedSpawnIds)).toBe(true);
+    expect(Object.isFrozen(result.state.battlefield?.enemyCombatants)).toBe(
+      true
+    );
+    expect(Object.isFrozen(result.state.battlefield?.enemyCombatants[0])).toBe(
+      true
+    );
+    expect(
+      Object.isFrozen(result.state.battlefield?.enemyCombatants[0]?.basicAttack)
+    ).toBe(true);
     expect(Object.isFrozen(result.events)).toBe(true);
     expect(Object.isFrozen(result.events[0])).toBe(true);
   });
@@ -172,9 +223,170 @@ describe("authored wave battlefield composition", () => {
     ).toThrow("does not match authored schedule");
   });
 
+  it("validates persisted combatants before intermediate scheduled-state freezing", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const initial = createInitialState(
+      content,
+      "level.scheduled_battlefield" as never,
+      "1"
+    );
+    const due = resolveScheduledBattlefieldPhase(initial, content, []);
+    if (due.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const combatants = [...due.state.battlefield.enemyCombatants];
+    Object.defineProperty(combatants, "map", {
+      value: () => [],
+      enumerable: false
+    });
+    const custom = {
+      ...due.state,
+      battlefield: { ...due.state.battlefield, enemyCombatants: combatants }
+    };
+
+    expect(() => resolveScheduledBattlefieldPhase(custom, content, [])).toThrow(
+      "battlefield enemy combatants contains unsupported array properties"
+    );
+  });
+
+  it("binds persisted combatants to fired authored spawn identities", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const initial = createInitialState(
+      content,
+      "level.scheduled_battlefield" as never,
+      "1"
+    );
+    if (initial.battlefield === undefined)
+      throw new Error("expected initial battlefield state");
+    const due = resolveScheduledBattlefieldPhase(initial, content, []);
+    if (due.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const slinger = content.enemies.get("enemy.goblin_slinger" as never);
+    if (slinger === undefined) throw new Error("expected slinger definition");
+    const swapped = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        enemyCombatants: due.state.battlefield.enemyCombatants.map(
+          (combatant) => ({
+            ...combatant,
+            enemyDefinitionId: slinger.id,
+            classification: slinger.classification,
+            currentHealth: slinger.maximumHealth,
+            maximumHealth: slinger.maximumHealth,
+            armor: slinger.armor,
+            movementIntervalTicks: slinger.movementIntervalTicks,
+            basicAttack: { ...slinger.basicAttack }
+          })
+        )
+      }
+    };
+    const missing = {
+      ...due.state,
+      battlefield: { ...due.state.battlefield, enemyCombatants: [] }
+    };
+    const unfiredPending = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        firedSpawnIds: due.state.battlefield.firedSpawnIds.filter(
+          (spawnId) => spawnId !== "spawn.second"
+        )
+      }
+    };
+    const unstartedFiredSpawn = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        startedWaveIds: ["wave.opening"] as never
+      }
+    };
+    const duplicateFiredSpawn = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        firedSpawnIds: [
+          ...due.state.battlefield.firedSpawnIds,
+          "spawn.first"
+        ] as never
+      }
+    };
+    const unknownStartedWave = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        startedWaveIds: [
+          ...due.state.battlefield.startedWaveIds,
+          "wave.unknown"
+        ] as never
+      }
+    };
+    const hiddenFiredSpawnIds = [...due.state.battlefield.firedSpawnIds];
+    Object.defineProperty(hiddenFiredSpawnIds, Symbol.iterator, {
+      value: () => [][Symbol.iterator](),
+      enumerable: false
+    });
+    const hiddenProgress = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        occupancy: [],
+        enemyCombatants: [],
+        firedSpawnIds: hiddenFiredSpawnIds
+      }
+    };
+    const future = {
+      ...initial,
+      battlefield: {
+        ...initial.battlefield,
+        occupancy: [
+          { entityId: "entity.enemy.second", nodeId: "node.entrance_west" }
+        ] as never,
+        enemyCombatants: [
+          {
+            schemaVersion: 1,
+            entityId: "entity.enemy.second",
+            enemyDefinitionId: slinger.id,
+            classification: slinger.classification,
+            currentHealth: slinger.maximumHealth,
+            maximumHealth: slinger.maximumHealth,
+            armor: slinger.armor,
+            movementIntervalTicks: slinger.movementIntervalTicks,
+            lifecycleState: "active",
+            basicAttack: { ...slinger.basicAttack }
+          }
+        ] as never
+      }
+    };
+
+    expect(() =>
+      resolveScheduledBattlefieldPhase(swapped, content, [])
+    ).toThrow("does not match authored spawn identity");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(missing, content, [])
+    ).toThrow("is missing battlefield enemy combatant state");
+    expect(() =>
+      resolveBattlefieldPhase(unfiredPending, content, [], [])
+    ).toThrow("pending spawn spawn.second is not marked fired");
+    expect(() =>
+      resolveBattlefieldPhase(unstartedFiredSpawn, content, [], [])
+    ).toThrow("belongs to a wave that is not marked started");
+    expect(() =>
+      resolveBattlefieldPhase(duplicateFiredSpawn, content, [], [])
+    ).toThrow("fired spawn IDs contains duplicate ID (spawn.first)");
+    expect(() =>
+      resolveBattlefieldPhase(unknownStartedWave, content, [], [])
+    ).toThrow("unknown started wave ID (wave.unknown)");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(hiddenProgress, content, [])
+    ).toThrow("fired spawn IDs contains unsupported array properties");
+    expect(() => resolveScheduledBattlefieldPhase(future, content, [])).toThrow(
+      "does not match authored spawn identity"
+    );
+  });
+
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("0756ae1c17e7548dbac80e3f043af10c6985cc3fe7df7ab01d9a63e1acd93866");
+    ).toBe("99c041bd09947025a43ee9523a11dafd6d5d1f396ba825bd97aa023b4c72f2a1");
   });
 });

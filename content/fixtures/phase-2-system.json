@@ -9,6 +9,23 @@
       "mapId": "map.phase_2_system"
     },
     {
+      "kind": "enemy",
+      "id": "enemy.goblin_cutter",
+      "classification": "basic",
+      "maximumHealth": 50,
+      "armor": 0,
+      "movementIntervalTicks": 6,
+      "basicAttack": {
+        "id": "attack.goblin_cutter_basic",
+        "windupTicks": 6,
+        "impactDelayTicks": 1,
+        "cooldownTicks": 20,
+        "damage": 10,
+        "range": 1,
+        "requiresLineOfSight": false
+      }
+    },
+    {
       "kind": "map",
       "id": "map.phase_2_system",
       "nodes": [

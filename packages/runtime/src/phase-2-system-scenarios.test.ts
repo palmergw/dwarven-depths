@@ -43,7 +43,19 @@ describe("Phase 2 battlefield system scenarios", () => {
       occupancy: [
         { entityId: "entity.enemy.cap_second", nodeId: "node.entry" }
       ],
-      pendingSpawns: []
+      pendingSpawns: [],
+      enemyCombatants: [
+        {
+          entityId: "entity.enemy.cap_first",
+          currentHealth: 0,
+          lifecycleState: "destroyed"
+        },
+        {
+          entityId: "entity.enemy.cap_second",
+          currentHealth: 50,
+          lifecycleState: "active"
+        }
+      ]
     });
 
     expect(evidence.placementRoutes).toEqual({
@@ -73,7 +85,7 @@ describe("Phase 2 battlefield system scenarios", () => {
       true
     );
     expect(await canonicalHash(evidence)).toBe(
-      "7da8214a6d73f77ef4975b2b2eef859cb531e783a4dc4100f5df14a25f65b80a"
+      "be3f74c098613d4b78d811ab66a1648cad1c229e343a33267de5dc2bf646d0ae"
     );
   });
 });

@@ -25,6 +25,9 @@ import contentInput from "../../../content/fixtures/empty-content.json" with {
 import phase2SystemContentInput from "../../../content/fixtures/phase-2-system.json" with {
   type: "json"
 };
+import referenceCombatantsInput from "../../../content/fixtures/phase-3-reference-combatants.json" with {
+  type: "json"
+};
 import scenarioInput from "../../../scenarios/conformance/empty-level.json" with {
   type: "json"
 };
@@ -45,6 +48,16 @@ import {
   runScenario,
   verifyReplay
 } from "./index.js";
+
+const battlefieldContentInput = {
+  ...mapContentInput,
+  definitions: [
+    ...mapContentInput.definitions,
+    ...referenceCombatantsInput.definitions.filter(
+      (definition) => definition.kind === "enemy"
+    )
+  ]
+};
 
 const expected = {
   contentManifestHash:
@@ -169,6 +182,7 @@ describe("cross-runtime deterministic conformance", () => {
         mapId: map.id,
         startedWaveIds: [],
         firedSpawnIds: [],
+        enemyCombatants: [],
         occupancy: [
           {
             entityId: "entity.enemy.alpha" as never,
@@ -313,7 +327,7 @@ describe("cross-runtime deterministic conformance", () => {
   });
 
   it("matches authoritative battlefield state and reason-coded events", async () => {
-    const content = await compileContent(mapContentInput);
+    const content = await compileContent(battlefieldContentInput);
     const initial = createInitialState(
       content,
       "level.conformance_map" as never,
@@ -350,7 +364,7 @@ describe("cross-runtime deterministic conformance", () => {
     const resumed = resolveBattlefieldPhase(first.state, content, [], []);
 
     expect(await canonicalHash({ first, resumed })).toBe(
-      "348df4bceab92d33329f545240fd64cea0a1ec93aed05b6047dfbbddd12efc88"
+      "f78b6e2b65b29e8a0014d142a5ae4f72b7d1a876ca5449466d7e67f59c4cc51d"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -361,7 +375,19 @@ describe("cross-runtime deterministic conformance", () => {
         { entityId: "entity.enemy.first", nodeId: "node.south" },
         { entityId: "entity.enemy.second", nodeId: "node.entry" }
       ],
-      pendingSpawns: []
+      pendingSpawns: [],
+      enemyCombatants: [
+        expect.objectContaining({
+          entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
+          currentHealth: 50
+        }),
+        expect.objectContaining({
+          entityId: "entity.enemy.second",
+          enemyDefinitionId: "enemy.goblin_cutter",
+          currentHealth: 50
+        })
+      ]
     });
   });
 
@@ -370,7 +396,7 @@ describe("cross-runtime deterministic conformance", () => {
     const evidence = createPhase2SystemScenarioEvidence(content);
 
     expect(await canonicalHash(evidence)).toBe(
-      "7da8214a6d73f77ef4975b2b2eef859cb531e783a4dc4100f5df14a25f65b80a"
+      "be3f74c098613d4b78d811ab66a1648cad1c229e343a33267de5dc2bf646d0ae"
     );
     expect(evidence.placementRoutes.eastAttackRoute?.route.nodeIds).toEqual([
       "node.entry",

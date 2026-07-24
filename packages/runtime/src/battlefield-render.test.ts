@@ -15,6 +15,7 @@ async function renderRequest() {
     mapId: map.id,
     startedWaveIds: [],
     firedSpawnIds: [],
+    enemyCombatants: [],
     occupancy: [
       {
         entityId: "entity.enemy.alpha" as never,
