@@ -212,6 +212,34 @@ export interface MovementReservationResolution {
   readonly decisions: readonly MovementDecision[];
 }
 
+export interface EnemyRoutePlanningRequest {
+  readonly schemaVersion: 1;
+  readonly map: BattlefieldMapDefinition;
+  readonly sourceNodeId: NavigationNodeId;
+  readonly targetPlacementPointId: PlacementPointId;
+  readonly range: number;
+  readonly requiresLineOfSight: boolean;
+  /** Solid navigation blockers only; moving-enemy congestion resolves later. */
+  readonly blockedNodeIds: readonly NavigationNodeId[];
+}
+
+export type EnemyRoutePlanningReason =
+  | "already_attack_valid"
+  | "minimum_cost_route"
+  | "no_attack_position_reachable";
+
+export interface EnemyRoutePlanningDecision {
+  readonly schemaVersion: 1;
+  readonly status: "attack_position_reached" | "route_found" | "unreachable";
+  readonly reason: EnemyRoutePlanningReason;
+  readonly sourceNodeId: NavigationNodeId;
+  readonly targetPlacementPointId: PlacementPointId;
+  readonly pathCost: number | null;
+  readonly pathNodeIds: readonly NavigationNodeId[];
+  readonly nextNodeId: NavigationNodeId | null;
+  readonly attackPositionNodeId: NavigationNodeId | null;
+}
+
 export interface PendingSpawn {
   /** Stable authored spawn-event ID. */
   readonly id: StableId;
