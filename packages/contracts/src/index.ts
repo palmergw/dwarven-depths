@@ -376,6 +376,24 @@ export interface DwarfActionPhaseResolution {
   readonly decisions: readonly DwarfActionPhaseDecision[];
 }
 
+/** One authoritative fixed-step combat tick over the implemented Phase 3 boundaries. */
+export interface AuthoritativeCombatTickRequest {
+  readonly schemaVersion: 1;
+  readonly state: SimulationState;
+  readonly dwarfActionEntries: readonly DwarfActionPhaseEntry[];
+}
+
+export interface AuthoritativeCombatTickResolution {
+  readonly schemaVersion: 1;
+  readonly state: SimulationState;
+  readonly events: readonly SimulationEvent[];
+  readonly enemyPlanning: EnemyPlanningEntryDerivationResolution;
+  readonly enemyActions: EnemyActionPhaseResolution;
+  readonly dwarfActions: DwarfActionPhaseResolution;
+  readonly enemyMovement: EnemyMovementPhaseResolution;
+  readonly impacts: BattlefieldAttackImpactResolution;
+}
+
 export interface PendingSpawn {
   /** Stable authored spawn-event ID. */
   readonly id: StableId;
