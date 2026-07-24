@@ -93,6 +93,7 @@ function freezeSpawnDecision(
   return Object.freeze({
     spawnId: spawn.id,
     entityId: spawn.entityId,
+    enemyDefinitionId: spawn.enemyDefinitionId,
     entranceId: spawn.entranceId,
     status,
     reason
@@ -184,6 +185,11 @@ export function admitQueuedSpawns(
       );
     }
     spawnEntityIds.add(spawn.entityId);
+    if (!isDomainStableId(spawn.enemyDefinitionId, "enemy")) {
+      throw new RangeError(
+        `pending spawn enemyDefinitionId must be an enemy.* stable ID (${spawn.id})`
+      );
+    }
     if (occupantsByEntity.has(spawn.entityId)) {
       throw new RangeError(
         `pending spawn entity is already occupied (${spawn.entityId})`
@@ -494,6 +500,33 @@ export function resolveBattlefieldPhase(
   const map = content.maps.get(level.mapId);
   if (map === undefined) throw new Error(`Unknown map ID: ${level.mapId}`);
 
+  if (level.waveIds.length > 0) {
+    const authoredSpawns = new Map(
+      level.waveIds.flatMap((waveId) => {
+        const wave = content.waves.get(waveId);
+        if (wave === undefined) throw new Error(`Unknown wave ID: ${waveId}`);
+        return wave.spawnEvents.map((spawn) => [spawn.id, spawn] as const);
+      })
+    );
+    for (const spawn of [
+      ...state.battlefield.pendingSpawns,
+      ...scheduledSpawns
+    ]) {
+      const authored = authoredSpawns.get(spawn.id);
+      if (
+        authored === undefined ||
+        authored.authoredOrder !== spawn.authoredOrder ||
+        authored.entityId !== spawn.entityId ||
+        authored.enemyDefinitionId !== spawn.enemyDefinitionId ||
+        authored.entranceId !== spawn.entranceId
+      ) {
+        throw new RangeError(
+          `pending spawn ${spawn.id} does not match authored schedule`
+        );
+      }
+    }
+  }
+
   const admitted = admitQueuedSpawns(
     map,
     state.battlefield.occupancy,
@@ -515,6 +548,7 @@ export function resolveBattlefieldPhase(
         ruleId: "SIM-SPAWN-ADMISSION-001",
         spawnId: decision.spawnId,
         entityId: decision.entityId,
+        enemyDefinitionId: decision.enemyDefinitionId,
         entranceId: decision.entranceId,
         reasonCode: decision.reason
       })

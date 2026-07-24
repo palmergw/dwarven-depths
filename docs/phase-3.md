@@ -129,6 +129,11 @@ Phase 3 surface currently present in the repository.
   replaying schedule events. The composed result remains versioned, immutable,
   detached, input-order independent, and checksum-pinned across Node and all
   three browser engines.
+- Authored enemy-definition identity is preserved from each wave spawn through
+  pending queues, admission decisions, battlefield state, and reason-coded spawn
+  events. Queued records validate their `enemy.*` definition ID against the
+  authored schedule, providing the deterministic content link required to
+  initialize admitted combatants in the executable encounter path.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are

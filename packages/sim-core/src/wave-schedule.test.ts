@@ -28,6 +28,9 @@ describe("authored wave scheduling", () => {
       "spawn.cutter",
       "spawn.slinger"
     ]);
+    expect(
+      result.pendingSpawns.map((spawn) => spawn.enemyDefinitionId)
+    ).toEqual(["enemy.goblin_cutter", "enemy.goblin_slinger"]);
     expect(result.decisions.map((decision) => decision.reason)).toEqual([
       "authored_wave_start_reached",
       "authored_wave_start_reached",
@@ -131,11 +134,24 @@ describe("authored wave scheduling", () => {
         firedSpawnIds: ["spawn.cutter" as never]
       })
     ).toThrow("wave that is not marked started");
+    const scheduled = resolveWaveSchedule(initialRequest());
+    expect(() =>
+      resolveWaveSchedule({
+        ...initialRequest(),
+        startedWaveIds: scheduled.startedWaveIds,
+        firedSpawnIds: scheduled.firedSpawnIds,
+        pendingSpawns: scheduled.pendingSpawns.map((spawn, index) =>
+          index === 0
+            ? { ...spawn, enemyDefinitionId: "enemy.tampered" as never }
+            : spawn
+        )
+      })
+    ).toThrow("does not match authored schedule");
   });
 
   it("pins the overlapping-wave Node evidence checksum", async () => {
     expect(await canonicalHash(waveScheduleParityEvidence())).toBe(
-      "3a9da8e4f0b55e71995a39a79999f05f0dc86826b694a896330ed4873fc42ef3"
+      "c660f897c9dd1d239f9e821211c64e7597bb8f582d773b0bbea1d512c7c7ba19"
     );
   });
 });

@@ -218,6 +218,7 @@ export interface PendingSpawn {
   /** Authored order within the level spawn schedule. */
   readonly authoredOrder: number;
   readonly entityId: EntityId;
+  readonly enemyDefinitionId: StableId;
   readonly entranceId: EnemyEntranceId;
 }
 
@@ -230,6 +231,7 @@ export type SpawnAdmissionDecisionReason =
 export interface SpawnAdmissionDecision {
   readonly spawnId: StableId;
   readonly entityId: EntityId;
+  readonly enemyDefinitionId: StableId;
   readonly entranceId: EnemyEntranceId;
   readonly status: "admitted" | "queued";
   readonly reason: SpawnAdmissionDecisionReason;
@@ -874,6 +876,7 @@ export interface SpawnSimulationEvent extends SimulationEventBase {
   readonly type: "spawn.admitted" | "spawn.queued";
   readonly spawnId: StableId;
   readonly entityId: EntityId;
+  readonly enemyDefinitionId: StableId;
   readonly entranceId: EnemyEntranceId;
   readonly reasonCode: SpawnAdmissionDecisionReason;
 }

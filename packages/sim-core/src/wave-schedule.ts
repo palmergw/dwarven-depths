@@ -47,6 +47,7 @@ function freezeSpawn(event: WaveSpawnEvent): PendingSpawn {
     id: event.id,
     authoredOrder: event.authoredOrder,
     entityId: event.entityId,
+    enemyDefinitionId: event.enemyDefinitionId,
     entranceId: event.entranceId
   });
 }
@@ -193,6 +194,11 @@ export function resolveWaveSchedule(
       "entity"
     );
     requireStableId(
+      spawn.enemyDefinitionId,
+      `pending spawn ${spawn.id} enemyDefinitionId`,
+      "enemy"
+    );
+    requireStableId(
       spawn.entranceId,
       `pending spawn ${spawn.id} entranceId`,
       "entrance"
@@ -210,6 +216,7 @@ export function resolveWaveSchedule(
       authored === undefined ||
       authored.authoredOrder !== spawn.authoredOrder ||
       authored.entityId !== spawn.entityId ||
+      authored.enemyDefinitionId !== spawn.enemyDefinitionId ||
       authored.entranceId !== spawn.entranceId
     )
       throw new RangeError(

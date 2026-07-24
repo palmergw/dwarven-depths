@@ -3,6 +3,7 @@ import { canonicalHash, type SimulationEvent } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import {
   createInitialState,
+  resolveBattlefieldPhase,
   resolveScheduledBattlefieldPhase
 } from "./index.js";
 import {
@@ -29,6 +30,7 @@ describe("authored wave battlefield composition", () => {
           id: "spawn.second",
           authoredOrder: 1,
           entityId: "entity.enemy.second",
+          enemyDefinitionId: "enemy.goblin_slinger",
           entranceId: "entrance.west"
         }
       ]
@@ -43,6 +45,18 @@ describe("authored wave battlefield composition", () => {
     ]);
     expect(due?.events.map((event) => event.sequence)).toEqual([
       0, 1, 2, 3, 4, 5
+    ]);
+    expect(
+      due?.events
+        .filter((event) => event.type.startsWith("spawn."))
+        .map((event) =>
+          "enemyDefinitionId" in event ? event.enemyDefinitionId : undefined
+        )
+    ).toEqual([
+      "enemy.goblin_cutter",
+      "enemy.goblin_slinger",
+      "enemy.goblin_cutter",
+      "enemy.goblin_slinger"
     ]);
   });
 
@@ -132,9 +146,35 @@ describe("authored wave battlefield composition", () => {
     expect(malformed).toEqual(before);
   });
 
+  it("rejects authored definition tampering at direct battlefield admission", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const initial = createInitialState(
+      content,
+      "level.scheduled_battlefield" as never,
+      "1"
+    );
+
+    expect(() =>
+      resolveBattlefieldPhase(
+        initial,
+        content,
+        [
+          {
+            id: "spawn.first" as never,
+            authoredOrder: 0,
+            entityId: "entity.enemy.first" as never,
+            enemyDefinitionId: "enemy.goblin_slinger" as never,
+            entranceId: "entrance.west" as never
+          }
+        ],
+        []
+      )
+    ).toThrow("does not match authored schedule");
+  });
+
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("dc1bfb6b39733d418d853a98eb762d73e5c53b1f7696a100683bfcfe81d528dc");
+    ).toBe("0756ae1c17e7548dbac80e3f043af10c6985cc3fe7df7ab01d9a63e1acd93866");
   });
 });

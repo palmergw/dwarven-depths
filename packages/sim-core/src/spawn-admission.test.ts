@@ -31,7 +31,13 @@ function pendingSpawn(
   entityId: string,
   entranceId = "entrance.west"
 ): PendingSpawn {
-  return { id, authoredOrder, entityId, entranceId } as PendingSpawn;
+  return {
+    id,
+    authoredOrder,
+    entityId,
+    enemyDefinitionId: "enemy.goblin_cutter",
+    entranceId
+  } as PendingSpawn;
 }
 
 describe("deterministic spawn admission", () => {
@@ -65,6 +71,7 @@ describe("deterministic spawn admission", () => {
       {
         spawnId: "spawn.blocked",
         entityId: "entity.enemy.blocked",
+        enemyDefinitionId: "enemy.goblin_cutter",
         entranceId: "entrance.west",
         status: "queued",
         reason: "entrance_occupied"
@@ -72,6 +79,7 @@ describe("deterministic spawn admission", () => {
       {
         spawnId: "spawn.independent",
         entityId: "entity.enemy.independent",
+        enemyDefinitionId: "enemy.goblin_cutter",
         entranceId: "entrance.flank",
         status: "admitted",
         reason: "admitted"
@@ -161,6 +169,18 @@ describe("deterministic spawn admission", () => {
     expect(() =>
       admitQueuedSpawns(map, [], [pendingSpawn("spawn.invalid", 0, "")])
     ).toThrow("entity.* stable ID");
+    expect(() =>
+      admitQueuedSpawns(
+        map,
+        [],
+        [
+          {
+            ...pendingSpawn("spawn.invalid", 0, "entity.enemy.invalid"),
+            enemyDefinitionId: "character.iron_warden"
+          } as PendingSpawn
+        ]
+      )
+    ).toThrow("enemy.* stable ID");
     expect(() =>
       admitQueuedSpawns(
         map,

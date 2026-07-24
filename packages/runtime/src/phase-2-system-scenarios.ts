@@ -44,6 +44,7 @@ function spawn(
     id,
     authoredOrder,
     entityId,
+    enemyDefinitionId: "enemy.goblin_cutter",
     entranceId: "entrance.west"
   } as PendingSpawn;
 }

@@ -7,7 +7,7 @@ describe("authored wave schedule browser parity", () => {
     const evidence = waveScheduleParityEvidence();
     expect(evidence[1]?.startedWaveIds).toEqual(["wave.first", "wave.second"]);
     expect(await canonicalHash(evidence)).toBe(
-      "3a9da8e4f0b55e71995a39a79999f05f0dc86826b694a896330ed4873fc42ef3"
+      "c660f897c9dd1d239f9e821211c64e7597bb8f582d773b0bbea1d512c7c7ba19"
     );
   });
 });
