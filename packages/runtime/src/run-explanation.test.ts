@@ -18,7 +18,9 @@ describe("run explanation", () => {
       reasonCode: "SIM-LIFECYCLE-001",
       causes: [{ kind: "command", commandType: "confirmPreparation" }]
     });
-    expect(await canonicalHash(report)).toMatch(/^[a-f0-9]{64}$/);
+    expect(await canonicalHash(report)).toBe(
+      "a0190c4ad18684a217162e359c403437303c8b47fe47e447566d959ceb5a53b3"
+    );
     expect(() =>
       createRunExplanation({
         ...runExplanationFixture,
