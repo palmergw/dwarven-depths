@@ -68,6 +68,12 @@ export function propagateBattlefieldRoundLineage(
 ): void {
   const lineage = battlefieldLineages.get(source);
   if (lineage !== undefined) {
+    const existing = battlefieldLineages.get(target);
+    if (existing !== undefined) {
+      if (existing !== lineage)
+        throw new RangeError("battlefield already belongs to another round");
+      return;
+    }
     battlefieldLineages.set(target, lineage);
     battlefieldParents.set(target, source);
   }

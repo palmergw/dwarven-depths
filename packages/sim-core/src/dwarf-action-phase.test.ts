@@ -134,6 +134,42 @@ describe("dwarf action phase", () => {
     ).toThrow("do not match authoritative pending attacks");
   });
 
+  it("rejects caller-authored dwarf health and lifecycle transitions", async () => {
+    const evidence = await dwarfActionPhaseFixture();
+    for (const [source, currentTick] of [
+      [evidence.base.readyToCommit, 6],
+      [evidence.started.battlefield, 10]
+    ] as const) {
+      const substituted = {
+        ...source,
+        occupancy: source.occupancy.filter(
+          (occupant) => occupant.entityId !== "entity.dwarf.warden"
+        ),
+        dwarfCombatants: source.dwarfCombatants.map((dwarf) => ({
+          ...dwarf,
+          currentHealth: 0,
+          lifecycleState: "downed" as const
+        }))
+      };
+      propagateBattlefieldRoundLineage(source, substituted);
+      expect(() =>
+        resolveDwarfActionPhase(
+          {
+            schemaVersion: 1,
+            currentTick,
+            levelId: "level.conformance_map" as never,
+            battlefield: substituted,
+            entries: []
+          },
+          evidence.base.content,
+          evidence.base.deploymentAuthority
+        )
+      ).toThrow(
+        "health/lifecycle does not match authoritative battlefield evidence"
+      );
+    }
+  });
+
   it("returns deeply frozen detached evidence and validates entries", async () => {
     const evidence = await dwarfActionPhaseParityEvidence();
     expect(Object.isFrozen(evidence.started)).toBe(true);

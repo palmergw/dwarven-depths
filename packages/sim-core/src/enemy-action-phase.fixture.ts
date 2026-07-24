@@ -14,7 +14,10 @@ import {
   enemyMovementPlanningContent,
   entry
 } from "./enemy-movement-planning.fixture.js";
-import { createInitialState } from "./index.js";
+import {
+  createInitialState,
+  resolveBattlefieldAttackImpacts
+} from "./index.js";
 
 function request(
   currentTick: number,
@@ -88,17 +91,15 @@ export async function enemyActionPhaseParityEvidence() {
 
   const cancelledState: BattlefieldState = {
     ...startedState,
-    occupancy: startedState.occupancy.filter(
-      (occupant) => occupant.entityId !== "entity.dwarf.warden"
-    ),
-    dwarfCombatants: startedState.dwarfCombatants.map((dwarf) => ({
-      ...dwarf,
-      currentHealth: 0,
-      lifecycleState: "downed"
-    }))
+    occupancy: startedState.occupancy.map((occupant) =>
+      occupant.entityId === startingEnemy.entityId
+        ? { ...occupant, nodeId: "node.entry" as NavigationNodeId }
+        : occupant
+    )
   };
+  propagateBattlefieldRoundLineage(startedState, cancelledState);
   const cancelled = resolveEnemyActionPhase(
-    request(10, cancelledState, false),
+    request(10, cancelledState),
     content,
     dwarfAuthority
   );
@@ -113,10 +114,16 @@ export async function enemyActionPhaseParityEvidence() {
     content,
     dwarfAuthority
   );
-  const cooldownState: BattlefieldState = {
-    ...impactDue.battlefield,
-    pendingCommittedAttacks: []
-  };
+  const cooldownState = resolveBattlefieldAttackImpacts(
+    {
+      schemaVersion: 1,
+      currentTick: 13,
+      levelId: "level.conformance_map" as never,
+      battlefield: impactDue.battlefield
+    },
+    content,
+    dwarfAuthority
+  ).battlefield;
   const coolingDown = resolveEnemyActionPhase(
     request(20, cooldownState),
     content,

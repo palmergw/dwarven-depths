@@ -134,7 +134,7 @@ describe("enemy action phase", () => {
     expect(evidence.cancelled.decisions[0]).toMatchObject({
       status: "cancelled",
       reason: "basic_attack_cancelled",
-      targetLock: { status: "unlocked" }
+      targetLock: { status: "retained" }
     });
     expect(evidence.committed.committedAttacks[0]).toMatchObject({
       attackId:
@@ -440,7 +440,7 @@ describe("enemy action phase", () => {
 
   it("pins action evidence for browser parity", async () => {
     expect(await canonicalHash(await enemyActionPhaseParityEvidence())).toBe(
-      "9b5b114b37d22c60307dc5c8d7c7d2112e9e1f08fc6b9f9b2f2ad9fc13e9cbf6"
+      "404c87a118f81d050de22dd600ad292a33c003d43645092850f3740ac54fa628"
     );
   });
 });

@@ -13,6 +13,7 @@ import conformanceContent from "../../../content/fixtures/conformance-map.json" 
 import referenceCombatants from "../../../content/fixtures/phase-3-reference-combatants.json" with {
   type: "json"
 };
+import { battlefieldAttackImpactParityEvidence } from "./battlefield-attack-impact.fixture.js";
 import { createBattlefieldDwarfDeploymentAuthority } from "./battlefield-attack-impact.js";
 import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import { planEnemyMovement as executeEnemyMovementPlanning } from "./enemy-movement-planning.js";
@@ -287,21 +288,20 @@ export async function enemyMovementPlanningParityEvidence() {
     content,
     dwarfAuthority
   );
-  const unlockedEnemy = combatant("entity.enemy.unlocked", 6, null);
-  const unlocked = planEnemyMovement(
+  const downed = await battlefieldAttackImpactParityEvidence();
+  const unlockedEnemy = downed.resolved.battlefield.enemyCombatants[0];
+  if (unlockedEnemy === undefined)
+    throw new Error("missing unlocked enemy fixture");
+  const unlocked = executeEnemyMovementPlanning(
     {
       schemaVersion: 1,
-      currentTick: 6,
+      currentTick: 7,
       levelId: "level.conformance_map" as never,
-      battlefield: battlefield(
-        unlockedEnemy,
-        "node.entry" as NavigationNodeId,
-        false
-      ),
+      battlefield: downed.resolved.battlefield,
       entries: [entry(unlockedEnemy.entityId, false)]
     },
-    content,
-    dwarfAuthority
+    downed.content,
+    downed.deploymentAuthority
   );
   return Object.freeze({
     proposed,

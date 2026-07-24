@@ -10,7 +10,7 @@ describe("enemy movement planning browser parity", () => {
       "already_attack_valid"
     );
     expect(await canonicalHash(evidence)).toBe(
-      "e4a188281420c86eac8d0b2b4309236bd317cab8eb5160e76153066d12136055"
+      "be96a4265f2adbe8376cd12e2308ac50d68ed4966b288d648fafa0f025a89ab6"
     );
   });
 });
