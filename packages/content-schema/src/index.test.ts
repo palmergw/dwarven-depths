@@ -5,6 +5,9 @@ import mapContentInput from "../../../content/fixtures/conformance-map.json" wit
 import referenceCombatantsInput from "../../../content/fixtures/phase-3-reference-combatants.json" with {
   type: "json"
 };
+import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
+  type: "json"
+};
 import {
   ContentValidationError,
   validateContentBundle,
@@ -342,6 +345,29 @@ describe("content validation", () => {
       "enemy.goblin_bulwark",
       "enemy.gatebreaker_captain"
     ]);
+  });
+
+  it("accepts the authored Shuttergate map and five-wave composition", () => {
+    const result = validateContentBundle(shuttergateInput);
+    const level = result.definitions.find(
+      (definition) => definition.kind === "level"
+    );
+    const waves = result.definitions.filter(
+      (definition) => definition.kind === "wave"
+    );
+    expect(level).toMatchObject({
+      id: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      waveIds: [
+        "wave.shuttergate_1",
+        "wave.shuttergate_2",
+        "wave.shuttergate_3",
+        "wave.shuttergate_4",
+        "wave.shuttergate_5"
+      ]
+    });
+    expect(waves).toHaveLength(5);
+    expect(waves.flatMap((wave) => wave.spawnEvents)).toHaveLength(18);
   });
 
   it("rejects malformed combatant definitions at precise paths", () => {
