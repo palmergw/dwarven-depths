@@ -126,6 +126,16 @@ function freezeMap(
       definition.enemyEntrances
         .map((entrance) => Object.freeze({ ...entrance }))
         .sort(compareIds)
+    ),
+    aimPoints: Object.freeze(
+      definition.aimPoints
+        .map((point) => Object.freeze({ ...point }))
+        .sort(compareIds)
+    ),
+    opaqueRegions: Object.freeze(
+      definition.opaqueRegions
+        .map((region) => Object.freeze({ ...region }))
+        .sort(compareIds)
     )
   });
 }

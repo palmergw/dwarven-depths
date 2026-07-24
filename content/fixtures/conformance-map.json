@@ -16,24 +16,28 @@
           "id": "node.entry",
           "x": 0,
           "y": 0,
+          "aimPointId": "aim.entry",
           "neighborNodeIds": ["node.south", "node.east"]
         },
         {
           "id": "node.east",
           "x": 1,
           "y": 0,
+          "aimPointId": "aim.east",
           "neighborNodeIds": ["node.entry", "node.goal"]
         },
         {
           "id": "node.south",
           "x": 0,
           "y": 1,
+          "aimPointId": "aim.south",
           "neighborNodeIds": ["node.entry", "node.goal"]
         },
         {
           "id": "node.goal",
           "x": 1,
           "y": 1,
+          "aimPointId": "aim.goal",
           "neighborNodeIds": ["node.east", "node.south"]
         }
       ],
@@ -73,7 +77,22 @@
           "adjacentPlacementPointIds": ["placement.goal"]
         }
       ],
-      "enemyEntrances": [{ "id": "entrance.west", "nodeId": "node.entry" }]
+      "enemyEntrances": [{ "id": "entrance.west", "nodeId": "node.entry" }],
+      "aimPoints": [
+        { "id": "aim.entry", "x": 0, "y": 0 },
+        { "id": "aim.east", "x": 1, "y": 0 },
+        { "id": "aim.south", "x": 0, "y": 1 },
+        { "id": "aim.goal", "x": 1, "y": 1 }
+      ],
+      "opaqueRegions": [
+        {
+          "id": "opaque.conformance_wall",
+          "minimumX": 4,
+          "minimumY": 4,
+          "maximumX": 6,
+          "maximumY": 6
+        }
+      ]
     }
   ]
 }
