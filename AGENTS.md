@@ -2,7 +2,7 @@
 
 ## Project status
 
-Dwarven Depths is in Phase 1 deterministic harness implementation. The repository contains the deterministic TypeScript workspace, stable immutable entity/effect tables, and a runnable `validate`/`run`/`replay --verify`/`inspect`/`compare` simulation CLI. Completed Phase 1 run bundles are self-contained and bind strict content, scenario, command, checkpoint, state, and event evidence. The broader command surface in `docs/simulation-harness.md` remains an implementation contract unless listed as available in `docs/milestone-0.md` or `docs/phase-1.md`.
+Dwarven Depths is in Phase 3 combat-foundation implementation. Phase 2's static battlefield, pathing, congestion, and rendering boundary is complete, and Phase 3 begins with deterministic target-policy selection. The repository contains a runnable `validate`/`run`/`replay --verify`/`inspect`/`compare`/`render` simulation CLI. The broader command surface in `docs/simulation-harness.md` remains an implementation contract unless listed as available in `docs/milestone-0.md`, `docs/phase-1.md`, `docs/phase-2.md`, or `docs/phase-3.md`.
 
 ## Source-of-truth order
 

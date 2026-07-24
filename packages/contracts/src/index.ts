@@ -186,6 +186,45 @@ export interface BattlefieldState {
   readonly pendingSpawns: readonly PendingSpawn[];
 }
 
+export type DwarfTargetPolicy =
+  | "nearest"
+  | "lowest_health"
+  | "highest_health"
+  | "highest_armor"
+  | "fastest"
+  | "boss_or_elite_first";
+
+/** A living hostile already determined to be in range and line of sight. */
+export interface DwarfTargetCandidate {
+  readonly entityId: EntityId;
+  readonly distanceSquared: number;
+  readonly currentHealth: number;
+  readonly maximumHealth: number;
+  readonly armor: number;
+  readonly speed: number;
+  readonly isBoss: boolean;
+  readonly isElite: boolean;
+}
+
+export interface DwarfTargetSelectionRequest {
+  readonly requestedPolicy: DwarfTargetPolicy;
+  readonly supportedPolicies: readonly DwarfTargetPolicy[];
+  readonly candidates: readonly DwarfTargetCandidate[];
+}
+
+export type DwarfTargetSelectionReason =
+  | "selected_requested_policy"
+  | "fallback_unsupported_policy"
+  | "fallback_no_preferred_target"
+  | "no_valid_targets";
+
+export interface DwarfTargetSelectionDecision {
+  readonly requestedPolicy: DwarfTargetPolicy;
+  readonly appliedPolicy: DwarfTargetPolicy;
+  readonly targetEntityId?: EntityId;
+  readonly reason: DwarfTargetSelectionReason;
+}
+
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition
