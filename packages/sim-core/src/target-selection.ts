@@ -86,9 +86,7 @@ function requirePolicy(value: unknown, description: string): DwarfTargetPolicy {
     typeof value !== "string" ||
     !targetPolicies.has(value as DwarfTargetPolicy)
   )
-    throw new RangeError(
-      `unknown ${description} target policy (${String(value)})`
-    );
+    throw new RangeError(`unknown ${description} target policy`);
   return value as DwarfTargetPolicy;
 }
 

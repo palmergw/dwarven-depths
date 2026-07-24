@@ -242,6 +242,32 @@ describe("deterministic dwarf target selection", () => {
     ).toThrow("target candidates must be a dense data array");
   });
 
+  it("rejects policy objects without invoking caller-controlled coercion", () => {
+    let coercionCalls = 0;
+    const invalidPolicy = {
+      [Symbol.toPrimitive]() {
+        coercionCalls += 1;
+        throw new Error("caller code executed");
+      }
+    } as unknown as DwarfTargetPolicy;
+
+    expect(() =>
+      selectDwarfTarget({
+        requestedPolicy: invalidPolicy,
+        supportedPolicies: ["nearest"],
+        candidates: []
+      })
+    ).toThrow("unknown requested target policy");
+    expect(() =>
+      selectDwarfTarget({
+        requestedPolicy: "nearest",
+        supportedPolicies: [invalidPolicy],
+        candidates: []
+      })
+    ).toThrow("unknown supported target policy");
+    expect(coercionCalls).toBe(0);
+  });
+
   it("is permutation-invariant, detached, and deeply immutable", () => {
     const request = {
       requestedPolicy: "lowest_health" as const,
