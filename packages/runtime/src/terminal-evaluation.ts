@@ -70,10 +70,19 @@ function requirePlainExactRecord(
     throw new TypeError(`${path} must contain exactly ${keys.join(", ")}`);
 }
 
+function requireStandardArray(
+  value: unknown,
+  path: string
+): asserts value is unknown[] {
+  if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype)
+    throw new TypeError(`${path} must be a standard array`);
+}
+
 function requireEntityIds(value: unknown, path: string): readonly EntityId[] {
-  if (!Array.isArray(value)) throw new TypeError(`${path} must be an array`);
+  requireStandardArray(value, path);
   const seen = new Set<string>();
-  for (const id of value) {
+  for (let index = 0; index < value.length; index += 1) {
+    const id = value[index];
     if (
       typeof id !== "string" ||
       !stableIdPattern.test(id) ||
@@ -85,6 +94,74 @@ function requireEntityIds(value: unknown, path: string): readonly EntityId[] {
     seen.add(id);
   }
   return value as readonly EntityId[];
+}
+
+function validateWaveScheduleShape(
+  value: unknown
+): asserts value is WaveScheduleRequest {
+  requirePlainExactRecord(
+    value,
+    [
+      "schemaVersion",
+      "currentTick",
+      "level",
+      "waves",
+      "startedWaveIds",
+      "firedSpawnIds",
+      "pendingSpawns"
+    ],
+    "terminal evaluation waveSchedule"
+  );
+  const schedule = value as unknown as WaveScheduleRequest;
+  requirePlainExactRecord(
+    schedule.level,
+    Object.hasOwn(schedule.level, "mapId")
+      ? ["kind", "id", "waveIds", "mapId"]
+      : ["kind", "id", "waveIds"],
+    "terminal evaluation waveSchedule.level"
+  );
+  requireStandardArray(schedule.level.waveIds, "waveSchedule.level.waveIds");
+  requireStandardArray(schedule.waves, "waveSchedule.waves");
+  for (let waveIndex = 0; waveIndex < schedule.waves.length; waveIndex += 1) {
+    const wave = schedule.waves[waveIndex];
+    requirePlainExactRecord(
+      wave,
+      ["kind", "id", "startAtTick", "durationTicks", "spawnEvents"],
+      `waveSchedule.waves[${waveIndex}]`
+    );
+    requireStandardArray(
+      wave.spawnEvents,
+      `waveSchedule.waves[${waveIndex}].spawnEvents`
+    );
+    for (
+      let spawnIndex = 0;
+      spawnIndex < wave.spawnEvents.length;
+      spawnIndex += 1
+    ) {
+      requirePlainExactRecord(
+        wave.spawnEvents[spawnIndex],
+        [
+          "id",
+          "authoredOrder",
+          "atTick",
+          "entityId",
+          "enemyDefinitionId",
+          "entranceId"
+        ],
+        `waveSchedule.waves[${waveIndex}].spawnEvents[${spawnIndex}]`
+      );
+    }
+  }
+  requireStandardArray(schedule.startedWaveIds, "waveSchedule.startedWaveIds");
+  requireStandardArray(schedule.firedSpawnIds, "waveSchedule.firedSpawnIds");
+  requireStandardArray(schedule.pendingSpawns, "waveSchedule.pendingSpawns");
+  for (let index = 0; index < schedule.pendingSpawns.length; index += 1) {
+    requirePlainExactRecord(
+      schedule.pendingSpawns[index],
+      ["id", "authoredOrder", "entityId", "entranceId"],
+      `waveSchedule.pendingSpawns[${index}]`
+    );
+  }
 }
 
 function sameIdSet(
@@ -109,6 +186,7 @@ export function evaluateTerminalState(
   canonicalStringify(request);
   if (request.schemaVersion !== 1)
     throw new RangeError("terminal evaluation request schemaVersion must be 1");
+  validateWaveScheduleShape(request.waveSchedule);
 
   const livingDwarfIds = requireEntityIds(
     request.livingDwarfIds,

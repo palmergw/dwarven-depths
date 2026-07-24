@@ -114,5 +114,33 @@ describe("final cleanup and terminal evaluation", () => {
         }
       })
     ).toThrow("must already be resolved through currentTick");
+
+    const customPrototypeIds = ["entity.dwarf.warden" as never];
+    Object.setPrototypeOf(customPrototypeIds, {
+      [Symbol.iterator]() {
+        return {
+          next() {
+            return { done: true, value: undefined };
+          }
+        };
+      }
+    });
+    expect(() =>
+      evaluateTerminalState({
+        ...terminalEvaluationRequest(),
+        livingDwarfIds: customPrototypeIds
+      })
+    ).toThrow("livingDwarfIds must be a standard array");
+
+    const request = terminalEvaluationRequest();
+    expect(() =>
+      evaluateTerminalState({
+        ...request,
+        waveSchedule: {
+          ...request.waveSchedule,
+          level: { ...request.waveSchedule.level, unexpected: true }
+        }
+      } as never)
+    ).toThrow("waveSchedule.level must contain exactly");
   });
 });
