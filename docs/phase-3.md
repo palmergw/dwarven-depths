@@ -38,10 +38,16 @@ Phase 3 surface currently present in the repository.
   dwarves and reachable, living blockers whose destruction opens the intended
   route, then selects the lowest path cost with stable placement-point and
   entity-ID ties. Decisions are immutable and reason-coded.
+- Attack windups resolve at explicit integer commit and impact ticks. Invalid
+  targets cancel before or at commitment without starting cooldown; valid
+  attacks commit exactly at the authored tick and pin both impact and cooldown
+  completion timing. Batch decisions use stable attack-ID order and are
+  immutable, detached, and reason-coded.
 
 ## Not implemented yet
 
 Integration of route analysis with enemy target acquisition, dwarf candidate
-filtering, target locking, attack commitment, damage, armor, cooldowns,
-statuses, death resolution, authored spawn schedules, boss behavior, and combat
-event integration remain later Phase 3 checkpoints.
+filtering, target locking, committed-attack impact execution, damage, armor,
+cooldown state advancement, statuses, death resolution, authored spawn
+schedules, boss behavior, and combat event integration remain later Phase 3
+checkpoints.
