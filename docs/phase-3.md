@@ -129,9 +129,17 @@ Phase 3 surface currently present in the repository.
   replaying schedule events. The composed result remains versioned, immutable,
   detached, input-order independent, and checksum-pinned across Node and all
   three browser engines.
+- Fixed-step phase 12 resolves configured boss-death rewards before terminal
+  evaluation. Each unclaimed reward atomically grants Forge Ore, records its
+  stable claim ID, and unlocks its configured character; replayed claims are
+  explicit no-ops. Multiple boss deaths resolve in stable boss/reward order,
+  and the resulting profile and reason-coded decisions are versioned,
+  immutable, detached, input-order independent, and checksum-pinned across
+  Node and all three browser engines. This preserves the boss reward and unlock
+  even when terminal evaluation subsequently records a same-step defeat.
 
 ## Not implemented yet
 
 Armor, attack-windup status semantics, non-damage trigger variants, authored
-enemy stat definitions, rewards, boss behavior, terminal evaluation, and
+enemy stat definitions, non-boss rewards, boss behavior, terminal evaluation, and
 broader combat event integration remain later Phase 3 checkpoints.

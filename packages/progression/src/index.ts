@@ -1,5 +1,7 @@
 import type { StableId } from "@dwarven-depths/contracts";
 
+export * from "./boss-rewards.js";
+
 export interface ProfileState {
   readonly schemaVersion: 1;
   readonly revision: number;
