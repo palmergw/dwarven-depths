@@ -134,6 +134,7 @@ function battlefield(
       }
     ],
     enemyCombatants: [enemy],
+    dwarfCombatants: [],
     pendingCommittedAttacks: []
   } as unknown as BattlefieldState;
 }

@@ -418,6 +418,11 @@ export function resolveEnemyActionPhase(
         .map((admission) => Object.freeze({ ...admission }))
     ),
     enemyCombatants,
+    dwarfCombatants: Object.freeze(
+      request.battlefield.dwarfCombatants.map((dwarf) =>
+        Object.freeze({ ...dwarf })
+      )
+    ),
     pendingCommittedAttacks: Object.freeze(
       committedAttacks
         .sort((left, right) => compareText(left.attackId, right.attackId))

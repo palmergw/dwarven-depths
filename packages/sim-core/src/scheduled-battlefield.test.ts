@@ -39,6 +39,7 @@ describe("authored wave battlefield composition", () => {
         }
       ],
       pendingCommittedAttacks: [],
+      dwarfCombatants: [],
       enemyAdmissions: [
         {
           schemaVersion: 1,
@@ -687,6 +688,6 @@ describe("authored wave battlefield composition", () => {
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("556917bbe7cbc4fb487c86dd3743a188f8456b41f847fc0ab00b409dd88fba6f");
+    ).toBe("cfd3d19163ded2155abcc6a274fe3e4d5b062466cd8d6973df9b6e60115173d7");
   });
 });

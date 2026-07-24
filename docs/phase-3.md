@@ -212,6 +212,17 @@ Phase 3 surface currently present in the repository.
   death after commitment does not invalidate the pending work. The commitment-
   through-impact-boundary evidence is immutable and checksum-pinned across Node
   and all three browser engines.
+- Authored dwarf deployments now initialize authoritative battlefield health
+  and lifecycle records bound to one compiled `character.*` definition and one
+  authored placement. Fixed-step damage resolution keeps enemy attacks pending
+  before their exact impact tick, consumes due work through the shared
+  simultaneous-damage boundary, and downs zero-health dwarves while vacating
+  their navigation occupancy in the same phase. Absent or already-downed
+  targets discard due impacts without disturbing unrelated battlefield state.
+  Persisted dwarf identity, health, lifecycle, and placement occupancy are
+  strictly validated, and lethal Cutter-to-Warden evidence is immutable and
+  checksum-pinned across Node and all three browser engines. Armor reduction is
+  intentionally not inferred.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
@@ -266,7 +277,8 @@ Phase 3 surface currently present in the repository.
 
 ## Not implemented yet
 
-Broader attack impact execution in the authored encounter,
+Broader attack impact execution across enemy and deployable targets in the
+authored encounter,
 armor reduction,
 attack-windup status semantics,
 non-damage trigger variants,

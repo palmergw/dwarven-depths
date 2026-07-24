@@ -686,6 +686,7 @@ export function planEnemyMovement(
       "pendingSpawns",
       "enemyAdmissions",
       "enemyCombatants",
+      "dwarfCombatants",
       "pendingCommittedAttacks"
     ],
     "battlefield"

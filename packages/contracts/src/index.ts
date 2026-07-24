@@ -389,6 +389,22 @@ export interface BattlefieldEnemyAdmission {
   readonly admittedAtTick: number;
 }
 
+export interface BattlefieldDwarfCombatant {
+  readonly schemaVersion: 1;
+  readonly entityId: EntityId;
+  readonly characterDefinitionId: StableId;
+  readonly placementPointId: PlacementPointId;
+  readonly currentHealth: number;
+  readonly maximumHealth: number;
+  readonly lifecycleState: "active" | "downed";
+}
+
+export interface DwarfDeployment {
+  readonly entityId: EntityId;
+  readonly characterDefinitionId: StableId;
+  readonly placementPointId: PlacementPointId;
+}
+
 export interface WaveScheduleRequest {
   readonly schemaVersion: 1;
   readonly currentTick: number;
@@ -432,8 +448,24 @@ export interface BattlefieldState {
   readonly pendingSpawns: readonly PendingSpawn[];
   readonly enemyAdmissions: readonly BattlefieldEnemyAdmission[];
   readonly enemyCombatants: readonly BattlefieldEnemyCombatant[];
+  readonly dwarfCombatants: readonly BattlefieldDwarfCombatant[];
   /** Committed enemy attacks awaiting their exact authored impact tick. */
   readonly pendingCommittedAttacks: readonly CommittedAttack[];
+}
+
+export interface BattlefieldAttackImpactRequest {
+  readonly schemaVersion: 1;
+  readonly currentTick: number;
+  readonly levelId: StableId;
+  readonly battlefield: BattlefieldState;
+}
+
+export interface BattlefieldAttackImpactResolution {
+  readonly schemaVersion: 1;
+  readonly battlefield: BattlefieldState;
+  readonly impactDecisions: readonly CommittedAttackImpactDecision[];
+  readonly healthResolutions: readonly CombatantHealthResolution[];
+  readonly lifecycleDecisions: readonly ZeroHealthLifecycleDecision[];
 }
 
 export type DwarfTargetPolicy =

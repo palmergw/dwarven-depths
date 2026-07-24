@@ -385,7 +385,7 @@ describe("enemy action phase", () => {
 
   it("pins action evidence for browser parity", async () => {
     expect(await canonicalHash(await enemyActionPhaseParityEvidence())).toBe(
-      "4fc89acfd5de1ebeda1ceef427e717c84b441704745949cadd1771495e4a8127"
+      "97ab711681105d8f16dc4016b0c0d78435da095da15b62f0c5836d068080273a"
     );
   });
 });
