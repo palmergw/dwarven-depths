@@ -146,9 +146,18 @@ Phase 3 surface currently present in the repository.
   are versioned, immutable, detached, input-order independent, and
   checksum-pinned across Node and all three browser engines. The runtime
   checkpoint composes this evaluation after boss reward resolution.
+- One compact Phase 3 system artifact carries a retained dwarf target through
+  commitment, lethal boss impact, lifecycle resolution, a bounded death trigger,
+  boss reward/unlock, and completed-wave victory. Companion evidence covers
+  invalid-lock cancellation with future reacquisition, same-tick dwarf/enemy
+  lethal impacts, and committed healing/status application.
+- The complete artifact is reason-coded, immutable, and pinned to one literal
+  checksum in Node, Chromium, Firefox, and WebKit. It verifies the implemented
+  combat boundaries together without introducing a second authoritative game
+  loop or inventing unresolved mechanics.
 
 ## Not implemented yet
 
 Armor, attack-windup status semantics, non-damage trigger variants, authored
-enemy stat definitions, non-boss rewards, boss behavior, and broader combat
-event integration remain later Phase 3 checkpoints.
+enemy stat definitions, non-boss rewards, boss behavior, broader combat event
+integration, and the contracted `sim explain` surface remain later checkpoints.
