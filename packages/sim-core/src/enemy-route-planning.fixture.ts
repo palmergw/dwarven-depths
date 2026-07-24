@@ -34,7 +34,7 @@ export async function enemyRouteParityEvidence() {
     map,
     sourceNodeId: "node.shuttergate_west_entry" as never,
     targetPlacementPointId: "placement.shuttergate_north_guard" as never,
-    range: 1,
+    range: 0,
     requiresLineOfSight: false,
     blockedNodeIds: ["node.shuttergate_north_guard" as never]
   });
