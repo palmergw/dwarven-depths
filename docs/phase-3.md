@@ -44,11 +44,19 @@ Phase 3 surface currently present in the repository.
   completion timing plus the resolved damage and range values then in force.
   Batch decisions use stable attack-ID order and are immutable, detached,
   versioned, and reason-coded.
+- Committed direct attacks remain pending until their exact authored impact
+  tick. Source death or removal does not cancel committed work. At impact, an
+  absent or zero-health target discards the attack with a machine-readable
+  reason; otherwise snapshotted integer damage is applied.
+- Same-tick direct damage is aggregated per living target before health changes,
+  clamps at zero, and returns stable attack decisions plus stable entity health
+  evidence. Results are independent of input order and are immutable, detached,
+  and versioned. Armor reduction is intentionally not inferred at this boundary.
 
 ## Not implemented yet
 
 Integration of route analysis with enemy target acquisition, dwarf candidate
-filtering, target locking, committed-attack impact execution, damage, armor,
-cooldown state advancement, statuses, death resolution, authored spawn
+filtering, target locking, armor, cooldown state advancement, statuses, healing,
+zero-health downed/destroyed transitions, death triggers, authored spawn
 schedules, boss behavior, and combat event integration remain later Phase 3
 checkpoints.

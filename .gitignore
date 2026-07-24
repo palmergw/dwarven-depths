@@ -11,6 +11,8 @@ node_modules/
 .pnpm-store/
 dist/
 coverage/
+.vitest-attachments/
+**/__screenshots__/
 *.tsbuildinfo
 
 # Generated simulation artifacts
