@@ -52,11 +52,19 @@ Phase 3 surface currently present in the repository.
   clamps at zero, and returns stable attack decisions plus stable entity health
   evidence. Results are independent of input order and are immutable, detached,
   and versioned. Armor reduction is intentionally not inferred at this boundary.
+- After health changes, active zero-health dwarves transition to downed while
+  active zero-health enemies and deployables transition to destroyed from one
+  shared pre-resolution snapshot. Living and already-resolved entities retain
+  their lifecycle state with machine-readable evidence.
+- Lifecycle decisions, resulting combatants, and surviving navigation occupancy
+  use stable entity-ID order. Downed and destroyed entities vacate occupancy in
+  the same resolution. Inputs are strictly validated, immutable, and detached,
+  and the mixed-kind simultaneous-death fixture is pinned across Node and all
+  three browser engines.
 
 ## Not implemented yet
 
 Integration of route analysis with enemy target acquisition, dwarf candidate
 filtering, target locking, armor, cooldown state advancement, statuses, healing,
-zero-health downed/destroyed transitions, death triggers, authored spawn
-schedules, boss behavior, and combat event integration remain later Phase 3
-checkpoints.
+death and destruction triggers, authored spawn schedules, boss behavior, and
+combat event integration remain later Phase 3 checkpoints.
