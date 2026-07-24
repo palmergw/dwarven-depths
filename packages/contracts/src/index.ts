@@ -68,6 +68,37 @@ export interface WaveSpawnEvent {
   readonly entranceId: EnemyEntranceId;
 }
 
+export interface AuthoredBasicAttackDefinition {
+  readonly id: StableId;
+  readonly windupTicks: number;
+  readonly impactDelayTicks: number;
+  readonly cooldownTicks: number;
+  readonly damage: number;
+  readonly range: number;
+  readonly requiresLineOfSight: boolean;
+}
+
+export interface CharacterDefinition {
+  readonly kind: "character";
+  readonly id: StableId;
+  readonly maximumHealth: number;
+  /** Target-selection metric only; damage reduction is not yet contracted. */
+  readonly armor: number;
+  readonly supportedTargetPolicies: readonly DwarfTargetPolicy[];
+  readonly basicAttack: AuthoredBasicAttackDefinition;
+}
+
+export interface EnemyDefinition {
+  readonly kind: "enemy";
+  readonly id: StableId;
+  readonly classification: "basic" | "elite" | "boss";
+  readonly maximumHealth: number;
+  /** Target-selection metric only; damage reduction is not yet contracted. */
+  readonly armor: number;
+  readonly movementIntervalTicks: number;
+  readonly basicAttack: AuthoredBasicAttackDefinition;
+}
+
 export interface NavigationNodeDefinition {
   readonly id: NavigationNodeId;
   readonly x: number;
@@ -787,7 +818,9 @@ export interface DeathTriggerResolution {
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition
-  | BattlefieldMapDefinition;
+  | BattlefieldMapDefinition
+  | CharacterDefinition
+  | EnemyDefinition;
 
 export interface ContentBundle {
   readonly schemaVersion: 1;

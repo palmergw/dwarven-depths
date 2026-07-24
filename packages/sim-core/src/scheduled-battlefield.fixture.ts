@@ -6,6 +6,9 @@ import type {
 import mapContentInput from "../../../content/fixtures/conformance-map.json" with {
   type: "json"
 };
+import referenceCombatantsInput from "../../../content/fixtures/phase-3-reference-combatants.json" with {
+  type: "json"
+};
 import {
   createInitialState,
   resolveScheduledBattlefieldPhase,
@@ -13,6 +16,11 @@ import {
 } from "./index.js";
 
 const mapDefinition = mapContentInput.definitions[1];
+const enemyDefinitions = referenceCombatantsInput.definitions.filter(
+  (definition) =>
+    definition.id === "enemy.goblin_cutter" ||
+    definition.id === "enemy.goblin_slinger"
+);
 
 export const scheduledBattlefieldContent = Object.freeze({
   schemaVersion: 1,
@@ -56,7 +64,8 @@ export const scheduledBattlefieldContent = Object.freeze({
           entranceId: "entrance.west"
         })
       ])
-    })
+    }),
+    ...enemyDefinitions
   ])
 }) as unknown as ContentBundle;
 

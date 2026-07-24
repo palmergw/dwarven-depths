@@ -5,6 +5,9 @@ import mapContentInput from "../../../content/fixtures/conformance-map.json" wit
 import phase2SystemContentInput from "../../../content/fixtures/phase-2-system.json" with {
   type: "json"
 };
+import referenceCombatantsInput from "../../../content/fixtures/phase-3-reference-combatants.json" with {
+  type: "json"
+};
 import {
   ContentValidationError,
   calculateRouteCost,
@@ -42,6 +45,29 @@ function permutations<Value>(values: readonly Value[]): Value[][] {
 }
 
 describe("content compilation", () => {
+  it("canonically indexes and deeply freezes reference combatants", async () => {
+    const input = structuredClone(referenceCombatantsInput);
+    const before = structuredClone(input);
+    const content = await compileContent(input);
+    expect(input).toEqual(before);
+    expect(content.manifestHash).toBe(
+      "99db3dd6f233616e3393adba378daf098d1b17c26312f9a9c288df65e21a7aa4"
+    );
+    expect([...content.characters.keys()]).toEqual(["character.iron_warden"]);
+    expect([...content.enemies.keys()]).toEqual([
+      "enemy.gatebreaker_captain",
+      "enemy.goblin_bulwark",
+      "enemy.goblin_cutter",
+      "enemy.goblin_slinger"
+    ]);
+    const warden = content.characters.get("character.iron_warden" as never);
+    expect(Object.isFrozen(warden)).toBe(true);
+    expect(Object.isFrozen(warden?.supportedTargetPolicies)).toBe(true);
+    expect(Object.isFrozen(warden?.basicAttack)).toBe(true);
+    expect("set" in content.characters).toBe(false);
+    expect("set" in content.enemies).toBe(false);
+  });
+
   it("sorts definitions and builds kind-specific indexes", async () => {
     const content = await compileContent({
       schemaVersion: 1,
@@ -120,7 +146,12 @@ describe("content compilation", () => {
             }
           ]
         },
-        map
+        map,
+        ...referenceCombatantsInput.definitions.filter(
+          (definition) =>
+            definition.id === "enemy.goblin_cutter" ||
+            definition.id === "enemy.goblin_slinger"
+        )
       ]
     };
     const before = structuredClone(input);
