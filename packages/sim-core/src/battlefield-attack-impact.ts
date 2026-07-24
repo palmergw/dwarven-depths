@@ -175,10 +175,6 @@ export function createBattlefieldDwarfDeploymentAuthority(
   preparationBattlefield: BattlefieldState,
   content: CompiledContent
 ): BattlefieldDwarfDeploymentAuthority {
-  const lineage = claimBattlefieldPreparationLineage(
-    preparationBattlefield,
-    content
-  );
   const mapId = preparationBattlefield.mapId;
   const map = content.maps.get(mapId);
   if (map === undefined)
@@ -238,6 +234,10 @@ export function createBattlefieldDwarfDeploymentAuthority(
       )
     )
   });
+  const lineage = claimBattlefieldPreparationLineage(
+    preparationBattlefield,
+    content
+  );
   deploymentAuthorityMetadata.set(authority, {
     content,
     lineage,

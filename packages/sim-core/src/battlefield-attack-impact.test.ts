@@ -233,6 +233,21 @@ describe("battlefield committed-attack impacts", () => {
         placementPointId: "placement.goal" as never
       }
     ];
+    const deployment = deployments[0];
+    if (deployment === undefined) throw new Error("missing deployment fixture");
+    expect(() =>
+      createBattlefieldDwarfDeploymentAuthority(
+        [
+          {
+            entityId: deployment.entityId,
+            characterDefinitionId: "character.missing" as never,
+            placementPointId: deployment.placementPointId
+          }
+        ],
+        otherPreparation,
+        content
+      )
+    ).toThrow("unknown character");
     const otherAuthority = createBattlefieldDwarfDeploymentAuthority(
       deployments,
       otherPreparation,
