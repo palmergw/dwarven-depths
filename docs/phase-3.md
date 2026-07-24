@@ -137,9 +137,18 @@ Phase 3 surface currently present in the repository.
   immutable, detached, input-order independent, and checksum-pinned across
   Node and all three browser engines. This preserves the boss reward and unlock
   even when terminal evaluation subsequently records a same-step defeat.
+- Fixed-step phase 13 validates the authoritative post-scheduling wave state,
+  enters final cleanup only when the final authored wave interval has ended,
+  and evaluates defeat before victory. No living deployed dwarf is an immediate
+  defeat; otherwise victory requires the complete spawn schedule to have fired,
+  an empty pending-spawn queue, and no living hostile enemy or hostile
+  deployable. Unresolved cleanup conditions remain reason-coded, while results
+  are versioned, immutable, detached, input-order independent, and
+  checksum-pinned across Node and all three browser engines. The runtime
+  checkpoint composes this evaluation after boss reward resolution.
 
 ## Not implemented yet
 
 Armor, attack-windup status semantics, non-damage trigger variants, authored
-enemy stat definitions, non-boss rewards, boss behavior, terminal evaluation, and
-broader combat event integration remain later Phase 3 checkpoints.
+enemy stat definitions, non-boss rewards, boss behavior, and broader combat
+event integration remain later Phase 3 checkpoints.
