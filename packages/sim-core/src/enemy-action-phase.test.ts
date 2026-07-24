@@ -10,6 +10,7 @@ import {
   type BattlefieldDwarfDeploymentAuthority,
   createBattlefieldDwarfDeploymentAuthority
 } from "./battlefield-attack-impact.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import { enemyActionPhaseParityEvidence } from "./enemy-action-phase.fixture.js";
 import { resolveEnemyActionPhase as executeEnemyActionPhase } from "./enemy-action-phase.js";
 import {
@@ -18,12 +19,16 @@ import {
   enemyMovementPlanningContent,
   entry
 } from "./enemy-movement-planning.fixture.js";
-import { resolveEnemyMovementPhase } from "./index.js";
+import { createInitialState, resolveEnemyMovementPhase } from "./index.js";
 
 let content: Awaited<ReturnType<typeof compileContent>>;
 const authorities = new WeakMap<
   Parameters<typeof executeEnemyActionPhase>[1],
   BattlefieldDwarfDeploymentAuthority
+>();
+const preparationBattlefields = new WeakMap<
+  Parameters<typeof executeEnemyActionPhase>[1],
+  NonNullable<ReturnType<typeof createInitialState>["battlefield"]>
 >();
 
 beforeAll(async () => {
@@ -37,6 +42,12 @@ function authorityFor(
 ): BattlefieldDwarfDeploymentAuthority {
   const existing = authorities.get(compiled);
   if (existing !== undefined) return existing;
+  const preparation = createInitialState(
+    compiled,
+    "level.conformance_map" as never,
+    "1"
+  ).battlefield;
+  if (preparation === undefined) throw new Error("missing fixture battlefield");
   const authority = createBattlefieldDwarfDeploymentAuthority(
     [
       {
@@ -45,10 +56,11 @@ function authorityFor(
         placementPointId: "placement.goal" as never
       }
     ],
-    "map.conformance_diamond" as never,
+    preparation,
     compiled
   );
   authorities.set(compiled, authority);
+  preparationBattlefields.set(compiled, preparation);
   return authority;
 }
 
@@ -56,7 +68,11 @@ function resolveEnemyActionPhase(
   request: Parameters<typeof executeEnemyActionPhase>[0],
   compiled: Parameters<typeof executeEnemyActionPhase>[1]
 ) {
-  return executeEnemyActionPhase(request, compiled, authorityFor(compiled));
+  const authority = authorityFor(compiled);
+  const preparation = preparationBattlefields.get(compiled);
+  if (preparation === undefined) throw new Error("missing fixture preparation");
+  propagateBattlefieldRoundLineage(preparation, request.battlefield);
+  return executeEnemyActionPhase(request, compiled, authority);
 }
 
 describe("enemy action phase", () => {

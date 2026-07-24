@@ -1,13 +1,28 @@
-import { canonicalHash } from "@dwarven-depths/contracts";
+import {
+  type BattlefieldState,
+  canonicalHash
+} from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import { battlefieldAttackImpactParityEvidence } from "./battlefield-attack-impact.fixture.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import {
+  createBattlefieldDwarfDeploymentAuthority,
+  createInitialState,
+  deployBattlefieldDwarves,
   normalizeBattlefieldDwarves,
   resolveBattlefieldAttackImpacts
 } from "./index.js";
 
 const parityChecksum =
   "c197de6feed2dac3630389e508c546425960b544a1de23572e3a7912a9aa4895";
+
+function descendant<T extends BattlefieldState>(
+  source: BattlefieldState,
+  target: T
+): T {
+  propagateBattlefieldRoundLineage(source, target);
+  return target;
+}
 
 describe("battlefield committed-attack impacts", () => {
   it("persists before impact then consumes lethal damage into downed state", async () => {
@@ -71,14 +86,13 @@ describe("battlefield committed-attack impacts", () => {
         lifecycleState: "downed"
       }))
     ]) {
+      const candidate = {
+        ...committed,
+        dwarfCombatants
+      } as unknown as typeof committed;
+      propagateBattlefieldRoundLineage(committed, candidate);
       expect(() =>
-        normalizeBattlefieldDwarves(
-          dwarfCombatants,
-          deploymentAuthority,
-          content,
-          committed.mapId,
-          committed.occupancy
-        )
+        normalizeBattlefieldDwarves(candidate, deploymentAuthority, content)
       ).toThrow();
     }
   });
@@ -92,7 +106,7 @@ describe("battlefield committed-attack impacts", () => {
           schemaVersion: 1,
           currentTick: 7,
           levelId: "level.conformance_map" as never,
-          battlefield: {
+          battlefield: descendant(committed, {
             ...committed,
             pendingCommittedAttacks: committed.pendingCommittedAttacks.map(
               (attack) => ({
@@ -100,7 +114,7 @@ describe("battlefield committed-attack impacts", () => {
                 targetEntityId: "entity.dwarf.absent" as never
               })
             )
-          }
+          })
         },
         content,
         deploymentAuthority
@@ -117,13 +131,13 @@ describe("battlefield committed-attack impacts", () => {
           schemaVersion: 1,
           currentTick: 7,
           levelId: "level.conformance_map" as never,
-          battlefield: {
+          battlefield: descendant(committed, {
             ...committed,
             occupancy: [
               ...committed.occupancy,
               { entityId: "not-an-entity", nodeId: "not-a-node" }
             ] as never
-          }
+          })
         },
         content,
         deploymentAuthority
@@ -140,7 +154,7 @@ describe("battlefield committed-attack impacts", () => {
           schemaVersion: 1,
           currentTick: 7,
           levelId: "level.conformance_map" as never,
-          battlefield: {
+          battlefield: descendant(committed, {
             ...committed,
             enemyCombatants: committed.enemyCombatants.map((enemy) => ({
               ...enemy,
@@ -149,7 +163,7 @@ describe("battlefield committed-attack impacts", () => {
             pendingCommittedAttacks: committed.pendingCommittedAttacks.map(
               (attack) => ({ ...attack, damage: 999 })
             )
-          }
+          })
         },
         content,
         deploymentAuthority
@@ -170,6 +184,7 @@ describe("battlefield committed-attack impacts", () => {
         }))
       }
     ]) {
+      propagateBattlefieldRoundLineage(committed, battlefield);
       expect(() =>
         resolveBattlefieldAttackImpacts(
           {
@@ -202,6 +217,58 @@ describe("battlefield committed-attack impacts", () => {
     ).toThrow("was not accepted");
   });
 
+  it("rejects alternate-round authority and a second preparation claim", async () => {
+    const { content, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    const otherPreparation = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "2"
+    ).battlefield;
+    if (otherPreparation === undefined) throw new Error("missing other round");
+    const deployments = [
+      {
+        entityId: "entity.dwarf.warden" as never,
+        characterDefinitionId: "character.substitute" as never,
+        placementPointId: "placement.goal" as never
+      }
+    ];
+    const otherAuthority = createBattlefieldDwarfDeploymentAuthority(
+      deployments,
+      otherPreparation,
+      content
+    );
+    expect(() =>
+      createBattlefieldDwarfDeploymentAuthority(
+        deployments,
+        otherPreparation,
+        content
+      )
+    ).toThrow("already accepted");
+    const otherDeployed = deployBattlefieldDwarves(
+      otherPreparation,
+      otherAuthority,
+      content
+    );
+    const redirected = {
+      ...committed,
+      dwarfCombatants: otherDeployed.dwarfCombatants
+    };
+    propagateBattlefieldRoundLineage(committed, redirected);
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 7,
+          levelId: "level.conformance_map" as never,
+          battlefield: redirected
+        },
+        content,
+        otherAuthority
+      )
+    ).toThrow("accepted preparation round");
+  });
+
   it("rejects malformed pending-spawn payload through the shared normalizer", async () => {
     const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
@@ -211,7 +278,7 @@ describe("battlefield committed-attack impacts", () => {
           schemaVersion: 1,
           currentTick: 7,
           levelId: "level.conformance_map" as never,
-          battlefield: {
+          battlefield: descendant(committed, {
             ...committed,
             pendingSpawns: [
               {
@@ -222,7 +289,7 @@ describe("battlefield committed-attack impacts", () => {
                 entranceId: "entrance.forged"
               }
             ] as never
-          }
+          })
         },
         content,
         deploymentAuthority
@@ -235,39 +302,41 @@ describe("battlefield committed-attack impacts", () => {
       await battlefieldAttackImpactParityEvidence();
     const enemy = committed.enemyCombatants[0];
     if (enemy === undefined) throw new Error("missing enemy fixture");
+    const candidate = {
+      ...committed,
+      pendingCommittedAttacks: [],
+      enemyCombatants: [
+        {
+          ...enemy,
+          actionState: {
+            ...enemy.actionState,
+            activeBasicAttack: {
+              schemaVersion: 1,
+              attackId:
+                "attack.goblin_cutter_basic.enemy.cutter.tick_6" as never,
+              sourceEntityId: enemy.entityId,
+              targetEntityId: "entity.dwarf.warden" as never,
+              startedAtTick: 6,
+              commitAtTick: 12,
+              impactAtTick: 13,
+              cooldownDurationTicks: 20,
+              damage: 10,
+              range: 1,
+              targetIsValid: true
+            },
+            cooldownCompleteAtTick: null
+          }
+        }
+      ]
+    } as unknown as typeof committed;
+    propagateBattlefieldRoundLineage(committed, candidate);
     expect(() =>
       resolveBattlefieldAttackImpacts(
         {
           schemaVersion: 1,
           currentTick: 6,
           levelId: "level.conformance_map" as never,
-          battlefield: {
-            ...committed,
-            pendingCommittedAttacks: [],
-            enemyCombatants: [
-              {
-                ...enemy,
-                actionState: {
-                  ...enemy.actionState,
-                  activeBasicAttack: {
-                    schemaVersion: 1,
-                    attackId:
-                      "attack.goblin_cutter_basic.enemy.cutter.tick_6" as never,
-                    sourceEntityId: enemy.entityId,
-                    targetEntityId: "entity.dwarf.warden" as never,
-                    startedAtTick: 6,
-                    commitAtTick: 12,
-                    impactAtTick: 13,
-                    cooldownDurationTicks: 20,
-                    damage: 10,
-                    range: 1,
-                    targetIsValid: true
-                  },
-                  cooldownCompleteAtTick: null
-                }
-              }
-            ]
-          }
+          battlefield: candidate
         },
         content,
         deploymentAuthority
@@ -288,7 +357,7 @@ describe("battlefield committed-attack impacts", () => {
           schemaVersion: 1,
           currentTick: 7,
           levelId: "level.conformance_map" as never,
-          battlefield: {
+          battlefield: descendant(committed, {
             ...committed,
             enemyCombatants: [
               {
@@ -299,7 +368,7 @@ describe("battlefield committed-attack impacts", () => {
                 }
               }
             ]
-          }
+          })
         },
         content,
         deploymentAuthority
@@ -319,7 +388,7 @@ describe("battlefield committed-attack impacts", () => {
           schemaVersion: 1,
           currentTick: 7,
           levelId: "level.conformance_map" as never,
-          battlefield: {
+          battlefield: descendant(committed, {
             ...committed,
             enemyCombatants: [
               {
@@ -331,7 +400,7 @@ describe("battlefield committed-attack impacts", () => {
               }
             ],
             pendingCommittedAttacks: [first, overlapping]
-          }
+          })
         },
         content,
         deploymentAuthority
@@ -348,13 +417,13 @@ describe("battlefield committed-attack impacts", () => {
           schemaVersion: 1,
           currentTick: 7,
           levelId: "level.conformance_map" as never,
-          battlefield: {
+          battlefield: descendant(committed, {
             ...committed,
             enemyCombatants: committed.enemyCombatants.map((enemy) => ({
               ...enemy,
               actionState: { ...enemy.actionState, nextMovementAtTick: "bad" }
             })) as never
-          }
+          })
         },
         content,
         deploymentAuthority

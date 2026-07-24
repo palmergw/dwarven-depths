@@ -13,6 +13,7 @@ import {
   type BattlefieldDwarfDeploymentAuthority,
   createBattlefieldDwarfDeploymentAuthority
 } from "./battlefield-attack-impact.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import {
   battlefield,
   combatant,
@@ -21,14 +22,25 @@ import {
   entry
 } from "./enemy-movement-planning.fixture.js";
 import { planEnemyMovement as executeEnemyMovementPlanning } from "./enemy-movement-planning.js";
+import { createInitialState } from "./index.js";
 
 let content: CompiledContent;
 let dwarfAuthority: BattlefieldDwarfDeploymentAuthority;
+let preparationBattlefield: NonNullable<
+  ReturnType<typeof createInitialState>["battlefield"]
+>;
 
 beforeAll(async () => {
   content = await compileContent({
     ...enemyMovementPlanningContent
   } as unknown as ContentBundle);
+  const preparation = createInitialState(
+    content,
+    "level.conformance_map" as never,
+    "1"
+  ).battlefield;
+  if (preparation === undefined) throw new Error("missing fixture battlefield");
+  preparationBattlefield = preparation;
   dwarfAuthority = createBattlefieldDwarfDeploymentAuthority(
     [
       {
@@ -37,12 +49,13 @@ beforeAll(async () => {
         placementPointId: "placement.goal" as never
       }
     ],
-    "map.conformance_diamond" as never,
+    preparation,
     content
   );
 });
 
 function planEnemyMovement(request: EnemyMovementPlanningRequest) {
+  propagateBattlefieldRoundLineage(preparationBattlefield, request.battlefield);
   return executeEnemyMovementPlanning(request, content, dwarfAuthority);
 }
 
@@ -141,7 +154,12 @@ describe("deterministic enemy movement proposal planning", () => {
     expect(() =>
       planEnemyMovement({
         ...base,
-        battlefield: { ...base.battlefield, occupancy: [] }
+        battlefield: {
+          ...base.battlefield,
+          occupancy: base.battlefield.occupancy.filter(
+            (occupant) => occupant.entityId === "entity.dwarf.warden"
+          )
+        }
       })
     ).toThrow("active enemy is not occupied");
     expect(() => planEnemyMovement({ ...base, entries: [] })).toThrow(

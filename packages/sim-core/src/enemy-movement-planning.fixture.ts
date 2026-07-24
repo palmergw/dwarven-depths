@@ -14,7 +14,9 @@ import referenceCombatants from "../../../content/fixtures/phase-3-reference-com
   type: "json"
 };
 import { createBattlefieldDwarfDeploymentAuthority } from "./battlefield-attack-impact.js";
-import { planEnemyMovement } from "./enemy-movement-planning.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
+import { planEnemyMovement as executeEnemyMovementPlanning } from "./enemy-movement-planning.js";
+import { createInitialState } from "./index.js";
 
 const authoredEnemyEntityIds = [
   "entity.enemy.proposed",
@@ -177,6 +179,12 @@ export async function enemyMovementPlanningParityEvidence() {
   const content = await compileContent(
     enemyMovementPlanningContent as unknown as ContentBundle
   );
+  const preparation = createInitialState(
+    content,
+    "level.conformance_map" as never,
+    "1"
+  ).battlefield;
+  if (preparation === undefined) throw new Error("missing fixture battlefield");
   const dwarfAuthority = createBattlefieldDwarfDeploymentAuthority(
     [
       {
@@ -185,9 +193,17 @@ export async function enemyMovementPlanningParityEvidence() {
         placementPointId: "placement.goal" as never
       }
     ],
-    "map.conformance_diamond" as never,
+    preparation,
     content
   );
+  const planEnemyMovement = (
+    request: EnemyMovementPlanningRequest,
+    _content: typeof content,
+    _authority: typeof dwarfAuthority
+  ) => {
+    propagateBattlefieldRoundLineage(preparation, request.battlefield);
+    return executeEnemyMovementPlanning(request, content, dwarfAuthority);
+  };
   const proposedEnemy = combatant(
     "entity.enemy.proposed",
     6,

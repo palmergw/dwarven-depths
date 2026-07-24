@@ -9,20 +9,34 @@ import {
   type BattlefieldDwarfDeploymentAuthority,
   createBattlefieldDwarfDeploymentAuthority
 } from "./battlefield-attack-impact.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import {
   contentionRequest,
   enemyMovementPhaseContent,
   enemyMovementPhaseParityEvidence
 } from "./enemy-movement-phase.fixture.js";
-import { resolveEnemyMovementPhase as executeEnemyMovementPhase } from "./index.js";
+import {
+  createInitialState,
+  resolveEnemyMovementPhase as executeEnemyMovementPhase
+} from "./index.js";
 
 let content: Awaited<ReturnType<typeof compileContent>>;
 let dwarfAuthority: BattlefieldDwarfDeploymentAuthority;
+let preparationBattlefield: NonNullable<
+  ReturnType<typeof createInitialState>["battlefield"]
+>;
 
 beforeAll(async () => {
   content = await compileContent(
     enemyMovementPhaseContent as unknown as ContentBundle
   );
+  const preparation = createInitialState(
+    content,
+    "level.conformance_map" as never,
+    "1"
+  ).battlefield;
+  if (preparation === undefined) throw new Error("missing fixture battlefield");
+  preparationBattlefield = preparation;
   dwarfAuthority = createBattlefieldDwarfDeploymentAuthority(
     [
       {
@@ -31,7 +45,7 @@ beforeAll(async () => {
         placementPointId: "placement.goal" as never
       }
     ],
-    "map.conformance_diamond" as never,
+    preparation,
     content
   );
 });
@@ -40,6 +54,7 @@ function resolveEnemyMovementPhase(
   request: Parameters<typeof executeEnemyMovementPhase>[0],
   compiled: Parameters<typeof executeEnemyMovementPhase>[1]
 ) {
+  propagateBattlefieldRoundLineage(preparationBattlefield, request.battlefield);
   return executeEnemyMovementPhase(request, compiled, dwarfAuthority);
 }
 

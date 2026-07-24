@@ -22,6 +22,7 @@ import {
 } from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import { planEnemyRoute } from "./enemy-route-planning.js";
 import { resolveEnemyTargetLock } from "./target-locks.js";
 
@@ -675,6 +676,7 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
     ],
     "battlefield"
   );
+  const sourceBattlefield = value as BattlefieldState;
   if (battlefield.schemaVersion !== 1)
     throw new RangeError("battlefield has unsupported schemaVersion");
   if (typeof battlefield.mapId !== "string")
@@ -707,6 +709,25 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
   );
   if (admissions.size !== enemyCombatants.length)
     throw new RangeError("enemy admissions do not match enemy combatants");
+  const dwarfValues = requireArray(
+    battlefield.dwarfCombatants,
+    "battlefield dwarf combatants"
+  );
+  if (dwarfValues.length > 0 && dwarfAuthority === undefined)
+    throw new RangeError(
+      "battlefield dwarves require accepted preparation authority"
+    );
+  const dwarfCombatants = Object.freeze(
+    dwarfAuthority === undefined
+      ? []
+      : [
+          ...normalizeBattlefieldDwarves(
+            sourceBattlefield,
+            dwarfAuthority,
+            content
+          )
+        ].sort((left, right) => compareText(left.entityId, right.entityId))
+  );
   const pendingCommittedAttacks = normalizePendingCommittedAttacks(
     battlefield.pendingCommittedAttacks,
     currentTick,
@@ -755,27 +776,6 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
   const firedSpawnIdSet = new Set(
     battlefield.firedSpawnIds as readonly StableId[]
   );
-  const dwarfValues = requireArray(
-    battlefield.dwarfCombatants,
-    "battlefield dwarf combatants"
-  );
-  if (dwarfValues.length > 0 && dwarfAuthority === undefined)
-    throw new RangeError(
-      "battlefield dwarves require accepted preparation authority"
-    );
-  const dwarfCombatants = Object.freeze(
-    dwarfAuthority === undefined
-      ? []
-      : [
-          ...normalizeBattlefieldDwarves(
-            battlefield.dwarfCombatants,
-            dwarfAuthority,
-            content,
-            battlefield.mapId as StableId,
-            occupancy
-          )
-        ].sort((left, right) => compareText(left.entityId, right.entityId))
-  );
   const canonicalBattlefield = Object.freeze({
     schemaVersion: 1 as const,
     mapId: battlefield.mapId as StableId,
@@ -811,6 +811,7 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
     dwarfCombatants,
     pendingCommittedAttacks
   }) satisfies BattlefieldState;
+  propagateBattlefieldRoundLineage(sourceBattlefield, canonicalBattlefield);
   return Object.freeze({
     battlefield: canonicalBattlefield,
     occupancy: canonicalBattlefield.occupancy,

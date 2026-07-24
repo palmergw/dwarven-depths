@@ -12,6 +12,12 @@ import type {
   PlacementPointId,
   StableId
 } from "@dwarven-depths/contracts";
+import {
+  type BattlefieldRoundLineage,
+  claimBattlefieldPreparationLineage,
+  propagateBattlefieldRoundLineage,
+  requireBattlefieldRoundLineage
+} from "./battlefield-round-lineage.js";
 import { resolveCommittedAttackImpacts } from "./committed-attack-impact.js";
 import { resolveZeroHealthLifecycles } from "./death-resolution.js";
 import { normalizeAuthoritativeBattlefieldEnemyState } from "./enemy-movement-planning.js";
@@ -28,6 +34,7 @@ const deploymentAuthorityMetadata = new WeakMap<
   BattlefieldDwarfDeploymentAuthority,
   {
     readonly content: CompiledContent;
+    readonly lineage: BattlefieldRoundLineage;
     readonly committedAttacks: Map<StableId, CommittedAttack>;
   }
 >();
@@ -43,7 +50,7 @@ function freezeBattlefield(
   pendingCommittedAttacks: BattlefieldState["pendingCommittedAttacks"],
   enemyCombatants: readonly BattlefieldEnemyCombatant[] = battlefield.enemyCombatants
 ): BattlefieldState {
-  return Object.freeze({
+  const result = Object.freeze({
     schemaVersion: 1,
     mapId: battlefield.mapId,
     startedWaveIds: Object.freeze([...battlefield.startedWaveIds]),
@@ -79,6 +86,8 @@ function freezeBattlefield(
       pendingCommittedAttacks.map((item) => Object.freeze({ ...item }))
     )
   });
+  propagateBattlefieldRoundLineage(battlefield, result);
+  return result;
 }
 
 function requireRecord(
@@ -163,9 +172,14 @@ function requireHealth(value: unknown, description: string): number {
 /** Accepts a preparation choice once for use by later mutable phases. */
 export function createBattlefieldDwarfDeploymentAuthority(
   value: readonly DwarfDeployment[],
-  mapId: StableId,
+  preparationBattlefield: BattlefieldState,
   content: CompiledContent
 ): BattlefieldDwarfDeploymentAuthority {
+  const lineage = claimBattlefieldPreparationLineage(
+    preparationBattlefield,
+    content
+  );
+  const mapId = preparationBattlefield.mapId;
   const map = content.maps.get(mapId);
   if (map === undefined)
     throw new RangeError(`unknown battlefield map (${mapId})`);
@@ -226,6 +240,7 @@ export function createBattlefieldDwarfDeploymentAuthority(
   });
   deploymentAuthorityMetadata.set(authority, {
     content,
+    lineage,
     committedAttacks: new Map()
   });
   return authority;
@@ -288,11 +303,12 @@ export function getAuthorizedCommittedAttackTargets(
 
 function requireDeploymentAuthority(
   authority: BattlefieldDwarfDeploymentAuthority,
-  mapId: StableId,
+  battlefield: BattlefieldState,
   content: CompiledContent
 ): readonly DwarfDeployment[] {
   const metadata = requireAuthorityMetadata(authority, content);
-  if (metadata.content !== content || authority.mapId !== mapId)
+  requireBattlefieldRoundLineage(battlefield, content, metadata.lineage);
+  if (metadata.content !== content || authority.mapId !== battlefield.mapId)
     throw new RangeError(
       "dwarf deployment authority was not accepted for this content and map"
     );
@@ -675,13 +691,21 @@ function _normalizeEnemyCombatants(
 }
 
 export function normalizeBattlefieldDwarves(
-  value: unknown,
+  battlefield: BattlefieldState,
   authority: BattlefieldDwarfDeploymentAuthority,
-  content: CompiledContent,
-  mapId: StableId,
-  occupancy: readonly NavigationOccupant[]
+  content: CompiledContent
 ): readonly BattlefieldDwarfCombatant[] {
-  const deployments = requireDeploymentAuthority(authority, mapId, content);
+  const deployments = requireDeploymentAuthority(
+    authority,
+    battlefield,
+    content
+  );
+  const mapId = battlefield.mapId;
+  const occupancy = _normalizeOccupancy(
+    battlefield.occupancy,
+    content,
+    battlefield.mapId
+  );
   const map = content.maps.get(mapId);
   if (map === undefined)
     throw new RangeError(`unknown battlefield map (${mapId})`);
@@ -729,7 +753,11 @@ export function normalizeBattlefieldDwarves(
       throw new RangeError("duplicate authored dwarf deployment entity ID");
     deploymentsByEntity.set(deployment.entityId, deployment);
   }
-  const dwarves = requireArray(value, "battlefield dwarf combatants").map(
+  // biome-ignore format: keep the descriptor-validation pipeline visually nested
+  const dwarves = requireArray(
+    battlefield.dwarfCombatants,
+    "battlefield dwarf combatants"
+  ).map(
     (item, index): BattlefieldDwarfCombatant => {
       const description = `battlefield dwarf combatant ${index}`;
       const record = requireRecord(
@@ -850,7 +878,7 @@ export function deployBattlefieldDwarves(
 ): BattlefieldState {
   const deployments = requireDeploymentAuthority(
     authority,
-    battlefield.mapId,
+    battlefield,
     content
   );
   if (battlefield.dwarfCombatants.length > 0)
@@ -918,16 +946,16 @@ export function deployBattlefieldDwarves(
       })
     );
   }
-  const normalized = normalizeBattlefieldDwarves(
-    dwarfCombatants,
-    authority,
-    content,
-    battlefield.mapId,
-    occupancy
-  );
-  return freezeBattlefield(
+  const candidate = freezeBattlefield(
     battlefield,
     occupancy.sort((left, right) => compareText(left.entityId, right.entityId)),
+    dwarfCombatants,
+    battlefield.pendingCommittedAttacks
+  );
+  const normalized = normalizeBattlefieldDwarves(candidate, authority, content);
+  return freezeBattlefield(
+    candidate,
+    candidate.occupancy,
     normalized,
     battlefield.pendingCommittedAttacks
   );
@@ -1042,13 +1070,7 @@ export function resolveBattlefieldAttackImpacts(
     pendingCommittedAttacks,
     enemyCombatants
   );
-  normalizeBattlefieldDwarves(
-    nextDwarves,
-    authority,
-    content,
-    battlefield.mapId,
-    nextOccupancy
-  );
+  normalizeBattlefieldDwarves(nextBattlefield, authority, content);
   return Object.freeze({
     schemaVersion: 1,
     battlefield: nextBattlefield,

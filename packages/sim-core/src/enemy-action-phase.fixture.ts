@@ -6,13 +6,15 @@ import type {
   NavigationNodeId
 } from "@dwarven-depths/contracts";
 import { createBattlefieldDwarfDeploymentAuthority } from "./battlefield-attack-impact.js";
-import { resolveEnemyActionPhase } from "./enemy-action-phase.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
+import { resolveEnemyActionPhase as executeEnemyActionPhase } from "./enemy-action-phase.js";
 import {
   battlefield,
   combatant,
   enemyMovementPlanningContent,
   entry
 } from "./enemy-movement-planning.fixture.js";
+import { createInitialState } from "./index.js";
 
 function request(
   currentTick: number,
@@ -34,6 +36,12 @@ export async function enemyActionPhaseParityEvidence() {
   const content = await compileContent(
     enemyMovementPlanningContent as unknown as ContentBundle
   );
+  const preparation = createInitialState(
+    content,
+    "level.conformance_map" as never,
+    "1"
+  ).battlefield;
+  if (preparation === undefined) throw new Error("missing fixture battlefield");
   const dwarfAuthority = createBattlefieldDwarfDeploymentAuthority(
     [
       {
@@ -42,9 +50,17 @@ export async function enemyActionPhaseParityEvidence() {
         placementPointId: "placement.goal" as never
       }
     ],
-    "map.conformance_diamond" as never,
+    preparation,
     content
   );
+  const resolveEnemyActionPhase = (
+    actionRequest: EnemyActionPhaseRequest,
+    _content: typeof content,
+    _authority: typeof dwarfAuthority
+  ) => {
+    propagateBattlefieldRoundLineage(preparation, actionRequest.battlefield);
+    return executeEnemyActionPhase(actionRequest, content, dwarfAuthority);
+  };
 
   const trackingEnemy = combatant("entity.enemy.waiting", 6, null);
   const tracking = resolveEnemyActionPhase(

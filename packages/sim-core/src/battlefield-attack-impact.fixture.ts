@@ -10,6 +10,7 @@ import conformanceContent from "../../../content/fixtures/conformance-map.json" 
 import referenceCombatants from "../../../content/fixtures/phase-3-reference-combatants.json" with {
   type: "json"
 };
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import {
   createBattlefieldDwarfDeploymentAuthority,
   createInitialState,
@@ -87,7 +88,7 @@ export async function battlefieldAttackImpactParityEvidence() {
   ]);
   const deploymentAuthority = createBattlefieldDwarfDeploymentAuthority(
     deployments,
-    initial.battlefield.mapId,
+    initial.battlefield,
     content
   );
   const deployed = deployBattlefieldDwarves(
@@ -159,6 +160,7 @@ export async function battlefieldAttackImpactParityEvidence() {
     ],
     pendingCommittedAttacks: []
   };
+  propagateBattlefieldRoundLineage(deployed, readyToCommit);
   const committed = resolveEnemyActionPhase(
     {
       schemaVersion: 1,

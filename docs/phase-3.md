@@ -220,8 +220,11 @@ Phase 3 surface currently present in the repository.
   their navigation occupancy in the same phase. Absent or already-downed
   targets discard due impacts without disturbing unrelated battlefield state.
   Persisted dwarf identity, health, lifecycle, and placement occupancy are
-  strictly validated against opaque, immutable authority accepted at the
-  preparation boundary rather than replaceable impact-phase input. Enemy wave,
+  strictly validated against opaque, immutable authority claimed once from the
+  exact initialized preparation round rather than replaceable impact-phase
+  input. Distinct rounds over the same content and map retain distinct lineage,
+  and authority from one round cannot validate another round's battlefield.
+  Enemy wave,
   admission, combatant, action, occupancy, and pending-attack state reuse one
   shared authoritative normalizer across movement and impact phases. Lethal
   Cutter-to-Warden evidence is immutable and checksum-pinned across Node and all

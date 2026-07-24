@@ -20,6 +20,7 @@ import {
 } from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
 import { hasLineOfSight, isAimPointInRange } from "./range-line-of-sight.js";
 
@@ -438,6 +439,7 @@ export function resolveEnemyActionPhase(
         .map((attack) => Object.freeze({ ...attack }))
     )
   }) satisfies BattlefieldState;
+  propagateBattlefieldRoundLineage(request.battlefield, battlefield);
 
   if (dwarfAuthority !== undefined)
     authorizeBattlefieldCommittedAttacks(
