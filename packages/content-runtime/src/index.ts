@@ -147,7 +147,18 @@ function freezeDefinition(definition: ContentDefinition): ContentDefinition {
         ...definition,
         waveIds: Object.freeze([...definition.waveIds])
       })
-    : Object.freeze({ ...definition });
+    : Object.freeze({
+        ...definition,
+        spawnEvents: Object.freeze(
+          definition.spawnEvents
+            .map((event) => Object.freeze({ ...event }))
+            .sort(
+              (left, right) =>
+                left.authoredOrder - right.authoredOrder ||
+                compareIds(left, right)
+            )
+        )
+      });
 }
 
 export interface CompiledContent {

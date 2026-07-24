@@ -51,7 +51,21 @@ export interface LevelDefinition {
 export interface WaveDefinition {
   readonly kind: "wave";
   readonly id: StableId;
+  /** Authored start on the round combat clock. */
+  readonly startAtTick: number;
   readonly durationTicks: number;
+  readonly spawnEvents: readonly WaveSpawnEvent[];
+}
+
+export interface WaveSpawnEvent {
+  readonly id: StableId;
+  /** Stable authored order across the level's complete spawn schedule. */
+  readonly authoredOrder: number;
+  /** Authored timestamp on the round combat clock. */
+  readonly atTick: number;
+  readonly entityId: EntityId;
+  readonly enemyDefinitionId: StableId;
+  readonly entranceId: EnemyEntranceId;
 }
 
 export interface NavigationNodeDefinition {
@@ -200,6 +214,40 @@ export interface SpawnAdmissionResolution {
   readonly occupancy: readonly NavigationOccupant[];
   readonly pendingSpawns: readonly PendingSpawn[];
   readonly decisions: readonly SpawnAdmissionDecision[];
+}
+
+export interface WaveScheduleRequest {
+  readonly schemaVersion: 1;
+  readonly currentTick: number;
+  readonly level: LevelDefinition;
+  /** Definitions may arrive in any order; level.waveIds owns gameplay order. */
+  readonly waves: readonly WaveDefinition[];
+  readonly startedWaveIds: readonly StableId[];
+  readonly firedSpawnIds: readonly StableId[];
+  readonly pendingSpawns: readonly PendingSpawn[];
+}
+
+export interface WaveScheduleDecision {
+  readonly schemaVersion: 1;
+  readonly eventKind: "wave_started" | "spawn_enqueued";
+  readonly eventId: StableId;
+  readonly waveId: StableId;
+  readonly status: "started" | "enqueued";
+  readonly reason:
+    | "authored_wave_start_reached"
+    | "authored_spawn_tick_reached";
+  readonly authoredAtTick: number;
+  readonly entityId?: EntityId;
+  readonly enemyDefinitionId?: StableId;
+  readonly entranceId?: EnemyEntranceId;
+}
+
+export interface WaveScheduleResolution {
+  readonly schemaVersion: 1;
+  readonly startedWaveIds: readonly StableId[];
+  readonly firedSpawnIds: readonly StableId[];
+  readonly pendingSpawns: readonly PendingSpawn[];
+  readonly decisions: readonly WaveScheduleDecision[];
 }
 
 export interface BattlefieldState {

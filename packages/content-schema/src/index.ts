@@ -3,6 +3,7 @@ import type {
   BattlefieldMapDefinition,
   ContentBundle,
   EnemyEntranceId,
+  EntityId,
   NavigationConnectionId,
   NavigationNodeId,
   OpaqueRegionId,
@@ -28,9 +29,14 @@ function domainIdSchema(domain: string) {
 }
 
 const navigationNodeIdSchema = domainIdSchema("node");
+const levelIdSchema = domainIdSchema("level");
+const waveIdSchema = domainIdSchema("wave");
 const navigationConnectionIdSchema = domainIdSchema("connection");
 const placementPointIdSchema = domainIdSchema("placement");
 const enemyEntranceIdSchema = domainIdSchema("entrance");
+const entityIdSchema = domainIdSchema("entity");
+const enemyDefinitionIdSchema = domainIdSchema("enemy");
+const spawnIdSchema = domainIdSchema("spawn");
 const aimPointIdSchema = domainIdSchema("aim");
 const opaqueRegionIdSchema = domainIdSchema("opaque");
 const authoredCoordinateSchema = z
@@ -56,8 +62,8 @@ const seedSchema = z
 const levelDefinitionSchema = z
   .object({
     kind: z.literal("level"),
-    id: stableIdSchema,
-    waveIds: z.array(stableIdSchema),
+    id: levelIdSchema,
+    waveIds: z.array(waveIdSchema),
     mapId: stableIdSchema.optional()
   })
   .strict();
@@ -65,8 +71,21 @@ const levelDefinitionSchema = z
 const waveDefinitionSchema = z
   .object({
     kind: z.literal("wave"),
-    id: stableIdSchema,
-    durationTicks: z.int().positive().max(10_000_000)
+    id: waveIdSchema,
+    startAtTick: z.int().nonnegative().max(10_000_000),
+    durationTicks: z.int().positive().max(10_000_000),
+    spawnEvents: z.array(
+      z
+        .object({
+          id: spawnIdSchema,
+          authoredOrder: z.int().nonnegative().max(10_000_000),
+          atTick: z.int().nonnegative().max(10_000_000),
+          entityId: entityIdSchema,
+          enemyDefinitionId: enemyDefinitionIdSchema,
+          entranceId: enemyEntranceIdSchema
+        })
+        .strict()
+    )
   })
   .strict();
 
@@ -539,6 +558,11 @@ export function validateContentBundle(input: unknown): ContentBundle {
       return;
     }
     if (definition.kind !== "level") return;
+    validateUniqueReferences(
+      definition.waveIds,
+      `$/definitions/${definitionIndex}/waveIds`,
+      issues
+    );
     definition.waveIds.forEach((waveId, waveIndex) => {
       const target = seen.get(waveId);
       if (target === undefined) {
@@ -574,6 +598,96 @@ export function validateContentBundle(input: unknown): ContentBundle {
     }
   });
 
+  const waves = new Map(
+    parsed.data.definitions
+      .filter((definition) => definition.kind === "wave")
+      .map((wave) => [wave.id, wave])
+  );
+  const globalSpawnIds = new Map<string, string>();
+  const globalSpawnEntityIds = new Map<string, string>();
+  parsed.data.definitions.forEach((definition, definitionIndex) => {
+    if (definition.kind !== "wave") return;
+    const waveEnd = definition.startAtTick + definition.durationTicks;
+    if (!Number.isSafeInteger(waveEnd) || waveEnd > 10_000_000)
+      issues.push({
+        path: `$/definitions/${definitionIndex}/durationTicks`,
+        code: "wave_end_out_of_range",
+        message: "startAtTick + durationTicks must not exceed 10000000"
+      });
+    definition.spawnEvents.forEach((event, eventIndex) => {
+      const eventPath = `$/definitions/${definitionIndex}/spawnEvents/${eventIndex}`;
+      if (event.atTick < definition.startAtTick || event.atTick >= waveEnd)
+        issues.push({
+          path: `${eventPath}/atTick`,
+          code: "spawn_outside_wave",
+          message: `must be within wave interval [${definition.startAtTick}, ${waveEnd})`
+        });
+      for (const [value, path, seenValues, code] of [
+        [event.id, `${eventPath}/id`, globalSpawnIds, "duplicate_spawn_id"],
+        [
+          event.entityId,
+          `${eventPath}/entityId`,
+          globalSpawnEntityIds,
+          "duplicate_spawn_entity"
+        ]
+      ] as const) {
+        const previousPath = seenValues.get(value);
+        if (previousPath === undefined) seenValues.set(value, path);
+        else
+          issues.push({
+            path,
+            code,
+            message: `duplicates ${value}`,
+            relatedPaths: [previousPath]
+          });
+      }
+    });
+  });
+
+  parsed.data.definitions.forEach((definition, definitionIndex) => {
+    if (definition.kind !== "level") return;
+    const map =
+      definition.mapId === undefined
+        ? undefined
+        : parsed.data.definitions.find(
+            (candidate) =>
+              candidate.kind === "map" && candidate.id === definition.mapId
+          );
+    const entranceIds = new Set(
+      map?.kind === "map"
+        ? map.enemyEntrances.map((entrance) => entrance.id)
+        : []
+    );
+    const authoredOrders = new Map<number, string>();
+    definition.waveIds.forEach((waveId, waveIndex) => {
+      const wave = waves.get(waveId);
+      wave?.spawnEvents.forEach((event, eventIndex) => {
+        const waveDefinitionIndex = seen.get(waveId)?.index;
+        if (waveDefinitionIndex === undefined) return;
+        const eventPath = `$/definitions/${waveDefinitionIndex}/spawnEvents/${eventIndex}`;
+        const previousPath = authoredOrders.get(event.authoredOrder);
+        if (previousPath === undefined)
+          authoredOrders.set(event.authoredOrder, `${eventPath}/authoredOrder`);
+        else
+          issues.push({
+            path: `${eventPath}/authoredOrder`,
+            code: "duplicate_spawn_order",
+            message: `duplicates authored order ${event.authoredOrder} in level ${definition.id}`,
+            relatedPaths: [previousPath]
+          });
+        if (!entranceIds.has(event.entranceId))
+          issues.push({
+            path: `${eventPath}/entranceId`,
+            code: "unknown_reference",
+            message: `references entrance ${event.entranceId} not authored by level map`,
+            relatedPaths: [
+              `$/definitions/${definitionIndex}/waveIds/${waveIndex}`
+            ]
+          });
+      });
+    });
+  });
+
   if (issues.length > 0) throw new ContentValidationError(issues);
   return {
     schemaVersion: 1,
@@ -592,7 +706,15 @@ export function validateContentBundle(input: unknown): ContentBundle {
         return {
           kind: "wave",
           id: definition.id as StableId,
-          durationTicks: definition.durationTicks
+          startAtTick: definition.startAtTick,
+          durationTicks: definition.durationTicks,
+          spawnEvents: definition.spawnEvents.map((event) => ({
+            ...event,
+            id: event.id as StableId,
+            entityId: event.entityId as EntityId,
+            enemyDefinitionId: event.enemyDefinitionId as StableId,
+            entranceId: event.entranceId as EnemyEntranceId
+          }))
         };
       return {
         kind: "map",
