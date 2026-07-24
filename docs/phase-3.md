@@ -265,6 +265,16 @@ Phase 3 surface currently present in the repository.
   and checksum-pinned across Node and all three browser engines. The two guard
   aim points are attack-valid from their authored adjacent hall nodes, so the
   due Cutter evidence acquires the lower-cost north route and moves off spawn.
+- One authoritative combat-tick operation now composes authored scheduling and
+  admission, derived enemy planning, enemy and dwarf target/action updates,
+  movement reservations, and exact-tick attack impacts in the fixed same-step
+  order. Newly admitted enemies participate immediately when their authored
+  cadence permits, dwarf policy entries remain the explicit player-owned input,
+  and impact health/lifecycle/occupancy changes feed the resulting simulation
+  state without caller reconstruction. A Cutter/Warden Shuttergate sequence is
+  immutable, input-order independent, and literal-checksum-pinned across Node,
+  Chromium, Firefox, and WebKit. Rewards, terminal evaluation, statuses, and
+  death triggers remain separate integration checkpoints.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
