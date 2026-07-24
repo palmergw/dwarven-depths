@@ -10,7 +10,7 @@ describe("enemy movement phase browser parity", () => {
       "destination_reserved"
     );
     expect(await canonicalHash(evidence)).toBe(
-      "ec56f1e8ec27f154249a07a4005297309ae8ee23dee1a6264cd72bd0518bc223"
+      "057ef3257a1871a0cb155870e41e448711b29a64c3812a38f82df7542403c835"
     );
   });
 });

@@ -184,6 +184,7 @@ describe("cross-runtime deterministic conformance", () => {
         firedSpawnIds: [],
         enemyAdmissions: [],
         enemyCombatants: [],
+        dwarfCombatants: [],
         pendingCommittedAttacks: [],
         occupancy: [
           {
@@ -467,7 +468,7 @@ describe("cross-runtime deterministic conformance", () => {
     );
 
     expect(await canonicalHash({ first, resumed })).toBe(
-      "6e0098bfaa554c9f2c4f6b8264690938a9d6dc4c12302f448581e7d453b1a0a1"
+      "919e707f1f088ea443fb039c14bc1ae542fffc98f6d788ba0d1b9091f31c949e"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -481,6 +482,7 @@ describe("cross-runtime deterministic conformance", () => {
       ],
       pendingSpawns: [],
       pendingCommittedAttacks: [],
+      dwarfCombatants: [],
       enemyAdmissions: [
         {
           schemaVersion: 1,
@@ -517,7 +519,7 @@ describe("cross-runtime deterministic conformance", () => {
     const evidence = createPhase2SystemScenarioEvidence(content);
 
     expect(await canonicalHash(evidence)).toBe(
-      "6a0f88a138fcea0b36aa83dee3b8d57e9380589f195956b85494efa26cbadd0f"
+      "b43780c06a0abee8a7a16b9ed9eed17e07ad6db5ec43a84bc091afe28789ae73"
     );
     expect(evidence.placementRoutes.eastAttackRoute?.route.nodeIds).toEqual([
       "node.entry",

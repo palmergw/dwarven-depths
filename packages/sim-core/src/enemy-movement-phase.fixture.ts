@@ -5,6 +5,7 @@ import type {
   EnemyMovementPlanningRequest,
   NavigationNodeId
 } from "@dwarven-depths/contracts";
+import { createBattlefieldDwarfDeploymentAuthority } from "./battlefield-attack-impact.js";
 import {
   battlefield,
   combatant,
@@ -93,7 +94,22 @@ export async function enemyMovementPhaseParityEvidence() {
   const content = await compileContent(
     enemyMovementPhaseContent as unknown as ContentBundle
   );
-  const contention = resolveEnemyMovementPhase(contentionRequest(), content);
+  const dwarfAuthority = createBattlefieldDwarfDeploymentAuthority(
+    [
+      {
+        entityId: "entity.dwarf.warden" as never,
+        characterDefinitionId: "character.iron_warden" as never,
+        placementPointId: "placement.goal" as never
+      }
+    ],
+    "map.conformance_diamond" as never,
+    content
+  );
+  const contention = resolveEnemyMovementPhase(
+    contentionRequest(),
+    content,
+    dwarfAuthority
+  );
   const waiting = combatant("entity.enemy.waiting", 12, null);
   const stationary = resolveEnemyMovementPhase(
     {
@@ -103,7 +119,8 @@ export async function enemyMovementPhaseParityEvidence() {
       battlefield: battlefield(waiting, "node.entry" as NavigationNodeId),
       entries: [entry(waiting.entityId)]
     },
-    content
+    content,
+    dwarfAuthority
   );
   return Object.freeze({ contention, stationary });
 }

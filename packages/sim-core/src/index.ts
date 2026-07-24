@@ -1,6 +1,13 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
 
 export * from "./attack-commitment.js";
+export {
+  type BattlefieldDwarfDeploymentAuthority,
+  createBattlefieldDwarfDeploymentAuthority,
+  deployBattlefieldDwarves,
+  normalizeBattlefieldDwarves,
+  resolveBattlefieldAttackImpacts
+} from "./battlefield-attack-impact.js";
 export * from "./combat-timers.js";
 export * from "./committed-attack-impact.js";
 export * from "./committed-combat-effects.js";
@@ -45,6 +52,7 @@ import {
   type WaveDefinition,
   type WaveSpawnEvent
 } from "@dwarven-depths/contracts";
+import type { BattlefieldDwarfDeploymentAuthority } from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
@@ -63,7 +71,8 @@ function freezeBattlefieldState(
   firedSpawnIds: BattlefieldState["firedSpawnIds"] = [],
   enemyCombatants: BattlefieldState["enemyCombatants"] = [],
   enemyAdmissions: BattlefieldState["enemyAdmissions"] = [],
-  pendingCommittedAttacks: readonly CommittedAttack[] = []
+  pendingCommittedAttacks: readonly CommittedAttack[] = [],
+  dwarfCombatants: BattlefieldState["dwarfCombatants"] = []
 ): BattlefieldState {
   return Object.freeze({
     schemaVersion: 1,
@@ -93,6 +102,9 @@ function freezeBattlefieldState(
           })
         })
       )
+    ),
+    dwarfCombatants: Object.freeze(
+      dwarfCombatants.map((combatant) => Object.freeze({ ...combatant }))
     ),
     pendingCommittedAttacks: Object.freeze(
       [...pendingCommittedAttacks]
@@ -1200,9 +1212,10 @@ export function resolveMovementReservations(
  */
 export function resolveEnemyMovementPhase(
   request: EnemyMovementPlanningRequest,
-  content: CompiledContent
+  content: CompiledContent,
+  dwarfAuthority?: BattlefieldDwarfDeploymentAuthority
 ): EnemyMovementPhaseResolution {
-  const planning = planEnemyMovement(request, content);
+  const planning = planEnemyMovement(request, content, dwarfAuthority);
   const level = content.levels.get(request.levelId);
   if (level === undefined)
     throw new Error("validated movement level is missing");
@@ -1255,7 +1268,10 @@ export function resolveEnemyMovementPhase(
     firedSpawnIds,
     enemyCombatants,
     enemyAdmissions,
-    request.battlefield.pendingCommittedAttacks
+    request.battlefield.pendingCommittedAttacks,
+    [...request.battlefield.dwarfCombatants].sort((left, right) =>
+      compareText(left.entityId, right.entityId)
+    )
   );
   return Object.freeze({
     schemaVersion: 1,
@@ -1661,7 +1677,8 @@ export function resolveBattlefieldPhase(
         firedSpawnIds as BattlefieldState["firedSpawnIds"],
         movedEnemyCombatants,
         enemyAdmissions,
-        persistedCommittedAttacks
+        persistedCommittedAttacks,
+        state.battlefield?.dwarfCombatants
       )
     }),
     events: Object.freeze(events)
@@ -1830,7 +1847,8 @@ export function resolveScheduledBattlefieldPhase(
       scheduled.firedSpawnIds,
       persistedEnemyCombatants,
       persistedEnemyAdmissions,
-      persistedCommittedAttacks
+      persistedCommittedAttacks,
+      state.battlefield.dwarfCombatants
     )
   });
   const battlefield = resolveBattlefieldPhase(
@@ -1854,7 +1872,8 @@ export function resolveScheduledBattlefieldPhase(
         scheduled.firedSpawnIds,
         battlefield.state.battlefield.enemyCombatants,
         battlefield.state.battlefield.enemyAdmissions,
-        battlefield.state.battlefield.pendingCommittedAttacks
+        battlefield.state.battlefield.pendingCommittedAttacks,
+        battlefield.state.battlefield.dwarfCombatants
       )
     }),
     events: Object.freeze([...scheduleEvents, ...battlefield.events])

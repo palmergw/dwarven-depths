@@ -1,6 +1,8 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
 import type {
   BattlefieldEnemyCombatant,
+  BattlefieldState,
+  CommittedAttack,
   EnemyMovementPlanningDecision,
   EnemyMovementPlanningEntry,
   EnemyMovementPlanningRequest,
@@ -10,9 +12,16 @@ import type {
   MovementProposal,
   NavigationNodeId,
   NavigationOccupant,
+  StableId,
   WaveSpawnEvent
 } from "@dwarven-depths/contracts";
+import {
+  type BattlefieldDwarfDeploymentAuthority,
+  getAuthorizedCommittedAttackTargets,
+  normalizeBattlefieldDwarves
+} from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
+import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import { planEnemyRoute } from "./enemy-route-planning.js";
 import { resolveEnemyTargetLock } from "./target-locks.js";
 
@@ -41,6 +50,7 @@ interface ParsedDataRecord extends Record<string, unknown> {
   readonly mapId?: unknown;
   readonly occupancy?: unknown;
   readonly enemyCombatants?: unknown;
+  readonly dwarfCombatants?: unknown;
   readonly entries?: unknown;
   readonly spawnId?: unknown;
   readonly enemyDefinitionId?: unknown;
@@ -510,6 +520,8 @@ function normalizeCombatants(
           action.currentTargetEntityId,
           `${description} currentTargetEntityId`
         );
+      let activeBasicAttack: BattlefieldEnemyCombatant["actionState"]["activeBasicAttack"] =
+        null;
       if (action.activeBasicAttack !== null) {
         const active = requireRecord(
           action.activeBasicAttack,
@@ -570,6 +582,19 @@ function normalizeCombatants(
           throw new RangeError(
             `${description} has invalid active basic attack`
           );
+        activeBasicAttack = Object.freeze({
+          schemaVersion: 1,
+          attackId: active.attackId as StableId,
+          sourceEntityId: entityId,
+          targetEntityId: active.targetEntityId as EntityId,
+          startedAtTick,
+          commitAtTick,
+          impactAtTick,
+          cooldownDurationTicks: definition.basicAttack.cooldownTicks,
+          damage: definition.basicAttack.damage,
+          range: definition.basicAttack.range,
+          targetIsValid: active.targetIsValid as boolean
+        });
       }
       if (
         action.activeBasicAttack !== null &&
@@ -606,11 +631,193 @@ function normalizeCombatants(
           ...(attack as unknown as BattlefieldEnemyCombatant["basicAttack"])
         }),
         actionState: Object.freeze({
-          ...(action as unknown as BattlefieldEnemyCombatant["actionState"])
+          schemaVersion: 1,
+          nextMovementAtTick,
+          currentTargetEntityId:
+            action.currentTargetEntityId as EntityId | null,
+          activeBasicAttack,
+          cooldownCompleteAtTick: action.cooldownCompleteAtTick as number | null
         })
       });
     }
   );
+}
+
+export interface NormalizedAuthoritativeBattlefieldEnemyState {
+  readonly battlefield: BattlefieldState;
+  readonly occupancy: readonly NavigationOccupant[];
+  readonly enemyCombatants: readonly BattlefieldEnemyCombatant[];
+  readonly pendingCommittedAttacks: readonly CommittedAttack[];
+  readonly authoredEnemyEntityIds: ReadonlySet<EntityId>;
+}
+
+/** Shared validation boundary for persisted authored enemy battlefield state. */
+export function normalizeAuthoritativeBattlefieldEnemyState(
+  value: unknown,
+  levelId: StableId,
+  currentTick: number,
+  content: CompiledContent,
+  dwarfAuthority?: BattlefieldDwarfDeploymentAuthority
+): NormalizedAuthoritativeBattlefieldEnemyState {
+  const battlefield = requireRecord(
+    value,
+    [
+      "schemaVersion",
+      "mapId",
+      "startedWaveIds",
+      "firedSpawnIds",
+      "occupancy",
+      "pendingSpawns",
+      "enemyAdmissions",
+      "enemyCombatants",
+      "dwarfCombatants",
+      "pendingCommittedAttacks"
+    ],
+    "battlefield"
+  );
+  if (battlefield.schemaVersion !== 1)
+    throw new RangeError("battlefield has unsupported schemaVersion");
+  if (typeof battlefield.mapId !== "string")
+    throw new RangeError("battlefield mapId must be stable");
+  const map = content.maps.get(battlefield.mapId as StableId);
+  if (map === undefined)
+    throw new RangeError(
+      "battlefield map is not available in compiled content"
+    );
+  const occupancy = normalizeOccupancy(battlefield.occupancy);
+  const knownNodeIds = new Set(map.nodes.map((node) => node.id));
+  for (const occupant of occupancy)
+    if (!knownNodeIds.has(occupant.nodeId))
+      throw new RangeError(
+        `battlefield occupancy references unknown node (${occupant.nodeId})`
+      );
+  const admissions = normalizeAdmissions(battlefield.enemyAdmissions);
+  const authoredEnemyEntityIds = validateAuthoredAdmissionIdentity(
+    battlefield,
+    levelId,
+    currentTick,
+    content,
+    admissions
+  );
+  const enemyCombatants = normalizeCombatants(
+    battlefield.enemyCombatants,
+    currentTick,
+    content,
+    admissions
+  );
+  if (admissions.size !== enemyCombatants.length)
+    throw new RangeError("enemy admissions do not match enemy combatants");
+  const pendingCommittedAttacks = normalizePendingCommittedAttacks(
+    battlefield.pendingCommittedAttacks,
+    currentTick,
+    enemyCombatants,
+    dwarfAuthority === undefined
+      ? undefined
+      : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)
+  );
+  const enemyIds = new Set(
+    enemyCombatants.map((combatant) => combatant.entityId)
+  );
+  const occupancyByEntity = new Map(
+    occupancy.map((occupant) => [occupant.entityId, occupant] as const)
+  );
+  for (const occupant of occupancy)
+    if (
+      authoredEnemyEntityIds.has(occupant.entityId) &&
+      !enemyIds.has(occupant.entityId)
+    )
+      throw new RangeError(
+        `occupied enemy is missing authoritative combatant state (${occupant.entityId})`
+      );
+  for (const combatant of enemyCombatants) {
+    const occupied = occupancyByEntity.has(combatant.entityId);
+    if (combatant.lifecycleState === "active" && !occupied)
+      throw new RangeError(
+        `active enemy is not occupied (${combatant.entityId})`
+      );
+    if (combatant.lifecycleState === "destroyed" && occupied)
+      throw new RangeError(
+        `destroyed enemy remains occupied (${combatant.entityId})`
+      );
+  }
+  const level = content.levels.get(levelId);
+  if (level === undefined)
+    throw new Error("validated battlefield level is missing");
+  const waves = level.waveIds.map((waveId) => {
+    const wave = content.waves.get(waveId);
+    if (wave === undefined)
+      throw new Error("validated battlefield wave is missing");
+    return wave;
+  });
+  const startedWaveIdSet = new Set(
+    battlefield.startedWaveIds as readonly StableId[]
+  );
+  const firedSpawnIdSet = new Set(
+    battlefield.firedSpawnIds as readonly StableId[]
+  );
+  const dwarfValues = requireArray(
+    battlefield.dwarfCombatants,
+    "battlefield dwarf combatants"
+  );
+  if (dwarfValues.length > 0 && dwarfAuthority === undefined)
+    throw new RangeError(
+      "battlefield dwarves require accepted preparation authority"
+    );
+  const dwarfCombatants = Object.freeze(
+    dwarfAuthority === undefined
+      ? []
+      : [
+          ...normalizeBattlefieldDwarves(
+            battlefield.dwarfCombatants,
+            dwarfAuthority,
+            content,
+            battlefield.mapId as StableId,
+            occupancy
+          )
+        ].sort((left, right) => compareText(left.entityId, right.entityId))
+  );
+  const canonicalBattlefield = Object.freeze({
+    schemaVersion: 1 as const,
+    mapId: battlefield.mapId as StableId,
+    startedWaveIds: Object.freeze(
+      level.waveIds.filter((waveId) => startedWaveIdSet.has(waveId))
+    ),
+    firedSpawnIds: Object.freeze(orderFiredSpawnIds(waves, firedSpawnIdSet)),
+    occupancy: Object.freeze(
+      [...occupancy].sort((left, right) =>
+        compareText(left.entityId, right.entityId)
+      )
+    ),
+    pendingSpawns: Object.freeze(
+      [...(battlefield.pendingSpawns as BattlefieldState["pendingSpawns"])]
+        .sort(
+          (left, right) =>
+            left.authoredOrder - right.authoredOrder ||
+            compareText(left.id, right.id) ||
+            compareText(left.entityId, right.entityId)
+        )
+        .map((pending) => Object.freeze({ ...pending }))
+    ),
+    enemyAdmissions: Object.freeze(
+      [...(battlefield.enemyAdmissions as BattlefieldState["enemyAdmissions"])]
+        .sort((left, right) => compareText(left.entityId, right.entityId))
+        .map((admission) => Object.freeze({ ...admission }))
+    ),
+    enemyCombatants: Object.freeze(
+      [...enemyCombatants].sort((left, right) =>
+        compareText(left.entityId, right.entityId)
+      )
+    ),
+    dwarfCombatants,
+    pendingCommittedAttacks
+  }) satisfies BattlefieldState;
+  return Object.freeze({
+    battlefield: canonicalBattlefield,
+    occupancy: canonicalBattlefield.occupancy,
+    enemyCombatants: canonicalBattlefield.enemyCombatants,
+    pendingCommittedAttacks,
+    authoredEnemyEntityIds
+  });
 }
 
 function normalizeEntry(
@@ -658,7 +865,8 @@ function normalizeEntry(
 /** Generates contention-ready proposals from authoritative enemy occupancy. */
 export function planEnemyMovement(
   request: EnemyMovementPlanningRequest,
-  content: CompiledContent
+  content: CompiledContent,
+  dwarfAuthority?: BattlefieldDwarfDeploymentAuthority
 ): EnemyMovementPlanningResolution {
   const input = requireRecord(
     request,
@@ -675,54 +883,25 @@ export function planEnemyMovement(
   );
   if (typeof input.levelId !== "string" || !input.levelId.startsWith("level."))
     throw new RangeError("movement planning levelId must be level.*");
-  const battlefield = requireRecord(
+  const normalized = normalizeAuthoritativeBattlefieldEnemyState(
     input.battlefield,
-    [
-      "schemaVersion",
-      "mapId",
-      "startedWaveIds",
-      "firedSpawnIds",
-      "occupancy",
-      "pendingSpawns",
-      "enemyAdmissions",
-      "enemyCombatants",
-      "pendingCommittedAttacks"
-    ],
-    "battlefield"
+    input.levelId as StableId,
+    currentTick,
+    content,
+    dwarfAuthority
   );
-  if (battlefield.schemaVersion !== 1)
-    throw new RangeError("battlefield has unsupported schemaVersion");
-  if (typeof battlefield.mapId !== "string")
-    throw new RangeError("battlefield mapId must be stable");
-  const map = content.maps.get(battlefield.mapId as never);
+  const battlefield = normalized.battlefield;
+  const map = content.maps.get(battlefield.mapId);
   if (map === undefined)
-    throw new RangeError(
-      "battlefield map is not available in compiled content"
-    );
-  const occupancy = normalizeOccupancy(battlefield.occupancy);
-  const admissions = normalizeAdmissions(battlefield.enemyAdmissions);
-  const authoredEnemyEntityIds = validateAuthoredAdmissionIdentity(
-    battlefield,
-    input.levelId,
-    currentTick,
-    content,
-    admissions
-  );
-  const combatants = normalizeCombatants(
-    battlefield.enemyCombatants,
-    currentTick,
-    content,
-    admissions
-  );
-  normalizePendingCommittedAttacks(
-    battlefield.pendingCommittedAttacks,
-    currentTick,
-    combatants
-  );
-  if (admissions.size !== combatants.length)
-    throw new RangeError("enemy admissions do not match enemy combatants");
+    throw new Error("validated battlefield map is missing");
+  const occupancy = normalized.occupancy;
+  const authoredEnemyEntityIds = normalized.authoredEnemyEntityIds;
+  const combatants = normalized.enemyCombatants;
   const entries = requireArray(input.entries, "movement planning entries").map(
     normalizeEntry
+  );
+  const dwarfEntityIds = new Set(
+    normalized.battlefield.dwarfCombatants.map((dwarf) => dwarf.entityId)
   );
   const entriesByEnemy = new Map<EntityId, EnemyMovementPlanningEntry>();
   for (const entry of entries) {
@@ -735,26 +914,7 @@ export function planEnemyMovement(
   const occupancyByEntity = new Map(
     occupancy.map((item) => [item.entityId, item] as const)
   );
-  const enemyIds = new Set(combatants.map((combatant) => combatant.entityId));
-  for (const occupant of occupancy) {
-    if (
-      authoredEnemyEntityIds.has(occupant.entityId) &&
-      !enemyIds.has(occupant.entityId)
-    )
-      throw new RangeError(
-        `occupied enemy is missing authoritative combatant state (${occupant.entityId})`
-      );
-  }
   for (const combatant of combatants) {
-    const occupied = occupancyByEntity.has(combatant.entityId);
-    if (combatant.lifecycleState === "active" && !occupied)
-      throw new RangeError(
-        `active enemy is not occupied (${combatant.entityId})`
-      );
-    if (combatant.lifecycleState === "destroyed" && occupied)
-      throw new RangeError(
-        `destroyed enemy remains occupied (${combatant.entityId})`
-      );
     if (
       combatant.lifecycleState === "active" &&
       !entriesByEnemy.has(combatant.entityId)
@@ -804,6 +964,20 @@ export function planEnemyMovement(
       if (authoredEnemyEntityIds.has(candidate.entityId))
         throw new RangeError(
           `moving enemy cannot be an enemy target (${candidate.entityId})`
+        );
+      if (
+        candidate.targetKind === "living_dwarf" &&
+        !dwarfEntityIds.has(candidate.entityId)
+      )
+        throw new RangeError(
+          `living dwarf candidate lacks authoritative combatant (${candidate.entityId})`
+        );
+      if (
+        candidate.targetKind !== "living_dwarf" &&
+        dwarfEntityIds.has(candidate.entityId)
+      )
+        throw new RangeError(
+          `authoritative dwarf cannot be a blocker target (${candidate.entityId})`
         );
     }
     for (const blockerId of entry.solidBlockerEntityIds) {

@@ -106,6 +106,7 @@ describe("authoritative battlefield state", () => {
       pendingSpawns: [],
       enemyAdmissions: [],
       enemyCombatants: [],
+      dwarfCombatants: [],
       pendingCommittedAttacks: []
     });
     expect(Object.isFrozen(state)).toBe(true);
@@ -258,6 +259,7 @@ describe("authoritative battlefield state", () => {
         }
       ],
       pendingCommittedAttacks: [],
+      dwarfCombatants: [],
       enemyAdmissions: [
         {
           schemaVersion: 1,
@@ -283,7 +285,7 @@ describe("authoritative battlefield state", () => {
       []
     );
     expect(await canonicalHash({ first, resumed })).toBe(
-      "6e0098bfaa554c9f2c4f6b8264690938a9d6dc4c12302f448581e7d453b1a0a1"
+      "919e707f1f088ea443fb039c14bc1ae542fffc98f6d788ba0d1b9091f31c949e"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -297,6 +299,7 @@ describe("authoritative battlefield state", () => {
       ],
       pendingSpawns: [],
       pendingCommittedAttacks: [],
+      dwarfCombatants: [],
       enemyAdmissions: [
         {
           schemaVersion: 1,
@@ -537,6 +540,13 @@ describe("authoritative battlefield state", () => {
       tick: 6,
       battlefield: {
         ...admittedBattlefield,
+        enemyCombatants: admittedBattlefield.enemyCombatants.map((enemy) => ({
+          ...enemy,
+          actionState: {
+            ...enemy.actionState,
+            cooldownCompleteAtTick: 26
+          }
+        })),
         pendingCommittedAttacks: [attack] as never
       }
     };

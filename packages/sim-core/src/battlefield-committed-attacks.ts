@@ -97,7 +97,8 @@ function requireNonNegativeSafeInteger(
 export function normalizePendingCommittedAttacks(
   value: unknown,
   currentTick: number,
-  combatants: readonly BattlefieldEnemyCombatant[]
+  combatants: readonly BattlefieldEnemyCombatant[],
+  authorizedTargets?: ReadonlyMap<StableId, EntityId>
 ): readonly CommittedAttack[] {
   const combatantsById = new Map<EntityId, BattlefieldEnemyCombatant>(
     combatants.map((combatant) => [combatant.entityId, combatant])
@@ -143,6 +144,13 @@ export function normalizePendingCommittedAttacks(
       !entityIdPattern.test(data.targetEntityId)
     )
       throw new RangeError(`${description} targetEntityId must be entity.*`);
+    if (
+      authorizedTargets !== undefined &&
+      authorizedTargets.get(attackId) !== data.targetEntityId
+    )
+      throw new RangeError(
+        `${description} target does not match accepted commitment evidence`
+      );
     const sourceEntityId = data.sourceEntityId as EntityId;
     const source = combatantsById.get(sourceEntityId);
     if (source === undefined)
@@ -202,6 +210,44 @@ export function normalizePendingCommittedAttacks(
       range
     });
   });
+  const attacksBySource = new Map<EntityId, CommittedAttack[]>();
+  for (const attack of attacks) {
+    const sourceAttacks = attacksBySource.get(attack.sourceEntityId) ?? [];
+    sourceAttacks.push(attack);
+    attacksBySource.set(attack.sourceEntityId, sourceAttacks);
+  }
+  for (const [sourceEntityId, sourceAttacks] of attacksBySource) {
+    sourceAttacks.sort(
+      (left, right) =>
+        left.committedAtTick - right.committedAtTick ||
+        compareText(left.attackId, right.attackId)
+    );
+    for (let index = 1; index < sourceAttacks.length; index += 1) {
+      const previous = sourceAttacks[index - 1];
+      const current = sourceAttacks[index];
+      if (
+        previous !== undefined &&
+        current !== undefined &&
+        current.committedAtTick < previous.cooldownCompleteAtTick
+      )
+        throw new RangeError(
+          `pending committed attacks overlap one source cooldown (${sourceEntityId})`
+        );
+    }
+    const latest = sourceAttacks.at(-1);
+    const source = combatantsById.get(sourceEntityId);
+    if (
+      latest !== undefined &&
+      source !== undefined &&
+      latest.cooldownCompleteAtTick > currentTick &&
+      (source.actionState.activeBasicAttack !== null ||
+        source.actionState.cooldownCompleteAtTick !==
+          latest.cooldownCompleteAtTick)
+    )
+      throw new RangeError(
+        `pending committed attack lacks source cooldown evidence (${sourceEntityId})`
+      );
+  }
   return Object.freeze(
     attacks.sort((left, right) => compareText(left.attackId, right.attackId))
   );

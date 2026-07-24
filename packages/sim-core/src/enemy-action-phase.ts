@@ -13,6 +13,11 @@ import type {
   StableId
 } from "@dwarven-depths/contracts";
 import { resolveAttackCommitments } from "./attack-commitment.js";
+import {
+  authorizeBattlefieldCommittedAttacks,
+  type BattlefieldDwarfDeploymentAuthority,
+  getAuthorizedCommittedAttackTargets
+} from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
@@ -83,9 +88,10 @@ function decision(
  */
 export function resolveEnemyActionPhase(
   request: EnemyActionPhaseRequest,
-  content: CompiledContent
+  content: CompiledContent,
+  dwarfAuthority?: BattlefieldDwarfDeploymentAuthority
 ): EnemyActionPhaseResolution {
-  const planning = planEnemyMovement(request, content);
+  const planning = planEnemyMovement(request, content, dwarfAuthority);
   const currentTick = request.currentTick;
   const map = content.maps.get(request.battlefield.mapId);
   if (map === undefined)
@@ -113,7 +119,10 @@ export function resolveEnemyActionPhase(
     ...normalizePendingCommittedAttacks(
       request.battlefield.pendingCommittedAttacks,
       currentTick,
-      request.battlefield.enemyCombatants
+      request.battlefield.enemyCombatants,
+      dwarfAuthority === undefined
+        ? undefined
+        : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)
     )
   ];
   const decisions: EnemyActionPhaseDecision[] = [];
@@ -418,12 +427,24 @@ export function resolveEnemyActionPhase(
         .map((admission) => Object.freeze({ ...admission }))
     ),
     enemyCombatants,
+    dwarfCombatants: Object.freeze(
+      [...request.battlefield.dwarfCombatants]
+        .sort((left, right) => compareText(left.entityId, right.entityId))
+        .map((dwarf) => Object.freeze({ ...dwarf }))
+    ),
     pendingCommittedAttacks: Object.freeze(
       committedAttacks
         .sort((left, right) => compareText(left.attackId, right.attackId))
         .map((attack) => Object.freeze({ ...attack }))
     )
   }) satisfies BattlefieldState;
+
+  if (dwarfAuthority !== undefined)
+    authorizeBattlefieldCommittedAttacks(
+      dwarfAuthority,
+      content,
+      battlefield.pendingCommittedAttacks
+    );
 
   return Object.freeze({
     schemaVersion: 1,
