@@ -54,6 +54,16 @@ const deploymentAuthorityMetadata = new WeakMap<
         }>
       >
     >;
+    readonly enemyHealthByBattlefield: WeakMap<
+      BattlefieldState,
+      ReadonlyMap<
+        EntityId,
+        Readonly<{
+          currentHealth: number;
+          lifecycleState: BattlefieldEnemyCombatant["lifecycleState"];
+        }>
+      >
+    >;
     readonly dwarfActionStates: Map<
       EntityId,
       BattlefieldDwarfCombatant["actionState"]
@@ -357,6 +367,7 @@ export function createBattlefieldDwarfDeploymentAuthority(
     dwarfHealthByBattlefield: new WeakMap([
       [preparationBattlefield, new Map()]
     ]),
+    enemyHealthByBattlefield: new WeakMap(),
     dwarfActionStates: new Map(
       deployments.map((deployment) => [
         deployment.entityId,
@@ -520,6 +531,90 @@ function getInheritedBattlefieldDwarfHealth(
     accepted = metadata.dwarfHealthByBattlefield.get(current);
   }
   return accepted;
+}
+
+function getInheritedBattlefieldEnemyHealth(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  battlefield: BattlefieldState
+):
+  | ReadonlyMap<
+      EntityId,
+      Readonly<{
+        currentHealth: number;
+        lifecycleState: BattlefieldEnemyCombatant["lifecycleState"];
+      }>
+    >
+  | undefined {
+  const metadata = requireAuthorityMetadata(authority, content);
+  const visited = new Set<BattlefieldState>();
+  let current: BattlefieldState | undefined = battlefield;
+  while (current !== undefined) {
+    if (visited.has(current))
+      throw new RangeError("battlefield enemy-health lineage contains a cycle");
+    visited.add(current);
+    const accepted = metadata.enemyHealthByBattlefield.get(current);
+    if (accepted !== undefined) return accepted;
+    current = getBattlefieldRoundParent(current);
+  }
+  return undefined;
+}
+
+/** Rejects caller-authored enemy health after admission or an impact transition. */
+export function validateBattlefieldEnemyHealth(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  battlefield: BattlefieldState,
+  enemies: readonly BattlefieldEnemyCombatant[]
+): void {
+  const accepted = getInheritedBattlefieldEnemyHealth(
+    authority,
+    content,
+    battlefield
+  );
+  for (const enemy of enemies) {
+    const prior = accepted?.get(enemy.entityId);
+    if (
+      prior === undefined
+        ? enemy.currentHealth !== enemy.maximumHealth ||
+          enemy.lifecycleState !== "active"
+        : prior.currentHealth !== enemy.currentHealth ||
+          prior.lifecycleState !== enemy.lifecycleState
+    )
+      throw new RangeError(
+        `battlefield enemy health/lifecycle does not match authoritative evidence (${enemy.entityId})`
+      );
+  }
+  if (
+    accepted !== undefined &&
+    [...accepted.keys()].some(
+      (entityId) => !enemies.some((enemy) => enemy.entityId === entityId)
+    )
+  )
+    throw new RangeError(
+      "battlefield enemy health/lifecycle omits authoritative evidence"
+    );
+}
+
+function authorizeBattlefieldEnemyHealth(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  battlefield: BattlefieldState,
+  enemies: readonly BattlefieldEnemyCombatant[]
+): void {
+  const metadata = requireAuthorityMetadata(authority, content);
+  metadata.enemyHealthByBattlefield.set(
+    battlefield,
+    new Map(
+      enemies.map((enemy) => [
+        enemy.entityId,
+        Object.freeze({
+          currentHealth: enemy.currentHealth,
+          lifecycleState: enemy.lifecycleState
+        })
+      ])
+    )
+  );
 }
 
 function sameDwarfActionState(
@@ -1431,31 +1526,46 @@ export function resolveBattlefieldAttackImpacts(
   const dwarves = battlefield.dwarfCombatants;
   const enemyCombatants = normalized.enemyCombatants;
   const attacks = normalized.pendingCommittedAttacks;
+  const impactCombatants = [...dwarves, ...enemyCombatants];
   const impacts = resolveCommittedAttackImpacts({
     currentTick,
     attacks,
-    combatants: dwarves.map((dwarf) => ({
+    combatants: impactCombatants.map((combatant) => ({
       schemaVersion: 1,
-      entityId: dwarf.entityId,
-      currentHealth: dwarf.currentHealth,
-      maximumHealth: dwarf.maximumHealth
+      entityId: combatant.entityId,
+      currentHealth: combatant.currentHealth,
+      maximumHealth: combatant.maximumHealth
     }))
   });
   const healthById = new Map(
     impacts.health.map((health) => [health.entityId, health])
   );
   const dwarfEntityIds = new Set(dwarves.map((dwarf) => dwarf.entityId));
+  const enemyEntityIds = new Set(
+    enemyCombatants.map((enemy) => enemy.entityId)
+  );
+  const combatantEntityIds = new Set([...dwarfEntityIds, ...enemyEntityIds]);
   const lifecycle = resolveZeroHealthLifecycles({
-    combatants: dwarves.map((dwarf) => ({
-      schemaVersion: 1,
-      entityId: dwarf.entityId,
-      kind: "dwarf",
-      currentHealth:
-        healthById.get(dwarf.entityId)?.currentHealth ?? dwarf.currentHealth,
-      lifecycleState: dwarf.lifecycleState
-    })),
+    combatants: [
+      ...dwarves.map((dwarf) => ({
+        schemaVersion: 1 as const,
+        entityId: dwarf.entityId,
+        kind: "dwarf" as const,
+        currentHealth:
+          healthById.get(dwarf.entityId)?.currentHealth ?? dwarf.currentHealth,
+        lifecycleState: dwarf.lifecycleState
+      })),
+      ...enemyCombatants.map((enemy) => ({
+        schemaVersion: 1 as const,
+        entityId: enemy.entityId,
+        kind: "enemy" as const,
+        currentHealth:
+          healthById.get(enemy.entityId)?.currentHealth ?? enemy.currentHealth,
+        lifecycleState: enemy.lifecycleState
+      }))
+    ],
     occupancy: occupancy.filter((occupant) =>
-      dwarfEntityIds.has(occupant.entityId)
+      combatantEntityIds.has(occupant.entityId)
     )
   });
   const lifecycleById = new Map(
@@ -1487,12 +1597,41 @@ export function resolveBattlefieldAttackImpacts(
       .filter((dwarf) => dwarf.lifecycleState === "active")
       .map((dwarf) => dwarf.entityId)
   );
+  const nextEnemies = Object.freeze(
+    enemyCombatants.map((enemy) => {
+      const resolved = lifecycleById.get(enemy.entityId);
+      const lifecycleState = (resolved?.lifecycleState ??
+        enemy.lifecycleState) as "active" | "destroyed";
+      return Object.freeze({
+        ...enemy,
+        currentHealth: resolved?.currentHealth ?? enemy.currentHealth,
+        lifecycleState,
+        actionState:
+          lifecycleState === "destroyed"
+            ? Object.freeze({
+                schemaVersion: 1 as const,
+                nextMovementAtTick: enemy.actionState.nextMovementAtTick,
+                currentTargetEntityId: null,
+                activeBasicAttack: null,
+                cooldownCompleteAtTick: null
+              })
+            : enemy.actionState
+      });
+    })
+  );
+  const activeEnemyIds = new Set(
+    nextEnemies
+      .filter((enemy) => enemy.lifecycleState === "active")
+      .map((enemy) => enemy.entityId)
+  );
   const nextOccupancy = Object.freeze(
     occupancy
       .filter(
         (occupant) =>
-          !dwarfEntityIds.has(occupant.entityId) ||
-          activeDwarfIds.has(occupant.entityId)
+          (!dwarfEntityIds.has(occupant.entityId) ||
+            activeDwarfIds.has(occupant.entityId)) &&
+          (!enemyEntityIds.has(occupant.entityId) ||
+            activeEnemyIds.has(occupant.entityId))
       )
       .map((occupant) => Object.freeze({ ...occupant }))
       .sort((left, right) => compareText(left.entityId, right.entityId))
@@ -1512,13 +1651,19 @@ export function resolveBattlefieldAttackImpacts(
     nextOccupancy,
     nextDwarves,
     pendingCommittedAttacks,
-    enemyCombatants
+    nextEnemies
   );
   authorizeBattlefieldDwarfHealth(
     authority,
     content,
     nextBattlefield,
     nextDwarves
+  );
+  authorizeBattlefieldEnemyHealth(
+    authority,
+    content,
+    nextBattlefield,
+    nextEnemies
   );
   acceptDwarfActionTransition(
     authority,

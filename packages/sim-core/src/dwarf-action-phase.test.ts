@@ -9,7 +9,7 @@ import {
 import { resolveDwarfActionPhase } from "./index.js";
 
 const checksum =
-  "6c6bbe2fc79b809a88dc32dd2bd166e52e39c96c633c3e0a24bc8dd286c40832";
+  "311c25a76be19e3b6cd920a66c884e14436cbc76c7c109c90612f80523ccc486";
 
 describe("dwarf action phase", () => {
   it("starts, retains, commits, and cools down an authored basic attack", async () => {
@@ -29,7 +29,7 @@ describe("dwarf action phase", () => {
       startedAtTick: 6,
       commitAtTick: 14,
       impactAtTick: 16,
-      damage: 18,
+      damage: 50,
       range: 2
     });
     expect(evidence.winding.decisions[0]?.reason).toBe(
@@ -62,6 +62,31 @@ describe("dwarf action phase", () => {
           "attack.iron_warden_basic.dwarf.warden.source_length_12.tick_6"
       })
     );
+    expect(evidence.impactPending.impactDecisions).toHaveLength(2);
+    expect(
+      evidence.impactPending.impactDecisions.every(
+        (decision) => decision.reason === "waiting_for_impact"
+      )
+    ).toBe(true);
+    expect(evidence.impacted.healthResolutions).toEqual([
+      expect.objectContaining({
+        entityId: "entity.dwarf.warden",
+        healthAfter: 0
+      }),
+      expect.objectContaining({
+        entityId: "entity.enemy.cutter",
+        healthAfter: 0
+      })
+    ]);
+    expect(evidence.impacted.battlefield.dwarfCombatants[0]).toMatchObject({
+      lifecycleState: "downed",
+      currentHealth: 0
+    });
+    expect(evidence.impacted.battlefield.enemyCombatants[0]).toMatchObject({
+      lifecycleState: "destroyed",
+      currentHealth: 0
+    });
+    expect(evidence.impacted.battlefield.occupancy).toEqual([]);
     expect(
       evidence.battlefieldPhase.state.battlefield?.pendingCommittedAttacks
     ).toEqual(evidence.enemyPhase.battlefield.pendingCommittedAttacks);

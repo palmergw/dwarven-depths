@@ -41,7 +41,11 @@ const contentInput = {
       )
       .map((definition) =>
         definition.id === "character.iron_warden"
-          ? { ...definition, maximumHealth: 10 }
+          ? {
+              ...definition,
+              maximumHealth: 10,
+              basicAttack: { ...definition.basicAttack, damage: 50 }
+            }
           : definition
       ),
     {

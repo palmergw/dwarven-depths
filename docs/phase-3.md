@@ -246,6 +246,14 @@ Phase 3 surface currently present in the repository.
   caller substitution fails closed. Stable attack-instance evidence is deeply
   frozen, input-order independent, and literal-checksum-pinned across Node and
   Chromium, Firefox, and WebKit.
+- Committed dwarf basic attacks now share the authoritative exact-tick impact
+  boundary with enemy attacks. Due damage resolves from one pre-impact snapshot,
+  so simultaneous lethal dwarf/enemy attacks both land; zero-health enemies are
+  destroyed and vacate navigation occupancy in the same phase. Resulting enemy
+  health and lifecycle state are bound to battlefield lineage, and later caller
+  substitution fails closed. Pending, resolved, discarded, health, lifecycle,
+  and occupancy evidence is immutable and checksum-pinned across Node and all
+  three browser engines. Armor reduction remains intentionally uninferred.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
@@ -300,8 +308,7 @@ Phase 3 surface currently present in the repository.
 
 ## Not implemented yet
 
-Dwarf attack impact execution across enemy and deployable targets in the
-authored encounter,
+Deployable-target impact execution in the authored encounter,
 armor reduction,
 attack-windup status semantics,
 non-damage trigger variants,

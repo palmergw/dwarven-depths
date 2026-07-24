@@ -19,7 +19,8 @@ import { createAttackInstanceId } from "./attack-instance-id.js";
 import {
   type BattlefieldDwarfDeploymentAuthority,
   getAuthorizedCommittedAttackTargets,
-  normalizeBattlefieldDwarves
+  normalizeBattlefieldDwarves,
+  validateBattlefieldEnemyHealth
 } from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
@@ -712,6 +713,13 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
     content,
     admissions
   );
+  if (dwarfAuthority !== undefined)
+    validateBattlefieldEnemyHealth(
+      dwarfAuthority,
+      content,
+      sourceBattlefield,
+      enemyCombatants
+    );
   if (admissions.size !== enemyCombatants.length)
     throw new RangeError("enemy admissions do not match enemy combatants");
   const dwarfValues = requireArray(
