@@ -13,6 +13,8 @@ async function renderRequest() {
   const state: BattlefieldState = {
     schemaVersion: 1,
     mapId: map.id,
+    startedWaveIds: [],
+    firedSpawnIds: [],
     occupancy: [
       {
         entityId: "entity.enemy.alpha" as never,

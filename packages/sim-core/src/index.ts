@@ -35,6 +35,7 @@ import {
   type SpawnAdmissionLimits,
   type SpawnAdmissionResolution
 } from "@dwarven-depths/contracts";
+import { resolveWaveSchedule } from "./wave-schedule.js";
 
 export interface StepResult {
   readonly state: SimulationState;
@@ -44,11 +45,15 @@ export interface StepResult {
 function freezeBattlefieldState(
   mapId: BattlefieldState["mapId"],
   occupancy: readonly NavigationOccupant[],
-  pendingSpawns: readonly PendingSpawn[]
+  pendingSpawns: readonly PendingSpawn[],
+  startedWaveIds: BattlefieldState["startedWaveIds"] = [],
+  firedSpawnIds: BattlefieldState["firedSpawnIds"] = []
 ): BattlefieldState {
   return Object.freeze({
     schemaVersion: 1,
     mapId,
+    startedWaveIds: Object.freeze([...startedWaveIds]),
+    firedSpawnIds: Object.freeze([...firedSpawnIds]),
     occupancy: Object.freeze(
       occupancy.map((occupant) => Object.freeze({ ...occupant }))
     ),
@@ -545,10 +550,124 @@ export function resolveBattlefieldPhase(
       battlefield: freezeBattlefieldState(
         level.mapId,
         moved.occupancy,
-        admitted.pendingSpawns
+        admitted.pendingSpawns,
+        state.battlefield.startedWaveIds,
+        state.battlefield.firedSpawnIds
       )
     }),
     events: Object.freeze(events)
+  });
+}
+
+/**
+ * Resolves fixed-step phase 2 from authored wave timestamps through spawn
+ * admission and movement. Schedule progress lives in battlefield state, so due
+ * events are emitted exactly once while queued spawns remain retryable.
+ */
+export function resolveScheduledBattlefieldPhase(
+  state: SimulationState,
+  content: CompiledContent,
+  proposals: readonly MovementProposal[],
+  limits?: SpawnAdmissionLimits
+): StepResult {
+  const level = content.levels.get(state.levelId);
+  if (level === undefined)
+    throw new Error(`Unknown level ID: ${state.levelId}`);
+  if (state.battlefield === undefined)
+    throw new Error(`level ${state.levelId} does not have battlefield state`);
+  if (level.mapId === undefined || state.battlefield.mapId !== level.mapId) {
+    throw new Error(
+      `battlefield map ${state.battlefield.mapId} does not match level map`
+    );
+  }
+
+  const waves = level.waveIds.map((waveId) => {
+    const wave = content.waves.get(waveId);
+    if (wave === undefined) throw new Error(`Unknown wave ID: ${waveId}`);
+    return wave;
+  });
+  const scheduled = resolveWaveSchedule({
+    schemaVersion: 1,
+    currentTick: state.tick,
+    level,
+    waves,
+    startedWaveIds: state.battlefield.startedWaveIds,
+    firedSpawnIds: state.battlefield.firedSpawnIds,
+    pendingSpawns: state.battlefield.pendingSpawns
+  });
+
+  const scheduleEvents: SimulationEvent[] = scheduled.decisions.map(
+    (decision, offset) => {
+      const sequence = state.eventSequence + offset;
+      const base = {
+        id: `event.${String(sequence).padStart(6, "0")}`,
+        tick: state.tick,
+        sequence,
+        ruleId: "SIM-WAVE-SCHEDULE-001",
+        authoredAtTick: decision.authoredAtTick,
+        waveId: decision.waveId
+      } as const;
+      if (decision.eventKind === "wave_started") {
+        return Object.freeze({
+          ...base,
+          type: "wave.started" as const,
+          reasonCode: "authored_wave_start_reached" as const
+        });
+      }
+      if (
+        decision.entityId === undefined ||
+        decision.enemyDefinitionId === undefined ||
+        decision.entranceId === undefined
+      ) {
+        throw new Error(
+          `spawn schedule decision ${decision.eventId} is incomplete`
+        );
+      }
+      return Object.freeze({
+        ...base,
+        type: "spawn.enqueued" as const,
+        reasonCode: "authored_spawn_tick_reached" as const,
+        spawnId: decision.eventId,
+        entityId: decision.entityId,
+        enemyDefinitionId: decision.enemyDefinitionId,
+        entranceId: decision.entranceId
+      });
+    }
+  );
+
+  const admissionState: SimulationState = Object.freeze({
+    ...state,
+    eventSequence: state.eventSequence + scheduleEvents.length,
+    battlefield: freezeBattlefieldState(
+      level.mapId,
+      state.battlefield.occupancy,
+      [],
+      scheduled.startedWaveIds,
+      scheduled.firedSpawnIds
+    )
+  });
+  const battlefield = resolveBattlefieldPhase(
+    admissionState,
+    content,
+    scheduled.pendingSpawns,
+    proposals,
+    limits
+  );
+  if (battlefield.state.battlefield === undefined)
+    throw new Error("resolved battlefield state is missing");
+
+  return Object.freeze({
+    state: Object.freeze({
+      ...battlefield.state,
+      battlefield: freezeBattlefieldState(
+        level.mapId,
+        battlefield.state.battlefield.occupancy,
+        battlefield.state.battlefield.pendingSpawns,
+        scheduled.startedWaveIds,
+        scheduled.firedSpawnIds
+      )
+    }),
+    events: Object.freeze([...scheduleEvents, ...battlefield.events])
   });
 }
 

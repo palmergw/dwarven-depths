@@ -253,6 +253,8 @@ export interface WaveScheduleResolution {
 export interface BattlefieldState {
   readonly schemaVersion: 1;
   readonly mapId: StableId;
+  readonly startedWaveIds: readonly StableId[];
+  readonly firedSpawnIds: readonly StableId[];
   readonly occupancy: readonly NavigationOccupant[];
   readonly pendingSpawns: readonly PendingSpawn[];
 }
@@ -843,6 +845,24 @@ export interface SpawnSimulationEvent extends SimulationEventBase {
   readonly reasonCode: SpawnAdmissionDecisionReason;
 }
 
+export interface WaveStartedSimulationEvent extends SimulationEventBase {
+  readonly type: "wave.started";
+  readonly waveId: StableId;
+  readonly authoredAtTick: number;
+  readonly reasonCode: "authored_wave_start_reached";
+}
+
+export interface SpawnEnqueuedSimulationEvent extends SimulationEventBase {
+  readonly type: "spawn.enqueued";
+  readonly waveId: StableId;
+  readonly spawnId: StableId;
+  readonly entityId: EntityId;
+  readonly enemyDefinitionId: StableId;
+  readonly entranceId: EnemyEntranceId;
+  readonly authoredAtTick: number;
+  readonly reasonCode: "authored_spawn_tick_reached";
+}
+
 export interface MovementSimulationEvent extends SimulationEventBase {
   readonly type: "movement.moved" | "movement.waited" | "movement.rejected";
   readonly proposalId: StableId;
@@ -854,6 +874,8 @@ export interface MovementSimulationEvent extends SimulationEventBase {
 
 export type SimulationEvent =
   | LifecycleSimulationEvent
+  | WaveStartedSimulationEvent
+  | SpawnEnqueuedSimulationEvent
   | SpawnSimulationEvent
   | MovementSimulationEvent;
 

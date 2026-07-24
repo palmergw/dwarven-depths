@@ -73,7 +73,7 @@ describe("Phase 2 battlefield system scenarios", () => {
       true
     );
     expect(await canonicalHash(evidence)).toBe(
-      "9692c834cb7a3473af812d49a074dedf93b35366f5a703251f75d58fec32cdf8"
+      "94b2a3b6090ac88f7dd4f4d2425d125afec8e5848627fe94292ef285c93d996b"
     );
   });
 });
