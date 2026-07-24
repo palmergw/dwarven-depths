@@ -36,15 +36,15 @@ export {
   resolveBossRewardCheckpoint
 } from "./boss-reward-checkpoint.js";
 export {
+  createPhase2SystemScenarioEvidence,
+  type Phase2SystemScenarioEvidence
+} from "./phase-2-system-scenarios.js";
+export {
   evaluateTerminalState,
   type TerminalEvaluationReason,
   type TerminalEvaluationRequest,
   type TerminalEvaluationResult
 } from "./terminal-evaluation.js";
-export {
-  createPhase2SystemScenarioEvidence,
-  type Phase2SystemScenarioEvidence
-} from "./phase-2-system-scenarios.js";
 
 export interface RuntimeResult {
   readonly scenarioId: string;
