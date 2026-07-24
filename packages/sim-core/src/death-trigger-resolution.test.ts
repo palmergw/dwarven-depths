@@ -36,6 +36,10 @@ function effect(
   };
 }
 
+function deathEvent(entityId: string) {
+  return { schemaVersion: 1 as const, entityId: entityId as never };
+}
+
 const deadAlpha = combatant("entity.enemy.alpha", {
   currentHealth: 0,
   lifecycleState: "destroyed"
@@ -45,9 +49,10 @@ describe("death trigger resolution", () => {
   it("resolves a recursive chain once per death in stable rounds", () => {
     const result = deathTriggerParityEvidence();
 
+    expect(result.schemaVersion).toBe(1);
     expect(result.status).toBe("complete");
     expect(result.completedRounds).toBe(4);
-    expect(result.pendingDeathEntityIds).toEqual([]);
+    expect(result.pendingDeathEvents).toEqual([]);
     expect(
       result.decisions.map(({ round, effectId, status, reason }) => ({
         round,
@@ -116,7 +121,10 @@ describe("death trigger resolution", () => {
     const target = combatant("entity.enemy.target", { currentHealth: 7 });
     const result = resolveDeathTriggers({
       combatants: [deadZulu, target, deadAlpha],
-      deathEntityIds: [deadZulu.entityId, deadAlpha.entityId],
+      deathEvents: [
+        deathEvent(deadZulu.entityId),
+        deathEvent(deadAlpha.entityId)
+      ],
       effects: [
         effect(
           "effect.zulu.hit",
@@ -159,7 +167,7 @@ describe("death trigger resolution", () => {
         deadAlpha,
         combatant("entity.enemy.bravo", { currentHealth: 1 })
       ],
-      deathEntityIds: [deadAlpha.entityId],
+      deathEvents: [deathEvent(deadAlpha.entityId)],
       effects: [
         effect(
           "effect.alpha.hit",
@@ -179,7 +187,10 @@ describe("death trigger resolution", () => {
 
     expect(result.status).toBe("safety_limit_reached");
     expect(result.completedRounds).toBe(1);
-    expect(result.pendingDeathEntityIds).toEqual(["entity.enemy.bravo"]);
+    expect(result.pendingDeathEvents).toEqual([
+      { schemaVersion: 1, entityId: "entity.enemy.bravo" }
+    ]);
+    expect(Object.isFrozen(result.pendingDeathEvents[0])).toBe(true);
     expect(result.decisions.map((decision) => decision.effectId)).toEqual([
       "effect.alpha.hit"
     ]);
@@ -192,7 +203,7 @@ describe("death trigger resolution", () => {
     });
     const result = resolveDeathTriggers({
       combatants: [deadBravo, deadAlpha, combatant("entity.enemy.target")],
-      deathEntityIds: [deadAlpha.entityId],
+      deathEvents: [deathEvent(deadAlpha.entityId)],
       effects: [
         effect(
           "effect.alpha.hit",
@@ -224,7 +235,7 @@ describe("death trigger resolution", () => {
         combatant("entity.enemy.target", { currentHealth: 2 }),
         deadAlpha
       ],
-      deathEntityIds: [deadAlpha.entityId],
+      deathEvents: [deathEvent(deadAlpha.entityId)],
       effects: [
         effect(
           "effect.alpha.zulu",
@@ -261,7 +272,7 @@ describe("death trigger resolution", () => {
       forward.healthResolutions[0],
       forward.lifecycleTransitions,
       forward.lifecycleTransitions[0],
-      forward.pendingDeathEntityIds
+      forward.pendingDeathEvents
     ])
       expect(Object.isFrozen(value)).toBe(true);
   });
@@ -270,7 +281,7 @@ describe("death trigger resolution", () => {
     const target = combatant("entity.enemy.target");
     const base = {
       combatants: [deadAlpha, target],
-      deathEntityIds: [deadAlpha.entityId],
+      deathEvents: [deathEvent(deadAlpha.entityId)],
       effects: [
         effect(
           "effect.alpha.hit",
@@ -295,19 +306,30 @@ describe("death trigger resolution", () => {
     expect(() =>
       resolveDeathTriggers({
         ...base,
-        deathEntityIds: [deadAlpha.entityId, deadAlpha.entityId]
+        deathEvents: [
+          deathEvent(deadAlpha.entityId),
+          deathEvent(deadAlpha.entityId)
+        ]
       })
     ).toThrow("duplicate death entity ID");
     expect(() =>
       resolveDeathTriggers({
         ...base,
-        deathEntityIds: [target.entityId]
+        deathEvents: [
+          { schemaVersion: 2, entityId: deadAlpha.entityId } as never
+        ]
+      })
+    ).toThrow("unsupported schemaVersion");
+    expect(() =>
+      resolveDeathTriggers({
+        ...base,
+        deathEvents: [deathEvent(target.entityId)]
       })
     ).toThrow("still active");
     expect(() =>
       resolveDeathTriggers({
         ...base,
-        deathEntityIds: ["entity.missing" as never]
+        deathEvents: [deathEvent("entity.missing")]
       })
     ).toThrow("unknown combatant");
     expect(() =>
@@ -360,7 +382,7 @@ describe("death trigger resolution", () => {
     expect(() =>
       resolveDeathTriggers({
         combatants: new Array(1) as CombatantLifecycle[],
-        deathEntityIds: [],
+        deathEvents: [],
         effects: [],
         recursionLimit: 1
       })
@@ -378,7 +400,28 @@ describe("death trigger resolution", () => {
     expect(() =>
       resolveDeathTriggers({
         combatants: [accessor],
-        deathEntityIds: [],
+        deathEvents: [],
+        effects: [],
+        recursionLimit: 1
+      })
+    ).toThrow("entityId must be an enumerable data property");
+    expect(getterCalls).toBe(0);
+
+    const eventAccessor = { schemaVersion: 1 } as {
+      schemaVersion: 1;
+      entityId: CombatantLifecycle["entityId"];
+    };
+    Object.defineProperty(eventAccessor, "entityId", {
+      enumerable: true,
+      get() {
+        getterCalls += 1;
+        return deadAlpha.entityId;
+      }
+    });
+    expect(() =>
+      resolveDeathTriggers({
+        combatants: [deadAlpha],
+        deathEvents: [eventAccessor],
         effects: [],
         recursionLimit: 1
       })
@@ -388,7 +431,7 @@ describe("death trigger resolution", () => {
 
   it("pins the shared Node and browser parity evidence", async () => {
     expect(await canonicalHash(deathTriggerParityEvidence())).toBe(
-      "c2642666869b0348c1a3edc5c08390543fa3b5bdb7d5b47af9f5b7e4c66b2ea1"
+      "4bff638b556020dbe59d29cec606251ea7a9dde50b1ec28552e2e929c82dfd91"
     );
   });
 });

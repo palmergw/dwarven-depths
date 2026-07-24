@@ -68,8 +68,8 @@ Phase 3 surface currently present in the repository.
 - Trigger chains stop when exhausted or at the authored positive recursion-round
   limit. A bounded result explicitly identifies pending death events, while
   decisions, health evidence, transitions, and resulting combatants remain
-  immutable, detached, reason-coded, and input-order independent. A recursive
-  chain fixture is pinned across Node and all three browser engines.
+  versioned, immutable, detached, reason-coded, and input-order independent. A
+  recursive chain fixture is pinned across Node and all three browser engines.
 
 ## Not implemented yet
 

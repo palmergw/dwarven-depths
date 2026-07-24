@@ -66,7 +66,9 @@ const effects = [
 export function deathTriggerParityEvidence() {
   return resolveDeathTriggers({
     combatants,
-    deathEntityIds: ["entity.enemy.alpha" as never],
+    deathEvents: [
+      { schemaVersion: 1, entityId: "entity.enemy.alpha" as never }
+    ],
     effects,
     recursionLimit: 4
   });

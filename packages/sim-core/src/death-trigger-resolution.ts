@@ -4,6 +4,7 @@ import type {
   CombatantLifecycleState,
   DeathTriggerDecision,
   DeathTriggerEffect,
+  DeathTriggerEvent,
   DeathTriggerHealthResolution,
   DeathTriggerLifecycleTransition,
   DeathTriggerResolution,
@@ -191,6 +192,25 @@ function validateEffect(value: unknown, index: number): DeathTriggerEffect {
   });
 }
 
+function validateDeathEvent(value: unknown, index: number): DeathTriggerEvent {
+  const description = `death event ${index}`;
+  const record = requireDataRecord(
+    value,
+    ["schemaVersion", "entityId"],
+    description
+  );
+  if (record.schemaVersion !== 1)
+    throw new RangeError(`${description} has unsupported schemaVersion`);
+  return Object.freeze({
+    schemaVersion: 1,
+    entityId: requireId<EntityId>(
+      record.entityId,
+      entityIdPattern,
+      `${description} entityId`
+    )
+  });
+}
+
 function freezeCombatant(
   combatant: CombatantLifecycle,
   currentHealth = combatant.currentHealth,
@@ -215,7 +235,7 @@ export function resolveDeathTriggers(
 ): DeathTriggerResolution {
   const record = requireDataRecord(
     request,
-    ["combatants", "deathEntityIds", "effects", "recursionLimit"],
+    ["combatants", "deathEvents", "effects", "recursionLimit"],
     "death trigger resolution request"
   );
   const recursionLimit = requireNonNegativeSafeInteger(
@@ -241,11 +261,11 @@ export function resolveDeathTriggers(
     .sort((left, right) => compareText(left.entityId, right.entityId));
 
   const deathEntityIds = requireDenseDataArray(
-    record.deathEntityIds,
-    "death entity IDs"
-  ).map((value, index) =>
-    requireId<EntityId>(value, entityIdPattern, `death entity ID ${index}`)
-  );
+    record.deathEvents,
+    "death events"
+  )
+    .map(validateDeathEvent)
+    .map((event) => event.entityId);
   const uniqueDeathEntityIds = new Set<EntityId>();
   for (const entityId of deathEntityIds) {
     if (uniqueDeathEntityIds.has(entityId))
@@ -392,6 +412,7 @@ export function resolveDeathTriggers(
   const status =
     pendingDeathEntityIds.length === 0 ? "complete" : "safety_limit_reached";
   return Object.freeze({
+    schemaVersion: 1,
     combatants: Object.freeze(
       combatants.map((combatant) =>
         freezeCombatant(
@@ -404,6 +425,10 @@ export function resolveDeathTriggers(
     lifecycleTransitions: Object.freeze(lifecycleTransitions),
     completedRounds,
     status,
-    pendingDeathEntityIds: Object.freeze([...pendingDeathEntityIds])
+    pendingDeathEvents: Object.freeze(
+      pendingDeathEntityIds.map((entityId) =>
+        Object.freeze({ schemaVersion: 1 as const, entityId })
+      )
+    )
   });
 }

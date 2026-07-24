@@ -6,7 +6,7 @@ import { resolveDeathTriggers } from "./index.js";
 describe("death trigger browser parity", () => {
   it("pins recursive trigger resolution evidence", async () => {
     expect(await canonicalHash(deathTriggerParityEvidence())).toBe(
-      "c2642666869b0348c1a3edc5c08390543fa3b5bdb7d5b47af9f5b7e4c66b2ea1"
+      "4bff638b556020dbe59d29cec606251ea7a9dde50b1ec28552e2e929c82dfd91"
     );
   });
 
@@ -29,7 +29,9 @@ describe("death trigger browser parity", () => {
     ];
     const result = resolveDeathTriggers({
       combatants,
-      deathEntityIds: ["entity.enemy.alpha" as never],
+      deathEvents: [
+        { schemaVersion: 1, entityId: "entity.enemy.alpha" as never }
+      ],
       effects: [
         {
           schemaVersion: 1,
@@ -43,11 +45,15 @@ describe("death trigger browser parity", () => {
     });
 
     expect(result.status).toBe("safety_limit_reached");
-    expect(result.pendingDeathEntityIds).toEqual(["entity.enemy.zulu"]);
+    expect(result.pendingDeathEvents).toEqual([
+      { schemaVersion: 1, entityId: "entity.enemy.zulu" }
+    ]);
     expect(() =>
       resolveDeathTriggers({
         combatants,
-        deathEntityIds: ["entity.enemy.alpha" as never],
+        deathEvents: [
+          { schemaVersion: 1, entityId: "entity.enemy.alpha" as never }
+        ],
         effects: [],
         recursionLimit: 0
       })

@@ -419,10 +419,15 @@ export interface DeathTriggerEffect {
   readonly damage: number;
 }
 
+export interface DeathTriggerEvent {
+  readonly schemaVersion: 1;
+  readonly entityId: EntityId;
+}
+
 export interface DeathTriggerResolutionRequest {
   readonly combatants: readonly CombatantLifecycle[];
   /** Entities newly downed or destroyed by the preceding lifecycle phase. */
-  readonly deathEntityIds: readonly EntityId[];
+  readonly deathEvents: readonly DeathTriggerEvent[];
   readonly effects: readonly DeathTriggerEffect[];
   /** Maximum number of trigger-damage/lifecycle recursion rounds. */
   readonly recursionLimit: number;
@@ -460,13 +465,14 @@ export interface DeathTriggerLifecycleTransition {
 }
 
 export interface DeathTriggerResolution {
+  readonly schemaVersion: 1;
   readonly combatants: readonly CombatantLifecycle[];
   readonly decisions: readonly DeathTriggerDecision[];
   readonly healthResolutions: readonly DeathTriggerHealthResolution[];
   readonly lifecycleTransitions: readonly DeathTriggerLifecycleTransition[];
   readonly completedRounds: number;
   readonly status: "complete" | "safety_limit_reached";
-  readonly pendingDeathEntityIds: readonly EntityId[];
+  readonly pendingDeathEvents: readonly DeathTriggerEvent[];
 }
 
 export type ContentDefinition =
