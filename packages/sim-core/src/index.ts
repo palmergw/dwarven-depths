@@ -632,8 +632,7 @@ function initializeAdmittedEnemyCombatants(
       );
     }
     if (
-      (action.currentTargetEntityId === null &&
-        (activeAttack !== null || action.cooldownCompleteAtTick !== null)) ||
+      (action.currentTargetEntityId === null && activeAttack !== null) ||
       (activeAttack !== null && action.cooldownCompleteAtTick !== null)
     ) {
       throw new RangeError(

@@ -491,7 +491,7 @@ describe("authored wave battlefield composition", () => {
         content,
         []
       )
-    ).toThrow("incoherent action state");
+    ).not.toThrow();
     expect(() =>
       resolveScheduledBattlefieldPhase(
         withActionState(accessorState) as never,
