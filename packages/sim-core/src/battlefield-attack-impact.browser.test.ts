@@ -57,6 +57,17 @@ describe("battlefield attack impact browser parity", () => {
     ).toThrow("authored deployment evidence");
   });
 
+  it("rejects redeployment after authoritative dwarf death", async () => {
+    const { content, deploymentAuthority, preparation, resolved } =
+      await battlefieldAttackImpactParityEvidence();
+    expect(resolved.battlefield.dwarfCombatants[0]?.lifecycleState).toBe(
+      "downed"
+    );
+    expect(() =>
+      deployBattlefieldDwarves(preparation, deploymentAuthority, content)
+    ).toThrow("already initialized");
+  });
+
   it("rejects valid alternate-round deployment authority", async () => {
     const { content, committed } =
       await battlefieldAttackImpactParityEvidence();

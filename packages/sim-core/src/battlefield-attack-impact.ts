@@ -58,6 +58,7 @@ const deploymentAuthorityMetadata = new WeakMap<
       EntityId,
       BattlefieldDwarfCombatant["actionState"]
     >;
+    deploymentBattlefield?: BattlefieldState;
   }
 >();
 
@@ -1230,6 +1231,9 @@ export function deployBattlefieldDwarves(
   authority: BattlefieldDwarfDeploymentAuthority,
   content: CompiledContent
 ): BattlefieldState {
+  const metadata = requireAuthorityMetadata(authority, content);
+  if (metadata.deploymentBattlefield !== undefined)
+    throw new RangeError("battlefield dwarves are already initialized");
   const deployments = requireDeploymentAuthority(
     authority,
     battlefield,
@@ -1320,12 +1324,14 @@ export function deployBattlefieldDwarves(
     dwarfCombatants
   );
   const normalized = normalizeBattlefieldDwarves(candidate, authority, content);
-  return freezeBattlefield(
+  const deployed = freezeBattlefield(
     candidate,
     candidate.occupancy,
     normalized,
     battlefield.pendingCommittedAttacks
   );
+  metadata.deploymentBattlefield = deployed;
+  return deployed;
 }
 
 /** Resolves authoritative dwarf target locks, basic windups, and commitments. */

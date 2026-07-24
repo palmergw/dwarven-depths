@@ -94,6 +94,17 @@ describe("battlefield committed-attack impacts", () => {
     ).toBe(false);
   });
 
+  it("rejects redeploying dwarves after the round deployment was consumed", async () => {
+    const { content, deploymentAuthority, preparation, resolved } =
+      await battlefieldAttackImpactParityEvidence();
+    expect(resolved.battlefield.dwarfCombatants[0]?.lifecycleState).toBe(
+      "downed"
+    );
+    expect(() =>
+      deployBattlefieldDwarves(preparation, deploymentAuthority, content)
+    ).toThrow("already initialized");
+  });
+
   it("rejects authored identity substitution and inconsistent lifecycle state", async () => {
     const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
