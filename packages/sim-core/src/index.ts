@@ -1261,7 +1261,23 @@ export function resolveBattlefieldPhase(
       }
       if (!pendingSpawnIds.has(firedSpawnId as never)) {
         admittedDefinitions.set(authored.entityId, authored.enemyDefinitionId);
+        const admission = enemyAdmissionsByEntity.get(authored.entityId);
+        if (
+          admission === undefined ||
+          admission.spawnId !== authored.id ||
+          admission.entityId !== authored.entityId ||
+          admission.admittedAtTick < authored.atTick
+        ) {
+          throw new RangeError(
+            `authored spawn does not match authoritative admission evidence (${authored.id})`
+          );
+        }
       }
+    }
+    if (enemyAdmissionsByEntity.size !== admittedDefinitions.size) {
+      throw new RangeError(
+        "battlefield enemy admissions do not match admitted authored spawns"
+      );
     }
   }
 
@@ -1493,7 +1509,23 @@ export function resolveScheduledBattlefieldPhase(
     }
     if (!pendingSpawnIds.has(firedSpawnId as never)) {
       admittedDefinitions.set(authored.entityId, authored.enemyDefinitionId);
+      const admission = enemyAdmissionsByEntity.get(authored.entityId);
+      if (
+        admission === undefined ||
+        admission.spawnId !== authored.id ||
+        admission.entityId !== authored.entityId ||
+        admission.admittedAtTick < authored.atTick
+      ) {
+        throw new RangeError(
+          `authored spawn does not match authoritative admission evidence (${authored.id})`
+        );
+      }
     }
+  }
+  if (enemyAdmissionsByEntity.size !== admittedDefinitions.size) {
+    throw new RangeError(
+      "battlefield enemy admissions do not match admitted authored spawns"
+    );
   }
   const persistedEnemyCombatants = initializeAdmittedEnemyCombatants(
     content,

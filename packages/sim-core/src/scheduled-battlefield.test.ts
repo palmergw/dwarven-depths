@@ -228,7 +228,7 @@ describe("authored wave battlefield composition", () => {
 
     expect(() =>
       resolveScheduledBattlefieldPhase(malformed, content, [])
-    ).toThrow("wave that is not marked started");
+    ).toThrow("does not match authoritative admission evidence");
     expect(malformed).toEqual(before);
   });
 
@@ -465,6 +465,23 @@ describe("authored wave battlefield composition", () => {
         []
       )
     ).toThrow("does not match authoritative admission timing");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        {
+          ...due.state,
+          battlefield: {
+            ...due.state.battlefield,
+            enemyAdmissions:
+              due.state.battlefield?.enemyAdmissions.map((admission) => ({
+                ...admission,
+                spawnId: "spawn.second"
+              })) ?? []
+          }
+        } as never,
+        content,
+        []
+      )
+    ).toThrow("does not match authoritative admission evidence");
     expect(() =>
       resolveScheduledBattlefieldPhase(
         withActionState({
