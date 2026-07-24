@@ -278,6 +278,56 @@ export interface EnemyTargetAcquisitionDecision {
   readonly reason: EnemyTargetAcquisitionReason;
 }
 
+export interface AttackWindup {
+  readonly schemaVersion: 1;
+  readonly attackId: StableId;
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId: EntityId;
+  readonly startedAtTick: number;
+  readonly commitAtTick: number;
+  readonly impactAtTick: number;
+  readonly cooldownDurationTicks: number;
+  /** Resolved values in force for this windup; snapshotted at commitment. */
+  readonly damage: number;
+  readonly range: number;
+  /** Target validity after the current tick's target-validation phase. */
+  readonly targetIsValid: boolean;
+}
+
+export interface AttackCommitmentRequest {
+  readonly currentTick: number;
+  readonly windups: readonly AttackWindup[];
+}
+
+export type AttackCommitmentReason =
+  | "waiting_for_commit"
+  | "target_invalid_before_commit"
+  | "committed";
+
+export interface CommittedAttack {
+  readonly schemaVersion: 1;
+  readonly attackId: StableId;
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId: EntityId;
+  readonly committedAtTick: number;
+  readonly impactAtTick: number;
+  readonly cooldownCompleteAtTick: number;
+  readonly damage: number;
+  readonly range: number;
+}
+
+export interface AttackCommitmentDecision {
+  readonly schemaVersion: 1;
+  readonly attackId: StableId;
+  readonly status: "winding_up" | "cancelled" | "committed";
+  readonly reason: AttackCommitmentReason;
+  readonly committedAttack?: CommittedAttack;
+}
+
+export interface AttackCommitmentResolution {
+  readonly decisions: readonly AttackCommitmentDecision[];
+}
+
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition
