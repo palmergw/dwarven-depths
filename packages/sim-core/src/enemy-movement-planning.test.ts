@@ -9,15 +9,10 @@ import {
   type NavigationNodeId
 } from "@dwarven-depths/contracts";
 import { beforeAll, describe, expect, it } from "vitest";
-import conformanceContent from "../../../content/fixtures/conformance-map.json" with {
-  type: "json"
-};
-import referenceCombatants from "../../../content/fixtures/phase-3-reference-combatants.json" with {
-  type: "json"
-};
 import {
   battlefield,
   combatant,
+  enemyMovementPlanningContent,
   enemyMovementPlanningParityEvidence,
   entry
 } from "./enemy-movement-planning.fixture.js";
@@ -27,13 +22,7 @@ let content: CompiledContent;
 
 beforeAll(async () => {
   content = await compileContent({
-    ...conformanceContent,
-    definitions: [
-      ...conformanceContent.definitions,
-      ...referenceCombatants.definitions.filter(
-        (definition) => definition.id === "enemy.goblin_cutter"
-      )
-    ]
+    ...enemyMovementPlanningContent
   } as unknown as ContentBundle);
 });
 
@@ -46,6 +35,7 @@ function request(): EnemyMovementPlanningRequest {
   return {
     schemaVersion: 1,
     currentTick: 6,
+    levelId: "level.conformance_map" as never,
     battlefield: battlefield(enemy, "node.entry" as NavigationNodeId),
     entries: [entry(enemy.entityId)]
   };
@@ -150,7 +140,7 @@ describe("deterministic enemy movement proposal planning", () => {
         ...base,
         battlefield: { ...base.battlefield, enemyAdmissions: [] }
       })
-    ).toThrow("does not match authoritative admission evidence");
+    ).toThrow("enemy admissions do not match authored fired spawns");
     expect(() =>
       planEnemyMovement({
         ...base,
@@ -181,6 +171,78 @@ describe("deterministic enemy movement proposal planning", () => {
         }
       })
     ).toThrow("occupied enemy is missing authoritative combatant state");
+    const slinger = content.enemies.get("enemy.goblin_slinger" as never);
+    if (slinger === undefined) throw new Error("missing slinger definition");
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        battlefield: {
+          ...base.battlefield,
+          enemyAdmissions: base.battlefield.enemyAdmissions.map(
+            (admission) => ({
+              ...admission,
+              enemyDefinitionId: slinger.id
+            })
+          ),
+          enemyCombatants: base.battlefield.enemyCombatants.map(
+            (combatant) => ({
+              ...combatant,
+              enemyDefinitionId: slinger.id,
+              classification: slinger.classification,
+              currentHealth: slinger.maximumHealth,
+              maximumHealth: slinger.maximumHealth,
+              armor: slinger.armor,
+              movementIntervalTicks: slinger.movementIntervalTicks,
+              basicAttack: { ...slinger.basicAttack },
+              actionState: {
+                ...combatant.actionState,
+                nextMovementAtTick: slinger.movementIntervalTicks
+              }
+            })
+          )
+        }
+      })
+    ).toThrow("independently authored spawn");
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        battlefield: {
+          ...base.battlefield,
+          enemyCombatants: base.battlefield.enemyCombatants.map(
+            (combatant) => ({
+              ...combatant,
+              actionState: {
+                ...combatant.actionState,
+                currentTargetEntityId: "entity.dwarf.warden" as never,
+                activeBasicAttack: {
+                  schemaVersion: 1,
+                  attackId: combatant.basicAttack.id,
+                  sourceEntityId: combatant.entityId,
+                  targetEntityId: "entity.dwarf.warden" as never,
+                  startedAtTick: 0,
+                  commitAtTick: 6,
+                  impactAtTick: 7,
+                  cooldownDurationTicks: 20,
+                  damage: 10,
+                  range: 1,
+                  targetIsValid: true
+                },
+                cooldownCompleteAtTick: 999
+              }
+            })
+          )
+        }
+      })
+    ).toThrow("incoherent attack and cooldown");
+    expect(() =>
+      planEnemyMovement({
+        ...base,
+        battlefield: {
+          ...base.battlefield,
+          pendingSpawns: [{ id: "spawn.bad" }] as never
+        }
+      })
+    ).toThrow("pending spawn 0 must contain exactly the expected keys");
   });
 
   it("rejects extended/accessor records and custom arrays", () => {
@@ -228,6 +290,10 @@ describe("deterministic enemy movement proposal planning", () => {
           ...base.battlefield.enemyAdmissions,
           ...battlefield(second, "node.east" as NavigationNodeId)
             .enemyAdmissions
+        ],
+        firedSpawnIds: [
+          ...base.battlefield.firedSpawnIds,
+          ...battlefield(second, "node.east" as NavigationNodeId).firedSpawnIds
         ]
       },
       entries: [...base.entries, entry(second.entityId)]

@@ -15,6 +15,46 @@ import referenceCombatants from "../../../content/fixtures/phase-3-reference-com
 };
 import { planEnemyMovement } from "./enemy-movement-planning.js";
 
+const authoredEnemyEntityIds = [
+  "entity.enemy.proposed",
+  "entity.enemy.already",
+  "entity.enemy.unreachable",
+  "entity.enemy.waiting",
+  "entity.enemy.unlocked",
+  "entity.enemy.test",
+  "entity.enemy.second"
+];
+
+export const enemyMovementPlanningContent = {
+  ...conformanceContent,
+  definitions: [
+    ...conformanceContent.definitions.map((definition) =>
+      definition.kind === "level"
+        ? { ...definition, waveIds: ["wave.movement_planning"] }
+        : definition
+    ),
+    {
+      kind: "wave",
+      id: "wave.movement_planning",
+      startAtTick: 0,
+      durationTicks: 100,
+      spawnEvents: authoredEnemyEntityIds.map((entityId, authoredOrder) => ({
+        id: `spawn.${entityId.slice("entity.".length)}`,
+        authoredOrder,
+        atTick: 0,
+        entityId,
+        enemyDefinitionId: "enemy.goblin_cutter",
+        entranceId: "entrance.west"
+      }))
+    },
+    ...referenceCombatants.definitions.filter(
+      (definition) =>
+        definition.id === "enemy.goblin_cutter" ||
+        definition.id === "enemy.goblin_slinger"
+    )
+  ]
+};
+
 function combatant(
   entityId: string,
   nextMovementAtTick: number,
@@ -59,8 +99,8 @@ function battlefield(
   return {
     schemaVersion: 1,
     mapId: "map.conformance_diamond",
-    startedWaveIds: [],
-    firedSpawnIds: [],
+    startedWaveIds: ["wave.movement_planning"],
+    firedSpawnIds: [`spawn.${enemy.entityId.slice("entity.".length)}`],
     occupancy: [
       { entityId: enemy.entityId, nodeId: enemyNodeId },
       ...(includeTarget
@@ -109,15 +149,9 @@ function entry(
 }
 
 export async function enemyMovementPlanningParityEvidence() {
-  const content = await compileContent({
-    ...conformanceContent,
-    definitions: [
-      ...conformanceContent.definitions,
-      ...referenceCombatants.definitions.filter(
-        (definition) => definition.id === "enemy.goblin_cutter"
-      )
-    ]
-  } as unknown as ContentBundle);
+  const content = await compileContent(
+    enemyMovementPlanningContent as unknown as ContentBundle
+  );
   const proposedEnemy = combatant(
     "entity.enemy.proposed",
     6,
@@ -127,6 +161,7 @@ export async function enemyMovementPlanningParityEvidence() {
     {
       schemaVersion: 1,
       currentTick: 6,
+      levelId: "level.conformance_map" as never,
       battlefield: battlefield(proposedEnemy, "node.entry" as NavigationNodeId),
       entries: [entry(proposedEnemy.entityId)]
     },
@@ -137,6 +172,7 @@ export async function enemyMovementPlanningParityEvidence() {
     {
       schemaVersion: 1,
       currentTick: 6,
+      levelId: "level.conformance_map" as never,
       battlefield: battlefield(alreadyEnemy, "node.south" as NavigationNodeId),
       entries: [entry(alreadyEnemy.entityId)]
     },
@@ -151,6 +187,7 @@ export async function enemyMovementPlanningParityEvidence() {
     {
       schemaVersion: 1,
       currentTick: 6,
+      levelId: "level.conformance_map" as never,
       battlefield: {
         ...unreachableBattlefield,
         occupancy: [
@@ -173,6 +210,7 @@ export async function enemyMovementPlanningParityEvidence() {
     {
       schemaVersion: 1,
       currentTick: 6,
+      levelId: "level.conformance_map" as never,
       battlefield: battlefield(waitingEnemy, "node.entry" as NavigationNodeId),
       entries: [entry(waitingEnemy.entityId)]
     },
@@ -183,6 +221,7 @@ export async function enemyMovementPlanningParityEvidence() {
     {
       schemaVersion: 1,
       currentTick: 6,
+      levelId: "level.conformance_map" as never,
       battlefield: battlefield(
         unlockedEnemy,
         "node.entry" as NavigationNodeId,

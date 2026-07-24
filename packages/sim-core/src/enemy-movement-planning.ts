@@ -9,7 +9,8 @@ import type {
   EntityId,
   MovementProposal,
   NavigationNodeId,
-  NavigationOccupant
+  NavigationOccupant,
+  WaveSpawnEvent
 } from "@dwarven-depths/contracts";
 import { planEnemyRoute } from "./enemy-route-planning.js";
 import { resolveEnemyTargetLock } from "./target-locks.js";
@@ -33,6 +34,7 @@ interface ParsedDataRecord extends Record<string, unknown> {
   readonly candidates?: unknown;
   readonly enemyEntityId?: unknown;
   readonly currentTick?: unknown;
+  readonly levelId?: unknown;
   readonly battlefield?: unknown;
   readonly map?: unknown;
   readonly mapId?: unknown;
@@ -64,6 +66,8 @@ interface ParsedDataRecord extends Record<string, unknown> {
   readonly firedSpawnIds?: unknown;
   readonly pendingSpawns?: unknown;
   readonly enemyAdmissions?: unknown;
+  readonly authoredOrder?: unknown;
+  readonly entranceId?: unknown;
 }
 
 function requireRecord(
@@ -177,6 +181,7 @@ function normalizeAdmissions(value: unknown) {
   const byEntity = new Map<
     EntityId,
     {
+      readonly spawnId: string;
       readonly enemyDefinitionId: string;
       readonly admittedAtTick: number;
     }
@@ -220,11 +225,125 @@ function normalizeAdmissions(value: unknown) {
     if (byEntity.has(entityId))
       throw new RangeError(`duplicate enemy admission (${entityId})`);
     byEntity.set(entityId, {
+      spawnId: data.spawnId,
       enemyDefinitionId: data.enemyDefinitionId,
       admittedAtTick
     });
   }
   return byEntity;
+}
+
+function validateAuthoredAdmissionIdentity(
+  battlefield: ParsedDataRecord,
+  levelId: string,
+  currentTick: number,
+  content: CompiledContent,
+  admissions: ReturnType<typeof normalizeAdmissions>
+): void {
+  const level = content.levels.get(levelId as never);
+  if (level === undefined)
+    throw new RangeError(`unknown movement planning level (${levelId})`);
+  if (level.mapId !== battlefield.mapId)
+    throw new RangeError(
+      "battlefield map does not match movement planning level"
+    );
+  const startedIds = new Set<string>();
+  for (const [index, value] of requireArray(
+    battlefield.startedWaveIds,
+    "battlefield startedWaveIds"
+  ).entries()) {
+    if (typeof value !== "string" || !value.startsWith("wave."))
+      throw new RangeError(`startedWaveIds ${index} must be wave.*`);
+    if (startedIds.has(value))
+      throw new RangeError(`duplicate started wave (${value})`);
+    startedIds.add(value);
+  }
+  const authoredSpawns = new Map<
+    string,
+    { readonly waveId: string; readonly spawn: WaveSpawnEvent }
+  >();
+  for (const waveId of level.waveIds) {
+    const wave = content.waves.get(waveId);
+    if (wave === undefined)
+      throw new RangeError(`unknown authored wave (${waveId})`);
+    if (startedIds.has(waveId) && wave.startAtTick > currentTick)
+      throw new RangeError(`started wave is in the future (${waveId})`);
+    for (const spawn of wave.spawnEvents)
+      authoredSpawns.set(spawn.id, { waveId, spawn });
+  }
+  for (const startedId of startedIds)
+    if (!level.waveIds.includes(startedId as never))
+      throw new RangeError(`started wave is not authored (${startedId})`);
+  const firedIds = new Set<string>();
+  for (const [index, value] of requireArray(
+    battlefield.firedSpawnIds,
+    "battlefield firedSpawnIds"
+  ).entries()) {
+    if (typeof value !== "string" || !value.startsWith("spawn."))
+      throw new RangeError(`firedSpawnIds ${index} must be spawn.*`);
+    if (firedIds.has(value))
+      throw new RangeError(`duplicate fired spawn (${value})`);
+    const authored = authoredSpawns.get(value);
+    if (
+      authored === undefined ||
+      !startedIds.has(authored.waveId) ||
+      authored.spawn.atTick > currentTick
+    )
+      throw new RangeError(
+        `fired spawn lacks due authored wave evidence (${value})`
+      );
+    firedIds.add(value);
+  }
+  const pendingIds = new Set<string>();
+  for (const [index, item] of requireArray(
+    battlefield.pendingSpawns,
+    "battlefield pendingSpawns"
+  ).entries()) {
+    const pending = requireRecord(
+      item,
+      ["id", "authoredOrder", "entityId", "enemyDefinitionId", "entranceId"],
+      `pending spawn ${index}`
+    );
+    if (typeof pending.id !== "string" || pendingIds.has(pending.id))
+      throw new RangeError(
+        `pending spawn ${index} has invalid or duplicate id`
+      );
+    const authored = authoredSpawns.get(pending.id);
+    if (
+      authored === undefined ||
+      !firedIds.has(pending.id) ||
+      pending.authoredOrder !== authored.spawn.authoredOrder ||
+      pending.entityId !== authored.spawn.entityId ||
+      pending.enemyDefinitionId !== authored.spawn.enemyDefinitionId ||
+      pending.entranceId !== authored.spawn.entranceId
+    )
+      throw new RangeError(
+        `pending spawn does not match authored evidence (${pending.id})`
+      );
+    pendingIds.add(pending.id);
+  }
+  const expected = new Map<EntityId, WaveSpawnEvent>();
+  for (const firedId of firedIds) {
+    if (pendingIds.has(firedId)) continue;
+    const authored = authoredSpawns.get(firedId);
+    if (authored !== undefined)
+      expected.set(authored.spawn.entityId, authored.spawn);
+  }
+  if (expected.size !== admissions.size)
+    throw new RangeError("enemy admissions do not match authored fired spawns");
+  for (const [entityId, admission] of admissions) {
+    const spawn = expected.get(entityId);
+    if (
+      spawn === undefined ||
+      admission.spawnId !== spawn.id ||
+      admission.enemyDefinitionId !== spawn.enemyDefinitionId ||
+      admission.admittedAtTick < spawn.atTick ||
+      admission.admittedAtTick > currentTick
+    )
+      throw new RangeError(
+        `enemy admission does not match independently authored spawn (${entityId})`
+      );
+  }
 }
 
 function normalizeCombatants(
@@ -403,8 +522,16 @@ function normalizeCombatants(
           active.attackId !== definition.basicAttack.id ||
           active.sourceEntityId !== entityId ||
           active.targetEntityId !== action.currentTargetEntityId ||
+          startedAtTick < admittedAtTick ||
           startedAtTick > currentTick ||
+          !Number.isSafeInteger(
+            startedAtTick + definition.basicAttack.windupTicks
+          ) ||
           commitAtTick !== startedAtTick + definition.basicAttack.windupTicks ||
+          commitAtTick < currentTick ||
+          !Number.isSafeInteger(
+            commitAtTick + definition.basicAttack.impactDelayTicks
+          ) ||
           impactAtTick !==
             commitAtTick + definition.basicAttack.impactDelayTicks ||
           active.cooldownDurationTicks !==
@@ -418,13 +545,27 @@ function normalizeCombatants(
           );
       }
       if (
-        action.cooldownCompleteAtTick !== null &&
-        requireNonNegativeInteger(
+        action.activeBasicAttack !== null &&
+        action.cooldownCompleteAtTick !== null
+      )
+        throw new RangeError(
+          `${description} has incoherent attack and cooldown`
+        );
+      if (action.cooldownCompleteAtTick !== null) {
+        const cooldownCompleteAtTick = requireNonNegativeInteger(
           action.cooldownCompleteAtTick,
           `${description} cooldownCompleteAtTick`
-        ) < currentTick
-      )
-        throw new RangeError(`${description} has invalid cooldown boundary`);
+        );
+        const cooldownStartedAtTick =
+          cooldownCompleteAtTick - definition.basicAttack.cooldownTicks;
+        if (
+          cooldownCompleteAtTick < currentTick ||
+          !Number.isSafeInteger(cooldownStartedAtTick) ||
+          cooldownStartedAtTick < admittedAtTick ||
+          cooldownStartedAtTick > currentTick
+        )
+          throw new RangeError(`${description} has invalid cooldown boundary`);
+      }
       if (
         (data.lifecycleState === "active" && currentHealth === 0) ||
         (data.lifecycleState === "destroyed" && currentHealth !== 0)
@@ -494,7 +635,7 @@ export function planEnemyMovement(
 ): EnemyMovementPlanningResolution {
   const input = requireRecord(
     request,
-    ["schemaVersion", "currentTick", "battlefield", "entries"],
+    ["schemaVersion", "currentTick", "levelId", "battlefield", "entries"],
     "enemy movement planning request"
   );
   if (input.schemaVersion !== 1)
@@ -505,6 +646,8 @@ export function planEnemyMovement(
     input.currentTick,
     "enemy movement planning currentTick"
   );
+  if (typeof input.levelId !== "string" || !input.levelId.startsWith("level."))
+    throw new RangeError("movement planning levelId must be level.*");
   const battlefield = requireRecord(
     input.battlefield,
     [
@@ -529,10 +672,14 @@ export function planEnemyMovement(
       "battlefield map is not available in compiled content"
     );
   const occupancy = normalizeOccupancy(battlefield.occupancy);
-  requireArray(battlefield.startedWaveIds, "battlefield startedWaveIds");
-  requireArray(battlefield.firedSpawnIds, "battlefield firedSpawnIds");
-  requireArray(battlefield.pendingSpawns, "battlefield pendingSpawns");
   const admissions = normalizeAdmissions(battlefield.enemyAdmissions);
+  validateAuthoredAdmissionIdentity(
+    battlefield,
+    input.levelId,
+    currentTick,
+    content,
+    admissions
+  );
   const combatants = normalizeCombatants(
     battlefield.enemyCombatants,
     currentTick,
