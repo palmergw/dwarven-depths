@@ -13,6 +13,7 @@ import type {
   StableId
 } from "@dwarven-depths/contracts";
 import { resolveAttackCommitments } from "./attack-commitment.js";
+import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
 import { hasLineOfSight, isAimPointInRange } from "./range-line-of-sight.js";
 
@@ -376,22 +377,19 @@ export function resolveEnemyActionPhase(
   const enemyCombatants = Object.freeze(combatants);
   const startedWaveIdSet = new Set(request.battlefield.startedWaveIds);
   const firedSpawnIdSet = new Set(request.battlefield.firedSpawnIds);
+  const waves = level.waveIds.map((waveId) => {
+    const wave = content.waves.get(waveId);
+    if (wave === undefined)
+      throw new Error("validated enemy action wave is missing");
+    return wave;
+  });
   const battlefield = Object.freeze({
     schemaVersion: 1 as const,
     mapId: request.battlefield.mapId,
     startedWaveIds: Object.freeze(
       level.waveIds.filter((waveId) => startedWaveIdSet.has(waveId))
     ),
-    firedSpawnIds: Object.freeze(
-      level.waveIds.flatMap((waveId) => {
-        const wave = content.waves.get(waveId);
-        if (wave === undefined)
-          throw new Error("validated enemy action wave is missing");
-        return wave.spawnEvents
-          .filter((spawn) => firedSpawnIdSet.has(spawn.id))
-          .map((spawn) => spawn.id);
-      })
-    ),
+    firedSpawnIds: Object.freeze(orderFiredSpawnIds(waves, firedSpawnIdSet)),
     occupancy: Object.freeze(
       [...request.battlefield.occupancy]
         .sort((left, right) => compareText(left.entityId, right.entityId))
