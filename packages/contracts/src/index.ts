@@ -372,6 +372,45 @@ export interface CommittedAttackImpactResolution {
   readonly healthResolutions: readonly CombatantHealthResolution[];
 }
 
+export type CombatantKind = "dwarf" | "enemy" | "deployable";
+export type CombatantLifecycleState = "active" | "downed" | "destroyed";
+
+export interface CombatantLifecycle {
+  readonly schemaVersion: 1;
+  readonly entityId: EntityId;
+  readonly kind: CombatantKind;
+  readonly currentHealth: number;
+  readonly lifecycleState: CombatantLifecycleState;
+}
+
+export interface ZeroHealthLifecycleRequest {
+  readonly combatants: readonly CombatantLifecycle[];
+  readonly occupancy: readonly NavigationOccupant[];
+}
+
+export type ZeroHealthLifecycleReason =
+  | "living"
+  | "dwarf_downed"
+  | "enemy_destroyed"
+  | "deployable_destroyed"
+  | "already_resolved";
+
+export interface ZeroHealthLifecycleDecision {
+  readonly schemaVersion: 1;
+  readonly entityId: EntityId;
+  readonly kind: CombatantKind;
+  readonly lifecycleBefore: CombatantLifecycleState;
+  readonly lifecycleAfter: CombatantLifecycleState;
+  readonly status: "unchanged" | "transitioned";
+  readonly reason: ZeroHealthLifecycleReason;
+}
+
+export interface ZeroHealthLifecycleResolution {
+  readonly combatants: readonly CombatantLifecycle[];
+  readonly occupancy: readonly NavigationOccupant[];
+  readonly decisions: readonly ZeroHealthLifecycleDecision[];
+}
+
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition
