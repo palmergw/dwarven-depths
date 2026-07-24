@@ -217,9 +217,10 @@ Phase 3 surface currently present in the repository.
   authored placement. Each dwarf also carries a detached compiled basic-attack
   snapshot and versioned idle action state with no target, windup, or cooldown.
   Persisted attack/action fields are strictly normalized against the deployment
-  authority and character definition, deeply frozen through later battlefield
-  phases, and cleared atomically when the dwarf is downed. Fixed-step damage
-  resolution keeps enemy attacks pending
+  authority and character definition; non-idle state fails closed until an
+  authoritative dwarf action phase exists. The state is deeply frozen through
+  later battlefield phases and cleared atomically when the dwarf is downed.
+  Fixed-step damage resolution keeps enemy attacks pending
   before their exact impact tick, consumes due work through the shared
   simultaneous-damage boundary, and downs zero-health dwarves while vacating
   their navigation occupancy in the same phase. Absent or already-downed

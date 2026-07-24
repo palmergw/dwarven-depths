@@ -10,7 +10,9 @@ import {
   createInitialState,
   deployBattlefieldDwarves,
   normalizeBattlefieldDwarves,
-  resolveBattlefieldAttackImpacts
+  resolveBattlefieldAttackImpacts,
+  resolveBattlefieldPhase,
+  resolveScheduledBattlefieldPhase
 } from "./index.js";
 
 const parityChecksum =
@@ -127,7 +129,14 @@ describe("battlefield committed-attack impacts", () => {
       { ...dwarf, basicAttack: { ...dwarf.basicAttack, damage: 999 } },
       {
         ...dwarf,
-        actionState: { ...dwarf.actionState, cooldownCompleteAtTick: -1 }
+        actionState: { ...dwarf.actionState, cooldownCompleteAtTick: 5 }
+      },
+      {
+        ...dwarf,
+        actionState: {
+          ...dwarf.actionState,
+          currentTargetEntityId: "entity.enemy.cutter"
+        }
       },
       {
         ...dwarf,
@@ -162,43 +171,50 @@ describe("battlefield committed-attack impacts", () => {
     }
   });
 
-  it("accepts authored active dwarf action state and detaches it", async () => {
+  it("rejects forged dwarf state across admission and scheduling phases", async () => {
     const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
-    const dwarf = committed.dwarfCombatants[0];
-    if (dwarf === undefined) throw new Error("missing dwarf fixture");
-    const actionState = {
-      schemaVersion: 1 as const,
-      currentTargetEntityId: "entity.enemy.cutter" as never,
-      activeBasicAttack: {
-        schemaVersion: 1 as const,
-        attackId: "attack.iron_warden_basic.dwarf.warden.tick_0" as never,
-        sourceEntityId: dwarf.entityId,
-        targetEntityId: "entity.enemy.cutter" as never,
-        startedAtTick: 0,
-        commitAtTick: 8,
-        impactAtTick: 10,
-        cooldownDurationTicks: 24,
-        damage: 18,
-        range: 2,
-        targetIsValid: true
-      },
-      cooldownCompleteAtTick: null
-    };
-    const candidate = {
+    const forgedBattlefield = descendant(committed, {
       ...committed,
-      dwarfCombatants: [{ ...dwarf, actionState }]
-    };
-    propagateBattlefieldRoundLineage(committed, candidate);
-    const normalized = normalizeBattlefieldDwarves(
-      candidate,
-      deploymentAuthority,
-      content
-    );
-    actionState.activeBasicAttack.damage = 999;
-    expect(normalized[0]?.actionState.activeBasicAttack?.damage).toBe(18);
-    expect(Object.isFrozen(normalized[0]?.actionState.activeBasicAttack)).toBe(
-      true
+      dwarfCombatants: committed.dwarfCombatants.map((dwarf) => ({
+        ...dwarf,
+        basicAttack: { ...dwarf.basicAttack, damage: 999 },
+        actionState: { ...dwarf.actionState, cooldownCompleteAtTick: 999 }
+      }))
+    });
+    const state = {
+      schemaVersion: 1,
+      contentVersion: content.bundle.contentVersion,
+      tick: 6,
+      seed: "1",
+      rngState: 1,
+      levelId: "level.conformance_map",
+      phase: "COMBAT",
+      eventSequence: 0,
+      battlefield: forgedBattlefield
+    } as never;
+
+    expect(() =>
+      resolveBattlefieldPhase(
+        state,
+        content,
+        [],
+        [],
+        undefined,
+        deploymentAuthority
+      )
+    ).toThrow("basicAttack is not authored");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        state,
+        content,
+        [],
+        undefined,
+        deploymentAuthority
+      )
+    ).toThrow("basicAttack is not authored");
+    expect(() => resolveBattlefieldPhase(state, content, [], [])).toThrow(
+      "require deployment authority"
     );
   });
 
