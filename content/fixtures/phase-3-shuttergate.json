@@ -67,7 +67,7 @@
         {
           "id": "node.shuttergate_north_guard",
           "x": 0,
-          "y": -2,
+          "y": -1,
           "aimPointId": "aim.shuttergate_north_guard",
           "neighborNodeIds": ["node.shuttergate_gate"]
         },
@@ -84,7 +84,7 @@
         {
           "id": "node.shuttergate_keep_guard",
           "x": 3,
-          "y": -2,
+          "y": -1,
           "aimPointId": "aim.shuttergate_keep_guard",
           "neighborNodeIds": ["node.shuttergate_keep"]
         }
@@ -162,9 +162,9 @@
         { "id": "aim.shuttergate_east_entry", "x": 0, "y": 6 },
         { "id": "aim.shuttergate_east_hall", "x": 0, "y": 3 },
         { "id": "aim.shuttergate_gate", "x": 0, "y": 0 },
-        { "id": "aim.shuttergate_north_guard", "x": 0, "y": -2 },
+        { "id": "aim.shuttergate_north_guard", "x": 0, "y": -1 },
         { "id": "aim.shuttergate_keep", "x": 3, "y": 0 },
-        { "id": "aim.shuttergate_keep_guard", "x": 3, "y": -2 }
+        { "id": "aim.shuttergate_keep_guard", "x": 3, "y": -1 }
       ],
       "opaqueRegions": [
         {

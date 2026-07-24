@@ -248,6 +248,18 @@ export interface EnemyMovementPlanningEntry {
   readonly solidBlockerEntityIds: readonly EntityId[];
 }
 
+export interface EnemyPlanningEntryDerivationRequest {
+  readonly schemaVersion: 1;
+  readonly currentTick: number;
+  readonly levelId: StableId;
+  readonly battlefield: BattlefieldState;
+}
+
+export interface EnemyPlanningEntryDerivationResolution {
+  readonly schemaVersion: 1;
+  readonly entries: readonly EnemyMovementPlanningEntry[];
+}
+
 export interface EnemyMovementPlanningRequest {
   readonly schemaVersion: 1;
   readonly currentTick: number;

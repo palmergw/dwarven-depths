@@ -254,6 +254,17 @@ Phase 3 surface currently present in the repository.
   substitution fails closed. Pending, resolved, discarded, health, lifecycle,
   and occupancy evidence is immutable and checksum-pinned across Node and all
   three browser engines. Armor reduction remains intentionally uninferred.
+- Basic-enemy planning entries can now be derived directly from the normalized
+  authoritative battlefield. Active enemies receive stable living-dwarf
+  candidates whose lifecycle, placement, occupancy, authored-route
+  reachability, and path cost come from simulation state and compiled map
+  geometry rather than caller assertions. Occupied non-enemies are carried as
+  solid route blockers while moving enemies remain reservation-time congestion.
+  The entries feed unchanged into the existing enemy action and movement phases;
+  two-placement Shuttergate evidence plus downed-dwarf exclusion is immutable
+  and checksum-pinned across Node and all three browser engines. The two guard
+  aim points are attack-valid from their authored adjacent hall nodes, so the
+  due Cutter evidence acquires the lower-cost north route and moves off spawn.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are

@@ -7,6 +7,8 @@ import type {
   EnemyMovementPlanningEntry,
   EnemyMovementPlanningRequest,
   EnemyMovementPlanningResolution,
+  EnemyPlanningEntryDerivationRequest,
+  EnemyPlanningEntryDerivationResolution,
   EnemyTargetCandidate,
   EntityId,
   MovementProposal,
@@ -835,6 +837,102 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
     enemyCombatants: canonicalBattlefield.enemyCombatants,
     pendingCommittedAttacks,
     authoredEnemyEntityIds
+  });
+}
+
+/**
+ * Derives basic-enemy route-analysis inputs from the authoritative battlefield.
+ * Dwarf identity, lifecycle, placement, occupancy, reachability, and path cost
+ * are therefore simulation evidence rather than caller-supplied assertions.
+ */
+export function deriveEnemyPlanningEntries(
+  request: EnemyPlanningEntryDerivationRequest,
+  content: CompiledContent,
+  dwarfAuthority: BattlefieldDwarfDeploymentAuthority
+): EnemyPlanningEntryDerivationResolution {
+  const input = requireRecord(
+    request,
+    ["schemaVersion", "currentTick", "levelId", "battlefield"],
+    "enemy planning entry derivation request"
+  );
+  if (input.schemaVersion !== 1)
+    throw new RangeError(
+      "enemy planning entry derivation request has unsupported schemaVersion"
+    );
+  const currentTick = requireNonNegativeInteger(
+    input.currentTick,
+    "enemy planning entry derivation currentTick"
+  );
+  if (typeof input.levelId !== "string" || !input.levelId.startsWith("level."))
+    throw new RangeError(
+      "enemy planning entry derivation levelId must be level.*"
+    );
+  const normalized = normalizeAuthoritativeBattlefieldEnemyState(
+    input.battlefield,
+    input.levelId as StableId,
+    currentTick,
+    content,
+    dwarfAuthority
+  );
+  const map = content.maps.get(normalized.battlefield.mapId);
+  if (map === undefined)
+    throw new Error("validated battlefield map is missing");
+  const occupancyByEntity = new Map(
+    normalized.occupancy.map(
+      (occupant) => [occupant.entityId, occupant] as const
+    )
+  );
+  const livingDwarves = normalized.battlefield.dwarfCombatants
+    .filter((dwarf) => dwarf.lifecycleState === "active")
+    .sort((left, right) => compareText(left.entityId, right.entityId));
+  const solidBlockers = normalized.occupancy
+    .filter(
+      (occupant) => !normalized.authoredEnemyEntityIds.has(occupant.entityId)
+    )
+    .sort((left, right) => compareText(left.entityId, right.entityId));
+  const solidBlockerEntityIds = Object.freeze(
+    solidBlockers.map((occupant) => occupant.entityId)
+  );
+  const blockedNodeIds = Object.freeze(
+    solidBlockers.map((occupant) => occupant.nodeId)
+  );
+  const entries = normalized.enemyCombatants
+    .filter((enemy) => enemy.lifecycleState === "active")
+    .sort((left, right) => compareText(left.entityId, right.entityId))
+    .map((enemy): EnemyMovementPlanningEntry => {
+      const source = occupancyByEntity.get(enemy.entityId);
+      if (source === undefined)
+        throw new Error("validated active enemy occupancy is missing");
+      const candidates = livingDwarves.map((dwarf): EnemyTargetCandidate => {
+        const route = planEnemyRoute({
+          schemaVersion: 1,
+          map,
+          sourceNodeId: source.nodeId,
+          targetPlacementPointId: dwarf.placementPointId,
+          range: enemy.basicAttack.range,
+          requiresLineOfSight: enemy.basicAttack.requiresLineOfSight,
+          blockedNodeIds
+        });
+        return Object.freeze({
+          entityId: dwarf.entityId,
+          targetKind: "living_dwarf",
+          placementPointId: dwarf.placementPointId,
+          pathCost: route.pathCost ?? 0,
+          isAlive: true,
+          isReachable: route.status !== "unreachable",
+          opensRoute: false
+        });
+      });
+      return Object.freeze({
+        schemaVersion: 1,
+        enemyEntityId: enemy.entityId,
+        candidates: Object.freeze(candidates),
+        solidBlockerEntityIds
+      });
+    });
+  return Object.freeze({
+    schemaVersion: 1,
+    entries: Object.freeze(entries)
   });
 }
 
