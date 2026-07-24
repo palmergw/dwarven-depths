@@ -35,18 +35,26 @@ function request(
 
 export async function dwarfActionPhaseFixture() {
   const base = await battlefieldAttackImpactParityEvidence();
+  const actionReady: BattlefieldState = {
+    ...base.readyToCommit,
+    enemyCombatants: base.readyToCommit.enemyCombatants.map((enemy) => ({
+      ...enemy,
+      actionState: {
+        ...enemy.actionState,
+        currentTargetEntityId: null,
+        activeBasicAttack: null,
+        cooldownCompleteAtTick: null
+      }
+    }))
+  };
+  propagateBattlefieldRoundLineage(base.readyToCommit, actionReady);
   const started = resolveDwarfActionPhase(
-    request(6, base.committed),
+    request(6, actionReady),
     base.content,
     base.deploymentAuthority
   );
-  const withoutEnemyAttack: BattlefieldState = {
-    ...started.battlefield,
-    pendingCommittedAttacks: []
-  };
-  propagateBattlefieldRoundLineage(started.battlefield, withoutEnemyAttack);
   const winding = resolveDwarfActionPhase(
-    request(10, withoutEnemyAttack),
+    request(10, started.battlefield),
     base.content,
     base.deploymentAuthority
   );

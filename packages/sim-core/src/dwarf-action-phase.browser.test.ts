@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { dwarfActionPhaseParityEvidence } from "./dwarf-action-phase.fixture.js";
 
 const checksum =
-  "a1989122047547229de4739cf815c3c5d6250733ba69eab83989cc1b0356513e";
+  "6c6bbe2fc79b809a88dc32dd2bd166e52e39c96c633c3e0a24bc8dd286c40832";
 
 describe("dwarf action phase browser parity", () => {
   it("matches literal Node action evidence", async () => {
@@ -21,7 +21,7 @@ describe("dwarf action phase browser parity", () => {
         ?.sourceEntityId
     ).toBe("entity.dwarf.warden");
     expect(evidence.substitutionError).toContain(
-      "target does not match accepted commitment evidence"
+      "do not match authoritative pending attacks"
     );
     expect(await canonicalHash(evidence)).toBe(checksum);
   });

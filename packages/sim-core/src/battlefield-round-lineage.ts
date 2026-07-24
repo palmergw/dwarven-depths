@@ -12,6 +12,7 @@ const battlefieldLineages = new WeakMap<
   BattlefieldState,
   BattlefieldRoundLineage
 >();
+const battlefieldParents = new WeakMap<BattlefieldState, BattlefieldState>();
 
 export function initializeBattlefieldRoundLineage(
   battlefield: BattlefieldState,
@@ -66,5 +67,14 @@ export function propagateBattlefieldRoundLineage(
   target: BattlefieldState
 ): void {
   const lineage = battlefieldLineages.get(source);
-  if (lineage !== undefined) battlefieldLineages.set(target, lineage);
+  if (lineage !== undefined) {
+    battlefieldLineages.set(target, lineage);
+    battlefieldParents.set(target, source);
+  }
+}
+
+export function getBattlefieldRoundParent(
+  battlefield: BattlefieldState
+): BattlefieldState | undefined {
+  return battlefieldParents.get(battlefield);
 }

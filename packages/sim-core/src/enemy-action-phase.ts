@@ -119,7 +119,11 @@ export function resolveEnemyActionPhase(
       ],
       dwarfAuthority === undefined
         ? undefined
-        : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)
+        : getAuthorizedCommittedAttackTargets(
+            dwarfAuthority,
+            content,
+            request.battlefield
+          )
     )
   ];
   const decisions: EnemyActionPhaseDecision[] = [];
@@ -453,7 +457,8 @@ export function resolveEnemyActionPhase(
     authorizeBattlefieldCommittedAttacks(
       dwarfAuthority,
       content,
-      battlefield.pendingCommittedAttacks
+      battlefield.pendingCommittedAttacks,
+      battlefield
     );
 
   return Object.freeze({

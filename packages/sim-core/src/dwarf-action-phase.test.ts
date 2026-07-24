@@ -9,7 +9,7 @@ import {
 import { resolveDwarfActionPhase } from "./index.js";
 
 const checksum =
-  "a1989122047547229de4739cf815c3c5d6250733ba69eab83989cc1b0356513e";
+  "6c6bbe2fc79b809a88dc32dd2bd166e52e39c96c633c3e0a24bc8dd286c40832";
 
 describe("dwarf action phase", () => {
   it("starts, retains, commits, and cools down an authored basic attack", async () => {
@@ -69,7 +69,7 @@ describe("dwarf action phase", () => {
       evidence.scheduledPhase.state.battlefield?.pendingCommittedAttacks
     ).toEqual(evidence.enemyPhase.battlefield.pendingCommittedAttacks);
     expect(evidence.substitutionError).toContain(
-      "target does not match accepted commitment evidence"
+      "do not match authoritative pending attacks"
     );
   });
 
@@ -106,6 +106,34 @@ describe("dwarf action phase", () => {
     ).toThrow("does not match accepted action evidence");
   });
 
+  it("rejects deleting an authoritative pending attack", async () => {
+    const evidence = await dwarfActionPhaseFixture();
+    const deleted = {
+      ...evidence.coolingDown.battlefield,
+      pendingCommittedAttacks: []
+    };
+    propagateBattlefieldRoundLineage(evidence.coolingDown.battlefield, deleted);
+    expect(() =>
+      resolveDwarfActionPhase(
+        {
+          schemaVersion: 1,
+          currentTick: 15,
+          levelId: "level.conformance_map" as never,
+          battlefield: deleted,
+          entries: [
+            {
+              schemaVersion: 1,
+              dwarfEntityId: "entity.dwarf.warden" as never,
+              requestedPolicy: "nearest"
+            }
+          ]
+        },
+        evidence.base.content,
+        evidence.base.deploymentAuthority
+      )
+    ).toThrow("do not match authoritative pending attacks");
+  });
+
   it("returns deeply frozen detached evidence and validates entries", async () => {
     const evidence = await dwarfActionPhaseParityEvidence();
     expect(Object.isFrozen(evidence.started)).toBe(true);
@@ -132,7 +160,7 @@ describe("dwarf action phase", () => {
             schemaVersion: 1,
             currentTick: 6,
             levelId: "level.conformance_map" as never,
-            battlefield: base.committed,
+            battlefield: base.readyToCommit,
             entries
           },
           base.content,

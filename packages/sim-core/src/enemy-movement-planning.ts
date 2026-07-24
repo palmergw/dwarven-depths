@@ -739,7 +739,11 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
     [...enemyCombatants, ...dwarfCombatants],
     dwarfAuthority === undefined
       ? undefined
-      : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)
+      : getAuthorizedCommittedAttackTargets(
+          dwarfAuthority,
+          content,
+          sourceBattlefield
+        )
   );
   const enemyIds = new Set(
     enemyCombatants.map((combatant) => combatant.entityId)

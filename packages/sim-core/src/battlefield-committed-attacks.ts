@@ -259,6 +259,14 @@ export function normalizePendingCommittedAttacks(
         `pending committed attack lacks source cooldown evidence (${sourceEntityId})`
       );
   }
+  if (
+    authorizedTargets !== undefined &&
+    attacks.length !== authorizedTargets.size
+  ) {
+    throw new RangeError(
+      "persisted committed attacks do not match authoritative pending attacks"
+    );
+  }
   return Object.freeze(
     attacks.sort((left, right) => compareText(left.attackId, right.attackId))
   );

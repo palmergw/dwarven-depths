@@ -214,6 +214,8 @@ export async function battlefieldAttackImpactParityEvidence() {
     content,
     deployments,
     deploymentAuthority,
+    deployed,
+    readyToCommit,
     committed,
     pending,
     resolved

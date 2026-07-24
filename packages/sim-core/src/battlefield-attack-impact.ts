@@ -17,6 +17,7 @@ import type {
 import {
   type BattlefieldRoundLineage,
   claimBattlefieldPreparationLineage,
+  getBattlefieldRoundParent,
   propagateBattlefieldRoundLineage,
   requireBattlefieldRoundLineage
 } from "./battlefield-round-lineage.js";
@@ -39,6 +40,10 @@ const deploymentAuthorityMetadata = new WeakMap<
     readonly content: CompiledContent;
     readonly lineage: BattlefieldRoundLineage;
     readonly committedAttacks: Map<StableId, CommittedAttack>;
+    readonly pendingAttacksByBattlefield: WeakMap<
+      BattlefieldState,
+      ReadonlyMap<StableId, EntityId>
+    >;
     readonly dwarfActionStates: Map<
       EntityId,
       BattlefieldDwarfCombatant["actionState"]
@@ -335,6 +340,9 @@ export function createBattlefieldDwarfDeploymentAuthority(
     content,
     lineage,
     committedAttacks: new Map(),
+    pendingAttacksByBattlefield: new WeakMap([
+      [preparationBattlefield, new Map()]
+    ]),
     dwarfActionStates: new Map(
       deployments.map((deployment) => [
         deployment.entityId,
@@ -366,9 +374,11 @@ function requireAuthorityMetadata(
 export function authorizeBattlefieldCommittedAttacks(
   authority: BattlefieldDwarfDeploymentAuthority,
   content: CompiledContent,
-  attacks: readonly CommittedAttack[]
+  attacks: readonly CommittedAttack[],
+  battlefield: BattlefieldState
 ): void {
   const metadata = requireAuthorityMetadata(authority, content);
+  const pending = new Map<StableId, EntityId>();
   for (const attack of attacks) {
     const existing = metadata.committedAttacks.get(attack.attackId);
     if (
@@ -388,21 +398,56 @@ export function authorizeBattlefieldCommittedAttacks(
       attack.attackId,
       Object.freeze({ ...attack })
     );
+    pending.set(attack.attackId, attack.targetEntityId);
   }
+  metadata.pendingAttacksByBattlefield.set(battlefield, pending);
 }
 
 /** Returns the accepted target identity for each action-phase commitment. */
 export function getAuthorizedCommittedAttackTargets(
   authority: BattlefieldDwarfDeploymentAuthority,
-  content: CompiledContent
+  content: CompiledContent,
+  battlefield: BattlefieldState
 ): ReadonlyMap<StableId, EntityId> {
   const metadata = requireAuthorityMetadata(authority, content);
-  return new Map(
-    [...metadata.committedAttacks].map(([attackId, attack]) => [
-      attackId,
-      attack.targetEntityId
-    ])
-  );
+  const descendants: BattlefieldState[] = [];
+  const visited = new Set<BattlefieldState>();
+  let current = battlefield;
+  let accepted = metadata.pendingAttacksByBattlefield.get(current);
+  while (accepted === undefined) {
+    if (visited.has(current))
+      throw new RangeError(
+        "battlefield pending-attack lineage contains a cycle"
+      );
+    visited.add(current);
+    descendants.push(current);
+    const parent = getBattlefieldRoundParent(current);
+    if (parent === undefined)
+      throw new RangeError(
+        "battlefield lacks authoritative pending-attack lineage"
+      );
+    current = parent;
+    accepted = metadata.pendingAttacksByBattlefield.get(current);
+  }
+  for (const descendant of descendants.reverse()) {
+    const actual = new Map(
+      descendant.pendingCommittedAttacks.map((attack) => [
+        attack.attackId,
+        attack.targetEntityId
+      ])
+    );
+    if (
+      actual.size !== accepted.size ||
+      [...accepted].some(
+        ([attackId, targetId]) => actual.get(attackId) !== targetId
+      )
+    )
+      throw new RangeError(
+        "persisted committed attacks do not match authoritative pending attacks"
+      );
+    metadata.pendingAttacksByBattlefield.set(descendant, accepted);
+  }
+  return new Map(accepted);
 }
 
 function sameDwarfActionState(
@@ -1220,7 +1265,8 @@ export function resolveDwarfActionPhase(
   authorizeBattlefieldCommittedAttacks(
     authority,
     content,
-    battlefield.pendingCommittedAttacks
+    battlefield.pendingCommittedAttacks,
+    battlefield
   );
   acceptDwarfActionTransition(
     authority,
@@ -1360,6 +1406,12 @@ export function resolveBattlefieldAttackImpacts(
     content,
     battlefield.dwarfCombatants,
     nextBattlefield.dwarfCombatants
+  );
+  authorizeBattlefieldCommittedAttacks(
+    authority,
+    content,
+    pendingCommittedAttacks,
+    nextBattlefield
   );
   normalizeBattlefieldDwarves(nextBattlefield, authority, content);
   return Object.freeze({

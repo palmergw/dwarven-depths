@@ -241,7 +241,7 @@ describe("battlefield committed-attack impacts", () => {
         content,
         deploymentAuthority
       )
-    ).toThrow("target does not match accepted commitment evidence");
+    ).toThrow("do not match authoritative pending attacks");
   });
 
   it("rejects malformed unrelated occupancy instead of preserving it", async () => {
@@ -435,13 +435,12 @@ describe("battlefield committed-attack impacts", () => {
   });
 
   it("accepts a valid composite active windup from the shared normalizer", async () => {
-    const { content, deploymentAuthority, committed } =
+    const { content, deploymentAuthority, readyToCommit } =
       await battlefieldAttackImpactParityEvidence();
-    const enemy = committed.enemyCombatants[0];
+    const enemy = readyToCommit.enemyCombatants[0];
     if (enemy === undefined) throw new Error("missing enemy fixture");
     const candidate = {
-      ...committed,
-      pendingCommittedAttacks: [],
+      ...readyToCommit,
       enemyCombatants: [
         {
           ...enemy,
@@ -465,8 +464,8 @@ describe("battlefield committed-attack impacts", () => {
           }
         }
       ]
-    } as unknown as typeof committed;
-    propagateBattlefieldRoundLineage(committed, candidate);
+    } as unknown as typeof readyToCommit;
+    propagateBattlefieldRoundLineage(readyToCommit, candidate);
     expect(() =>
       resolveBattlefieldAttackImpacts(
         {
@@ -543,7 +542,7 @@ describe("battlefield committed-attack impacts", () => {
         content,
         deploymentAuthority
       )
-    ).toThrow("target does not match accepted commitment evidence");
+    ).toThrow("do not match authoritative pending attacks");
   });
 
   it("rejects malformed enemy action state before resolving impacts", async () => {
