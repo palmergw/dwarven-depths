@@ -152,6 +152,11 @@ export interface NavigationRoute {
   readonly totalCost: number;
 }
 
+export interface NavigationRouteOptions {
+  /** Nodes that cannot be entered while evaluating this route. */
+  readonly blockedNodeIds?: readonly NavigationNodeId[];
+}
+
 function connectionKey(
   leftId: NavigationNodeId,
   rightId: NavigationNodeId
@@ -236,13 +241,27 @@ export function calculateRouteCost(
 export function findShortestRoute(
   map: BattlefieldMapDefinition,
   startNodeId: NavigationNodeId,
-  goalNodeId: NavigationNodeId
+  goalNodeId: NavigationNodeId,
+  options: NavigationRouteOptions = {}
 ): NavigationRoute | undefined {
   const { nodes, connectionCosts } = indexMap(map);
   if (!nodes.has(startNodeId))
     throw new RangeError(`unknown start navigation node ID (${startNodeId})`);
   if (!nodes.has(goalNodeId))
     throw new RangeError(`unknown goal navigation node ID (${goalNodeId})`);
+
+  const blockedNodeIds = new Set<NavigationNodeId>();
+  for (const blockedNodeId of options.blockedNodeIds ?? []) {
+    if (!nodes.has(blockedNodeId)) {
+      throw new RangeError(
+        `blocked route references unknown navigation node ID (${blockedNodeId})`
+      );
+    }
+    blockedNodeIds.add(blockedNodeId);
+  }
+  if (blockedNodeIds.has(startNodeId) || blockedNodeIds.has(goalNodeId)) {
+    return undefined;
+  }
 
   const distances = new Map<NavigationNodeId, number>([[startNodeId, 0]]);
   const startRoutePriority: readonly number[] = [];
@@ -301,6 +320,7 @@ export function findShortestRoute(
     const node = nodes.get(current.nodeId);
     if (node === undefined) continue;
     node.neighborNodeIds.forEach((neighborNodeId, neighborIndex) => {
+      if (blockedNodeIds.has(neighborNodeId)) return;
       const edgeCost = connectionCosts.get(
         connectionKey(current.nodeId, neighborNodeId)
       );

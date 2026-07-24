@@ -22,6 +22,9 @@ import mapContentInput from "../../../content/fixtures/conformance-map.json" wit
 import contentInput from "../../../content/fixtures/empty-content.json" with {
   type: "json"
 };
+import phase2SystemContentInput from "../../../content/fixtures/phase-2-system.json" with {
+  type: "json"
+};
 import scenarioInput from "../../../scenarios/conformance/empty-level.json" with {
   type: "json"
 };
@@ -34,6 +37,7 @@ import stableTablesInput from "../../../scenarios/conformance/stable-tables.json
 import {
   compareRunEvidence,
   createLifecycleDiagnostics,
+  createPhase2SystemScenarioEvidence,
   createReplayDefinition,
   createTimelineRecords,
   renderBattlefieldSvg,
@@ -332,6 +336,25 @@ describe("cross-runtime deterministic conformance", () => {
       ],
       pendingSpawns: []
     });
+  });
+
+  it("matches the golden Phase 2 system scenario evidence", async () => {
+    const content = await compileContent(phase2SystemContentInput);
+    const evidence = createPhase2SystemScenarioEvidence(content);
+
+    expect(await canonicalHash(evidence)).toBe(
+      "fb00c130aaf33ba7901523ede18215893b26743486fc0192e9960c0509711ec9"
+    );
+    expect(evidence.placementRoutes.eastBlockedRoute?.nodeIds).toEqual([
+      "node.entry",
+      "node.south",
+      "node.goal"
+    ]);
+    expect(evidence.placementRoutes.southBlockedRoute?.nodeIds).toEqual([
+      "node.entry",
+      "node.east",
+      "node.goal"
+    ]);
   });
 
   it("matches the golden nonempty entity/effect table", async () => {

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "phase-2-system-scenarios",
+  "definitions": [
+    {
+      "kind": "level",
+      "id": "level.phase_2_system",
+      "waveIds": [],
+      "mapId": "map.phase_2_system"
+    },
+    {
+      "kind": "map",
+      "id": "map.phase_2_system",
+      "nodes": [
+        {
+          "id": "node.entry",
+          "x": 0,
+          "y": 0,
+          "neighborNodeIds": ["node.south", "node.east"]
+        },
+        {
+          "id": "node.east",
+          "x": 1,
+          "y": 0,
+          "neighborNodeIds": ["node.entry", "node.goal"]
+        },
+        {
+          "id": "node.south",
+          "x": 0,
+          "y": 1,
+          "neighborNodeIds": ["node.entry", "node.goal"]
+        },
+        {
+          "id": "node.goal",
+          "x": 1,
+          "y": 1,
+          "neighborNodeIds": ["node.east", "node.south"]
+        }
+      ],
+      "connections": [
+        {
+          "id": "connection.entry_east",
+          "nodeIds": ["node.entry", "node.east"],
+          "cost": 10
+        },
+        {
+          "id": "connection.entry_south",
+          "nodeIds": ["node.south", "node.entry"],
+          "cost": 10
+        },
+        {
+          "id": "connection.east_goal",
+          "nodeIds": ["node.goal", "node.east"],
+          "cost": 10
+        },
+        {
+          "id": "connection.south_goal",
+          "nodeIds": ["node.south", "node.goal"],
+          "cost": 10
+        }
+      ],
+      "placementPoints": [
+        {
+          "id": "placement.east",
+          "nodeId": "node.east",
+          "capacity": 1,
+          "adjacentPlacementPointIds": []
+        },
+        {
+          "id": "placement.south",
+          "nodeId": "node.south",
+          "capacity": 1,
+          "adjacentPlacementPointIds": []
+        }
+      ],
+      "enemyEntrances": [{ "id": "entrance.west", "nodeId": "node.entry" }]
+    }
+  ]
+}

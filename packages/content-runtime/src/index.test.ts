@@ -260,6 +260,35 @@ describe("content compilation", () => {
     });
   });
 
+  it("routes around immutable blocked nodes and rejects unknown blockers", async () => {
+    const content = await compileContent(mapContentInput);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing compiled map fixture");
+    const snapshot = structuredClone(map);
+
+    expect(
+      findShortestRoute(map, "node.entry" as never, "node.goal" as never, {
+        blockedNodeIds: ["node.south" as never]
+      })
+    ).toEqual({
+      nodeIds: ["node.entry", "node.east", "node.goal"],
+      totalCost: 20
+    });
+    expect(
+      findShortestRoute(map, "node.entry" as never, "node.goal" as never, {
+        blockedNodeIds: ["node.goal" as never]
+      })
+    ).toBeUndefined();
+    expect(() =>
+      findShortestRoute(map, "node.entry" as never, "node.goal" as never, {
+        blockedNodeIds: ["node.missing" as never]
+      })
+    ).toThrowError(
+      "blocked route references unknown navigation node ID (node.missing)"
+    );
+    expect(map).toEqual(snapshot);
+  });
+
   it("keeps routing independent of canonical record insertion order", async () => {
     const reordered = structuredClone(mapContentInput);
     const mapInput = reordered.definitions.find(
