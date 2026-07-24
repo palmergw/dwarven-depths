@@ -88,11 +88,19 @@ Phase 3 surface currently present in the repository.
   decisions, health evidence, and statuses are versioned, immutable, detached,
   and input-order independent, with capped-healing and status-refresh evidence
   pinned across Node and all three browser engines.
+- Existing dwarf targets remain locked while living, hostile, in inclusive
+  authored range, and (when required) in line of sight. Policy changes do not
+  displace a valid lock; an absent, dead, friendly, out-of-range, or obscured
+  lock triggers deterministic policy reacquisition from geometry-filtered
+  candidates.
+- Basic enemies likewise retain an eligible reachable dwarf or route-opening
+  blocker and otherwise reuse deterministic route acquisition. Both lock paths
+  return versioned, immutable, detached, reason-coded decisions, with retained
+  and reacquired evidence pinned across Node and all three browser engines.
 
 ## Not implemented yet
 
-Integration of route analysis with enemy target acquisition, dwarf candidate
-filtering, target locking, armor, attack-windup status semantics,
-non-damage trigger variants, rewards, authored spawn schedules, boss behavior,
-terminal evaluation, and combat event integration remain later Phase 3
-checkpoints.
+Fixed-step integration of target validation/reacquisition with attack windups,
+armor, attack-windup status semantics, non-damage trigger variants, rewards,
+authored spawn schedules, boss behavior, terminal evaluation, and broader
+combat event integration remain later Phase 3 checkpoints.

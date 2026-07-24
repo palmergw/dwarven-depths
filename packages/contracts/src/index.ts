@@ -279,6 +279,64 @@ export interface EnemyTargetAcquisitionDecision {
   readonly reason: EnemyTargetAcquisitionReason;
 }
 
+export interface DwarfTargetLockCandidate {
+  readonly entityId: EntityId;
+  readonly aimPointId: AimPointId;
+  readonly isHostile: boolean;
+  readonly currentHealth: number;
+  readonly maximumHealth: number;
+  readonly armor: number;
+  readonly speed: number;
+  readonly isBoss: boolean;
+  readonly isElite: boolean;
+}
+
+export interface DwarfTargetLockRequest {
+  readonly map: BattlefieldMapDefinition;
+  readonly sourceAimPointId: AimPointId;
+  readonly range: number;
+  readonly requiresLineOfSight: boolean;
+  readonly currentTargetEntityId: EntityId | null;
+  readonly requestedPolicy: DwarfTargetPolicy;
+  readonly supportedPolicies: readonly DwarfTargetPolicy[];
+  readonly candidates: readonly DwarfTargetLockCandidate[];
+}
+
+export type TargetLockInvalidReason =
+  | "no_previous_target"
+  | "target_absent"
+  | "target_not_living"
+  | "target_not_hostile"
+  | "target_out_of_range"
+  | "target_outside_line_of_sight";
+
+export interface DwarfTargetLockDecision {
+  readonly schemaVersion: 1;
+  readonly status: "retained" | "reacquired" | "unlocked";
+  readonly targetEntityId?: EntityId;
+  readonly previousTargetReason:
+    | "target_remains_valid"
+    | TargetLockInvalidReason;
+  readonly selectionReason?: DwarfTargetSelectionReason;
+}
+
+export interface EnemyTargetLockRequest {
+  readonly currentTargetEntityId: EntityId | null;
+  readonly candidates: readonly EnemyTargetCandidate[];
+}
+
+export interface EnemyTargetLockDecision {
+  readonly schemaVersion: 1;
+  readonly status: "retained" | "reacquired" | "unlocked";
+  readonly targetEntityId?: EntityId;
+  readonly previousTargetReason:
+    | "target_remains_eligible"
+    | "no_previous_target"
+    | "target_absent"
+    | "target_not_eligible";
+  readonly acquisitionReason?: EnemyTargetAcquisitionReason;
+}
+
 export interface AttackWindup {
   readonly schemaVersion: 1;
   readonly attackId: StableId;
