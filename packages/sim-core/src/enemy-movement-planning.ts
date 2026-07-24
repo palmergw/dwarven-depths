@@ -17,6 +17,7 @@ import type {
 } from "@dwarven-depths/contracts";
 import {
   type BattlefieldDwarfDeploymentAuthority,
+  getAuthorizedCommittedAttackTargets,
   normalizeBattlefieldDwarves
 } from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
@@ -709,7 +710,10 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
   const pendingCommittedAttacks = normalizePendingCommittedAttacks(
     battlefield.pendingCommittedAttacks,
     currentTick,
-    enemyCombatants
+    enemyCombatants,
+    dwarfAuthority === undefined
+      ? undefined
+      : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)
   );
   const enemyIds = new Set(
     enemyCombatants.map((combatant) => combatant.entityId)

@@ -13,7 +13,11 @@ import type {
   StableId
 } from "@dwarven-depths/contracts";
 import { resolveAttackCommitments } from "./attack-commitment.js";
-import type { BattlefieldDwarfDeploymentAuthority } from "./battlefield-attack-impact.js";
+import {
+  authorizeBattlefieldCommittedAttacks,
+  type BattlefieldDwarfDeploymentAuthority,
+  getAuthorizedCommittedAttackTargets
+} from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
@@ -115,7 +119,10 @@ export function resolveEnemyActionPhase(
     ...normalizePendingCommittedAttacks(
       request.battlefield.pendingCommittedAttacks,
       currentTick,
-      request.battlefield.enemyCombatants
+      request.battlefield.enemyCombatants,
+      dwarfAuthority === undefined
+        ? undefined
+        : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)
     )
   ];
   const decisions: EnemyActionPhaseDecision[] = [];
@@ -431,6 +438,13 @@ export function resolveEnemyActionPhase(
         .map((attack) => Object.freeze({ ...attack }))
     )
   }) satisfies BattlefieldState;
+
+  if (dwarfAuthority !== undefined)
+    authorizeBattlefieldCommittedAttacks(
+      dwarfAuthority,
+      content,
+      battlefield.pendingCommittedAttacks
+    );
 
   return Object.freeze({
     schemaVersion: 1,

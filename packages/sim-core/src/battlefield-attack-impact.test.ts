@@ -7,7 +7,7 @@ import {
 } from "./index.js";
 
 const parityChecksum =
-  "1928e21b3748bd7bc2381bcc1bf6d35fd55a61e2441bd241eb44048b26f5b78e";
+  "c197de6feed2dac3630389e508c546425960b544a1de23572e3a7912a9aa4895";
 
 describe("battlefield committed-attack impacts", () => {
   it("persists before impact then consumes lethal damage into downed state", async () => {
@@ -83,37 +83,29 @@ describe("battlefield committed-attack impacts", () => {
     }
   });
 
-  it("discards a due impact when the target is already absent", async () => {
+  it("rejects redirecting a committed attack to an absent target", async () => {
     const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
-    const result = resolveBattlefieldAttackImpacts(
-      {
-        schemaVersion: 1,
-        currentTick: 7,
-        levelId: "level.conformance_map" as never,
-        battlefield: {
-          ...committed,
-          pendingCommittedAttacks: committed.pendingCommittedAttacks.map(
-            (attack) => ({
-              ...attack,
-              targetEntityId: "entity.dwarf.absent" as never
-            })
-          )
-        }
-      },
-      content,
-      deploymentAuthority
-    );
-    expect(result.impactDecisions[0]).toEqual(
-      expect.objectContaining({
-        status: "discarded",
-        reason: "target_not_living_at_impact"
-      })
-    );
-    expect(result.battlefield.pendingCommittedAttacks).toEqual([]);
-    expect(result.battlefield.enemyCombatants).toEqual(
-      committed.enemyCombatants
-    );
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 7,
+          levelId: "level.conformance_map" as never,
+          battlefield: {
+            ...committed,
+            pendingCommittedAttacks: committed.pendingCommittedAttacks.map(
+              (attack) => ({
+                ...attack,
+                targetEntityId: "entity.dwarf.absent" as never
+              })
+            )
+          }
+        },
+        content,
+        deploymentAuthority
+      )
+    ).toThrow("target does not match accepted commitment evidence");
   });
 
   it("rejects malformed unrelated occupancy instead of preserving it", async () => {
@@ -344,7 +336,7 @@ describe("battlefield committed-attack impacts", () => {
         content,
         deploymentAuthority
       )
-    ).toThrow("overlap one source cooldown");
+    ).toThrow("target does not match accepted commitment evidence");
   });
 
   it("rejects malformed enemy action state before resolving impacts", async () => {

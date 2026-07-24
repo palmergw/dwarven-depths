@@ -21,6 +21,10 @@ import {
 import { resolveEnemyMovementPhase } from "./index.js";
 
 let content: Awaited<ReturnType<typeof compileContent>>;
+const authorities = new WeakMap<
+  Parameters<typeof executeEnemyActionPhase>[1],
+  BattlefieldDwarfDeploymentAuthority
+>();
 
 beforeAll(async () => {
   content = await compileContent(
@@ -31,7 +35,9 @@ beforeAll(async () => {
 function authorityFor(
   compiled: Parameters<typeof executeEnemyActionPhase>[1]
 ): BattlefieldDwarfDeploymentAuthority {
-  return createBattlefieldDwarfDeploymentAuthority(
+  const existing = authorities.get(compiled);
+  if (existing !== undefined) return existing;
+  const authority = createBattlefieldDwarfDeploymentAuthority(
     [
       {
         entityId: "entity.dwarf.warden" as never,
@@ -42,6 +48,8 @@ function authorityFor(
     "map.conformance_diamond" as never,
     compiled
   );
+  authorities.set(compiled, authority);
+  return authority;
 }
 
 function resolveEnemyActionPhase(

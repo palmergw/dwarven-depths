@@ -1,7 +1,13 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
 
 export * from "./attack-commitment.js";
-export * from "./battlefield-attack-impact.js";
+export {
+  type BattlefieldDwarfDeploymentAuthority,
+  createBattlefieldDwarfDeploymentAuthority,
+  deployBattlefieldDwarves,
+  normalizeBattlefieldDwarves,
+  resolveBattlefieldAttackImpacts
+} from "./battlefield-attack-impact.js";
 export * from "./combat-timers.js";
 export * from "./committed-attack-impact.js";
 export * from "./committed-combat-effects.js";

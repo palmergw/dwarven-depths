@@ -14,7 +14,8 @@ import {
   createBattlefieldDwarfDeploymentAuthority,
   createInitialState,
   deployBattlefieldDwarves,
-  resolveBattlefieldAttackImpacts
+  resolveBattlefieldAttackImpacts,
+  resolveEnemyActionPhase
 } from "./index.js";
 
 const authoredWarden = referenceCombatants.definitions.find(
@@ -31,11 +32,17 @@ const contentInput = {
         ? { ...definition, waveIds: ["wave.attack_impact"] }
         : definition
     ),
-    ...referenceCombatants.definitions.filter(
-      (definition) =>
-        definition.id === "character.iron_warden" ||
-        definition.id === "enemy.goblin_cutter"
-    ),
+    ...referenceCombatants.definitions
+      .filter(
+        (definition) =>
+          definition.id === "character.iron_warden" ||
+          definition.id === "enemy.goblin_cutter"
+      )
+      .map((definition) =>
+        definition.id === "character.iron_warden"
+          ? { ...definition, maximumHealth: 10 }
+          : definition
+      ),
     {
       ...authoredWarden,
       id: "character.substitute",
@@ -111,19 +118,36 @@ export async function battlefieldAttackImpactParityEvidence() {
       cooldownCompleteAtTick: 26
     }
   };
-  const committed: BattlefieldState = {
+  const readyToCommit: BattlefieldState = {
     ...deployed,
     startedWaveIds: ["wave.attack_impact" as never],
     firedSpawnIds: ["spawn.attack_impact.cutter" as never],
-    dwarfCombatants: deployed.dwarfCombatants.map((dwarf) => ({
-      ...dwarf,
-      currentHealth: cutterDefinition.basicAttack.damage
-    })),
     occupancy: [
-      { entityId: cutter.entityId, nodeId: "node.entry" as never },
+      { entityId: cutter.entityId, nodeId: "node.south" as never },
       ...deployed.occupancy
     ],
-    enemyCombatants: [cutter],
+    enemyCombatants: [
+      {
+        ...cutter,
+        actionState: {
+          ...cutter.actionState,
+          activeBasicAttack: {
+            schemaVersion: 1,
+            attackId: "attack.goblin_cutter_basic.enemy.cutter.tick_0" as never,
+            sourceEntityId: cutter.entityId,
+            targetEntityId: "entity.dwarf.warden" as never,
+            startedAtTick: 0,
+            commitAtTick: 6,
+            impactAtTick: 7,
+            cooldownDurationTicks: 20,
+            damage: 10,
+            range: 1,
+            targetIsValid: true
+          },
+          cooldownCompleteAtTick: null
+        }
+      }
+    ],
     enemyAdmissions: [
       {
         schemaVersion: 1,
@@ -133,20 +157,36 @@ export async function battlefieldAttackImpactParityEvidence() {
         admittedAtTick: 0
       }
     ],
-    pendingCommittedAttacks: [
-      {
-        schemaVersion: 1,
-        attackId: "attack.goblin_cutter_basic.enemy.cutter.tick_0" as never,
-        sourceEntityId: cutter.entityId,
-        targetEntityId: "entity.dwarf.warden" as never,
-        committedAtTick: 6,
-        impactAtTick: 7,
-        cooldownCompleteAtTick: 26,
-        damage: cutterDefinition.basicAttack.damage,
-        range: cutterDefinition.basicAttack.range
-      }
-    ]
+    pendingCommittedAttacks: []
   };
+  const committed = resolveEnemyActionPhase(
+    {
+      schemaVersion: 1,
+      currentTick: 6,
+      levelId: "level.conformance_map" as never,
+      battlefield: readyToCommit,
+      entries: [
+        {
+          schemaVersion: 1,
+          enemyEntityId: cutter.entityId,
+          candidates: [
+            {
+              entityId: "entity.dwarf.warden" as never,
+              targetKind: "living_dwarf",
+              placementPointId: "placement.goal" as never,
+              pathCost: 1,
+              isAlive: true,
+              isReachable: true,
+              opensRoute: false
+            }
+          ],
+          solidBlockerEntityIds: []
+        }
+      ]
+    },
+    content,
+    deploymentAuthority
+  ).battlefield;
   const pending = resolveBattlefieldAttackImpacts(
     {
       schemaVersion: 1,

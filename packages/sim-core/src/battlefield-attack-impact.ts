@@ -5,6 +5,7 @@ import type {
   BattlefieldDwarfCombatant,
   BattlefieldEnemyCombatant,
   BattlefieldState,
+  CommittedAttack,
   DwarfDeployment,
   EntityId,
   NavigationOccupant,
@@ -25,7 +26,10 @@ export interface BattlefieldDwarfDeploymentAuthority {
 
 const deploymentAuthorityMetadata = new WeakMap<
   BattlefieldDwarfDeploymentAuthority,
-  { readonly content: CompiledContent }
+  {
+    readonly content: CompiledContent;
+    readonly committedAttacks: Map<StableId, CommittedAttack>;
+  }
 >();
 
 function compareText(left: string, right: string): number {
@@ -220,8 +224,66 @@ export function createBattlefieldDwarfDeploymentAuthority(
       )
     )
   });
-  deploymentAuthorityMetadata.set(authority, { content });
+  deploymentAuthorityMetadata.set(authority, {
+    content,
+    committedAttacks: new Map()
+  });
   return authority;
+}
+
+function requireAuthorityMetadata(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent
+) {
+  const metadata = deploymentAuthorityMetadata.get(authority);
+  if (metadata?.content !== content)
+    throw new RangeError(
+      "dwarf deployment authority was not accepted for this content"
+    );
+  return metadata;
+}
+
+/** Records immutable attack commitment evidence produced by the action phase. */
+export function authorizeBattlefieldCommittedAttacks(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  attacks: readonly CommittedAttack[]
+): void {
+  const metadata = requireAuthorityMetadata(authority, content);
+  for (const attack of attacks) {
+    const existing = metadata.committedAttacks.get(attack.attackId);
+    if (
+      existing !== undefined &&
+      (existing.sourceEntityId !== attack.sourceEntityId ||
+        existing.targetEntityId !== attack.targetEntityId ||
+        existing.committedAtTick !== attack.committedAtTick ||
+        existing.impactAtTick !== attack.impactAtTick ||
+        existing.cooldownCompleteAtTick !== attack.cooldownCompleteAtTick ||
+        existing.damage !== attack.damage ||
+        existing.range !== attack.range)
+    )
+      throw new RangeError(
+        `committed attack conflicts with accepted evidence (${attack.attackId})`
+      );
+    metadata.committedAttacks.set(
+      attack.attackId,
+      Object.freeze({ ...attack })
+    );
+  }
+}
+
+/** Returns the accepted target identity for each action-phase commitment. */
+export function getAuthorizedCommittedAttackTargets(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent
+): ReadonlyMap<StableId, EntityId> {
+  const metadata = requireAuthorityMetadata(authority, content);
+  return new Map(
+    [...metadata.committedAttacks].map(([attackId, attack]) => [
+      attackId,
+      attack.targetEntityId
+    ])
+  );
 }
 
 function requireDeploymentAuthority(
@@ -229,8 +291,8 @@ function requireDeploymentAuthority(
   mapId: StableId,
   content: CompiledContent
 ): readonly DwarfDeployment[] {
-  const metadata = deploymentAuthorityMetadata.get(authority);
-  if (metadata?.content !== content || authority.mapId !== mapId)
+  const metadata = requireAuthorityMetadata(authority, content);
+  if (metadata.content !== content || authority.mapId !== mapId)
     throw new RangeError(
       "dwarf deployment authority was not accepted for this content and map"
     );

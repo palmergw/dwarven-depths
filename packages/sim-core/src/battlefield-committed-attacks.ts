@@ -97,7 +97,8 @@ function requireNonNegativeSafeInteger(
 export function normalizePendingCommittedAttacks(
   value: unknown,
   currentTick: number,
-  combatants: readonly BattlefieldEnemyCombatant[]
+  combatants: readonly BattlefieldEnemyCombatant[],
+  authorizedTargets?: ReadonlyMap<StableId, EntityId>
 ): readonly CommittedAttack[] {
   const combatantsById = new Map<EntityId, BattlefieldEnemyCombatant>(
     combatants.map((combatant) => [combatant.entityId, combatant])
@@ -143,6 +144,13 @@ export function normalizePendingCommittedAttacks(
       !entityIdPattern.test(data.targetEntityId)
     )
       throw new RangeError(`${description} targetEntityId must be entity.*`);
+    if (
+      authorizedTargets !== undefined &&
+      authorizedTargets.get(attackId) !== data.targetEntityId
+    )
+      throw new RangeError(
+        `${description} target does not match accepted commitment evidence`
+      );
     const sourceEntityId = data.sourceEntityId as EntityId;
     const source = combatantsById.get(sourceEntityId);
     if (source === undefined)
