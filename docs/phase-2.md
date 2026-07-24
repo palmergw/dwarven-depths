@@ -64,9 +64,10 @@ surface currently present on the Phase 2 implementation branch.
   tie-breaking remains authoritative among the unblocked alternatives.
 - Focused Phase 2 system evidence covers occupied-entrance and live-enemy-cap
   queues through deterministic resume. Two legal Warden placements block
-  opposite branches of the authored diamond map and produce distinct,
-  explainable minimum-cost routes. The complete evidence has one literal hash
-  pinned in Node and Chromium, Firefox, and WebKit.
+  authored navigation nodes on opposite branches; routing derives each
+  attack-valid adjacent approach from the selected placement and produces
+  distinct, explainable minimum-cost routes. The complete evidence has one
+  literal hash pinned in Node and Chromium, Firefox, and WebKit.
 
 ## Not implemented yet
 

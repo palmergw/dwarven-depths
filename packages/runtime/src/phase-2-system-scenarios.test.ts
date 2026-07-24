@@ -48,22 +48,32 @@ describe("Phase 2 battlefield system scenarios", () => {
 
     expect(evidence.placementRoutes).toEqual({
       eastPlacement: { valid: true, issues: [] },
-      eastBlockedRoute: {
-        nodeIds: ["node.entry", "node.south", "node.goal"],
-        totalCost: 20
+      eastAttackRoute: {
+        entityId: "entity.dwarf.warden",
+        placementPointId: "placement.east",
+        approachNodeId: "node.east_approach",
+        route: {
+          nodeIds: ["node.entry", "node.east", "node.east_approach"],
+          totalCost: 20
+        }
       },
       southPlacement: { valid: true, issues: [] },
-      southBlockedRoute: {
-        nodeIds: ["node.entry", "node.east", "node.goal"],
-        totalCost: 20
+      southAttackRoute: {
+        entityId: "entity.dwarf.warden",
+        placementPointId: "placement.south",
+        approachNodeId: "node.south_approach",
+        route: {
+          nodeIds: ["node.entry", "node.south", "node.south_approach"],
+          totalCost: 20
+        }
       }
     });
     expect(Object.isFrozen(evidence)).toBe(true);
-    expect(Object.isFrozen(evidence.placementRoutes.eastBlockedRoute)).toBe(
+    expect(Object.isFrozen(evidence.placementRoutes.eastAttackRoute)).toBe(
       true
     );
     expect(await canonicalHash(evidence)).toBe(
-      "fb00c130aaf33ba7901523ede18215893b26743486fc0192e9960c0509711ec9"
+      "9692c834cb7a3473af812d49a074dedf93b35366f5a703251f75d58fec32cdf8"
     );
   });
 });

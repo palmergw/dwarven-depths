@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 import mapContentInput from "../../../content/fixtures/conformance-map.json" with {
   type: "json"
 };
+import phase2SystemContentInput from "../../../content/fixtures/phase-2-system.json" with {
+  type: "json"
+};
 import {
   ContentValidationError,
   calculateRouteCost,
   compileContent,
   compileReplay,
   compileScenario,
+  findShortestAttackRoute,
   findShortestRoute,
   validateStaticPlacement
 } from "./index.js";
@@ -287,6 +291,37 @@ describe("content compilation", () => {
       "blocked route references unknown navigation node ID (node.missing)"
     );
     expect(map).toEqual(snapshot);
+  });
+
+  it("routes to attack-valid approaches derived from legal placements", async () => {
+    const content = await compileContent(phase2SystemContentInput);
+    const map = content.maps.get("map.phase_2_system" as never);
+    if (map === undefined) throw new Error("missing Phase 2 system map");
+
+    expect(
+      findShortestAttackRoute(map, "entrance.west" as never, [
+        {
+          entityId: "entity.dwarf.warden" as never,
+          placementPointId: "placement.east" as never
+        }
+      ])
+    ).toEqual({
+      entityId: "entity.dwarf.warden",
+      placementPointId: "placement.east",
+      approachNodeId: "node.east_approach",
+      route: {
+        nodeIds: ["node.entry", "node.east", "node.east_approach"],
+        totalCost: 20
+      }
+    });
+    expect(() =>
+      findShortestAttackRoute(map, "entrance.missing" as never, [
+        {
+          entityId: "entity.dwarf.warden" as never,
+          placementPointId: "placement.east" as never
+        }
+      ])
+    ).toThrowError("unknown enemy entrance ID (entrance.missing)");
   });
 
   it("keeps routing independent of canonical record insertion order", async () => {

@@ -13,6 +13,7 @@ import {
   type ContentBundle,
   type ContentDefinition,
   canonicalHash,
+  type EnemyEntranceId,
   type LevelDefinition,
   type NavigationNodeDefinition,
   type NavigationNodeId,
@@ -155,6 +156,13 @@ export interface NavigationRoute {
 export interface NavigationRouteOptions {
   /** Nodes that cannot be entered while evaluating this route. */
   readonly blockedNodeIds?: readonly NavigationNodeId[];
+}
+
+export interface StaticAttackRoute {
+  readonly entityId: StaticDwarfPlacement["entityId"];
+  readonly placementPointId: StaticDwarfPlacement["placementPointId"];
+  readonly approachNodeId: NavigationNodeId;
+  readonly route: NavigationRoute;
 }
 
 function connectionKey(
@@ -469,6 +477,88 @@ export function validateStaticPlacement(
   });
 
   return freezePlacementValidation(issues);
+}
+
+/**
+ * Selects the minimum-cost route from an entrance to an unoccupied node that
+ * is directly adjacent to a placed dwarf. Placed dwarves block their authored
+ * navigation nodes; equal-cost targets use stable placement and entity IDs.
+ */
+export function findShortestAttackRoute(
+  map: BattlefieldMapDefinition,
+  entranceId: EnemyEntranceId,
+  placements: readonly StaticDwarfPlacement[]
+): StaticAttackRoute | undefined {
+  if (!validateStaticPlacement(map, placements).valid) {
+    throw new RangeError(
+      "static placements must be valid before attack routing"
+    );
+  }
+  const entrance = map.enemyEntrances.find(
+    (candidate) => candidate.id === entranceId
+  );
+  if (entrance === undefined) {
+    throw new RangeError(`unknown enemy entrance ID (${entranceId})`);
+  }
+
+  const nodes = new Map(map.nodes.map((node) => [node.id, node]));
+  const points = new Map(map.placementPoints.map((point) => [point.id, point]));
+  const blockedNodeIds = placements.map((placement) => {
+    const point = points.get(placement.placementPointId);
+    if (point === undefined)
+      throw new Error("validated placement point is missing");
+    return point.nodeId;
+  });
+  const candidates: Array<
+    StaticAttackRoute & { readonly approachOrder: number }
+  > = [];
+
+  for (const placement of placements) {
+    const point = points.get(placement.placementPointId);
+    if (point === undefined)
+      throw new Error("validated placement point is missing");
+    const node = nodes.get(point.nodeId);
+    if (node === undefined)
+      throw new Error("validated placement node is missing");
+    node.neighborNodeIds.forEach((approachNodeId, approachOrder) => {
+      if (blockedNodeIds.includes(approachNodeId)) return;
+      const route = findShortestRoute(map, entrance.nodeId, approachNodeId, {
+        blockedNodeIds
+      });
+      if (route === undefined) return;
+      candidates.push({
+        entityId: placement.entityId,
+        placementPointId: placement.placementPointId,
+        approachNodeId,
+        route,
+        approachOrder
+      });
+    });
+  }
+
+  candidates.sort(
+    (left, right) =>
+      left.route.totalCost - right.route.totalCost ||
+      (left.placementPointId < right.placementPointId
+        ? -1
+        : left.placementPointId > right.placementPointId
+          ? 1
+          : 0) ||
+      (left.entityId < right.entityId
+        ? -1
+        : left.entityId > right.entityId
+          ? 1
+          : 0) ||
+      left.approachOrder - right.approachOrder
+  );
+  const selected = candidates[0];
+  if (selected === undefined) return undefined;
+  return Object.freeze({
+    entityId: selected.entityId,
+    placementPointId: selected.placementPointId,
+    approachNodeId: selected.approachNodeId,
+    route: selected.route
+  });
 }
 
 export async function compileContent(input: unknown): Promise<CompiledContent> {

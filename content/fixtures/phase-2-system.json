@@ -22,19 +22,37 @@
           "id": "node.east",
           "x": 1,
           "y": 0,
-          "neighborNodeIds": ["node.entry", "node.goal"]
+          "neighborNodeIds": ["node.entry", "node.east_approach"]
         },
         {
           "id": "node.south",
           "x": 0,
           "y": 1,
-          "neighborNodeIds": ["node.entry", "node.goal"]
+          "neighborNodeIds": ["node.entry", "node.south_approach"]
         },
         {
-          "id": "node.goal",
-          "x": 1,
+          "id": "node.east_approach",
+          "x": 2,
+          "y": 0,
+          "neighborNodeIds": ["node.east", "node.east_warden"]
+        },
+        {
+          "id": "node.east_warden",
+          "x": 2,
           "y": 1,
-          "neighborNodeIds": ["node.east", "node.south"]
+          "neighborNodeIds": ["node.east_approach"]
+        },
+        {
+          "id": "node.south_approach",
+          "x": 0,
+          "y": 2,
+          "neighborNodeIds": ["node.south", "node.south_warden"]
+        },
+        {
+          "id": "node.south_warden",
+          "x": 1,
+          "y": 2,
+          "neighborNodeIds": ["node.south_approach"]
         }
       ],
       "connections": [
@@ -49,26 +67,36 @@
           "cost": 10
         },
         {
-          "id": "connection.east_goal",
-          "nodeIds": ["node.goal", "node.east"],
+          "id": "connection.east_approach",
+          "nodeIds": ["node.east", "node.east_approach"],
           "cost": 10
         },
         {
-          "id": "connection.south_goal",
-          "nodeIds": ["node.south", "node.goal"],
+          "id": "connection.east_warden",
+          "nodeIds": ["node.east_approach", "node.east_warden"],
+          "cost": 10
+        },
+        {
+          "id": "connection.south_approach",
+          "nodeIds": ["node.south", "node.south_approach"],
+          "cost": 10
+        },
+        {
+          "id": "connection.south_warden",
+          "nodeIds": ["node.south_approach", "node.south_warden"],
           "cost": 10
         }
       ],
       "placementPoints": [
         {
           "id": "placement.east",
-          "nodeId": "node.east",
+          "nodeId": "node.east_warden",
           "capacity": 1,
           "adjacentPlacementPointIds": []
         },
         {
           "id": "placement.south",
-          "nodeId": "node.south",
+          "nodeId": "node.south_warden",
           "capacity": 1,
           "adjacentPlacementPointIds": []
         }

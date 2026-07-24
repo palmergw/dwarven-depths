@@ -1,7 +1,7 @@
 import {
   type CompiledContent,
-  findShortestRoute,
-  type NavigationRoute,
+  findShortestAttackRoute,
+  type StaticAttackRoute,
   validateStaticPlacement
 } from "@dwarven-depths/content-runtime";
 import type {
@@ -29,9 +29,9 @@ export interface Phase2SystemScenarioEvidence {
   };
   readonly placementRoutes: {
     readonly eastPlacement: StaticPlacementValidation;
-    readonly eastBlockedRoute: NavigationRoute | undefined;
+    readonly eastAttackRoute: StaticAttackRoute | undefined;
     readonly southPlacement: StaticPlacementValidation;
-    readonly southBlockedRoute: NavigationRoute | undefined;
+    readonly southAttackRoute: StaticAttackRoute | undefined;
   };
 }
 
@@ -133,18 +133,20 @@ export function createPhase2SystemScenarioEvidence(
     { liveEnemyCap: 1, currentLiveEnemies: 0 }
   );
 
-  const eastPlacement = validateStaticPlacement(map, [
+  const eastPlacements = [
     {
       entityId: "entity.dwarf.warden" as never,
       placementPointId: "placement.east" as never
     }
-  ]);
-  const southPlacement = validateStaticPlacement(map, [
+  ];
+  const southPlacements = [
     {
       entityId: "entity.dwarf.warden" as never,
       placementPointId: "placement.south" as never
     }
-  ]);
+  ];
+  const eastPlacement = validateStaticPlacement(map, eastPlacements);
+  const southPlacement = validateStaticPlacement(map, southPlacements);
 
   return Object.freeze({
     entranceQueue: Object.freeze({
@@ -159,18 +161,16 @@ export function createPhase2SystemScenarioEvidence(
     }),
     placementRoutes: Object.freeze({
       eastPlacement,
-      eastBlockedRoute: findShortestRoute(
+      eastAttackRoute: findShortestAttackRoute(
         map,
-        "node.entry" as never,
-        "node.goal" as never,
-        { blockedNodeIds: ["node.east" as never] }
+        "entrance.west" as never,
+        eastPlacements
       ),
       southPlacement,
-      southBlockedRoute: findShortestRoute(
+      southAttackRoute: findShortestAttackRoute(
         map,
-        "node.entry" as never,
-        "node.goal" as never,
-        { blockedNodeIds: ["node.south" as never] }
+        "entrance.west" as never,
+        southPlacements
       )
     })
   });

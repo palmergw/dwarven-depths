@@ -343,17 +343,17 @@ describe("cross-runtime deterministic conformance", () => {
     const evidence = createPhase2SystemScenarioEvidence(content);
 
     expect(await canonicalHash(evidence)).toBe(
-      "fb00c130aaf33ba7901523ede18215893b26743486fc0192e9960c0509711ec9"
+      "9692c834cb7a3473af812d49a074dedf93b35366f5a703251f75d58fec32cdf8"
     );
-    expect(evidence.placementRoutes.eastBlockedRoute?.nodeIds).toEqual([
-      "node.entry",
-      "node.south",
-      "node.goal"
-    ]);
-    expect(evidence.placementRoutes.southBlockedRoute?.nodeIds).toEqual([
+    expect(evidence.placementRoutes.eastAttackRoute?.route.nodeIds).toEqual([
       "node.entry",
       "node.east",
-      "node.goal"
+      "node.east_approach"
+    ]);
+    expect(evidence.placementRoutes.southAttackRoute?.route.nodeIds).toEqual([
+      "node.entry",
+      "node.south",
+      "node.south_approach"
     ]);
   });
 
