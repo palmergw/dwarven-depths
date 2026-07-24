@@ -284,6 +284,15 @@ describe("authored wave battlefield composition", () => {
       ...due.state,
       battlefield: { ...due.state.battlefield, enemyCombatants: [] }
     };
+    const unfiredPending = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        firedSpawnIds: due.state.battlefield.firedSpawnIds.filter(
+          (spawnId) => spawnId !== "spawn.second"
+        )
+      }
+    };
     const hiddenFiredSpawnIds = [...due.state.battlefield.firedSpawnIds];
     Object.defineProperty(hiddenFiredSpawnIds, Symbol.iterator, {
       value: () => [][Symbol.iterator](),
@@ -328,6 +337,9 @@ describe("authored wave battlefield composition", () => {
     expect(() =>
       resolveScheduledBattlefieldPhase(missing, content, [])
     ).toThrow("is missing battlefield enemy combatant state");
+    expect(() =>
+      resolveBattlefieldPhase(unfiredPending, content, [], [])
+    ).toThrow("pending spawn spawn.second is not marked fired");
     expect(() =>
       resolveScheduledBattlefieldPhase(hiddenProgress, content, [])
     ).toThrow("fired spawn IDs contains unsupported array properties");

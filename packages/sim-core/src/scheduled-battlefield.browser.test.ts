@@ -3,6 +3,7 @@ import { canonicalHash } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import {
   createInitialState,
+  resolveBattlefieldPhase,
   resolveScheduledBattlefieldPhase
 } from "./index.js";
 import {
@@ -60,6 +61,19 @@ describe("scheduled battlefield browser parity", () => {
     expect(() =>
       resolveScheduledBattlefieldPhase(swapped, content, [])
     ).toThrow("does not match authored spawn identity");
+
+    const unfiredPending = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        firedSpawnIds: due.state.battlefield.firedSpawnIds.filter(
+          (spawnId) => spawnId !== "spawn.second"
+        )
+      }
+    };
+    expect(() =>
+      resolveBattlefieldPhase(unfiredPending, content, [], [])
+    ).toThrow("pending spawn spawn.second is not marked fired");
 
     const hiddenFiredSpawnIds = [...due.state.battlefield.firedSpawnIds];
     Object.defineProperty(hiddenFiredSpawnIds, Symbol.iterator, {

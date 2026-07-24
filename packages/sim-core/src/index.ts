@@ -925,6 +925,7 @@ export function resolveBattlefieldPhase(
     })
   );
   if (level.waveIds.length > 0) {
+    const firedSpawnIdSet = new Set(firedSpawnIds);
     for (const spawn of allPendingSpawns) {
       const authored = authoredSpawns.get(spawn.id);
       if (
@@ -937,6 +938,9 @@ export function resolveBattlefieldPhase(
         throw new RangeError(
           `pending spawn ${spawn.id} does not match authored schedule`
         );
+      }
+      if (!firedSpawnIdSet.has(spawn.id)) {
+        throw new RangeError(`pending spawn ${spawn.id} is not marked fired`);
       }
     }
   }
