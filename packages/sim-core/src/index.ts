@@ -924,11 +924,6 @@ export function resolveBattlefieldPhase(
       return wave.spawnEvents.map((spawn) => [spawn.id, spawn] as const);
     })
   );
-  const expectedDefinitions = new Map(
-    [...authoredSpawns.values()].map(
-      (spawn) => [spawn.entityId, spawn.enemyDefinitionId] as const
-    )
-  );
   if (level.waveIds.length > 0) {
     for (const spawn of allPendingSpawns) {
       const authored = authoredSpawns.get(spawn.id);
@@ -946,26 +941,39 @@ export function resolveBattlefieldPhase(
     }
   }
 
+  const pendingSpawnIds = new Set(allPendingSpawns.map((spawn) => spawn.id));
+  const admittedDefinitions = new Map<
+    EntityId,
+    BattlefieldEnemyCombatant["enemyDefinitionId"]
+  >();
+  if (level.waveIds.length > 0) {
+    for (const firedSpawnId of firedSpawnIds) {
+      const authored = authoredSpawns.get(firedSpawnId as never);
+      if (authored === undefined) {
+        throw new RangeError(
+          `fired spawn ID is not authored (${firedSpawnId})`
+        );
+      }
+      if (!pendingSpawnIds.has(firedSpawnId as never)) {
+        admittedDefinitions.set(authored.entityId, authored.enemyDefinitionId);
+      }
+    }
+  }
+
   const existingEnemyCombatants = initializeAdmittedEnemyCombatants(
     content,
     state.battlefield.enemyCombatants,
     [],
-    level.waveIds.length > 0 ? expectedDefinitions : undefined
+    level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
   const existingEnemyEntityIds = new Set(
     existingEnemyCombatants.map((combatant) => combatant.entityId)
   );
   if (level.waveIds.length > 0) {
-    const pendingSpawnIds = new Set(allPendingSpawns.map((spawn) => spawn.id));
-    for (const firedSpawnId of firedSpawnIds) {
-      const authored = authoredSpawns.get(firedSpawnId as never);
-      if (
-        authored !== undefined &&
-        !pendingSpawnIds.has(firedSpawnId as never) &&
-        !existingEnemyEntityIds.has(authored.entityId)
-      ) {
+    for (const entityId of admittedDefinitions.keys()) {
+      if (!existingEnemyEntityIds.has(entityId)) {
         throw new RangeError(
-          `admitted authored spawn is missing battlefield enemy combatant state (${firedSpawnId})`
+          `admitted authored spawn is missing battlefield enemy combatant state (${entityId})`
         );
       }
     }
@@ -1019,7 +1027,7 @@ export function resolveBattlefieldPhase(
     content,
     existingEnemyCombatants,
     admitted.decisions,
-    level.waveIds.length > 0 ? expectedDefinitions : undefined
+    level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
   const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
   const events: SimulationEvent[] = [];
@@ -1109,11 +1117,9 @@ export function resolveScheduledBattlefieldPhase(
     if (wave === undefined) throw new Error(`Unknown wave ID: ${waveId}`);
     return wave;
   });
-  const expectedDefinitions = new Map(
+  const authoredSpawns = new Map(
     waves.flatMap((wave) =>
-      wave.spawnEvents.map(
-        (spawn) => [spawn.entityId, spawn.enemyDefinitionId] as const
-      )
+      wave.spawnEvents.map((spawn) => [spawn.id, spawn] as const)
     )
   );
   const persistedPendingSpawns = normalizePendingSpawns(
@@ -1124,19 +1130,43 @@ export function resolveScheduledBattlefieldPhase(
     state.battlefield.occupancy,
     "persisted occupancy"
   );
+  const startedWaveIds = normalizeStableIdArray(
+    state.battlefield.startedWaveIds,
+    "started wave IDs"
+  );
+  const firedSpawnIds = normalizeStableIdArray(
+    state.battlefield.firedSpawnIds,
+    "fired spawn IDs"
+  );
+  const pendingSpawnIds = new Set(
+    persistedPendingSpawns.map((spawn) => spawn.id)
+  );
+  const admittedDefinitions = new Map<
+    EntityId,
+    BattlefieldEnemyCombatant["enemyDefinitionId"]
+  >();
+  for (const firedSpawnId of firedSpawnIds) {
+    const authored = authoredSpawns.get(firedSpawnId as never);
+    if (authored === undefined) {
+      throw new RangeError(`fired spawn ID is not authored (${firedSpawnId})`);
+    }
+    if (!pendingSpawnIds.has(firedSpawnId as never)) {
+      admittedDefinitions.set(authored.entityId, authored.enemyDefinitionId);
+    }
+  }
   const persistedEnemyCombatants = initializeAdmittedEnemyCombatants(
     content,
     state.battlefield.enemyCombatants,
     [],
-    level.waveIds.length > 0 ? expectedDefinitions : undefined
+    level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
   const scheduled = resolveWaveSchedule({
     schemaVersion: 1,
     currentTick: state.tick,
     level,
     waves,
-    startedWaveIds: state.battlefield.startedWaveIds,
-    firedSpawnIds: state.battlefield.firedSpawnIds,
+    startedWaveIds: startedWaveIds as BattlefieldState["startedWaveIds"],
+    firedSpawnIds: firedSpawnIds as BattlefieldState["firedSpawnIds"],
     pendingSpawns: persistedPendingSpawns
   });
 

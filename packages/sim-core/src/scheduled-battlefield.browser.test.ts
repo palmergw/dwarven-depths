@@ -60,5 +60,23 @@ describe("scheduled battlefield browser parity", () => {
     expect(() =>
       resolveScheduledBattlefieldPhase(swapped, content, [])
     ).toThrow("does not match authored spawn identity");
+
+    const hiddenFiredSpawnIds = [...due.state.battlefield.firedSpawnIds];
+    Object.defineProperty(hiddenFiredSpawnIds, Symbol.iterator, {
+      value: () => [][Symbol.iterator](),
+      enumerable: false
+    });
+    const hiddenProgress = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        occupancy: [],
+        enemyCombatants: [],
+        firedSpawnIds: hiddenFiredSpawnIds
+      }
+    };
+    expect(() =>
+      resolveScheduledBattlefieldPhase(hiddenProgress, content, [])
+    ).toThrow("fired spawn IDs contains unsupported array properties");
   });
 });

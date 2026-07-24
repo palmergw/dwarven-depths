@@ -255,6 +255,8 @@ describe("authored wave battlefield composition", () => {
       "level.scheduled_battlefield" as never,
       "1"
     );
+    if (initial.battlefield === undefined)
+      throw new Error("expected initial battlefield state");
     const due = resolveScheduledBattlefieldPhase(initial, content, []);
     if (due.state.battlefield === undefined)
       throw new Error("expected battlefield state");
@@ -282,6 +284,43 @@ describe("authored wave battlefield composition", () => {
       ...due.state,
       battlefield: { ...due.state.battlefield, enemyCombatants: [] }
     };
+    const hiddenFiredSpawnIds = [...due.state.battlefield.firedSpawnIds];
+    Object.defineProperty(hiddenFiredSpawnIds, Symbol.iterator, {
+      value: () => [][Symbol.iterator](),
+      enumerable: false
+    });
+    const hiddenProgress = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        occupancy: [],
+        enemyCombatants: [],
+        firedSpawnIds: hiddenFiredSpawnIds
+      }
+    };
+    const future = {
+      ...initial,
+      battlefield: {
+        ...initial.battlefield,
+        occupancy: [
+          { entityId: "entity.enemy.second", nodeId: "node.entrance_west" }
+        ] as never,
+        enemyCombatants: [
+          {
+            schemaVersion: 1,
+            entityId: "entity.enemy.second",
+            enemyDefinitionId: slinger.id,
+            classification: slinger.classification,
+            currentHealth: slinger.maximumHealth,
+            maximumHealth: slinger.maximumHealth,
+            armor: slinger.armor,
+            movementIntervalTicks: slinger.movementIntervalTicks,
+            lifecycleState: "active",
+            basicAttack: { ...slinger.basicAttack }
+          }
+        ] as never
+      }
+    };
 
     expect(() =>
       resolveScheduledBattlefieldPhase(swapped, content, [])
@@ -289,6 +328,12 @@ describe("authored wave battlefield composition", () => {
     expect(() =>
       resolveScheduledBattlefieldPhase(missing, content, [])
     ).toThrow("is missing battlefield enemy combatant state");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(hiddenProgress, content, [])
+    ).toThrow("fired spawn IDs contains unsupported array properties");
+    expect(() => resolveScheduledBattlefieldPhase(future, content, [])).toThrow(
+      "does not match authored spawn identity"
+    );
   });
 
   it("pins the composed Node evidence checksum", async () => {
