@@ -162,15 +162,25 @@ export function resolveDwarfAttackTargeting(
 ): DwarfAttackTargetingResolution {
   const record = requireRecord(
     request,
-    ["currentTick", "entries"],
+    ["schemaVersion", "currentTick", "entries"],
     "dwarf attack targeting request"
   );
+  if (record.schemaVersion !== 1)
+    throw new RangeError(
+      "dwarf attack targeting request has unsupported schemaVersion"
+    );
   const currentTick = requireTick(record.currentTick);
   const entries = requireArray(record.entries).map(normalizedEntry);
   const seen = new Set<string>();
   const decisions = entries
     .map((entry): DwarfAttackTargetingDecision => {
+      // Validate the complete input before replacing phase-derived validity.
+      resolveAttackCommitments({ currentTick, windups: [entry.windup] });
       const targetLock = resolveDwarfTargetLock(entry.targetLock);
+      if (entry.targetLock.range !== entry.windup.range)
+        throw new RangeError(
+          `attack windup range does not match target-lock range (${entry.windup.attackId})`
+        );
       const commitment = resolveAttackCommitments({
         currentTick,
         windups: [

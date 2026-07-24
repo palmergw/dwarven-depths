@@ -10,6 +10,7 @@ import { dwarfCandidate } from "./target-locks.fixture.js";
 describe("dwarf attack targeting integration", () => {
   it("retains a valid lock and commits exactly at the boundary", () => {
     const result = resolveDwarfAttackTargeting({
+      schemaVersion: 1,
       currentTick: 12,
       entries: [targetingEntry()]
     });
@@ -30,6 +31,7 @@ describe("dwarf attack targeting integration", () => {
 
   it("cancels old work while exposing normal reacquisition", () => {
     const result = resolveDwarfAttackTargeting({
+      schemaVersion: 1,
       currentTick: 11,
       entries: [
         targetingEntry("attack.warden.reacquire", "entity.enemy.dead", [
@@ -53,12 +55,14 @@ describe("dwarf attack targeting integration", () => {
 
   it("keeps valid pre-boundary work winding up and cancels unlocked work", () => {
     const valid = resolveDwarfAttackTargeting({
+      schemaVersion: 1,
       currentTick: 11,
       entries: [targetingEntry()]
     });
     expect(valid.decisions[0]?.commitment.status).toBe("winding_up");
 
     const unlocked = resolveDwarfAttackTargeting({
+      schemaVersion: 1,
       currentTick: 12,
       entries: [
         targetingEntry("attack.warden.unlocked", "entity.enemy.dead", [
@@ -74,6 +78,7 @@ describe("dwarf attack targeting integration", () => {
 
   it("sorts detached immutable evidence without mutating inputs", () => {
     const request = {
+      schemaVersion: 1 as const,
       currentTick: 12,
       entries: [targetingEntry("attack.zulu"), targetingEntry("attack.alpha")]
     };
@@ -91,13 +96,25 @@ describe("dwarf attack targeting integration", () => {
     expect(Object.isFrozen(result.decisions[0]?.commitment)).toBe(true);
   });
 
-  it("rejects mismatched identities, duplicate attacks, and unsafe containers", () => {
+  it("rejects mismatched identities, ranges, malformed windups, and unsafe containers", () => {
     expect(() =>
-      resolveDwarfAttackTargeting({ currentTick: -1, entries: [] })
+      resolveDwarfAttackTargeting({
+        schemaVersion: 1,
+        currentTick: -1,
+        entries: []
+      })
     ).toThrow("currentTick must be a non-negative safe integer");
+    expect(() =>
+      resolveDwarfAttackTargeting({
+        schemaVersion: 2 as never,
+        currentTick: 12,
+        entries: []
+      })
+    ).toThrow("unsupported schemaVersion");
 
     expect(() =>
       resolveDwarfAttackTargeting({
+        schemaVersion: 1,
         currentTick: 12,
         entries: [
           {
@@ -117,11 +134,16 @@ describe("dwarf attack targeting integration", () => {
       }
     };
     expect(() =>
-      resolveDwarfAttackTargeting({ currentTick: 12, entries: [mismatched] })
+      resolveDwarfAttackTargeting({
+        schemaVersion: 1,
+        currentTick: 12,
+        entries: [mismatched]
+      })
     ).toThrow("current target does not match windup target");
 
     expect(() =>
       resolveDwarfAttackTargeting({
+        schemaVersion: 1,
         currentTick: 12,
         entries: [targetingEntry(), targetingEntry()]
       })
@@ -129,7 +151,11 @@ describe("dwarf attack targeting integration", () => {
 
     const sparse = new Array(1) as ReturnType<typeof targetingEntry>[];
     expect(() =>
-      resolveDwarfAttackTargeting({ currentTick: 12, entries: sparse })
+      resolveDwarfAttackTargeting({
+        schemaVersion: 1,
+        currentTick: 12,
+        entries: sparse
+      })
     ).toThrow("dense data array");
 
     let getterCalls = 0;
@@ -142,9 +168,44 @@ describe("dwarf attack targeting integration", () => {
       }
     });
     expect(() =>
-      resolveDwarfAttackTargeting({ currentTick: 12, entries: [accessor] })
+      resolveDwarfAttackTargeting({
+        schemaVersion: 1,
+        currentTick: 12,
+        entries: [accessor]
+      })
     ).toThrow("windup must be an enumerable data property");
     expect(getterCalls).toBe(0);
+
+    const malformedValidity = targetingEntry();
+    expect(() =>
+      resolveDwarfAttackTargeting({
+        schemaVersion: 1,
+        currentTick: 12,
+        entries: [
+          {
+            ...malformedValidity,
+            windup: {
+              ...malformedValidity.windup,
+              targetIsValid: "yes"
+            } as never
+          }
+        ]
+      })
+    ).toThrow("targetIsValid must be boolean");
+
+    const mismatchedRange = targetingEntry();
+    expect(() =>
+      resolveDwarfAttackTargeting({
+        schemaVersion: 1,
+        currentTick: 12,
+        entries: [
+          {
+            ...mismatchedRange,
+            windup: { ...mismatchedRange.windup, range: 9 }
+          }
+        ]
+      })
+    ).toThrow("range does not match target-lock range");
   });
 
   it("pins shared integration evidence to the browser checksum", async () => {

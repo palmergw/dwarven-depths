@@ -62,10 +62,12 @@ export function targetingEntry(
 
 export function dwarfAttackTargetingParityEvidence() {
   const retained = resolveDwarfAttackTargeting({
+    schemaVersion: 1,
     currentTick: 12,
     entries: [targetingEntry()]
   });
   const reacquired = resolveDwarfAttackTargeting({
+    schemaVersion: 1,
     currentTick: 11,
     entries: [
       targetingEntry("attack.warden.reacquire", "entity.enemy.dead", [
@@ -75,6 +77,7 @@ export function dwarfAttackTargetingParityEvidence() {
     ]
   });
   const unlocked = resolveDwarfAttackTargeting({
+    schemaVersion: 1,
     currentTick: 12,
     entries: [
       targetingEntry("attack.warden.unlocked", "entity.enemy.dead", [

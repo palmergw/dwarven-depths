@@ -396,6 +396,7 @@ export interface DwarfAttackTargetingEntry {
 }
 
 export interface DwarfAttackTargetingRequest {
+  readonly schemaVersion: 1;
   readonly currentTick: number;
   readonly entries: readonly DwarfAttackTargetingEntry[];
 }
