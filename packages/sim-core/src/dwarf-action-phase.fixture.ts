@@ -3,6 +3,7 @@ import type {
   DwarfActionPhaseRequest
 } from "@dwarven-depths/contracts";
 import { battlefieldAttackImpactParityEvidence } from "./battlefield-attack-impact.fixture.js";
+import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import { resolveDwarfActionPhase } from "./index.js";
 
@@ -52,11 +53,48 @@ export async function dwarfActionPhaseFixture() {
     base.content,
     base.deploymentAuthority
   );
-  return Object.freeze({ base, started, winding, committed, coolingDown });
+  const dwarfAttack = committed.committedAttacks.find(
+    (attack) => attack.sourceEntityId === "entity.dwarf.warden"
+  );
+  const dwarf = committed.dwarfCombatants[0];
+  if (dwarfAttack === undefined || dwarf === undefined)
+    throw new Error("missing committed dwarf attack fixture");
+  const sourceDowned = normalizePendingCommittedAttacks(
+    [dwarfAttack],
+    15,
+    [
+      {
+        ...dwarf,
+        currentHealth: 0,
+        lifecycleState: "downed",
+        actionState: {
+          schemaVersion: 1,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        }
+      }
+    ],
+    new Map([[dwarfAttack.attackId, dwarfAttack.targetEntityId]])
+  );
+  return Object.freeze({
+    base,
+    started,
+    winding,
+    committed,
+    coolingDown,
+    sourceDowned
+  });
 }
 
 export async function dwarfActionPhaseParityEvidence() {
-  const { started, winding, committed, coolingDown } =
+  const { started, winding, committed, coolingDown, sourceDowned } =
     await dwarfActionPhaseFixture();
-  return Object.freeze({ started, winding, committed, coolingDown });
+  return Object.freeze({
+    started,
+    winding,
+    committed,
+    coolingDown,
+    sourceDowned
+  });
 }

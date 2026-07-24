@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { dwarfActionPhaseParityEvidence } from "./dwarf-action-phase.fixture.js";
 
 const checksum =
-  "6e67270bc4a8489573fd2de08f0971232a83ae8b76beff651a72971b5f38b12e";
+  "acb9b6c9bd0a43adbf589bebcd84f17328bbccc24899e495862c69556578018d";
 
 describe("dwarf action phase browser parity", () => {
   it("matches literal Node action evidence", async () => {
@@ -12,6 +12,7 @@ describe("dwarf action phase browser parity", () => {
     expect(evidence.committed.decisions[0]?.reason).toBe(
       "basic_attack_committed"
     );
+    expect(evidence.sourceDowned[0]?.impactAtTick).toBe(16);
     expect(await canonicalHash(evidence)).toBe(checksum);
   });
 });

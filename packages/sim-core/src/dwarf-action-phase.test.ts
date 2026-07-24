@@ -9,7 +9,7 @@ import {
 import { resolveDwarfActionPhase } from "./index.js";
 
 const checksum =
-  "6e67270bc4a8489573fd2de08f0971232a83ae8b76beff651a72971b5f38b12e";
+  "acb9b6c9bd0a43adbf589bebcd84f17328bbccc24899e495862c69556578018d";
 
 describe("dwarf action phase", () => {
   it("starts, retains, commits, and cools down an authored basic attack", async () => {
@@ -46,6 +46,12 @@ describe("dwarf action phase", () => {
     expect(evidence.coolingDown.decisions[0]?.reason).toBe(
       "cooldown_in_progress"
     );
+    expect(evidence.sourceDowned).toEqual([
+      expect.objectContaining({
+        attackId: "attack.iron_warden_basic.dwarf.warden.tick_6",
+        impactAtTick: 16
+      })
+    ]);
   });
 
   it("rejects caller-substituted action state before transition", async () => {

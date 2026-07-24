@@ -246,6 +246,7 @@ export function normalizePendingCommittedAttacks(
     if (
       latest !== undefined &&
       source !== undefined &&
+      source.lifecycleState === "active" &&
       latest.cooldownCompleteAtTick > currentTick &&
       (source.actionState.activeBasicAttack !== null ||
         source.actionState.cooldownCompleteAtTick !==
