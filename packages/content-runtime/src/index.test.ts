@@ -324,6 +324,51 @@ describe("content compilation", () => {
     ).toThrowError("unknown start navigation node ID (node.missing)");
   });
 
+  it("ignores overflowing dead branches when a safe route exists", async () => {
+    const source = structuredClone(mapContentInput);
+    const mapInput = source.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (mapInput === undefined) throw new Error("missing map fixture");
+    mapInput.nodes.push({
+      id: "node.dead_end",
+      x: -1,
+      y: 0,
+      neighborNodeIds: ["node.entry", "node.overflow"]
+    });
+    mapInput.nodes.push({
+      id: "node.overflow",
+      x: -2,
+      y: 0,
+      neighborNodeIds: ["node.dead_end"]
+    });
+    const entry = mapInput.nodes.find((node) => node.id === "node.entry");
+    if (entry === undefined) throw new Error("missing entry node");
+    entry.neighborNodeIds.push("node.dead_end");
+    mapInput.connections.push(
+      {
+        id: "connection.entry_dead_end",
+        nodeIds: ["node.entry", "node.dead_end"],
+        cost: Number.MAX_SAFE_INTEGER - 1
+      },
+      {
+        id: "connection.dead_end_overflow",
+        nodeIds: ["node.dead_end", "node.overflow"],
+        cost: 2
+      }
+    );
+
+    const content = await compileContent(source);
+    const map = content.maps.get("map.conformance_diamond" as never);
+    if (map === undefined) throw new Error("missing compiled map fixture");
+    expect(
+      findShortestRoute(map, "node.entry" as never, "node.goal" as never)
+    ).toEqual({
+      nodeIds: ["node.entry", "node.south", "node.goal"],
+      totalCost: 20
+    });
+  });
+
   it("accepts placements when every entrance can approach a placed dwarf", async () => {
     const content = await compileContent(mapContentInput);
     const map = content.maps.get("map.conformance_diamond" as never);

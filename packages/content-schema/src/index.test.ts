@@ -159,6 +159,51 @@ describe("content validation", () => {
     }
   });
 
+  it("enforces battlefield ID domains, global uniqueness, and single occupancy", () => {
+    const wrongDomains = structuredClone(mapContentInput);
+    const wrongDomainMap = mapFromFixture(wrongDomains);
+    const node = wrongDomainMap.nodes[0];
+    const placement = wrongDomainMap.placementPoints[0];
+    if (node === undefined || placement === undefined)
+      throw new Error("incomplete map fixture");
+    node.id = "placement.entry";
+    placement.capacity = 2;
+    expect(() => validateContentBundle(wrongDomains)).toThrow(
+      /must be a node\.\* stable ID.*Invalid input: expected 1/s
+    );
+
+    const duplicateAcrossMaps = structuredClone(mapContentInput);
+    const sourceMap = duplicateAcrossMaps.definitions.find(
+      (definition) => definition.kind === "map"
+    );
+    if (sourceMap === undefined || sourceMap.kind !== "map")
+      throw new Error("missing map fixture");
+    duplicateAcrossMaps.definitions.push({
+      ...structuredClone(sourceMap),
+      id: "map.second"
+    });
+
+    try {
+      validateContentBundle(duplicateAcrossMaps);
+      throw new Error("expected validation to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ContentValidationError);
+      expect((error as ContentValidationError).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "$/definitions/2/nodes/0/id",
+            code: "duplicate_stable_id",
+            relatedPaths: ["$/definitions/1/nodes/0/id"]
+          }),
+          expect.objectContaining({
+            path: "$/definitions/2/placementPoints/0/id",
+            code: "duplicate_stable_id"
+          })
+        ])
+      );
+    }
+  });
+
   it("rejects non-orthogonal edges and missing authored neighbor order", () => {
     const invalid = structuredClone(mapContentInput);
     const map = mapFromFixture(invalid);

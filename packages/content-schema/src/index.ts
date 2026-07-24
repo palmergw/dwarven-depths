@@ -18,6 +18,18 @@ const stableIdSchema = z
     "must be a stable nonlocalized ID"
   );
 
+function domainIdSchema(domain: string) {
+  return stableIdSchema.refine(
+    (value) => value.startsWith(`${domain}.`),
+    `must be a ${domain}.* stable ID`
+  );
+}
+
+const navigationNodeIdSchema = domainIdSchema("node");
+const navigationConnectionIdSchema = domainIdSchema("connection");
+const placementPointIdSchema = domainIdSchema("placement");
+const enemyEntranceIdSchema = domainIdSchema("entrance");
+
 const checksumSchema = z
   .string()
   .regex(/^[a-f0-9]{64}$/, "must be a lowercase SHA-256 checksum");
@@ -51,32 +63,32 @@ const waveDefinitionSchema = z
 
 const navigationNodeSchema = z
   .object({
-    id: stableIdSchema,
+    id: navigationNodeIdSchema,
     x: z.int(),
     y: z.int(),
-    neighborNodeIds: z.array(stableIdSchema)
+    neighborNodeIds: z.array(navigationNodeIdSchema)
   })
   .strict();
 
 const navigationConnectionSchema = z
   .object({
-    id: stableIdSchema,
-    nodeIds: z.tuple([stableIdSchema, stableIdSchema]),
+    id: navigationConnectionIdSchema,
+    nodeIds: z.tuple([navigationNodeIdSchema, navigationNodeIdSchema]),
     cost: z.int().positive()
   })
   .strict();
 
 const placementPointSchema = z
   .object({
-    id: stableIdSchema,
-    nodeId: stableIdSchema,
-    capacity: z.int().positive(),
-    adjacentPlacementPointIds: z.array(stableIdSchema)
+    id: placementPointIdSchema,
+    nodeId: navigationNodeIdSchema,
+    capacity: z.literal(1),
+    adjacentPlacementPointIds: z.array(placementPointIdSchema)
   })
   .strict();
 
 const enemyEntranceSchema = z
-  .object({ id: stableIdSchema, nodeId: stableIdSchema })
+  .object({ id: enemyEntranceIdSchema, nodeId: navigationNodeIdSchema })
   .strict();
 
 const battlefieldMapSchema = z
@@ -198,13 +210,25 @@ type ParsedMap = z.infer<typeof battlefieldMapSchema>;
 function recordUniqueIds(
   records: readonly { readonly id: string }[],
   basePath: string,
-  issues: ValidationIssue[]
+  issues: ValidationIssue[],
+  globalPaths?: Map<string, string>
 ): Map<string, number> {
   const seen = new Map<string, number>();
   records.forEach((record, index) => {
     const previous = seen.get(record.id);
-    if (previous === undefined) seen.set(record.id, index);
-    else
+    if (previous === undefined) {
+      seen.set(record.id, index);
+      const path = `${basePath}/${index}/id`;
+      const globalPath = globalPaths?.get(record.id);
+      if (globalPath === undefined) globalPaths?.set(record.id, path);
+      else
+        issues.push({
+          path,
+          code: "duplicate_stable_id",
+          message: `duplicates ${record.id}`,
+          relatedPaths: [globalPath]
+        });
+    } else
       issues.push({
         path: `${basePath}/${index}/id`,
         code: "duplicate_stable_id",
@@ -237,17 +261,39 @@ function validateUniqueReferences(
 function validateBattlefieldMap(
   map: ParsedMap,
   definitionIndex: number,
-  issues: ValidationIssue[]
+  issues: ValidationIssue[],
+  globalIds: {
+    readonly nodes: Map<string, string>;
+    readonly connections: Map<string, string>;
+    readonly placements: Map<string, string>;
+    readonly entrances: Map<string, string>;
+  }
 ): void {
   const base = `$/definitions/${definitionIndex}`;
-  const nodes = recordUniqueIds(map.nodes, `${base}/nodes`, issues);
-  recordUniqueIds(map.connections, `${base}/connections`, issues);
+  const nodes = recordUniqueIds(
+    map.nodes,
+    `${base}/nodes`,
+    issues,
+    globalIds.nodes
+  );
+  recordUniqueIds(
+    map.connections,
+    `${base}/connections`,
+    issues,
+    globalIds.connections
+  );
   const placements = recordUniqueIds(
     map.placementPoints,
     `${base}/placementPoints`,
-    issues
+    issues,
+    globalIds.placements
   );
-  recordUniqueIds(map.enemyEntrances, `${base}/enemyEntrances`, issues);
+  recordUniqueIds(
+    map.enemyEntrances,
+    `${base}/enemyEntrances`,
+    issues,
+    globalIds.entrances
+  );
 
   const connectionPairs = new Map<string, number>();
   map.connections.forEach((connection, connectionIndex) => {
@@ -399,6 +445,12 @@ export function validateContentBundle(input: unknown): ContentBundle {
     { readonly index: number; readonly kind: "level" | "wave" | "map" }
   >();
   const issues: ValidationIssue[] = [];
+  const globalMapIds = {
+    nodes: new Map<string, string>(),
+    connections: new Map<string, string>(),
+    placements: new Map<string, string>(),
+    entrances: new Map<string, string>()
+  };
   parsed.data.definitions.forEach((definition, index) => {
     const previous = seen.get(definition.id);
     if (previous !== undefined) {
@@ -415,7 +467,7 @@ export function validateContentBundle(input: unknown): ContentBundle {
 
   parsed.data.definitions.forEach((definition, definitionIndex) => {
     if (definition.kind === "map") {
-      validateBattlefieldMap(definition, definitionIndex, issues);
+      validateBattlefieldMap(definition, definitionIndex, issues, globalMapIds);
       return;
     }
     if (definition.kind !== "level") return;

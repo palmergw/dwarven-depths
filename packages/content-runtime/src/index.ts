@@ -308,7 +308,8 @@ export function findShortestRoute(
         throw new RangeError(
           `neighbor step ${current.nodeId} -> ${neighborNodeId} has no authored connection`
         );
-      const candidateCost = addRouteCost(current.cost, edgeCost);
+      if (current.cost > Number.MAX_SAFE_INTEGER - edgeCost) return;
+      const candidateCost = current.cost + edgeCost;
       const candidatePriority = [...current.routePriority, neighborIndex];
       const knownCost = distances.get(neighborNodeId);
       const knownPriority = routePriorities.get(neighborNodeId);
