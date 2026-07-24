@@ -354,7 +354,7 @@ describe("authoritative battlefield state", () => {
     expect(mismatched).toEqual(before);
   });
 
-  it("rejects admitted spawns whose enemy definition is unavailable", async () => {
+  it("rejects queued spawns whose enemy definition is unavailable", async () => {
     const content = await compileContent(battlefieldContentInput);
     const initial = createInitialState(
       content,
@@ -365,12 +365,66 @@ describe("authoritative battlefield state", () => {
       ...spawn("spawn.unknown", 0, "entity.enemy.unknown"),
       enemyDefinitionId: "enemy.unknown" as never
     };
-    const before = structuredClone(initial);
+    if (initial.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const entranceBlocked: SimulationState = {
+      ...initial,
+      battlefield: {
+        ...initial.battlefield,
+        occupancy: [
+          { entityId: "entity.blocker", nodeId: "node.entry" }
+        ] as never
+      }
+    };
+    const before = structuredClone(entranceBlocked);
 
     expect(() =>
-      resolveBattlefieldPhase(initial, content, [unknown], [])
+      resolveBattlefieldPhase(entranceBlocked, content, [unknown], [])
     ).toThrow("references unknown enemy definition");
-    expect(initial).toEqual(before);
+    expect(entranceBlocked).toEqual(before);
+  });
+
+  it("rejects queued reuse of an existing destroyed enemy identity", async () => {
+    const content = await compileContent(battlefieldContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    const admitted = resolveBattlefieldPhase(
+      initial,
+      content,
+      [spawn("spawn.original", 0, "entity.enemy.reused")],
+      []
+    );
+    if (admitted.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const destroyed: SimulationState = {
+      ...admitted.state,
+      battlefield: {
+        ...admitted.state.battlefield,
+        occupancy: [],
+        enemyCombatants: admitted.state.battlefield.enemyCombatants.map(
+          (combatant) => ({
+            ...combatant,
+            currentHealth: 0,
+            lifecycleState: "destroyed" as const
+          })
+        )
+      }
+    };
+    const before = structuredClone(destroyed);
+
+    expect(() =>
+      resolveBattlefieldPhase(
+        destroyed,
+        content,
+        [spawn("spawn.reused", 1, "entity.enemy.reused")],
+        [],
+        { liveEnemyCap: 1, currentLiveEnemies: 1 }
+      )
+    ).toThrow("already has battlefield enemy combatant state");
+    expect(destroyed).toEqual(before);
   });
 
   it("rejects battlefield phases for mapless or mismatched state", async () => {

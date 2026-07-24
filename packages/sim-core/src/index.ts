@@ -649,6 +649,30 @@ export function resolveBattlefieldPhase(
     }
   }
 
+  const existingEnemyCombatants = initializeAdmittedEnemyCombatants(
+    content,
+    state.battlefield.enemyCombatants,
+    []
+  );
+  const existingEnemyEntityIds = new Set(
+    existingEnemyCombatants.map((combatant) => combatant.entityId)
+  );
+  for (const spawn of [
+    ...state.battlefield.pendingSpawns,
+    ...scheduledSpawns
+  ]) {
+    if (!content.enemies.has(spawn.enemyDefinitionId)) {
+      throw new RangeError(
+        `pending spawn references unknown enemy definition (${spawn.enemyDefinitionId})`
+      );
+    }
+    if (existingEnemyEntityIds.has(spawn.entityId)) {
+      throw new RangeError(
+        `pending spawn entity already has battlefield enemy combatant state (${spawn.entityId})`
+      );
+    }
+  }
+
   const admitted = admitQueuedSpawns(
     map,
     state.battlefield.occupancy,
@@ -657,7 +681,7 @@ export function resolveBattlefieldPhase(
   );
   const enemyCombatants = initializeAdmittedEnemyCombatants(
     content,
-    state.battlefield.enemyCombatants,
+    existingEnemyCombatants,
     admitted.decisions
   );
   const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
