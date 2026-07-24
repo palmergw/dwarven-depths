@@ -79,11 +79,20 @@ Phase 3 surface currently present in the repository.
   Different statuses coexist in stable order. Application results are
   versioned, reason-coded, immutable, detached, and input-order independent,
   with timer and refresh evidence pinned across Node and all three browsers.
+- Committed healing and non-damage status effects resolve at their exact impact
+  tick during the damage-and-healing phase. Source death or removal does not
+  cancel committed work; absent or zero-health targets discard it.
+- Same-tick healing is aggregated per living target, capped at maximum health,
+  and cannot revive a zero-health target. Due status effects reuse the shared
+  refresh and stronger-magnitude rules in stable effect-ID order. Pending work,
+  decisions, health evidence, and statuses are versioned, immutable, detached,
+  and input-order independent, with capped-healing and status-refresh evidence
+  pinned across Node and all three browser engines.
 
 ## Not implemented yet
 
 Integration of route analysis with enemy target acquisition, dwarf candidate
-filtering, target locking, armor, healing,
+filtering, target locking, armor, attack-windup status semantics,
 non-damage trigger variants, rewards, authored spawn schedules, boss behavior,
 terminal evaluation, and combat event integration remain later Phase 3
 checkpoints.
