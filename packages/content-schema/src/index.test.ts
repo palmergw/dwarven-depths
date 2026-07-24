@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import mapContentInput from "../../../content/fixtures/conformance-map.json" with {
+  type: "json"
+};
 import {
   ContentValidationError,
   validateContentBundle,
@@ -11,6 +14,31 @@ const validBundle = {
   contentVersion: "milestone-0",
   definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
 };
+
+interface MutableSchemaMap {
+  nodes: Array<{
+    id: string;
+    x: number;
+    y: number;
+    neighborNodeIds: string[];
+  }>;
+  connections: Array<{ id: string; nodeIds: [string, string]; cost: number }>;
+  placementPoints: Array<{
+    id: string;
+    nodeId: string;
+    capacity: number;
+    adjacentPlacementPointIds: string[];
+  }>;
+  enemyEntrances: Array<{ id: string; nodeId: string }>;
+}
+
+function mapFromFixture(bundle: typeof mapContentInput): MutableSchemaMap {
+  const map = bundle.definitions.find(
+    (definition) => definition.kind === "map"
+  );
+  if (map === undefined) throw new Error("missing map fixture");
+  return map as unknown as MutableSchemaMap;
+}
 
 describe("content validation", () => {
   it("accepts a minimal level bundle", () => {
@@ -80,6 +108,130 @@ describe("content validation", () => {
       ]
     });
     expect(result.definitions).toHaveLength(2);
+  });
+
+  it("accepts the authored orthogonal conformance map", () => {
+    const result = validateContentBundle(mapContentInput);
+    expect(
+      result.definitions.find((definition) => definition.kind === "map")
+    ).toMatchObject({ id: "map.conformance_diamond" });
+  });
+
+  it("rejects malformed map IDs and references at stable paths", () => {
+    const invalid = structuredClone(mapContentInput);
+    const map = mapFromFixture(invalid);
+    const firstNode = map.nodes[0];
+    const duplicateNode = map.nodes[1];
+    const placement = map.placementPoints[0];
+    const entrance = map.enemyEntrances[0];
+    if (
+      firstNode === undefined ||
+      duplicateNode === undefined ||
+      placement === undefined ||
+      entrance === undefined
+    )
+      throw new Error("incomplete map fixture");
+    duplicateNode.id = firstNode.id;
+    placement.nodeId = "node.missing";
+    entrance.nodeId = "node.missing";
+
+    try {
+      validateContentBundle(invalid);
+      throw new Error("expected validation to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ContentValidationError);
+      expect((error as ContentValidationError).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "$/definitions/1/nodes/1/id",
+            code: "duplicate_stable_id"
+          }),
+          expect.objectContaining({
+            path: "$/definitions/1/placementPoints/0/nodeId",
+            code: "unknown_reference"
+          }),
+          expect.objectContaining({
+            path: "$/definitions/1/enemyEntrances/0/nodeId",
+            code: "unknown_reference"
+          })
+        ])
+      );
+    }
+  });
+
+  it("enforces battlefield ID domains, global uniqueness, and single occupancy", () => {
+    const wrongDomains = structuredClone(mapContentInput);
+    const wrongDomainMap = mapFromFixture(wrongDomains);
+    const node = wrongDomainMap.nodes[0];
+    const placement = wrongDomainMap.placementPoints[0];
+    if (node === undefined || placement === undefined)
+      throw new Error("incomplete map fixture");
+    node.id = "placement.entry";
+    placement.capacity = 2;
+    expect(() => validateContentBundle(wrongDomains)).toThrow(
+      /must be a node\.\* stable ID.*Invalid input: expected 1/s
+    );
+
+    const duplicateAcrossMaps = structuredClone(mapContentInput);
+    const sourceMap = duplicateAcrossMaps.definitions.find(
+      (definition) => definition.kind === "map"
+    );
+    if (sourceMap === undefined || sourceMap.kind !== "map")
+      throw new Error("missing map fixture");
+    duplicateAcrossMaps.definitions.push({
+      ...structuredClone(sourceMap),
+      id: "map.second"
+    });
+
+    try {
+      validateContentBundle(duplicateAcrossMaps);
+      throw new Error("expected validation to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ContentValidationError);
+      expect((error as ContentValidationError).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "$/definitions/2/nodes/0/id",
+            code: "duplicate_stable_id",
+            relatedPaths: ["$/definitions/1/nodes/0/id"]
+          }),
+          expect.objectContaining({
+            path: "$/definitions/2/placementPoints/0/id",
+            code: "duplicate_stable_id"
+          })
+        ])
+      );
+    }
+  });
+
+  it("rejects non-orthogonal edges and missing authored neighbor order", () => {
+    const invalid = structuredClone(mapContentInput);
+    const map = mapFromFixture(invalid);
+    const east = map.nodes.find((node) => node.id === "node.east");
+    const entry = map.nodes.find((node) => node.id === "node.entry");
+    if (east === undefined || entry === undefined)
+      throw new Error("incomplete map fixture");
+    east.y = 2;
+    entry.neighborNodeIds = ["node.south"];
+
+    try {
+      validateContentBundle(invalid);
+      throw new Error("expected validation to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ContentValidationError);
+      expect((error as ContentValidationError).issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: "$/definitions/1/connections/0/nodeIds",
+            code: "non_orthogonal_connection"
+          }),
+          expect.objectContaining({
+            path: "$/definitions/1/connections/0/nodeIds",
+            code: "missing_neighbor_order"
+          })
+        ])
+      );
+    }
   });
 });
 

@@ -1,6 +1,18 @@
 export type StableId = string & { readonly __stableId: unique symbol };
 export type EntityId = StableId & { readonly __entityId: unique symbol };
 export type EffectId = StableId & { readonly __effectId: unique symbol };
+export type NavigationNodeId = StableId & {
+  readonly __navigationNodeId: unique symbol;
+};
+export type NavigationConnectionId = StableId & {
+  readonly __navigationConnectionId: unique symbol;
+};
+export type PlacementPointId = StableId & {
+  readonly __placementPointId: unique symbol;
+};
+export type EnemyEntranceId = StableId & {
+  readonly __enemyEntranceId: unique symbol;
+};
 
 export interface StableEntityRecord {
   readonly id: EntityId;
@@ -28,6 +40,7 @@ export interface LevelDefinition {
   readonly kind: "level";
   readonly id: StableId;
   readonly waveIds: readonly StableId[];
+  readonly mapId?: StableId;
 }
 
 export interface WaveDefinition {
@@ -36,7 +49,68 @@ export interface WaveDefinition {
   readonly durationTicks: number;
 }
 
-export type ContentDefinition = LevelDefinition | WaveDefinition;
+export interface NavigationNodeDefinition {
+  readonly id: NavigationNodeId;
+  readonly x: number;
+  readonly y: number;
+  /** Authored gameplay order used to break equal-cost route choices. */
+  readonly neighborNodeIds: readonly NavigationNodeId[];
+}
+
+export interface NavigationConnectionDefinition {
+  readonly id: NavigationConnectionId;
+  readonly nodeIds: readonly [NavigationNodeId, NavigationNodeId];
+  readonly cost: number;
+}
+
+export interface PlacementPointDefinition {
+  readonly id: PlacementPointId;
+  readonly nodeId: NavigationNodeId;
+  readonly capacity: number;
+  readonly adjacentPlacementPointIds: readonly PlacementPointId[];
+}
+
+export interface EnemyEntranceDefinition {
+  readonly id: EnemyEntranceId;
+  readonly nodeId: NavigationNodeId;
+}
+
+export interface BattlefieldMapDefinition {
+  readonly kind: "map";
+  readonly id: StableId;
+  readonly nodes: readonly NavigationNodeDefinition[];
+  readonly connections: readonly NavigationConnectionDefinition[];
+  readonly placementPoints: readonly PlacementPointDefinition[];
+  readonly enemyEntrances: readonly EnemyEntranceDefinition[];
+}
+
+export interface StaticDwarfPlacement {
+  readonly entityId: EntityId;
+  readonly placementPointId: PlacementPointId;
+}
+
+export type StaticPlacementIssueCode =
+  | "duplicate_dwarf"
+  | "unknown_placement_point"
+  | "placement_capacity_exceeded"
+  | "entrance_has_no_attack_route";
+
+export interface StaticPlacementIssue {
+  readonly path: string;
+  readonly code: StaticPlacementIssueCode;
+  readonly message: string;
+  readonly relatedPaths?: readonly string[];
+}
+
+export interface StaticPlacementValidation {
+  readonly valid: boolean;
+  readonly issues: readonly StaticPlacementIssue[];
+}
+
+export type ContentDefinition =
+  | LevelDefinition
+  | WaveDefinition
+  | BattlefieldMapDefinition;
 
 export interface ContentBundle {
   readonly schemaVersion: 1;
