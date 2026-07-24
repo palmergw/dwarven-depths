@@ -104,6 +104,35 @@ describe("authored wave battlefield composition", () => {
     ]);
   });
 
+  it("validates persisted attacks before scheduling", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const [due] = await scheduledBattlefieldParityEvidence();
+    if (due?.state.battlefield === undefined)
+      throw new Error("expected scheduled battlefield state");
+    const forged = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        pendingCommittedAttacks: [
+          {
+            schemaVersion: 1,
+            attackId: "attack.goblin_cutter_basic.enemy.first.tick_0",
+            sourceEntityId: "entity.enemy.first",
+            targetEntityId: "entity.dwarf.warden",
+            committedAtTick: 6,
+            impactAtTick: 7,
+            cooldownCompleteAtTick: 26,
+            damage: 10,
+            range: 1
+          }
+        ]
+      }
+    };
+    expect(() =>
+      resolveScheduledBattlefieldPhase(forged as never, content, [])
+    ).toThrow("before its commit tick");
+  });
+
   it("retries queued enemies without replaying authored schedule events", async () => {
     const [, moved, admitted] = await scheduledBattlefieldParityEvidence();
     expect(moved?.events.map(eventEvidence)).toEqual([

@@ -45,6 +45,7 @@ import {
   type WaveDefinition,
   type WaveSpawnEvent
 } from "@dwarven-depths/contracts";
+import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
 import { resolveWaveSchedule } from "./wave-schedule.js";
@@ -1490,6 +1491,11 @@ export function resolveBattlefieldPhase(
     enemyAdmissionsByEntity,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
+  const persistedCommittedAttacks = normalizePendingCommittedAttacks(
+    state.battlefield.pendingCommittedAttacks,
+    state.tick,
+    existingEnemyCombatants
+  );
   const existingEnemyEntityIds = new Set(
     existingEnemyCombatants.map((combatant) => combatant.entityId)
   );
@@ -1655,7 +1661,7 @@ export function resolveBattlefieldPhase(
         firedSpawnIds as BattlefieldState["firedSpawnIds"],
         movedEnemyCombatants,
         enemyAdmissions,
-        state.battlefield.pendingCommittedAttacks
+        persistedCommittedAttacks
       )
     }),
     events: Object.freeze(events)
@@ -1759,6 +1765,11 @@ export function resolveScheduledBattlefieldPhase(
     enemyAdmissionsByEntity,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
+  const persistedCommittedAttacks = normalizePendingCommittedAttacks(
+    state.battlefield.pendingCommittedAttacks,
+    state.tick,
+    persistedEnemyCombatants
+  );
   const scheduled = resolveWaveSchedule({
     schemaVersion: 1,
     currentTick: state.tick,
@@ -1819,7 +1830,7 @@ export function resolveScheduledBattlefieldPhase(
       scheduled.firedSpawnIds,
       persistedEnemyCombatants,
       persistedEnemyAdmissions,
-      state.battlefield.pendingCommittedAttacks
+      persistedCommittedAttacks
     )
   });
   const battlefield = resolveBattlefieldPhase(

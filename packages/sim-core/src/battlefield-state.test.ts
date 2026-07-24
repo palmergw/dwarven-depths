@@ -504,6 +504,73 @@ describe("authoritative battlefield state", () => {
     expect(mismatched).toEqual(before);
   });
 
+  it("validates persisted attacks before admission and movement", async () => {
+    const content = await compileContent(battlefieldContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    const admitted = resolveBattlefieldPhase(
+      initial,
+      content,
+      [spawn("spawn.attacker", 0, "entity.enemy.attacker")],
+      []
+    );
+    if (admitted.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const admittedBattlefield: NonNullable<SimulationState["battlefield"]> =
+      admitted.state.battlefield;
+    const attack = {
+      schemaVersion: 1,
+      attackId: "attack.goblin_cutter_basic.enemy.attacker.tick_0",
+      sourceEntityId: "entity.enemy.attacker",
+      targetEntityId: "entity.dwarf.warden",
+      committedAtTick: 6,
+      impactAtTick: 7,
+      cooldownCompleteAtTick: 26,
+      damage: 10,
+      range: 1
+    };
+    const pending: SimulationState = {
+      ...admitted.state,
+      tick: 6,
+      battlefield: {
+        ...admittedBattlefield,
+        pendingCommittedAttacks: [attack] as never
+      }
+    };
+    const preserved = resolveBattlefieldPhase(pending, content, [], []);
+    expect(preserved.state.battlefield?.pendingCommittedAttacks).toEqual([
+      attack
+    ]);
+    expect(preserved.state.battlefield?.pendingCommittedAttacks[0]).not.toBe(
+      attack
+    );
+    for (const pendingCommittedAttacks of [
+      [attack, attack],
+      [{ ...attack, damage: 11 }]
+    ]) {
+      expect(() =>
+        resolveBattlefieldPhase(
+          {
+            ...pending,
+            battlefield: {
+              ...admittedBattlefield,
+              pendingCommittedAttacks: pendingCommittedAttacks as never
+            }
+          },
+          content,
+          [],
+          []
+        )
+      ).toThrow();
+    }
+    expect(() =>
+      resolveBattlefieldPhase({ ...pending, tick: 8 }, content, [], [])
+    ).toThrow("passed its impact tick");
+  });
+
   it("rejects extended records and custom combatant arrays", async () => {
     const content = await compileContent(battlefieldContentInput);
     const initial = createInitialState(
