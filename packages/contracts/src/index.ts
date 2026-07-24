@@ -328,6 +328,50 @@ export interface AttackCommitmentResolution {
   readonly decisions: readonly AttackCommitmentDecision[];
 }
 
+export interface CombatantHealth {
+  readonly schemaVersion: 1;
+  readonly entityId: EntityId;
+  readonly currentHealth: number;
+  readonly maximumHealth: number;
+}
+
+export interface CommittedAttackImpactRequest {
+  readonly currentTick: number;
+  readonly attacks: readonly CommittedAttack[];
+  readonly combatants: readonly CombatantHealth[];
+}
+
+export type CommittedAttackImpactReason =
+  | "waiting_for_impact"
+  | "target_not_living_at_impact"
+  | "damage_applied";
+
+export interface CommittedAttackImpactDecision {
+  readonly schemaVersion: 1;
+  readonly attackId: StableId;
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId: EntityId;
+  readonly status: "pending" | "discarded" | "resolved";
+  readonly reason: CommittedAttackImpactReason;
+  readonly damage?: number;
+}
+
+export interface CombatantHealthResolution {
+  readonly schemaVersion: 1;
+  readonly entityId: EntityId;
+  readonly healthBefore: number;
+  readonly incomingDamage: number;
+  readonly appliedDamage: number;
+  readonly healthAfter: number;
+  readonly becameZeroHealth: boolean;
+}
+
+export interface CommittedAttackImpactResolution {
+  readonly decisions: readonly CommittedAttackImpactDecision[];
+  readonly health: readonly CombatantHealth[];
+  readonly healthResolutions: readonly CombatantHealthResolution[];
+}
+
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition
