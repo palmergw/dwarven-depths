@@ -7,7 +7,7 @@ import {
 import { applyCharacterExperienceAward } from "./character-experience.js";
 
 const checksum =
-  "d00672f67090794f4b6b32058b3c1130daa9e8e8ba4ad1dec8298a20ae62ba40";
+  "001659a332f5547ff95ccb99b22e7266e9ea24179a1fae955ba36a36b068e0fd";
 
 function initialState() {
   return {
@@ -39,6 +39,9 @@ describe("character experience awards", () => {
       pendingSkillPointLevels: [2, 3, 4]
     });
     expect(evidence.zero.decision.reason).toBe("no_experience_awarded");
+    expect(evidence.maximum.decision.reason).toBe(
+      "experience_awarded_at_maximum_level"
+    );
     expect(await canonicalHash(evidence)).toBe(checksum);
   });
 
@@ -84,7 +87,7 @@ describe("character experience awards", () => {
     expect(result.state).toMatchObject({ experience: 625, level: 4 });
     expect(result.decision).toMatchObject({
       gainedSkillPointLevels: [],
-      reason: "experience_awarded"
+      reason: "experience_awarded_at_maximum_level"
     });
   });
 

@@ -50,5 +50,11 @@ export function characterExperienceParityEvidence() {
     experienceAward: 0,
     thresholds: characterLevelThresholds
   });
-  return Object.freeze({ first, deferred, zero });
+  const maximum = applyCharacterExperienceAward({
+    schemaVersion: 1,
+    state: zero.state,
+    experienceAward: 25,
+    thresholds: characterLevelThresholds
+  });
+  return Object.freeze({ first, deferred, zero, maximum });
 }

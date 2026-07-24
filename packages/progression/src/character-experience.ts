@@ -33,6 +33,7 @@ export interface CharacterExperienceAwardDecision {
   readonly reason:
     | "no_experience_awarded"
     | "experience_awarded"
+    | "experience_awarded_at_maximum_level"
     | "level_thresholds_crossed";
 }
 
@@ -319,7 +320,9 @@ export function applyCharacterExperienceAward(
         ? ("no_experience_awarded" as const)
         : gainedSkillPointLevels.length > 0
           ? ("level_thresholds_crossed" as const)
-          : ("experience_awarded" as const)
+          : state.level === thresholds.length
+            ? ("experience_awarded_at_maximum_level" as const)
+            : ("experience_awarded" as const)
   });
   return Object.freeze({
     schemaVersion: 1,
