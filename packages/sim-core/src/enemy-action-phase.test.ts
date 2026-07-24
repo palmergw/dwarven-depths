@@ -201,6 +201,12 @@ describe("enemy action phase", () => {
     const result = resolveEnemyActionPhase(request, content);
     expect(request).toEqual(before);
     expect(Object.isFrozen(result)).toBe(true);
+    expect(Object.isFrozen(result.battlefield)).toBe(true);
+    expect(Object.isFrozen(result.battlefield.occupancy)).toBe(true);
+    expect(Object.isFrozen(result.battlefield.occupancy[0])).toBe(true);
+    expect(Object.isFrozen(result.battlefield.pendingSpawns)).toBe(true);
+    expect(Object.isFrozen(result.battlefield.enemyAdmissions)).toBe(true);
+    expect(result.battlefield.enemyCombatants).toBe(result.enemyCombatants);
     expect(Object.isFrozen(result.enemyCombatants)).toBe(true);
     expect(Object.isFrozen(result.enemyCombatants[0])).toBe(true);
     expect(Object.isFrozen(result.enemyCombatants[0]?.actionState)).toBe(true);
@@ -252,6 +258,7 @@ describe("enemy action phase", () => {
       "entity.enemy.second"
     ]);
     expect(new Set(result.decisions.map((item) => item.attackId)).size).toBe(2);
+    expect(result.battlefield.enemyCombatants).toEqual(result.enemyCombatants);
 
     const permuted = resolveEnemyActionPhase(
       {
@@ -314,7 +321,7 @@ describe("enemy action phase", () => {
 
   it("pins action evidence for browser parity", async () => {
     expect(await canonicalHash(await enemyActionPhaseParityEvidence())).toBe(
-      "3375f6faa4c212ee26bcaed8f9a8f856eee3a9ca1d87b1ab252a7bf375fb2fa7"
+      "846fa36b2d4ddfbd0036cf37282fe0af9131135ad4b911d4140d6c5a2168f69b"
     );
   });
 });

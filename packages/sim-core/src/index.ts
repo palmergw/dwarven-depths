@@ -44,6 +44,7 @@ import {
   type WaveDefinition,
   type WaveSpawnEvent
 } from "@dwarven-depths/contracts";
+import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
 import { resolveWaveSchedule } from "./wave-schedule.js";
 
@@ -1228,14 +1229,13 @@ export function resolveEnemyMovementPhase(
     startedWaveIdSet.has(waveId)
   );
   const firedSpawnIdSet = new Set(request.battlefield.firedSpawnIds);
-  const firedSpawnIds = level.waveIds.flatMap((waveId) => {
+  const movementWaves = level.waveIds.map((waveId) => {
     const wave = content.waves.get(waveId);
     if (wave === undefined)
       throw new Error("validated movement wave is missing");
-    return wave.spawnEvents
-      .filter((spawn) => firedSpawnIdSet.has(spawn.id))
-      .map((spawn) => spawn.id);
+    return wave;
   });
+  const firedSpawnIds = orderFiredSpawnIds(movementWaves, firedSpawnIdSet);
   const pendingSpawns = [...request.battlefield.pendingSpawns].sort(
     comparePendingSpawns
   );

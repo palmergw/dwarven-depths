@@ -194,6 +194,14 @@ Phase 3 surface currently present in the repository.
   battlefield, planning, and reservation evidence is versioned, immutable,
   detached, input-order independent, and checksum-pinned across Node and all
   three browser engines.
+- Enemy target validation now returns a complete authoritative battlefield
+  snapshot with its persisted locks, basic-attack windups, and cooldowns. Wave
+  progress, pending spawns, occupancy, and admission evidence are preserved in
+  canonical order, so callers can feed the result directly into later action or
+  movement phases without reconstructing combatants. The snapshot is immutable,
+  detached, input-order independent, and checksum-pinned across Node and all
+  three browser engines; committed attacks remain explicit phase evidence for
+  the downstream impact-integration checkpoint.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are

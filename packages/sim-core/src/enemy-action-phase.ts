@@ -2,6 +2,7 @@ import type { CompiledContent } from "@dwarven-depths/content-runtime";
 import type {
   AttackWindup,
   BattlefieldEnemyCombatant,
+  BattlefieldState,
   CommittedAttack,
   EnemyActionPhaseDecision,
   EnemyActionPhaseRequest,
@@ -12,11 +13,23 @@ import type {
   StableId
 } from "@dwarven-depths/contracts";
 import { resolveAttackCommitments } from "./attack-commitment.js";
+import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
 import { hasLineOfSight, isAimPointInRange } from "./range-line-of-sight.js";
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function comparePendingSpawns(
+  left: BattlefieldState["pendingSpawns"][number],
+  right: BattlefieldState["pendingSpawns"][number]
+): number {
+  return (
+    left.authoredOrder - right.authoredOrder ||
+    compareText(left.id, right.id) ||
+    compareText(left.entityId, right.entityId)
+  );
 }
 
 function attackInstanceId(
@@ -76,6 +89,9 @@ export function resolveEnemyActionPhase(
   const map = content.maps.get(request.battlefield.mapId);
   if (map === undefined)
     throw new Error("validated battlefield map is missing");
+  const level = content.levels.get(request.levelId);
+  if (level === undefined)
+    throw new Error("validated enemy action level is missing");
 
   const entriesByEnemy = new Map<EntityId, EnemyMovementPlanningEntry>(
     request.entries.map((entry) => [entry.enemyEntityId, entry])
@@ -358,9 +374,44 @@ export function resolveEnemyActionPhase(
     );
   }
 
+  const enemyCombatants = Object.freeze(combatants);
+  const startedWaveIdSet = new Set(request.battlefield.startedWaveIds);
+  const firedSpawnIdSet = new Set(request.battlefield.firedSpawnIds);
+  const waves = level.waveIds.map((waveId) => {
+    const wave = content.waves.get(waveId);
+    if (wave === undefined)
+      throw new Error("validated enemy action wave is missing");
+    return wave;
+  });
+  const battlefield = Object.freeze({
+    schemaVersion: 1 as const,
+    mapId: request.battlefield.mapId,
+    startedWaveIds: Object.freeze(
+      level.waveIds.filter((waveId) => startedWaveIdSet.has(waveId))
+    ),
+    firedSpawnIds: Object.freeze(orderFiredSpawnIds(waves, firedSpawnIdSet)),
+    occupancy: Object.freeze(
+      [...request.battlefield.occupancy]
+        .sort((left, right) => compareText(left.entityId, right.entityId))
+        .map((occupant) => Object.freeze({ ...occupant }))
+    ),
+    pendingSpawns: Object.freeze(
+      [...request.battlefield.pendingSpawns]
+        .sort(comparePendingSpawns)
+        .map((spawn) => Object.freeze({ ...spawn }))
+    ),
+    enemyAdmissions: Object.freeze(
+      [...request.battlefield.enemyAdmissions]
+        .sort((left, right) => compareText(left.entityId, right.entityId))
+        .map((admission) => Object.freeze({ ...admission }))
+    ),
+    enemyCombatants
+  }) satisfies BattlefieldState;
+
   return Object.freeze({
     schemaVersion: 1,
-    enemyCombatants: Object.freeze(combatants),
+    battlefield,
+    enemyCombatants,
     committedAttacks: Object.freeze(
       committedAttacks.sort((left, right) =>
         compareText(left.attackId, right.attackId)
