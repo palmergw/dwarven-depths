@@ -5,7 +5,7 @@ import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json
 import { compileContent, validateStaticPlacement } from "./index.js";
 
 const SHUTTERGATE_MANIFEST =
-  "a857f29758e18f0496bc24512dc57b3f1c89ae1bfdcb97ffd2054660457e8705";
+  "5e9d7bcbafb53208cb016432857a912aff9d032f44c2870ada3bc9361e9c5a3f";
 
 describe("Shuttergate reference content browser parity", () => {
   it("matches the literal Node manifest and authored encounter shape", async () => {

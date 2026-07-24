@@ -28,14 +28,14 @@ export async function enemyPlanningEntryDerivationParityEvidence() {
   const authority = createBattlefieldDwarfDeploymentAuthority(
     [
       {
-        entityId: "entity.dwarf.warden_keep" as never,
-        characterDefinitionId: "character.iron_warden" as never,
-        placementPointId: "placement.shuttergate_keep_guard" as never
-      },
-      {
         entityId: "entity.dwarf.warden_north" as never,
         characterDefinitionId: "character.iron_warden" as never,
         placementPointId: "placement.shuttergate_north_guard" as never
+      },
+      {
+        entityId: "entity.dwarf.warden_keep" as never,
+        characterDefinitionId: "character.iron_warden" as never,
+        placementPointId: "placement.shuttergate_keep_guard" as never
       }
     ],
     initial.battlefield,
@@ -58,7 +58,7 @@ export async function enemyPlanningEntryDerivationParityEvidence() {
   const derived = deriveEnemyPlanningEntries(
     {
       schemaVersion: 1,
-      currentTick: 0,
+      currentTick: 6,
       levelId: initial.levelId,
       battlefield: scheduled.state.battlefield
     },
@@ -68,7 +68,7 @@ export async function enemyPlanningEntryDerivationParityEvidence() {
   const enemyActions = resolveEnemyActionPhase(
     {
       schemaVersion: 1,
-      currentTick: 0,
+      currentTick: 6,
       levelId: initial.levelId,
       battlefield: scheduled.state.battlefield,
       entries: derived.entries
@@ -79,7 +79,7 @@ export async function enemyPlanningEntryDerivationParityEvidence() {
   const movement = resolveEnemyMovementPhase(
     {
       schemaVersion: 1,
-      currentTick: 0,
+      currentTick: 6,
       levelId: initial.levelId,
       battlefield: enemyActions.battlefield,
       entries: derived.entries

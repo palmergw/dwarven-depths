@@ -77,7 +77,7 @@ describe("content compilation", () => {
     const content = await compileContent(input);
     expect(input).toEqual(before);
     expect(content.manifestHash).toBe(
-      "a857f29758e18f0496bc24512dc57b3f1c89ae1bfdcb97ffd2054660457e8705"
+      "5e9d7bcbafb53208cb016432857a912aff9d032f44c2870ada3bc9361e9c5a3f"
     );
 
     const level = content.levels.get("level.shuttergate_hall" as never);

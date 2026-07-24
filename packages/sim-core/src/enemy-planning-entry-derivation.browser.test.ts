@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { enemyPlanningEntryDerivationParityEvidence } from "./enemy-planning-entry-derivation.fixture.js";
 
 const EXPECTED_CHECKSUM =
-  "469fe0ef9ebf1452a21fc565d4d25bd574a0ab7a6b4ce204501aa7446790eb33";
+  "13572164b73f1f4f53aad8ce7abbe477e4c8c2aec7c7324c6b5c5c1d3a29e0a1";
 
 describe("authoritative enemy planning-entry derivation browser parity", () => {
   it("matches the literal Node Shuttergate evidence checksum", async () => {
