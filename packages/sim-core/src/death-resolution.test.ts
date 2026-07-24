@@ -1,8 +1,10 @@
-import type {
-  CombatantLifecycle,
-  NavigationOccupant
+import {
+  type CombatantLifecycle,
+  canonicalHash,
+  type NavigationOccupant
 } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
+import { deathResolutionParityEvidence } from "./death-resolution.fixture.js";
 import { resolveZeroHealthLifecycles } from "./index.js";
 
 function combatant(
@@ -230,5 +232,11 @@ describe("zero-health lifecycle resolution", () => {
       resolveZeroHealthLifecycles({ combatants: [accessor], occupancy: [] })
     ).toThrow("entityId must be an enumerable data property");
     expect(getterCalls).toBe(0);
+  });
+
+  it("pins the shared Node and browser parity evidence", async () => {
+    expect(await canonicalHash(deathResolutionParityEvidence())).toBe(
+      "414cf6301c7bf3368a937fb5594c703b6cc6ca0288ae4a8d7f8e88167b8c2640"
+    );
   });
 });
