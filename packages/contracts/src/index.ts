@@ -279,6 +279,13 @@ export interface EnemyMovementPlanningResolution {
   readonly decisions: readonly EnemyMovementPlanningDecision[];
 }
 
+export interface EnemyMovementPhaseResolution {
+  readonly schemaVersion: 1;
+  readonly battlefield: BattlefieldState;
+  readonly planning: EnemyMovementPlanningResolution;
+  readonly reservations: MovementReservationResolution;
+}
+
 export type EnemyActionPhaseRequest = EnemyMovementPlanningRequest;
 
 export type EnemyActionPhaseReason =

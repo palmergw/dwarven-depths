@@ -26,6 +26,8 @@ import {
   type CommandEnvelope,
   canonicalHash,
   type EnemyEntranceId,
+  type EnemyMovementPhaseResolution,
+  type EnemyMovementPlanningRequest,
   type EntityId,
   type LifecycleSimulationEvent,
   type MovementDecision,
@@ -42,6 +44,7 @@ import {
   type WaveDefinition,
   type WaveSpawnEvent
 } from "@dwarven-depths/contracts";
+import { planEnemyMovement } from "./enemy-movement-planning.js";
 import { resolveWaveSchedule } from "./wave-schedule.js";
 
 export interface StepResult {
@@ -1179,6 +1182,58 @@ export function resolveMovementReservations(
   return Object.freeze({
     occupancy: Object.freeze(resolvedOccupancy),
     decisions: Object.freeze(resolvedDecisions)
+  });
+}
+
+/**
+ * Resolves fixed-step phase 6 from generated routes through reservation
+ * arbitration and authoritative occupancy/cadence persistence.
+ */
+export function resolveEnemyMovementPhase(
+  request: EnemyMovementPlanningRequest,
+  content: CompiledContent
+): EnemyMovementPhaseResolution {
+  const planning = planEnemyMovement(request, content);
+  const map = content.maps.get(request.battlefield.mapId);
+  if (map === undefined)
+    throw new Error("validated battlefield map is missing");
+  const reservations = resolveMovementReservations(
+    map,
+    request.battlefield.occupancy,
+    planning.proposals
+  );
+  const rejected = reservations.decisions.find(
+    (movement) => movement.status === "rejected"
+  );
+  if (rejected !== undefined) {
+    throw new Error(
+      `generated enemy movement was rejected (${rejected.proposalId}: ${rejected.reason})`
+    );
+  }
+  const enemyCombatants = [
+    ...advanceEnemyMovementCadence(
+      request.currentTick,
+      request.battlefield.enemyCombatants,
+      reservations.decisions
+    )
+  ].sort((left, right) => compareText(left.entityId, right.entityId));
+  const enemyAdmissions = [...request.battlefield.enemyAdmissions].sort(
+    (left, right) => compareText(left.entityId, right.entityId)
+  );
+  const battlefield = freezeBattlefieldState(
+    request.battlefield.mapId,
+    reservations.occupancy,
+    request.battlefield.pendingSpawns,
+    request.battlefield.startedWaveIds,
+    request.battlefield.firedSpawnIds,
+    enemyCombatants,
+    enemyAdmissions
+  );
+  return Object.freeze({
+    schemaVersion: 1,
+    battlefield,
+    planning,
+    reservations
   });
 }
 
