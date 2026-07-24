@@ -239,7 +239,10 @@ describe("deterministic enemy movement proposal planning", () => {
                 currentTargetEntityId: "entity.dwarf.warden" as never,
                 activeBasicAttack: {
                   schemaVersion: 1,
-                  attackId: combatant.basicAttack.id,
+                  attackId: (combatant.basicAttack.id +
+                    "." +
+                    combatant.entityId.slice("entity.".length) +
+                    ".tick_0") as never,
                   sourceEntityId: combatant.entityId,
                   targetEntityId: "entity.dwarf.warden" as never,
                   startedAtTick: 0,
@@ -272,7 +275,10 @@ describe("deterministic enemy movement proposal planning", () => {
                 currentTargetEntityId: "entity.dwarf.warden" as never,
                 activeBasicAttack: {
                   schemaVersion: 1,
-                  attackId: combatant.basicAttack.id,
+                  attackId: (combatant.basicAttack.id +
+                    "." +
+                    combatant.entityId.slice("entity.".length) +
+                    `.tick_${lateCommit - 6}`) as never,
                   sourceEntityId: combatant.entityId,
                   targetEntityId: "entity.dwarf.warden" as never,
                   startedAtTick: lateCommit - 6,
@@ -298,6 +304,36 @@ describe("deterministic enemy movement proposal planning", () => {
         }
       })
     ).toThrow("pending spawn 0 must contain exactly the expected keys");
+  });
+
+  it("rejects authored enemies masquerading as target candidates", () => {
+    const enemy = combatant("entity.enemy.test", 6, null);
+    expect(() =>
+      planEnemyMovement({
+        schemaVersion: 1,
+        currentTick: 6,
+        levelId: "level.conformance_map" as never,
+        battlefield: battlefield(enemy, "node.goal" as never, false),
+        entries: [
+          {
+            schemaVersion: 1,
+            enemyEntityId: enemy.entityId,
+            candidates: [
+              {
+                entityId: enemy.entityId,
+                targetKind: "living_dwarf",
+                placementPointId: "placement.goal",
+                pathCost: 0,
+                isAlive: true,
+                isReachable: true,
+                opensRoute: false
+              }
+            ],
+            solidBlockerEntityIds: []
+          }
+        ]
+      } as never)
+    ).toThrow("moving enemy cannot be an enemy target");
   });
 
   it("rejects extended/accessor records and custom arrays", () => {

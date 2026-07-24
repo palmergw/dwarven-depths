@@ -538,9 +538,10 @@ function normalizeCombatants(
           active.impactAtTick,
           `${description} attack impactAtTick`
         );
+        const expectedAttackId = `${definition.basicAttack.id}.${entityId.slice("entity.".length)}.tick_${startedAtTick}`;
         if (
           active.schemaVersion !== 1 ||
-          active.attackId !== definition.basicAttack.id ||
+          active.attackId !== expectedAttackId ||
           active.sourceEntityId !== entityId ||
           active.targetEntityId !== action.currentTargetEntityId ||
           startedAtTick < admittedAtTick ||
@@ -791,6 +792,12 @@ export function planEnemyMovement(
         );
     }
     const blockedNodeIds: NavigationNodeId[] = [];
+    for (const candidate of entry.candidates) {
+      if (authoredEnemyEntityIds.has(candidate.entityId))
+        throw new RangeError(
+          `moving enemy cannot be an enemy target (${candidate.entityId})`
+        );
+    }
     for (const blockerId of entry.solidBlockerEntityIds) {
       if (authoredEnemyEntityIds.has(blockerId))
         throw new RangeError(
