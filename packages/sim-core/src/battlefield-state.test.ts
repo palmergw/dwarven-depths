@@ -1,9 +1,10 @@
 import { compileContent } from "@dwarven-depths/content-runtime";
-import type {
-  MovementProposal,
-  PendingSpawn,
-  SimulationEvent,
-  SimulationState
+import {
+  canonicalHash,
+  type MovementProposal,
+  type PendingSpawn,
+  type SimulationEvent,
+  type SimulationState
 } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import mapContentInput from "../../../content/fixtures/conformance-map.json" with {
@@ -104,8 +105,11 @@ describe("authoritative battlefield state", () => {
     expect(first.events.map((event) => event.sequence)).toEqual([0, 1, 2]);
     expect(first.state.eventSequence).toBe(3);
 
-    const second = resolveBattlefieldPhase(first.state, content, [], []);
-    expect(second.state.battlefield).toEqual({
+    const resumed = resolveBattlefieldPhase(first.state, content, [], []);
+    expect(await canonicalHash({ first, resumed })).toBe(
+      "b4ebcef677035968fcc90cee5916a99aa1f886038880344d5a7e2cee970d6120"
+    );
+    expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
       mapId: "map.conformance_diamond",
       occupancy: [
@@ -114,13 +118,13 @@ describe("authoritative battlefield state", () => {
       ],
       pendingSpawns: []
     });
-    expect(second.events.map(decisionEvidence)).toEqual([
+    expect(resumed.events.map(decisionEvidence)).toEqual([
       ["spawn.admitted", "admitted"]
     ]);
-    expect(second.events[0]?.sequence).toBe(3);
-    expect(Object.isFrozen(second.state)).toBe(true);
-    expect(Object.isFrozen(second.events)).toBe(true);
-    expect(Object.isFrozen(second.events[0])).toBe(true);
+    expect(resumed.events[0]?.sequence).toBe(3);
+    expect(Object.isFrozen(resumed.state)).toBe(true);
+    expect(Object.isFrozen(resumed.events)).toBe(true);
+    expect(Object.isFrozen(resumed.events[0])).toBe(true);
   });
 
   it("retries an entrance-blocked spawn after the blocker moves away", async () => {
