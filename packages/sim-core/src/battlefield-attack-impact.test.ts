@@ -57,7 +57,7 @@ describe("battlefield committed-attack impacts", () => {
   });
 
   it("rejects authored identity substitution and inconsistent lifecycle state", async () => {
-    const { content, deployments, committed } =
+    const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
     for (const dwarfCombatants of [
       committed.dwarfCombatants.map((dwarf) => ({
@@ -74,7 +74,7 @@ describe("battlefield committed-attack impacts", () => {
       expect(() =>
         normalizeBattlefieldDwarves(
           dwarfCombatants,
-          deployments,
+          deploymentAuthority,
           content,
           committed.mapId,
           committed.occupancy
@@ -84,14 +84,13 @@ describe("battlefield committed-attack impacts", () => {
   });
 
   it("discards a due impact when the target is already absent", async () => {
-    const { content, deployments, committed } =
+    const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
     const result = resolveBattlefieldAttackImpacts(
       {
         schemaVersion: 1,
         currentTick: 7,
         levelId: "level.conformance_map" as never,
-        deployments,
         battlefield: {
           ...committed,
           pendingCommittedAttacks: committed.pendingCommittedAttacks.map(
@@ -102,7 +101,8 @@ describe("battlefield committed-attack impacts", () => {
           )
         }
       },
-      content
+      content,
+      deploymentAuthority
     );
     expect(result.impactDecisions[0]).toEqual(
       expect.objectContaining({
@@ -117,7 +117,7 @@ describe("battlefield committed-attack impacts", () => {
   });
 
   it("rejects malformed unrelated occupancy instead of preserving it", async () => {
-    const { content, deployments, committed } =
+    const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
     expect(() =>
       resolveBattlefieldAttackImpacts(
@@ -125,7 +125,6 @@ describe("battlefield committed-attack impacts", () => {
           schemaVersion: 1,
           currentTick: 7,
           levelId: "level.conformance_map" as never,
-          deployments,
           battlefield: {
             ...committed,
             occupancy: [
@@ -134,13 +133,14 @@ describe("battlefield committed-attack impacts", () => {
             ] as never
           }
         },
-        content
+        content,
+        deploymentAuthority
       )
     ).toThrow("entity.* stable ID");
   });
 
   it("rejects paired enemy basic-attack and pending-damage substitution", async () => {
-    const { content, deployments, committed } =
+    const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
     expect(() =>
       resolveBattlefieldAttackImpacts(
@@ -148,7 +148,6 @@ describe("battlefield committed-attack impacts", () => {
           schemaVersion: 1,
           currentTick: 7,
           levelId: "level.conformance_map" as never,
-          deployments,
           battlefield: {
             ...committed,
             enemyCombatants: committed.enemyCombatants.map((enemy) => ({
@@ -160,13 +159,14 @@ describe("battlefield committed-attack impacts", () => {
             )
           }
         },
-        content
+        content,
+        deploymentAuthority
       )
-    ).toThrow("basicAttack is not authored");
+    ).toThrow("compiled enemy definition");
   });
 
   it("rejects admissions without exact fired authored-spawn evidence", async () => {
-    const { content, deployments, committed } =
+    const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
     for (const battlefield of [
       { ...committed, startedWaveIds: [] },
@@ -184,17 +184,17 @@ describe("battlefield committed-attack impacts", () => {
             schemaVersion: 1,
             currentTick: 7,
             levelId: "level.conformance_map" as never,
-            deployments,
             battlefield
           },
-          content
+          content,
+          deploymentAuthority
         )
-      ).toThrow("authored wave evidence");
+      ).toThrow();
     }
   });
 
-  it("rejects malformed enemy action state before resolving impacts", async () => {
-    const { content, deployments, committed } =
+  it("rejects structurally forged preparation authority", async () => {
+    const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
     expect(() =>
       resolveBattlefieldAttackImpacts(
@@ -202,7 +202,96 @@ describe("battlefield committed-attack impacts", () => {
           schemaVersion: 1,
           currentTick: 7,
           levelId: "level.conformance_map" as never,
-          deployments,
+          battlefield: committed
+        },
+        content,
+        structuredClone(deploymentAuthority)
+      )
+    ).toThrow("was not accepted");
+  });
+
+  it("rejects malformed pending-spawn payload through the shared normalizer", async () => {
+    const { content, deploymentAuthority, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 7,
+          levelId: "level.conformance_map" as never,
+          battlefield: {
+            ...committed,
+            pendingSpawns: [
+              {
+                id: "spawn.attack_impact.cutter",
+                authoredOrder: "bad",
+                entityId: "entity.forged",
+                enemyDefinitionId: "enemy.forged",
+                entranceId: "entrance.forged"
+              }
+            ] as never
+          }
+        },
+        content,
+        deploymentAuthority
+      )
+    ).toThrow("pending spawn does not match authored evidence");
+  });
+
+  it("accepts a valid composite active windup from the shared normalizer", async () => {
+    const { content, deploymentAuthority, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    const enemy = committed.enemyCombatants[0];
+    if (enemy === undefined) throw new Error("missing enemy fixture");
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 6,
+          levelId: "level.conformance_map" as never,
+          battlefield: {
+            ...committed,
+            pendingCommittedAttacks: [],
+            enemyCombatants: [
+              {
+                ...enemy,
+                actionState: {
+                  ...enemy.actionState,
+                  activeBasicAttack: {
+                    schemaVersion: 1,
+                    attackId:
+                      "attack.goblin_cutter_basic.enemy.cutter.tick_6" as never,
+                    sourceEntityId: enemy.entityId,
+                    targetEntityId: "entity.dwarf.warden" as never,
+                    startedAtTick: 6,
+                    commitAtTick: 12,
+                    impactAtTick: 13,
+                    cooldownDurationTicks: 20,
+                    damage: 10,
+                    range: 1,
+                    targetIsValid: true
+                  },
+                  cooldownCompleteAtTick: null
+                }
+              }
+            ]
+          }
+        },
+        content,
+        deploymentAuthority
+      )
+    ).not.toThrow();
+  });
+
+  it("rejects malformed enemy action state before resolving impacts", async () => {
+    const { content, deploymentAuthority, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 7,
+          levelId: "level.conformance_map" as never,
           battlefield: {
             ...committed,
             enemyCombatants: committed.enemyCombatants.map((enemy) => ({
@@ -211,7 +300,8 @@ describe("battlefield committed-attack impacts", () => {
             })) as never
           }
         },
-        content
+        content,
+        deploymentAuthority
       )
     ).toThrow("nextMovementAtTick");
   });

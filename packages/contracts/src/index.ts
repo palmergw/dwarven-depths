@@ -457,8 +457,6 @@ export interface BattlefieldAttackImpactRequest {
   readonly schemaVersion: 1;
   readonly currentTick: number;
   readonly levelId: StableId;
-  /** Immutable preparation evidence supplied independently of battlefield state. */
-  readonly deployments: readonly DwarfDeployment[];
   readonly battlefield: BattlefieldState;
 }
 

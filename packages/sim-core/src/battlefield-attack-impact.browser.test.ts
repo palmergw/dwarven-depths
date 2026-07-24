@@ -18,7 +18,7 @@ describe("battlefield attack impact browser parity", () => {
   });
 
   it("rejects a paired persisted definition and health substitution", async () => {
-    const { content, deployments, committed } =
+    const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
     expect(() =>
       normalizeBattlefieldDwarves(
@@ -28,7 +28,7 @@ describe("battlefield attack impact browser parity", () => {
           currentHealth: 999,
           maximumHealth: 999
         })),
-        deployments,
+        deploymentAuthority,
         content,
         committed.mapId,
         committed.occupancy

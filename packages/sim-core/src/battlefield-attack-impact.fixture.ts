@@ -11,6 +11,7 @@ import referenceCombatants from "../../../content/fixtures/phase-3-reference-com
   type: "json"
 };
 import {
+  createBattlefieldDwarfDeploymentAuthority,
   createInitialState,
   deployBattlefieldDwarves,
   resolveBattlefieldAttackImpacts
@@ -77,9 +78,14 @@ export async function battlefieldAttackImpactParityEvidence() {
       placementPointId: "placement.goal" as never
     })
   ]);
+  const deploymentAuthority = createBattlefieldDwarfDeploymentAuthority(
+    deployments,
+    initial.battlefield.mapId,
+    content
+  );
   const deployed = deployBattlefieldDwarves(
     initial.battlefield,
-    deployments,
+    deploymentAuthority,
     content
   );
   const cutterDefinition = content.enemies.get("enemy.goblin_cutter" as never);
@@ -146,20 +152,27 @@ export async function battlefieldAttackImpactParityEvidence() {
       schemaVersion: 1,
       currentTick: 6,
       levelId: "level.conformance_map" as never,
-      deployments,
       battlefield: committed
     },
-    content
+    content,
+    deploymentAuthority
   );
   const resolved = resolveBattlefieldAttackImpacts(
     {
       schemaVersion: 1,
       currentTick: 7,
       levelId: "level.conformance_map" as never,
-      deployments,
       battlefield: pending.battlefield
     },
-    content
+    content,
+    deploymentAuthority
   );
-  return Object.freeze({ content, deployments, committed, pending, resolved });
+  return Object.freeze({
+    content,
+    deployments,
+    deploymentAuthority,
+    committed,
+    pending,
+    resolved
+  });
 }
