@@ -540,6 +540,13 @@ describe("authoritative battlefield state", () => {
       tick: 6,
       battlefield: {
         ...admittedBattlefield,
+        enemyCombatants: admittedBattlefield.enemyCombatants.map((enemy) => ({
+          ...enemy,
+          actionState: {
+            ...enemy.actionState,
+            cooldownCompleteAtTick: 26
+          }
+        })),
         pendingCommittedAttacks: [attack] as never
       }
     };
