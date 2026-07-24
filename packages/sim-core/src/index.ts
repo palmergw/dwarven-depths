@@ -16,6 +16,7 @@ export * from "./target-selection.js";
 export * from "./wave-schedule.js";
 
 import {
+  type BattlefieldEnemyAdmission,
   type BattlefieldEnemyCombatant,
   type BattlefieldMapDefinition,
   type BattlefieldState,
@@ -51,7 +52,8 @@ function freezeBattlefieldState(
   pendingSpawns: readonly PendingSpawn[],
   startedWaveIds: BattlefieldState["startedWaveIds"] = [],
   firedSpawnIds: BattlefieldState["firedSpawnIds"] = [],
-  enemyCombatants: BattlefieldState["enemyCombatants"] = []
+  enemyCombatants: BattlefieldState["enemyCombatants"] = [],
+  enemyAdmissions: BattlefieldState["enemyAdmissions"] = []
 ): BattlefieldState {
   return Object.freeze({
     schemaVersion: 1,
@@ -64,11 +66,21 @@ function freezeBattlefieldState(
     pendingSpawns: Object.freeze(
       pendingSpawns.map((spawn) => Object.freeze({ ...spawn }))
     ),
+    enemyAdmissions: Object.freeze(
+      enemyAdmissions.map((admission) => Object.freeze({ ...admission }))
+    ),
     enemyCombatants: Object.freeze(
       enemyCombatants.map((combatant) =>
         Object.freeze({
           ...combatant,
-          basicAttack: Object.freeze({ ...combatant.basicAttack })
+          basicAttack: Object.freeze({ ...combatant.basicAttack }),
+          actionState: Object.freeze({
+            ...combatant.actionState,
+            activeBasicAttack:
+              combatant.actionState.activeBasicAttack === null
+                ? null
+                : Object.freeze({ ...combatant.actionState.activeBasicAttack })
+          })
         })
       )
     )
@@ -301,15 +313,81 @@ function normalizeStableIdArray(
   );
 }
 
+function normalizeEnemyAdmissions(
+  value: unknown,
+  currentTick: number
+): readonly BattlefieldEnemyAdmission[] {
+  const seenEntities = new Set<string>();
+  const seenSpawns = new Set<string>();
+  return Object.freeze(
+    requireDenseDataArray(value, "battlefield enemy admissions")
+      .map((item, index) => {
+        const record = requireExactDataRecord(
+          item,
+          ["schemaVersion", "spawnId", "entityId", "admittedAtTick"],
+          `battlefield enemy admission ${index}`
+        );
+        const schemaVersion = record["schemaVersion"];
+        const spawnId = record["spawnId"];
+        const entityId = record["entityId"];
+        const admittedAtTick = record["admittedAtTick"];
+        if (schemaVersion !== 1)
+          throw new RangeError(
+            "battlefield enemy admission has unsupported schemaVersion"
+          );
+        if (!isDomainStableId(spawnId, "spawn"))
+          throw new RangeError(
+            "battlefield enemy admission spawnId must be spawn.*"
+          );
+        if (!isDomainStableId(entityId, "entity"))
+          throw new RangeError(
+            "battlefield enemy admission entityId must be entity.*"
+          );
+        if (
+          !Number.isSafeInteger(admittedAtTick) ||
+          Object.is(admittedAtTick, -0) ||
+          (admittedAtTick as number) < 0 ||
+          (admittedAtTick as number) > currentTick
+        ) {
+          throw new RangeError("battlefield enemy admission tick is invalid");
+        }
+        if (seenSpawns.has(spawnId) || seenEntities.has(entityId))
+          throw new RangeError(
+            "duplicate battlefield enemy admission identity"
+          );
+        seenSpawns.add(spawnId);
+        seenEntities.add(entityId);
+        return Object.freeze({
+          schemaVersion: 1,
+          spawnId,
+          entityId,
+          admittedAtTick: admittedAtTick as number
+        }) as BattlefieldEnemyAdmission;
+      })
+      .sort((left, right) => compareText(left.entityId, right.entityId))
+  );
+}
+
 function initializeAdmittedEnemyCombatants(
   content: CompiledContent,
   existingCombatants: readonly BattlefieldEnemyCombatant[],
   decisions: readonly SpawnAdmissionDecision[],
+  currentTick: number,
+  authoritativeAdmissions: ReadonlyMap<EntityId, BattlefieldEnemyAdmission>,
   expectedDefinitions?: ReadonlyMap<
     EntityId,
     BattlefieldEnemyCombatant["enemyDefinitionId"]
   >
 ): readonly BattlefieldEnemyCombatant[] {
+  if (
+    !Number.isSafeInteger(currentTick) ||
+    Object.is(currentTick, -0) ||
+    currentTick < 0
+  ) {
+    throw new RangeError(
+      "battlefield current tick must be a non-negative safe integer"
+    );
+  }
   const combatantsByEntity = new Map<EntityId, BattlefieldEnemyCombatant>();
   const existingValues = requireDenseDataArray(
     existingCombatants,
@@ -327,8 +405,10 @@ function initializeAdmittedEnemyCombatants(
         "maximumHealth",
         "armor",
         "movementIntervalTicks",
+        "admittedAtTick",
         "lifecycleState",
-        "basicAttack"
+        "basicAttack",
+        "actionState"
       ],
       `battlefield enemy combatant ${index}`
     );
@@ -345,6 +425,37 @@ function initializeAdmittedEnemyCombatants(
       ],
       `battlefield enemy combatant ${index} basic attack`
     );
+    const actionState = requireExactDataRecord(
+      record["actionState"],
+      [
+        "schemaVersion",
+        "nextMovementAtTick",
+        "currentTargetEntityId",
+        "activeBasicAttack",
+        "cooldownCompleteAtTick"
+      ],
+      `battlefield enemy combatant ${index} action state`
+    );
+    const activeAttackRecord =
+      actionState["activeBasicAttack"] === null
+        ? null
+        : requireExactDataRecord(
+            actionState["activeBasicAttack"],
+            [
+              "schemaVersion",
+              "attackId",
+              "sourceEntityId",
+              "targetEntityId",
+              "startedAtTick",
+              "commitAtTick",
+              "impactAtTick",
+              "cooldownDurationTicks",
+              "damage",
+              "range",
+              "targetIsValid"
+            ],
+            `battlefield enemy combatant ${index} active basic attack`
+          );
     if (!isDomainStableId(record["entityId"], "entity")) {
       throw new RangeError(
         `battlefield enemy combatant ${index} entityId must be an entity.* stable ID`
@@ -369,6 +480,7 @@ function initializeAdmittedEnemyCombatants(
       maximumHealth: record["maximumHealth"],
       armor: record["armor"],
       movementIntervalTicks: record["movementIntervalTicks"],
+      admittedAtTick: record["admittedAtTick"],
       lifecycleState: record["lifecycleState"],
       basicAttack: {
         id: attack["id"],
@@ -378,6 +490,29 @@ function initializeAdmittedEnemyCombatants(
         damage: attack["damage"],
         range: attack["range"],
         requiresLineOfSight: attack["requiresLineOfSight"]
+      },
+      actionState: {
+        schemaVersion: actionState["schemaVersion"],
+        nextMovementAtTick: actionState["nextMovementAtTick"],
+        currentTargetEntityId: actionState["currentTargetEntityId"],
+        activeBasicAttack:
+          activeAttackRecord === null
+            ? null
+            : {
+                schemaVersion: activeAttackRecord["schemaVersion"],
+                attackId: activeAttackRecord["attackId"],
+                sourceEntityId: activeAttackRecord["sourceEntityId"],
+                targetEntityId: activeAttackRecord["targetEntityId"],
+                startedAtTick: activeAttackRecord["startedAtTick"],
+                commitAtTick: activeAttackRecord["commitAtTick"],
+                impactAtTick: activeAttackRecord["impactAtTick"],
+                cooldownDurationTicks:
+                  activeAttackRecord["cooldownDurationTicks"],
+                damage: activeAttackRecord["damage"],
+                range: activeAttackRecord["range"],
+                targetIsValid: activeAttackRecord["targetIsValid"]
+              },
+        cooldownCompleteAtTick: actionState["cooldownCompleteAtTick"]
       }
     } as BattlefieldEnemyCombatant;
     if (combatantsByEntity.has(combatant.entityId)) {
@@ -398,6 +533,15 @@ function initializeAdmittedEnemyCombatants(
     ) {
       throw new RangeError(
         `battlefield enemy combatant definition does not match authored spawn identity (${combatant.entityId})`
+      );
+    }
+    const admission = authoritativeAdmissions.get(combatant.entityId);
+    if (
+      admission === undefined ||
+      admission.admittedAtTick !== combatant.admittedAtTick
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} does not match authoritative admission timing`
       );
     }
     if (
@@ -429,6 +573,97 @@ function initializeAdmittedEnemyCombatants(
     ) {
       throw new RangeError(
         `battlefield enemy ${combatant.entityId} has invalid current health`
+      );
+    }
+    const action = combatant.actionState;
+    if (
+      action.schemaVersion !== 1 ||
+      !Number.isSafeInteger(combatant.admittedAtTick) ||
+      Object.is(combatant.admittedAtTick, -0) ||
+      combatant.admittedAtTick < 0 ||
+      combatant.admittedAtTick > currentTick ||
+      !Number.isSafeInteger(action.nextMovementAtTick) ||
+      Object.is(action.nextMovementAtTick, -0) ||
+      action.nextMovementAtTick < combatant.admittedAtTick ||
+      action.nextMovementAtTick - combatant.admittedAtTick <
+        combatant.movementIntervalTicks ||
+      (action.nextMovementAtTick - combatant.admittedAtTick) %
+        combatant.movementIntervalTicks !==
+        0 ||
+      (action.currentTargetEntityId !== null &&
+        !isDomainStableId(action.currentTargetEntityId, "entity")) ||
+      (action.cooldownCompleteAtTick !== null &&
+        (!Number.isSafeInteger(action.cooldownCompleteAtTick) ||
+          Object.is(action.cooldownCompleteAtTick, -0) ||
+          (action.cooldownCompleteAtTick as number) < currentTick ||
+          !Number.isSafeInteger(
+            (action.cooldownCompleteAtTick as number) -
+              combatant.basicAttack.cooldownTicks
+          ) ||
+          (action.cooldownCompleteAtTick as number) -
+            combatant.basicAttack.cooldownTicks <
+            combatant.admittedAtTick ||
+          (action.cooldownCompleteAtTick as number) -
+            combatant.basicAttack.cooldownTicks >
+            currentTick))
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} has invalid action state`
+      );
+    }
+    const activeAttack = action.activeBasicAttack;
+    if (
+      activeAttack !== null &&
+      (activeAttack.schemaVersion !== 1 ||
+        !isDomainStableId(activeAttack.attackId, "attack") ||
+        activeAttack.attackId !== combatant.basicAttack.id ||
+        activeAttack.sourceEntityId !== combatant.entityId ||
+        !isDomainStableId(activeAttack.targetEntityId, "entity") ||
+        activeAttack.targetEntityId !== action.currentTargetEntityId ||
+        !Number.isSafeInteger(activeAttack.startedAtTick) ||
+        Object.is(activeAttack.startedAtTick, -0) ||
+        activeAttack.startedAtTick < combatant.admittedAtTick ||
+        activeAttack.startedAtTick > currentTick ||
+        !Number.isSafeInteger(activeAttack.commitAtTick) ||
+        Object.is(activeAttack.commitAtTick, -0) ||
+        !Number.isSafeInteger(
+          activeAttack.startedAtTick + combatant.basicAttack.windupTicks
+        ) ||
+        activeAttack.commitAtTick !==
+          activeAttack.startedAtTick + combatant.basicAttack.windupTicks ||
+        activeAttack.commitAtTick < currentTick ||
+        !Number.isSafeInteger(activeAttack.impactAtTick) ||
+        Object.is(activeAttack.impactAtTick, -0) ||
+        !Number.isSafeInteger(
+          activeAttack.commitAtTick + combatant.basicAttack.impactDelayTicks
+        ) ||
+        activeAttack.impactAtTick !==
+          activeAttack.commitAtTick + combatant.basicAttack.impactDelayTicks ||
+        !Number.isSafeInteger(activeAttack.cooldownDurationTicks) ||
+        activeAttack.cooldownDurationTicks <= 0 ||
+        activeAttack.cooldownDurationTicks !==
+          combatant.basicAttack.cooldownTicks ||
+        !Number.isSafeInteger(
+          activeAttack.commitAtTick + activeAttack.cooldownDurationTicks
+        ) ||
+        !Number.isSafeInteger(activeAttack.damage) ||
+        activeAttack.damage < 0 ||
+        activeAttack.damage !== combatant.basicAttack.damage ||
+        !Number.isSafeInteger(activeAttack.range) ||
+        activeAttack.range < 0 ||
+        activeAttack.range !== combatant.basicAttack.range ||
+        typeof activeAttack.targetIsValid !== "boolean")
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} has invalid active basic attack`
+      );
+    }
+    if (
+      (action.currentTargetEntityId === null && activeAttack !== null) ||
+      (activeAttack !== null && action.cooldownCompleteAtTick !== null)
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} has incoherent action state`
       );
     }
     if (
@@ -465,6 +700,22 @@ function initializeAdmittedEnemyCombatants(
         `admitted spawn references unknown enemy definition (${decision.enemyDefinitionId})`
       );
     }
+    const admission = authoritativeAdmissions.get(decision.entityId);
+    if (
+      admission === undefined ||
+      admission.spawnId !== decision.spawnId ||
+      admission.admittedAtTick !== currentTick
+    ) {
+      throw new RangeError(
+        `admitted spawn does not match authoritative admission timing (${decision.entityId})`
+      );
+    }
+    const nextMovementAtTick = currentTick + definition.movementIntervalTicks;
+    if (!Number.isSafeInteger(nextMovementAtTick)) {
+      throw new RangeError(
+        `admitted spawn movement schedule exceeds safe integer bounds (${decision.entityId})`
+      );
+    }
     combatantsByEntity.set(
       decision.entityId,
       Object.freeze({
@@ -476,8 +727,16 @@ function initializeAdmittedEnemyCombatants(
         maximumHealth: definition.maximumHealth,
         armor: definition.armor,
         movementIntervalTicks: definition.movementIntervalTicks,
+        admittedAtTick: currentTick,
         lifecycleState: "active",
-        basicAttack: Object.freeze({ ...definition.basicAttack })
+        basicAttack: Object.freeze({ ...definition.basicAttack }),
+        actionState: Object.freeze({
+          schemaVersion: 1,
+          nextMovementAtTick,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        })
       })
     );
   }
@@ -488,7 +747,14 @@ function initializeAdmittedEnemyCombatants(
       .map((combatant) =>
         Object.freeze({
           ...combatant,
-          basicAttack: Object.freeze({ ...combatant.basicAttack })
+          basicAttack: Object.freeze({ ...combatant.basicAttack }),
+          actionState: Object.freeze({
+            ...combatant.actionState,
+            activeBasicAttack:
+              combatant.actionState.activeBasicAttack === null
+                ? null
+                : Object.freeze({ ...combatant.actionState.activeBasicAttack })
+          })
         })
       )
   );
@@ -906,6 +1172,15 @@ export function resolveBattlefieldPhase(
     state.battlefield.occupancy,
     "persisted occupancy"
   );
+  const persistedEnemyAdmissions = normalizeEnemyAdmissions(
+    state.battlefield.enemyAdmissions,
+    state.tick
+  );
+  const enemyAdmissionsByEntity = new Map(
+    persistedEnemyAdmissions.map(
+      (admission) => [admission.entityId, admission] as const
+    )
+  );
   const allPendingSpawns = Object.freeze([
     ...persistedPendingSpawns,
     ...dueScheduledSpawns
@@ -1012,7 +1287,23 @@ export function resolveBattlefieldPhase(
       }
       if (!pendingSpawnIds.has(firedSpawnId as never)) {
         admittedDefinitions.set(authored.entityId, authored.enemyDefinitionId);
+        const admission = enemyAdmissionsByEntity.get(authored.entityId);
+        if (
+          admission === undefined ||
+          admission.spawnId !== authored.id ||
+          admission.entityId !== authored.entityId ||
+          admission.admittedAtTick < authored.atTick
+        ) {
+          throw new RangeError(
+            `authored spawn does not match authoritative admission evidence (${authored.id})`
+          );
+        }
       }
+    }
+    if (enemyAdmissionsByEntity.size !== admittedDefinitions.size) {
+      throw new RangeError(
+        "battlefield enemy admissions do not match admitted authored spawns"
+      );
     }
   }
 
@@ -1020,6 +1311,8 @@ export function resolveBattlefieldPhase(
     content,
     state.battlefield.enemyCombatants,
     [],
+    state.tick,
+    enemyAdmissionsByEntity,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
   const existingEnemyEntityIds = new Set(
@@ -1063,6 +1356,28 @@ export function resolveBattlefieldPhase(
     allPendingSpawns,
     admissionLimits
   );
+  for (const decision of admitted.decisions) {
+    if (decision.status !== "admitted") continue;
+    if (enemyAdmissionsByEntity.has(decision.entityId)) {
+      throw new RangeError(
+        `admitted enemy already has authoritative admission timing (${decision.entityId})`
+      );
+    }
+    enemyAdmissionsByEntity.set(
+      decision.entityId,
+      Object.freeze({
+        schemaVersion: 1,
+        spawnId: decision.spawnId,
+        entityId: decision.entityId,
+        admittedAtTick: state.tick
+      })
+    );
+  }
+  const enemyAdmissions = Object.freeze(
+    [...enemyAdmissionsByEntity.values()].sort((left, right) =>
+      compareText(left.entityId, right.entityId)
+    )
+  );
   const occupiedEntityIds = new Set(
     admitted.occupancy.map((occupant) => occupant.entityId)
   );
@@ -1083,6 +1398,8 @@ export function resolveBattlefieldPhase(
     content,
     existingEnemyCombatants,
     admitted.decisions,
+    state.tick,
+    enemyAdmissionsByEntity,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
   const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
@@ -1139,7 +1456,8 @@ export function resolveBattlefieldPhase(
         admitted.pendingSpawns,
         startedWaveIds as BattlefieldState["startedWaveIds"],
         firedSpawnIds as BattlefieldState["firedSpawnIds"],
-        enemyCombatants
+        enemyCombatants,
+        enemyAdmissions
       )
     }),
     events: Object.freeze(events)
@@ -1186,6 +1504,15 @@ export function resolveScheduledBattlefieldPhase(
     state.battlefield.occupancy,
     "persisted occupancy"
   );
+  const persistedEnemyAdmissions = normalizeEnemyAdmissions(
+    state.battlefield.enemyAdmissions,
+    state.tick
+  );
+  const enemyAdmissionsByEntity = new Map(
+    persistedEnemyAdmissions.map(
+      (admission) => [admission.entityId, admission] as const
+    )
+  );
   const startedWaveIds = normalizeStableIdArray(
     state.battlefield.startedWaveIds,
     "started wave IDs"
@@ -1208,12 +1535,30 @@ export function resolveScheduledBattlefieldPhase(
     }
     if (!pendingSpawnIds.has(firedSpawnId as never)) {
       admittedDefinitions.set(authored.entityId, authored.enemyDefinitionId);
+      const admission = enemyAdmissionsByEntity.get(authored.entityId);
+      if (
+        admission === undefined ||
+        admission.spawnId !== authored.id ||
+        admission.entityId !== authored.entityId ||
+        admission.admittedAtTick < authored.atTick
+      ) {
+        throw new RangeError(
+          `authored spawn does not match authoritative admission evidence (${authored.id})`
+        );
+      }
     }
+  }
+  if (enemyAdmissionsByEntity.size !== admittedDefinitions.size) {
+    throw new RangeError(
+      "battlefield enemy admissions do not match admitted authored spawns"
+    );
   }
   const persistedEnemyCombatants = initializeAdmittedEnemyCombatants(
     content,
     state.battlefield.enemyCombatants,
     [],
+    state.tick,
+    enemyAdmissionsByEntity,
     level.waveIds.length > 0 ? admittedDefinitions : undefined
   );
   const scheduled = resolveWaveSchedule({
@@ -1274,7 +1619,8 @@ export function resolveScheduledBattlefieldPhase(
       [],
       scheduled.startedWaveIds,
       scheduled.firedSpawnIds,
-      persistedEnemyCombatants
+      persistedEnemyCombatants,
+      persistedEnemyAdmissions
     )
   });
   const battlefield = resolveBattlefieldPhase(
@@ -1296,7 +1642,8 @@ export function resolveScheduledBattlefieldPhase(
         battlefield.state.battlefield.pendingSpawns,
         scheduled.startedWaveIds,
         scheduled.firedSpawnIds,
-        battlefield.state.battlefield.enemyCombatants
+        battlefield.state.battlefield.enemyCombatants,
+        battlefield.state.battlefield.enemyAdmissions
       )
     }),
     events: Object.freeze([...scheduleEvents, ...battlefield.events])

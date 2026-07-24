@@ -15,6 +15,7 @@ async function renderRequest() {
     mapId: map.id,
     startedWaveIds: [],
     firedSpawnIds: [],
+    enemyAdmissions: [],
     enemyCombatants: [],
     occupancy: [
       {

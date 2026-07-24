@@ -259,8 +259,25 @@ export interface BattlefieldEnemyCombatant {
   /** Target-selection metric only; damage reduction is not yet contracted. */
   readonly armor: number;
   readonly movementIntervalTicks: number;
+  readonly admittedAtTick: number;
   readonly lifecycleState: "active" | "destroyed";
   readonly basicAttack: AuthoredBasicAttackDefinition;
+  readonly actionState: BattlefieldEnemyActionState;
+}
+
+export interface BattlefieldEnemyActionState {
+  readonly schemaVersion: 1;
+  readonly nextMovementAtTick: number;
+  readonly currentTargetEntityId: EntityId | null;
+  readonly activeBasicAttack: AttackWindup | null;
+  readonly cooldownCompleteAtTick: number | null;
+}
+
+export interface BattlefieldEnemyAdmission {
+  readonly schemaVersion: 1;
+  readonly spawnId: StableId;
+  readonly entityId: EntityId;
+  readonly admittedAtTick: number;
 }
 
 export interface WaveScheduleRequest {
@@ -304,6 +321,7 @@ export interface BattlefieldState {
   readonly firedSpawnIds: readonly StableId[];
   readonly occupancy: readonly NavigationOccupant[];
   readonly pendingSpawns: readonly PendingSpawn[];
+  readonly enemyAdmissions: readonly BattlefieldEnemyAdmission[];
   readonly enemyCombatants: readonly BattlefieldEnemyCombatant[];
 }
 

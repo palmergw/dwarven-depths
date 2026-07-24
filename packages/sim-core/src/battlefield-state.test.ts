@@ -58,6 +58,7 @@ function cutterCombatant(entityId: string) {
     maximumHealth: 50,
     armor: 0,
     movementIntervalTicks: 6,
+    admittedAtTick: 0,
     lifecycleState: "active",
     basicAttack: {
       id: "attack.goblin_cutter_basic",
@@ -67,6 +68,13 @@ function cutterCombatant(entityId: string) {
       damage: 10,
       range: 1,
       requiresLineOfSight: false
+    },
+    actionState: {
+      schemaVersion: 1,
+      nextMovementAtTick: 6,
+      currentTargetEntityId: null,
+      activeBasicAttack: null,
+      cooldownCompleteAtTick: null
     }
   };
 }
@@ -92,6 +100,7 @@ describe("authoritative battlefield state", () => {
       firedSpawnIds: [],
       occupancy: [],
       pendingSpawns: [],
+      enemyAdmissions: [],
       enemyCombatants: []
     });
     expect(Object.isFrozen(state)).toBe(true);
@@ -139,6 +148,14 @@ describe("authoritative battlefield state", () => {
           entranceId: "entrance.west"
         }
       ],
+      enemyAdmissions: [
+        {
+          schemaVersion: 1,
+          spawnId: "spawn.first",
+          entityId: "entity.enemy.first",
+          admittedAtTick: 0
+        }
+      ],
       enemyCombatants: [cutterCombatant("entity.enemy.first")]
     });
     expect(first.events.map(decisionEvidence)).toEqual([
@@ -151,7 +168,7 @@ describe("authoritative battlefield state", () => {
 
     const resumed = resolveBattlefieldPhase(first.state, content, [], []);
     expect(await canonicalHash({ first, resumed })).toBe(
-      "f78b6e2b65b29e8a0014d142a5ae4f72b7d1a876ca5449466d7e67f59c4cc51d"
+      "e42daf2db927a97bcd8649312f67d79b1aa33295d0a36592feef98a2f5abf04d"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -163,6 +180,20 @@ describe("authoritative battlefield state", () => {
         { entityId: "entity.enemy.second", nodeId: "node.entry" }
       ],
       pendingSpawns: [],
+      enemyAdmissions: [
+        {
+          schemaVersion: 1,
+          spawnId: "spawn.first",
+          entityId: "entity.enemy.first",
+          admittedAtTick: 0
+        },
+        {
+          schemaVersion: 1,
+          spawnId: "spawn.second",
+          entityId: "entity.enemy.second",
+          admittedAtTick: 0
+        }
+      ],
       enemyCombatants: [
         cutterCombatant("entity.enemy.first"),
         cutterCombatant("entity.enemy.second")
@@ -572,6 +603,28 @@ describe("authoritative battlefield state", () => {
       )
     ).toThrow("already has battlefield enemy combatant state");
     expect(destroyed).toEqual(before);
+  });
+
+  it("rejects admission when the first movement boundary overflows", async () => {
+    const content = await compileContent(battlefieldContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    const atMaximumTick = {
+      ...initial,
+      tick: Number.MAX_SAFE_INTEGER
+    } as SimulationState;
+
+    expect(() =>
+      resolveBattlefieldPhase(
+        atMaximumTick,
+        content,
+        [spawn("spawn.overflow", 0, "entity.enemy.overflow")],
+        []
+      )
+    ).toThrow("movement schedule exceeds safe integer bounds");
   });
 
   it("rejects battlefield phases for mapless or mismatched state", async () => {

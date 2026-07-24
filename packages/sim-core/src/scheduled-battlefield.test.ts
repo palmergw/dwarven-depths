@@ -34,6 +34,14 @@ describe("authored wave battlefield composition", () => {
           entranceId: "entrance.west"
         }
       ],
+      enemyAdmissions: [
+        {
+          schemaVersion: 1,
+          spawnId: "spawn.first",
+          entityId: "entity.enemy.first",
+          admittedAtTick: 0
+        }
+      ],
       enemyCombatants: [
         {
           schemaVersion: 1,
@@ -44,6 +52,7 @@ describe("authored wave battlefield composition", () => {
           maximumHealth: 50,
           armor: 0,
           movementIntervalTicks: 6,
+          admittedAtTick: 0,
           lifecycleState: "active",
           basicAttack: {
             id: "attack.goblin_cutter_basic",
@@ -53,6 +62,13 @@ describe("authored wave battlefield composition", () => {
             damage: 10,
             range: 1,
             requiresLineOfSight: false
+          },
+          actionState: {
+            schemaVersion: 1,
+            nextMovementAtTick: 6,
+            currentTargetEntityId: null,
+            activeBasicAttack: null,
+            cooldownCompleteAtTick: null
           }
         }
       ]
@@ -98,18 +114,34 @@ describe("authored wave battlefield composition", () => {
         enemyDefinitionId: "enemy.goblin_cutter",
         currentHealth: 50,
         movementIntervalTicks: 6,
-        basicAttack: expect.objectContaining({ damage: 10, range: 1 })
+        admittedAtTick: 0,
+        basicAttack: expect.objectContaining({ damage: 10, range: 1 }),
+        actionState: {
+          schemaVersion: 1,
+          nextMovementAtTick: 6,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        }
       }),
       expect.objectContaining({
         entityId: "entity.enemy.second",
         enemyDefinitionId: "enemy.goblin_slinger",
         currentHealth: 38,
         movementIntervalTicks: 7,
+        admittedAtTick: 0,
         basicAttack: expect.objectContaining({
           damage: 9,
           range: 6,
           requiresLineOfSight: true
-        })
+        }),
+        actionState: {
+          schemaVersion: 1,
+          nextMovementAtTick: 7,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        }
       })
     ]);
     expect(admitted?.state.battlefield?.occupancy).toEqual([
@@ -144,6 +176,9 @@ describe("authored wave battlefield composition", () => {
     );
     expect(
       Object.isFrozen(result.state.battlefield?.enemyCombatants[0]?.basicAttack)
+    ).toBe(true);
+    expect(
+      Object.isFrozen(result.state.battlefield?.enemyCombatants[0]?.actionState)
     ).toBe(true);
     expect(Object.isFrozen(result.events)).toBe(true);
     expect(Object.isFrozen(result.events[0])).toBe(true);
@@ -193,7 +228,7 @@ describe("authored wave battlefield composition", () => {
 
     expect(() =>
       resolveScheduledBattlefieldPhase(malformed, content, [])
-    ).toThrow("wave that is not marked started");
+    ).toThrow("does not match authoritative admission evidence");
     expect(malformed).toEqual(before);
   });
 
@@ -351,8 +386,16 @@ describe("authored wave battlefield composition", () => {
             maximumHealth: slinger.maximumHealth,
             armor: slinger.armor,
             movementIntervalTicks: slinger.movementIntervalTicks,
+            admittedAtTick: 0,
             lifecycleState: "active",
-            basicAttack: { ...slinger.basicAttack }
+            basicAttack: { ...slinger.basicAttack },
+            actionState: {
+              schemaVersion: 1,
+              nextMovementAtTick: slinger.movementIntervalTicks,
+              currentTargetEntityId: null,
+              activeBasicAttack: null,
+              cooldownCompleteAtTick: null
+            }
           }
         ] as never
       }
@@ -384,9 +427,163 @@ describe("authored wave battlefield composition", () => {
     );
   });
 
+  it("rejects malformed or incoherent persisted enemy action state", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const initial = createInitialState(
+      content,
+      "level.scheduled_battlefield" as never,
+      "1"
+    );
+    const due = resolveScheduledBattlefieldPhase(initial, content, []);
+    if (due.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const original = due.state.battlefield.enemyCombatants[0];
+    if (original === undefined) throw new Error("expected admitted enemy");
+    const withActionState = (actionState: unknown) => ({
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        enemyCombatants: [{ ...original, actionState }]
+      }
+    });
+    const accessorState = { ...original.actionState };
+    Object.defineProperty(accessorState, "nextMovementAtTick", {
+      get: () => 6,
+      enumerable: true
+    });
+
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        {
+          ...due.state,
+          battlefield: {
+            ...due.state.battlefield,
+            enemyCombatants: [{ ...original, admittedAtTick: 1 }]
+          }
+        } as never,
+        content,
+        []
+      )
+    ).toThrow("does not match authoritative admission timing");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        {
+          ...due.state,
+          battlefield: {
+            ...due.state.battlefield,
+            enemyAdmissions:
+              due.state.battlefield?.enemyAdmissions.map((admission) => ({
+                ...admission,
+                spawnId: "spawn.second"
+              })) ?? []
+          }
+        } as never,
+        content,
+        []
+      )
+    ).toThrow("does not match authoritative admission evidence");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          cooldownCompleteAtTick: 20
+        }) as never,
+        content,
+        []
+      )
+    ).not.toThrow();
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          nextMovementAtTick: 7
+        }) as never,
+        content,
+        []
+      )
+    ).toThrow("invalid action state");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          cooldownCompleteAtTick: Number.MAX_SAFE_INTEGER
+        }) as never,
+        content,
+        []
+      )
+    ).toThrow("invalid action state");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState(accessorState) as never,
+        content,
+        []
+      )
+    ).toThrow("nextMovementAtTick must be own enumerable data");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          currentTargetEntityId: "entity.dwarf.warden",
+          activeBasicAttack: {
+            schemaVersion: 1,
+            attackId: original.basicAttack.id,
+            sourceEntityId: original.entityId,
+            targetEntityId: "entity.dwarf.warden",
+            startedAtTick: 0,
+            commitAtTick: Number.MAX_SAFE_INTEGER,
+            impactAtTick: Number.MAX_SAFE_INTEGER,
+            cooldownDurationTicks: 1,
+            damage: 10,
+            range: 1,
+            targetIsValid: true
+          }
+        }) as never,
+        content,
+        []
+      )
+    ).toThrow("invalid active basic attack");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        {
+          ...withActionState({
+            ...original.actionState,
+            currentTargetEntityId: "entity.dwarf.warden",
+            cooldownCompleteAtTick: 5
+          }),
+          tick: 10
+        } as never,
+        content,
+        []
+      )
+    ).toThrow("invalid action state");
+    expect(() =>
+      resolveScheduledBattlefieldPhase(
+        withActionState({
+          ...original.actionState,
+          currentTargetEntityId: "entity.dwarf.warden",
+          activeBasicAttack: {
+            schemaVersion: 1,
+            attackId: "attack.unrelated",
+            sourceEntityId: original.entityId,
+            targetEntityId: "entity.dwarf.warden",
+            startedAtTick: 0,
+            commitAtTick: 1,
+            impactAtTick: 2,
+            cooldownDurationTicks: 20,
+            damage: 10,
+            range: 1,
+            targetIsValid: true
+          }
+        }) as never,
+        content,
+        []
+      )
+    ).toThrow("invalid active basic attack");
+  });
+
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("99c041bd09947025a43ee9523a11dafd6d5d1f396ba825bd97aa023b4c72f2a1");
+    ).toBe("3d519cac0f9133b4ccf18f24677cc215a045ef149538ffd068b26251571380a0");
   });
 });
