@@ -247,6 +247,37 @@ export interface DwarfTargetSelectionDecision {
   readonly reason: DwarfTargetSelectionReason;
 }
 
+export type EnemyTargetKind = "living_dwarf" | "attackable_blocker";
+
+/** A potential basic-enemy target with route analysis already resolved. */
+export interface EnemyTargetCandidate {
+  readonly entityId: EntityId;
+  readonly targetKind: EnemyTargetKind;
+  readonly placementPointId: PlacementPointId;
+  readonly pathCost: number;
+  readonly isAlive: boolean;
+  readonly isReachable: boolean;
+  /** True only when destroying this blocker opens the enemy's intended route. */
+  readonly opensRoute: boolean;
+}
+
+export interface EnemyTargetAcquisitionRequest {
+  readonly candidates: readonly EnemyTargetCandidate[];
+}
+
+export type EnemyTargetAcquisitionReason =
+  | "selected_reachable_dwarf"
+  | "selected_route_opening_blocker"
+  | "no_eligible_targets";
+
+export interface EnemyTargetAcquisitionDecision {
+  readonly targetEntityId?: EntityId;
+  readonly targetKind?: EnemyTargetKind;
+  readonly placementPointId?: PlacementPointId;
+  readonly pathCost?: number;
+  readonly reason: EnemyTargetAcquisitionReason;
+}
+
 export type ContentDefinition =
   | LevelDefinition
   | WaveDefinition
