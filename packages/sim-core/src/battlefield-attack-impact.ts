@@ -6,6 +6,8 @@ import type {
   BattlefieldEnemyCombatant,
   BattlefieldState,
   CommittedAttack,
+  DwarfActionPhaseRequest,
+  DwarfActionPhaseResolution,
   DwarfDeployment,
   EntityId,
   NavigationOccupant,
@@ -15,11 +17,13 @@ import type {
 import {
   type BattlefieldRoundLineage,
   claimBattlefieldPreparationLineage,
+  getBattlefieldRoundParent,
   propagateBattlefieldRoundLineage,
   requireBattlefieldRoundLineage
 } from "./battlefield-round-lineage.js";
 import { resolveCommittedAttackImpacts } from "./committed-attack-impact.js";
 import { resolveZeroHealthLifecycles } from "./death-resolution.js";
+import { resolveNormalizedDwarfActions } from "./dwarf-action-phase.js";
 import { normalizeAuthoritativeBattlefieldEnemyState } from "./enemy-movement-planning.js";
 
 const stableIdPattern = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
@@ -36,6 +40,25 @@ const deploymentAuthorityMetadata = new WeakMap<
     readonly content: CompiledContent;
     readonly lineage: BattlefieldRoundLineage;
     readonly committedAttacks: Map<StableId, CommittedAttack>;
+    readonly pendingAttacksByBattlefield: WeakMap<
+      BattlefieldState,
+      ReadonlyMap<StableId, EntityId>
+    >;
+    readonly dwarfHealthByBattlefield: WeakMap<
+      BattlefieldState,
+      ReadonlyMap<
+        EntityId,
+        Readonly<{
+          currentHealth: number;
+          lifecycleState: BattlefieldDwarfCombatant["lifecycleState"];
+        }>
+      >
+    >;
+    readonly dwarfActionStates: Map<
+      EntityId,
+      BattlefieldDwarfCombatant["actionState"]
+    >;
+    deploymentBattlefield?: BattlefieldState;
   }
 >();
 
@@ -181,6 +204,80 @@ function requireHealth(value: unknown, description: string): number {
   return value as number;
 }
 
+function assertAcceptedDwarfActionState(
+  value: unknown,
+  expected: BattlefieldDwarfCombatant["actionState"],
+  description: string
+): BattlefieldDwarfCombatant["actionState"] {
+  const record = requireRecord(
+    value,
+    [
+      "schemaVersion",
+      "currentTargetEntityId",
+      "activeBasicAttack",
+      "cooldownCompleteAtTick"
+    ],
+    description
+  );
+  if (
+    record["schemaVersion"] !== expected.schemaVersion ||
+    record["currentTargetEntityId"] !== expected.currentTargetEntityId ||
+    record["cooldownCompleteAtTick"] !== expected.cooldownCompleteAtTick
+  )
+    throw new RangeError(
+      `${description} does not match accepted action evidence`
+    );
+  const active = record["activeBasicAttack"];
+  if (expected.activeBasicAttack === null) {
+    if (active !== null)
+      throw new RangeError(
+        `${description} does not match accepted action evidence`
+      );
+  } else {
+    const parsed = requireRecord(
+      active,
+      [
+        "schemaVersion",
+        "attackId",
+        "sourceEntityId",
+        "targetEntityId",
+        "startedAtTick",
+        "commitAtTick",
+        "impactAtTick",
+        "cooldownDurationTicks",
+        "damage",
+        "range",
+        "targetIsValid"
+      ],
+      `${description} activeBasicAttack`
+    );
+    for (const key of [
+      "schemaVersion",
+      "attackId",
+      "sourceEntityId",
+      "targetEntityId",
+      "startedAtTick",
+      "commitAtTick",
+      "impactAtTick",
+      "cooldownDurationTicks",
+      "damage",
+      "range",
+      "targetIsValid"
+    ] as const)
+      if (parsed[key] !== expected.activeBasicAttack[key])
+        throw new RangeError(
+          `${description} does not match accepted action evidence`
+        );
+  }
+  return Object.freeze({
+    ...expected,
+    activeBasicAttack:
+      expected.activeBasicAttack === null
+        ? null
+        : Object.freeze({ ...expected.activeBasicAttack })
+  });
+}
+
 /** Accepts a preparation choice once for use by later mutable phases. */
 export function createBattlefieldDwarfDeploymentAuthority(
   value: readonly DwarfDeployment[],
@@ -253,7 +350,24 @@ export function createBattlefieldDwarfDeploymentAuthority(
   deploymentAuthorityMetadata.set(authority, {
     content,
     lineage,
-    committedAttacks: new Map()
+    committedAttacks: new Map(),
+    pendingAttacksByBattlefield: new WeakMap([
+      [preparationBattlefield, new Map()]
+    ]),
+    dwarfHealthByBattlefield: new WeakMap([
+      [preparationBattlefield, new Map()]
+    ]),
+    dwarfActionStates: new Map(
+      deployments.map((deployment) => [
+        deployment.entityId,
+        Object.freeze({
+          schemaVersion: 1 as const,
+          currentTargetEntityId: null,
+          activeBasicAttack: null,
+          cooldownCompleteAtTick: null
+        })
+      ])
+    )
   });
   return authority;
 }
@@ -274,9 +388,11 @@ function requireAuthorityMetadata(
 export function authorizeBattlefieldCommittedAttacks(
   authority: BattlefieldDwarfDeploymentAuthority,
   content: CompiledContent,
-  attacks: readonly CommittedAttack[]
+  attacks: readonly CommittedAttack[],
+  battlefield: BattlefieldState
 ): void {
   const metadata = requireAuthorityMetadata(authority, content);
+  const pending = new Map<StableId, EntityId>();
   for (const attack of attacks) {
     const existing = metadata.committedAttacks.get(attack.attackId);
     if (
@@ -296,21 +412,169 @@ export function authorizeBattlefieldCommittedAttacks(
       attack.attackId,
       Object.freeze({ ...attack })
     );
+    pending.set(attack.attackId, attack.targetEntityId);
   }
+  metadata.pendingAttacksByBattlefield.set(battlefield, pending);
 }
 
 /** Returns the accepted target identity for each action-phase commitment. */
 export function getAuthorizedCommittedAttackTargets(
   authority: BattlefieldDwarfDeploymentAuthority,
-  content: CompiledContent
+  content: CompiledContent,
+  battlefield: BattlefieldState
 ): ReadonlyMap<StableId, EntityId> {
   const metadata = requireAuthorityMetadata(authority, content);
-  return new Map(
-    [...metadata.committedAttacks].map(([attackId, attack]) => [
-      attackId,
-      attack.targetEntityId
-    ])
+  const descendants: BattlefieldState[] = [];
+  const visited = new Set<BattlefieldState>();
+  let current = battlefield;
+  let accepted = metadata.pendingAttacksByBattlefield.get(current);
+  while (accepted === undefined) {
+    if (visited.has(current))
+      throw new RangeError(
+        "battlefield pending-attack lineage contains a cycle"
+      );
+    visited.add(current);
+    descendants.push(current);
+    const parent = getBattlefieldRoundParent(current);
+    if (parent === undefined)
+      throw new RangeError(
+        "battlefield lacks authoritative pending-attack lineage"
+      );
+    current = parent;
+    accepted = metadata.pendingAttacksByBattlefield.get(current);
+  }
+  for (const descendant of descendants.reverse()) {
+    const actual = new Map(
+      descendant.pendingCommittedAttacks.map((attack) => [
+        attack.attackId,
+        attack.targetEntityId
+      ])
+    );
+    if (
+      actual.size !== accepted.size ||
+      [...accepted].some(
+        ([attackId, targetId]) => actual.get(attackId) !== targetId
+      )
+    )
+      throw new RangeError(
+        "persisted committed attacks do not match authoritative pending attacks"
+      );
+    metadata.pendingAttacksByBattlefield.set(descendant, accepted);
+  }
+  return new Map(accepted);
+}
+
+function authorizeBattlefieldDwarfHealth(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  battlefield: BattlefieldState,
+  dwarves: readonly BattlefieldDwarfCombatant[]
+): void {
+  const metadata = requireAuthorityMetadata(authority, content);
+  const health = new Map<
+    EntityId,
+    Readonly<{
+      currentHealth: number;
+      lifecycleState: BattlefieldDwarfCombatant["lifecycleState"];
+    }>
+  >();
+  for (const dwarf of dwarves) {
+    if (health.has(dwarf.entityId))
+      throw new RangeError("authoritative dwarf health duplicates an entity");
+    health.set(
+      dwarf.entityId,
+      Object.freeze({
+        currentHealth: dwarf.currentHealth,
+        lifecycleState: dwarf.lifecycleState
+      })
+    );
+  }
+  metadata.dwarfHealthByBattlefield.set(battlefield, health);
+}
+
+function getInheritedBattlefieldDwarfHealth(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  battlefield: BattlefieldState
+): ReadonlyMap<
+  EntityId,
+  Readonly<{
+    currentHealth: number;
+    lifecycleState: BattlefieldDwarfCombatant["lifecycleState"];
+  }>
+> {
+  const metadata = requireAuthorityMetadata(authority, content);
+  const visited = new Set<BattlefieldState>();
+  let current = battlefield;
+  let accepted = metadata.dwarfHealthByBattlefield.get(current);
+  while (accepted === undefined) {
+    if (visited.has(current))
+      throw new RangeError("battlefield dwarf-health lineage contains a cycle");
+    visited.add(current);
+    const parent = getBattlefieldRoundParent(current);
+    if (parent === undefined)
+      throw new RangeError(
+        "battlefield lacks authoritative dwarf-health lineage"
+      );
+    current = parent;
+    accepted = metadata.dwarfHealthByBattlefield.get(current);
+  }
+  return accepted;
+}
+
+function sameDwarfActionState(
+  left: BattlefieldDwarfCombatant["actionState"],
+  right: BattlefieldDwarfCombatant["actionState"]
+): boolean {
+  if (
+    left.schemaVersion !== right.schemaVersion ||
+    left.currentTargetEntityId !== right.currentTargetEntityId ||
+    left.cooldownCompleteAtTick !== right.cooldownCompleteAtTick
+  )
+    return false;
+  const leftAttack = left.activeBasicAttack;
+  const rightAttack = right.activeBasicAttack;
+  if (leftAttack === null || rightAttack === null)
+    return leftAttack === rightAttack;
+  return (
+    leftAttack.schemaVersion === rightAttack.schemaVersion &&
+    leftAttack.attackId === rightAttack.attackId &&
+    leftAttack.sourceEntityId === rightAttack.sourceEntityId &&
+    leftAttack.targetEntityId === rightAttack.targetEntityId &&
+    leftAttack.startedAtTick === rightAttack.startedAtTick &&
+    leftAttack.commitAtTick === rightAttack.commitAtTick &&
+    leftAttack.impactAtTick === rightAttack.impactAtTick &&
+    leftAttack.cooldownDurationTicks === rightAttack.cooldownDurationTicks &&
+    leftAttack.damage === rightAttack.damage &&
+    leftAttack.range === rightAttack.range &&
+    leftAttack.targetIsValid === rightAttack.targetIsValid
   );
+}
+
+function acceptDwarfActionTransition(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  previous: readonly BattlefieldDwarfCombatant[],
+  next: readonly BattlefieldDwarfCombatant[]
+): void {
+  const metadata = requireAuthorityMetadata(authority, content);
+  const previousById = new Map(previous.map((item) => [item.entityId, item]));
+  if (previous.length !== next.length)
+    throw new RangeError("dwarf action transition changed deployment identity");
+  for (const combatant of next) {
+    const prior = previousById.get(combatant.entityId);
+    const accepted = metadata.dwarfActionStates.get(combatant.entityId);
+    if (
+      prior === undefined ||
+      accepted === undefined ||
+      !sameDwarfActionState(prior.actionState, accepted)
+    )
+      throw new RangeError(
+        "dwarf action transition lacks accepted prior state"
+      );
+  }
+  for (const combatant of next)
+    metadata.dwarfActionStates.set(combatant.entityId, combatant.actionState);
 }
 
 function requireDeploymentAuthority(
@@ -712,6 +976,11 @@ export function normalizeBattlefieldDwarves(
     battlefield,
     content
   );
+  const acceptedHealth = getInheritedBattlefieldDwarfHealth(
+    authority,
+    content,
+    battlefield
+  );
   const mapId = battlefield.mapId;
   const occupancy = _normalizeOccupancy(
     battlefield.occupancy,
@@ -842,6 +1111,18 @@ export function normalizeBattlefieldDwarves(
         throw new RangeError(
           `${description} health and lifecycleState are inconsistent`
         );
+      const authoritativeHealth = acceptedHealth.get(entityId);
+      if (
+        authoritativeHealth === undefined
+          ? acceptedHealth.size !== 0 ||
+            currentHealth !== character.maximumHealth ||
+            lifecycleState !== "active"
+          : authoritativeHealth.currentHealth !== currentHealth ||
+            authoritativeHealth.lifecycleState !== lifecycleState
+      )
+        throw new RangeError(
+          `${description} health/lifecycle does not match authoritative battlefield evidence`
+        );
       const basicAttack = requireRecord(
         record["basicAttack"],
         [
@@ -878,14 +1159,22 @@ export function normalizeBattlefieldDwarves(
       );
       if (actionStateRecord["schemaVersion"] !== 1)
         throw new RangeError(`${description} actionState is not version 1`);
+      const acceptedActionState = requireAuthorityMetadata(authority, content)
+        .dwarfActionStates.get(entityId);
+      if (acceptedActionState === undefined)
+        throw new RangeError(`${description} actionState lacks deployment authority`);
+      const actionState = assertAcceptedDwarfActionState(
+        record["actionState"],
+        acceptedActionState,
+        `${description} actionState`
+      );
       if (
-        actionStateRecord["currentTargetEntityId"] !== null ||
-        actionStateRecord["activeBasicAttack"] !== null ||
-        actionStateRecord["cooldownCompleteAtTick"] !== null
+        lifecycleState === "downed" &&
+        (actionState.currentTargetEntityId !== null ||
+          actionState.activeBasicAttack !== null ||
+          actionState.cooldownCompleteAtTick !== null)
       )
-        throw new RangeError(
-          `${description} actionState must remain idle before the authoritative dwarf action phase`
-        );
+        throw new RangeError(`${description} downed dwarf actionState is not idle`);
       const expectedNode = placementNodes.get(placementPointId);
       if (expectedNode === undefined)
         throw new RangeError(
@@ -918,12 +1207,7 @@ export function normalizeBattlefieldDwarves(
         maximumHealth,
         lifecycleState,
         basicAttack: Object.freeze({ ...character.basicAttack }),
-        actionState: Object.freeze({
-          schemaVersion: 1,
-          currentTargetEntityId: null,
-          activeBasicAttack: null,
-          cooldownCompleteAtTick: null
-        })
+        actionState
       });
     }
   );
@@ -931,9 +1215,15 @@ export function normalizeBattlefieldDwarves(
     throw new RangeError(
       "battlefield dwarves do not match authored deployments"
     );
-  return Object.freeze(
+  if (acceptedHealth.size !== 0 && dwarves.length !== acceptedHealth.size)
+    throw new RangeError(
+      "battlefield dwarf health does not match authoritative battlefield evidence"
+    );
+  const normalized = Object.freeze(
     dwarves.sort((left, right) => compareText(left.entityId, right.entityId))
   );
+  authorizeBattlefieldDwarfHealth(authority, content, battlefield, normalized);
+  return normalized;
 }
 
 export function deployBattlefieldDwarves(
@@ -941,6 +1231,9 @@ export function deployBattlefieldDwarves(
   authority: BattlefieldDwarfDeploymentAuthority,
   content: CompiledContent
 ): BattlefieldState {
+  const metadata = requireAuthorityMetadata(authority, content);
+  if (metadata.deploymentBattlefield !== undefined)
+    throw new RangeError("battlefield dwarves are already initialized");
   const deployments = requireDeploymentAuthority(
     authority,
     battlefield,
@@ -1024,13 +1317,83 @@ export function deployBattlefieldDwarves(
     dwarfCombatants,
     battlefield.pendingCommittedAttacks
   );
+  authorizeBattlefieldDwarfHealth(
+    authority,
+    content,
+    candidate,
+    dwarfCombatants
+  );
   const normalized = normalizeBattlefieldDwarves(candidate, authority, content);
-  return freezeBattlefield(
+  const deployed = freezeBattlefield(
     candidate,
     candidate.occupancy,
     normalized,
     battlefield.pendingCommittedAttacks
   );
+  metadata.deploymentBattlefield = deployed;
+  return deployed;
+}
+
+/** Resolves authoritative dwarf target locks, basic windups, and commitments. */
+export function resolveDwarfActionPhase(
+  request: DwarfActionPhaseRequest,
+  content: CompiledContent,
+  authority: BattlefieldDwarfDeploymentAuthority
+): DwarfActionPhaseResolution {
+  const input = requireRecord(
+    request,
+    ["schemaVersion", "currentTick", "levelId", "battlefield", "entries"],
+    "dwarf action phase request"
+  );
+  if (input["schemaVersion"] !== 1)
+    throw new RangeError(
+      "dwarf action phase request has unsupported schemaVersion"
+    );
+  const currentTick = requireHealth(input["currentTick"], "currentTick");
+  const levelId = requireId(input["levelId"], "level", "levelId");
+  const level = content.levels.get(levelId);
+  if (level === undefined) throw new RangeError(`unknown level (${levelId})`);
+  const normalized = normalizeAuthoritativeBattlefieldEnemyState(
+    input["battlefield"],
+    levelId,
+    currentTick,
+    content,
+    authority
+  );
+  if (normalized.battlefield.mapId !== level.mapId)
+    throw new RangeError("battlefield map does not match level");
+  const resolved = resolveNormalizedDwarfActions(
+    normalized.battlefield,
+    currentTick,
+    input["entries"],
+    content
+  );
+  const battlefield = freezeBattlefield(
+    normalized.battlefield,
+    normalized.occupancy,
+    resolved.dwarfCombatants,
+    resolved.committedAttacks,
+    normalized.enemyCombatants
+  );
+  authorizeBattlefieldCommittedAttacks(
+    authority,
+    content,
+    battlefield.pendingCommittedAttacks,
+    battlefield
+  );
+  acceptDwarfActionTransition(
+    authority,
+    content,
+    normalized.battlefield.dwarfCombatants,
+    battlefield.dwarfCombatants
+  );
+  return Object.freeze({
+    schemaVersion: 1,
+    battlefield,
+    dwarfCombatants: battlefield.dwarfCombatants,
+    committedAttacks: battlefield.pendingCommittedAttacks,
+    decisions: resolved.decisions
+  });
 }
 
 export function resolveBattlefieldAttackImpacts(
@@ -1150,6 +1513,24 @@ export function resolveBattlefieldAttackImpacts(
     nextDwarves,
     pendingCommittedAttacks,
     enemyCombatants
+  );
+  authorizeBattlefieldDwarfHealth(
+    authority,
+    content,
+    nextBattlefield,
+    nextDwarves
+  );
+  acceptDwarfActionTransition(
+    authority,
+    content,
+    battlefield.dwarfCombatants,
+    nextBattlefield.dwarfCombatants
+  );
+  authorizeBattlefieldCommittedAttacks(
+    authority,
+    content,
+    pendingCommittedAttacks,
+    nextBattlefield
   );
   normalizeBattlefieldDwarves(nextBattlefield, authority, content);
   return Object.freeze({

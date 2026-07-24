@@ -16,7 +16,7 @@ import {
 } from "./index.js";
 
 const parityChecksum =
-  "e986f6531c68f65de7020502ce40d8da9fe240277136fd7f2def422bb8cc4804";
+  "f7afbb6dabe8ff679b776bd2fa6cb0dfdb7fe0ac0626a8b04f3a61f638277cb1";
 
 function descendant<T extends BattlefieldState>(
   source: BattlefieldState,
@@ -94,6 +94,17 @@ describe("battlefield committed-attack impacts", () => {
     ).toBe(false);
   });
 
+  it("rejects redeploying dwarves after the round deployment was consumed", async () => {
+    const { content, deploymentAuthority, preparation, resolved } =
+      await battlefieldAttackImpactParityEvidence();
+    expect(resolved.battlefield.dwarfCombatants[0]?.lifecycleState).toBe(
+      "downed"
+    );
+    expect(() =>
+      deployBattlefieldDwarves(preparation, deploymentAuthority, content)
+    ).toThrow("already initialized");
+  });
+
   it("rejects authored identity substitution and inconsistent lifecycle state", async () => {
     const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();
@@ -145,7 +156,8 @@ describe("battlefield committed-attack impacts", () => {
           currentTargetEntityId: null,
           activeBasicAttack: {
             schemaVersion: 1,
-            attackId: "attack.iron_warden_basic.dwarf.warden.tick_0",
+            attackId:
+              "attack.iron_warden_basic.dwarf.warden.source_length_12.tick_0",
             sourceEntityId: dwarf.entityId,
             targetEntityId: "entity.enemy.cutter",
             startedAtTick: 0,
@@ -240,7 +252,7 @@ describe("battlefield committed-attack impacts", () => {
         content,
         deploymentAuthority
       )
-    ).toThrow("target does not match accepted commitment evidence");
+    ).toThrow("do not match authoritative pending attacks");
   });
 
   it("rejects malformed unrelated occupancy instead of preserving it", async () => {
@@ -434,13 +446,12 @@ describe("battlefield committed-attack impacts", () => {
   });
 
   it("accepts a valid composite active windup from the shared normalizer", async () => {
-    const { content, deploymentAuthority, committed } =
+    const { content, deploymentAuthority, readyToCommit } =
       await battlefieldAttackImpactParityEvidence();
-    const enemy = committed.enemyCombatants[0];
+    const enemy = readyToCommit.enemyCombatants[0];
     if (enemy === undefined) throw new Error("missing enemy fixture");
     const candidate = {
-      ...committed,
-      pendingCommittedAttacks: [],
+      ...readyToCommit,
       enemyCombatants: [
         {
           ...enemy,
@@ -449,7 +460,7 @@ describe("battlefield committed-attack impacts", () => {
             activeBasicAttack: {
               schemaVersion: 1,
               attackId:
-                "attack.goblin_cutter_basic.enemy.cutter.tick_6" as never,
+                "attack.goblin_cutter_basic.enemy.cutter.source_length_12.tick_6" as never,
               sourceEntityId: enemy.entityId,
               targetEntityId: "entity.dwarf.warden" as never,
               startedAtTick: 6,
@@ -464,8 +475,8 @@ describe("battlefield committed-attack impacts", () => {
           }
         }
       ]
-    } as unknown as typeof committed;
-    propagateBattlefieldRoundLineage(committed, candidate);
+    } as unknown as typeof readyToCommit;
+    propagateBattlefieldRoundLineage(readyToCommit, candidate);
     expect(() =>
       resolveBattlefieldAttackImpacts(
         {
@@ -513,7 +524,8 @@ describe("battlefield committed-attack impacts", () => {
 
     const overlapping = {
       ...first,
-      attackId: "attack.goblin_cutter_basic.enemy.cutter.tick_1" as never,
+      attackId:
+        "attack.goblin_cutter_basic.enemy.cutter.source_length_12.tick_1" as never,
       committedAtTick: 7,
       impactAtTick: 8,
       cooldownCompleteAtTick: 27
@@ -541,7 +553,7 @@ describe("battlefield committed-attack impacts", () => {
         content,
         deploymentAuthority
       )
-    ).toThrow("target does not match accepted commitment evidence");
+    ).toThrow("do not match authoritative pending attacks");
   });
 
   it("rejects malformed enemy action state before resolving impacts", async () => {

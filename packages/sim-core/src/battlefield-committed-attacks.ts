@@ -1,9 +1,11 @@
 import type {
+  BattlefieldDwarfCombatant,
   BattlefieldEnemyCombatant,
   CommittedAttack,
   EntityId,
   StableId
 } from "@dwarven-depths/contracts";
+import { createAttackInstanceId } from "./attack-instance-id.js";
 
 const stableIdPattern = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 const entityIdPattern = /^entity\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
@@ -97,12 +99,16 @@ function requireNonNegativeSafeInteger(
 export function normalizePendingCommittedAttacks(
   value: unknown,
   currentTick: number,
-  combatants: readonly BattlefieldEnemyCombatant[],
+  combatants: readonly (
+    | BattlefieldEnemyCombatant
+    | BattlefieldDwarfCombatant
+  )[],
   authorizedTargets?: ReadonlyMap<StableId, EntityId>
 ): readonly CommittedAttack[] {
-  const combatantsById = new Map<EntityId, BattlefieldEnemyCombatant>(
-    combatants.map((combatant) => [combatant.entityId, combatant])
-  );
+  const combatantsById = new Map<
+    EntityId,
+    BattlefieldEnemyCombatant | BattlefieldDwarfCombatant
+  >(combatants.map((combatant) => [combatant.entityId, combatant]));
   const seen = new Set<StableId>();
   const attacks = requireArray(value).map((item, index): CommittedAttack => {
     const description = `pending committed attack ${index}`;
@@ -155,7 +161,7 @@ export function normalizePendingCommittedAttacks(
     const source = combatantsById.get(sourceEntityId);
     if (source === undefined)
       throw new RangeError(
-        `${description} source must be an admitted enemy (${sourceEntityId})`
+        `${description} source must be an authored combatant (${sourceEntityId})`
       );
     const committedAtTick = requireNonNegativeSafeInteger(
       data.committedAtTick,
@@ -178,11 +184,15 @@ export function normalizePendingCommittedAttacks(
       `${description} range`
     );
     const startedAtTick = committedAtTick - source.basicAttack.windupTicks;
-    const expectedAttackId = `${source.basicAttack.id}.${sourceEntityId.slice(
-      "entity.".length
-    )}.tick_${startedAtTick}`;
+    const earliestStartTick =
+      "admittedAtTick" in source ? source.admittedAtTick : 0;
+    const expectedAttackId = createAttackInstanceId(
+      source.basicAttack.id,
+      sourceEntityId,
+      startedAtTick
+    );
     if (
-      startedAtTick < source.admittedAtTick ||
+      startedAtTick < earliestStartTick ||
       attackId !== expectedAttackId ||
       impactAtTick !== committedAtTick + source.basicAttack.impactDelayTicks ||
       cooldownCompleteAtTick !==
@@ -192,7 +202,7 @@ export function normalizePendingCommittedAttacks(
       range > maximumSafeRange
     )
       throw new RangeError(
-        `${description} does not match its authored enemy basic attack`
+        `${description} does not match its authored basic attack`
       );
     if (committedAtTick > currentTick)
       throw new RangeError(`${description} is before its commit tick`);
@@ -239,6 +249,7 @@ export function normalizePendingCommittedAttacks(
     if (
       latest !== undefined &&
       source !== undefined &&
+      source.lifecycleState === "active" &&
       latest.cooldownCompleteAtTick > currentTick &&
       (source.actionState.activeBasicAttack !== null ||
         source.actionState.cooldownCompleteAtTick !==
@@ -247,6 +258,14 @@ export function normalizePendingCommittedAttacks(
       throw new RangeError(
         `pending committed attack lacks source cooldown evidence (${sourceEntityId})`
       );
+  }
+  if (
+    authorizedTargets !== undefined &&
+    attacks.length !== authorizedTargets.size
+  ) {
+    throw new RangeError(
+      "persisted committed attacks do not match authoritative pending attacks"
+    );
   }
   return Object.freeze(
     attacks.sort((left, right) => compareText(left.attackId, right.attackId))

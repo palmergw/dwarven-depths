@@ -11,7 +11,7 @@ import {
 } from "./index.js";
 
 const parityChecksum =
-  "e986f6531c68f65de7020502ce40d8da9fe240277136fd7f2def422bb8cc4804";
+  "f7afbb6dabe8ff679b776bd2fa6cb0dfdb7fe0ac0626a8b04f3a61f638277cb1";
 
 describe("battlefield attack impact browser parity", () => {
   it("matches the Node evidence checksum", async () => {
@@ -55,6 +55,17 @@ describe("battlefield attack impact browser parity", () => {
     expect(() =>
       normalizeBattlefieldDwarves(candidate, deploymentAuthority, content)
     ).toThrow("authored deployment evidence");
+  });
+
+  it("rejects redeployment after authoritative dwarf death", async () => {
+    const { content, deploymentAuthority, preparation, resolved } =
+      await battlefieldAttackImpactParityEvidence();
+    expect(resolved.battlefield.dwarfCombatants[0]?.lifecycleState).toBe(
+      "downed"
+    );
+    expect(() =>
+      deployBattlefieldDwarves(preparation, deploymentAuthority, content)
+    ).toThrow("already initialized");
   });
 
   it("rejects valid alternate-round deployment authority", async () => {

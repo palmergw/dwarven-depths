@@ -12,6 +12,7 @@ const battlefieldLineages = new WeakMap<
   BattlefieldState,
   BattlefieldRoundLineage
 >();
+const battlefieldParents = new WeakMap<BattlefieldState, BattlefieldState>();
 
 export function initializeBattlefieldRoundLineage(
   battlefield: BattlefieldState,
@@ -66,5 +67,20 @@ export function propagateBattlefieldRoundLineage(
   target: BattlefieldState
 ): void {
   const lineage = battlefieldLineages.get(source);
-  if (lineage !== undefined) battlefieldLineages.set(target, lineage);
+  if (lineage !== undefined) {
+    const existing = battlefieldLineages.get(target);
+    if (existing !== undefined) {
+      if (existing !== lineage)
+        throw new RangeError("battlefield already belongs to another round");
+      return;
+    }
+    battlefieldLineages.set(target, lineage);
+    battlefieldParents.set(target, source);
+  }
+}
+
+export function getBattlefieldRoundParent(
+  battlefield: BattlefieldState
+): BattlefieldState | undefined {
+  return battlefieldParents.get(battlefield);
 }

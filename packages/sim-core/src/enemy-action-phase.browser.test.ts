@@ -9,10 +9,10 @@ describe("enemy action phase browser parity", () => {
       "target_acquired_for_movement"
     );
     expect(evidence.committed.committedAttacks[0]?.attackId).toBe(
-      "attack.goblin_cutter_basic.enemy.already.tick_6"
+      "attack.goblin_cutter_basic.enemy.already.source_length_13.tick_6"
     );
     expect(await canonicalHash(evidence)).toBe(
-      "17dfac44bdfdd85f0ed63e4cfff0af16a0dea58cde18b5dc303d881e5bdb5946"
+      "404c87a118f81d050de22dd600ad292a33c003d43645092850f3740ac54fa628"
     );
   });
 });

@@ -13,6 +13,7 @@ import type {
   StableId
 } from "@dwarven-depths/contracts";
 import { resolveAttackCommitments } from "./attack-commitment.js";
+import { createAttackInstanceId } from "./attack-instance-id.js";
 import {
   authorizeBattlefieldCommittedAttacks,
   type BattlefieldDwarfDeploymentAuthority,
@@ -37,14 +38,6 @@ function comparePendingSpawns(
     compareText(left.id, right.id) ||
     compareText(left.entityId, right.entityId)
   );
-}
-
-function attackInstanceId(
-  authoredAttackId: StableId,
-  sourceEntityId: EntityId,
-  startedAtTick: number
-): StableId {
-  return `${authoredAttackId}.${sourceEntityId.slice("entity.".length)}.tick_${startedAtTick}` as StableId;
 }
 
 function freezeCombatant(
@@ -120,10 +113,17 @@ export function resolveEnemyActionPhase(
     ...normalizePendingCommittedAttacks(
       request.battlefield.pendingCommittedAttacks,
       currentTick,
-      request.battlefield.enemyCombatants,
+      [
+        ...request.battlefield.enemyCombatants,
+        ...request.battlefield.dwarfCombatants
+      ],
       dwarfAuthority === undefined
         ? undefined
-        : getAuthorizedCommittedAttackTargets(dwarfAuthority, content)
+        : getAuthorizedCommittedAttackTargets(
+            dwarfAuthority,
+            content,
+            request.battlefield
+          )
     )
   ];
   const decisions: EnemyActionPhaseDecision[] = [];
@@ -329,7 +329,7 @@ export function resolveEnemyActionPhase(
       throw new RangeError(
         `enemy basic attack timing exceeds safe integer bounds (${combatant.entityId})`
       );
-    const attackId = attackInstanceId(
+    const attackId = createAttackInstanceId(
       combatant.basicAttack.id,
       combatant.entityId,
       currentTick
@@ -457,7 +457,8 @@ export function resolveEnemyActionPhase(
     authorizeBattlefieldCommittedAttacks(
       dwarfAuthority,
       content,
-      battlefield.pendingCommittedAttacks
+      battlefield.pendingCommittedAttacks,
+      battlefield
     );
 
   return Object.freeze({

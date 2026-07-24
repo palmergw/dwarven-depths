@@ -235,6 +235,17 @@ Phase 3 surface currently present in the repository.
   shared authoritative normalizer across movement and impact phases. Lethal
   Cutter-to-Warden evidence is immutable and checksum-pinned across Node and all
   three browser engines. Armor reduction is intentionally not inferred.
+- Authoritative dwarf target validation now derives living hostile candidates,
+  combat metrics, occupancy aim points, range, and line of sight from the
+  normalized battlefield and compiled content. Each active dwarf applies one
+  explicit requested policy through its character's authored supported-policy
+  fallback, retains or reacquires its lock, and starts, waits on, cancels, or
+  commits an authored basic attack without retargeting work already in flight.
+  Non-idle locks, windups, cooldowns, and committed attacks are accepted only
+  from the action producer bound to the same opaque preparation-round authority;
+  caller substitution fails closed. Stable attack-instance evidence is deeply
+  frozen, input-order independent, and literal-checksum-pinned across Node and
+  Chromium, Firefox, and WebKit.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are
@@ -289,7 +300,7 @@ Phase 3 surface currently present in the repository.
 
 ## Not implemented yet
 
-Broader attack impact execution across enemy and deployable targets in the
+Dwarf attack impact execution across enemy and deployable targets in the
 authored encounter,
 armor reduction,
 attack-windup status semantics,

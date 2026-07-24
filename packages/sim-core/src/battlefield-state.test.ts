@@ -526,7 +526,8 @@ describe("authoritative battlefield state", () => {
       admitted.state.battlefield;
     const attack = {
       schemaVersion: 1,
-      attackId: "attack.goblin_cutter_basic.enemy.attacker.tick_0",
+      attackId:
+        "attack.goblin_cutter_basic.enemy.attacker.source_length_14.tick_0",
       sourceEntityId: "entity.enemy.attacker",
       targetEntityId: "entity.dwarf.warden",
       committedAtTick: 6,

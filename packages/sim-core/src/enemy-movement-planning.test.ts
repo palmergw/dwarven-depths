@@ -9,6 +9,7 @@ import {
   type NavigationNodeId
 } from "@dwarven-depths/contracts";
 import { beforeAll, describe, expect, it } from "vitest";
+import { createAttackInstanceId } from "./attack-instance-id.js";
 import {
   type BattlefieldDwarfDeploymentAuthority,
   createBattlefieldDwarfDeploymentAuthority
@@ -308,10 +309,11 @@ describe("deterministic enemy movement proposal planning", () => {
                 currentTargetEntityId: "entity.dwarf.warden" as never,
                 activeBasicAttack: {
                   schemaVersion: 1,
-                  attackId: (combatant.basicAttack.id +
-                    "." +
-                    combatant.entityId.slice("entity.".length) +
-                    ".tick_0") as never,
+                  attackId: createAttackInstanceId(
+                    combatant.basicAttack.id,
+                    combatant.entityId,
+                    0
+                  ),
                   sourceEntityId: combatant.entityId,
                   targetEntityId: "entity.dwarf.warden" as never,
                   startedAtTick: 0,
@@ -344,10 +346,11 @@ describe("deterministic enemy movement proposal planning", () => {
                 currentTargetEntityId: "entity.dwarf.warden" as never,
                 activeBasicAttack: {
                   schemaVersion: 1,
-                  attackId: (combatant.basicAttack.id +
-                    "." +
-                    combatant.entityId.slice("entity.".length) +
-                    `.tick_${lateCommit - 6}`) as never,
+                  attackId: createAttackInstanceId(
+                    combatant.basicAttack.id,
+                    combatant.entityId,
+                    lateCommit - 6
+                  ),
                   sourceEntityId: combatant.entityId,
                   targetEntityId: "entity.dwarf.warden" as never,
                   startedAtTick: lateCommit - 6,
@@ -382,7 +385,7 @@ describe("deterministic enemy movement proposal planning", () => {
         schemaVersion: 1,
         currentTick: 6,
         levelId: "level.conformance_map" as never,
-        battlefield: battlefield(enemy, "node.goal" as never, false),
+        battlefield: battlefield(enemy, "node.east" as never),
         entries: [
           {
             schemaVersion: 1,
@@ -391,7 +394,7 @@ describe("deterministic enemy movement proposal planning", () => {
               {
                 entityId: enemy.entityId,
                 targetKind: "living_dwarf",
-                placementPointId: "placement.goal",
+                placementPointId: "placement.east",
                 pathCost: 0,
                 isAlive: true,
                 isReachable: true,
@@ -470,7 +473,7 @@ describe("deterministic enemy movement proposal planning", () => {
     expect(reversed).toEqual(forward);
     const evidence = await enemyMovementPlanningParityEvidence();
     expect(await canonicalHash(evidence)).toBe(
-      "e4a188281420c86eac8d0b2b4309236bd317cab8eb5160e76153066d12136055"
+      "be96a4265f2adbe8376cd12e2308ac50d68ed4966b288d648fafa0f025a89ab6"
     );
   });
 });

@@ -6,7 +6,8 @@ export {
   createBattlefieldDwarfDeploymentAuthority,
   deployBattlefieldDwarves,
   normalizeBattlefieldDwarves,
-  resolveBattlefieldAttackImpacts
+  resolveBattlefieldAttackImpacts,
+  resolveDwarfActionPhase
 } from "./battlefield-attack-impact.js";
 export * from "./combat-timers.js";
 export * from "./committed-attack-impact.js";
@@ -52,8 +53,10 @@ import {
   type WaveDefinition,
   type WaveSpawnEvent
 } from "@dwarven-depths/contracts";
+import { createAttackInstanceId } from "./attack-instance-id.js";
 import {
   type BattlefieldDwarfDeploymentAuthority,
+  getAuthorizedCommittedAttackTargets,
   normalizeBattlefieldDwarves
 } from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
@@ -692,7 +695,12 @@ function initializeAdmittedEnemyCombatants(
       activeAttack !== null &&
       (activeAttack.schemaVersion !== 1 ||
         !isDomainStableId(activeAttack.attackId, "attack") ||
-        activeAttack.attackId !== combatant.basicAttack.id ||
+        activeAttack.attackId !==
+          createAttackInstanceId(
+            combatant.basicAttack.id,
+            combatant.entityId,
+            activeAttack.startedAtTick
+          ) ||
         activeAttack.sourceEntityId !== combatant.entityId ||
         !isDomainStableId(activeAttack.targetEntityId, "entity") ||
         activeAttack.targetEntityId !== action.currentTargetEntityId ||
@@ -1558,7 +1566,14 @@ export function resolveBattlefieldPhase(
   const persistedCommittedAttacks = normalizePendingCommittedAttacks(
     state.battlefield.pendingCommittedAttacks,
     state.tick,
-    existingEnemyCombatants
+    [...existingEnemyCombatants, ...persistedDwarfCombatants],
+    dwarfAuthority === undefined
+      ? undefined
+      : getAuthorizedCommittedAttackTargets(
+          dwarfAuthority,
+          content,
+          state.battlefield
+        )
   );
   const existingEnemyEntityIds = new Set(
     existingEnemyCombatants.map((combatant) => combatant.entityId)
@@ -1840,7 +1855,14 @@ export function resolveScheduledBattlefieldPhase(
   const persistedCommittedAttacks = normalizePendingCommittedAttacks(
     state.battlefield.pendingCommittedAttacks,
     state.tick,
-    persistedEnemyCombatants
+    [...persistedEnemyCombatants, ...persistedDwarfCombatants],
+    dwarfAuthority === undefined
+      ? undefined
+      : getAuthorizedCommittedAttackTargets(
+          dwarfAuthority,
+          content,
+          state.battlefield
+        )
   );
   const scheduled = resolveWaveSchedule({
     schemaVersion: 1,

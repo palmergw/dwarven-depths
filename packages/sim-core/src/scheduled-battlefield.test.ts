@@ -117,7 +117,8 @@ describe("authored wave battlefield composition", () => {
         pendingCommittedAttacks: [
           {
             schemaVersion: 1,
-            attackId: "attack.goblin_cutter_basic.enemy.first.tick_0",
+            attackId:
+              "attack.goblin_cutter_basic.enemy.first.source_length_11.tick_0",
             sourceEntityId: "entity.enemy.first",
             targetEntityId: "entity.dwarf.warden",
             committedAtTick: 6,
