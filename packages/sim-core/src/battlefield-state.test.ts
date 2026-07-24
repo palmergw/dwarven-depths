@@ -51,6 +51,8 @@ describe("authoritative battlefield state", () => {
     expect(state.battlefield).toEqual({
       schemaVersion: 1,
       mapId: "map.conformance_diamond",
+      startedWaveIds: [],
+      firedSpawnIds: [],
       occupancy: [],
       pendingSpawns: []
     });
@@ -87,6 +89,8 @@ describe("authoritative battlefield state", () => {
     expect(first.state.battlefield).toEqual({
       schemaVersion: 1,
       mapId: "map.conformance_diamond",
+      startedWaveIds: [],
+      firedSpawnIds: [],
       occupancy: [{ entityId: "entity.enemy.first", nodeId: "node.south" }],
       pendingSpawns: [
         {
@@ -107,11 +111,13 @@ describe("authoritative battlefield state", () => {
 
     const resumed = resolveBattlefieldPhase(first.state, content, [], []);
     expect(await canonicalHash({ first, resumed })).toBe(
-      "b4ebcef677035968fcc90cee5916a99aa1f886038880344d5a7e2cee970d6120"
+      "07dad1a5b7317426c1ad1f737b6aa97512dc14c31590744c0f45c4d108601911"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
       mapId: "map.conformance_diamond",
+      startedWaveIds: [],
+      firedSpawnIds: [],
       occupancy: [
         { entityId: "entity.enemy.first", nodeId: "node.south" },
         { entityId: "entity.enemy.second", nodeId: "node.entry" }

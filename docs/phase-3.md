@@ -122,6 +122,13 @@ Phase 3 surface currently present in the repository.
   caller array order—own gameplay ordering. Results are versioned, immutable,
   detached, reason-coded, and pinned for overlapping waves across Node and all
   three browser engines.
+- Authored phase-2 scheduling now composes directly with authoritative spawn
+  admission and movement. Battlefield state persists started-wave and
+  fired-spawn IDs, emits reason-coded `wave.started` and `spawn.enqueued`
+  evidence before admission evidence, and retries queued enemies without
+  replaying schedule events. The composed result remains versioned, immutable,
+  detached, input-order independent, and checksum-pinned across Node and all
+  three browser engines.
 
 ## Not implemented yet
 
