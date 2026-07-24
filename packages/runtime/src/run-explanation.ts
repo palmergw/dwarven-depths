@@ -57,7 +57,8 @@ function requireDensePlainArray<T>(value: readonly T[], path: string): void {
     throw new TypeError(`${path} must be a dense plain array`);
   }
   for (let index = 0; index < value.length; index += 1) {
-    if (!Object.hasOwn(value, index)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, index);
+    if (descriptor === undefined || !("value" in descriptor)) {
       throw new TypeError(`${path} must be a dense plain array`);
     }
   }

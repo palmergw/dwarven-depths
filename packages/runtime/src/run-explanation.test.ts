@@ -36,6 +36,16 @@ describe("run explanation", () => {
     expect(() =>
       createRunExplanation({ ...runExplanationFixture, events: customEvents })
     ).toThrow("events must be a dense plain array");
+
+    const accessorEvents = [...runExplanationFixture.events];
+    Object.defineProperty(accessorEvents, 0, {
+      configurable: true,
+      enumerable: true,
+      get: () => runExplanationFixture.events[0]
+    });
+    expect(() =>
+      createRunExplanation({ ...runExplanationFixture, events: accessorEvents })
+    ).toThrow("events must be a dense plain array");
   });
 
   it("renders deterministic Markdown from the versioned report", () => {
