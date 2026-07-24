@@ -4,6 +4,7 @@ import {
   canonicalHash
 } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
+import { committedAttackImpactParityEvidence } from "./committed-attack-impact.fixture.js";
 import { resolveCommittedAttackImpacts } from "./index.js";
 
 function attack(overrides: Partial<CommittedAttack> = {}): CommittedAttack {
@@ -265,22 +266,9 @@ describe("committed attack impact and health resolution", () => {
     expect(getterCalls).toBe(0);
   });
 
-  it("pins canonical simultaneous-impact evidence", async () => {
-    const result = resolveCommittedAttackImpacts({
-      currentTick: 15,
-      attacks: [
-        attack({ attackId: "attack.zulu" as never, damage: 13 }),
-        attack({ attackId: "attack.alpha" as never, damage: 11 }),
-        attack({
-          attackId: "attack.future" as never,
-          impactAtTick: 16,
-          damage: 99
-        })
-      ],
-      combatants: [combatant()]
-    });
-    expect(await canonicalHash(result)).toBe(
-      "9f1a1874e76db825ef45c308a25f2380f4a10071f14fe009c7b67d5731e9bbde"
+  it("pins the shared Node and browser parity evidence", async () => {
+    expect(await canonicalHash(committedAttackImpactParityEvidence())).toBe(
+      "78d625835d6ad538cd3339ee44676a971e66e7afc19631f8f05a5bd2faf5e52d"
     );
   });
 });

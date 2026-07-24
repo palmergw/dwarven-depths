@@ -1,5 +1,6 @@
 import { canonicalHash } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
+import { committedAttackImpactParityEvidence } from "./committed-attack-impact.fixture.js";
 import { resolveCommittedAttackImpacts } from "./index.js";
 
 const combatant = {
@@ -23,27 +24,7 @@ const attack = {
 
 describe("committed attack impact browser parity", () => {
   it("pins pending, invalid-target, and simultaneous lethal impact evidence", async () => {
-    const evidence = [
-      resolveCommittedAttackImpacts({
-        currentTick: 14,
-        attacks: [attack],
-        combatants: [combatant]
-      }),
-      resolveCommittedAttackImpacts({
-        currentTick: 15,
-        attacks: [attack],
-        combatants: []
-      }),
-      resolveCommittedAttackImpacts({
-        currentTick: 15,
-        attacks: [
-          { ...attack, attackId: "attack.zulu" as never, damage: 13 },
-          { ...attack, attackId: "attack.alpha" as never, damage: 11 }
-        ],
-        combatants: [combatant]
-      })
-    ];
-    expect(await canonicalHash(evidence)).toBe(
+    expect(await canonicalHash(committedAttackImpactParityEvidence())).toBe(
       "78d625835d6ad538cd3339ee44676a971e66e7afc19631f8f05a5bd2faf5e52d"
     );
   });
