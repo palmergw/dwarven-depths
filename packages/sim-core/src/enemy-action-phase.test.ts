@@ -14,6 +14,7 @@ import {
   enemyMovementPlanningContent,
   entry
 } from "./enemy-movement-planning.fixture.js";
+import { resolveEnemyMovementPhase } from "./index.js";
 
 let content: Awaited<ReturnType<typeof compileContent>>;
 
@@ -89,6 +90,12 @@ describe("enemy action phase", () => {
       impactAtTick: 13,
       cooldownCompleteAtTick: 32
     });
+    expect(evidence.committed.battlefield.pendingCommittedAttacks).toEqual(
+      evidence.committed.committedAttacks
+    );
+    expect(evidence.impactDue.battlefield.pendingCommittedAttacks).toEqual(
+      evidence.committed.committedAttacks
+    );
     expect(
       evidence.committed.enemyCombatants[0]?.actionState.activeBasicAttack
     ).toBeNull();
@@ -188,6 +195,60 @@ describe("enemy action phase", () => {
     expect(result.enemyCombatants[0]?.actionState.activeBasicAttack).toBeNull();
   });
 
+  it("rejects forged, duplicate, and overdue persisted attacks", () => {
+    const enemy = combatant("entity.enemy.already", 6, null);
+    const baseRequest = {
+      schemaVersion: 1 as const,
+      levelId: "level.conformance_map" as never,
+      entries: [entry(enemy.entityId)]
+    };
+    const started = resolveEnemyActionPhase(
+      {
+        ...baseRequest,
+        currentTick: 6,
+        battlefield: battlefield(enemy, "node.south" as never)
+      },
+      content
+    );
+    const committed = resolveEnemyActionPhase(
+      { ...baseRequest, currentTick: 12, battlefield: started.battlefield },
+      content
+    );
+    const attack = committed.committedAttacks[0];
+    if (attack === undefined)
+      throw new Error("missing committed attack fixture");
+    const moved = resolveEnemyMovementPhase(
+      { ...baseRequest, currentTick: 12, battlefield: committed.battlefield },
+      content
+    );
+    expect(moved.battlefield.pendingCommittedAttacks).toEqual([attack]);
+    expect(moved.battlefield.pendingCommittedAttacks[0]).not.toBe(attack);
+    for (const pendingCommittedAttacks of [
+      [attack, attack],
+      [{ ...attack, damage: attack.damage + 1 }]
+    ]) {
+      expect(() =>
+        resolveEnemyActionPhase(
+          {
+            ...baseRequest,
+            currentTick: 13,
+            battlefield: {
+              ...committed.battlefield,
+              pendingCommittedAttacks
+            }
+          },
+          content
+        )
+      ).toThrow();
+    }
+    expect(() =>
+      resolveEnemyActionPhase(
+        { ...baseRequest, currentTick: 14, battlefield: committed.battlefield },
+        content
+      )
+    ).toThrow("passed its impact tick");
+  });
+
   it("returns detached deeply frozen stable evidence without mutating input", () => {
     const enemy = combatant("entity.enemy.already", 6, null);
     const request = {
@@ -205,6 +266,9 @@ describe("enemy action phase", () => {
     expect(Object.isFrozen(result.battlefield.occupancy)).toBe(true);
     expect(Object.isFrozen(result.battlefield.occupancy[0])).toBe(true);
     expect(Object.isFrozen(result.battlefield.pendingSpawns)).toBe(true);
+    expect(Object.isFrozen(result.battlefield.pendingCommittedAttacks)).toBe(
+      true
+    );
     expect(Object.isFrozen(result.battlefield.enemyAdmissions)).toBe(true);
     expect(result.battlefield.enemyCombatants).toBe(result.enemyCombatants);
     expect(Object.isFrozen(result.enemyCombatants)).toBe(true);
@@ -321,7 +385,7 @@ describe("enemy action phase", () => {
 
   it("pins action evidence for browser parity", async () => {
     expect(await canonicalHash(await enemyActionPhaseParityEvidence())).toBe(
-      "846fa36b2d4ddfbd0036cf37282fe0af9131135ad4b911d4140d6c5a2168f69b"
+      "4fc89acfd5de1ebeda1ceef427e717c84b441704745949cadd1771495e4a8127"
     );
   });
 });

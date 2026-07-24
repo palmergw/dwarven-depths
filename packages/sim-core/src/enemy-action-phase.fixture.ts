@@ -61,7 +61,14 @@ export async function enemyActionPhaseParityEvidence() {
   );
 
   const committed = resolveEnemyActionPhase(request(12, startedState), content);
-  const cooldownState = committed.battlefield;
+  const impactDue = resolveEnemyActionPhase(
+    request(13, committed.battlefield),
+    content
+  );
+  const cooldownState: BattlefieldState = {
+    ...impactDue.battlefield,
+    pendingCommittedAttacks: []
+  };
   const coolingDown = resolveEnemyActionPhase(
     request(20, cooldownState),
     content
@@ -77,6 +84,7 @@ export async function enemyActionPhaseParityEvidence() {
     winding,
     cancelled,
     committed,
+    impactDue,
     coolingDown,
     restarted
   });

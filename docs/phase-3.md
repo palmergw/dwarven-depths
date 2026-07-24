@@ -202,6 +202,16 @@ Phase 3 surface currently present in the repository.
   detached, input-order independent, and checksum-pinned across Node and all
   three browser engines; committed attacks remain explicit phase evidence for
   the downstream impact-integration checkpoint.
+- Committed enemy basic attacks now enter authoritative battlefield state at
+  their exact commitment tick and remain there through subsequent action,
+  movement, scheduling, and admission snapshots until downstream impact
+  resolution consumes them. Persisted attacks are canonicalized by stable
+  attack-instance ID and validated against independently admitted enemy identity
+  plus authored windup, impact, cooldown, damage, and range data. Duplicate,
+  forged, future-commit, and already-overdue records fail closed, while source
+  death after commitment does not invalidate the pending work. The commitment-
+  through-impact-boundary evidence is immutable and checksum-pinned across Node
+  and all three browser engines.
 - Fixed-step phase 12 resolves configured boss-death rewards before terminal
   evaluation. Each unclaimed reward atomically grants Forge Ore, records its
   stable claim ID, and unlocks its configured character; replayed claims are

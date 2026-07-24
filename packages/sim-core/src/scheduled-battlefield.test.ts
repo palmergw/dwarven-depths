@@ -38,6 +38,7 @@ describe("authored wave battlefield composition", () => {
           entranceId: "entrance.west"
         }
       ],
+      pendingCommittedAttacks: [],
       enemyAdmissions: [
         {
           schemaVersion: 1,
@@ -101,6 +102,35 @@ describe("authored wave battlefield composition", () => {
       "enemy.goblin_cutter",
       "enemy.goblin_slinger"
     ]);
+  });
+
+  it("validates persisted attacks before scheduling", async () => {
+    const content = await compileContent(scheduledBattlefieldContent);
+    const [due] = await scheduledBattlefieldParityEvidence();
+    if (due?.state.battlefield === undefined)
+      throw new Error("expected scheduled battlefield state");
+    const forged = {
+      ...due.state,
+      battlefield: {
+        ...due.state.battlefield,
+        pendingCommittedAttacks: [
+          {
+            schemaVersion: 1,
+            attackId: "attack.goblin_cutter_basic.enemy.first.tick_0",
+            sourceEntityId: "entity.enemy.first",
+            targetEntityId: "entity.dwarf.warden",
+            committedAtTick: 6,
+            impactAtTick: 7,
+            cooldownCompleteAtTick: 26,
+            damage: 10,
+            range: 1
+          }
+        ]
+      }
+    };
+    expect(() =>
+      resolveScheduledBattlefieldPhase(forged as never, content, [])
+    ).toThrow("before its commit tick");
   });
 
   it("retries queued enemies without replaying authored schedule events", async () => {
@@ -657,6 +687,6 @@ describe("authored wave battlefield composition", () => {
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("d5f819b4b028ebeca9c19f9619a3dfee1e35156287a39158e2a1e844e3dfa33e");
+    ).toBe("556917bbe7cbc4fb487c86dd3743a188f8456b41f847fc0ab00b409dd88fba6f");
   });
 });

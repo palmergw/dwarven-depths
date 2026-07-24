@@ -133,7 +133,8 @@ function battlefield(
         admittedAtTick: enemy.admittedAtTick
       }
     ],
-    enemyCombatants: [enemy]
+    enemyCombatants: [enemy],
+    pendingCommittedAttacks: []
   } as unknown as BattlefieldState;
 }
 

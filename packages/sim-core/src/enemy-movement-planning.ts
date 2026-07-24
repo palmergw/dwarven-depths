@@ -12,6 +12,7 @@ import type {
   NavigationOccupant,
   WaveSpawnEvent
 } from "@dwarven-depths/contracts";
+import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { planEnemyRoute } from "./enemy-route-planning.js";
 import { resolveEnemyTargetLock } from "./target-locks.js";
 
@@ -66,6 +67,7 @@ interface ParsedDataRecord extends Record<string, unknown> {
   readonly firedSpawnIds?: unknown;
   readonly pendingSpawns?: unknown;
   readonly enemyAdmissions?: unknown;
+  readonly pendingCommittedAttacks?: unknown;
   readonly authoredOrder?: unknown;
   readonly entranceId?: unknown;
 }
@@ -683,7 +685,8 @@ export function planEnemyMovement(
       "occupancy",
       "pendingSpawns",
       "enemyAdmissions",
-      "enemyCombatants"
+      "enemyCombatants",
+      "pendingCommittedAttacks"
     ],
     "battlefield"
   );
@@ -710,6 +713,11 @@ export function planEnemyMovement(
     currentTick,
     content,
     admissions
+  );
+  normalizePendingCommittedAttacks(
+    battlefield.pendingCommittedAttacks,
+    currentTick,
+    combatants
   );
   if (admissions.size !== combatants.length)
     throw new RangeError("enemy admissions do not match enemy combatants");

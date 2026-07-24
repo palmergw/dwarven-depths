@@ -12,7 +12,7 @@ describe("enemy action phase browser parity", () => {
       "attack.goblin_cutter_basic.enemy.already.tick_6"
     );
     expect(await canonicalHash(evidence)).toBe(
-      "846fa36b2d4ddfbd0036cf37282fe0af9131135ad4b911d4140d6c5a2168f69b"
+      "4fc89acfd5de1ebeda1ceef427e717c84b441704745949cadd1771495e4a8127"
     );
   });
 });

@@ -432,6 +432,8 @@ export interface BattlefieldState {
   readonly pendingSpawns: readonly PendingSpawn[];
   readonly enemyAdmissions: readonly BattlefieldEnemyAdmission[];
   readonly enemyCombatants: readonly BattlefieldEnemyCombatant[];
+  /** Committed enemy attacks awaiting their exact authored impact tick. */
+  readonly pendingCommittedAttacks: readonly CommittedAttack[];
 }
 
 export type DwarfTargetPolicy =

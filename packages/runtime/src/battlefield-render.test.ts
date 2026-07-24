@@ -17,6 +17,7 @@ async function renderRequest() {
     firedSpawnIds: [],
     enemyAdmissions: [],
     enemyCombatants: [],
+    pendingCommittedAttacks: [],
     occupancy: [
       {
         entityId: "entity.enemy.alpha" as never,

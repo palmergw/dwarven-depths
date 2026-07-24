@@ -105,7 +105,8 @@ describe("authoritative battlefield state", () => {
       occupancy: [],
       pendingSpawns: [],
       enemyAdmissions: [],
-      enemyCombatants: []
+      enemyCombatants: [],
+      pendingCommittedAttacks: []
     });
     expect(Object.isFrozen(state)).toBe(true);
     expect(Object.isFrozen(state.battlefield)).toBe(true);
@@ -256,6 +257,7 @@ describe("authoritative battlefield state", () => {
           entranceId: "entrance.west"
         }
       ],
+      pendingCommittedAttacks: [],
       enemyAdmissions: [
         {
           schemaVersion: 1,
@@ -281,7 +283,7 @@ describe("authoritative battlefield state", () => {
       []
     );
     expect(await canonicalHash({ first, resumed })).toBe(
-      "1cfdb70a116eb07e75abe3288fad6acae8fc68c83a7796dac92f65ea79a5cf0d"
+      "6e0098bfaa554c9f2c4f6b8264690938a9d6dc4c12302f448581e7d453b1a0a1"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -294,6 +296,7 @@ describe("authoritative battlefield state", () => {
         { entityId: "entity.enemy.second", nodeId: "node.entry" }
       ],
       pendingSpawns: [],
+      pendingCommittedAttacks: [],
       enemyAdmissions: [
         {
           schemaVersion: 1,
@@ -499,6 +502,73 @@ describe("authoritative battlefield state", () => {
       "does not match compiled enemy definition"
     );
     expect(mismatched).toEqual(before);
+  });
+
+  it("validates persisted attacks before admission and movement", async () => {
+    const content = await compileContent(battlefieldContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    const admitted = resolveBattlefieldPhase(
+      initial,
+      content,
+      [spawn("spawn.attacker", 0, "entity.enemy.attacker")],
+      []
+    );
+    if (admitted.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const admittedBattlefield: NonNullable<SimulationState["battlefield"]> =
+      admitted.state.battlefield;
+    const attack = {
+      schemaVersion: 1,
+      attackId: "attack.goblin_cutter_basic.enemy.attacker.tick_0",
+      sourceEntityId: "entity.enemy.attacker",
+      targetEntityId: "entity.dwarf.warden",
+      committedAtTick: 6,
+      impactAtTick: 7,
+      cooldownCompleteAtTick: 26,
+      damage: 10,
+      range: 1
+    };
+    const pending: SimulationState = {
+      ...admitted.state,
+      tick: 6,
+      battlefield: {
+        ...admittedBattlefield,
+        pendingCommittedAttacks: [attack] as never
+      }
+    };
+    const preserved = resolveBattlefieldPhase(pending, content, [], []);
+    expect(preserved.state.battlefield?.pendingCommittedAttacks).toEqual([
+      attack
+    ]);
+    expect(preserved.state.battlefield?.pendingCommittedAttacks[0]).not.toBe(
+      attack
+    );
+    for (const pendingCommittedAttacks of [
+      [attack, attack],
+      [{ ...attack, damage: 11 }]
+    ]) {
+      expect(() =>
+        resolveBattlefieldPhase(
+          {
+            ...pending,
+            battlefield: {
+              ...admittedBattlefield,
+              pendingCommittedAttacks: pendingCommittedAttacks as never
+            }
+          },
+          content,
+          [],
+          []
+        )
+      ).toThrow();
+    }
+    expect(() =>
+      resolveBattlefieldPhase({ ...pending, tick: 8 }, content, [], [])
+    ).toThrow("passed its impact tick");
   });
 
   it("rejects extended records and custom combatant arrays", async () => {
