@@ -12,7 +12,7 @@ export const shuttergateCalibrationChecksum =
 describe("Shuttergate reference balance calibration", () => {
   it("records the bounded unupgraded one-Warden defeat", async () => {
     const content = await compileContent(shuttergateInput);
-    const evidence = runShuttergateReferenceCalibration(content);
+    const evidence = await runShuttergateReferenceCalibration(content);
 
     expect(evidence).toMatchObject({
       schemaVersion: 1,
@@ -70,9 +70,29 @@ describe("Shuttergate reference balance calibration", () => {
       )
     };
     const content = await compileContent(changedInput);
+    const forgedManifest = {
+      ...content,
+      manifestHash:
+        "5e9d7bcbafb53208cb016432857a912aff9d032f44c2870ada3bc9361e9c5a3f"
+    };
 
-    expect(() => runShuttergateReferenceCalibration(content)).toThrow(
-      "pinned reference content manifest"
-    );
+    await expect(
+      runShuttergateReferenceCalibration(forgedManifest)
+    ).rejects.toThrow("pinned reference content manifest");
+  });
+
+  it("recompiles canonical bundle data instead of trusting supplied indexes", async () => {
+    const content = await compileContent(shuttergateInput);
+    const forgedIndexes = {
+      ...content,
+      levels: new Map(),
+      waves: new Map(),
+      maps: new Map(),
+      characters: new Map(),
+      enemies: new Map()
+    } as typeof content;
+
+    const evidence = await runShuttergateReferenceCalibration(forgedIndexes);
+    expect(await canonicalHash(evidence)).toBe(shuttergateCalibrationChecksum);
   });
 });

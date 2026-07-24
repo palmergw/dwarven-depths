@@ -1,4 +1,7 @@
-import type { CompiledContent } from "@dwarven-depths/content-runtime";
+import {
+  type CompiledContent,
+  compileContent
+} from "@dwarven-depths/content-runtime";
 import type {
   DwarfTargetPolicy,
   SimulationState,
@@ -56,16 +59,25 @@ export interface ShuttergateReferenceCalibrationEvidence {
   readonly milestones: readonly ShuttergateCalibrationMilestone[];
 }
 
-function requireReferenceContent(content: CompiledContent): void {
-  if (content.manifestHash !== referenceManifestHash)
+async function requireReferenceContent(
+  content: CompiledContent
+): Promise<CompiledContent> {
+  // Recompile the canonical bundle so neither a forged manifestHash nor
+  // caller-substituted compiled indexes can influence calibration gameplay.
+  const recompiled = await compileContent(content.bundle);
+  if (
+    content.manifestHash !== referenceManifestHash ||
+    recompiled.manifestHash !== referenceManifestHash
+  )
     throw new RangeError(
       "Shuttergate calibration requires the pinned reference content manifest"
     );
-  const level = content.levels.get(levelId);
+  const level = recompiled.levels.get(levelId);
   if (level === undefined || level.waveIds.length !== 5)
     throw new RangeError(
       "Shuttergate calibration requires the five-wave reference level"
     );
+  return recompiled;
 }
 
 /**
@@ -73,11 +85,11 @@ function requireReferenceContent(content: CompiledContent): void {
  * authoritative combat, reward, and terminal producer path. The result is a
  * compact calibration artifact rather than a second gameplay loop.
  */
-export function runShuttergateReferenceCalibration(
+export async function runShuttergateReferenceCalibration(
   content: CompiledContent
-): ShuttergateReferenceCalibrationEvidence {
-  requireReferenceContent(content);
-  const initial = createInitialState(content, levelId, "1");
+): Promise<ShuttergateReferenceCalibrationEvidence> {
+  const referenceContent = await requireReferenceContent(content);
+  const initial = createInitialState(referenceContent, levelId, "1");
   if (initial.battlefield === undefined)
     throw new Error("Shuttergate calibration requires battlefield state");
   const authority = createBattlefieldDwarfDeploymentAuthority(
@@ -89,7 +101,7 @@ export function runShuttergateReferenceCalibration(
       }
     ],
     initial.battlefield,
-    content
+    referenceContent
   );
   let state: SimulationState = Object.freeze({
     ...initial,
@@ -97,7 +109,7 @@ export function runShuttergateReferenceCalibration(
     battlefield: deployBattlefieldDwarves(
       initial.battlefield,
       authority,
-      content
+      referenceContent
     )
   });
   let profile = createInitialProfile(wardenCharacterId);
@@ -130,7 +142,7 @@ export function runShuttergateReferenceCalibration(
         profile,
         rewards
       },
-      content,
+      referenceContent,
       authority
     );
     state = checkpoint.combat.state;
@@ -171,7 +183,7 @@ export function runShuttergateReferenceCalibration(
     return Object.freeze({
       schemaVersion: 1,
       calibrationId: "calibration.shuttergate.unupgraded_warden.v1",
-      contentManifestHash: content.manifestHash,
+      contentManifestHash: referenceContent.manifestHash,
       seed: "1",
       levelId,
       placementPointId,

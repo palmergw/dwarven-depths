@@ -12,7 +12,7 @@ const expectedChecksum =
 describe("Shuttergate calibration browser parity", () => {
   it("matches the literal Node outcome checksum", async () => {
     const content = await compileContent(shuttergateInput);
-    const evidence = runShuttergateReferenceCalibration(content);
+    const evidence = await runShuttergateReferenceCalibration(content);
 
     expect(evidence).toMatchObject({
       terminalResult: "defeat",
@@ -21,5 +21,5 @@ describe("Shuttergate calibration browser parity", () => {
       deepRangerUnlocked: false
     });
     expect(await canonicalHash(evidence)).toBe(expectedChecksum);
-  });
+  }, 30_000);
 });

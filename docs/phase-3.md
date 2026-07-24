@@ -350,5 +350,6 @@ Deployable-target impact execution in the authored encounter,
 armor reduction,
 attack-windup status semantics,
 non-damage trigger variants,
-non-boss rewards, authored special abilities and boss behavior, balance
-calibration, and broader combat event integration remain later checkpoints.
+non-boss rewards, authored special abilities and boss behavior, upgraded-build
+comparison calibration, and broader combat event integration remain later
+checkpoints.
