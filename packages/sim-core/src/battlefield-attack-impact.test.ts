@@ -283,6 +283,70 @@ describe("battlefield committed-attack impacts", () => {
     ).not.toThrow();
   });
 
+  it("binds pending attacks to cooldown evidence and rejects overlap", async () => {
+    const { content, deploymentAuthority, committed } =
+      await battlefieldAttackImpactParityEvidence();
+    const enemy = committed.enemyCombatants[0];
+    const first = committed.pendingCommittedAttacks[0];
+    if (enemy === undefined || first === undefined)
+      throw new Error("missing committed attack fixture");
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 7,
+          levelId: "level.conformance_map" as never,
+          battlefield: {
+            ...committed,
+            enemyCombatants: [
+              {
+                ...enemy,
+                actionState: {
+                  ...enemy.actionState,
+                  cooldownCompleteAtTick: null
+                }
+              }
+            ]
+          }
+        },
+        content,
+        deploymentAuthority
+      )
+    ).toThrow("lacks source cooldown evidence");
+
+    const overlapping = {
+      ...first,
+      attackId: "attack.goblin_cutter_basic.enemy.cutter.tick_1" as never,
+      committedAtTick: 7,
+      impactAtTick: 8,
+      cooldownCompleteAtTick: 27
+    };
+    expect(() =>
+      resolveBattlefieldAttackImpacts(
+        {
+          schemaVersion: 1,
+          currentTick: 7,
+          levelId: "level.conformance_map" as never,
+          battlefield: {
+            ...committed,
+            enemyCombatants: [
+              {
+                ...enemy,
+                actionState: {
+                  ...enemy.actionState,
+                  cooldownCompleteAtTick: 27
+                }
+              }
+            ],
+            pendingCommittedAttacks: [first, overlapping]
+          }
+        },
+        content,
+        deploymentAuthority
+      )
+    ).toThrow("overlap one source cooldown");
+  });
+
   it("rejects malformed enemy action state before resolving impacts", async () => {
     const { content, deploymentAuthority, committed } =
       await battlefieldAttackImpactParityEvidence();

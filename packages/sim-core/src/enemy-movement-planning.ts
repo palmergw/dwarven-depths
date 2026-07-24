@@ -514,6 +514,8 @@ function normalizeCombatants(
           action.currentTargetEntityId,
           `${description} currentTargetEntityId`
         );
+      let activeBasicAttack: BattlefieldEnemyCombatant["actionState"]["activeBasicAttack"] =
+        null;
       if (action.activeBasicAttack !== null) {
         const active = requireRecord(
           action.activeBasicAttack,
@@ -574,6 +576,19 @@ function normalizeCombatants(
           throw new RangeError(
             `${description} has invalid active basic attack`
           );
+        activeBasicAttack = Object.freeze({
+          schemaVersion: 1,
+          attackId: active.attackId as StableId,
+          sourceEntityId: entityId,
+          targetEntityId: active.targetEntityId as EntityId,
+          startedAtTick,
+          commitAtTick,
+          impactAtTick,
+          cooldownDurationTicks: definition.basicAttack.cooldownTicks,
+          damage: definition.basicAttack.damage,
+          range: definition.basicAttack.range,
+          targetIsValid: active.targetIsValid as boolean
+        });
       }
       if (
         action.activeBasicAttack !== null &&
@@ -610,7 +625,12 @@ function normalizeCombatants(
           ...(attack as unknown as BattlefieldEnemyCombatant["basicAttack"])
         }),
         actionState: Object.freeze({
-          ...(action as unknown as BattlefieldEnemyCombatant["actionState"])
+          schemaVersion: 1,
+          nextMovementAtTick,
+          currentTargetEntityId:
+            action.currentTargetEntityId as EntityId | null,
+          activeBasicAttack,
+          cooldownCompleteAtTick: action.cooldownCompleteAtTick as number | null
         })
       });
     }
