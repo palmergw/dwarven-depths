@@ -329,7 +329,12 @@ export function resolveEnemyTargetLock(
   const currentTargetEntityId = requireCurrentTarget(
     record.currentTargetEntityId
   );
-  const candidates = record.candidates as readonly EnemyTargetCandidate[];
+  const candidates = Object.freeze(
+    requireArray(
+      record.candidates,
+      "enemy target-lock candidates"
+    ) as readonly EnemyTargetCandidate[]
+  );
   const acquisition = acquireEnemyTarget({ candidates });
   const previous = candidates.find(
     (candidate) => candidate.entityId === currentTargetEntityId

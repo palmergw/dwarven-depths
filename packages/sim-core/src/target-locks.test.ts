@@ -1,3 +1,4 @@
+import { canonicalHash } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import {
   dwarfCandidate,
@@ -188,6 +189,37 @@ describe("deterministic target locks", () => {
         ]
       })
     ).toThrow("unknown aim point ID (aim.missing)");
+  });
+
+  it("pins shared target-lock evidence to the browser checksum", async () => {
+    expect(await canonicalHash(targetLockParityEvidence())).toBe(
+      "3db7f5f4523da2cfe56d3b39b0b1860867e729d61ce2fface23ff36070a55cc4"
+    );
+  });
+
+  it("does not invoke inherited candidate-array methods", () => {
+    let findCalls = 0;
+    const candidates = [enemyCandidate("entity.dwarf.real")];
+    Object.setPrototypeOf(candidates, {
+      ...Array.prototype,
+      find() {
+        findCalls += 1;
+        return enemyCandidate("entity.dwarf.forged");
+      }
+    });
+    expect(
+      resolveEnemyTargetLock({
+        currentTargetEntityId: "entity.dwarf.forged" as never,
+        candidates
+      })
+    ).toEqual({
+      schemaVersion: 1,
+      status: "reacquired",
+      targetEntityId: "entity.dwarf.real",
+      previousTargetReason: "target_absent",
+      acquisitionReason: "selected_reachable_dwarf"
+    });
+    expect(findCalls).toBe(0);
   });
 
   it("is input-order independent, detached, and deeply immutable", () => {
