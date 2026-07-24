@@ -1,6 +1,7 @@
 export type StableId = string & { readonly __stableId: unique symbol };
 export type EntityId = StableId & { readonly __entityId: unique symbol };
 export type EffectId = StableId & { readonly __effectId: unique symbol };
+export type StatusId = StableId & { readonly __statusId: unique symbol };
 export type NavigationNodeId = StableId & {
   readonly __navigationNodeId: unique symbol;
 };
@@ -326,6 +327,86 @@ export interface AttackCommitmentDecision {
 
 export interface AttackCommitmentResolution {
   readonly decisions: readonly AttackCommitmentDecision[];
+}
+
+export interface ActiveCooldown {
+  readonly schemaVersion: 1;
+  readonly cooldownId: StableId;
+  readonly ownerEntityId: EntityId;
+  readonly startedAtTick: number;
+  readonly completeAtTick: number;
+}
+
+export interface ActiveStatus {
+  readonly schemaVersion: 1;
+  readonly statusId: StatusId;
+  readonly ownerEntityId: EntityId;
+  readonly appliedAtTick: number;
+  readonly expiresAtTick: number;
+  readonly magnitude: number;
+}
+
+export interface CombatTimerResolutionRequest {
+  readonly currentTick: number;
+  readonly cooldowns: readonly ActiveCooldown[];
+  readonly statuses: readonly ActiveStatus[];
+}
+
+export interface CooldownTimerDecision {
+  readonly schemaVersion: 1;
+  readonly cooldownId: StableId;
+  readonly ownerEntityId: EntityId;
+  readonly status: "active" | "completed";
+  readonly reason: "waiting_for_completion" | "completion_tick_reached";
+}
+
+export interface StatusTimerDecision {
+  readonly schemaVersion: 1;
+  readonly statusId: StatusId;
+  readonly ownerEntityId: EntityId;
+  readonly status: "active" | "expired";
+  readonly reason: "waiting_for_expiry" | "expiry_tick_reached";
+}
+
+export interface CombatTimerResolution {
+  readonly schemaVersion: 1;
+  readonly cooldowns: readonly ActiveCooldown[];
+  readonly statuses: readonly ActiveStatus[];
+  readonly cooldownDecisions: readonly CooldownTimerDecision[];
+  readonly statusDecisions: readonly StatusTimerDecision[];
+}
+
+export interface StatusApplication {
+  readonly schemaVersion: 1;
+  readonly statusId: StatusId;
+  readonly ownerEntityId: EntityId;
+  readonly durationTicks: number;
+  readonly magnitude: number;
+}
+
+export interface StatusApplicationRequest {
+  readonly currentTick: number;
+  readonly statuses: readonly ActiveStatus[];
+  readonly applications: readonly StatusApplication[];
+}
+
+export interface StatusApplicationDecision {
+  readonly schemaVersion: 1;
+  readonly statusId: StatusId;
+  readonly ownerEntityId: EntityId;
+  readonly status: "applied" | "refreshed";
+  readonly reason:
+    | "new_status"
+    | "duration_refreshed_stronger_magnitude_retained";
+  readonly previousMagnitude?: number;
+  readonly resultingMagnitude: number;
+  readonly expiresAtTick: number;
+}
+
+export interface StatusApplicationResolution {
+  readonly schemaVersion: 1;
+  readonly statuses: readonly ActiveStatus[];
+  readonly decisions: readonly StatusApplicationDecision[];
 }
 
 export interface CombatantHealth {

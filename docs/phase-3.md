@@ -70,11 +70,20 @@ Phase 3 surface currently present in the repository.
   decisions, health evidence, transitions, and resulting combatants remain
   versioned, immutable, detached, reason-coded, and input-order independent. A
   recursive chain fixture is pinned across Node and all three browser engines.
+- Fixed-step phase 4 completes committed cooldowns and expires statuses exactly
+  at their authored boundary tick. Timer decisions use stable cooldown-ID and
+  owner-entity/status-ID order and retain immutable active records before the
+  boundary.
+- Applying an identical owner/status pair refreshes its expiry from the
+  application tick without stacking and retains the stronger magnitude.
+  Different statuses coexist in stable order. Application results are
+  versioned, reason-coded, immutable, detached, and input-order independent,
+  with timer and refresh evidence pinned across Node and all three browsers.
 
 ## Not implemented yet
 
 Integration of route analysis with enemy target acquisition, dwarf candidate
-filtering, target locking, armor, cooldown state advancement, statuses, healing,
+filtering, target locking, armor, healing,
 non-damage trigger variants, rewards, authored spawn schedules, boss behavior,
 terminal evaluation, and combat event integration remain later Phase 3
 checkpoints.

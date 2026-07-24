@@ -1,6 +1,7 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
 
 export * from "./attack-commitment.js";
+export * from "./combat-timers.js";
 export * from "./committed-attack-impact.js";
 export * from "./death-resolution.js";
 export * from "./death-trigger-resolution.js";
