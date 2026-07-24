@@ -111,6 +111,23 @@ async function simultaneousBossAndDwarfDeath() {
       forgeOre: 20
     })
   ]);
+  let rejectedRewardError = "";
+  try {
+    resolveAuthoritativeCombatCheckpoint(
+      {
+        schemaVersion: 1,
+        state,
+        dwarfActionEntries: [wardenEntry],
+        profile: createInitialProfile("character.iron_warden" as never),
+        rewards: []
+      },
+      content,
+      authority
+    );
+  } catch (error) {
+    rejectedRewardError =
+      error instanceof Error ? error.message : String(error);
+  }
   const tick0 = resolveAuthoritativeCombatCheckpoint(
     {
       schemaVersion: 1,
@@ -134,7 +151,7 @@ async function simultaneousBossAndDwarfDeath() {
     content,
     authority
   );
-  return Object.freeze({ tick0, tick1 });
+  return Object.freeze({ rejectedRewardError, tick0, tick1 });
 }
 
 async function shuttergateInProgress() {
@@ -188,7 +205,15 @@ async function shuttergateInProgress() {
         }
       ],
       profile: createInitialProfile("character.iron_warden" as never),
-      rewards: []
+      rewards: [
+        {
+          schemaVersion: 1,
+          rewardId: "reward.boss.gatebreaker_captain" as never,
+          bossEntityId: "entity.enemy.shuttergate_010" as never,
+          characterUnlockId: "character.deep_ranger" as never,
+          forgeOre: 20
+        }
+      ]
     },
     content,
     authority

@@ -12,6 +12,7 @@ import type {
   BossRewardResolution,
   ProfileState
 } from "@dwarven-depths/progression";
+import { resolveBossDeathRewards } from "@dwarven-depths/progression";
 import {
   type BattlefieldDwarfDeploymentAuthority,
   resolveAuthoritativeCombatTick
@@ -124,6 +125,41 @@ function bossDeathEventId(entityId: EntityId): StableId {
   return `death.${entityId.slice("entity.".length)}` as StableId;
 }
 
+function prevalidateBossRewards(
+  state: SimulationState,
+  profile: ProfileState,
+  rewards: readonly BossRewardDefinition[],
+  content: CompiledContent
+): void {
+  const level = content.levels.get(state.levelId);
+  if (level === undefined)
+    throw new RangeError(
+      "combat checkpoint levelId must reference compiled content"
+    );
+  const bossEntityIds = level.waveIds.flatMap((waveId) => {
+    const wave = content.waves.get(waveId);
+    if (wave === undefined)
+      throw new RangeError(
+        `combat checkpoint is missing authored wave (${waveId})`
+      );
+    return wave.spawnEvents.flatMap((spawn) =>
+      content.enemies.get(spawn.enemyDefinitionId)?.classification === "boss"
+        ? [spawn.entityId]
+        : []
+    );
+  });
+  resolveBossDeathRewards({
+    schemaVersion: 1,
+    profile,
+    bossDeaths: bossEntityIds.map((bossEntityId) => ({
+      schemaVersion: 1,
+      eventId: bossDeathEventId(bossEntityId),
+      bossEntityId
+    })),
+    rewards
+  });
+}
+
 /**
  * Composes the authoritative combat work for one fixed tick with phases 12 and
  * 13. Boss deaths and living-combatant sets are derived from producer-backed
@@ -144,6 +180,11 @@ export function resolveAuthoritativeCombatCheckpoint(
       "authoritative combat checkpoint request has unsupported schemaVersion"
     );
   const startingState = input.state as SimulationState;
+  const profile = input.profile as ProfileState;
+  const rewards = input.rewards as readonly BossRewardDefinition[];
+  // Validate the worst-case set of authored boss claims before combat producers
+  // accept any new action or health evidence into opaque round authority.
+  prevalidateBossRewards(startingState, profile, rewards, content);
   const combat = resolveAuthoritativeCombatTick(
     {
       schemaVersion: 1,
@@ -188,9 +229,9 @@ export function resolveAuthoritativeCombatCheckpoint(
     schemaVersion: 1,
     bossRewards: {
       schemaVersion: 1,
-      profile: input.profile as ProfileState,
+      profile,
       bossDeaths: Object.freeze(bossDeaths),
-      rewards: input.rewards as readonly BossRewardDefinition[]
+      rewards
     },
     terminalEvaluation: {
       schemaVersion: 1,
