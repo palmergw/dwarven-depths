@@ -6,8 +6,12 @@ import {
   type EnemyDefinition
 } from "@dwarven-depths/contracts";
 import { beforeAll, describe, expect, it } from "vitest";
+import {
+  type BattlefieldDwarfDeploymentAuthority,
+  createBattlefieldDwarfDeploymentAuthority
+} from "./battlefield-attack-impact.js";
 import { enemyActionPhaseParityEvidence } from "./enemy-action-phase.fixture.js";
-import { resolveEnemyActionPhase } from "./enemy-action-phase.js";
+import { resolveEnemyActionPhase as executeEnemyActionPhase } from "./enemy-action-phase.js";
 import {
   battlefield,
   combatant,
@@ -23,6 +27,29 @@ beforeAll(async () => {
     enemyMovementPlanningContent as unknown as ContentBundle
   );
 });
+
+function authorityFor(
+  compiled: Parameters<typeof executeEnemyActionPhase>[1]
+): BattlefieldDwarfDeploymentAuthority {
+  return createBattlefieldDwarfDeploymentAuthority(
+    [
+      {
+        entityId: "entity.dwarf.warden" as never,
+        characterDefinitionId: "character.iron_warden" as never,
+        placementPointId: "placement.goal" as never
+      }
+    ],
+    "map.conformance_diamond" as never,
+    compiled
+  );
+}
+
+function resolveEnemyActionPhase(
+  request: Parameters<typeof executeEnemyActionPhase>[0],
+  compiled: Parameters<typeof executeEnemyActionPhase>[1]
+) {
+  return executeEnemyActionPhase(request, compiled, authorityFor(compiled));
+}
 
 describe("enemy action phase", () => {
   it("persists targets independently of movement cadence and starts only in attack geometry", () => {
@@ -219,7 +246,8 @@ describe("enemy action phase", () => {
       throw new Error("missing committed attack fixture");
     const moved = resolveEnemyMovementPhase(
       { ...baseRequest, currentTick: 12, battlefield: committed.battlefield },
-      content
+      content,
+      authorityFor(content)
     );
     expect(moved.battlefield.pendingCommittedAttacks).toEqual([attack]);
     expect(moved.battlefield.pendingCommittedAttacks[0]).not.toBe(attack);
@@ -385,7 +413,7 @@ describe("enemy action phase", () => {
 
   it("pins action evidence for browser parity", async () => {
     expect(await canonicalHash(await enemyActionPhaseParityEvidence())).toBe(
-      "97ab711681105d8f16dc4016b0c0d78435da095da15b62f0c5836d068080273a"
+      "22616017f9c2478df01596fe93d732cf21649b228e11a12bdc420c78f134321a"
     );
   });
 });

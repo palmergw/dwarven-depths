@@ -6,19 +6,42 @@ import {
 } from "@dwarven-depths/contracts";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
+  type BattlefieldDwarfDeploymentAuthority,
+  createBattlefieldDwarfDeploymentAuthority
+} from "./battlefield-attack-impact.js";
+import {
   contentionRequest,
   enemyMovementPhaseContent,
   enemyMovementPhaseParityEvidence
 } from "./enemy-movement-phase.fixture.js";
-import { resolveEnemyMovementPhase } from "./index.js";
+import { resolveEnemyMovementPhase as executeEnemyMovementPhase } from "./index.js";
 
 let content: Awaited<ReturnType<typeof compileContent>>;
+let dwarfAuthority: BattlefieldDwarfDeploymentAuthority;
 
 beforeAll(async () => {
   content = await compileContent(
     enemyMovementPhaseContent as unknown as ContentBundle
   );
+  dwarfAuthority = createBattlefieldDwarfDeploymentAuthority(
+    [
+      {
+        entityId: "entity.dwarf.warden" as never,
+        characterDefinitionId: "character.iron_warden" as never,
+        placementPointId: "placement.goal" as never
+      }
+    ],
+    "map.conformance_diamond" as never,
+    content
+  );
 });
+
+function resolveEnemyMovementPhase(
+  request: Parameters<typeof executeEnemyMovementPhase>[0],
+  compiled: Parameters<typeof executeEnemyMovementPhase>[1]
+) {
+  return executeEnemyMovementPhase(request, compiled, dwarfAuthority);
+}
 
 describe("generated enemy movement phase", () => {
   it("applies stable reservation winners and advances moved and waited cadence", async () => {
@@ -80,7 +103,7 @@ describe("generated enemy movement phase", () => {
       Object.isFrozen(forward.battlefield.enemyCombatants[0]?.actionState)
     ).toBe(true);
     expect(await canonicalHash(await enemyMovementPhaseParityEvidence())).toBe(
-      "adeade2f4e28a693f17fe519ccb055fe2654e631de1e04254d777e72b01f58d1"
+      "057ef3257a1871a0cb155870e41e448711b29a64c3812a38f82df7542403c835"
     );
   });
 });

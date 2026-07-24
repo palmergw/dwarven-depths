@@ -896,6 +896,9 @@ export function planEnemyMovement(
   const entries = requireArray(input.entries, "movement planning entries").map(
     normalizeEntry
   );
+  const dwarfEntityIds = new Set(
+    normalized.battlefield.dwarfCombatants.map((dwarf) => dwarf.entityId)
+  );
   const entriesByEnemy = new Map<EntityId, EnemyMovementPlanningEntry>();
   for (const entry of entries) {
     if (entriesByEnemy.has(entry.enemyEntityId))
@@ -957,6 +960,20 @@ export function planEnemyMovement(
       if (authoredEnemyEntityIds.has(candidate.entityId))
         throw new RangeError(
           `moving enemy cannot be an enemy target (${candidate.entityId})`
+        );
+      if (
+        candidate.targetKind === "living_dwarf" &&
+        !dwarfEntityIds.has(candidate.entityId)
+      )
+        throw new RangeError(
+          `living dwarf candidate lacks authoritative combatant (${candidate.entityId})`
+        );
+      if (
+        candidate.targetKind !== "living_dwarf" &&
+        dwarfEntityIds.has(candidate.entityId)
+      )
+        throw new RangeError(
+          `authoritative dwarf cannot be a blocker target (${candidate.entityId})`
         );
     }
     for (const blockerId of entry.solidBlockerEntityIds) {
