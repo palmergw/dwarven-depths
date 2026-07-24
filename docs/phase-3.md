@@ -97,10 +97,17 @@ Phase 3 surface currently present in the repository.
   blocker and otherwise reuse deterministic route acquisition. Both lock paths
   return versioned, immutable, detached, reason-coded decisions, with retained
   and reacquired evidence pinned across Node and all three browser engines.
+- Fixed-step phase 5 now composes dwarf target-lock validation with active
+  pre-commit attack windups. A retained lock keeps the existing windup valid;
+  an invalid lock cancels that work before or at commitment while separately
+  exposing normal policy reacquisition for future work. Reacquisition never
+  retargets an already-started attack. Batch evidence is stable by attack ID,
+  versioned, immutable, detached, reason-coded, and checksum-pinned across Node
+  and all three browser engines.
 
 ## Not implemented yet
 
-Fixed-step integration of target validation/reacquisition with attack windups,
-armor, attack-windup status semantics, non-damage trigger variants, rewards,
-authored spawn schedules, boss behavior, terminal evaluation, and broader
-combat event integration remain later Phase 3 checkpoints.
+Enemy target-lock/windup integration, armor, attack-windup status semantics,
+non-damage trigger variants, rewards, authored spawn schedules, boss behavior,
+terminal evaluation, and broader combat event integration remain later Phase 3
+checkpoints.
