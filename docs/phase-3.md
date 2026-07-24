@@ -170,10 +170,19 @@ Phase 3 surface currently present in the repository.
   Chromium, Firefox, and WebKit. Armor remains a targeting/content metric here;
   no damage-reduction formula, Shield Slam stagger, Captain rally, or heavy-strike
   behavior is inferred by this checkpoint.
+- The Shuttergate Hall reference content authors one deterministic battlefield
+  with west and east enemy entrances, two legal Iron Warden placements, and five
+  ordered 900-tick waves. The composition teaches Cutter blocking, adds
+  second-entrance and Slinger pressure, introduces a Bulwark, places the
+  Gatebreaker Captain with a mixed Wave 4 escort, and continues mixed pressure
+  through Wave 5 after the boss spawn. All 18 spawns use stable global authored
+  order, entity identity, enemy-definition, and entrance references. Compilation
+  is immutable, insensitive to non-gameplay source ordering, and checksum-pinned
+  across Node and all three browser engines. Captain special abilities and armor
+  behavior remain intentionally unauthored until their mechanic contracts exist.
 
 ## Not implemented yet
 
 Armor reduction, attack-windup status semantics, non-damage trigger variants,
-non-boss rewards, authored special abilities and boss behavior, reference map and
-five-wave composition, balance calibration, and broader combat event integration
-remain later checkpoints.
+non-boss rewards, authored special abilities and boss behavior, balance
+calibration, and broader combat event integration remain later checkpoints.

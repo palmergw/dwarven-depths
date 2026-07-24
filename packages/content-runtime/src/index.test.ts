@@ -8,6 +8,9 @@ import phase2SystemContentInput from "../../../content/fixtures/phase-2-system.j
 import referenceCombatantsInput from "../../../content/fixtures/phase-3-reference-combatants.json" with {
   type: "json"
 };
+import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
+  type: "json"
+};
 import {
   ContentValidationError,
   calculateRouteCost,
@@ -66,6 +69,101 @@ describe("content compilation", () => {
     expect(Object.isFrozen(warden?.basicAttack)).toBe(true);
     expect("set" in content.characters).toBe(false);
     expect("set" in content.enemies).toBe(false);
+  });
+
+  it("compiles the immutable Shuttergate map and five-wave schedule", async () => {
+    const input = structuredClone(shuttergateInput);
+    const before = structuredClone(input);
+    const content = await compileContent(input);
+    expect(input).toEqual(before);
+    expect(content.manifestHash).toBe(
+      "a857f29758e18f0496bc24512dc57b3f1c89ae1bfdcb97ffd2054660457e8705"
+    );
+
+    const level = content.levels.get("level.shuttergate_hall" as never);
+    const map = content.maps.get("map.shuttergate_hall" as never);
+    if (level === undefined || map === undefined)
+      throw new Error("missing Shuttergate reference content");
+    expect(level.waveIds).toEqual([
+      "wave.shuttergate_1",
+      "wave.shuttergate_2",
+      "wave.shuttergate_3",
+      "wave.shuttergate_4",
+      "wave.shuttergate_5"
+    ]);
+    expect(level.mapId).toBe("map.shuttergate_hall");
+    expect(Object.isFrozen(level.waveIds)).toBe(true);
+    expect(Object.isFrozen(map.nodes)).toBe(true);
+
+    const waves = level.waveIds.map((waveId) => content.waves.get(waveId));
+    expect(waves.every((wave) => wave?.durationTicks === 900)).toBe(true);
+    expect(
+      waves.map((wave) =>
+        wave?.spawnEvents.map((spawn) => spawn.enemyDefinitionId)
+      )
+    ).toEqual([
+      ["enemy.goblin_cutter", "enemy.goblin_cutter", "enemy.goblin_cutter"],
+      ["enemy.goblin_cutter", "enemy.goblin_cutter", "enemy.goblin_slinger"],
+      ["enemy.goblin_bulwark", "enemy.goblin_cutter", "enemy.goblin_slinger"],
+      [
+        "enemy.gatebreaker_captain",
+        "enemy.goblin_cutter",
+        "enemy.goblin_slinger",
+        "enemy.goblin_bulwark"
+      ],
+      [
+        "enemy.goblin_cutter",
+        "enemy.goblin_cutter",
+        "enemy.goblin_slinger",
+        "enemy.goblin_cutter",
+        "enemy.goblin_bulwark"
+      ]
+    ]);
+    expect(waves[1]?.spawnEvents.map((spawn) => spawn.entranceId)).toContain(
+      "entrance.shuttergate_east"
+    );
+
+    for (const placementPointId of [
+      "placement.shuttergate_north_guard",
+      "placement.shuttergate_keep_guard"
+    ]) {
+      expect(
+        validateStaticPlacement(map, [
+          {
+            entityId: "entity.dwarf.iron_warden" as never,
+            placementPointId: placementPointId as never
+          }
+        ])
+      ).toEqual({ valid: true, issues: [] });
+    }
+  });
+
+  it("canonicalizes non-authored Shuttergate source ordering", async () => {
+    const reordered = structuredClone(shuttergateInput);
+    reordered.definitions.reverse();
+    const map = reordered.definitions.find(
+      (definition) => definition.kind === "map"
+    ) as MutableMapFixture | undefined;
+    if (map === undefined) throw new Error("missing Shuttergate map");
+    map.nodes.reverse();
+    map.connections.reverse();
+    map.placementPoints.reverse();
+    map.enemyEntrances.reverse();
+    map.aimPoints.reverse();
+    map.opaqueRegions.reverse();
+    for (const connection of map.connections) connection.nodeIds.reverse();
+    for (const definition of reordered.definitions) {
+      const spawnEvents = definition.spawnEvents;
+      if (definition.kind === "wave" && spawnEvents !== undefined)
+        spawnEvents.reverse();
+    }
+
+    const [canonical, permuted] = await Promise.all([
+      compileContent(shuttergateInput),
+      compileContent(reordered)
+    ]);
+    expect(permuted.bundle).toEqual(canonical.bundle);
+    expect(permuted.manifestHash).toBe(canonical.manifestHash);
   });
 
   it("sorts definitions and builds kind-specific indexes", async () => {
