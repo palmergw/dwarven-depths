@@ -23,7 +23,7 @@ describe("scheduled battlefield browser parity", () => {
       "spawn.queued"
     ]);
     expect(await canonicalHash(evidence)).toBe(
-      "d5f819b4b028ebeca9c19f9619a3dfee1e35156287a39158e2a1e844e3dfa33e"
+      "556917bbe7cbc4fb487c86dd3743a188f8456b41f847fc0ab00b409dd88fba6f"
     );
   });
 

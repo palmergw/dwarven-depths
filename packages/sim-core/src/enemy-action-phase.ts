@@ -13,6 +13,7 @@ import type {
   StableId
 } from "@dwarven-depths/contracts";
 import { resolveAttackCommitments } from "./attack-commitment.js";
+import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
 import { hasLineOfSight, isAimPointInRange } from "./range-line-of-sight.js";
@@ -108,7 +109,13 @@ export function resolveEnemyActionPhase(
   );
 
   const combatants: BattlefieldEnemyCombatant[] = [];
-  const committedAttacks: CommittedAttack[] = [];
+  const committedAttacks: CommittedAttack[] = [
+    ...normalizePendingCommittedAttacks(
+      request.battlefield.pendingCommittedAttacks,
+      currentTick,
+      request.battlefield.enemyCombatants
+    )
+  ];
   const decisions: EnemyActionPhaseDecision[] = [];
 
   for (const combatant of [...request.battlefield.enemyCombatants].sort(
@@ -375,6 +382,11 @@ export function resolveEnemyActionPhase(
   }
 
   const enemyCombatants = Object.freeze(combatants);
+  if (
+    new Set(committedAttacks.map((attack) => attack.attackId)).size !==
+    committedAttacks.length
+  )
+    throw new RangeError("duplicate pending committed attack ID");
   const startedWaveIdSet = new Set(request.battlefield.startedWaveIds);
   const firedSpawnIdSet = new Set(request.battlefield.firedSpawnIds);
   const waves = level.waveIds.map((waveId) => {
@@ -405,18 +417,19 @@ export function resolveEnemyActionPhase(
         .sort((left, right) => compareText(left.entityId, right.entityId))
         .map((admission) => Object.freeze({ ...admission }))
     ),
-    enemyCombatants
+    enemyCombatants,
+    pendingCommittedAttacks: Object.freeze(
+      committedAttacks
+        .sort((left, right) => compareText(left.attackId, right.attackId))
+        .map((attack) => Object.freeze({ ...attack }))
+    )
   }) satisfies BattlefieldState;
 
   return Object.freeze({
     schemaVersion: 1,
     battlefield,
     enemyCombatants,
-    committedAttacks: Object.freeze(
-      committedAttacks.sort((left, right) =>
-        compareText(left.attackId, right.attackId)
-      )
-    ),
+    committedAttacks: battlefield.pendingCommittedAttacks,
     decisions: Object.freeze(decisions)
   });
 }

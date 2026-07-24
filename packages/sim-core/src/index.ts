@@ -24,6 +24,7 @@ import {
   type BattlefieldMapDefinition,
   type BattlefieldState,
   type CommandEnvelope,
+  type CommittedAttack,
   canonicalHash,
   type EnemyEntranceId,
   type EnemyMovementPhaseResolution,
@@ -60,7 +61,8 @@ function freezeBattlefieldState(
   startedWaveIds: BattlefieldState["startedWaveIds"] = [],
   firedSpawnIds: BattlefieldState["firedSpawnIds"] = [],
   enemyCombatants: BattlefieldState["enemyCombatants"] = [],
-  enemyAdmissions: BattlefieldState["enemyAdmissions"] = []
+  enemyAdmissions: BattlefieldState["enemyAdmissions"] = [],
+  pendingCommittedAttacks: readonly CommittedAttack[] = []
 ): BattlefieldState {
   return Object.freeze({
     schemaVersion: 1,
@@ -90,6 +92,11 @@ function freezeBattlefieldState(
           })
         })
       )
+    ),
+    pendingCommittedAttacks: Object.freeze(
+      [...pendingCommittedAttacks]
+        .sort((left, right) => compareText(left.attackId, right.attackId))
+        .map((attack) => Object.freeze({ ...attack }))
     )
   });
 }
@@ -1246,7 +1253,8 @@ export function resolveEnemyMovementPhase(
     startedWaveIds,
     firedSpawnIds,
     enemyCombatants,
-    enemyAdmissions
+    enemyAdmissions,
+    request.battlefield.pendingCommittedAttacks
   );
   return Object.freeze({
     schemaVersion: 1,
@@ -1646,7 +1654,8 @@ export function resolveBattlefieldPhase(
         startedWaveIds as BattlefieldState["startedWaveIds"],
         firedSpawnIds as BattlefieldState["firedSpawnIds"],
         movedEnemyCombatants,
-        enemyAdmissions
+        enemyAdmissions,
+        state.battlefield.pendingCommittedAttacks
       )
     }),
     events: Object.freeze(events)
@@ -1809,7 +1818,8 @@ export function resolveScheduledBattlefieldPhase(
       scheduled.startedWaveIds,
       scheduled.firedSpawnIds,
       persistedEnemyCombatants,
-      persistedEnemyAdmissions
+      persistedEnemyAdmissions,
+      state.battlefield.pendingCommittedAttacks
     )
   });
   const battlefield = resolveBattlefieldPhase(
@@ -1832,7 +1842,8 @@ export function resolveScheduledBattlefieldPhase(
         scheduled.startedWaveIds,
         scheduled.firedSpawnIds,
         battlefield.state.battlefield.enemyCombatants,
-        battlefield.state.battlefield.enemyAdmissions
+        battlefield.state.battlefield.enemyAdmissions,
+        battlefield.state.battlefield.pendingCommittedAttacks
       )
     }),
     events: Object.freeze([...scheduleEvents, ...battlefield.events])

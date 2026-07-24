@@ -38,6 +38,7 @@ describe("authored wave battlefield composition", () => {
           entranceId: "entrance.west"
         }
       ],
+      pendingCommittedAttacks: [],
       enemyAdmissions: [
         {
           schemaVersion: 1,
@@ -657,6 +658,6 @@ describe("authored wave battlefield composition", () => {
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("d5f819b4b028ebeca9c19f9619a3dfee1e35156287a39158e2a1e844e3dfa33e");
+    ).toBe("556917bbe7cbc4fb487c86dd3743a188f8456b41f847fc0ab00b409dd88fba6f");
   });
 });
