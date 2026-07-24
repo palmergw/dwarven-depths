@@ -22,6 +22,15 @@ import {
   stepSimulation
 } from "@dwarven-depths/sim-core";
 
+export {
+  type BattlefieldRenderFormat,
+  type BattlefieldRenderLayer,
+  type BattlefieldRenderRequest,
+  type BattlefieldRouteSelection,
+  renderBattlefieldSvg,
+  renderBattlefieldText
+} from "./battlefield-render.js";
+
 export interface RuntimeResult {
   readonly scenarioId: string;
   readonly scenarioHash: string;

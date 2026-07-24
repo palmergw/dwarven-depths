@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "scenario.conformance_battlefield_map",
+  "levelId": "level.conformance_map",
+  "seed": "1",
+  "maximumTicks": 1,
+  "commands": [{ "atTick": 0, "type": "confirmPreparation" }],
+  "expectedTerminalResult": "victory"
+}
