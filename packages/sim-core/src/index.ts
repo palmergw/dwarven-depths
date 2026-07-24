@@ -16,6 +16,7 @@ export * from "./target-selection.js";
 export * from "./wave-schedule.js";
 
 import {
+  type BattlefieldEnemyCombatant,
   type BattlefieldMapDefinition,
   type BattlefieldState,
   type CommandEnvelope,
@@ -47,7 +48,8 @@ function freezeBattlefieldState(
   occupancy: readonly NavigationOccupant[],
   pendingSpawns: readonly PendingSpawn[],
   startedWaveIds: BattlefieldState["startedWaveIds"] = [],
-  firedSpawnIds: BattlefieldState["firedSpawnIds"] = []
+  firedSpawnIds: BattlefieldState["firedSpawnIds"] = [],
+  enemyCombatants: BattlefieldState["enemyCombatants"] = []
 ): BattlefieldState {
   return Object.freeze({
     schemaVersion: 1,
@@ -59,6 +61,14 @@ function freezeBattlefieldState(
     ),
     pendingSpawns: Object.freeze(
       pendingSpawns.map((spawn) => Object.freeze({ ...spawn }))
+    ),
+    enemyCombatants: Object.freeze(
+      enemyCombatants.map((combatant) =>
+        Object.freeze({
+          ...combatant,
+          basicAttack: Object.freeze({ ...combatant.basicAttack })
+        })
+      )
     )
   });
 }
@@ -98,6 +108,118 @@ function freezeSpawnDecision(
     status,
     reason
   });
+}
+
+function initializeAdmittedEnemyCombatants(
+  content: CompiledContent,
+  existingCombatants: readonly BattlefieldEnemyCombatant[],
+  decisions: readonly SpawnAdmissionDecision[]
+): readonly BattlefieldEnemyCombatant[] {
+  const combatantsByEntity = new Map<EntityId, BattlefieldEnemyCombatant>();
+  for (const combatant of existingCombatants) {
+    if (combatantsByEntity.has(combatant.entityId)) {
+      throw new RangeError(
+        `duplicate battlefield enemy combatant entity ID (${combatant.entityId})`
+      );
+    }
+    const definition = content.enemies.get(combatant.enemyDefinitionId);
+    if (definition === undefined) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} references unknown enemy definition (${combatant.enemyDefinitionId})`
+      );
+    }
+    if (
+      combatant.schemaVersion !== 1 ||
+      combatant.classification !== definition.classification ||
+      combatant.maximumHealth !== definition.maximumHealth ||
+      combatant.armor !== definition.armor ||
+      combatant.movementIntervalTicks !== definition.movementIntervalTicks ||
+      combatant.basicAttack.id !== definition.basicAttack.id ||
+      combatant.basicAttack.windupTicks !==
+        definition.basicAttack.windupTicks ||
+      combatant.basicAttack.impactDelayTicks !==
+        definition.basicAttack.impactDelayTicks ||
+      combatant.basicAttack.cooldownTicks !==
+        definition.basicAttack.cooldownTicks ||
+      combatant.basicAttack.damage !== definition.basicAttack.damage ||
+      combatant.basicAttack.range !== definition.basicAttack.range ||
+      combatant.basicAttack.requiresLineOfSight !==
+        definition.basicAttack.requiresLineOfSight
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} does not match compiled enemy definition (${combatant.enemyDefinitionId})`
+      );
+    }
+    if (
+      !Number.isSafeInteger(combatant.currentHealth) ||
+      combatant.currentHealth < 0 ||
+      combatant.currentHealth > combatant.maximumHealth
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} has invalid current health`
+      );
+    }
+    if (
+      combatant.lifecycleState !== "active" &&
+      combatant.lifecycleState !== "destroyed"
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} has invalid lifecycle state`
+      );
+    }
+    if (
+      (combatant.lifecycleState === "active" &&
+        combatant.currentHealth === 0) ||
+      (combatant.lifecycleState === "destroyed" &&
+        combatant.currentHealth !== 0)
+    ) {
+      throw new RangeError(
+        `battlefield enemy ${combatant.entityId} has health inconsistent with its lifecycle state`
+      );
+    }
+    combatantsByEntity.set(combatant.entityId, combatant);
+  }
+
+  for (const decision of decisions) {
+    if (decision.status !== "admitted") continue;
+    if (combatantsByEntity.has(decision.entityId)) {
+      throw new RangeError(
+        `admitted spawn entity already has battlefield enemy combatant state (${decision.entityId})`
+      );
+    }
+    const definition = content.enemies.get(decision.enemyDefinitionId);
+    if (definition === undefined) {
+      throw new RangeError(
+        `admitted spawn references unknown enemy definition (${decision.enemyDefinitionId})`
+      );
+    }
+    combatantsByEntity.set(
+      decision.entityId,
+      Object.freeze({
+        schemaVersion: 1,
+        entityId: decision.entityId,
+        enemyDefinitionId: definition.id,
+        classification: definition.classification,
+        currentHealth: definition.maximumHealth,
+        maximumHealth: definition.maximumHealth,
+        armor: definition.armor,
+        movementIntervalTicks: definition.movementIntervalTicks,
+        lifecycleState: "active",
+        basicAttack: Object.freeze({ ...definition.basicAttack })
+      })
+    );
+  }
+
+  return Object.freeze(
+    [...combatantsByEntity.values()]
+      .sort((left, right) => compareText(left.entityId, right.entityId))
+      .map((combatant) =>
+        Object.freeze({
+          ...combatant,
+          basicAttack: Object.freeze({ ...combatant.basicAttack })
+        })
+      )
+  );
 }
 
 /**
@@ -533,6 +655,11 @@ export function resolveBattlefieldPhase(
     [...state.battlefield.pendingSpawns, ...scheduledSpawns],
     limits
   );
+  const enemyCombatants = initializeAdmittedEnemyCombatants(
+    content,
+    state.battlefield.enemyCombatants,
+    admitted.decisions
+  );
   const moved = resolveMovementReservations(map, admitted.occupancy, proposals);
   const events: SimulationEvent[] = [];
 
@@ -586,7 +713,8 @@ export function resolveBattlefieldPhase(
         moved.occupancy,
         admitted.pendingSpawns,
         state.battlefield.startedWaveIds,
-        state.battlefield.firedSpawnIds
+        state.battlefield.firedSpawnIds,
+        enemyCombatants
       )
     }),
     events: Object.freeze(events)
@@ -677,7 +805,8 @@ export function resolveScheduledBattlefieldPhase(
       state.battlefield.occupancy,
       [],
       scheduled.startedWaveIds,
-      scheduled.firedSpawnIds
+      scheduled.firedSpawnIds,
+      state.battlefield.enemyCombatants
     )
   });
   const battlefield = resolveBattlefieldPhase(
@@ -698,7 +827,8 @@ export function resolveScheduledBattlefieldPhase(
         battlefield.state.battlefield.occupancy,
         battlefield.state.battlefield.pendingSpawns,
         scheduled.startedWaveIds,
-        scheduled.firedSpawnIds
+        scheduled.firedSpawnIds,
+        battlefield.state.battlefield.enemyCombatants
       )
     }),
     events: Object.freeze([...scheduleEvents, ...battlefield.events])

@@ -10,7 +10,20 @@ import { describe, expect, it } from "vitest";
 import mapContentInput from "../../../content/fixtures/conformance-map.json" with {
   type: "json"
 };
+import referenceCombatantsInput from "../../../content/fixtures/phase-3-reference-combatants.json" with {
+  type: "json"
+};
 import { createInitialState, resolveBattlefieldPhase } from "./index.js";
+
+const battlefieldContentInput = {
+  ...mapContentInput,
+  definitions: [
+    ...mapContentInput.definitions,
+    ...referenceCombatantsInput.definitions.filter(
+      (definition) => definition.kind === "enemy"
+    )
+  ]
+};
 
 function spawn(
   id: string,
@@ -35,6 +48,29 @@ function movement(
   return { id, entityId, fromNodeId, toNodeId } as MovementProposal;
 }
 
+function cutterCombatant(entityId: string) {
+  return {
+    schemaVersion: 1,
+    entityId,
+    enemyDefinitionId: "enemy.goblin_cutter",
+    classification: "basic",
+    currentHealth: 50,
+    maximumHealth: 50,
+    armor: 0,
+    movementIntervalTicks: 6,
+    lifecycleState: "active",
+    basicAttack: {
+      id: "attack.goblin_cutter_basic",
+      windupTicks: 6,
+      impactDelayTicks: 1,
+      cooldownTicks: 20,
+      damage: 10,
+      range: 1,
+      requiresLineOfSight: false
+    }
+  };
+}
+
 function decisionEvidence(event: SimulationEvent): readonly [string, string] {
   if (!("reasonCode" in event)) throw new Error("expected decision event");
   return [event.type, event.reasonCode];
@@ -42,7 +78,7 @@ function decisionEvidence(event: SimulationEvent): readonly [string, string] {
 
 describe("authoritative battlefield state", () => {
   it("initializes map-backed levels with canonical immutable battlefield state", async () => {
-    const content = await compileContent(mapContentInput);
+    const content = await compileContent(battlefieldContentInput);
     const state = createInitialState(
       content,
       "level.conformance_map" as never,
@@ -55,7 +91,8 @@ describe("authoritative battlefield state", () => {
       startedWaveIds: [],
       firedSpawnIds: [],
       occupancy: [],
-      pendingSpawns: []
+      pendingSpawns: [],
+      enemyCombatants: []
     });
     expect(Object.isFrozen(state)).toBe(true);
     expect(Object.isFrozen(state.battlefield)).toBe(true);
@@ -64,7 +101,7 @@ describe("authoritative battlefield state", () => {
   });
 
   it("admits, moves, queues, and resumes enemies in fixed same-step order", async () => {
-    const content = await compileContent(mapContentInput);
+    const content = await compileContent(battlefieldContentInput);
     const initial = createInitialState(
       content,
       "level.conformance_map" as never,
@@ -101,7 +138,8 @@ describe("authoritative battlefield state", () => {
           enemyDefinitionId: "enemy.goblin_cutter",
           entranceId: "entrance.west"
         }
-      ]
+      ],
+      enemyCombatants: [cutterCombatant("entity.enemy.first")]
     });
     expect(first.events.map(decisionEvidence)).toEqual([
       ["spawn.admitted", "admitted"],
@@ -113,7 +151,7 @@ describe("authoritative battlefield state", () => {
 
     const resumed = resolveBattlefieldPhase(first.state, content, [], []);
     expect(await canonicalHash({ first, resumed })).toBe(
-      "348df4bceab92d33329f545240fd64cea0a1ec93aed05b6047dfbbddd12efc88"
+      "f78b6e2b65b29e8a0014d142a5ae4f72b7d1a876ca5449466d7e67f59c4cc51d"
     );
     expect(resumed.state.battlefield).toEqual({
       schemaVersion: 1,
@@ -124,7 +162,11 @@ describe("authoritative battlefield state", () => {
         { entityId: "entity.enemy.first", nodeId: "node.south" },
         { entityId: "entity.enemy.second", nodeId: "node.entry" }
       ],
-      pendingSpawns: []
+      pendingSpawns: [],
+      enemyCombatants: [
+        cutterCombatant("entity.enemy.first"),
+        cutterCombatant("entity.enemy.second")
+      ]
     });
     expect(resumed.events.map(decisionEvidence)).toEqual([
       ["spawn.admitted", "admitted"]
@@ -136,7 +178,7 @@ describe("authoritative battlefield state", () => {
   });
 
   it("retries an entrance-blocked spawn after the blocker moves away", async () => {
-    const content = await compileContent(mapContentInput);
+    const content = await compileContent(battlefieldContentInput);
     const initial = createInitialState(
       content,
       "level.conformance_map" as never,
@@ -184,7 +226,7 @@ describe("authoritative battlefield state", () => {
   });
 
   it("records deterministic movement contention against post-spawn occupancy", async () => {
-    const content = await compileContent(mapContentInput);
+    const content = await compileContent(battlefieldContentInput);
     const initial = createInitialState(
       content,
       "level.conformance_map" as never,
@@ -241,7 +283,7 @@ describe("authoritative battlefield state", () => {
   });
 
   it("rejects invalid phase input without mutating the original state", async () => {
-    const content = await compileContent(mapContentInput);
+    const content = await compileContent(battlefieldContentInput);
     const initial = createInitialState(
       content,
       "level.conformance_map" as never,
@@ -263,8 +305,76 @@ describe("authoritative battlefield state", () => {
     expect(initial).toEqual(snapshot);
   });
 
+  it("preserves mutable health and rejects definition-inconsistent combatants", async () => {
+    const content = await compileContent(battlefieldContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    const admitted = resolveBattlefieldPhase(
+      initial,
+      content,
+      [spawn("spawn.persisted", 0, "entity.enemy.persisted")],
+      []
+    );
+    if (admitted.state.battlefield === undefined)
+      throw new Error("expected battlefield state");
+    const damaged: SimulationState = {
+      ...admitted.state,
+      battlefield: {
+        ...admitted.state.battlefield,
+        enemyCombatants: admitted.state.battlefield.enemyCombatants.map(
+          (combatant) => ({ ...combatant, currentHealth: 25 })
+        )
+      }
+    };
+
+    expect(
+      resolveBattlefieldPhase(damaged, content, [], []).state.battlefield
+        ?.enemyCombatants[0]?.currentHealth
+    ).toBe(25);
+    const damagedBattlefield = damaged.battlefield;
+    if (damagedBattlefield === undefined)
+      throw new Error("expected damaged battlefield state");
+
+    const mismatched: SimulationState = {
+      ...damaged,
+      battlefield: {
+        ...damagedBattlefield,
+        enemyCombatants: damagedBattlefield.enemyCombatants.map(
+          (combatant) => ({ ...combatant, armor: 99 })
+        ) as never
+      }
+    };
+    const before = structuredClone(mismatched);
+    expect(() => resolveBattlefieldPhase(mismatched, content, [], [])).toThrow(
+      "does not match compiled enemy definition"
+    );
+    expect(mismatched).toEqual(before);
+  });
+
+  it("rejects admitted spawns whose enemy definition is unavailable", async () => {
+    const content = await compileContent(battlefieldContentInput);
+    const initial = createInitialState(
+      content,
+      "level.conformance_map" as never,
+      "1"
+    );
+    const unknown = {
+      ...spawn("spawn.unknown", 0, "entity.enemy.unknown"),
+      enemyDefinitionId: "enemy.unknown" as never
+    };
+    const before = structuredClone(initial);
+
+    expect(() =>
+      resolveBattlefieldPhase(initial, content, [unknown], [])
+    ).toThrow("references unknown enemy definition");
+    expect(initial).toEqual(before);
+  });
+
   it("rejects battlefield phases for mapless or mismatched state", async () => {
-    const mapContent = await compileContent(mapContentInput);
+    const mapContent = await compileContent(battlefieldContentInput);
     const mapState = createInitialState(
       mapContent,
       "level.conformance_map" as never,

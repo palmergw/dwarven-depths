@@ -169,6 +169,7 @@ describe("cross-runtime deterministic conformance", () => {
         mapId: map.id,
         startedWaveIds: [],
         firedSpawnIds: [],
+        enemyCombatants: [],
         occupancy: [
           {
             entityId: "entity.enemy.alpha" as never,

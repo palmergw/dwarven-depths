@@ -33,6 +33,28 @@ describe("authored wave battlefield composition", () => {
           enemyDefinitionId: "enemy.goblin_slinger",
           entranceId: "entrance.west"
         }
+      ],
+      enemyCombatants: [
+        {
+          schemaVersion: 1,
+          entityId: "entity.enemy.first",
+          enemyDefinitionId: "enemy.goblin_cutter",
+          classification: "basic",
+          currentHealth: 50,
+          maximumHealth: 50,
+          armor: 0,
+          movementIntervalTicks: 6,
+          lifecycleState: "active",
+          basicAttack: {
+            id: "attack.goblin_cutter_basic",
+            windupTicks: 6,
+            impactDelayTicks: 1,
+            cooldownTicks: 20,
+            damage: 10,
+            range: 1,
+            requiresLineOfSight: false
+          }
+        }
       ]
     });
     expect(due?.events.map(eventEvidence)).toEqual([
@@ -70,6 +92,26 @@ describe("authored wave battlefield composition", () => {
       ["spawn.admitted", "admitted"]
     ]);
     expect(admitted?.state.battlefield?.pendingSpawns).toEqual([]);
+    expect(admitted?.state.battlefield?.enemyCombatants).toEqual([
+      expect.objectContaining({
+        entityId: "entity.enemy.first",
+        enemyDefinitionId: "enemy.goblin_cutter",
+        currentHealth: 50,
+        movementIntervalTicks: 6,
+        basicAttack: expect.objectContaining({ damage: 10, range: 1 })
+      }),
+      expect.objectContaining({
+        entityId: "entity.enemy.second",
+        enemyDefinitionId: "enemy.goblin_slinger",
+        currentHealth: 38,
+        movementIntervalTicks: 7,
+        basicAttack: expect.objectContaining({
+          damage: 9,
+          range: 6,
+          requiresLineOfSight: true
+        })
+      })
+    ]);
     expect(admitted?.state.battlefield?.occupancy).toEqual([
       { entityId: "entity.enemy.first", nodeId: "node.south" },
       { entityId: "entity.enemy.second", nodeId: "node.entry" }
@@ -94,6 +136,15 @@ describe("authored wave battlefield composition", () => {
       true
     );
     expect(Object.isFrozen(result.state.battlefield?.firedSpawnIds)).toBe(true);
+    expect(Object.isFrozen(result.state.battlefield?.enemyCombatants)).toBe(
+      true
+    );
+    expect(Object.isFrozen(result.state.battlefield?.enemyCombatants[0])).toBe(
+      true
+    );
+    expect(
+      Object.isFrozen(result.state.battlefield?.enemyCombatants[0]?.basicAttack)
+    ).toBe(true);
     expect(Object.isFrozen(result.events)).toBe(true);
     expect(Object.isFrozen(result.events[0])).toBe(true);
   });
@@ -175,6 +226,6 @@ describe("authored wave battlefield composition", () => {
   it("pins the composed Node evidence checksum", async () => {
     expect(
       await canonicalHash(await scheduledBattlefieldParityEvidence())
-    ).toBe("0756ae1c17e7548dbac80e3f043af10c6985cc3fe7df7ab01d9a63e1acd93866");
+    ).toBe("99c041bd09947025a43ee9523a11dafd6d5d1f396ba825bd97aa023b4c72f2a1");
   });
 });

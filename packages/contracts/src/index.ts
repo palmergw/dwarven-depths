@@ -249,6 +249,20 @@ export interface SpawnAdmissionResolution {
   readonly decisions: readonly SpawnAdmissionDecision[];
 }
 
+export interface BattlefieldEnemyCombatant {
+  readonly schemaVersion: 1;
+  readonly entityId: EntityId;
+  readonly enemyDefinitionId: StableId;
+  readonly classification: EnemyDefinition["classification"];
+  readonly currentHealth: number;
+  readonly maximumHealth: number;
+  /** Target-selection metric only; damage reduction is not yet contracted. */
+  readonly armor: number;
+  readonly movementIntervalTicks: number;
+  readonly lifecycleState: "active" | "destroyed";
+  readonly basicAttack: AuthoredBasicAttackDefinition;
+}
+
 export interface WaveScheduleRequest {
   readonly schemaVersion: 1;
   readonly currentTick: number;
@@ -290,6 +304,7 @@ export interface BattlefieldState {
   readonly firedSpawnIds: readonly StableId[];
   readonly occupancy: readonly NavigationOccupant[];
   readonly pendingSpawns: readonly PendingSpawn[];
+  readonly enemyCombatants: readonly BattlefieldEnemyCombatant[];
 }
 
 export type DwarfTargetPolicy =
