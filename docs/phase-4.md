@@ -90,12 +90,16 @@ the repository.
   and the completed aggregate binds matrix, content, and base-scenario hashes to
   ordered terminal/checksum evidence and relative constituent-run paths. Aggregate
   publication and validated replacement are rollback-safe; invalid matrices and
-  failed samples do not expose a completed sweep.
+  failed samples do not expose a completed sweep. Sweep artifact schema 2 also
+  records terminal-result counts in stable byte order and terminal-tick minimum,
+  maximum, p50, and p90 metrics. Percentiles use the deterministic nearest-rank
+  method over sorted integer ticks. Replacement recomputes these metrics from
+  replay-verified constituent evidence and rejects aggregate tampering.
 
 ## Not implemented yet
 
 Additional historical save migrations, encounter reward-event production,
 catch-up experience, purchased-upgrade effect application, full save scope,
 player-facing recycle confirmation, placement/build/controller sweep axes,
-statistical sweep aggregation, campaign/minimization harnesses, and upgraded-build
+additional statistical sweep metrics, campaign/minimization harnesses, and upgraded-build
 calibration remain later Phase 4 checkpoints.

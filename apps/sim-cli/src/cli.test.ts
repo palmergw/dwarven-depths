@@ -99,8 +99,29 @@ describe("simulation CLI", () => {
     });
     const firstArtifact = readFileSync(resolve(output, "sweep.json"), "utf8");
     const artifact = JSON.parse(firstArtifact) as {
+      aggregate: {
+        terminalResultCounts: Array<{
+          terminalResult: string;
+          count: number;
+        }>;
+        terminalTick: {
+          minimum: number;
+          maximum: number;
+          p50NearestRank: number;
+          p90NearestRank: number;
+        };
+      };
       samples: Array<{ seed: string; runDirectory: string }>;
     };
+    expect(artifact.aggregate).toEqual({
+      terminalResultCounts: [{ terminalResult: "victory", count: 3 }],
+      terminalTick: {
+        minimum: 0,
+        maximum: 0,
+        p50NearestRank: 0,
+        p90NearestRank: 0
+      }
+    });
     expect(artifact.samples.map((sample) => sample.seed)).toEqual([
       "2",
       "1",
@@ -133,6 +154,40 @@ describe("simulation CLI", () => {
     expect(readFileSync(resolve(output, "sweep.json"), "utf8")).toBe(
       firstArtifact
     );
+
+    const sweepArtifactPath = resolve(output, "sweep.json");
+    writeFileSync(
+      sweepArtifactPath,
+      `${JSON.stringify(
+        {
+          ...artifact,
+          aggregate: {
+            ...artifact.aggregate,
+            terminalTick: {
+              ...artifact.aggregate.terminalTick,
+              p90NearestRank: 1
+            }
+          }
+        },
+        null,
+        2
+      )}\n`
+    );
+    const aggregateTamper = runCli(
+      "sweep",
+      "--matrix",
+      matrix,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(aggregateTamper.status).toBe(3);
+    expect(JSON.parse(aggregateTamper.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "report", code: "report_generation_failed" }
+    });
+    writeFileSync(sweepArtifactPath, firstArtifact);
 
     const matrixArtifactPath = resolve(output, "matrix.compiled.json");
     const matrixArtifact = readFileSync(matrixArtifactPath, "utf8");
