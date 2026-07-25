@@ -929,7 +929,7 @@ describe("simulation CLI", () => {
             mutate: async (directory) => {
               const path = resolve(directory, "minimization.json");
               const value = JSON.parse(readFileSync(path, "utf8"));
-              value.divergenceExpected = "victory";
+              value.divergenceExpected = "draw";
               const { artifactChecksum: _, ...body } = value;
               value.artifactChecksum = await canonicalHash(body);
               writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
@@ -940,7 +940,7 @@ describe("simulation CLI", () => {
             mutate: async (directory) => {
               const path = resolve(directory, "minimization.json");
               const value = JSON.parse(readFileSync(path, "utf8"));
-              value.divergenceActual = "defeat";
+              value.divergenceActual = "draw";
               const { artifactChecksum: _, ...body } = value;
               value.artifactChecksum = await canonicalHash(body);
               writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
@@ -1033,6 +1033,54 @@ describe("simulation CLI", () => {
                 name,
                 lstatSync(resolve(tamperedOutput, name)).nlink,
                 readFileSync(resolve(tamperedOutput, name), "utf8")
+              ])
+          ).toEqual(before);
+        }
+      }
+      if (testCase.name === "tick") {
+        for (const [name, field] of [
+          ["tick-expected", "divergenceExpected"],
+          ["tick-actual", "divergenceActual"],
+          ["tick-observed", "checkpointTick"]
+        ] as const) {
+          const tamperedOutput = resolve(directory, `tampered-${name}`);
+          cpSync(output, tamperedOutput, { recursive: true });
+          const path = resolve(tamperedOutput, "minimization.json");
+          const value = JSON.parse(readFileSync(path, "utf8"));
+          value[field] = 2;
+          const { artifactChecksum: _, ...body } = value;
+          value.artifactChecksum = await canonicalHash(body);
+          writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+          const before = readdirSync(tamperedOutput)
+            .sort()
+            .map((entry) => [
+              entry,
+              lstatSync(resolve(tamperedOutput, entry)).nlink,
+              readFileSync(resolve(tamperedOutput, entry), "utf8")
+            ]);
+          expect(
+            runCli(
+              "minimize",
+              "--content",
+              compiledContent,
+              "--scenario",
+              testCase.scenario,
+              "--replay",
+              testCase.replay,
+              "--out",
+              tamperedOutput,
+              "--replace",
+              "true"
+            ).status,
+            name
+          ).toBe(3);
+          expect(
+            readdirSync(tamperedOutput)
+              .sort()
+              .map((entry) => [
+                entry,
+                lstatSync(resolve(tamperedOutput, entry)).nlink,
+                readFileSync(resolve(tamperedOutput, entry), "utf8")
               ])
           ).toEqual(before);
         }
