@@ -213,8 +213,13 @@ the repository.
   indexes, divergence code/checkpoint tick, candidate count, and canonical
   checksums. Publication independently rederives the command-deletion 1-minimal
   result and retains the same filesystem protections. Replay tick-budget
-  reduction, non-checkpoint divergences, and additional invariant classes remain
-  later expansions.
+  reduction is available as an explicit opt-in mode. Schema-4 evidence keeps
+  default schema-3 output byte-stable, then binds the original and smallest
+  reproducing positive scenario tick budgets after command deletion. Staging and
+  replacement independently rederive both reductions and reject a nonminimal,
+  malformed, or tampered budget. Checkpoint-sequence reduction,
+  non-checkpoint divergences, and additional invariant classes remain later
+  expansions.
 
 ## Not implemented yet
 

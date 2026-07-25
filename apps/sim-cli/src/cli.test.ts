@@ -577,6 +577,193 @@ describe("simulation CLI", () => {
     expect(existsSync(identityOutput)).toBe(false);
   });
 
+  it("optionally minimizes a replay divergence tick budget into schema-4 evidence", async () => {
+    const directory = temporaryDirectory();
+    const content = resolve(directory, "content.json");
+    const scenario = resolve(directory, "scenario.json");
+    const runOutput = resolve(directory, "source-run");
+    const output = resolve(directory, "replay-minimization");
+    writeFileSync(
+      content,
+      JSON.stringify({
+        schemaVersion: 1,
+        contentVersion: "replay-tick-minimization-test",
+        definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+      })
+    );
+    writeFileSync(
+      scenario,
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "scenario.test.replay_tick_minimization",
+        levelId: "level.empty",
+        seed: "1",
+        maximumTicks: 64,
+        commands: [{ atTick: 0, type: "confirmPreparation" }],
+        expectedTerminalResult: "victory"
+      })
+    );
+    expect(
+      runCli(
+        "run",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        runOutput
+      ).status
+    ).toBe(0);
+    const compiledContent = resolve(runOutput, "content.compiled.json");
+    const compiledScenario = resolve(runOutput, "scenario.compiled.json");
+    const divergentReplay = resolve(directory, "divergent-replay.json");
+    const replayValue = JSON.parse(
+      readFileSync(resolve(runOutput, "replay.json"), "utf8")
+    ) as { checkpoints: Array<{ eventStreamChecksum: string }> };
+    const finalCheckpoint = replayValue.checkpoints[0];
+    expect(finalCheckpoint).toBeDefined();
+    if (finalCheckpoint === undefined) throw new Error("missing checkpoint");
+    finalCheckpoint.eventStreamChecksum = "0".repeat(64);
+    writeFileSync(divergentReplay, JSON.stringify(replayValue));
+
+    const defaultOutput = resolve(directory, "default-replay-minimization");
+    const explicitFalseOutput = resolve(directory, "false-replay-minimization");
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        compiledScenario,
+        "--replay",
+        divergentReplay,
+        "--out",
+        defaultOutput
+      ).status
+    ).toBe(0);
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        compiledScenario,
+        "--replay",
+        divergentReplay,
+        "--replay-ticks",
+        "false",
+        "--out",
+        explicitFalseOutput
+      ).status
+    ).toBe(0);
+    for (const name of readdirSync(defaultOutput)) {
+      expect(readFileSync(resolve(explicitFalseOutput, name), "utf8")).toBe(
+        readFileSync(resolve(defaultOutput, name), "utf8")
+      );
+    }
+    expect(
+      JSON.parse(
+        readFileSync(resolve(defaultOutput, "minimization.json"), "utf8")
+      ).schemaVersion
+    ).toBe(3);
+
+    const first = runCli(
+      "minimize",
+      "--content",
+      compiledContent,
+      "--scenario",
+      compiledScenario,
+      "--replay",
+      divergentReplay,
+      "--replay-ticks",
+      "true",
+      "--out",
+      output
+    );
+    expect(first.status).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({
+      divergenceCode: "event_stream_checksum_mismatch",
+      checkpointTick: 0,
+      originalMaximumTicks: 64,
+      minimizedMaximumTicks: 1
+    });
+    const artifactPath = resolve(output, "minimization.json");
+    const artifactText = readFileSync(artifactPath, "utf8");
+    expect(JSON.parse(artifactText)).toMatchObject({
+      schemaVersion: 4,
+      originalMaximumTicks: 64,
+      minimizedMaximumTicks: 1,
+      retainedCommandIndexes: [0]
+    });
+    expect(
+      JSON.parse(
+        readFileSync(
+          resolve(output, "scenario.minimized.compiled.json"),
+          "utf8"
+        )
+      ).maximumTicks
+    ).toBe(1);
+
+    const replaced = runCli(
+      "minimize",
+      "--content",
+      compiledContent,
+      "--scenario",
+      compiledScenario,
+      "--replay",
+      divergentReplay,
+      "--replay-ticks",
+      "true",
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(replaced.status).toBe(0);
+    expect(readFileSync(artifactPath, "utf8")).toBe(artifactText);
+
+    writeFileSync(
+      artifactPath,
+      artifactText.replace(
+        '"minimizedMaximumTicks": 1',
+        '"minimizedMaximumTicks": 2'
+      )
+    );
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        compiledScenario,
+        "--replay",
+        divergentReplay,
+        "--replay-ticks",
+        "true",
+        "--out",
+        output,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(3);
+
+    const invalidOutput = resolve(directory, "invalid-output");
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        compiledScenario,
+        "--replay-ticks",
+        "true",
+        "--out",
+        invalidOutput
+      ).status
+    ).toBe(2);
+    expect(existsSync(invalidOutput)).toBe(false);
+  });
+
   it("publishes and replay-validates a durable authoritative campaign", async () => {
     const directory = temporaryDirectory();
     const content = resolve(directory, "content.json");
