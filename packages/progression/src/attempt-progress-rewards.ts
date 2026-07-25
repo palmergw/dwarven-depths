@@ -202,18 +202,24 @@ function normalizeEvent(
       `${description} startedWaveIds[${index}]`
     )
   );
+  const attemptId = requireProfileId(
+    source.attemptId,
+    attemptIdPattern,
+    `${description} attemptId`
+  );
+  const rewardId = requireProfileId(
+    source.rewardId,
+    attemptRewardIdPattern,
+    `${description} rewardId`
+  );
+  if (rewardId !== `reward.${attemptId}`)
+    throw new RangeError(
+      `${description} rewardId must be canonically derived from attemptId`
+    );
   return Object.freeze({
     schemaVersion: 1,
-    rewardId: requireProfileId(
-      source.rewardId,
-      attemptRewardIdPattern,
-      `${description} rewardId`
-    ),
-    attemptId: requireProfileId(
-      source.attemptId,
-      attemptIdPattern,
-      `${description} attemptId`
-    ),
+    rewardId,
+    attemptId,
     levelId: requireProfileId(
       source.levelId,
       levelIdPattern,

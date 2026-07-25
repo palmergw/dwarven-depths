@@ -148,10 +148,22 @@ the repository.
   fail atomically. The immutable nonempty evidence is literal-checksum-pinned
   across Node, Chromium, Firefox, and WebKit. Campaign artifact and save-envelope
   integration of this ledger remain later work.
+- A strict versioned Shuttergate attempt request now runs placement, target-policy,
+  and purchased-build choices through the authoritative encounter producer and
+  derives its completed-attempt reward event directly from terminal battlefield
+  evidence. Callers provide only one canonical attempt ID; the producer derives
+  its reward ID, level, result, destroyed-enemy count, and ordered started-wave
+  prefix. Existing calibration APIs and checksums remain unchanged. The result is
+  immutable and its nonempty reward event is literal-checksum-pinned across Node,
+  Chromium, Firefox, and WebKit. The earlier caller-authored event commitment
+  bridge is no longer part of the progression package's public API; the next
+  campaign transition must consume encounter evidence without reintroducing an
+  event input or jointly replaceable attempt authority. Multi-attempt campaign
+  policy transitions and artifact publication remain the next dependency.
 
 ## Not implemented yet
 
-Additional historical save migrations, authoritative encounter-to-attempt reward-event production,
+Additional historical save migrations, multi-attempt campaign policy transitions,
 catch-up experience, active ability and item-rank behavior, full save scope,
 player-facing recycle confirmation, additional build and active-ability controller sweep axes,
 additional statistical sweep metrics, campaign/minimization harnesses, and upgraded-build

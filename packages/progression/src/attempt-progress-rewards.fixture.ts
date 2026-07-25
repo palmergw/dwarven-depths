@@ -1,10 +1,10 @@
 import type { StableId } from "@dwarven-depths/contracts";
+import { resolveAttemptProgressRewards } from "./attempt-progress-rewards.js";
 import {
   type AttemptProgressRewardPolicy,
   type CompletedAttemptRewardEvent,
   createInitialAttemptRewardLedger,
-  createInitialProfile,
-  resolveAttemptProgressRewards
+  createInitialProfile
 } from "./index.js";
 
 export const shuttergateAttemptRewardPolicy = Object.freeze({

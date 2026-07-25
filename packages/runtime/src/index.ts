@@ -69,11 +69,14 @@ export {
   renderRunExplanationMarkdown
 } from "./run-explanation.js";
 export {
+  runShuttergateAttempt,
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,
   runShuttergateSeedPlacementCalibration,
   runShuttergateSeedPlacementControllerBuildCalibration,
   runShuttergateSeedPlacementControllerCalibration,
+  type ShuttergateAttemptRequest,
+  type ShuttergateAttemptResult,
   type ShuttergateBuildCalibrationEvidence,
   type ShuttergateCalibrationBuildId,
   type ShuttergateCalibrationMilestone,

@@ -9,6 +9,7 @@ import type {
   StableId
 } from "@dwarven-depths/contracts";
 import {
+  type CompletedAttemptRewardEvent,
   createInitialProfile,
   type PurchasedUpgradeCatalog,
   type PurchasedUpgradeCharacterModifiers,
@@ -143,6 +144,21 @@ export interface ShuttergateBuildCalibrationEvidence
   readonly deployedWardenMaximumHealth: number;
   readonly deployedWardenAttackDamage: number;
   readonly purchasedModifiers: readonly PurchasedUpgradeCharacterModifiers[];
+}
+
+export interface ShuttergateAttemptRequest {
+  readonly schemaVersion: 1;
+  readonly attemptId: StableId;
+  readonly seed: string;
+  readonly placementPointId: PlacementPointId;
+  readonly targetPolicy: DwarfTargetPolicy;
+  readonly buildId: ShuttergateCalibrationBuildId;
+}
+
+export interface ShuttergateAttemptResult {
+  readonly schemaVersion: 1;
+  readonly calibration: ShuttergateBuildCalibrationEvidence;
+  readonly rewardEvent: CompletedAttemptRewardEvent;
 }
 
 async function requireReferenceContent(
@@ -395,6 +411,93 @@ export async function runShuttergateSeedPlacementControllerBuildCalibration(
     requestedTargetPolicy,
     buildId
   )) as ShuttergateBuildCalibrationEvidence;
+}
+
+/** Runs one authoritative encounter and derives its persistent reward evidence. */
+export async function runShuttergateAttempt(
+  content: CompiledContent,
+  request: ShuttergateAttemptRequest
+): Promise<ShuttergateAttemptResult> {
+  if (typeof request !== "object" || request === null || Array.isArray(request))
+    throw new TypeError("Shuttergate attempt request must be an object");
+  const prototype = Object.getPrototypeOf(request);
+  if (prototype !== Object.prototype && prototype !== null)
+    throw new TypeError("Shuttergate attempt request must be a plain object");
+  const expectedKeys = [
+    "attemptId",
+    "buildId",
+    "placementPointId",
+    "schemaVersion",
+    "seed",
+    "targetPolicy"
+  ];
+  const ownKeys = Reflect.ownKeys(request);
+  const actualKeys = ownKeys
+    .filter((key): key is string => typeof key === "string")
+    .sort();
+  if (
+    actualKeys.length !== ownKeys.length ||
+    actualKeys.length !== expectedKeys.length ||
+    actualKeys.some((key, index) => key !== expectedKeys[index])
+  )
+    throw new TypeError("Shuttergate attempt request has invalid fields");
+  const descriptors = Object.getOwnPropertyDescriptors(request);
+  if (
+    expectedKeys.some((key) => {
+      const descriptor = descriptors[key];
+      return (
+        descriptor === undefined ||
+        descriptor.enumerable !== true ||
+        !("value" in descriptor)
+      );
+    })
+  )
+    throw new TypeError(
+      "Shuttergate attempt request fields must be plain data properties"
+    );
+  const normalizedRequest = Object.freeze({
+    schemaVersion: descriptors.schemaVersion?.value,
+    attemptId: descriptors.attemptId?.value,
+    seed: descriptors.seed?.value,
+    placementPointId: descriptors.placementPointId?.value,
+    targetPolicy: descriptors.targetPolicy?.value,
+    buildId: descriptors.buildId?.value
+  }) as ShuttergateAttemptRequest;
+  if (normalizedRequest.schemaVersion !== 1)
+    throw new RangeError(
+      "Shuttergate attempt request has unsupported schemaVersion"
+    );
+  if (
+    typeof normalizedRequest.attemptId !== "string" ||
+    !/^attempt\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/.test(
+      normalizedRequest.attemptId
+    )
+  )
+    throw new RangeError(
+      `Shuttergate attempt requires a canonical attempt ID (${String(normalizedRequest.attemptId)})`
+    );
+
+  const calibration =
+    await runShuttergateSeedPlacementControllerBuildCalibration(
+      content,
+      normalizedRequest.seed,
+      normalizedRequest.placementPointId,
+      normalizedRequest.targetPolicy,
+      normalizedRequest.buildId
+    );
+  const terminalMilestone = calibration.milestones.at(-1);
+  if (terminalMilestone === undefined)
+    throw new Error("Shuttergate attempt has no terminal milestone evidence");
+  const rewardEvent: CompletedAttemptRewardEvent = Object.freeze({
+    schemaVersion: 1,
+    rewardId: `reward.${normalizedRequest.attemptId}` as StableId,
+    attemptId: normalizedRequest.attemptId,
+    levelId: calibration.levelId,
+    terminalResult: calibration.terminalResult,
+    defeatedEnemies: calibration.defeatedEnemies,
+    startedWaveIds: Object.freeze([...terminalMilestone.startedWaveIds])
+  });
+  return Object.freeze({ schemaVersion: 1, calibration, rewardEvent });
 }
 
 export async function runShuttergateSeedPlacementControllerCalibration(

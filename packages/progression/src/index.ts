@@ -1,4 +1,13 @@
-export * from "./attempt-progress-rewards.js";
+export {
+  type AttemptProgressRewardClaim,
+  type AttemptProgressRewardDecision,
+  type AttemptProgressRewardLedger,
+  type AttemptProgressRewardPolicy,
+  type AttemptProgressRewardResolution,
+  type AttemptWaveMilestoneReward,
+  type CompletedAttemptRewardEvent,
+  createInitialAttemptRewardLedger
+} from "./attempt-progress-rewards.js";
 export * from "./boss-rewards.js";
 export * from "./character-experience.js";
 export * from "./owned-character-experience-rewards.js";
