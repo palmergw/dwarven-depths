@@ -51,8 +51,12 @@ import {
   renderRunExplanationMarkdown,
   runScenario,
   runShuttergateSeedPlacementCalibration,
+  runShuttergateSeedPlacementControllerBuildCalibration,
   runShuttergateSeedPlacementControllerCalibration,
+  type ShuttergateBuildCalibrationEvidence,
+  type ShuttergateCalibrationBuildId,
   type ShuttergateReferenceCalibrationEvidence,
+  shuttergateCalibrationBuildIds,
   verifyReplay
 } from "@dwarven-depths/runtime";
 
@@ -85,6 +89,13 @@ const sweepControllers = Object.freeze({
   "controller.target.fastest.v1": "fastest",
   "controller.target.boss_or_elite_first.v1": "boss_or_elite_first"
 } satisfies Readonly<Record<string, DwarfTargetPolicy>>);
+const sweepBuilds = Object.freeze(
+  Object.fromEntries(
+    shuttergateCalibrationBuildIds.map((buildId) => [buildId, buildId])
+  ) as Readonly<
+    Record<ShuttergateCalibrationBuildId, ShuttergateCalibrationBuildId>
+  >
+);
 
 interface ParsedArgs {
   readonly command: string | undefined;
@@ -147,6 +158,7 @@ interface SweepMatrix {
     readonly seed: readonly string[];
     readonly placement?: readonly string[];
     readonly controller?: readonly string[];
+    readonly build?: readonly string[];
   };
 }
 
@@ -161,8 +173,11 @@ interface SweepSampleArtifact {
   readonly eventStreamChecksum?: string;
   readonly placementPointId?: string;
   readonly controllerId?: string;
+  readonly buildId?: string;
   readonly calibrationChecksum?: string;
-  readonly calibrationEvidence?: ShuttergateReferenceCalibrationEvidence;
+  readonly calibrationEvidence?:
+    | ShuttergateReferenceCalibrationEvidence
+    | ShuttergateBuildCalibrationEvidence;
 }
 
 interface SweepAggregateArtifact {
@@ -179,7 +194,7 @@ interface SweepAggregateArtifact {
 }
 
 interface SweepArtifact {
-  readonly schemaVersion: 2 | 3 | 4;
+  readonly schemaVersion: 2 | 3 | 4 | 5;
   readonly complete: true;
   readonly matrixId: string;
   readonly matrixHash: string;
@@ -838,12 +853,18 @@ function parseSweepMatrix(value: unknown): SweepMatrix {
       "sweep matrix axes.controller requires the authoritative placement axis"
     );
   }
+  if (axes["build"] !== undefined && axes["controller"] === undefined) {
+    throw new CliInputError(
+      "sweep matrix axes.build requires the authoritative controller axis"
+    );
+  }
   requireSweepKeys(
     axes,
     [
       "seed",
       ...(axes["placement"] === undefined ? [] : ["placement"]),
-      ...(axes["controller"] === undefined ? [] : ["controller"])
+      ...(axes["controller"] === undefined ? [] : ["controller"]),
+      ...(axes["build"] === undefined ? [] : ["build"])
     ],
     "sweep matrix axes"
   );
@@ -937,6 +958,41 @@ function parseSweepMatrix(value: unknown): SweepMatrix {
       );
     }
   }
+  let builds: string[] | undefined;
+  if (axes["build"] !== undefined) {
+    if (!Array.isArray(axes["build"]) || axes["build"].length === 0) {
+      throw new CliInputError(
+        "sweep matrix axes.build must be a nonempty array"
+      );
+    }
+    builds = [];
+    const uniqueBuilds = new Set<string>();
+    for (const [index, build] of axes["build"].entries()) {
+      if (typeof build !== "string" || !Object.hasOwn(sweepBuilds, build)) {
+        throw new CliInputError(
+          `sweep matrix axes.build[${index}] must be a supported versioned build ID`
+        );
+      }
+      if (uniqueBuilds.has(build)) {
+        throw new CliInputError(
+          `sweep matrix axes.build contains duplicate ${build}`
+        );
+      }
+      uniqueBuilds.add(build);
+      builds.push(build);
+    }
+    if (
+      seeds.length *
+        (placements?.length ?? 0) *
+        (controllers?.length ?? 0) *
+        builds.length >
+      64
+    ) {
+      throw new CliInputError(
+        "sweep matrix seed × placement × controller × build product must not exceed 64 samples"
+      );
+    }
+  }
   return {
     schemaVersion: 1,
     id: matrix["id"],
@@ -947,7 +1003,14 @@ function parseSweepMatrix(value: unknown): SweepMatrix {
         ? { seed: seeds }
         : controllers === undefined
           ? { seed: seeds, placement: placements }
-          : { seed: seeds, placement: placements, controller: controllers }
+          : builds === undefined
+            ? { seed: seeds, placement: placements, controller: controllers }
+            : {
+                seed: seeds,
+                placement: placements,
+                controller: controllers,
+                build: builds
+              }
   };
 }
 
@@ -959,21 +1022,28 @@ function expandSweepAxes(matrix: SweepMatrix): readonly {
   readonly seed: string;
   readonly placementPointId?: string;
   readonly controllerId?: string;
+  readonly buildId?: string;
 }[] {
   const placements = matrix.axes.placement;
   if (placements === undefined) {
     return matrix.axes.seed.map((seed) => ({ seed }));
   }
   const controllers = matrix.axes.controller;
+  const builds = matrix.axes.build;
   return matrix.axes.seed.flatMap((seed) =>
     placements.flatMap((placementPointId) =>
       controllers === undefined
         ? [{ seed, placementPointId }]
-        : controllers.map((controllerId) => ({
-            seed,
-            placementPointId,
-            controllerId
-          }))
+        : controllers.flatMap((controllerId) =>
+            builds === undefined
+              ? [{ seed, placementPointId, controllerId }]
+              : builds.map((buildId) => ({
+                  seed,
+                  placementPointId,
+                  controllerId,
+                  buildId
+                }))
+          )
     )
   );
 }
@@ -1228,11 +1298,13 @@ async function assertReplaceableSweep(directory: string): Promise<void> {
     const expandedAxes = expandSweepAxes(matrix);
     if (
       artifact.schemaVersion !==
-        (matrix.axes.controller !== undefined
-          ? 4
-          : matrix.axes.placement === undefined
-            ? 2
-            : 3) ||
+        (matrix.axes.build !== undefined
+          ? 5
+          : matrix.axes.controller !== undefined
+            ? 4
+            : matrix.axes.placement === undefined
+              ? 2
+              : 3) ||
       artifact.complete !== true ||
       artifact.matrixId !== matrix.id ||
       artifact.matrixHash !== (await canonicalHash(matrix)) ||
@@ -1244,11 +1316,14 @@ async function assertReplaceableSweep(directory: string): Promise<void> {
       artifact.samples.length > 64 ||
       firstDifferencePath(
         expandedAxes,
-        artifact.samples.map(({ seed, placementPointId, controllerId }) => ({
-          seed,
-          ...(placementPointId === undefined ? {} : { placementPointId }),
-          ...(controllerId === undefined ? {} : { controllerId })
-        }))
+        artifact.samples.map(
+          ({ seed, placementPointId, controllerId, buildId }) => ({
+            seed,
+            ...(placementPointId === undefined ? {} : { placementPointId }),
+            ...(controllerId === undefined ? {} : { controllerId }),
+            ...(buildId === undefined ? {} : { buildId })
+          })
+        )
       ) !== undefined
     ) {
       throw new Error("sweep.json does not describe a complete bound sweep");
@@ -1257,54 +1332,71 @@ async function assertReplaceableSweep(directory: string): Promise<void> {
     for (const [index, sample] of artifact.samples.entries()) {
       requireExactKeys(
         sample,
-        artifact.schemaVersion === 4
+        artifact.schemaVersion === 5
           ? [
               "index",
               "seed",
               "placementPointId",
               "controllerId",
+              "buildId",
               "terminalResult",
               "terminalTick",
               "calibrationChecksum",
               "calibrationEvidence"
             ]
-          : artifact.schemaVersion === 3
+          : artifact.schemaVersion === 4
             ? [
                 "index",
                 "seed",
                 "placementPointId",
+                "controllerId",
                 "terminalResult",
                 "terminalTick",
                 "calibrationChecksum",
                 "calibrationEvidence"
               ]
-            : [
-                "index",
-                "seed",
-                "runDirectory",
-                "scenarioHash",
-                "terminalResult",
-                "terminalTick",
-                "finalStateChecksum",
-                "eventStreamChecksum"
-              ],
+            : artifact.schemaVersion === 3
+              ? [
+                  "index",
+                  "seed",
+                  "placementPointId",
+                  "terminalResult",
+                  "terminalTick",
+                  "calibrationChecksum",
+                  "calibrationEvidence"
+                ]
+              : [
+                  "index",
+                  "seed",
+                  "runDirectory",
+                  "scenarioHash",
+                  "terminalResult",
+                  "terminalTick",
+                  "finalStateChecksum",
+                  "eventStreamChecksum"
+                ],
         `sweep.json sample ${index}`
       );
-      const sampleIdentity = `${sample.seed}\u0000${sample.placementPointId ?? ""}\u0000${sample.controllerId ?? ""}`;
+      const sampleIdentity = `${sample.seed}\u0000${sample.placementPointId ?? ""}\u0000${sample.controllerId ?? ""}\u0000${sample.buildId ?? ""}`;
       if (
         sample.index !== index ||
         typeof sample.seed !== "string" ||
         !/^[1-9]\d{0,9}$/.test(sample.seed) ||
         BigInt(sample.seed) > 0xffff_ffffn ||
         seenSamples.has(sampleIdentity) ||
-        ((artifact.schemaVersion === 3 || artifact.schemaVersion === 4) &&
+        ((artifact.schemaVersion === 3 ||
+          artifact.schemaVersion === 4 ||
+          artifact.schemaVersion === 5) &&
           (typeof sample.placementPointId !== "string" ||
             typeof sample.calibrationChecksum !== "string" ||
             !/^[a-f0-9]{64}$/.test(sample.calibrationChecksum) ||
             sample.calibrationEvidence === undefined)) ||
-        (artifact.schemaVersion === 4 &&
+        ((artifact.schemaVersion === 4 || artifact.schemaVersion === 5) &&
           (typeof sample.controllerId !== "string" ||
             !Object.hasOwn(sweepControllers, sample.controllerId))) ||
+        (artifact.schemaVersion === 5 &&
+          (typeof sample.buildId !== "string" ||
+            !Object.hasOwn(sweepBuilds, sample.buildId))) ||
         (artifact.schemaVersion === 2 &&
           (sample.runDirectory !==
             `runs/${String(index).padStart(4, "0")}-seed-${sample.seed}` ||
@@ -1385,20 +1477,32 @@ async function assertReplaceableSweep(directory: string): Promise<void> {
       }
       for (const sample of artifact.samples) {
         const calibrationEvidence =
-          sample.controllerId === undefined
-            ? await runShuttergateSeedPlacementCalibration(
-                content,
-                sample.seed,
-                sample.placementPointId as PlacementPointId
-              )
-            : await runShuttergateSeedPlacementControllerCalibration(
+          sample.buildId !== undefined
+            ? await runShuttergateSeedPlacementControllerBuildCalibration(
                 content,
                 sample.seed,
                 sample.placementPointId as PlacementPointId,
                 sweepControllers[
                   sample.controllerId as keyof typeof sweepControllers
-                ]
-              );
+                ],
+                sweepBuilds[
+                  sample.buildId as keyof typeof sweepBuilds
+                ] as ShuttergateCalibrationBuildId
+              )
+            : sample.controllerId === undefined
+              ? await runShuttergateSeedPlacementCalibration(
+                  content,
+                  sample.seed,
+                  sample.placementPointId as PlacementPointId
+                )
+              : await runShuttergateSeedPlacementControllerCalibration(
+                  content,
+                  sample.seed,
+                  sample.placementPointId as PlacementPointId,
+                  sweepControllers[
+                    sample.controllerId as keyof typeof sweepControllers
+                  ]
+                );
         if (
           (await canonicalHash(calibrationEvidence)) !==
             sample.calibrationChecksum ||
@@ -1466,7 +1570,7 @@ async function sweep(args: ParsedArgs): Promise<void> {
         ]);
         const samples: SweepSampleArtifact[] = [];
         for (const [index, axis] of expandSweepAxes(matrix).entries()) {
-          const { seed, placementPointId, controllerId } = axis;
+          const { seed, placementPointId, controllerId, buildId } = axis;
           if (placementPointId === undefined) {
             const scenario = compileScenario(
               { ...scenarioInput, seed },
@@ -1492,25 +1596,38 @@ async function sweep(args: ParsedArgs): Promise<void> {
             });
           } else {
             const calibrationEvidence =
-              controllerId === undefined
-                ? await runShuttergateSeedPlacementCalibration(
-                    content,
-                    seed,
-                    placementPointId as PlacementPointId
-                  )
-                : await runShuttergateSeedPlacementControllerCalibration(
+              buildId !== undefined
+                ? await runShuttergateSeedPlacementControllerBuildCalibration(
                     content,
                     seed,
                     placementPointId as PlacementPointId,
                     sweepControllers[
                       controllerId as keyof typeof sweepControllers
-                    ]
-                  );
+                    ],
+                    sweepBuilds[
+                      buildId as keyof typeof sweepBuilds
+                    ] as ShuttergateCalibrationBuildId
+                  )
+                : controllerId === undefined
+                  ? await runShuttergateSeedPlacementCalibration(
+                      content,
+                      seed,
+                      placementPointId as PlacementPointId
+                    )
+                  : await runShuttergateSeedPlacementControllerCalibration(
+                      content,
+                      seed,
+                      placementPointId as PlacementPointId,
+                      sweepControllers[
+                        controllerId as keyof typeof sweepControllers
+                      ]
+                    );
             samples.push({
               index,
               seed,
               placementPointId,
               ...(controllerId === undefined ? {} : { controllerId }),
+              ...(buildId === undefined ? {} : { buildId }),
               terminalResult: calibrationEvidence.terminalResult,
               terminalTick: calibrationEvidence.terminalTick,
               calibrationChecksum: await canonicalHash(calibrationEvidence),
@@ -1520,11 +1637,13 @@ async function sweep(args: ParsedArgs): Promise<void> {
         }
         const artifact: SweepArtifact = {
           schemaVersion:
-            matrix.axes.controller !== undefined
-              ? 4
-              : matrix.axes.placement === undefined
-                ? 2
-                : 3,
+            matrix.axes.build !== undefined
+              ? 5
+              : matrix.axes.controller !== undefined
+                ? 4
+                : matrix.axes.placement === undefined
+                  ? 2
+                  : 3,
           complete: true,
           matrixId: matrix.id,
           matrixHash,

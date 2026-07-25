@@ -8,13 +8,19 @@ import type {
   SimulationState,
   StableId
 } from "@dwarven-depths/contracts";
-import { createInitialProfile } from "@dwarven-depths/progression";
+import {
+  createInitialProfile,
+  type PurchasedUpgradeCatalog,
+  type PurchasedUpgradeCharacterModifiers,
+  purchaseUpgradeRank
+} from "@dwarven-depths/progression";
 import {
   createBattlefieldDwarfDeploymentAuthority,
   createInitialState,
   deployBattlefieldDwarves
 } from "@dwarven-depths/sim-core";
 import { resolveAuthoritativeCombatCheckpoint } from "./authoritative-combat-checkpoint.js";
+import { deployBattlefieldDwarvesWithPurchasedUpgradeEffects } from "./battlefield-purchased-upgrade-effects.js";
 
 const referenceManifestHash =
   "5e9d7bcbafb53208cb016432857a912aff9d032f44c2870ada3bc9361e9c5a3f";
@@ -35,6 +41,63 @@ const targetPolicies: readonly DwarfTargetPolicy[] = Object.freeze([
   "boss_or_elite_first"
 ]);
 const maximumTick = 4_500;
+const shieldSlamUpgradeId = "upgrade.ability.shield_slam" as StableId;
+const referenceBuildCatalog: PurchasedUpgradeCatalog = Object.freeze({
+  schemaVersion: 1,
+  upgrades: Object.freeze([
+    Object.freeze({
+      schemaVersion: 1,
+      upgradeId: shieldSlamUpgradeId,
+      kind: "ability_rank" as const,
+      ownerId: wardenCharacterId,
+      prerequisiteUpgradeIds: Object.freeze([]),
+      rankCosts: Object.freeze([10]),
+      passiveEffectsByRank: Object.freeze([
+        Object.freeze([
+          Object.freeze({
+            schemaVersion: 1,
+            kind: "maximum_health_add" as const,
+            value: 20
+          }),
+          Object.freeze({
+            schemaVersion: 1,
+            kind: "attack_damage_add" as const,
+            value: 2
+          })
+        ])
+      ])
+    })
+  ])
+});
+
+export type ShuttergateCalibrationBuildId =
+  | "build.profile.new_campaign.v1"
+  | "build.warden.shield_slam_rank_1.v1";
+
+export const shuttergateCalibrationBuildIds = Object.freeze([
+  "build.profile.new_campaign.v1",
+  "build.warden.shield_slam_rank_1.v1"
+] as const satisfies readonly ShuttergateCalibrationBuildId[]);
+const referenceSkillTrees = Object.freeze([
+  Object.freeze({
+    schemaVersion: 1 as const,
+    characterId: wardenCharacterId,
+    nodes: Object.freeze([
+      Object.freeze({
+        schemaVersion: 1 as const,
+        nodeId: "skill.iron_warden.calibration_placeholder" as StableId,
+        prerequisiteNodeIds: Object.freeze([]),
+        effects: Object.freeze([
+          Object.freeze({
+            schemaVersion: 1 as const,
+            kind: "maximum_health_add" as const,
+            value: 1
+          })
+        ])
+      })
+    ])
+  })
+]);
 
 export interface ShuttergateCalibrationMilestone {
   readonly schemaVersion: 1;
@@ -69,6 +132,19 @@ export interface ShuttergateReferenceCalibrationEvidence {
   readonly milestones: readonly ShuttergateCalibrationMilestone[];
 }
 
+export interface ShuttergateBuildCalibrationEvidence
+  extends Omit<
+    ShuttergateReferenceCalibrationEvidence,
+    "schemaVersion" | "calibrationId"
+  > {
+  readonly schemaVersion: 2;
+  readonly calibrationId: "calibration.shuttergate.warden_build.v1";
+  readonly buildId: ShuttergateCalibrationBuildId;
+  readonly deployedWardenMaximumHealth: number;
+  readonly deployedWardenAttackDamage: number;
+  readonly purchasedModifiers: readonly PurchasedUpgradeCharacterModifiers[];
+}
+
 async function requireReferenceContent(
   content: CompiledContent
 ): Promise<CompiledContent> {
@@ -95,12 +171,15 @@ async function requireReferenceContent(
  * authoritative combat, reward, and terminal producer path. The result is a
  * compact calibration artifact rather than a second gameplay loop.
  */
-export async function runShuttergateSeedPlacementControllerCalibration(
+async function runShuttergateCalibration(
   content: CompiledContent,
   seed: string,
   placementPointId: PlacementPointId,
-  requestedTargetPolicy: DwarfTargetPolicy
-): Promise<ShuttergateReferenceCalibrationEvidence> {
+  requestedTargetPolicy: DwarfTargetPolicy,
+  buildId?: ShuttergateCalibrationBuildId
+): Promise<
+  ShuttergateReferenceCalibrationEvidence | ShuttergateBuildCalibrationEvidence
+> {
   if (!/^[1-9]\d{0,9}$/.test(seed) || BigInt(seed) > 0xffff_ffffn) {
     throw new RangeError(
       `Shuttergate calibration requires a canonical uint32 seed (${seed})`
@@ -139,16 +218,55 @@ export async function runShuttergateSeedPlacementControllerCalibration(
     initial.battlefield,
     referenceContent
   );
+  let profile = createInitialProfile(wardenCharacterId);
+  if (buildId === "build.warden.shield_slam_rank_1.v1") {
+    profile = purchaseUpgradeRank({
+      schemaVersion: 1,
+      profile: Object.freeze({ ...profile, forgeOre: 10 }),
+      catalog: referenceBuildCatalog,
+      upgradeId: shieldSlamUpgradeId
+    }).profile;
+  } else if (
+    buildId !== undefined &&
+    buildId !== "build.profile.new_campaign.v1"
+  ) {
+    throw new RangeError(
+      `Shuttergate calibration requires a supported build (${buildId})`
+    );
+  }
+  const deployed =
+    buildId === undefined
+      ? Object.freeze({
+          battlefield: deployBattlefieldDwarves(
+            initial.battlefield,
+            authority,
+            referenceContent
+          ),
+          purchasedModifiers: Object.freeze(
+            [] as PurchasedUpgradeCharacterModifiers[]
+          )
+        })
+      : deployBattlefieldDwarvesWithPurchasedUpgradeEffects(
+          {
+            schemaVersion: 1,
+            battlefield: initial.battlefield,
+            profile,
+            catalog: referenceBuildCatalog,
+            skillTrees: referenceSkillTrees
+          },
+          referenceContent,
+          authority
+        );
+  const deployedWarden = deployed.battlefield.dwarfCombatants.find(
+    (combatant) => combatant.entityId === wardenEntityId
+  );
+  if (deployedWarden === undefined)
+    throw new Error("Shuttergate calibration did not deploy the Warden");
   let state: SimulationState = Object.freeze({
     ...initial,
     phase: "COMBAT_RUNNING" as const,
-    battlefield: deployBattlefieldDwarves(
-      initial.battlefield,
-      authority,
-      referenceContent
-    )
+    battlefield: deployed.battlefield
   });
-  let profile = createInitialProfile(wardenCharacterId);
   const rewards = Object.freeze([
     Object.freeze({
       schemaVersion: 1 as const,
@@ -216,9 +334,7 @@ export async function runShuttergateSeedPlacementControllerCalibration(
       throw new Error(
         "Shuttergate calibration terminated before any wave started"
       );
-    return Object.freeze({
-      schemaVersion: 1,
-      calibrationId: "calibration.shuttergate.unupgraded_warden.v1",
+    const common = Object.freeze({
       contentManifestHash: referenceContent.manifestHash,
       seed,
       levelId,
@@ -243,10 +359,56 @@ export async function runShuttergateSeedPlacementControllerCalibration(
       deepRangerUnlocked: profile.unlockedCharacterIds.includes(deepRangerId),
       milestones: Object.freeze(milestones)
     });
+    if (buildId !== undefined) {
+      return Object.freeze({
+        schemaVersion: 2,
+        calibrationId: "calibration.shuttergate.warden_build.v1",
+        buildId,
+        deployedWardenMaximumHealth: deployedWarden.maximumHealth,
+        deployedWardenAttackDamage: deployedWarden.basicAttack.damage,
+        purchasedModifiers: deployed.purchasedModifiers,
+        ...common
+      });
+    }
+    return Object.freeze({
+      schemaVersion: 1,
+      calibrationId: "calibration.shuttergate.unupgraded_warden.v1",
+      ...common
+    });
   }
   throw new RangeError(
     `Shuttergate calibration did not terminate by safety tick ${maximumTick}`
   );
+}
+
+export async function runShuttergateSeedPlacementControllerBuildCalibration(
+  content: CompiledContent,
+  seed: string,
+  placementPointId: PlacementPointId,
+  requestedTargetPolicy: DwarfTargetPolicy,
+  buildId: ShuttergateCalibrationBuildId
+): Promise<ShuttergateBuildCalibrationEvidence> {
+  return (await runShuttergateCalibration(
+    content,
+    seed,
+    placementPointId,
+    requestedTargetPolicy,
+    buildId
+  )) as ShuttergateBuildCalibrationEvidence;
+}
+
+export async function runShuttergateSeedPlacementControllerCalibration(
+  content: CompiledContent,
+  seed: string,
+  placementPointId: PlacementPointId,
+  requestedTargetPolicy: DwarfTargetPolicy
+): Promise<ShuttergateReferenceCalibrationEvidence> {
+  return (await runShuttergateCalibration(
+    content,
+    seed,
+    placementPointId,
+    requestedTargetPolicy
+  )) as ShuttergateReferenceCalibrationEvidence;
 }
 
 export async function runShuttergateSeedPlacementCalibration(

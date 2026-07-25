@@ -128,11 +128,20 @@ the repository.
   target policy into canonical evidence, and rerun every sample during validated
   replacement. Existing schema-2 seed and schema-3 seed × placement artifacts
   remain unchanged.
+- An optional purchased-build axis expands controller sweeps in seed-major,
+  placement-middle, controller-middle, build-minor order. The versioned build
+  catalog currently contains the new-campaign Warden and the authored Shield
+  Slam rank-1 passive purchase. Schema-5 samples bind build identity, deployed
+  maximum health/basic-attack damage, purchased modifier evidence, and the full
+  calibration checksum. Validated replacement reconstructs the profile purchase
+  and reruns the authoritative deployment/combat/reward/terminal path. The
+  Cartesian product remains bounded to 64 samples, and earlier sweep schemas
+  remain unchanged.
 
 ## Not implemented yet
 
 Additional historical save migrations, encounter reward-event production,
 catch-up experience, active ability and item-rank behavior, full save scope,
-player-facing recycle confirmation, build and active-ability controller sweep axes,
+player-facing recycle confirmation, additional build and active-ability controller sweep axes,
 additional statistical sweep metrics, campaign/minimization harnesses, and upgraded-build
 calibration remain later Phase 4 checkpoints.
