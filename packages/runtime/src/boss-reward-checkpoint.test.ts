@@ -5,7 +5,7 @@ import { resolveBossRewardCheckpoint } from "./boss-reward-checkpoint.js";
 import { terminalEvaluationRequest } from "./terminal-evaluation.fixture.js";
 
 const checksum =
-  "7e6ec29ed6af78fb54b486dc017874304779fdb55f4c27e4cb1b5c6317e6b28e";
+  "8550eba62969273be5c0746ad00ef01ffaf7c617e7fc343c2379b57b0697dc9c";
 
 describe("boss reward and terminal checkpoint", () => {
   it("commits the boss unlock before evaluating same-step defeat", async () => {

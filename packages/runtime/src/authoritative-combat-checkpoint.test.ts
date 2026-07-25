@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { authoritativeCombatCheckpointParityEvidence } from "./authoritative-combat-checkpoint.fixture.js";
 
 const EXPECTED_CHECKSUM =
-  "33a31f517946ab64cbe9dad59026644b7c136375ae50d411718a9f51a23d47ca";
+  "ddb6c39a616aae83c6367d87451bb5159d0b043f52669faa765be5a69fce363a";
 
 describe("authoritative combat reward and terminal checkpoint", () => {
   it("derives reward and terminal evidence from the resolved battlefield", async () => {

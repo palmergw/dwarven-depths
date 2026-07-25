@@ -1,5 +1,5 @@
 import type { EntityId, StableId } from "@dwarven-depths/contracts";
-import type { ProfileState } from "./index.js";
+import { normalizeProfileState, type ProfileState } from "./profile-state.js";
 
 export interface BossDeathEvent {
   readonly schemaVersion: 1;
@@ -131,46 +131,7 @@ function requireUnsigned(value: unknown, description: string): number {
 }
 
 function validateProfile(value: unknown): ProfileState {
-  const source = requireRecord(
-    value,
-    [
-      "schemaVersion",
-      "revision",
-      "forgeOre",
-      "unlockedCharacterIds",
-      "claimedRewardIds"
-    ],
-    "profile"
-  );
-  if (source.schemaVersion !== 1)
-    throw new RangeError("profile has unsupported schemaVersion");
-  const unlocks = requireArray(
-    source.unlockedCharacterIds,
-    "profile unlockedCharacterIds"
-  ).map((value, index) =>
-    requireId(
-      value,
-      characterIdPattern,
-      `profile unlockedCharacterIds[${index}]`
-    )
-  );
-  const claims = requireArray(
-    source.claimedRewardIds,
-    "profile claimedRewardIds"
-  ).map((value, index) =>
-    requireId(value, rewardIdPattern, `profile claimedRewardIds[${index}]`)
-  );
-  if (new Set(unlocks).size !== unlocks.length)
-    throw new RangeError("profile contains duplicate unlocked character IDs");
-  if (new Set(claims).size !== claims.length)
-    throw new RangeError("profile contains duplicate claimed reward IDs");
-  return Object.freeze({
-    schemaVersion: 1,
-    revision: requireUnsigned(source.revision, "profile revision"),
-    forgeOre: requireUnsigned(source.forgeOre, "profile forgeOre"),
-    unlockedCharacterIds: Object.freeze([...unlocks].sort(compareText)),
-    claimedRewardIds: Object.freeze([...claims].sort(compareText))
-  });
+  return normalizeProfileState(value);
 }
 
 /** Resolves phase-12 boss claims before any terminal-outcome evaluation. */
@@ -337,7 +298,9 @@ export function resolveBossDeathRewards(
     revision: startingProfile.revision + (changed ? 1 : 0),
     forgeOre,
     unlockedCharacterIds: Object.freeze([...unlocked].sort(compareText)),
-    claimedRewardIds: Object.freeze([...claimed].sort(compareText))
+    claimedRewardIds: Object.freeze([...claimed].sort(compareText)),
+    characterExperienceStates: startingProfile.characterExperienceStates,
+    claimedExperienceRewardEvents: startingProfile.claimedExperienceRewardEvents
   });
   return Object.freeze({
     schemaVersion: 1,

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createPhase3SystemScenarioEvidence } from "./phase-3-system-scenarios.js";
 
 export const phase3SystemEvidenceChecksum =
-  "41d406a0b441a55c09a221ebc39d6c4c53465b5ea436d8bff60457e69df3e507";
+  "f105fc85d83980b827f0dfa2ea1e9b541a8541f0c0014478b41b956e6a07cc73";
 
 describe("Phase 3 combat system scenarios", () => {
   it("composes targeting, combat, lifecycle, rewards, and terminal evidence", async () => {
