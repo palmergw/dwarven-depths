@@ -915,7 +915,10 @@ function parseSweepMatrix(value: unknown): SweepMatrix {
     controllers = [];
     const uniqueControllers = new Set<string>();
     for (const [index, controller] of axes["controller"].entries()) {
-      if (typeof controller !== "string" || !(controller in sweepControllers)) {
+      if (
+        typeof controller !== "string" ||
+        !Object.hasOwn(sweepControllers, controller)
+      ) {
         throw new CliInputError(
           `sweep matrix axes.controller[${index}] must be a supported versioned controller ID`
         );
@@ -1301,7 +1304,7 @@ async function assertReplaceableSweep(directory: string): Promise<void> {
             sample.calibrationEvidence === undefined)) ||
         (artifact.schemaVersion === 4 &&
           (typeof sample.controllerId !== "string" ||
-            !(sample.controllerId in sweepControllers))) ||
+            !Object.hasOwn(sweepControllers, sample.controllerId))) ||
         (artifact.schemaVersion === 2 &&
           (sample.runDirectory !==
             `runs/${String(index).padStart(4, "0")}-seed-${sample.seed}` ||

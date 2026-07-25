@@ -445,7 +445,7 @@ describe("simulation CLI", () => {
       {
         seed: ["1"],
         placement: ["placement.shuttergate_north_guard"],
-        controller: ["controller.target.unsupported.v1"]
+        controller: ["toString"]
       },
       {
         seed: Array.from({ length: 17 }, (_, index) => String(index + 1)),
