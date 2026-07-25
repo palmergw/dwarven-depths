@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { bossRewardParityEvidence } from "./boss-rewards.fixture.js";
 
 const checksum =
-  "af51a876546e10ddc1c7e6bf065d5061b7de0a4e8ca9f9f965b0d408344ea457";
+  "4ad6d439720ca977a974e444040f75eea1e97aadfaa48634cfbe957efcfca2e3";
 
 describe("boss reward browser parity", () => {
   it("matches the literal Node evidence checksum", async () => {

@@ -20,13 +20,13 @@ describe("progression profile", () => {
           pendingSkillPointLevels: []
         }
       ],
-      claimedExperienceRewardEventIds: []
+      claimedExperienceRewardEvents: []
     });
     expect(Object.isFrozen(profile)).toBe(true);
     expect(Object.isFrozen(profile.unlockedCharacterIds)).toBe(true);
     expect(Object.isFrozen(profile.claimedRewardIds)).toBe(true);
     expect(Object.isFrozen(profile.characterExperienceStates)).toBe(true);
     expect(Object.isFrozen(profile.characterExperienceStates[0])).toBe(true);
-    expect(Object.isFrozen(profile.claimedExperienceRewardEventIds)).toBe(true);
+    expect(Object.isFrozen(profile.claimedExperienceRewardEvents)).toBe(true);
   });
 });

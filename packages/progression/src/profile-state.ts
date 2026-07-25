@@ -8,7 +8,14 @@ export interface ProfileState {
   readonly unlockedCharacterIds: readonly StableId[];
   readonly claimedRewardIds: readonly StableId[];
   readonly characterExperienceStates: readonly CharacterExperienceState[];
-  readonly claimedExperienceRewardEventIds: readonly StableId[];
+  readonly claimedExperienceRewardEvents: readonly ClaimedExperienceRewardEvent[];
+}
+
+export interface ClaimedExperienceRewardEvent {
+  readonly schemaVersion: 1;
+  readonly eventId: StableId;
+  readonly characterId: StableId;
+  readonly experience: number;
 }
 
 export const maximumProfileRecords = 100_000;
@@ -166,6 +173,37 @@ function normalizeExperienceState(
   });
 }
 
+function normalizeClaimedExperienceRewardEvent(
+  value: unknown,
+  index: number
+): ClaimedExperienceRewardEvent {
+  const description = `profile claimedExperienceRewardEvents[${index}]`;
+  const source = requireProfileRecord(
+    value,
+    ["schemaVersion", "eventId", "characterId", "experience"],
+    description
+  );
+  if (source.schemaVersion !== 1)
+    throw new RangeError(`${description} has unsupported schemaVersion`);
+  return Object.freeze({
+    schemaVersion: 1,
+    eventId: requireProfileId(
+      source.eventId,
+      experienceRewardEventIdPattern,
+      `${description} eventId`
+    ),
+    characterId: requireProfileId(
+      source.characterId,
+      characterIdPattern,
+      `${description} characterId`
+    ),
+    experience: requireProfileUnsigned(
+      source.experience,
+      `${description} experience`
+    )
+  });
+}
+
 export function normalizeProfileState(value: unknown): ProfileState {
   const source = requireProfileRecord(
     value,
@@ -176,7 +214,7 @@ export function normalizeProfileState(value: unknown): ProfileState {
       "unlockedCharacterIds",
       "claimedRewardIds",
       "characterExperienceStates",
-      "claimedExperienceRewardEventIds"
+      "claimedExperienceRewardEvents"
     ],
     "profile"
   );
@@ -206,16 +244,10 @@ export function normalizeProfileState(value: unknown): ProfileState {
     source.characterExperienceStates,
     "profile characterExperienceStates"
   ).map(normalizeExperienceState);
-  const claimedExperienceRewardEventIds = requireProfileArray(
-    source.claimedExperienceRewardEventIds,
-    "profile claimedExperienceRewardEventIds"
-  ).map((entry, index) =>
-    requireProfileId(
-      entry,
-      experienceRewardEventIdPattern,
-      `profile claimedExperienceRewardEventIds[${index}]`
-    )
-  );
+  const claimedExperienceRewardEvents = requireProfileArray(
+    source.claimedExperienceRewardEvents,
+    "profile claimedExperienceRewardEvents"
+  ).map(normalizeClaimedExperienceRewardEvent);
   for (const [description, values] of [
     ["unlocked character IDs", unlockedCharacterIds],
     ["claimed reward IDs", claimedRewardIds],
@@ -223,7 +255,10 @@ export function normalizeProfileState(value: unknown): ProfileState {
       "character experience state IDs",
       characterExperienceStates.map((state) => state.characterId)
     ],
-    ["claimed experience reward event IDs", claimedExperienceRewardEventIds]
+    [
+      "claimed experience reward event IDs",
+      claimedExperienceRewardEvents.map((event) => event.eventId)
+    ]
   ] as const) {
     if (new Set(values).size !== values.length)
       throw new RangeError(`profile contains duplicate ${description}`);
@@ -234,6 +269,14 @@ export function normalizeProfileState(value: unknown): ProfileState {
   )
     throw new RangeError(
       "profile character experience state must belong to an unlocked character"
+    );
+  if (
+    claimedExperienceRewardEvents.some(
+      (event) => !unlocked.has(event.characterId)
+    )
+  )
+    throw new RangeError(
+      "profile claimed experience reward must belong to an unlocked character"
     );
   return Object.freeze({
     schemaVersion: 1,
@@ -248,8 +291,10 @@ export function normalizeProfileState(value: unknown): ProfileState {
         compareText(left.characterId, right.characterId)
       )
     ),
-    claimedExperienceRewardEventIds: Object.freeze(
-      [...claimedExperienceRewardEventIds].sort(compareText)
+    claimedExperienceRewardEvents: Object.freeze(
+      [...claimedExperienceRewardEvents].sort((left, right) =>
+        compareText(left.eventId, right.eventId)
+      )
     )
   });
 }
@@ -275,6 +320,6 @@ export function createInitialProfile(ironWardenId: StableId): ProfileState {
         pendingSkillPointLevels: Object.freeze([])
       })
     ]),
-    claimedExperienceRewardEventIds: Object.freeze([])
+    claimedExperienceRewardEvents: Object.freeze([])
   });
 }

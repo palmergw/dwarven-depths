@@ -198,14 +198,27 @@ export function resolveOwnedCharacterExperienceRewards(
       );
   }
 
-  const claimed = new Set(profile.claimedExperienceRewardEventIds);
+  const claimed = new Map(
+    profile.claimedExperienceRewardEvents.map((event) => [event.eventId, event])
+  );
+  for (const event of events) {
+    const existing = claimed.get(event.eventId);
+    if (
+      existing !== undefined &&
+      (existing.characterId !== event.characterId ||
+        existing.experience !== event.experience)
+    )
+      throw new RangeError(
+        `experience reward event conflicts with claimed ownership (${event.eventId})`
+      );
+  }
   const newClaimCount = events.reduce(
     (count, event) => count + (claimed.has(event.eventId) ? 0 : 1),
     0
   );
   if (claimed.size + newClaimCount > maximumProfileRecords)
     throw new RangeError(
-      `resolved claimedExperienceRewardEventIds cannot exceed ${maximumProfileRecords} items`
+      `resolved claimedExperienceRewardEvents cannot exceed ${maximumProfileRecords} items`
     );
   if (newClaimCount > 0 && profile.revision === Number.MAX_SAFE_INTEGER)
     throw new RangeError("profile revision exceeds safe integer range");
@@ -237,7 +250,7 @@ export function resolveOwnedCharacterExperienceRewards(
       thresholds
     });
     states.set(event.characterId, applied.state);
-    claimed.add(event.eventId);
+    claimed.set(event.eventId, event);
     decisions.push(
       Object.freeze({
         schemaVersion: 1,
@@ -262,8 +275,10 @@ export function resolveOwnedCharacterExperienceRewards(
         compareText(left.characterId, right.characterId)
       )
     ),
-    claimedExperienceRewardEventIds: Object.freeze(
-      [...claimed].sort(compareText)
+    claimedExperienceRewardEvents: Object.freeze(
+      [...claimed.values()].sort((left, right) =>
+        compareText(left.eventId, right.eventId)
+      )
     )
   });
   return Object.freeze({

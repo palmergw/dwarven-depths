@@ -42,5 +42,17 @@ export function ownedCharacterExperienceRewardParityEvidence() {
     events: [ownedExperienceEvents[0]],
     thresholdSets: ownedExperienceThresholdSets
   });
-  return Object.freeze({ committed, replayed });
+  let conflictingReplayError = "";
+  try {
+    resolveOwnedCharacterExperienceRewards({
+      schemaVersion: 1,
+      profile: committed.profile,
+      events: [{ ...ownedExperienceEvents[0], experience: 171 }],
+      thresholdSets: ownedExperienceThresholdSets
+    });
+  } catch (error) {
+    conflictingReplayError =
+      error instanceof Error ? error.message : "unknown replay error";
+  }
+  return Object.freeze({ committed, replayed, conflictingReplayError });
 }

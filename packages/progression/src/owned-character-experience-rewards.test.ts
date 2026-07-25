@@ -13,7 +13,7 @@ import {
 } from "./owned-character-experience-rewards.fixture.js";
 
 const checksum =
-  "c1f05c412daf480f35cfe5c0bbd982a9c56f7957be03a334cc37d143f308306a";
+  "92c1e1a8b574ea6a3379850104f777d9d9c10c30ad256d5ffd78e1aab1e8fb09";
 
 describe("owned character experience rewards", () => {
   it("commits ordered event ownership into persistent character state", async () => {
@@ -28,9 +28,19 @@ describe("owned character experience rewards", () => {
           pendingSkillPointLevels: [2, 3]
         }
       ],
-      claimedExperienceRewardEventIds: [
-        "event.reward.xp.wave_1",
-        "event.reward.xp.wave_2"
+      claimedExperienceRewardEvents: [
+        {
+          schemaVersion: 1,
+          eventId: "event.reward.xp.wave_1",
+          characterId: "character.iron_warden",
+          experience: 90
+        },
+        {
+          schemaVersion: 1,
+          eventId: "event.reward.xp.wave_2",
+          characterId: "character.iron_warden",
+          experience: 170
+        }
       ]
     });
     expect(
@@ -48,6 +58,9 @@ describe("owned character experience rewards", () => {
       }
     ]);
     expect(evidence.replayed.profile).toEqual(evidence.committed.profile);
+    expect(evidence.conflictingReplayError).toBe(
+      "experience reward event conflicts with claimed ownership (event.reward.xp.wave_2)"
+    );
     expect(await canonicalHash(evidence)).toBe(checksum);
   });
 
@@ -191,6 +204,49 @@ describe("owned character experience rewards", () => {
     ).toThrow("level does not match authored thresholds");
   });
 
+  it("rejects a claimed event replayed for a different character", () => {
+    const committed = ownedCharacterExperienceRewardParityEvidence().committed;
+    const profile = {
+      ...committed.profile,
+      unlockedCharacterIds: [
+        ...committed.profile.unlockedCharacterIds,
+        "character.deep_ranger" as never
+      ],
+      characterExperienceStates: [
+        ...committed.profile.characterExperienceStates,
+        {
+          schemaVersion: 1 as const,
+          characterId: "character.deep_ranger" as never,
+          experience: 0,
+          level: 1,
+          pendingSkillPointLevels: []
+        }
+      ]
+    };
+    const before = structuredClone(profile);
+    expect(() =>
+      resolveOwnedCharacterExperienceRewards({
+        schemaVersion: 1,
+        profile,
+        events: [
+          {
+            ...ownedExperienceEvents[0],
+            characterId: "character.deep_ranger" as never
+          }
+        ],
+        thresholdSets: [
+          ...ownedExperienceThresholdSets,
+          {
+            schemaVersion: 1,
+            characterId: "character.deep_ranger" as never,
+            thresholds: characterLevelThresholds
+          }
+        ]
+      })
+    ).toThrow("conflicts with claimed ownership");
+    expect(profile).toEqual(before);
+  });
+
   it("preserves owned XP and replay claims through boss profile transitions", () => {
     const owned = resolveOwnedCharacterExperienceRewards({
       schemaVersion: 1,
@@ -221,8 +277,8 @@ describe("owned character experience rewards", () => {
     expect(boss.profile.characterExperienceStates).toEqual(
       owned.profile.characterExperienceStates
     );
-    expect(boss.profile.claimedExperienceRewardEventIds).toEqual(
-      owned.profile.claimedExperienceRewardEventIds
+    expect(boss.profile.claimedExperienceRewardEvents).toEqual(
+      owned.profile.claimedExperienceRewardEvents
     );
   });
 
