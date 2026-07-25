@@ -105,6 +105,7 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
       "purchased upgrade catalog has unsupported schemaVersion"
     );
   const seen = new Set<StableId>();
+  const seenOwners = new Set<string>();
   let totalRecords = 0;
   const upgrades = requireProfileArray(
     source.upgrades,
@@ -146,6 +147,18 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
         kind === "ability_rank" ? characterIdPattern : itemIdPattern,
         `${description} ownerId`
       );
+      const expectedUpgradePrefix =
+        kind === "ability_rank" ? "upgrade.ability." : "upgrade.item.";
+      if (!upgradeId.startsWith(expectedUpgradePrefix))
+        throw new RangeError(
+          `${description} upgradeId does not match kind (${upgradeId})`
+        );
+      const ownerKey = `${kind}:${ownerId}`;
+      if (seenOwners.has(ownerKey))
+        throw new RangeError(
+          `duplicate purchased upgrade owner (${kind}, ${ownerId})`
+        );
+      seenOwners.add(ownerKey);
       const prerequisites = requireProfileArray(
         definition.prerequisiteUpgradeIds,
         `${description} prerequisiteUpgradeIds`
@@ -298,6 +311,12 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
   return Object.freeze({ schemaVersion: 1, upgrades: Object.freeze(upgrades) });
 }
 
+function passiveEffectsIdentity(
+  definition: PurchasedUpgradeDefinition
+): string {
+  return JSON.stringify(definition.passiveEffectsByRank);
+}
+
 function expectedSpend(
   definition: PurchasedUpgradeDefinition,
   rank: number
@@ -316,7 +335,8 @@ function expectedSpend(
 
 function validatePurchases(
   profile: ProfileState,
-  catalog: PurchasedUpgradeCatalog
+  catalog: PurchasedUpgradeCatalog,
+  requirePassiveEffectsIdentity = false
 ): ReadonlyMap<StableId, PurchasedUpgrade> {
   const definitions = new Map(
     catalog.upgrades.map((upgrade) => [upgrade.upgradeId, upgrade])
@@ -333,6 +353,13 @@ function validatePurchases(
     if (purchase.forgeOreSpent !== expectedSpend(definition, purchase.rank))
       throw new RangeError(
         `profile purchased upgrade spend does not match authored costs (${purchase.upgradeId})`
+      );
+    if (
+      requirePassiveEffectsIdentity &&
+      purchase.passiveEffectsIdentity !== passiveEffectsIdentity(definition)
+    )
+      throw new RangeError(
+        `profile purchased upgrade passive effects do not match authored catalog (${purchase.upgradeId})`
       );
     const ownerIds =
       definition.kind === "ability_rank"
@@ -387,7 +414,7 @@ export function derivePurchasedUpgradeCharacterModifiers(
     );
   const profile = normalizeProfileState(source.profile);
   const catalog = normalizeCatalog(source.catalog);
-  const purchases = validatePurchases(profile, catalog);
+  const purchases = validatePurchases(profile, catalog, true);
   const totals = new Map<
     StableId,
     {
@@ -520,7 +547,8 @@ export function purchaseUpgradeRank(
     schemaVersion: 1 as const,
     upgradeId,
     rank: previousRank + 1,
-    forgeOreSpent
+    forgeOreSpent,
+    passiveEffectsIdentity: passiveEffectsIdentity(definition)
   });
   const purchasedUpgrades = Object.freeze(
     [

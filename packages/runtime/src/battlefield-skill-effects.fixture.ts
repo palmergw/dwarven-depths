@@ -74,12 +74,32 @@ function purchasedUpgradeProfile() {
     catalog: purchasedUpgradeCatalog,
     upgradeId: "upgrade.ability.shield_slam" as never
   });
-  return purchaseUpgradeRank({
+  const rankTwo = purchaseUpgradeRank({
     schemaVersion: 1,
     profile: rankOne.profile,
     catalog: purchasedUpgradeCatalog,
     upgradeId: "upgrade.ability.shield_slam" as never
   }).profile;
+  return Object.freeze({
+    ...rankTwo,
+    characterExperienceStates: Object.freeze([
+      Object.freeze({
+        schemaVersion: 1 as const,
+        characterId: "character.iron_warden" as never,
+        experience: 100,
+        level: 2,
+        pendingSkillPointLevels: Object.freeze([])
+      })
+    ]),
+    selectedSkillNodes: Object.freeze([
+      Object.freeze({
+        schemaVersion: 1 as const,
+        characterId: "character.iron_warden" as never,
+        nodeId: "skill.iron_warden.stone_guard" as never,
+        spentSkillPointLevel: 2
+      })
+    ])
+  });
 }
 
 const skillTree = Object.freeze({
@@ -269,7 +289,8 @@ export async function battlefieldPurchasedUpgradeEffectParityEvidence() {
       schemaVersion: 1,
       battlefield,
       profile,
-      catalog: purchasedUpgradeCatalog
+      catalog: purchasedUpgradeCatalog,
+      skillTrees: [skillTree]
     },
     prepared.content,
     prepared.authority
@@ -279,13 +300,15 @@ export async function battlefieldPurchasedUpgradeEffectParityEvidence() {
       schemaVersion: 1,
       battlefield: deployed.battlefield,
       profile,
-      catalog: purchasedUpgradeCatalog
+      catalog: purchasedUpgradeCatalog,
+      skillTrees: [skillTree]
     },
     prepared.content,
     prepared.authority
   );
   return Object.freeze({
-    modifiers: deployed.modifiers,
+    modifiers: deployed.purchasedModifiers,
+    appliedModifiers: deployed.appliedModifiers,
     dwarf: deployed.battlefield.dwarfCombatants[0],
     repeatedIsEquivalent:
       JSON.stringify(deployed.battlefield) ===

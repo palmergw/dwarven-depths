@@ -20,7 +20,9 @@ import {
 import { ironWardenSkillTree } from "./skill-tree.fixture.js";
 
 const checksum =
-  "ede93ac2992ec7b5069647e1afe79d77bb704cb048bcfee90350df56f7742dc9";
+  "5e84ccbbdae87f2bf498e917c111e9030c0d84c49290ea4406d80273c1c1db85";
+const shieldPassiveEffectsIdentity =
+  '[[{"schemaVersion":1,"kind":"attack_damage_add","value":2},{"schemaVersion":1,"kind":"maximum_health_add","value":20}],[{"schemaVersion":1,"kind":"maximum_health_add","value":30}]]';
 
 function fundedProfile(forgeOre = 60) {
   return {
@@ -50,13 +52,15 @@ describe("Forge Ore purchased upgrades", () => {
           schemaVersion: 1,
           upgradeId: "upgrade.ability.shield_slam",
           rank: 2,
-          forgeOreSpent: 35
+          forgeOreSpent: 35,
+          passiveEffectsIdentity: shieldPassiveEffectsIdentity
         },
         {
           schemaVersion: 1,
           upgradeId: "upgrade.item.powder_cask",
           rank: 1,
-          forgeOreSpent: 15
+          forgeOreSpent: 15,
+          passiveEffectsIdentity: "[[]]"
         }
       ]
     });
@@ -212,7 +216,8 @@ describe("Forge Ore purchased upgrades", () => {
               schemaVersion: 1,
               upgradeId: "upgrade.ability.shield_slam" as never,
               rank: 1,
-              forgeOreSpent: 11
+              forgeOreSpent: 11,
+              passiveEffectsIdentity: shieldPassiveEffectsIdentity
             }
           ]
         },
@@ -230,7 +235,8 @@ describe("Forge Ore purchased upgrades", () => {
               schemaVersion: 1,
               upgradeId: "upgrade.ability.shield_slam" as never,
               rank: 1,
-              forgeOreSpent: 10
+              forgeOreSpent: 10,
+              passiveEffectsIdentity: shieldPassiveEffectsIdentity
             }
           ]
         },
@@ -248,7 +254,8 @@ describe("Forge Ore purchased upgrades", () => {
               schemaVersion: 1,
               upgradeId: "upgrade.ability.shield_slam" as never,
               rank: 1,
-              forgeOreSpent: 10
+              forgeOreSpent: 10,
+              passiveEffectsIdentity: shieldPassiveEffectsIdentity
             }
           ]
         },
@@ -336,5 +343,56 @@ describe("Forge Ore purchased upgrades", () => {
         catalog: purchasedUpgradeCatalog
       })
     ).toEqual(purchasedUpgradeParityEvidence().modifiers);
+    expect(() =>
+      derivePurchasedUpgradeCharacterModifiers({
+        schemaVersion: 1,
+        profile: purchasedUpgradeParityEvidence().shieldRankOne.profile,
+        catalog: {
+          schemaVersion: 1,
+          upgrades: [
+            {
+              ...catalogUpgrade(0),
+              passiveEffectsByRank: [
+                [{ schemaVersion: 1, kind: "maximum_health_add", value: 21 }],
+                catalogUpgrade(0).passiveEffectsByRank[1] ?? []
+              ]
+            }
+          ]
+        }
+      })
+    ).toThrow("passive effects do not match authored catalog");
+    expect(() =>
+      purchaseUpgradeRank({
+        schemaVersion: 1,
+        profile: fundedProfile(),
+        catalog: {
+          schemaVersion: 1,
+          upgrades: [
+            {
+              ...catalogUpgrade(0),
+              upgradeId: "upgrade.item.wrong_namespace" as never
+            }
+          ]
+        },
+        upgradeId: "upgrade.item.wrong_namespace" as never
+      })
+    ).toThrow("upgradeId does not match kind");
+    expect(() =>
+      purchaseUpgradeRank({
+        schemaVersion: 1,
+        profile: fundedProfile(),
+        catalog: {
+          schemaVersion: 1,
+          upgrades: [
+            catalogUpgrade(0),
+            {
+              ...catalogUpgrade(0),
+              upgradeId: "upgrade.ability.second" as never
+            }
+          ]
+        },
+        upgradeId: "upgrade.ability.shield_slam" as never
+      })
+    ).toThrow("duplicate purchased upgrade owner");
   });
 });

@@ -55,8 +55,9 @@ the repository.
   purchase evidence is canonical and browser-parity pinned.
 - Purchased ability ranks can author bounded passive maximum-health, basic-attack
   damage/range, and future-cooldown modifiers per rank. Catalog-validated owned
-  ranks derive absolute cumulative character totals and apply through the same
-  authoritative deployment/live-state boundary as skill effects, preserving
+  ranks bind the exact normalized effect table into new purchase history, reject
+  later catalog substitution, combine with selected skill totals, and apply once
+  through the same authoritative deployment/live-state boundary, preserving
   missing health and already-running or committed work. Item ranks cannot claim
   character passive effects before a loadout owner exists. Reapplication is
   idempotent and nondecreasing, and effect evidence is literal-checksum-pinned

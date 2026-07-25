@@ -1,6 +1,9 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
-import type { BattlefieldState } from "@dwarven-depths/contracts";
+import type { BattlefieldState, StableId } from "@dwarven-depths/contracts";
 import {
+  type CharacterSkillModifiers,
+  type CharacterSkillTreeDefinition,
+  deriveCharacterSkillModifiers,
   derivePurchasedUpgradeCharacterModifiers,
   type ProfileState,
   type PurchasedUpgradeCatalog,
@@ -18,18 +21,26 @@ export interface BattlefieldPurchasedUpgradeEffectRequest {
   readonly battlefield: BattlefieldState;
   readonly profile: ProfileState;
   readonly catalog: PurchasedUpgradeCatalog;
+  readonly skillTrees: readonly CharacterSkillTreeDefinition[];
 }
 
 export interface BattlefieldPurchasedUpgradeEffectResolution {
   readonly schemaVersion: 1;
   readonly battlefield: BattlefieldState;
-  readonly modifiers: readonly PurchasedUpgradeCharacterModifiers[];
+  readonly purchasedModifiers: readonly PurchasedUpgradeCharacterModifiers[];
+  readonly appliedModifiers: readonly BattlefieldCharacterModifiers[];
 }
 
 function requireRequest(
   value: unknown
 ): BattlefieldPurchasedUpgradeEffectRequest {
-  const keys = ["schemaVersion", "battlefield", "profile", "catalog"] as const;
+  const keys = [
+    "schemaVersion",
+    "battlefield",
+    "profile",
+    "catalog",
+    "skillTrees"
+  ] as const;
   if (
     value === null ||
     typeof value !== "object" ||
@@ -48,7 +59,7 @@ function requireRequest(
     !keys.every((key) => Object.hasOwn(descriptors, key))
   )
     throw new TypeError(
-      "battlefield purchased-upgrade effect request must contain exactly schemaVersion, battlefield, profile, catalog"
+      "battlefield purchased-upgrade effect request must contain exactly schemaVersion, battlefield, profile, catalog, skillTrees"
     );
   const record: Record<string, unknown> = {};
   for (const key of keys) {
@@ -71,30 +82,73 @@ function requireRequest(
     schemaVersion: 1,
     battlefield: record["battlefield"] as BattlefieldState,
     profile: record["profile"] as ProfileState,
-    catalog: record["catalog"] as PurchasedUpgradeCatalog
+    catalog: record["catalog"] as PurchasedUpgradeCatalog,
+    skillTrees: record["skillTrees"] as readonly CharacterSkillTreeDefinition[]
   });
 }
 
 function deriveModifiers(input: BattlefieldPurchasedUpgradeEffectRequest) {
-  const modifiers = derivePurchasedUpgradeCharacterModifiers({
+  const purchasedModifiers = derivePurchasedUpgradeCharacterModifiers({
     schemaVersion: 1,
     profile: input.profile,
     catalog: input.catalog
   });
-  const battlefieldModifiers = Object.freeze(
-    modifiers.map(
-      (modifier): BattlefieldCharacterModifiers =>
-        Object.freeze({
-          schemaVersion: 1,
-          characterDefinitionId: modifier.characterId,
-          maximumHealthAdd: modifier.maximumHealthAdd,
-          attackDamageAdd: modifier.attackDamageAdd,
-          attackRangeAdd: modifier.attackRangeAdd,
-          futureCooldownReductionTicks: modifier.futureCooldownReductionTicks
-        })
-    )
+  const skillModifiers = input.skillTrees.map((tree) =>
+    deriveCharacterSkillModifiers({
+      schemaVersion: 1,
+      profile: input.profile,
+      tree
+    })
   );
-  return Object.freeze({ modifiers, battlefieldModifiers });
+  const skillByCharacter = new Map<StableId, CharacterSkillModifiers>();
+  for (const modifier of skillModifiers) {
+    if (skillByCharacter.has(modifier.characterId))
+      throw new RangeError("battlefield skill trees duplicate a character");
+    skillByCharacter.set(modifier.characterId, modifier);
+  }
+  const purchasedByCharacter = new Map(
+    purchasedModifiers.map((modifier) => [modifier.characterId, modifier])
+  );
+  const characterIds = [
+    ...new Set([...skillByCharacter.keys(), ...purchasedByCharacter.keys()])
+  ].sort();
+  const add = (left: number, right: number, description: string) => {
+    const total = left + right;
+    if (!Number.isSafeInteger(total))
+      throw new RangeError(`${description} exceeds safe integer range`);
+    return total;
+  };
+  const battlefieldModifiers = Object.freeze(
+    characterIds.map((characterId): BattlefieldCharacterModifiers => {
+      const skill = skillByCharacter.get(characterId);
+      const purchased = purchasedByCharacter.get(characterId);
+      return Object.freeze({
+        schemaVersion: 1,
+        characterDefinitionId: characterId,
+        maximumHealthAdd: add(
+          skill?.maximumHealthAdd ?? 0,
+          purchased?.maximumHealthAdd ?? 0,
+          "combined maximumHealthAdd"
+        ),
+        attackDamageAdd: add(
+          skill?.attackDamageAdd ?? 0,
+          purchased?.attackDamageAdd ?? 0,
+          "combined attackDamageAdd"
+        ),
+        attackRangeAdd: add(
+          skill?.attackRangeAdd ?? 0,
+          purchased?.attackRangeAdd ?? 0,
+          "combined attackRangeAdd"
+        ),
+        futureCooldownReductionTicks: add(
+          skill?.futureCooldownReductionTicks ?? 0,
+          purchased?.futureCooldownReductionTicks ?? 0,
+          "combined futureCooldownReductionTicks"
+        )
+      });
+    })
+  );
+  return Object.freeze({ purchasedModifiers, battlefieldModifiers });
 }
 
 /** Applies absolute purchased passive totals to an authoritative live battlefield. */
@@ -114,7 +168,8 @@ export function applyPurchasedUpgradeEffectsToBattlefield(
   return Object.freeze({
     schemaVersion: 1,
     battlefield,
-    modifiers: derived.modifiers
+    purchasedModifiers: derived.purchasedModifiers,
+    appliedModifiers: derived.battlefieldModifiers
   });
 }
 
@@ -135,6 +190,7 @@ export function deployBattlefieldDwarvesWithPurchasedUpgradeEffects(
   return Object.freeze({
     schemaVersion: 1,
     battlefield,
-    modifiers: derived.modifiers
+    purchasedModifiers: derived.purchasedModifiers,
+    appliedModifiers: derived.battlefieldModifiers
   });
 }

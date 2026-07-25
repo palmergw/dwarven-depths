@@ -19,6 +19,7 @@ export interface PurchasedUpgrade {
   readonly upgradeId: StableId;
   readonly rank: number;
   readonly forgeOreSpent: number;
+  readonly passiveEffectsIdentity?: string;
 }
 
 export interface SelectedSkillNode {
@@ -267,9 +268,22 @@ function normalizePurchasedUpgrade(
   index: number
 ): PurchasedUpgrade {
   const description = `profile purchasedUpgrades[${index}]`;
+  const hasPassiveEffectsIdentity =
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.hasOwn(value, "passiveEffectsIdentity");
   const source = requireProfileRecord(
     value,
-    ["schemaVersion", "upgradeId", "rank", "forgeOreSpent"],
+    hasPassiveEffectsIdentity
+      ? [
+          "schemaVersion",
+          "upgradeId",
+          "rank",
+          "forgeOreSpent",
+          "passiveEffectsIdentity"
+        ]
+      : ["schemaVersion", "upgradeId", "rank", "forgeOreSpent"],
     description
   );
   if (source.schemaVersion !== 1)
@@ -282,6 +296,15 @@ function normalizePurchasedUpgrade(
   );
   if (forgeOreSpent === 0)
     throw new RangeError(`${description} forgeOreSpent must be positive`);
+  if (
+    hasPassiveEffectsIdentity &&
+    (typeof source.passiveEffectsIdentity !== "string" ||
+      source.passiveEffectsIdentity.length === 0 ||
+      source.passiveEffectsIdentity.length > 8_192)
+  )
+    throw new RangeError(
+      `${description} passiveEffectsIdentity must be a nonempty bounded string`
+    );
   return Object.freeze({
     schemaVersion: 1,
     upgradeId: requireProfileId(
@@ -290,7 +313,10 @@ function normalizePurchasedUpgrade(
       `${description} upgradeId`
     ),
     rank,
-    forgeOreSpent
+    forgeOreSpent,
+    ...(hasPassiveEffectsIdentity
+      ? { passiveEffectsIdentity: source.passiveEffectsIdentity as string }
+      : {})
   });
 }
 
