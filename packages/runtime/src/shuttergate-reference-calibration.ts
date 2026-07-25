@@ -26,6 +26,14 @@ const referencePlacementPointId =
 const bossEntityId = "entity.enemy.shuttergate_010" as never;
 const deepRangerId = "character.deep_ranger" as StableId;
 const targetPolicy: DwarfTargetPolicy = "nearest";
+const targetPolicies: readonly DwarfTargetPolicy[] = Object.freeze([
+  "nearest",
+  "lowest_health",
+  "highest_health",
+  "highest_armor",
+  "fastest",
+  "boss_or_elite_first"
+]);
 const maximumTick = 4_500;
 
 export interface ShuttergateCalibrationMilestone {
@@ -87,10 +95,11 @@ async function requireReferenceContent(
  * authoritative combat, reward, and terminal producer path. The result is a
  * compact calibration artifact rather than a second gameplay loop.
  */
-export async function runShuttergateSeedPlacementCalibration(
+export async function runShuttergateSeedPlacementControllerCalibration(
   content: CompiledContent,
   seed: string,
-  placementPointId: PlacementPointId
+  placementPointId: PlacementPointId,
+  requestedTargetPolicy: DwarfTargetPolicy
 ): Promise<ShuttergateReferenceCalibrationEvidence> {
   if (!/^[1-9]\d{0,9}$/.test(seed) || BigInt(seed) > 0xffff_ffffn) {
     throw new RangeError(
@@ -98,6 +107,11 @@ export async function runShuttergateSeedPlacementCalibration(
     );
   }
   const referenceContent = await requireReferenceContent(content);
+  if (!targetPolicies.includes(requestedTargetPolicy)) {
+    throw new RangeError(
+      `Shuttergate calibration requires an authored target policy (${requestedTargetPolicy})`
+    );
+  }
   const level = referenceContent.levels.get(levelId);
   const map =
     level?.mapId === undefined
@@ -148,7 +162,7 @@ export async function runShuttergateSeedPlacementCalibration(
     Object.freeze({
       schemaVersion: 1 as const,
       dwarfEntityId: wardenEntityId,
-      requestedPolicy: targetPolicy
+      requestedPolicy: requestedTargetPolicy
     })
   ]);
   const milestones: ShuttergateCalibrationMilestone[] = [];
@@ -209,7 +223,7 @@ export async function runShuttergateSeedPlacementCalibration(
       seed,
       levelId,
       placementPointId,
-      targetPolicy,
+      targetPolicy: requestedTargetPolicy,
       safetyTickLimit: maximumTick,
       terminalTick: tick,
       terminalResult,
@@ -232,6 +246,19 @@ export async function runShuttergateSeedPlacementCalibration(
   }
   throw new RangeError(
     `Shuttergate calibration did not terminate by safety tick ${maximumTick}`
+  );
+}
+
+export async function runShuttergateSeedPlacementCalibration(
+  content: CompiledContent,
+  seed: string,
+  placementPointId: PlacementPointId
+): Promise<ShuttergateReferenceCalibrationEvidence> {
+  return runShuttergateSeedPlacementControllerCalibration(
+    content,
+    seed,
+    placementPointId,
+    targetPolicy
   );
 }
 

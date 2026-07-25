@@ -4,10 +4,14 @@
   "content": "../../content/fixtures/phase-3-shuttergate.json",
   "scenario": "./shuttergate-placement-sweep-base.json",
   "axes": {
-    "seed": ["1", "2"],
+    "seed": ["1"],
     "placement": [
       "placement.shuttergate_north_guard",
       "placement.shuttergate_keep_guard"
+    ],
+    "controller": [
+      "controller.target.nearest.v1",
+      "controller.target.lowest_health.v1"
     ]
   }
 }

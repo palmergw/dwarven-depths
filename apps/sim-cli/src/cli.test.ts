@@ -275,7 +275,7 @@ describe("simulation CLI", () => {
     expect(existsSync(assertionOutput)).toBe(false);
   });
 
-  it("expands seed and placement axes through authoritative calibration", () => {
+  it("expands seed, placement, and controller axes through authoritative calibration", () => {
     const directory = temporaryDirectory();
     const content = resolve(directory, "content.json");
     const scenario = resolve(directory, "scenario.json");
@@ -302,10 +302,14 @@ describe("simulation CLI", () => {
       content: "content.json",
       scenario: "scenario.json",
       axes: {
-        seed: ["2", "3"],
+        seed: ["2"],
         placement: [
           "placement.shuttergate_north_guard",
           "placement.shuttergate_keep_guard"
+        ],
+        controller: [
+          "controller.target.nearest.v1",
+          "controller.target.lowest_health.v1"
         ]
       }
     };
@@ -327,25 +331,43 @@ describe("simulation CLI", () => {
       samples: Array<{
         seed: string;
         placementPointId: string;
+        controllerId: string;
         terminalResult: string;
         terminalTick: number;
         calibrationChecksum: string;
         calibrationEvidence: {
           seed: string;
           placementPointId: string;
+          targetPolicy: string;
           terminalResult: string;
           terminalTick: number;
         };
       }>;
     };
-    expect(artifact.schemaVersion).toBe(3);
+    expect(artifact.schemaVersion).toBe(4);
     expect(
-      artifact.samples.map((sample) => [sample.seed, sample.placementPointId])
+      artifact.samples.map((sample) => [
+        sample.seed,
+        sample.placementPointId,
+        sample.controllerId
+      ])
     ).toEqual([
-      ["2", "placement.shuttergate_north_guard"],
-      ["2", "placement.shuttergate_keep_guard"],
-      ["3", "placement.shuttergate_north_guard"],
-      ["3", "placement.shuttergate_keep_guard"]
+      [
+        "2",
+        "placement.shuttergate_north_guard",
+        "controller.target.nearest.v1"
+      ],
+      [
+        "2",
+        "placement.shuttergate_north_guard",
+        "controller.target.lowest_health.v1"
+      ],
+      ["2", "placement.shuttergate_keep_guard", "controller.target.nearest.v1"],
+      [
+        "2",
+        "placement.shuttergate_keep_guard",
+        "controller.target.lowest_health.v1"
+      ]
     ]);
     for (const sample of artifact.samples) {
       expect(sample).toMatchObject({
@@ -353,7 +375,12 @@ describe("simulation CLI", () => {
         placementPointId: sample.calibrationEvidence.placementPointId,
         terminalResult: sample.calibrationEvidence.terminalResult,
         terminalTick: sample.calibrationEvidence.terminalTick,
-        calibrationChecksum: expect.stringMatching(/^[a-f0-9]{64}$/)
+        calibrationChecksum: expect.stringMatching(/^[a-f0-9]{64}$/),
+        calibrationEvidence: {
+          targetPolicy: sample.controllerId.includes("lowest_health")
+            ? "lowest_health"
+            : "nearest"
+        }
       });
     }
     const terminalTicks = artifact.samples
@@ -379,7 +406,7 @@ describe("simulation CLI", () => {
           index === 0
             ? {
                 ...sample,
-                placementPointId: "placement.shuttergate_keep_guard"
+                controllerId: "controller.target.lowest_health.v1"
               }
             : sample
         )
@@ -396,9 +423,10 @@ describe("simulation CLI", () => {
         ...matrixValue,
         axes: {
           seed: ["1"],
-          placement: [
-            "placement.shuttergate_north_guard",
-            "placement.shuttergate_north_guard"
+          placement: ["placement.shuttergate_north_guard"],
+          controller: [
+            "controller.target.nearest.v1",
+            "controller.target.nearest.v1"
           ]
         }
       })
@@ -412,6 +440,37 @@ describe("simulation CLI", () => {
         resolve(directory, "duplicate-output")
       ).status
     ).toBe(2);
+
+    const invalidAxes = [
+      {
+        seed: ["1"],
+        placement: ["placement.shuttergate_north_guard"],
+        controller: ["toString"]
+      },
+      {
+        seed: Array.from({ length: 17 }, (_, index) => String(index + 1)),
+        placement: [
+          "placement.shuttergate_north_guard",
+          "placement.shuttergate_keep_guard"
+        ],
+        controller: [
+          "controller.target.nearest.v1",
+          "controller.target.lowest_health.v1"
+        ]
+      }
+    ];
+    for (const [index, axes] of invalidAxes.entries()) {
+      writeFileSync(matrix, JSON.stringify({ ...matrixValue, axes }));
+      expect(
+        runCli(
+          "sweep",
+          "--matrix",
+          matrix,
+          "--out",
+          resolve(directory, `invalid-controller-output-${index}`)
+        ).status
+      ).toBe(2);
+    }
   }, 60_000);
 
   it("compares verified bundles while ignoring provenance metadata", async () => {
