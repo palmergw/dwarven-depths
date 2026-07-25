@@ -9,7 +9,9 @@ import {
   type ProfileState,
   purchaseUpgradeRank
 } from "@dwarven-depths/progression";
-import { resolveAttemptProgressRewards } from "@dwarven-depths/progression/internal";
+// This is an intentionally package-private workspace integration. The raw
+// event resolver is not exposed by the progression package's export map.
+import { resolveAttemptProgressRewards } from "../../progression/dist/attempt-progress-rewards.js";
 import {
   runShuttergateAttempt,
   type ShuttergateAttemptResult,
