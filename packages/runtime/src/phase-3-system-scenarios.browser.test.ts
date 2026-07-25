@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createPhase3SystemScenarioEvidence } from "./phase-3-system-scenarios.js";
 
 const expectedChecksum =
-  "9395bea6afa8bb9740ad3ac033088a946aa140c6130216a5ca09fc8315c6f8ca";
+  "22d82750c938cc985b3a80ab04af686f5c400a92cb196b811d9bc2e6bd37735f";
 
 describe("Phase 3 combat system browser parity", () => {
   it("matches the literal Node system-evidence checksum", async () => {

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ownedCharacterExperienceRewardParityEvidence } from "./owned-character-experience-rewards.fixture.js";
 
 const checksum =
-  "f543d8d6bddc3b7e5b5d5d837267cad8565fcd85804743b5242590eff6361e89";
+  "3c91b112e6702e7020cde016524958e5d120e4abfd642fb662e225bbf394b3e7";
 
 describe("owned character experience reward browser parity", () => {
   it("matches literal Node persistent reward evidence", async () => {
