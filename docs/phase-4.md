@@ -191,11 +191,22 @@ the repository.
   the deterministic Shield Slam rank-1 purchase, and subsequent upgraded-build
   use without accepting caller-authored attempt, reward, purchase, or controller
   decisions.
+- The first `sim minimize` boundary accepts a strict content bundle and a scenario
+  that reproduces `unexpected_terminal_result`. It preserves the exact expected
+  and actual terminal results while deterministically deleting commands and
+  binary-searching the smallest reproducing tick budget. The published schema-1
+  artifact is self-contained, binds original/minimized scenario and content
+  hashes, retained original command indexes, candidate count, and a canonical
+  checksum, and proves command-deletion 1-minimality plus tick-budget minimality
+  before validated rollback-safe replacement. Replacement rejects malformed or
+  non-reproducing evidence, extra artifacts, hardlinks, and symlinked outputs.
+  Replay-input minimization and additional assertion/invariant classes remain
+  later expansions.
 
 ## Not implemented yet
 
 Additional historical save migrations and campaign policy variants,
 catch-up experience, active ability and item-rank behavior, full save scope,
 player-facing recycle confirmation, additional build and active-ability controller sweep axes,
-additional statistical sweep metrics, campaign report variants, minimization harnesses, and upgraded-build
+additional statistical sweep metrics, campaign report variants, minimization expansions, and upgraded-build
 calibration remain later Phase 4 checkpoints.

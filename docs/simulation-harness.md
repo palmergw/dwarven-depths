@@ -73,10 +73,11 @@ pnpm sim campaign \
   --scenario scenarios/campaigns/vertical-slice-progression.yaml \
   --out reports/campaign-progression
 
-# Minimize a failing replay or scenario while preserving an assertion failure
+# Minimize a failing scenario while preserving its terminal-result assertion
 pnpm sim minimize \
-  --run reports/failing-case \
-  --assert invariant.no_overlap
+  --content content/fixtures/empty-content.json \
+  --scenario scenarios/failing-case.json \
+  --out reports/minimized-failing-case
 
 # Render text, JSON, CSV, or optional SVG diagnostics
 pnpm sim render \

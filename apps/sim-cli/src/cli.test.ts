@@ -56,6 +56,228 @@ afterEach(() => {
 });
 
 describe("simulation CLI", () => {
+  it("minimizes a terminal-result assertion into self-verifying 1-minimal evidence", () => {
+    const directory = temporaryDirectory();
+    const content = resolve(directory, "content.json");
+    const scenario = resolve(directory, "scenario.json");
+    const output = resolve(directory, "minimization-output");
+    writeFileSync(
+      content,
+      JSON.stringify({
+        schemaVersion: 1,
+        contentVersion: "minimization-test",
+        definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+      })
+    );
+    const scenarioValue = {
+      schemaVersion: 1,
+      id: "scenario.test.minimization",
+      levelId: "level.empty",
+      seed: "1",
+      maximumTicks: 64,
+      commands: [{ atTick: 0, type: "confirmPreparation" }],
+      expectedTerminalResult: "defeat"
+    };
+    writeFileSync(scenario, JSON.stringify(scenarioValue));
+
+    const first = runCli(
+      "minimize",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      output
+    );
+    expect(first.status).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({
+      ok: true,
+      minimized: true,
+      assertionCode: "unexpected_terminal_result",
+      expectedTerminalResult: "defeat",
+      actualTerminalResult: "victory",
+      originalCommandCount: 1,
+      minimizedCommandCount: 1
+    });
+    const artifactPath = resolve(output, "minimization.json");
+    const artifactText = readFileSync(artifactPath, "utf8");
+    const artifact = JSON.parse(artifactText) as {
+      retainedCommandIndexes: number[];
+      candidateEvaluationCount: number;
+      actualTerminalResult: string;
+    };
+    expect(artifact.retainedCommandIndexes).toEqual([0]);
+    expect(artifact.candidateEvaluationCount).toBeGreaterThan(1);
+    expect(
+      JSON.parse(
+        readFileSync(
+          resolve(output, "scenario.minimized.compiled.json"),
+          "utf8"
+        )
+      ).maximumTicks
+    ).toBe(1);
+    expect(
+      JSON.parse(
+        readFileSync(
+          resolve(output, "scenario.minimized.compiled.json"),
+          "utf8"
+        )
+      ).commands
+    ).toEqual([{ atTick: 0, type: "confirmPreparation" }]);
+
+    const replaced = runCli(
+      "minimize",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(replaced.status).toBe(0);
+    expect(readFileSync(artifactPath, "utf8")).toBe(artifactText);
+
+    writeFileSync(
+      artifactPath,
+      artifactText.replace(
+        '"actualTerminalResult": "victory"',
+        '"actualTerminalResult": "defeat"'
+      )
+    );
+    const tampered = runCli(
+      "minimize",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(tampered.status).toBe(3);
+    expect(JSON.parse(tampered.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "report", code: "report_generation_failed" }
+    });
+    writeFileSync(artifactPath, artifactText);
+
+    writeFileSync(resolve(output, "unexpected.json"), "{}\n");
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        output,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(3);
+    rmSync(resolve(output, "unexpected.json"));
+
+    const hardlinkSource = resolve(directory, "hardlinked-minimization.json");
+    writeFileSync(hardlinkSource, artifactText);
+    rmSync(artifactPath);
+    linkSync(hardlinkSource, artifactPath);
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        output,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(3);
+    rmSync(artifactPath);
+    rmSync(hardlinkSource);
+    writeFileSync(artifactPath, artifactText);
+
+    const symlinkedOutput = resolve(directory, "symlinked-minimization");
+    symlinkSync(output, symlinkedOutput, "dir");
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        symlinkedOutput,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(3);
+
+    const oversizedContent = resolve(directory, "oversized-content.json");
+    const oversizedScenario = resolve(directory, "oversized-scenario.json");
+    const oversizedOutput = resolve(directory, "oversized-output");
+    writeFileSync(
+      oversizedContent,
+      JSON.stringify({
+        schemaVersion: 1,
+        contentVersion: "oversized-minimization-test",
+        definitions: Array.from({ length: 80_001 }, (_, index) => ({
+          kind: "level",
+          id: `level.minimization.level_${index}`,
+          waveIds: []
+        }))
+      })
+    );
+    writeFileSync(
+      oversizedScenario,
+      JSON.stringify({
+        ...scenarioValue,
+        id: "scenario.test.oversized_minimization",
+        levelId: "level.minimization.level_0"
+      })
+    );
+    const oversized = runCli(
+      "minimize",
+      "--content",
+      oversizedContent,
+      "--scenario",
+      oversizedScenario,
+      "--out",
+      oversizedOutput
+    );
+    expect(oversized.status).toBe(3);
+    expect(JSON.parse(oversized.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "report", code: "report_generation_failed" }
+    });
+    expect(existsSync(oversizedOutput)).toBe(false);
+
+    const nonFailingOutput = resolve(directory, "non-failing-output");
+    writeFileSync(
+      scenario,
+      JSON.stringify({ ...scenarioValue, expectedTerminalResult: "victory" })
+    );
+    const nonFailing = runCli(
+      "minimize",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      nonFailingOutput
+    );
+    expect(nonFailing.status).toBe(2);
+    expect(JSON.parse(nonFailing.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "input", code: "invalid_cli_input" }
+    });
+    expect(existsSync(nonFailingOutput)).toBe(false);
+  });
+
   it("publishes and replay-validates a durable authoritative campaign", async () => {
     const directory = temporaryDirectory();
     const content = resolve(directory, "content.json");
