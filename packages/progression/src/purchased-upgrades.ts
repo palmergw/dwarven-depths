@@ -55,6 +55,12 @@ export interface ForgeOrePurchaseResolution {
   readonly decision: ForgeOrePurchaseDecision;
 }
 
+export interface PurchasedUpgradeValidationRequest {
+  readonly schemaVersion: 1;
+  readonly profile: ProfileState;
+  readonly catalog: PurchasedUpgradeCatalog;
+}
+
 const upgradeKinds = new Set<PurchasedUpgradeKind>([
   "ability_rank",
   "item_rank"
@@ -261,6 +267,24 @@ function validatePurchases(
       );
   }
   return purchased;
+}
+
+/** Validates persisted purchases against their authored catalog without mutation. */
+export function validatePurchasedUpgradeProfile(
+  request: PurchasedUpgradeValidationRequest
+): ProfileState {
+  const source = requireProfileRecord(
+    request,
+    ["schemaVersion", "profile", "catalog"],
+    "purchased upgrade validation request"
+  );
+  if (source.schemaVersion !== 1)
+    throw new RangeError(
+      "purchased upgrade validation request has unsupported schemaVersion"
+    );
+  const profile = normalizeProfileState(source.profile);
+  validatePurchases(profile, normalizeCatalog(source.catalog));
+  return profile;
 }
 
 /** Purchases exactly the next authored rank with Forge Ore. */

@@ -70,10 +70,22 @@ the repository.
   exact historical generation as a backup in the same atomic transaction.
   Interrupted migrations expose neither a partial backup nor a partial current
   save, while corrupt and unsupported-newer records remain untouched.
+- Full progression recycle transactions accept exactly one complete character
+  skill tree or the complete shared purchased-upgrade track. Character recycle
+  restores every persisted spent-level point in ascending order; shared recycle
+  refunds the exact catalog-validated cumulative Forge Ore spend. Both scopes
+  increment the profile revision once and reset validated campaign access to
+  the authored first level while preserving modeled XP, levels, unspent state,
+  other character choices, unlocks, items, and claimed reward ownership.
+  Strict request, campaign-prefix, owner, catalog, empty-scope, and overflow
+  validation is atomic, with reason-coded immutable evidence pinned across Node,
+  Chromium, Firefox, and WebKit. Player-facing destructive confirmation and
+  unmodeled settings, codex, achievement, and complete campaign-save integration
+  remain outside this executable boundary.
 
 ## Not implemented yet
 
 Additional historical save migrations, encounter reward-event production,
 catch-up experience, purchased-upgrade effect application, full save scope,
-recycle transactions, campaign/sweep harnesses, and upgraded-build calibration
-remain later Phase 4 checkpoints.
+player-facing recycle confirmation, campaign/sweep harnesses, and upgraded-build
+calibration remain later Phase 4 checkpoints.
