@@ -99,12 +99,22 @@ the repository.
   Warden placement point through one shared combat, reward, and terminal path.
   The original north-guard reference API and checksum remain stable, while
   unknown or foreign placement IDs are rejected before combat. This is the
-  executable prerequisite for, but not yet the CLI placement sweep axis.
+  executable prerequisite for the CLI placement sweep axis.
+- A strict optional placement axis expands with authored seeds in seed-major,
+  placement-minor Cartesian order through `sim sweep`, bounded to 64 total
+  samples. Placement sweeps use artifact schema 3, preserve the selected seed
+  and placement in every sample, execute each pair through the authoritative
+  Shuttergate combat/reward/terminal producer, and bind the complete evidence
+  by canonical checksum. Aggregate outcome and nearest-rank terminal-tick
+  metrics derive from that evidence. Replacement recompiles the self-contained
+  content, reruns every pair, and rejects reordered, foreign, duplicate, or
+  tampered identity/evidence. Existing seed-only schema-2 run bundles remain
+  unchanged and replay-verifiable.
 
 ## Not implemented yet
 
 Additional historical save migrations, encounter reward-event production,
 catch-up experience, purchased-upgrade effect application, full save scope,
-player-facing recycle confirmation, placement/build/controller sweep axes,
+player-facing recycle confirmation, build/controller sweep axes,
 additional statistical sweep metrics, campaign/minimization harnesses, and upgraded-build
 calibration remain later Phase 4 checkpoints.

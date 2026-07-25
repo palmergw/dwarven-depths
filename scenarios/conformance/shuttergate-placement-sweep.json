@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "matrix.conformance.shuttergate_placement_sweep",
+  "content": "../../content/fixtures/phase-3-shuttergate.json",
+  "scenario": "./shuttergate-placement-sweep-base.json",
+  "axes": {
+    "seed": ["1", "2"],
+    "placement": [
+      "placement.shuttergate_north_guard",
+      "placement.shuttergate_keep_guard"
+    ]
+  }
+}

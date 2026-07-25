@@ -65,6 +65,7 @@ export {
 export {
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,
+  runShuttergateSeedPlacementCalibration,
   type ShuttergateCalibrationMilestone,
   type ShuttergateReferenceCalibrationEvidence
 } from "./shuttergate-reference-calibration.js";

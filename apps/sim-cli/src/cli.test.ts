@@ -5,6 +5,7 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -273,6 +274,145 @@ describe("simulation CLI", () => {
     });
     expect(existsSync(assertionOutput)).toBe(false);
   });
+
+  it("expands seed and placement axes through authoritative calibration", () => {
+    const directory = temporaryDirectory();
+    const content = resolve(directory, "content.json");
+    const scenario = resolve(directory, "scenario.json");
+    const matrix = resolve(directory, "matrix.json");
+    const output = resolve(directory, "placement-sweep-output");
+    writeFileSync(
+      content,
+      readFileSync(resolve("content/fixtures/phase-3-shuttergate.json"))
+    );
+    writeFileSync(
+      scenario,
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "scenario.test.placement_sweep",
+        levelId: "level.shuttergate_hall",
+        seed: "99",
+        maximumTicks: 1,
+        commands: [{ atTick: 0, type: "confirmPreparation" }]
+      })
+    );
+    const matrixValue = {
+      schemaVersion: 1,
+      id: "matrix.test.placement_sweep",
+      content: "content.json",
+      scenario: "scenario.json",
+      axes: {
+        seed: ["2", "3"],
+        placement: [
+          "placement.shuttergate_north_guard",
+          "placement.shuttergate_keep_guard"
+        ]
+      }
+    };
+    writeFileSync(matrix, JSON.stringify(matrixValue));
+
+    const result = runCli("sweep", "--matrix", matrix, "--out", output);
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      ok: true,
+      swept: true,
+      matrixId: "matrix.test.placement_sweep",
+      sampleCount: 4
+    });
+    const artifact = JSON.parse(
+      readFileSync(resolve(output, "sweep.json"), "utf8")
+    ) as {
+      schemaVersion: number;
+      aggregate: unknown;
+      samples: Array<{
+        seed: string;
+        placementPointId: string;
+        terminalResult: string;
+        terminalTick: number;
+        calibrationChecksum: string;
+        calibrationEvidence: {
+          seed: string;
+          placementPointId: string;
+          terminalResult: string;
+          terminalTick: number;
+        };
+      }>;
+    };
+    expect(artifact.schemaVersion).toBe(3);
+    expect(
+      artifact.samples.map((sample) => [sample.seed, sample.placementPointId])
+    ).toEqual([
+      ["2", "placement.shuttergate_north_guard"],
+      ["2", "placement.shuttergate_keep_guard"],
+      ["3", "placement.shuttergate_north_guard"],
+      ["3", "placement.shuttergate_keep_guard"]
+    ]);
+    for (const sample of artifact.samples) {
+      expect(sample).toMatchObject({
+        seed: sample.calibrationEvidence.seed,
+        placementPointId: sample.calibrationEvidence.placementPointId,
+        terminalResult: sample.calibrationEvidence.terminalResult,
+        terminalTick: sample.calibrationEvidence.terminalTick,
+        calibrationChecksum: expect.stringMatching(/^[a-f0-9]{64}$/)
+      });
+    }
+    const terminalTicks = artifact.samples
+      .map((sample) => sample.terminalTick)
+      .sort((left, right) => left - right);
+    expect(artifact.aggregate).toEqual({
+      terminalResultCounts: [{ terminalResult: "defeat", count: 4 }],
+      terminalTick: {
+        minimum: terminalTicks[0],
+        maximum: terminalTicks[3],
+        p50NearestRank: terminalTicks[1],
+        p90NearestRank: terminalTicks[3]
+      }
+    });
+    expect(existsSync(resolve(output, "content.compiled.json"))).toBe(true);
+    expect(readdirSync(resolve(output, "runs"))).toEqual([]);
+
+    writeFileSync(
+      resolve(output, "sweep.json"),
+      JSON.stringify({
+        ...artifact,
+        samples: artifact.samples.map((sample, index) =>
+          index === 0
+            ? {
+                ...sample,
+                placementPointId: "placement.shuttergate_keep_guard"
+              }
+            : sample
+        )
+      })
+    );
+    expect(
+      runCli("sweep", "--matrix", matrix, "--out", output, "--replace", "true")
+        .status
+    ).toBe(3);
+
+    writeFileSync(
+      matrix,
+      JSON.stringify({
+        ...matrixValue,
+        axes: {
+          seed: ["1"],
+          placement: [
+            "placement.shuttergate_north_guard",
+            "placement.shuttergate_north_guard"
+          ]
+        }
+      })
+    );
+    expect(
+      runCli(
+        "sweep",
+        "--matrix",
+        matrix,
+        "--out",
+        resolve(directory, "duplicate-output")
+      ).status
+    ).toBe(2);
+  }, 60_000);
 
   it("compares verified bundles while ignoring provenance metadata", async () => {
     const directory = temporaryDirectory();
