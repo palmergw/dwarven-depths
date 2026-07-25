@@ -1,8 +1,10 @@
 import { compileContent } from "@dwarven-depths/content-runtime";
 import type { SimulationState } from "@dwarven-depths/contracts";
-import type {
-  CharacterSkillTreeDefinition,
-  ProfileState
+import {
+  type CharacterSkillTreeDefinition,
+  createInitialProfile,
+  type ProfileState,
+  purchaseUpgradeRank
 } from "@dwarven-depths/progression";
 import {
   createBattlefieldDwarfDeploymentAuthority,
@@ -18,9 +20,67 @@ import combatantsContent from "../../../content/fixtures/phase-3-reference-comba
   type: "json"
 };
 import {
+  applyPurchasedUpgradeEffectsToBattlefield,
+  deployBattlefieldDwarvesWithPurchasedUpgradeEffects
+} from "./battlefield-purchased-upgrade-effects.js";
+import {
   applySelectedSkillEffectsToBattlefield,
   deployBattlefieldDwarvesWithSelectedSkillEffects
 } from "./battlefield-skill-effects.js";
+
+const purchasedUpgradeCatalog = Object.freeze({
+  schemaVersion: 1 as const,
+  upgrades: Object.freeze([
+    Object.freeze({
+      schemaVersion: 1 as const,
+      upgradeId: "upgrade.ability.shield_slam" as never,
+      kind: "ability_rank" as const,
+      ownerId: "character.iron_warden" as never,
+      prerequisiteUpgradeIds: Object.freeze([]),
+      rankCosts: Object.freeze([10, 25]),
+      passiveEffectsByRank: Object.freeze([
+        Object.freeze([
+          Object.freeze({
+            schemaVersion: 1 as const,
+            kind: "maximum_health_add" as const,
+            value: 20
+          }),
+          Object.freeze({
+            schemaVersion: 1 as const,
+            kind: "attack_damage_add" as const,
+            value: 2
+          })
+        ]),
+        Object.freeze([
+          Object.freeze({
+            schemaVersion: 1 as const,
+            kind: "maximum_health_add" as const,
+            value: 30
+          })
+        ])
+      ])
+    })
+  ])
+});
+
+function purchasedUpgradeProfile() {
+  const initial = Object.freeze({
+    ...createInitialProfile("character.iron_warden" as never),
+    forgeOre: 60
+  });
+  const rankOne = purchaseUpgradeRank({
+    schemaVersion: 1,
+    profile: initial,
+    catalog: purchasedUpgradeCatalog,
+    upgradeId: "upgrade.ability.shield_slam" as never
+  });
+  return purchaseUpgradeRank({
+    schemaVersion: 1,
+    profile: rankOne.profile,
+    catalog: purchasedUpgradeCatalog,
+    upgradeId: "upgrade.ability.shield_slam" as never
+  }).profile;
+}
 
 const skillTree = Object.freeze({
   schemaVersion: 1 as const,
@@ -195,6 +255,42 @@ async function deployedRound(selectedProfile?: ProfileState) {
       battlefield
     }) as SimulationState
   };
+}
+
+/** Shared purchased-effect evidence executed unchanged by Node and browsers. */
+export async function battlefieldPurchasedUpgradeEffectParityEvidence() {
+  const prepared = await preparedRound();
+  const battlefield = prepared.admitted.state.battlefield;
+  if (battlefield === undefined)
+    throw new Error("missing admitted battlefield");
+  const profile = purchasedUpgradeProfile();
+  const deployed = deployBattlefieldDwarvesWithPurchasedUpgradeEffects(
+    {
+      schemaVersion: 1,
+      battlefield,
+      profile,
+      catalog: purchasedUpgradeCatalog
+    },
+    prepared.content,
+    prepared.authority
+  );
+  const repeated = applyPurchasedUpgradeEffectsToBattlefield(
+    {
+      schemaVersion: 1,
+      battlefield: deployed.battlefield,
+      profile,
+      catalog: purchasedUpgradeCatalog
+    },
+    prepared.content,
+    prepared.authority
+  );
+  return Object.freeze({
+    modifiers: deployed.modifiers,
+    dwarf: deployed.battlefield.dwarfCombatants[0],
+    repeatedIsEquivalent:
+      JSON.stringify(deployed.battlefield) ===
+      JSON.stringify(repeated.battlefield)
+  });
 }
 
 /** Shared nonempty evidence executed unchanged by Node and browsers. */

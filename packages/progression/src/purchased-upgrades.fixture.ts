@@ -1,5 +1,8 @@
 import { createInitialProfile } from "./profile-state.js";
-import { purchaseUpgradeRank } from "./purchased-upgrades.js";
+import {
+  derivePurchasedUpgradeCharacterModifiers,
+  purchaseUpgradeRank
+} from "./purchased-upgrades.js";
 
 export const purchasedUpgradeCatalog = Object.freeze({
   schemaVersion: 1 as const,
@@ -10,7 +13,28 @@ export const purchasedUpgradeCatalog = Object.freeze({
       kind: "ability_rank" as const,
       ownerId: "character.iron_warden" as never,
       prerequisiteUpgradeIds: Object.freeze([]),
-      rankCosts: Object.freeze([10, 25])
+      rankCosts: Object.freeze([10, 25]),
+      passiveEffectsByRank: Object.freeze([
+        Object.freeze([
+          Object.freeze({
+            schemaVersion: 1 as const,
+            kind: "maximum_health_add" as const,
+            value: 20
+          }),
+          Object.freeze({
+            schemaVersion: 1 as const,
+            kind: "attack_damage_add" as const,
+            value: 2
+          })
+        ]),
+        Object.freeze([
+          Object.freeze({
+            schemaVersion: 1 as const,
+            kind: "maximum_health_add" as const,
+            value: 30
+          })
+        ])
+      ])
     }),
     Object.freeze({
       schemaVersion: 1 as const,
@@ -20,7 +44,8 @@ export const purchasedUpgradeCatalog = Object.freeze({
       prerequisiteUpgradeIds: Object.freeze([
         "upgrade.ability.shield_slam" as never
       ]),
-      rankCosts: Object.freeze([15])
+      rankCosts: Object.freeze([15]),
+      passiveEffectsByRank: Object.freeze([Object.freeze([])])
     })
   ])
 });
@@ -52,5 +77,15 @@ export function purchasedUpgradeParityEvidence() {
     catalog: purchasedUpgradeCatalog,
     upgradeId: "upgrade.ability.shield_slam" as never
   });
-  return Object.freeze({ shieldRankOne, powderCask, shieldRankTwo });
+  const modifiers = derivePurchasedUpgradeCharacterModifiers({
+    schemaVersion: 1,
+    profile: shieldRankTwo.profile,
+    catalog: purchasedUpgradeCatalog
+  });
+  return Object.freeze({
+    shieldRankOne,
+    powderCask,
+    shieldRankTwo,
+    modifiers
+  });
 }

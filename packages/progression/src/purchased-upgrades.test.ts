@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { bossDeaths, bossRewards } from "./boss-rewards.fixture.js";
 import {
   createInitialProfile,
+  derivePurchasedUpgradeCharacterModifiers,
   purchaseUpgradeRank,
   resolveBossDeathRewards,
   resolveOwnedCharacterExperienceRewards,
@@ -19,7 +20,7 @@ import {
 import { ironWardenSkillTree } from "./skill-tree.fixture.js";
 
 const checksum =
-  "9211521865e0c892226be475a3e4a2e28defb44ea4b0105195decb8d18b1c9ec";
+  "ede93ac2992ec7b5069647e1afe79d77bb704cb048bcfee90350df56f7742dc9";
 
 function fundedProfile(forgeOre = 60) {
   return {
@@ -70,6 +71,17 @@ describe("Forge Ore purchased upgrades", () => {
       status: "purchased",
       reason: "upgrade_rank_purchased"
     });
+    expect(evidence.modifiers).toEqual([
+      {
+        schemaVersion: 1,
+        characterId: "character.iron_warden",
+        maximumHealthAdd: 50,
+        attackDamageAdd: 2,
+        attackRangeAdd: 0,
+        futureCooldownReductionTicks: 0,
+        sourceUpgradeIds: ["upgrade.ability.shield_slam"]
+      }
+    ]);
     expect(await canonicalHash(evidence)).toBe(checksum);
   });
 
@@ -292,5 +304,37 @@ describe("Forge Ore purchased upgrades", () => {
         upgradeId: "upgrade.ability.shield_slam" as never
       })
     ).toThrow("must contain exactly");
+    expect(() =>
+      purchaseUpgradeRank({
+        schemaVersion: 1,
+        profile: fundedProfile(),
+        catalog: {
+          schemaVersion: 1,
+          upgrades: [
+            {
+              ...catalogUpgrade(1),
+              prerequisiteUpgradeIds: [],
+              passiveEffectsByRank: [
+                [
+                  {
+                    schemaVersion: 1,
+                    kind: "attack_damage_add",
+                    value: 1
+                  }
+                ]
+              ]
+            }
+          ]
+        },
+        upgradeId: "upgrade.item.powder_cask" as never
+      })
+    ).toThrow("item rank cannot define character passive effects");
+    expect(
+      derivePurchasedUpgradeCharacterModifiers({
+        schemaVersion: 1,
+        profile: purchasedUpgradeParityEvidence().shieldRankTwo.profile,
+        catalog: purchasedUpgradeCatalog
+      })
+    ).toEqual(purchasedUpgradeParityEvidence().modifiers);
   });
 });
