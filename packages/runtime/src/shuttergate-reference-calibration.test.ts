@@ -5,6 +5,7 @@ import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json
   type: "json"
 };
 import {
+  runShuttergateAttempt,
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,
   runShuttergateSeedPlacementCalibration,
@@ -212,6 +213,79 @@ describe("Shuttergate reference balance calibration", () => {
       "58e6f8047ccf310e4a80d3110e1b6e761508169b0447483488f5e679c778154f"
     );
   }, 15_000);
+
+  it("produces attempt reward evidence from the authoritative encounter", async () => {
+    const content = await compileContent(shuttergateInput);
+    const result = await runShuttergateAttempt(content, {
+      schemaVersion: 1,
+      attemptId: "attempt.shuttergate.a0001" as never,
+      seed: "1",
+      placementPointId: "placement.shuttergate_north_guard" as never,
+      targetPolicy: "nearest",
+      buildId: "build.profile.new_campaign.v1"
+    });
+
+    expect(result.rewardEvent).toEqual({
+      schemaVersion: 1,
+      rewardId: "reward.attempt.shuttergate.a0001",
+      attemptId: "attempt.shuttergate.a0001",
+      levelId: "level.shuttergate_hall",
+      terminalResult: "defeat",
+      defeatedEnemies: result.calibration.defeatedEnemies,
+      startedWaveIds: [
+        "wave.shuttergate_1",
+        "wave.shuttergate_2",
+        "wave.shuttergate_3"
+      ]
+    });
+    expect(result.calibration.terminalResult).toBe(
+      result.rewardEvent.terminalResult
+    );
+    expect(Object.isFrozen(result)).toBe(true);
+    expect(Object.isFrozen(result.rewardEvent.startedWaveIds)).toBe(true);
+    expect(await canonicalHash(result.rewardEvent)).toBe(
+      "562b435c2f90110cdf3fa6b6a5bcf48676777ba6b7a1d6b132624054db50dcff"
+    );
+
+    const upgradedKeep = await runShuttergateAttempt(content, {
+      schemaVersion: 1,
+      attemptId: "attempt.shuttergate.a0002" as never,
+      seed: "2",
+      placementPointId: "placement.shuttergate_keep_guard" as never,
+      targetPolicy: "lowest_health",
+      buildId: "build.warden.shield_slam_rank_1.v1"
+    });
+    expect(upgradedKeep.rewardEvent).toMatchObject({
+      rewardId: "reward.attempt.shuttergate.a0002",
+      attemptId: "attempt.shuttergate.a0002",
+      defeatedEnemies: upgradedKeep.calibration.defeatedEnemies,
+      terminalResult: upgradedKeep.calibration.terminalResult
+    });
+    expect(upgradedKeep.calibration).toMatchObject({
+      placementPointId: "placement.shuttergate_keep_guard",
+      targetPolicy: "lowest_health",
+      buildId: "build.warden.shield_slam_rank_1.v1"
+    });
+  }, 15_000);
+
+  it("rejects malformed attempt identity before compiling encounter content", async () => {
+    const content = await compileContent(shuttergateInput);
+    const forgedContent = {
+      ...content,
+      bundle: { ...content.bundle, schemaVersion: 999 }
+    } as never;
+
+    await expect(
+      runShuttergateAttempt(forgedContent, {
+        schemaVersion: 1,
+        attemptId: "attempt.INVALID" as never,
+        seed: "1",
+        placementPointId: "placement.shuttergate_north_guard" as never,
+        targetPolicy: "nearest",
+        buildId: "build.profile.new_campaign.v1"
+      })
+    ).rejects.toThrow("canonical attempt ID");
+  });
 
   it("rejects placement points outside the pinned Shuttergate map", async () => {
     const content = await compileContent(shuttergateInput);
