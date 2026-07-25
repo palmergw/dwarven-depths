@@ -36,6 +36,12 @@ export {
   renderBattlefieldText
 } from "./battlefield-render.js";
 export {
+  applySelectedSkillEffectsToBattlefield,
+  type BattlefieldSkillEffectRequest,
+  type BattlefieldSkillEffectResolution,
+  deployBattlefieldDwarvesWithSelectedSkillEffects
+} from "./battlefield-skill-effects.js";
+export {
   type BossRewardCheckpointRequest,
   type BossRewardCheckpointResult,
   resolveBossRewardCheckpoint

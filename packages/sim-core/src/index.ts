@@ -10,6 +10,7 @@ export {
   resolveBattlefieldAttackImpacts,
   resolveDwarfActionPhase
 } from "./battlefield-attack-impact.js";
+
 export * from "./combat-timers.js";
 export * from "./committed-attack-impact.js";
 export * from "./committed-combat-effects.js";
@@ -57,6 +58,7 @@ import {
 import { createAttackInstanceId } from "./attack-instance-id.js";
 import {
   type BattlefieldDwarfDeploymentAuthority,
+  getAuthorizedCommittedAttacks,
   getAuthorizedCommittedAttackTargets,
   normalizeBattlefieldDwarves
 } from "./battlefield-attack-impact.js";
@@ -1574,6 +1576,13 @@ export function resolveBattlefieldPhase(
           dwarfAuthority,
           content,
           state.battlefield
+        ),
+    dwarfAuthority === undefined
+      ? undefined
+      : getAuthorizedCommittedAttacks(
+          dwarfAuthority,
+          content,
+          state.battlefield
         )
   );
   const existingEnemyEntityIds = new Set(
@@ -1860,6 +1869,13 @@ export function resolveScheduledBattlefieldPhase(
     dwarfAuthority === undefined
       ? undefined
       : getAuthorizedCommittedAttackTargets(
+          dwarfAuthority,
+          content,
+          state.battlefield
+        ),
+    dwarfAuthority === undefined
+      ? undefined
+      : getAuthorizedCommittedAttacks(
           dwarfAuthority,
           content,
           state.battlefield

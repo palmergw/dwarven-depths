@@ -34,6 +34,15 @@ export interface BattlefieldDwarfDeploymentAuthority {
   readonly deployments: readonly DwarfDeployment[];
 }
 
+export interface BattlefieldCharacterModifiers {
+  readonly schemaVersion: 1;
+  readonly characterDefinitionId: StableId;
+  readonly maximumHealthAdd: number;
+  readonly attackDamageAdd: number;
+  readonly attackRangeAdd: number;
+  readonly futureCooldownReductionTicks: number;
+}
+
 const deploymentAuthorityMetadata = new WeakMap<
   BattlefieldDwarfDeploymentAuthority,
   {
@@ -68,6 +77,7 @@ const deploymentAuthorityMetadata = new WeakMap<
       EntityId,
       BattlefieldDwarfCombatant["actionState"]
     >;
+    readonly characterModifiers: Map<StableId, BattlefieldCharacterModifiers>;
     deploymentBattlefield?: BattlefieldState;
   }
 >();
@@ -212,6 +222,92 @@ function requireHealth(value: unknown, description: string): number {
   )
     throw new RangeError(`${description} must be a non-negative safe integer`);
   return value as number;
+}
+
+function requireCharacterModifiers(
+  value: unknown,
+  description: string
+): BattlefieldCharacterModifiers {
+  const record = requireRecord(
+    value,
+    [
+      "schemaVersion",
+      "characterDefinitionId",
+      "maximumHealthAdd",
+      "attackDamageAdd",
+      "attackRangeAdd",
+      "futureCooldownReductionTicks"
+    ],
+    description
+  );
+  if (record["schemaVersion"] !== 1)
+    throw new RangeError(`${description} has unsupported schemaVersion`);
+  return Object.freeze({
+    schemaVersion: 1,
+    characterDefinitionId: requireId(
+      record["characterDefinitionId"],
+      "character",
+      `${description} characterDefinitionId`
+    ),
+    maximumHealthAdd: requireHealth(
+      record["maximumHealthAdd"],
+      `${description} maximumHealthAdd`
+    ),
+    attackDamageAdd: requireHealth(
+      record["attackDamageAdd"],
+      `${description} attackDamageAdd`
+    ),
+    attackRangeAdd: requireHealth(
+      record["attackRangeAdd"],
+      `${description} attackRangeAdd`
+    ),
+    futureCooldownReductionTicks: requireHealth(
+      record["futureCooldownReductionTicks"],
+      `${description} futureCooldownReductionTicks`
+    )
+  });
+}
+
+function addModifier(
+  base: number,
+  addition: number,
+  description: string
+): number {
+  const resolved = base + addition;
+  if (!Number.isSafeInteger(resolved))
+    throw new RangeError(`${description} exceeds safe integer range`);
+  return resolved;
+}
+
+function modifiedCharacterStats(
+  character: NonNullable<ReturnType<CompiledContent["characters"]["get"]>>,
+  modifiers: BattlefieldCharacterModifiers | undefined
+) {
+  return Object.freeze({
+    maximumHealth: addModifier(
+      character.maximumHealth,
+      modifiers?.maximumHealthAdd ?? 0,
+      "modified character maximumHealth"
+    ),
+    basicAttack: Object.freeze({
+      ...character.basicAttack,
+      cooldownTicks: Math.max(
+        1,
+        character.basicAttack.cooldownTicks -
+          (modifiers?.futureCooldownReductionTicks ?? 0)
+      ),
+      damage: addModifier(
+        character.basicAttack.damage,
+        modifiers?.attackDamageAdd ?? 0,
+        "modified character attack damage"
+      ),
+      range: addModifier(
+        character.basicAttack.range,
+        modifiers?.attackRangeAdd ?? 0,
+        "modified character attack range"
+      )
+    })
+  });
 }
 
 function assertAcceptedDwarfActionState(
@@ -378,7 +474,8 @@ export function createBattlefieldDwarfDeploymentAuthority(
           cooldownCompleteAtTick: null
         })
       ])
-    )
+    ),
+    characterModifiers: new Map()
   });
   return authority;
 }
@@ -473,6 +570,30 @@ export function getAuthorizedCommittedAttackTargets(
     metadata.pendingAttacksByBattlefield.set(descendant, accepted);
   }
   return new Map(accepted);
+}
+
+/** Returns complete accepted snapshots for the battlefield's pending attacks. */
+export function getAuthorizedCommittedAttacks(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  battlefield: BattlefieldState
+): ReadonlyMap<StableId, CommittedAttack> {
+  const metadata = requireAuthorityMetadata(authority, content);
+  const targets = getAuthorizedCommittedAttackTargets(
+    authority,
+    content,
+    battlefield
+  );
+  return new Map(
+    [...targets].map(([attackId, targetEntityId]) => {
+      const attack = metadata.committedAttacks.get(attackId);
+      if (attack?.targetEntityId !== targetEntityId)
+        throw new RangeError(
+          `pending attack lacks complete accepted evidence (${attackId})`
+        );
+      return [attackId, attack] as const;
+    })
+  );
 }
 
 function authorizeBattlefieldDwarfHealth(
@@ -1190,12 +1311,18 @@ export function normalizeBattlefieldDwarves(
         record["maximumHealth"],
         `${description} maximumHealth`
       );
+      const modified = modifiedCharacterStats(
+        character,
+        requireAuthorityMetadata(authority, content).characterModifiers.get(
+          characterDefinitionId
+        )
+      );
       if (
-        maximumHealth !== character.maximumHealth ||
+        maximumHealth !== modified.maximumHealth ||
         currentHealth > maximumHealth
       )
         throw new RangeError(
-          `${description} health does not match its authored character`
+          `${description} health does not match authoritative modifiers`
         );
       const lifecycleState = record["lifecycleState"];
       if (lifecycleState !== "active" && lifecycleState !== "downed")
@@ -1210,7 +1337,7 @@ export function normalizeBattlefieldDwarves(
       if (
         authoritativeHealth === undefined
           ? acceptedHealth.size !== 0 ||
-            currentHealth !== character.maximumHealth ||
+            currentHealth !== modified.maximumHealth ||
             lifecycleState !== "active"
           : authoritativeHealth.currentHealth !== currentHealth ||
             authoritativeHealth.lifecycleState !== lifecycleState
@@ -1240,8 +1367,10 @@ export function normalizeBattlefieldDwarves(
         "range",
         "requiresLineOfSight"
       ] as const)
-        if (basicAttack[key] !== character.basicAttack[key])
-          throw new RangeError(`${description} basicAttack is not authored`);
+        if (basicAttack[key] !== modified.basicAttack[key])
+          throw new RangeError(
+            `${description} basicAttack is not authored or does not match authoritative modifiers`
+          );
       const actionStateRecord = requireRecord(
         record["actionState"],
         [
@@ -1301,7 +1430,7 @@ export function normalizeBattlefieldDwarves(
         currentHealth,
         maximumHealth,
         lifecycleState,
-        basicAttack: Object.freeze({ ...character.basicAttack }),
+        basicAttack: modified.basicAttack,
         actionState
       });
     }
@@ -1387,16 +1516,20 @@ export function deployBattlefieldDwarves(
     occupiedNodes.add(nodeId);
     occupiedEntities.add(entityId);
     occupancy.push(Object.freeze({ entityId, nodeId }));
+    const modified = modifiedCharacterStats(
+      character,
+      metadata.characterModifiers.get(characterDefinitionId)
+    );
     dwarfCombatants.push(
       Object.freeze({
         schemaVersion: 1,
         entityId,
         characterDefinitionId,
         placementPointId,
-        currentHealth: character.maximumHealth,
-        maximumHealth: character.maximumHealth,
+        currentHealth: modified.maximumHealth,
+        maximumHealth: modified.maximumHealth,
         lifecycleState: "active",
-        basicAttack: Object.freeze({ ...character.basicAttack }),
+        basicAttack: modified.basicAttack,
         actionState: Object.freeze({
           schemaVersion: 1,
           currentTargetEntityId: null,
@@ -1427,6 +1560,183 @@ export function deployBattlefieldDwarves(
   );
   metadata.deploymentBattlefield = deployed;
   return deployed;
+}
+
+/** @internal Runtime integration after persisted skill validation. */
+export function deployBattlefieldDwarvesWithCharacterModifiers(
+  battlefield: BattlefieldState,
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  value: readonly BattlefieldCharacterModifiers[]
+): BattlefieldState {
+  const metadata = requireAuthorityMetadata(authority, content);
+  if (metadata.deploymentBattlefield !== undefined)
+    throw new RangeError("battlefield dwarves are already initialized");
+  const deployedCharacterIds = new Set(
+    authority.deployments.map((deployment) => deployment.characterDefinitionId)
+  );
+  const nextModifiers = new Map<StableId, BattlefieldCharacterModifiers>();
+  for (const [index, item] of requireArray(
+    value,
+    "battlefield character modifiers"
+  ).entries()) {
+    const modifiers = requireCharacterModifiers(
+      item,
+      `battlefield character modifiers ${index}`
+    );
+    if (!deployedCharacterIds.has(modifiers.characterDefinitionId))
+      throw new RangeError(
+        `battlefield character modifiers ${index} does not own a deployed dwarf`
+      );
+    if (nextModifiers.has(modifiers.characterDefinitionId))
+      throw new RangeError(
+        "battlefield character modifiers duplicate a character"
+      );
+    const character = content.characters.get(modifiers.characterDefinitionId);
+    if (character === undefined)
+      throw new RangeError(
+        "battlefield character modifiers reference unknown character"
+      );
+    modifiedCharacterStats(character, modifiers);
+    nextModifiers.set(modifiers.characterDefinitionId, modifiers);
+  }
+  if (nextModifiers.size !== deployedCharacterIds.size)
+    throw new RangeError(
+      "battlefield character modifiers must cover every deployed character"
+    );
+  for (const [characterId, modifiers] of nextModifiers)
+    metadata.characterModifiers.set(characterId, modifiers);
+  try {
+    return deployBattlefieldDwarves(battlefield, authority, content);
+  } catch (error) {
+    metadata.characterModifiers.clear();
+    throw error;
+  }
+}
+
+/** @internal Applies validated totals without rewriting committed work. */
+export function applyBattlefieldCharacterModifiers(
+  battlefield: BattlefieldState,
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  value: readonly BattlefieldCharacterModifiers[]
+): BattlefieldState {
+  const metadata = requireAuthorityMetadata(authority, content);
+  if (metadata.deploymentBattlefield === undefined)
+    throw new RangeError(
+      "battlefield dwarves must be initialized before modifiers apply"
+    );
+  const dwarves = normalizeBattlefieldDwarves(battlefield, authority, content);
+  const deployedCharacterIds = new Set(
+    authority.deployments.map((deployment) => deployment.characterDefinitionId)
+  );
+  const nextModifiers = new Map<StableId, BattlefieldCharacterModifiers>();
+  for (const [index, item] of requireArray(
+    value,
+    "battlefield character modifiers"
+  ).entries()) {
+    const modifiers = requireCharacterModifiers(
+      item,
+      `battlefield character modifiers ${index}`
+    );
+    if (!deployedCharacterIds.has(modifiers.characterDefinitionId))
+      throw new RangeError(
+        `battlefield character modifiers ${index} does not own a deployed dwarf`
+      );
+    if (nextModifiers.has(modifiers.characterDefinitionId))
+      throw new RangeError(
+        "battlefield character modifiers duplicate a character"
+      );
+    const previous = metadata.characterModifiers.get(
+      modifiers.characterDefinitionId
+    );
+    if (
+      previous !== undefined &&
+      (modifiers.maximumHealthAdd < previous.maximumHealthAdd ||
+        modifiers.attackDamageAdd < previous.attackDamageAdd ||
+        modifiers.attackRangeAdd < previous.attackRangeAdd ||
+        modifiers.futureCooldownReductionTicks <
+          previous.futureCooldownReductionTicks)
+    )
+      throw new RangeError(
+        "live battlefield character modifiers cannot decrease"
+      );
+    const character = content.characters.get(modifiers.characterDefinitionId);
+    if (character === undefined)
+      throw new RangeError(
+        "battlefield character modifiers reference unknown character"
+      );
+    modifiedCharacterStats(character, modifiers);
+    nextModifiers.set(modifiers.characterDefinitionId, modifiers);
+  }
+  if (nextModifiers.size !== deployedCharacterIds.size)
+    throw new RangeError(
+      "battlefield character modifiers must cover every deployed character"
+    );
+
+  const updatedDwarves = dwarves.map((dwarf) => {
+    const modifiers = nextModifiers.get(dwarf.characterDefinitionId);
+    const character = content.characters.get(dwarf.characterDefinitionId);
+    if (modifiers === undefined || character === undefined)
+      throw new Error("validated battlefield modifier owner is missing");
+    const modified = modifiedCharacterStats(character, modifiers);
+    const missingHealth = dwarf.maximumHealth - dwarf.currentHealth;
+    const currentHealth =
+      dwarf.lifecycleState === "downed"
+        ? 0
+        : Math.max(0, modified.maximumHealth - missingHealth);
+    if (dwarf.lifecycleState === "active" && currentHealth === 0)
+      throw new RangeError(
+        "live maximum-health modifier would down an active dwarf"
+      );
+    return Object.freeze({
+      ...dwarf,
+      currentHealth,
+      maximumHealth: modified.maximumHealth,
+      basicAttack: modified.basicAttack,
+      actionState: Object.freeze({
+        ...dwarf.actionState,
+        activeBasicAttack:
+          dwarf.actionState.activeBasicAttack === null
+            ? null
+            : Object.freeze({ ...dwarf.actionState.activeBasicAttack })
+      })
+    });
+  });
+  const previousModifiers = new Map(metadata.characterModifiers);
+  metadata.characterModifiers.clear();
+  for (const [characterId, modifiers] of nextModifiers)
+    metadata.characterModifiers.set(characterId, modifiers);
+  try {
+    const candidate = freezeBattlefield(
+      battlefield,
+      battlefield.occupancy,
+      updatedDwarves,
+      battlefield.pendingCommittedAttacks
+    );
+    authorizeBattlefieldDwarfHealth(
+      authority,
+      content,
+      candidate,
+      updatedDwarves
+    );
+    const normalized = normalizeBattlefieldDwarves(
+      candidate,
+      authority,
+      content
+    );
+    return freezeBattlefield(
+      candidate,
+      candidate.occupancy,
+      normalized,
+      candidate.pendingCommittedAttacks
+    );
+  } catch (error) {
+    metadata.characterModifiers.clear();
+    for (const [characterId, modifiers] of previousModifiers)
+      metadata.characterModifiers.set(characterId, modifiers);
+    throw error;
+  }
 }
 
 /** Resolves authoritative dwarf target locks, basic windups, and commitments. */

@@ -17,6 +17,7 @@ import { createAttackInstanceId } from "./attack-instance-id.js";
 import {
   authorizeBattlefieldCommittedAttacks,
   type BattlefieldDwarfDeploymentAuthority,
+  getAuthorizedCommittedAttacks,
   getAuthorizedCommittedAttackTargets
 } from "./battlefield-attack-impact.js";
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
@@ -120,6 +121,13 @@ export function resolveEnemyActionPhase(
       dwarfAuthority === undefined
         ? undefined
         : getAuthorizedCommittedAttackTargets(
+            dwarfAuthority,
+            content,
+            request.battlefield
+          ),
+      dwarfAuthority === undefined
+        ? undefined
+        : getAuthorizedCommittedAttacks(
             dwarfAuthority,
             content,
             request.battlefield
