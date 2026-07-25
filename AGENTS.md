@@ -2,7 +2,7 @@
 
 ## Project status
 
-Dwarven Depths is in Phase 3 combat-foundation implementation. Phase 2's static battlefield, pathing, congestion, and rendering boundary is complete, and Phase 3 begins with deterministic target-policy selection. The repository contains a runnable `validate`/`run`/`replay --verify`/`inspect`/`compare`/`render` simulation CLI. The broader command surface in `docs/simulation-harness.md` remains an implementation contract unless listed as available in `docs/milestone-0.md`, `docs/phase-1.md`, `docs/phase-2.md`, or `docs/phase-3.md`.
+Dwarven Depths is in Phase 4 progression, persistence, campaign-harness, and minimization consolidation. Phases 0–3 are complete. The executable simulation CLI currently provides `validate`, `run`, `replay --verify`, `inspect`, `explain`, `compare`, `render`, `sweep`, `campaign`, and `minimize`. `docs/phase-4.md` defines the live Phase 4 boundary; broader proposals in `docs/simulation-harness.md` remain contracts until explicitly listed as implemented in a phase document. Minimization schemas 1–8 are implemented and compatibility-frozen; new divergence classes or schema 9 require explicit product-owner approval.
 
 ## Source-of-truth order
 
@@ -26,6 +26,18 @@ If documents conflict, do not silently choose. Identify the conflict and preserv
 - Mechanics changes require focused scenarios and comparison evidence.
 - Balance claims require manifests, metrics, and event evidence rather than screenshots or intuition alone.
 - Keep generated large reports out of Git unless approved as compact regression or calibration fixtures.
+
+## Non-performative verification policy
+
+1. During iteration, run changed-scope tests and lint/typecheck as appropriate; CLI-only changes should prefer focused CLI tests.
+2. Once a pre-review head is stable, run one complete `pnpm run verify`.
+3. Independent exact-head review inspects code and runs only adversarial focused probes; it does not automatically duplicate the complete suite.
+4. Review fixes receive focused regression coverage, followed by one final complete verification only when the head stabilizes.
+5. Publication requires exact-head PR CI; merge requires post-merge `main` CI.
+6. Do not run another post-merge local complete suite when the merged tree is identical to the reviewed tree and CI is green.
+7. Wait for CI mechanically in one bounded command rather than spending repeated model turns polling.
+
+Detailed evidence belongs on the PR. Tracker #103 holds a finite checklist and one compact rolling status, not duplicate CI transcripts.
 
 ## Required agent workflow once the harness exists
 
