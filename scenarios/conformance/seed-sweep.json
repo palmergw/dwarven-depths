@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "matrix.conformance.seed_sweep",
+  "content": "../../content/fixtures/empty-content.json",
+  "scenario": "./empty-level.json",
+  "axes": {
+    "seed": ["1", "2", "4294967295"]
+  }
+}

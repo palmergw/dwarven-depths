@@ -54,6 +54,105 @@ afterEach(() => {
 });
 
 describe("simulation CLI", () => {
+  it("expands a bounded seed sweep into ordered replay-verifiable runs", () => {
+    const directory = temporaryDirectory();
+    const content = resolve(directory, "content.json");
+    const scenario = resolve(directory, "scenario.json");
+    const matrix = resolve(directory, "matrix.json");
+    const output = resolve(directory, "sweep-output");
+    writeFileSync(
+      content,
+      JSON.stringify({
+        schemaVersion: 1,
+        contentVersion: "sweep-test",
+        definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+      })
+    );
+    writeFileSync(
+      scenario,
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "scenario.test.sweep",
+        levelId: "level.empty",
+        seed: "99",
+        maximumTicks: 1,
+        commands: [{ atTick: 0, type: "confirmPreparation" }]
+      })
+    );
+    const matrixValue = {
+      schemaVersion: 1,
+      id: "matrix.test.seed_sweep",
+      content: "content.json",
+      scenario: "scenario.json",
+      axes: { seed: ["2", "1", "4294967295"] }
+    };
+    writeFileSync(matrix, JSON.stringify(matrixValue));
+
+    const first = runCli("sweep", "--matrix", matrix, "--out", output);
+    expect(first.status).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({
+      ok: true,
+      swept: true,
+      matrixId: "matrix.test.seed_sweep",
+      sampleCount: 3
+    });
+    const firstArtifact = readFileSync(resolve(output, "sweep.json"), "utf8");
+    const artifact = JSON.parse(firstArtifact) as {
+      samples: Array<{ seed: string; runDirectory: string }>;
+    };
+    expect(artifact.samples.map((sample) => sample.seed)).toEqual([
+      "2",
+      "1",
+      "4294967295"
+    ]);
+    for (const sample of artifact.samples) {
+      const verified = runCli(
+        "replay",
+        "--run",
+        resolve(output, sample.runDirectory),
+        "--verify"
+      );
+      expect(verified.status).toBe(0);
+      expect(JSON.parse(verified.stdout)).toMatchObject({
+        ok: true,
+        verified: true
+      });
+    }
+
+    const replaced = runCli(
+      "sweep",
+      "--matrix",
+      matrix,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(replaced.status).toBe(0);
+    expect(readFileSync(resolve(output, "sweep.json"), "utf8")).toBe(
+      firstArtifact
+    );
+
+    writeFileSync(
+      matrix,
+      JSON.stringify({ ...matrixValue, axes: { seed: ["1", "1"] } })
+    );
+    const rejectedOutput = resolve(directory, "rejected-output");
+    const rejected = runCli(
+      "sweep",
+      "--matrix",
+      matrix,
+      "--out",
+      rejectedOutput
+    );
+    expect(rejected.status).toBe(2);
+    expect(JSON.parse(rejected.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "input", code: "invalid_cli_input" }
+    });
+    expect(existsSync(rejectedOutput)).toBe(false);
+  });
+
   it("compares verified bundles while ignoring provenance metadata", async () => {
     const directory = temporaryDirectory();
     const content = temporaryFile("content.json", {
