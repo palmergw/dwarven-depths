@@ -8,6 +8,7 @@
     { "path": "./packages/progression" },
     { "path": "./packages/save" },
     { "path": "./packages/runtime" },
-    { "path": "./apps/sim-cli" }
+    { "path": "./apps/sim-cli" },
+    { "path": "./apps/web" }
   ]
 }

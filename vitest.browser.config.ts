@@ -3,7 +3,11 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    include: ["packages/*/src/**/*.browser.test.ts"],
+    include: [
+      "packages/*/src/**/*.browser.test.ts",
+      "apps/*/src/**/*.browser.test.ts",
+      "apps/*/src/**/*.browser.test.tsx"
+    ],
     exclude: ["**/node_modules/**"],
     browser: {
       enabled: true,

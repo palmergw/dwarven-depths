@@ -2,7 +2,7 @@
 
 ## Project status
 
-Dwarven Depths is in Phase 4 progression, persistence, campaign-harness, and minimization consolidation. Phases 0–3 are complete. The executable simulation CLI currently provides `validate`, `run`, `replay --verify`, `inspect`, `explain`, `compare`, `render`, `sweep`, `campaign`, and `minimize`. `docs/phase-4.md` defines the live Phase 4 boundary; broader proposals in `docs/simulation-harness.md` remain contracts until explicitly listed as implemented in a phase document. Minimization schemas 1–8 are implemented and compatibility-frozen; new divergence classes or schema 9 require explicit product-owner approval.
+Dwarven Depths is in Phase 5 playable-client development. Phases 0–4 are complete. The first React/Vite shell hosts the authoritative empty-level simulation in a Web Worker; `docs/phase-5.md` defines its exact implemented boundary. The executable simulation CLI currently provides `validate`, `run`, `replay --verify`, `inspect`, `explain`, `compare`, `render`, `sweep`, `campaign`, and `minimize`. Broader proposals remain contracts until explicitly listed as implemented in a phase document. Minimization schemas 1–8 are implemented and compatibility-frozen; new divergence classes or schema 9 require explicit product-owner approval.
 
 ## Source-of-truth order
 
