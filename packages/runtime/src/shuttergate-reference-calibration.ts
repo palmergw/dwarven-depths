@@ -162,7 +162,7 @@ export interface ShuttergateAttemptResult {
   readonly rewardEvent: CompletedAttemptRewardEvent;
 }
 
-async function requireReferenceContent(
+export async function requireShuttergateReferenceContent(
   content: CompiledContent
 ): Promise<CompiledContent> {
   // Recompile the canonical bundle so neither a forged manifestHash nor
@@ -202,7 +202,7 @@ async function runShuttergateCalibration(
       `Shuttergate calibration requires a canonical uint32 seed (${seed})`
     );
   }
-  const referenceContent = await requireReferenceContent(content);
+  const referenceContent = await requireShuttergateReferenceContent(content);
   if (!targetPolicies.includes(requestedTargetPolicy)) {
     throw new RangeError(
       `Shuttergate calibration requires an authored target policy (${requestedTargetPolicy})`

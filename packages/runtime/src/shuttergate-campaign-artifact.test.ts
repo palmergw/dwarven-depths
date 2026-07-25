@@ -32,22 +32,22 @@ async function oneAttemptArtifact() {
 
 async function rechecksumArtifact(
   artifact: ShuttergateCampaignArtifact,
-  attempts: readonly unknown[]
+  attemptChecksums: readonly string[]
 ) {
   const stateChecksum = await canonicalHash({
     campaignId: artifact.campaignId,
     contentManifestHash: artifact.contentManifestHash,
     profile: artifact.profileSave.profile,
-    rewardLedger: artifact.rewardLedger,
-    attempts
+    rewardLedgerChecksum: artifact.rewardLedgerChecksum,
+    attemptChecksums
   });
   const payload = {
     schemaVersion: 1,
     campaignId: artifact.campaignId,
     contentManifestHash: artifact.contentManifestHash,
     profileSave: artifact.profileSave,
-    rewardLedger: artifact.rewardLedger,
-    attempts,
+    rewardLedgerChecksum: artifact.rewardLedgerChecksum,
+    attemptChecksums,
     stateChecksum
   };
   return { ...payload, payloadChecksum: await canonicalHash(payload) };
@@ -58,12 +58,14 @@ describe("durable Shuttergate campaign artifact", () => {
     const { content, first, artifact } = await oneAttemptArtifact();
 
     expect(await canonicalHash(artifact)).toBe(
-      "d1d8cd088edc393086c0004aaae2017b65e773e97136c15e790c8dd9af64040f"
+      "3b5a5740e8ebf626b3ad09635b42037cc82271ade46a808efeb5f88f31c2c929"
     );
     expect(Object.isFrozen(artifact)).toBe(true);
-    expect(Object.isFrozen(artifact.attempts)).toBe(true);
-    expect(Object.isFrozen(artifact.rewardLedger)).toBe(true);
+    expect(Object.isFrozen(artifact.attemptChecksums)).toBe(true);
     expect(Object.isFrozen(artifact.profileSave)).toBe(true);
+    expect(artifact.profileSave.contentVersion).toBe(
+      content.bundle.contentVersion
+    );
     await expect(
       runShuttergateCampaignTransition(content, first.authority)
     ).rejects.toThrow("already consumed or in progress");
@@ -74,10 +76,14 @@ describe("durable Shuttergate campaign artifact", () => {
     );
     expect(restored).toMatchObject({
       campaignId: "campaign.shuttergate.v1",
-      profile: artifact.profileSave.profile,
-      rewardLedger: artifact.rewardLedger
+      profile: artifact.profileSave.profile
     });
-    expect(restored.attempts).toEqual(artifact.attempts);
+    expect(await canonicalHash(restored.rewardLedger)).toBe(
+      artifact.rewardLedgerChecksum
+    );
+    expect(await canonicalHash(restored.attempts[0])).toBe(
+      artifact.attemptChecksums[0]
+    );
     const continued = await runShuttergateCampaignTransition(content, restored);
     expect(continued.transition).toMatchObject({
       attemptNumber: 2,
@@ -91,17 +97,16 @@ describe("durable Shuttergate campaign artifact", () => {
 
   it("rejects checksummed attempt substitution after independent replay", async () => {
     const { content, artifact } = await oneAttemptArtifact();
-    const attempts = structuredClone(artifact.attempts) as unknown as Array<{
-      seed: string;
-    }>;
-    const firstAttempt = attempts[0];
-    if (firstAttempt === undefined) throw new Error("missing first attempt");
-    firstAttempt.seed = "999";
-    const substituted = await rechecksumArtifact(artifact, attempts);
+    const substituted = await rechecksumArtifact(artifact, [
+      await canonicalHash({
+        schemaVersion: 1,
+        substituted: "caller-authored-attempt"
+      })
+    ]);
 
     await expect(
       restoreShuttergateCampaignArtifact(content, substituted)
-    ).rejects.toThrow("authoritative replay evidence");
+    ).rejects.toThrow("attempt 0 does not match authoritative replay evidence");
   }, 45_000);
 
   it("rejects envelope, content, shape, checksum, and bound tampering before replay", async () => {
@@ -136,13 +141,50 @@ describe("durable Shuttergate campaign artifact", () => {
     await expect(
       restoreShuttergateCampaignArtifact(content, {
         ...artifact,
-        attempts: Array.from(
+        attemptChecksums: Array.from(
           { length: maximumShuttergateCampaignArtifactAttempts + 1 },
-          () => artifact.attempts[0]
+          () => artifact.attemptChecksums[0]
         )
       })
     ).rejects.toThrow(
       `cannot exceed ${maximumShuttergateCampaignArtifactAttempts}`
     );
+    await expect(
+      restoreShuttergateCampaignArtifact(content, {
+        ...artifact,
+        attemptChecksums: ["x".repeat(1_000_000)]
+      })
+    ).rejects.toThrow("lowercase SHA-256 hex digest");
+  }, 45_000);
+
+  it("validates pinned content even when the campaign has no attempts", async () => {
+    const content = await compileContent(shuttergateInput);
+    const authority = createShuttergateCampaignAuthority();
+    const forged = {
+      ...content,
+      manifestHash: "0".repeat(64)
+    } as never;
+    await expect(
+      createShuttergateCampaignArtifact({
+        schemaVersion: 1,
+        content: forged,
+        authority,
+        applicationBuild: "test-build-141",
+        writtenAtEpochMs: 1_721_900_000_000,
+        profileId: "profile.local"
+      })
+    ).rejects.toThrow("pinned reference content manifest");
+    const artifact = await createShuttergateCampaignArtifact({
+      schemaVersion: 1,
+      content,
+      authority,
+      applicationBuild: "test-build-141",
+      writtenAtEpochMs: 1_721_900_000_000,
+      profileId: "profile.local"
+    });
+    expect(artifact.attemptChecksums).toEqual([]);
+    await expect(
+      restoreShuttergateCampaignArtifact(forged, artifact)
+    ).rejects.toThrow("pinned reference content manifest");
   }, 45_000);
 });

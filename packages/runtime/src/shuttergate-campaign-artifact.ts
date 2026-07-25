@@ -1,7 +1,6 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
 import { canonicalHash, type StableId } from "@dwarven-depths/contracts";
 import {
-  maximumProfileRecords,
   requireProfileArray,
   requireProfileRecord
 } from "@dwarven-depths/progression";
@@ -14,9 +13,9 @@ import {
   createShuttergateCampaignAuthority,
   reserveShuttergateCampaignAuthority,
   runShuttergateCampaignTransition,
-  type ShuttergateCampaignAttemptEvidence,
   type ShuttergateCampaignAuthority
 } from "./shuttergate-campaign.js";
+import { requireShuttergateReferenceContent } from "./shuttergate-reference-calibration.js";
 
 const campaignId = "campaign.shuttergate.v1" as StableId;
 const checksumPattern = /^[a-f0-9]{64}$/;
@@ -28,8 +27,8 @@ export interface ShuttergateCampaignArtifact {
   readonly campaignId: StableId;
   readonly contentManifestHash: string;
   readonly profileSave: ProfileSaveEnvelope;
-  readonly rewardLedger: ShuttergateCampaignAuthority["rewardLedger"];
-  readonly attempts: readonly ShuttergateCampaignAttemptEvidence[];
+  readonly rewardLedgerChecksum: string;
+  readonly attemptChecksums: readonly string[];
   readonly stateChecksum: string;
   readonly payloadChecksum: string;
 }
@@ -54,72 +53,42 @@ function requireChecksum(value: unknown, description: string): string {
   return value;
 }
 
-function requireManifestHash(value: unknown): string {
-  return requireChecksum(value, "campaign artifact contentManifestHash");
-}
-
-function requireBoundedAttempts(
-  value: unknown
-): readonly ShuttergateCampaignAttemptEvidence[] {
-  const attempts = requireProfileArray(value, "campaign artifact attempts");
-  if (attempts.length > maximumShuttergateCampaignArtifactAttempts)
-    throw new RangeError(
-      `campaign artifact attempts cannot exceed ${maximumShuttergateCampaignArtifactAttempts}`
-    );
-  return Object.freeze([
-    ...attempts
-  ]) as readonly ShuttergateCampaignAttemptEvidence[];
-}
-
-function requireBoundedLedger(
-  value: unknown
-): ShuttergateCampaignAuthority["rewardLedger"] {
-  const source = requireProfileRecord(
+function requireBoundedAttemptChecksums(value: unknown): readonly string[] {
+  const checksums = requireProfileArray(
     value,
-    ["schemaVersion", "claims"],
-    "campaign artifact rewardLedger"
+    "campaign artifact attemptChecksums"
   );
-  if (source.schemaVersion !== 1)
+  if (checksums.length > maximumShuttergateCampaignArtifactAttempts)
     throw new RangeError(
-      "campaign artifact rewardLedger has unsupported schemaVersion"
+      `campaign artifact attemptChecksums cannot exceed ${maximumShuttergateCampaignArtifactAttempts}`
     );
-  const claims = requireProfileArray(
-    source.claims,
-    "campaign artifact rewardLedger claims"
+  return Object.freeze(
+    checksums.map((checksum, index) =>
+      requireChecksum(checksum, `campaign artifact attemptChecksums[${index}]`)
+    )
   );
-  if (
-    claims.length > maximumShuttergateCampaignArtifactAttempts ||
-    claims.length > maximumProfileRecords
-  )
-    throw new RangeError(
-      `campaign artifact rewardLedger claims cannot exceed ${maximumShuttergateCampaignArtifactAttempts}`
-    );
-  return Object.freeze({
-    schemaVersion: 1,
-    claims: Object.freeze([...claims])
-  }) as ShuttergateCampaignAuthority["rewardLedger"];
 }
 
 function statePayload(
   contentManifestHash: string,
   profileSave: ProfileSaveEnvelope,
-  rewardLedger: ShuttergateCampaignAuthority["rewardLedger"],
-  attempts: readonly ShuttergateCampaignAttemptEvidence[]
+  rewardLedgerChecksum: string,
+  attemptChecksums: readonly string[]
 ) {
   return Object.freeze({
     campaignId,
     contentManifestHash,
     profile: profileSave.profile,
-    rewardLedger,
-    attempts
+    rewardLedgerChecksum,
+    attemptChecksums
   });
 }
 
 function artifactPayload(
   contentManifestHash: string,
   profileSave: ProfileSaveEnvelope,
-  rewardLedger: ShuttergateCampaignAuthority["rewardLedger"],
-  attempts: readonly ShuttergateCampaignAttemptEvidence[],
+  rewardLedgerChecksum: string,
+  attemptChecksums: readonly string[],
   stateChecksum: string
 ) {
   return Object.freeze({
@@ -127,15 +96,16 @@ function artifactPayload(
     campaignId,
     contentManifestHash,
     profileSave,
-    rewardLedger,
-    attempts,
+    rewardLedgerChecksum,
+    attemptChecksums,
     stateChecksum
   });
 }
 
 /**
- * Creates a durable handoff and consumes the in-memory authority on success.
- * A failed creation releases the authority for retry.
+ * Creates a compact durable handoff and consumes the in-memory authority on
+ * success. Full ledger and attempt records are bound by checksums and are
+ * reconstructed by authoritative replay rather than trusted from storage.
  */
 export async function createShuttergateCampaignArtifact(
   request: CreateShuttergateCampaignArtifactRequest
@@ -156,28 +126,42 @@ export async function createShuttergateCampaignArtifact(
     throw new RangeError(
       "campaign artifact creation request has unsupported schemaVersion"
     );
-  const content = source.content as CompiledContent;
   const authority = source.authority as ShuttergateCampaignAuthority;
   const reservation = reserveShuttergateCampaignAuthority(authority);
   try {
-    const attempts = requireBoundedAttempts(authority.attempts);
-    const contentManifestHash = requireManifestHash(content.manifestHash);
+    if (authority.attempts.length > maximumShuttergateCampaignArtifactAttempts)
+      throw new RangeError(
+        `campaign artifact attempts cannot exceed ${maximumShuttergateCampaignArtifactAttempts}`
+      );
+    const content = await requireShuttergateReferenceContent(
+      source.content as CompiledContent
+    );
     const profileSave = await createProfileSaveEnvelope({
-      contentVersion: contentManifestHash,
+      contentVersion: content.bundle.contentVersion,
       applicationBuild: source.applicationBuild as string,
       writtenAtEpochMs: source.writtenAtEpochMs as number,
       profileId: source.profileId as string,
       profile: authority.profile
     });
-    const rewardLedger = requireBoundedLedger(authority.rewardLedger);
+    const rewardLedgerChecksum = await canonicalHash(authority.rewardLedger);
+    const attemptChecksums = Object.freeze(
+      await Promise.all(
+        authority.attempts.map((attempt) => canonicalHash(attempt))
+      )
+    );
     const stateChecksum = await canonicalHash(
-      statePayload(contentManifestHash, profileSave, rewardLedger, attempts)
+      statePayload(
+        content.manifestHash,
+        profileSave,
+        rewardLedgerChecksum,
+        attemptChecksums
+      )
     );
     const payload = artifactPayload(
-      contentManifestHash,
+      content.manifestHash,
       profileSave,
-      rewardLedger,
-      attempts,
+      rewardLedgerChecksum,
+      attemptChecksums,
       stateChecksum
     );
     const artifact = Object.freeze({
@@ -194,10 +178,11 @@ export async function createShuttergateCampaignArtifact(
 
 /**
  * Restores one process-local authority only after replaying every persisted
- * attempt. The same campaign state cannot be restored twice in this process.
+ * attempt checksum. The same campaign state cannot be restored twice in this
+ * process.
  */
 export async function restoreShuttergateCampaignArtifact(
-  content: CompiledContent,
+  suppliedContent: CompiledContent,
   value: unknown
 ): Promise<ShuttergateCampaignAuthority> {
   const source = requireProfileRecord(
@@ -207,8 +192,8 @@ export async function restoreShuttergateCampaignArtifact(
       "campaignId",
       "contentManifestHash",
       "profileSave",
-      "rewardLedger",
-      "attempts",
+      "rewardLedgerChecksum",
+      "attemptChecksums",
       "stateChecksum",
       "payloadChecksum"
     ],
@@ -218,28 +203,38 @@ export async function restoreShuttergateCampaignArtifact(
     throw new RangeError("campaign artifact has unsupported schemaVersion");
   if (source.campaignId !== campaignId)
     throw new RangeError("campaign artifact has unsupported campaignId");
-  const contentManifestHash = requireManifestHash(source.contentManifestHash);
+  const content = await requireShuttergateReferenceContent(suppliedContent);
+  const contentManifestHash = requireChecksum(
+    source.contentManifestHash,
+    "campaign artifact contentManifestHash"
+  );
   if (contentManifestHash !== content.manifestHash)
     throw new RangeError(
       "campaign artifact contentManifestHash does not match compiled content"
     );
   const profileSave = await normalizeProfileSaveEnvelope(source.profileSave);
-  if (profileSave.contentVersion !== contentManifestHash)
+  if (profileSave.contentVersion !== content.bundle.contentVersion)
     throw new RangeError(
-      "campaign artifact profile save does not match compiled content"
+      "campaign artifact profile save does not match compiled content version"
     );
-  const rewardLedger = requireBoundedLedger(source.rewardLedger);
-  const attempts = requireBoundedAttempts(source.attempts);
-  if (rewardLedger.claims.length !== attempts.length)
-    throw new RangeError(
-      "campaign artifact reward claims must match the attempt count"
-    );
+  const rewardLedgerChecksum = requireChecksum(
+    source.rewardLedgerChecksum,
+    "campaign artifact rewardLedgerChecksum"
+  );
+  const attemptChecksums = requireBoundedAttemptChecksums(
+    source.attemptChecksums
+  );
   const stateChecksum = requireChecksum(
     source.stateChecksum,
     "campaign artifact stateChecksum"
   );
   const actualStateChecksum = await canonicalHash(
-    statePayload(contentManifestHash, profileSave, rewardLedger, attempts)
+    statePayload(
+      contentManifestHash,
+      profileSave,
+      rewardLedgerChecksum,
+      attemptChecksums
+    )
   );
   if (stateChecksum !== actualStateChecksum)
     throw new RangeError("campaign artifact state checksum does not match");
@@ -251,8 +246,8 @@ export async function restoreShuttergateCampaignArtifact(
     artifactPayload(
       contentManifestHash,
       profileSave,
-      rewardLedger,
-      attempts,
+      rewardLedgerChecksum,
+      attemptChecksums,
       stateChecksum
     )
   );
@@ -266,20 +261,21 @@ export async function restoreShuttergateCampaignArtifact(
 
   try {
     let authority = createShuttergateCampaignAuthority();
-    for (let index = 0; index < attempts.length; index += 1) {
-      authority = (await runShuttergateCampaignTransition(content, authority))
-        .authority;
-    }
-    const replayedStateChecksum = await canonicalHash(
-      statePayload(
-        contentManifestHash,
-        profileSave,
-        authority.rewardLedger,
-        authority.attempts
+    for (let index = 0; index < attemptChecksums.length; index += 1) {
+      const transition = await runShuttergateCampaignTransition(
+        content,
+        authority
+      );
+      if (
+        (await canonicalHash(transition.transition)) !== attemptChecksums[index]
       )
-    );
+        throw new RangeError(
+          `campaign artifact attempt ${index} does not match authoritative replay evidence`
+        );
+      authority = transition.authority;
+    }
     if (
-      replayedStateChecksum !== stateChecksum ||
+      (await canonicalHash(authority.rewardLedger)) !== rewardLedgerChecksum ||
       (await canonicalHash(authority.profile)) !==
         (await canonicalHash(profileSave.profile))
     )
