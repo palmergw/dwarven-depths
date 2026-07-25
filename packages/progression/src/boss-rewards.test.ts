@@ -8,7 +8,7 @@ import {
 import { createInitialProfile, resolveBossDeathRewards } from "./index.js";
 
 const checksum =
-  "4ad6d439720ca977a974e444040f75eea1e97aadfaa48634cfbe957efcfca2e3";
+  "dcc724393a93956edd3c2b7cac5c1bae7292e2f4fb1644663cf94a3038ebdbda";
 
 describe("boss death rewards", () => {
   it("atomically commits rewards in stable boss order", async () => {
@@ -41,7 +41,8 @@ describe("boss death rewards", () => {
           pendingSkillPointLevels: []
         }
       ],
-      claimedExperienceRewardEvents: []
+      claimedExperienceRewardEvents: [],
+      selectedSkillNodes: []
     });
     expect(await canonicalHash(evidence)).toBe(checksum);
   });
@@ -132,7 +133,8 @@ describe("boss death rewards", () => {
         (_, index) => `reward.existing_${index}` as never
       ),
       characterExperienceStates: [],
-      claimedExperienceRewardEvents: []
+      claimedExperienceRewardEvents: [],
+      selectedSkillNodes: []
     };
 
     expect(() =>

@@ -279,7 +279,8 @@ export function resolveOwnedCharacterExperienceRewards(
       [...claimed.values()].sort((left, right) =>
         compareText(left.eventId, right.eventId)
       )
-    )
+    ),
+    selectedSkillNodes: profile.selectedSkillNodes
   });
   return Object.freeze({
     schemaVersion: 1,

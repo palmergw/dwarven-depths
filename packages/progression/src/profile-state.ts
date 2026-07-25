@@ -9,6 +9,14 @@ export interface ProfileState {
   readonly claimedRewardIds: readonly StableId[];
   readonly characterExperienceStates: readonly CharacterExperienceState[];
   readonly claimedExperienceRewardEvents: readonly ClaimedExperienceRewardEvent[];
+  readonly selectedSkillNodes: readonly SelectedSkillNode[];
+}
+
+export interface SelectedSkillNode {
+  readonly schemaVersion: 1;
+  readonly characterId: StableId;
+  readonly nodeId: StableId;
+  readonly spentSkillPointLevel: number;
 }
 
 export interface ClaimedExperienceRewardEvent {
@@ -24,6 +32,8 @@ export const characterIdPattern =
 export const rewardIdPattern = /^reward\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 export const experienceRewardEventIdPattern =
   /^event\.reward\.xp\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
+export const skillNodeIdPattern =
+  /^skill\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 
 export function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -204,6 +214,42 @@ function normalizeClaimedExperienceRewardEvent(
   });
 }
 
+function normalizeSelectedSkillNode(
+  value: unknown,
+  index: number
+): SelectedSkillNode {
+  const description = `profile selectedSkillNodes[${index}]`;
+  const source = requireProfileRecord(
+    value,
+    ["schemaVersion", "characterId", "nodeId", "spentSkillPointLevel"],
+    description
+  );
+  if (source.schemaVersion !== 1)
+    throw new RangeError(`${description} has unsupported schemaVersion`);
+  const spentSkillPointLevel = requireProfileUnsigned(
+    source.spentSkillPointLevel,
+    `${description} spentSkillPointLevel`
+  );
+  if (spentSkillPointLevel < 2)
+    throw new RangeError(
+      `${description} spentSkillPointLevel must be at least 2`
+    );
+  return Object.freeze({
+    schemaVersion: 1,
+    characterId: requireProfileId(
+      source.characterId,
+      characterIdPattern,
+      `${description} characterId`
+    ),
+    nodeId: requireProfileId(
+      source.nodeId,
+      skillNodeIdPattern,
+      `${description} nodeId`
+    ),
+    spentSkillPointLevel
+  });
+}
+
 export function normalizeProfileState(value: unknown): ProfileState {
   const source = requireProfileRecord(
     value,
@@ -214,7 +260,8 @@ export function normalizeProfileState(value: unknown): ProfileState {
       "unlockedCharacterIds",
       "claimedRewardIds",
       "characterExperienceStates",
-      "claimedExperienceRewardEvents"
+      "claimedExperienceRewardEvents",
+      "selectedSkillNodes"
     ],
     "profile"
   );
@@ -248,6 +295,10 @@ export function normalizeProfileState(value: unknown): ProfileState {
     source.claimedExperienceRewardEvents,
     "profile claimedExperienceRewardEvents"
   ).map(normalizeClaimedExperienceRewardEvent);
+  const selectedSkillNodes = requireProfileArray(
+    source.selectedSkillNodes,
+    "profile selectedSkillNodes"
+  ).map(normalizeSelectedSkillNode);
   for (const [description, values] of [
     ["unlocked character IDs", unlockedCharacterIds],
     ["claimed reward IDs", claimedRewardIds],
@@ -258,7 +309,8 @@ export function normalizeProfileState(value: unknown): ProfileState {
     [
       "claimed experience reward event IDs",
       claimedExperienceRewardEvents.map((event) => event.eventId)
-    ]
+    ],
+    ["selected skill node IDs", selectedSkillNodes.map((entry) => entry.nodeId)]
   ] as const) {
     if (new Set(values).size !== values.length)
       throw new RangeError(`profile contains duplicate ${description}`);
@@ -278,6 +330,54 @@ export function normalizeProfileState(value: unknown): ProfileState {
     throw new RangeError(
       "profile claimed experience reward must belong to an unlocked character"
     );
+  if (selectedSkillNodes.some((entry) => !unlocked.has(entry.characterId)))
+    throw new RangeError(
+      "profile selected skill node must belong to an unlocked character"
+    );
+  const experienceByCharacter = new Map(
+    characterExperienceStates.map((state) => [state.characterId, state])
+  );
+  const spentPointKeys = new Set<string>();
+  const spentLevelsByCharacter = new Map<StableId, Set<number>>();
+  for (const entry of selectedSkillNodes) {
+    const experienceState = experienceByCharacter.get(entry.characterId);
+    if (
+      experienceState === undefined ||
+      entry.spentSkillPointLevel > experienceState.level
+    )
+      throw new RangeError(
+        "profile selected skill node must spend an earned character level"
+      );
+    if (
+      experienceState.pendingSkillPointLevels.includes(
+        entry.spentSkillPointLevel
+      )
+    )
+      throw new RangeError(
+        "profile skill point level cannot be both pending and selected"
+      );
+    const pointKey = `${entry.characterId}\u0000${entry.spentSkillPointLevel}`;
+    if (spentPointKeys.has(pointKey))
+      throw new RangeError(
+        "profile contains duplicate spent skill point levels"
+      );
+    spentPointKeys.add(pointKey);
+    const spentLevels =
+      spentLevelsByCharacter.get(entry.characterId) ?? new Set();
+    spentLevels.add(entry.spentSkillPointLevel);
+    spentLevelsByCharacter.set(entry.characterId, spentLevels);
+  }
+  for (const experienceState of characterExperienceStates) {
+    const pendingLevels = new Set(experienceState.pendingSkillPointLevels);
+    const spentLevels =
+      spentLevelsByCharacter.get(experienceState.characterId) ?? new Set();
+    for (let level = 2; level <= experienceState.level; level += 1) {
+      if (!pendingLevels.has(level) && !spentLevels.has(level))
+        throw new RangeError(
+          "profile pending and selected skill points must account for every earned level"
+        );
+    }
+  }
   return Object.freeze({
     schemaVersion: 1,
     revision: requireProfileUnsigned(source.revision, "profile revision"),
@@ -294,6 +394,14 @@ export function normalizeProfileState(value: unknown): ProfileState {
     claimedExperienceRewardEvents: Object.freeze(
       [...claimedExperienceRewardEvents].sort((left, right) =>
         compareText(left.eventId, right.eventId)
+      )
+    ),
+    selectedSkillNodes: Object.freeze(
+      [...selectedSkillNodes].sort(
+        (left, right) =>
+          compareText(left.characterId, right.characterId) ||
+          left.spentSkillPointLevel - right.spentSkillPointLevel ||
+          compareText(left.nodeId, right.nodeId)
       )
     )
   });
@@ -320,6 +428,7 @@ export function createInitialProfile(ironWardenId: StableId): ProfileState {
         pendingSkillPointLevels: Object.freeze([])
       })
     ]),
-    claimedExperienceRewardEvents: Object.freeze([])
+    claimedExperienceRewardEvents: Object.freeze([]),
+    selectedSkillNodes: Object.freeze([])
   });
 }

@@ -27,10 +27,21 @@ the repository.
 - XP reward commitment validates the complete persisted character-XP set against
   character-owned thresholds before mutation. Existing boss reward transitions
   preserve character XP and XP-event claims.
+- Authored character skill trees use stable node IDs, bounded acyclic
+  prerequisites, and additive effect descriptors. Eligibility is derived from
+  persisted selections in stable node-ID order and never rerolls when queried
+  again.
+- Confirming an eligible node consumes the character's oldest pending
+  skill-point level, persists the selected node and spent level atomically, and
+  increments the profile revision. Existing reward transitions preserve the
+  selection.
+- Selected nodes derive immutable maximum-health, attack-damage, attack-range,
+  and future-cooldown-start modifier totals. Applying those totals to live
+  battlefield health, attacks, and cooldowns remains a later integration slice.
 
 ## Not implemented yet
 
 Durable file/local-storage profile adapters, encounter reward-event production,
-catch-up experience, skill-tree eligibility and selection, Forge Ore purchases,
-saves and migrations, recycle transactions, campaign/sweep harnesses, and
-upgraded-build calibration remain later Phase 4 checkpoints.
+catch-up experience, live battlefield skill-effect integration, Forge Ore
+purchases, saves and migrations, recycle transactions, campaign/sweep harnesses,
+and upgraded-build calibration remain later Phase 4 checkpoints.
