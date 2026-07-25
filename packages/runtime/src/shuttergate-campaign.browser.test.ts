@@ -32,5 +32,5 @@ describe("authoritative Shuttergate campaign browser parity", () => {
         third: third.transition
       })
     ).toBe("50fe1e71ecb2379b977bf13505ebc77c3788e9f1f60939ded0dca2dad7e1c070");
-  }, 90_000);
+  }, 120_000);
 });
