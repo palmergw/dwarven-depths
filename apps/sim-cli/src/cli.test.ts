@@ -23,6 +23,42 @@ import { canonicalHash } from "@dwarven-depths/contracts";
 import { afterEach, describe, expect, it } from "vitest";
 
 const temporaryDirectories: string[] = [];
+const minimizationCompatibilityFixtures = JSON.parse(
+  readFileSync(
+    resolve("apps/sim-cli/src/fixtures/minimization-schema-compatibility.json"),
+    "utf8"
+  )
+) as Array<{
+  schemaVersion: number;
+  files: string[];
+  artifactKeys: string[];
+}>;
+
+function expectCompatibleMinimization(
+  directory: string,
+  schemaVersion: number
+): void {
+  const fixture = minimizationCompatibilityFixtures.find(
+    (candidate) => candidate.schemaVersion === schemaVersion
+  );
+  expect(fixture).toBeDefined();
+  expect(readdirSync(directory).sort()).toEqual(fixture?.files);
+  const artifact = JSON.parse(
+    readFileSync(resolve(directory, "minimization.json"), "utf8")
+  ) as { schemaVersion?: unknown } & Record<string, unknown>;
+  expect(artifact.schemaVersion).toBe(schemaVersion);
+  expect(Object.keys(artifact).sort()).toEqual(fixture?.artifactKeys);
+}
+
+function artifactDirectorySnapshot(directory: string): unknown[] {
+  return readdirSync(directory)
+    .sort()
+    .map((name) => [
+      name,
+      lstatSync(resolve(directory, name)).nlink,
+      readFileSync(resolve(directory, name), "utf8")
+    ]);
+}
 
 function temporaryFile(name: string, value: unknown): string {
   const directory = mkdtempSync(resolve(tmpdir(), "dwarven-depths-cli-"));
@@ -106,6 +142,7 @@ describe("simulation CLI", () => {
     });
     const artifactPath = resolve(output, "minimization.json");
     const artifactText = readFileSync(artifactPath, "utf8");
+    expectCompatibleMinimization(output, 1);
     const artifact = JSON.parse(artifactText) as {
       retainedCommandIndexes: number[];
       candidateEvaluationCount: number;
@@ -199,6 +236,50 @@ describe("simulation CLI", () => {
       ).status
     ).toBe(3);
     rmSync(resolve(output, "unexpected.json"));
+
+    const minimizedScenarioPath = resolve(
+      output,
+      "scenario.minimized.compiled.json"
+    );
+    const minimizedScenarioText = readFileSync(minimizedScenarioPath, "utf8");
+    rmSync(minimizedScenarioPath);
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        output,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(3);
+    writeFileSync(minimizedScenarioPath, minimizedScenarioText);
+
+    const mismatchedScenario = resolve(directory, "mismatched-scenario.json");
+    writeFileSync(
+      mismatchedScenario,
+      JSON.stringify({
+        ...scenarioValue,
+        id: "scenario.test.different_minimization_invocation"
+      })
+    );
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        content,
+        "--scenario",
+        mismatchedScenario,
+        "--out",
+        output,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(3);
+    expect(readFileSync(artifactPath, "utf8")).toBe(artifactText);
 
     const hardlinkSource = resolve(directory, "hardlinked-minimization.json");
     writeFileSync(hardlinkSource, artifactText);
@@ -324,6 +405,7 @@ describe("simulation CLI", () => {
     });
     const artifactPath = resolve(output, "minimization.json");
     const artifactText = readFileSync(artifactPath, "utf8");
+    expectCompatibleMinimization(output, 2);
     expect(JSON.parse(artifactText)).toMatchObject({
       schemaVersion: 2,
       complete: true,
@@ -470,6 +552,7 @@ describe("simulation CLI", () => {
     });
     const artifactPath = resolve(output, "minimization.json");
     const artifactText = readFileSync(artifactPath, "utf8");
+    expectCompatibleMinimization(output, 6);
     expect(JSON.parse(artifactText)).toMatchObject({
       schemaVersion: 6,
       safetyStopCode: "simulation_stalled",
@@ -594,6 +677,7 @@ describe("simulation CLI", () => {
     });
     const artifactPath = resolve(output, "minimization.json");
     const artifactText = readFileSync(artifactPath, "utf8");
+    expectCompatibleMinimization(output, 3);
     expect(JSON.parse(artifactText)).toMatchObject({
       schemaVersion: 3,
       retainedCommandIndexes: [0]
@@ -792,6 +876,7 @@ describe("simulation CLI", () => {
     });
     const artifactPath = resolve(output, "minimization.json");
     const artifactText = readFileSync(artifactPath, "utf8");
+    expectCompatibleMinimization(output, 4);
     expect(JSON.parse(artifactText)).toMatchObject({
       schemaVersion: 4,
       originalMaximumTicks: 64,
@@ -995,6 +1080,7 @@ describe("simulation CLI", () => {
       });
       const artifactPath = resolve(output, "minimization.json");
       const artifactText = readFileSync(artifactPath, "utf8");
+      expectCompatibleMinimization(output, 5);
       expect(JSON.parse(artifactText)).toMatchObject({
         schemaVersion: 5,
         divergenceCode: testCase.code,
@@ -1105,13 +1191,7 @@ describe("simulation CLI", () => {
           );
           cpSync(output, tamperedOutput, { recursive: true });
           await tamperCase.mutate(tamperedOutput);
-          const before = readdirSync(tamperedOutput)
-            .sort()
-            .map((name) => [
-              name,
-              lstatSync(resolve(tamperedOutput, name)).nlink,
-              readFileSync(resolve(tamperedOutput, name), "utf8")
-            ]);
+          const before = artifactDirectorySnapshot(tamperedOutput);
           expect(
             runCli(
               "minimize",
@@ -1128,15 +1208,7 @@ describe("simulation CLI", () => {
             ).status,
             tamperCase.name
           ).toBe(3);
-          expect(
-            readdirSync(tamperedOutput)
-              .sort()
-              .map((name) => [
-                name,
-                lstatSync(resolve(tamperedOutput, name)).nlink,
-                readFileSync(resolve(tamperedOutput, name), "utf8")
-              ])
-          ).toEqual(before);
+          expect(artifactDirectorySnapshot(tamperedOutput)).toEqual(before);
         }
       }
       if (testCase.name === "tick") {
@@ -1153,13 +1225,7 @@ describe("simulation CLI", () => {
           const { artifactChecksum: _, ...body } = value;
           value.artifactChecksum = await canonicalHash(body);
           writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
-          const before = readdirSync(tamperedOutput)
-            .sort()
-            .map((entry) => [
-              entry,
-              lstatSync(resolve(tamperedOutput, entry)).nlink,
-              readFileSync(resolve(tamperedOutput, entry), "utf8")
-            ]);
+          const before = artifactDirectorySnapshot(tamperedOutput);
           expect(
             runCli(
               "minimize",
@@ -1176,15 +1242,7 @@ describe("simulation CLI", () => {
             ).status,
             name
           ).toBe(3);
-          expect(
-            readdirSync(tamperedOutput)
-              .sort()
-              .map((entry) => [
-                entry,
-                lstatSync(resolve(tamperedOutput, entry)).nlink,
-                readFileSync(resolve(tamperedOutput, entry), "utf8")
-              ])
-          ).toEqual(before);
+          expect(artifactDirectorySnapshot(tamperedOutput)).toEqual(before);
         }
       }
 
@@ -1214,6 +1272,7 @@ describe("simulation CLI", () => {
       });
       const ticksArtifactPath = resolve(ticksOutput, "minimization.json");
       const ticksArtifactText = readFileSync(ticksArtifactPath, "utf8");
+      expectCompatibleMinimization(ticksOutput, 8);
       expect(JSON.parse(ticksArtifactText)).toMatchObject({
         schemaVersion: 8,
         divergenceCode: testCase.code,
@@ -1364,6 +1423,7 @@ describe("simulation CLI", () => {
     });
     const artifactPath = resolve(output, "minimization.json");
     const artifactText = readFileSync(artifactPath, "utf8");
+    expectCompatibleMinimization(output, 7);
     expect(JSON.parse(artifactText)).toMatchObject({
       schemaVersion: 7,
       divergenceCode: "execution_failed",
@@ -1407,13 +1467,7 @@ describe("simulation CLI", () => {
         tamperedArtifactPath,
         `${JSON.stringify(tamperedArtifact, null, 2)}\n`
       );
-      const before = readdirSync(tamperedOutput)
-        .sort()
-        .map((entry) => [
-          entry,
-          lstatSync(resolve(tamperedOutput, entry)).nlink,
-          readFileSync(resolve(tamperedOutput, entry), "utf8")
-        ]);
+      const before = artifactDirectorySnapshot(tamperedOutput);
       expect(
         runCli(
           "minimize",
@@ -1430,15 +1484,7 @@ describe("simulation CLI", () => {
         ).status,
         name
       ).toBe(3);
-      expect(
-        readdirSync(tamperedOutput)
-          .sort()
-          .map((entry) => [
-            entry,
-            lstatSync(resolve(tamperedOutput, entry)).nlink,
-            readFileSync(resolve(tamperedOutput, entry), "utf8")
-          ])
-      ).toEqual(before);
+      expect(artifactDirectorySnapshot(tamperedOutput)).toEqual(before);
     }
 
     const ticksOutput = resolve(directory, "execution-failure-ticks");
@@ -1555,12 +1601,7 @@ describe("simulation CLI", () => {
       );
       cpSync(ticksOutput, tamperedOutput, { recursive: true });
       await tamperCase.mutate(tamperedOutput);
-      const before = readdirSync(tamperedOutput)
-        .sort()
-        .map((entry) => [
-          entry,
-          readFileSync(resolve(tamperedOutput, entry), "utf8")
-        ]);
+      const before = artifactDirectorySnapshot(tamperedOutput);
       expect(
         runCli(
           "minimize",
@@ -1579,14 +1620,7 @@ describe("simulation CLI", () => {
         ).status,
         tamperCase.name
       ).toBe(3);
-      expect(
-        readdirSync(tamperedOutput)
-          .sort()
-          .map((entry) => [
-            entry,
-            readFileSync(resolve(tamperedOutput, entry), "utf8")
-          ])
-      ).toEqual(before);
+      expect(artifactDirectorySnapshot(tamperedOutput)).toEqual(before);
     }
     expect(readFileSync(ticksArtifactPath, "utf8")).toBe(ticksArtifactText);
   }, 15_000);
