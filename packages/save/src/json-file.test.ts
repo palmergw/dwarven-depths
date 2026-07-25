@@ -1,6 +1,13 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  writeFile
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,7 +59,7 @@ function faultAt(point: JsonProfileStoreFaultPoint) {
 async function expectCleanArtifacts(path: string): Promise<void> {
   const names = await readdir(join(path, ".."));
   expect(
-    names.filter((name) => name.includes(".tmp-") || name.endsWith(".lock"))
+    names.filter((name) => name.includes(".tmp-") || name.includes(".lock"))
   ).toEqual([]);
 }
 
@@ -294,7 +301,7 @@ describe("JSON profile store", () => {
     child.kill("SIGKILL");
     await once(child, "exit");
     const abandoned = await readdir(join(path, ".."));
-    expect(abandoned.some((name) => name.endsWith(".lock"))).toBe(true);
+    expect(abandoned.some((name) => name.includes(".lock"))).toBe(true);
     expect(abandoned.some((name) => name.includes(".tmp-"))).toBe(true);
 
     const recovered = await envelope(1, 20);
@@ -309,6 +316,33 @@ describe("JSON profile store", () => {
       source: "primary",
       envelope: recovered
     });
+    await expectCleanArtifacts(path);
+  });
+
+  it("reclaims a unique stale entry when its PID has been reused", async () => {
+    const path = await testPath();
+    const store = new JsonProfileStore(path);
+    const nonce = `${process.pid}-00000000-0000-4000-8000-000000000000`;
+    const entry = join(store.lockPath, nonce);
+    await mkdir(entry, { recursive: true });
+    await writeFile(
+      join(entry, "owner.json"),
+      `${JSON.stringify({
+        schemaVersion: 1,
+        pid: process.pid,
+        processStartToken: "definitely-not-this-process",
+        nonce
+      })}\n`,
+      "utf8"
+    );
+    await writeFile(`${path}.tmp-${nonce}`, "orphan", "utf8");
+
+    await expect(
+      store.write({
+        expectedRevision: null,
+        envelope: await envelope(0, 0)
+      })
+    ).resolves.toMatchObject({ profileRevision: 0 });
     await expectCleanArtifacts(path);
   });
 });

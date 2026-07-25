@@ -2,14 +2,15 @@ import { randomUUID } from "node:crypto";
 import { constants } from "node:fs";
 import {
   copyFile,
-  link,
   mkdir,
   open,
+  readdir,
   readFile,
   rename,
-  rm
+  rm,
+  rmdir
 } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
   normalizeProfileSaveEnvelope,
   type ProfileSaveEnvelope
@@ -325,7 +326,7 @@ export class JsonProfileStore {
   ) {
     this.primaryPath = resolve(path);
     this.backupPath = `${this.primaryPath}.bak`;
-    this.lockPath = `${this.primaryPath}.lock`;
+    this.lockPath = `${this.primaryPath}.locks`;
   }
 
   private temporaryPaths(owner: LockOwner): readonly [string, string] {
@@ -335,72 +336,114 @@ export class JsonProfileStore {
     ];
   }
 
-  private async acquireLock(owner: LockOwner): Promise<void> {
-    const candidatePath = `${this.lockPath}.candidate-${owner.nonce}`;
-    const candidate = await open(candidatePath, "wx", 0o600);
+  private async readLockOwner(entryName: string): Promise<LockOwner> {
+    const metadataPath = join(this.lockPath, entryName, "owner.json");
+    let handle: Awaited<ReturnType<typeof open>> | undefined;
     try {
-      await candidate.writeFile(`${JSON.stringify(owner)}\n`, "utf8");
-      await candidate.sync();
+      handle = await open(
+        metadataPath,
+        constants.O_RDONLY | constants.O_NOFOLLOW
+      );
+      const info = await handle.stat();
+      if (!info.isFile() || info.size > 1_024)
+        throw new RangeError(
+          "save lock metadata is not a bounded regular file"
+        );
+      const bytes = Buffer.allocUnsafe(1_025);
+      const result = await handle.read(bytes, 0, bytes.length, 0);
+      if (result.bytesRead > 1_024)
+        throw new RangeError("save lock metadata is too large");
+      const owner = parseLockOwner(bytes.toString("utf8", 0, result.bytesRead));
+      if (owner.nonce !== entryName)
+        throw new TypeError("save lock metadata does not match its entry");
+      return owner;
     } finally {
-      await candidate.close();
+      await handle?.close();
+    }
+  }
+
+  private async removeLockDirectoryIfEmpty(): Promise<void> {
+    try {
+      await rmdir(this.lockPath);
+    } catch (error) {
+      if (
+        typeof error !== "object" ||
+        error === null ||
+        !("code" in error) ||
+        (error.code !== "ENOENT" && error.code !== "ENOTEMPTY")
+      )
+        throw error;
+    }
+  }
+
+  private async acquireLock(owner: LockOwner): Promise<void> {
+    await mkdir(this.lockPath, { recursive: true, mode: 0o700 });
+    const entryPath = join(this.lockPath, owner.nonce);
+    await mkdir(entryPath, { mode: 0o700 });
+    const metadata = await open(join(entryPath, "owner.json"), "wx", 0o600);
+    try {
+      await metadata.writeFile(`${JSON.stringify(owner)}\n`, "utf8");
+      await metadata.sync();
+    } finally {
+      await metadata.close();
     }
     try {
-      for (let attempt = 0; attempt < 2; attempt += 1) {
+      for (const entryName of await readdir(this.lockPath)) {
+        if (entryName === owner.nonce) continue;
+        if (!lockNoncePattern.test(entryName))
+          throw new JsonProfileStoreError(
+            "save_busy",
+            "profile save has an invalid lock entry that requires manual recovery"
+          );
+        let previousOwner: LockOwner;
         try {
-          await link(candidatePath, this.lockPath);
-          return;
-        } catch (error) {
-          if (
-            typeof error !== "object" ||
-            error === null ||
-            !("code" in error) ||
-            error.code !== "EEXIST"
-          )
-            throw error;
-          let previousOwner: LockOwner;
-          try {
-            const lockText = await readFile(this.lockPath, "utf8");
-            if (Buffer.byteLength(lockText, "utf8") > 1_024)
-              throw new RangeError("save lock metadata is too large");
-            previousOwner = parseLockOwner(lockText);
-          } catch (lockError) {
-            throw new JsonProfileStoreError(
-              "save_busy",
-              "profile save has an invalid lock that requires manual recovery",
-              { cause: lockError }
-            );
-          }
+          previousOwner = await this.readLockOwner(entryName);
+        } catch (lockError) {
+          previousOwner = {
+            schemaVersion: 1,
+            pid: Number(entryName.slice(0, entryName.indexOf("-"))),
+            processStartToken: "unknown",
+            nonce: entryName
+          };
           if (await ownerIsAlive(previousOwner))
             throw new JsonProfileStoreError(
               "save_busy",
-              "profile save is locked by another writer"
+              "profile save has an incomplete live lock entry",
+              { cause: lockError }
             );
-          await rm(this.lockPath);
-          const [orphanedPrimary, orphanedBackup] =
-            this.temporaryPaths(previousOwner);
-          await Promise.allSettled([
-            rm(orphanedPrimary, { force: true }),
-            rm(orphanedBackup, { force: true })
-          ]);
         }
+        if (await ownerIsAlive(previousOwner))
+          throw new JsonProfileStoreError(
+            "save_busy",
+            "profile save is locked by another writer"
+          );
+        await rm(join(this.lockPath, entryName), {
+          recursive: true,
+          force: true
+        });
+        const [orphanedPrimary, orphanedBackup] =
+          this.temporaryPaths(previousOwner);
+        await Promise.allSettled([
+          rm(orphanedPrimary, { force: true }),
+          rm(orphanedBackup, { force: true })
+        ]);
       }
-      throw new JsonProfileStoreError(
-        "save_busy",
-        "profile save lock changed during stale-lock recovery"
-      );
-    } finally {
-      await rm(candidatePath, { force: true });
+    } catch (error) {
+      await rm(entryPath, { recursive: true, force: true });
+      await this.removeLockDirectoryIfEmpty();
+      throw error;
     }
   }
 
   private async releaseLock(owner: LockOwner): Promise<void> {
-    const currentOwner = parseLockOwner(await readFile(this.lockPath, "utf8"));
+    const currentOwner = await this.readLockOwner(owner.nonce);
     if (currentOwner.nonce !== owner.nonce)
       throw new JsonProfileStoreError(
         "save_busy",
         "profile save lock ownership changed before release"
       );
-    await rm(this.lockPath);
+    await rm(join(this.lockPath, owner.nonce), { recursive: true });
+    await this.removeLockDirectoryIfEmpty();
   }
 
   public async load(): Promise<JsonProfileLoadResult> {
