@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import {
+  cpSync,
   existsSync,
   linkSync,
   lstatSync,
@@ -918,28 +919,124 @@ describe("simulation CLI", () => {
       ).toBe(0);
       expect(readFileSync(artifactPath, "utf8")).toBe(artifactText);
 
-      writeFileSync(
-        artifactPath,
-        artifactText.replace(
-          `"divergenceActual": ${JSON.stringify(testCase.actual)}`,
-          `"divergenceActual": ${JSON.stringify(testCase.expected)}`
-        )
-      );
-      expect(
-        runCli(
-          "minimize",
-          "--content",
-          compiledContent,
-          "--scenario",
-          testCase.scenario,
-          "--replay",
-          testCase.replay,
-          "--out",
-          output,
-          "--replace",
-          "true"
-        ).status
-      ).toBe(3);
+      if (testCase.name === "result") {
+        const tamperCases: Array<{
+          name: string;
+          mutate: (directory: string) => Promise<void> | void;
+        }> = [
+          {
+            name: "expected",
+            mutate: async (directory) => {
+              const path = resolve(directory, "minimization.json");
+              const value = JSON.parse(readFileSync(path, "utf8"));
+              value.divergenceExpected = "victory";
+              const { artifactChecksum: _, ...body } = value;
+              value.artifactChecksum = await canonicalHash(body);
+              writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+            }
+          },
+          {
+            name: "actual",
+            mutate: async (directory) => {
+              const path = resolve(directory, "minimization.json");
+              const value = JSON.parse(readFileSync(path, "utf8"));
+              value.divergenceActual = "defeat";
+              const { artifactChecksum: _, ...body } = value;
+              value.artifactChecksum = await canonicalHash(body);
+              writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+            }
+          },
+          {
+            name: "observed-tick",
+            mutate: async (directory) => {
+              const path = resolve(directory, "minimization.json");
+              const value = JSON.parse(readFileSync(path, "utf8"));
+              value.checkpointTick = 1;
+              const { artifactChecksum: _, ...body } = value;
+              value.artifactChecksum = await canonicalHash(body);
+              writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+            }
+          },
+          {
+            name: "identity",
+            mutate: async (directory) => {
+              const path = resolve(directory, "minimization.json");
+              const value = JSON.parse(readFileSync(path, "utf8"));
+              value.sourceReplayHash = "0".repeat(64);
+              const { artifactChecksum: _, ...body } = value;
+              value.artifactChecksum = await canonicalHash(body);
+              writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+            }
+          },
+          {
+            name: "artifact-checksum",
+            mutate: (directory) => {
+              const path = resolve(directory, "minimization.json");
+              const value = JSON.parse(readFileSync(path, "utf8"));
+              value.artifactChecksum = "0".repeat(64);
+              writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+            }
+          },
+          {
+            name: "source-replay",
+            mutate: (directory) => {
+              const path = resolve(directory, "replay.source.json");
+              const value = JSON.parse(readFileSync(path, "utf8"));
+              value.expectedTerminalResult = "victory";
+              writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+            }
+          },
+          {
+            name: "minimized-replay",
+            mutate: (directory) => {
+              const path = resolve(directory, "replay.minimized.json");
+              const value = JSON.parse(readFileSync(path, "utf8"));
+              value.expectedTerminalResult = "victory";
+              writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+            }
+          }
+        ];
+        for (const tamperCase of tamperCases) {
+          const tamperedOutput = resolve(
+            directory,
+            `tampered-${tamperCase.name}`
+          );
+          cpSync(output, tamperedOutput, { recursive: true });
+          await tamperCase.mutate(tamperedOutput);
+          const before = readdirSync(tamperedOutput)
+            .sort()
+            .map((name) => [
+              name,
+              lstatSync(resolve(tamperedOutput, name)).nlink,
+              readFileSync(resolve(tamperedOutput, name), "utf8")
+            ]);
+          expect(
+            runCli(
+              "minimize",
+              "--content",
+              compiledContent,
+              "--scenario",
+              testCase.scenario,
+              "--replay",
+              testCase.replay,
+              "--out",
+              tamperedOutput,
+              "--replace",
+              "true"
+            ).status,
+            tamperCase.name
+          ).toBe(3);
+          expect(
+            readdirSync(tamperedOutput)
+              .sort()
+              .map((name) => [
+                name,
+                lstatSync(resolve(tamperedOutput, name)).nlink,
+                readFileSync(resolve(tamperedOutput, name), "utf8")
+              ])
+          ).toEqual(before);
+        }
+      }
     }
   });
 
