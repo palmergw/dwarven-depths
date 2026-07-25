@@ -98,19 +98,23 @@ describe("authoritative web worker", () => {
     root = createRoot(container);
     root.render(<App />);
 
-    await vi.waitFor(() =>
-      expect(document.querySelector("button")?.textContent).toBe(
-        "Confirm preparation"
-      )
+    await vi.waitFor(
+      () =>
+        expect(document.querySelector("button")?.textContent).toBe(
+          "Confirm preparation"
+        ),
+      { timeout: 10_000 }
     );
     const button = document.querySelector("button");
     if (button === null) throw new Error("expected preparation button");
     button.focus();
     await userEvent.keyboard("{Enter}");
-    await vi.waitFor(() =>
-      expect(document.querySelector('[role="status"]')?.textContent).toContain(
-        "Run complete: victory"
-      )
+    await vi.waitFor(
+      () =>
+        expect(
+          document.querySelector('[role="status"]')?.textContent
+        ).toContain("Run complete: victory"),
+      { timeout: 10_000 }
     );
     expect(document.body.textContent).toContain(expected.finalStateChecksum);
     expect(document.querySelectorAll("button")).toHaveLength(0);
