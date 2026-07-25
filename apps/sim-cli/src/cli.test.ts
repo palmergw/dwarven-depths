@@ -603,21 +603,20 @@ describe("simulation CLI", () => {
         .commands
     ).toHaveLength(1);
 
-    expect(
-      runCli(
-        "minimize",
-        "--content",
-        compiledContent,
-        "--scenario",
-        compiledScenario,
-        "--replay",
-        divergentReplay,
-        "--out",
-        output,
-        "--replace",
-        "true"
-      ).status
-    ).toBe(0);
+    const replaced = runCli(
+      "minimize",
+      "--content",
+      compiledContent,
+      "--scenario",
+      compiledScenario,
+      "--replay",
+      divergentReplay,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(replaced.status, replaced.stderr).toBe(0);
     expect(readFileSync(artifactPath, "utf8")).toBe(artifactText);
 
     writeFileSync(
@@ -1188,15 +1187,95 @@ describe("simulation CLI", () => {
           ).toEqual(before);
         }
       }
+
+      const ticksOutput = resolve(
+        directory,
+        `${testCase.name}-ticks-minimization`
+      );
+      const ticks = runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        testCase.scenario,
+        "--replay",
+        testCase.replay,
+        "--replay-ticks",
+        "true",
+        "--out",
+        ticksOutput
+      );
+      expect(ticks.status, ticks.stderr).toBe(0);
+      expect(JSON.parse(ticks.stdout)).toMatchObject({
+        divergenceCode: testCase.code,
+        checkpointTick: 0,
+        originalMaximumTicks: 4,
+        minimizedMaximumTicks: 1
+      });
+      const ticksArtifactPath = resolve(ticksOutput, "minimization.json");
+      const ticksArtifactText = readFileSync(ticksArtifactPath, "utf8");
+      expect(JSON.parse(ticksArtifactText)).toMatchObject({
+        schemaVersion: 8,
+        divergenceCode: testCase.code,
+        divergenceExpected: testCase.expected,
+        divergenceActual: testCase.actual,
+        originalMaximumTicks: 4,
+        minimizedMaximumTicks: 1
+      });
+      expect(
+        runCli(
+          "minimize",
+          "--content",
+          compiledContent,
+          "--scenario",
+          testCase.scenario,
+          "--replay",
+          testCase.replay,
+          "--replay-ticks",
+          "true",
+          "--out",
+          ticksOutput,
+          "--replace",
+          "true"
+        ).status
+      ).toBe(0);
+      expect(readFileSync(ticksArtifactPath, "utf8")).toBe(ticksArtifactText);
+
+      if (testCase.name === "result") {
+        const tamperedArtifact = JSON.parse(ticksArtifactText);
+        tamperedArtifact.minimizedMaximumTicks = 2;
+        const { artifactChecksum: _, ...tamperedBody } = tamperedArtifact;
+        tamperedArtifact.artifactChecksum = await canonicalHash(tamperedBody);
+        writeFileSync(
+          ticksArtifactPath,
+          `${JSON.stringify(tamperedArtifact, null, 2)}\n`
+        );
+        const tamperedText = readFileSync(ticksArtifactPath, "utf8");
+        expect(
+          runCli(
+            "minimize",
+            "--content",
+            compiledContent,
+            "--scenario",
+            testCase.scenario,
+            "--replay",
+            testCase.replay,
+            "--replay-ticks",
+            "true",
+            "--out",
+            ticksOutput,
+            "--replace",
+            "true"
+          ).status
+        ).toBe(3);
+        expect(readFileSync(ticksArtifactPath, "utf8")).toBe(tamperedText);
+      }
     }
-  });
+  }, 15_000);
 
   it("minimizes exact replay execution failures into schema-7 evidence", async () => {
     const directory = temporaryDirectory();
-    const content = resolve("content/fixtures/nonterminating-content.json");
-    const sourceScenarioPath = resolve(
-      "scenarios/conformance/nonterminating.json"
-    );
+    const sourceScenarioPath = resolve(directory, "stalled-scenario.json");
     const validContent = resolve(directory, "valid-content.json");
     const validScenario = resolve(directory, "valid-scenario.json");
     const runOutput = resolve(directory, "source-run");
@@ -1233,12 +1312,20 @@ describe("simulation CLI", () => {
     ).toBe(0);
 
     const compiledSource = await compileContent(
-      JSON.parse(readFileSync(content, "utf8"))
+      JSON.parse(readFileSync(validContent, "utf8"))
     );
     const sourceScenario = compileScenario(
-      JSON.parse(readFileSync(sourceScenarioPath, "utf8")),
+      {
+        schemaVersion: 1,
+        id: "scenario.test.replay_execution_failure_stall",
+        levelId: "level.empty",
+        seed: "1",
+        maximumTicks: 64,
+        commands: []
+      },
       compiledSource
     );
+    writeFileSync(sourceScenarioPath, JSON.stringify(sourceScenario));
     const compiledContent = resolve(directory, "compiled-content.json");
     const sourceReplayPath = resolve(directory, "stalled-replay.json");
     writeFileSync(compiledContent, JSON.stringify(compiledSource.bundle));
@@ -1252,11 +1339,7 @@ describe("simulation CLI", () => {
       levelId: sourceScenario.levelId,
       seed: sourceScenario.seed,
       scenarioHash: await canonicalHash(sourceScenario),
-      commands: sourceScenario.commands.map((command, sequence) => ({
-        tick: command.atTick,
-        sequence,
-        command
-      }))
+      commands: []
     };
     writeFileSync(sourceReplayPath, JSON.stringify(sourceReplay));
 
@@ -1275,19 +1358,19 @@ describe("simulation CLI", () => {
     expect(first.status, first.stderr).toBe(0);
     expect(JSON.parse(first.stdout)).toMatchObject({
       divergenceCode: "execution_failed",
-      checkpointTick: 2,
-      originalCommandCount: 1,
-      minimizedCommandCount: 1
+      checkpointTick: 0,
+      originalCommandCount: 0,
+      minimizedCommandCount: 0
     });
     const artifactPath = resolve(output, "minimization.json");
     const artifactText = readFileSync(artifactPath, "utf8");
     expect(JSON.parse(artifactText)).toMatchObject({
       schemaVersion: 7,
       divergenceCode: "execution_failed",
-      checkpointTick: 2,
+      checkpointTick: 0,
       divergenceExpected: "victory",
-      divergenceActual: "tick_budget_exhausted",
-      retainedCommandIndexes: [0]
+      divergenceActual: "simulation_stalled",
+      retainedCommandIndexes: []
     });
     expect(
       runCli(
@@ -1308,7 +1391,7 @@ describe("simulation CLI", () => {
 
     for (const [name, field, value] of [
       ["expected", "divergenceExpected", "defeat"],
-      ["actual", "divergenceActual", "simulation_stalled"],
+      ["actual", "divergenceActual", "tick_budget_exhausted"],
       ["tick", "checkpointTick", 1]
     ] as const) {
       const tamperedOutput = resolve(directory, `tampered-execution-${name}`);
@@ -1359,23 +1442,154 @@ describe("simulation CLI", () => {
     }
 
     const ticksOutput = resolve(directory, "execution-failure-ticks");
-    expect(
-      runCli(
-        "minimize",
-        "--content",
-        compiledContent,
-        "--scenario",
-        sourceScenarioPath,
-        "--replay",
-        sourceReplayPath,
-        "--replay-ticks",
-        "true",
-        "--out",
-        ticksOutput
-      ).status
-    ).toBe(2);
-    expect(existsSync(ticksOutput)).toBe(false);
-  });
+    const ticks = runCli(
+      "minimize",
+      "--content",
+      compiledContent,
+      "--scenario",
+      sourceScenarioPath,
+      "--replay",
+      sourceReplayPath,
+      "--replay-ticks",
+      "true",
+      "--out",
+      ticksOutput
+    );
+    expect(ticks.status, ticks.stderr).toBe(0);
+    expect(JSON.parse(ticks.stdout)).toMatchObject({
+      divergenceCode: "execution_failed",
+      checkpointTick: 0,
+      originalMaximumTicks: 64,
+      minimizedMaximumTicks: 1
+    });
+    const ticksArtifactPath = resolve(ticksOutput, "minimization.json");
+    const ticksArtifactText = readFileSync(ticksArtifactPath, "utf8");
+    expect(JSON.parse(ticksArtifactText)).toMatchObject({
+      schemaVersion: 8,
+      divergenceExpected: "victory",
+      divergenceActual: "simulation_stalled",
+      originalMaximumTicks: 64,
+      minimizedMaximumTicks: 1
+    });
+
+    const schema8TamperCases: Array<{
+      name: string;
+      mutate: (directory: string) => Promise<void> | void;
+    }> = [
+      ...[
+        ["original-ticks", "originalMaximumTicks", 63],
+        ["minimized-ticks", "minimizedMaximumTicks", 2],
+        ["expected", "divergenceExpected", "defeat"],
+        ["actual", "divergenceActual", "tick_budget_exhausted"],
+        ["observed-tick", "checkpointTick", 1]
+      ].map(([name, field, value]) => ({
+        name: name as string,
+        mutate: async (directory: string) => {
+          const path = resolve(directory, "minimization.json");
+          const artifact = JSON.parse(readFileSync(path, "utf8"));
+          artifact[field as string] = value;
+          const { artifactChecksum: _, ...body } = artifact;
+          artifact.artifactChecksum = await canonicalHash(body);
+          writeFileSync(path, `${JSON.stringify(artifact, null, 2)}\n`);
+        }
+      })),
+      ...[
+        ["source-replay", "replay.source.json", "sourceReplayHash"],
+        ["minimized-replay", "replay.minimized.json", "minimizedReplayHash"]
+      ].map(([name, file, binding]) => ({
+        name: name as string,
+        mutate: async (directory: string) => {
+          const path = resolve(directory, file as string);
+          const replay = JSON.parse(readFileSync(path, "utf8"));
+          replay.expectedTerminalResult = "defeat";
+          writeFileSync(path, `${JSON.stringify(replay, null, 2)}\n`);
+          const artifactPath = resolve(directory, "minimization.json");
+          const artifact = JSON.parse(readFileSync(artifactPath, "utf8"));
+          artifact[binding as string] = await canonicalHash(replay);
+          const { artifactChecksum: _, ...body } = artifact;
+          artifact.artifactChecksum = await canonicalHash(body);
+          writeFileSync(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`);
+        }
+      })),
+      ...[
+        [
+          "source-scenario",
+          "scenario.source.compiled.json",
+          "sourceScenarioHash",
+          63
+        ],
+        [
+          "minimized-scenario",
+          "scenario.minimized.compiled.json",
+          "minimizedScenarioHash",
+          2
+        ]
+      ].map(([name, file, binding, maximumTicks]) => ({
+        name: name as string,
+        mutate: async (directory: string) => {
+          const path = resolve(directory, file as string);
+          const scenario = JSON.parse(readFileSync(path, "utf8"));
+          scenario.maximumTicks = maximumTicks;
+          writeFileSync(path, `${JSON.stringify(scenario, null, 2)}\n`);
+          const artifactPath = resolve(directory, "minimization.json");
+          const artifact = JSON.parse(readFileSync(artifactPath, "utf8"));
+          artifact[binding as string] = await canonicalHash(scenario);
+          if (name === "source-scenario") {
+            const replayPath = resolve(directory, "replay.source.json");
+            const replay = JSON.parse(readFileSync(replayPath, "utf8"));
+            replay.scenarioHash = artifact.sourceScenarioHash;
+            writeFileSync(replayPath, `${JSON.stringify(replay, null, 2)}\n`);
+            artifact.sourceReplayHash = await canonicalHash(replay);
+            artifact.originalMaximumTicks = maximumTicks;
+          }
+          const { artifactChecksum: _, ...body } = artifact;
+          artifact.artifactChecksum = await canonicalHash(body);
+          writeFileSync(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`);
+        }
+      }))
+    ];
+    for (const tamperCase of schema8TamperCases) {
+      const tamperedOutput = resolve(
+        directory,
+        `tampered-schema-8-${tamperCase.name}`
+      );
+      cpSync(ticksOutput, tamperedOutput, { recursive: true });
+      await tamperCase.mutate(tamperedOutput);
+      const before = readdirSync(tamperedOutput)
+        .sort()
+        .map((entry) => [
+          entry,
+          readFileSync(resolve(tamperedOutput, entry), "utf8")
+        ]);
+      expect(
+        runCli(
+          "minimize",
+          "--content",
+          compiledContent,
+          "--scenario",
+          sourceScenarioPath,
+          "--replay",
+          sourceReplayPath,
+          "--replay-ticks",
+          "true",
+          "--out",
+          tamperedOutput,
+          "--replace",
+          "true"
+        ).status,
+        tamperCase.name
+      ).toBe(3);
+      expect(
+        readdirSync(tamperedOutput)
+          .sort()
+          .map((entry) => [
+            entry,
+            readFileSync(resolve(tamperedOutput, entry), "utf8")
+          ])
+      ).toEqual(before);
+    }
+    expect(readFileSync(ticksArtifactPath, "utf8")).toBe(ticksArtifactText);
+  }, 15_000);
 
   it("publishes and replay-validates a durable authoritative campaign", async () => {
     const directory = temporaryDirectory();

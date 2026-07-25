@@ -291,7 +291,7 @@ interface StalledMinimizationArtifact extends StalledMinimizationArtifactBody {
 }
 
 interface ReplayMinimizationArtifactBody {
-  readonly schemaVersion: 3 | 4 | 5 | 7;
+  readonly schemaVersion: 3 | 4 | 5 | 7 | 8;
   readonly complete: true;
   readonly assertionCode: "replay_divergence";
   readonly divergenceCode:
@@ -1906,7 +1906,9 @@ async function assertReplayMinimization(
       "assertionCode",
       "divergenceCode",
       "checkpointTick",
-      ...(artifact.schemaVersion === 5 || artifact.schemaVersion === 7
+      ...(artifact.schemaVersion === 5 ||
+      artifact.schemaVersion === 7 ||
+      artifact.schemaVersion === 8
         ? ["divergenceExpected", "divergenceActual"]
         : []),
       "contentManifestHash",
@@ -1918,7 +1920,7 @@ async function assertReplayMinimization(
       "minimizedCommandCount",
       "retainedCommandIndexes",
       "candidateEvaluationCount",
-      ...(artifact.schemaVersion === 4
+      ...(artifact.schemaVersion === 4 || artifact.schemaVersion === 8
         ? ["originalMaximumTicks", "minimizedMaximumTicks"]
         : []),
       "artifactChecksum"
@@ -1940,19 +1942,26 @@ async function assertReplayMinimization(
     (artifact.schemaVersion !== 3 &&
       artifact.schemaVersion !== 4 &&
       artifact.schemaVersion !== 5 &&
-      artifact.schemaVersion !== 7) ||
+      artifact.schemaVersion !== 7 &&
+      artifact.schemaVersion !== 8) ||
     artifact.complete !== true ||
     artifact.assertionCode !== "replay_divergence" ||
     (artifact.schemaVersion === 7
       ? artifact.divergenceCode !== "execution_failed"
-      : artifact.schemaVersion === 5
+      : artifact.schemaVersion === 8
         ? artifact.divergenceCode !== "terminal_result_mismatch" &&
-          artifact.divergenceCode !== "terminal_tick_mismatch"
-        : artifact.divergenceCode !== "state_checksum_mismatch" &&
-          artifact.divergenceCode !== "event_stream_checksum_mismatch") ||
+          artifact.divergenceCode !== "terminal_tick_mismatch" &&
+          artifact.divergenceCode !== "execution_failed"
+        : artifact.schemaVersion === 5
+          ? artifact.divergenceCode !== "terminal_result_mismatch" &&
+            artifact.divergenceCode !== "terminal_tick_mismatch"
+          : artifact.divergenceCode !== "state_checksum_mismatch" &&
+            artifact.divergenceCode !== "event_stream_checksum_mismatch") ||
     !Number.isSafeInteger(artifact.checkpointTick) ||
     artifact.checkpointTick < 0 ||
-    ((artifact.schemaVersion === 5 || artifact.schemaVersion === 7) &&
+    ((artifact.schemaVersion === 5 ||
+      artifact.schemaVersion === 7 ||
+      artifact.schemaVersion === 8) &&
       ((typeof artifact.divergenceExpected !== "string" &&
         typeof artifact.divergenceExpected !== "number") ||
         (typeof artifact.divergenceActual !== "string" &&
@@ -1967,7 +1976,7 @@ async function assertReplayMinimization(
     artifact.originalCommandCount !== sourceScenario.commands.length ||
     artifact.minimizedCommandCount !== minimizedScenario.commands.length ||
     artifact.minimizedCommandCount !== indexes.length ||
-    (artifact.schemaVersion === 4 &&
+    ((artifact.schemaVersion === 4 || artifact.schemaVersion === 8) &&
       (artifact.originalMaximumTicks !== sourceScenario.maximumTicks ||
         artifact.minimizedMaximumTicks !== minimizedScenario.maximumTicks ||
         !Number.isSafeInteger(artifact.minimizedMaximumTicks) ||
@@ -1994,7 +2003,9 @@ async function assertReplayMinimization(
   const expected: MinimizedReplayDivergence = {
     code: artifact.divergenceCode,
     checkpointTick: artifact.checkpointTick,
-    ...(artifact.schemaVersion === 5 || artifact.schemaVersion === 7
+    ...(artifact.schemaVersion === 5 ||
+    artifact.schemaVersion === 7 ||
+    artifact.schemaVersion === 8
       ? {
           expected: artifact.divergenceExpected,
           actual: artifact.divergenceActual
@@ -2018,7 +2029,7 @@ async function assertReplayMinimization(
     sourceReplay,
     content,
     expected,
-    artifact.schemaVersion === 4
+    artifact.schemaVersion === 4 || artifact.schemaVersion === 8
   );
   const candidate = await replayCandidate(
     sourceScenario,
@@ -2054,7 +2065,7 @@ async function assertReplayMinimization(
     }
   }
   if (
-    artifact.schemaVersion === 4 &&
+    (artifact.schemaVersion === 4 || artifact.schemaVersion === 8) &&
     minimizedScenario.maximumTicks > 1 &&
     (await reproducesReplayDivergence(
       sourceScenario,
@@ -2340,7 +2351,8 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
         ...(artifactInput["schemaVersion"] === 3 ||
         artifactInput["schemaVersion"] === 4 ||
         artifactInput["schemaVersion"] === 5 ||
-        artifactInput["schemaVersion"] === 7
+        artifactInput["schemaVersion"] === 7 ||
+        artifactInput["schemaVersion"] === 8
           ? ["replay.minimized.json", "replay.source.json"]
           : []),
         "scenario.minimized.compiled.json",
@@ -2367,7 +2379,8 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
       artifactInput["schemaVersion"] === 3 ||
       artifactInput["schemaVersion"] === 4 ||
       artifactInput["schemaVersion"] === 5 ||
-      artifactInput["schemaVersion"] === 7
+      artifactInput["schemaVersion"] === 7 ||
+      artifactInput["schemaVersion"] === 8
     ) {
       await assertReplayMinimization(
         artifactInput as unknown as ReplayMinimizationArtifact,
@@ -2539,6 +2552,72 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
   }
 }
 
+async function assertMatchingReplayMinimization(
+  directory: string,
+  expected: {
+    readonly content: Awaited<ReturnType<typeof compileContent>>["bundle"];
+    readonly sourceScenario: ReturnType<typeof compileScenario>;
+    readonly minimizedScenario: ReturnType<typeof compileScenario>;
+    readonly sourceReplay: ReplayDefinition;
+    readonly minimizedReplay: ReplayDefinition;
+    readonly artifact: ReplayMinimizationArtifact;
+  }
+): Promise<void> {
+  let rootHandle: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    await assertReplaceableMinimization(directory);
+    rootHandle = await open(
+      directory,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    const rootDirectory = `/proc/self/fd/${rootHandle.fd}`;
+    const [
+      content,
+      sourceScenario,
+      minimizedScenario,
+      sourceReplay,
+      minimizedReplay,
+      artifact
+    ] = await Promise.all([
+      readArtifactJson(rootDirectory, "content.compiled.json"),
+      readArtifactJson(rootDirectory, "scenario.source.compiled.json"),
+      readArtifactJson(rootDirectory, "scenario.minimized.compiled.json"),
+      readArtifactJson(rootDirectory, "replay.source.json"),
+      readArtifactJson(rootDirectory, "replay.minimized.json"),
+      readArtifactJson(rootDirectory, "minimization.json")
+    ]);
+    const differences = [
+      ["content", firstDifferencePath(content, expected.content)],
+      [
+        "source scenario",
+        firstDifferencePath(sourceScenario, expected.sourceScenario)
+      ],
+      [
+        "minimized scenario",
+        firstDifferencePath(minimizedScenario, expected.minimizedScenario)
+      ],
+      [
+        "source replay",
+        firstDifferencePath(sourceReplay, expected.sourceReplay)
+      ],
+      [
+        "minimized replay",
+        firstDifferencePath(minimizedReplay, expected.minimizedReplay)
+      ],
+      ["artifact", firstDifferencePath(artifact, expected.artifact)]
+    ].filter((entry): entry is [string, string] => entry[1] !== undefined);
+    if (differences.length > 0) {
+      throw new Error(
+        `existing replay minimization does not match the current invocation: ${differences
+          .map(([name, path]) => `${name} ${path}`)
+          .join(", ")}`
+      );
+    }
+  } finally {
+    await rootHandle?.close().catch(() => undefined);
+  }
+}
+
 async function minimize(args: ParsedArgs): Promise<void> {
   rejectUnknownFlags(
     args,
@@ -2570,11 +2649,6 @@ async function minimize(args: ParsedArgs): Promise<void> {
       divergence.code === "terminal_result_mismatch" ||
       divergence.code === "terminal_tick_mismatch";
     const executionFailure = divergence.code === "execution_failed";
-    if ((terminalDivergence || executionFailure) && minimizeReplayTicks) {
-      throw new CliInputError(
-        "--replay-ticks supports only checkpoint checksum divergences"
-      );
-    }
     const reduction = await deriveReplayMinimization(
       scenario,
       sourceReplay,
@@ -2591,7 +2665,9 @@ async function minimize(args: ParsedArgs): Promise<void> {
     );
     const artifactBody: ReplayMinimizationArtifactBody = {
       schemaVersion: minimizeReplayTicks
-        ? 4
+        ? terminalDivergence || executionFailure
+          ? 8
+          : 4
         : executionFailure
           ? 7
           : terminalDivergence
@@ -2660,7 +2736,15 @@ async function minimize(args: ParsedArgs): Promise<void> {
           ]);
           await assertReplaceableMinimization(stagingDirectory);
         },
-        assertReplaceableMinimization
+        (directory) =>
+          assertMatchingReplayMinimization(directory, {
+            content: content.bundle,
+            sourceScenario: scenario,
+            minimizedScenario: candidate.scenario,
+            sourceReplay,
+            minimizedReplay: candidate.replay,
+            artifact
+          })
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -2677,7 +2761,7 @@ async function minimize(args: ParsedArgs): Promise<void> {
         assertionCode: artifact.assertionCode,
         divergenceCode: artifact.divergenceCode,
         checkpointTick: artifact.checkpointTick,
-        ...(artifact.schemaVersion === 4
+        ...(artifact.schemaVersion === 4 || artifact.schemaVersion === 8
           ? {
               originalMaximumTicks: artifact.originalMaximumTicks,
               minimizedMaximumTicks: artifact.minimizedMaximumTicks

@@ -229,7 +229,13 @@ the repository.
   binds the expected terminal result, exact runtime assertion or safety-stop
   code, and observed failure tick, then independently rederives exact-tuple
   reproduction and command-deletion 1-minimality during staging and validated
-  replacement. Pre-execution identity and command mismatches remain rejected.
+  replacement. An explicit replay tick-reduction request extends terminal-result,
+  terminal-tick, and execution-failure evidence to schema 8, binding the original
+  and smallest positive reproducing tick budgets while preserving the exact
+  divergence tuple. Staging and replacement independently rederive both command
+  and tick reductions, and replacement requires the existing replay minimization
+  to match the current invocation's complete source, minimized result, and bound
+  artifact. Pre-execution identity and command mismatches remain rejected.
   Checkpoint-sequence reduction and other non-checkpoint divergences remain
   later expansions.
 
