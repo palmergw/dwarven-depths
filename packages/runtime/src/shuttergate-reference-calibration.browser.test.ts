@@ -43,5 +43,20 @@ describe("Shuttergate calibration browser parity", () => {
     expect(await canonicalHash(result.rewardEvent)).toBe(
       "562b435c2f90110cdf3fa6b6a5bcf48676777ba6b7a1d6b132624054db50dcff"
     );
+
+    const accessorRequest = {
+      schemaVersion: 1,
+      seed: "1",
+      placementPointId: "placement.shuttergate_north_guard",
+      targetPolicy: "nearest",
+      buildId: "build.profile.new_campaign.v1"
+    } as Record<string, unknown>;
+    Object.defineProperty(accessorRequest, "attemptId", {
+      enumerable: true,
+      get: () => "attempt.shuttergate.a0001"
+    });
+    await expect(
+      runShuttergateAttempt(content, accessorRequest as never)
+    ).rejects.toThrow("plain data properties");
   }, 60_000);
 });

@@ -420,6 +420,9 @@ export async function runShuttergateAttempt(
 ): Promise<ShuttergateAttemptResult> {
   if (typeof request !== "object" || request === null || Array.isArray(request))
     throw new TypeError("Shuttergate attempt request must be an object");
+  const prototype = Object.getPrototypeOf(request);
+  if (prototype !== Object.prototype && prototype !== null)
+    throw new TypeError("Shuttergate attempt request must be a plain object");
   const expectedKeys = [
     "attemptId",
     "buildId",
@@ -434,33 +437,53 @@ export async function runShuttergateAttempt(
     actualKeys.some((key, index) => key !== expectedKeys[index])
   )
     throw new TypeError("Shuttergate attempt request has invalid fields");
-  if (request.schemaVersion !== 1)
+  const descriptors = Object.getOwnPropertyDescriptors(request);
+  if (
+    expectedKeys.some((key) => {
+      const descriptor = descriptors[key];
+      return descriptor === undefined || !("value" in descriptor);
+    })
+  )
+    throw new TypeError(
+      "Shuttergate attempt request fields must be plain data properties"
+    );
+  const normalizedRequest = Object.freeze({
+    schemaVersion: descriptors.schemaVersion?.value,
+    attemptId: descriptors.attemptId?.value,
+    seed: descriptors.seed?.value,
+    placementPointId: descriptors.placementPointId?.value,
+    targetPolicy: descriptors.targetPolicy?.value,
+    buildId: descriptors.buildId?.value
+  }) as ShuttergateAttemptRequest;
+  if (normalizedRequest.schemaVersion !== 1)
     throw new RangeError(
       "Shuttergate attempt request has unsupported schemaVersion"
     );
   if (
-    typeof request.attemptId !== "string" ||
-    !/^attempt\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/.test(request.attemptId)
+    typeof normalizedRequest.attemptId !== "string" ||
+    !/^attempt\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/.test(
+      normalizedRequest.attemptId
+    )
   )
     throw new RangeError(
-      `Shuttergate attempt requires a canonical attempt ID (${String(request.attemptId)})`
+      `Shuttergate attempt requires a canonical attempt ID (${String(normalizedRequest.attemptId)})`
     );
 
   const calibration =
     await runShuttergateSeedPlacementControllerBuildCalibration(
       content,
-      request.seed,
-      request.placementPointId,
-      request.targetPolicy,
-      request.buildId
+      normalizedRequest.seed,
+      normalizedRequest.placementPointId,
+      normalizedRequest.targetPolicy,
+      normalizedRequest.buildId
     );
   const terminalMilestone = calibration.milestones.at(-1);
   if (terminalMilestone === undefined)
     throw new Error("Shuttergate attempt has no terminal milestone evidence");
   const rewardEvent: CompletedAttemptRewardEvent = Object.freeze({
     schemaVersion: 1,
-    rewardId: `reward.${request.attemptId}` as StableId,
-    attemptId: request.attemptId,
+    rewardId: `reward.${normalizedRequest.attemptId}` as StableId,
+    attemptId: normalizedRequest.attemptId,
     levelId: calibration.levelId,
     terminalResult: calibration.terminalResult,
     defeatedEnemies: calibration.defeatedEnemies,

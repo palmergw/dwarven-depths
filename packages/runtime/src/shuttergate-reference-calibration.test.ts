@@ -287,6 +287,25 @@ describe("Shuttergate reference balance calibration", () => {
     ).rejects.toThrow("canonical attempt ID");
   });
 
+  it("rejects accessor-backed attempt identity before encounter execution", async () => {
+    const content = await compileContent(shuttergateInput);
+    const request = {
+      schemaVersion: 1,
+      seed: "1",
+      placementPointId: "placement.shuttergate_north_guard",
+      targetPolicy: "nearest",
+      buildId: "build.profile.new_campaign.v1"
+    } as Record<string, unknown>;
+    Object.defineProperty(request, "attemptId", {
+      enumerable: true,
+      get: () => "attempt.shuttergate.a0001"
+    });
+
+    await expect(
+      runShuttergateAttempt(content, request as never)
+    ).rejects.toThrow("plain data properties");
+  });
+
   it("rejects placement points outside the pinned Shuttergate map", async () => {
     const content = await compileContent(shuttergateInput);
 
