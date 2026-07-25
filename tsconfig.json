@@ -6,6 +6,7 @@
     { "path": "./packages/content-runtime" },
     { "path": "./packages/sim-core" },
     { "path": "./packages/progression" },
+    { "path": "./packages/save" },
     { "path": "./packages/runtime" },
     { "path": "./apps/sim-cli" }
   ]

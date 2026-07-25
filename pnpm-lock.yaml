@@ -80,6 +80,15 @@ importers:
         specifier: workspace:*
         version: link:../sim-core
 
+  packages/save:
+    dependencies:
+      '@dwarven-depths/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@dwarven-depths/progression':
+        specifier: workspace:*
+        version: link:../progression
+
   packages/sim-core:
     dependencies:
       '@dwarven-depths/content-runtime':

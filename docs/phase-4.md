@@ -53,10 +53,20 @@ the repository.
   Catalog/profile validation rejects unaffordable, maximum-rank, forged-spend,
   missing-prerequisite, overflow, and malformed transactions without mutation;
   purchase evidence is canonical and browser-parity pinned.
+- Portable profile saves use a strict versioned envelope that binds content
+  compatibility, simulation protocol, application build, write metadata, profile
+  identity/revision, and a canonical payload checksum to normalized progression
+  state. The explicit Node JSON adapter validates before writing, compares the
+  expected revision, flushes a temporary generation, retains the previous valid
+  primary as a backup, and atomically replaces the primary. Corrupt, oversized,
+  and unsupported generations are never silently overwritten; a valid backup can
+  be loaded read-only when the primary is unavailable. Fault-injection evidence
+  covers validation, durable replacement, backup replacement, and interrupted
+  acknowledgement boundaries.
 
 ## Not implemented yet
 
-Durable file/local-storage profile adapters, encounter reward-event production,
-catch-up experience, purchased-upgrade effect application, saves and migrations, recycle
-transactions, campaign/sweep harnesses, and upgraded-build calibration remain
-later Phase 4 checkpoints.
+IndexedDB profile storage, historical save migrations, encounter reward-event
+production, catch-up experience, purchased-upgrade effect application, full save
+scope, recycle transactions, campaign/sweep harnesses, and upgraded-build
+calibration remain later Phase 4 checkpoints.

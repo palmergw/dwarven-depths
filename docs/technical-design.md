@@ -64,7 +64,7 @@ packages/
   runtime/                Deterministic orchestration of combat, progression, and transaction intents
   content-schema/         Schemas, validators, references, canonical compiler
   content-runtime/        Compiled immutable content lookup
-  save/                   Save schema, migrations, transaction interface, adapters
+  save/                   Save envelope, migrations, JSON/IndexedDB adapters, recovery
   telemetry/              Event reduction, metrics, timelines, explanations
   balance/                Sweep matrices, policy bots, comparisons, calibration rules
   renderer-phaser/        Snapshot/event-to-visual projection only
