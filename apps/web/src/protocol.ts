@@ -1,0 +1,189 @@
+export const WEB_PROTOCOL_VERSION = 1 as const;
+
+export type ClientMessage =
+  | { readonly protocolVersion: 1; readonly type: "initialize" }
+  | {
+      readonly protocolVersion: 1;
+      readonly type: "command";
+      readonly requestId: string;
+      readonly command: { readonly type: "confirmPreparation" };
+    };
+
+export type WorkerMessage =
+  | {
+      readonly protocolVersion: 1;
+      readonly type: "snapshot";
+      readonly phase: "preparation" | "running";
+    }
+  | {
+      readonly protocolVersion: 1;
+      readonly type: "result";
+      readonly terminalResult: "victory" | "defeat";
+      readonly terminalTick: number;
+      readonly finalStateChecksum: string;
+      readonly eventStreamChecksum: string;
+      readonly commands: readonly {
+        readonly tick: number;
+        readonly sequence: number;
+        readonly command: {
+          readonly atTick: number;
+          readonly type: "confirmPreparation";
+        };
+      }[];
+    }
+  | {
+      readonly protocolVersion: 1;
+      readonly type: "failure";
+      readonly code: string;
+      readonly message: string;
+    };
+
+type RecordValue = {
+  [key: string]: unknown;
+  protocolVersion?: unknown;
+  type?: unknown;
+  requestId?: unknown;
+  command?: unknown;
+  phase?: unknown;
+  code?: unknown;
+  message?: unknown;
+  terminalResult?: unknown;
+  terminalTick?: unknown;
+  finalStateChecksum?: unknown;
+  eventStreamChecksum?: unknown;
+  commands?: unknown;
+  tick?: unknown;
+  sequence?: unknown;
+  atTick?: unknown;
+};
+
+function isRecord(value: unknown): value is RecordValue {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(value: RecordValue, keys: readonly string[]): boolean {
+  const actual = Object.keys(value).sort();
+  return (
+    actual.length === keys.length &&
+    actual.every((key, index) => key === [...keys].sort()[index])
+  );
+}
+
+function isHash(value: unknown): value is string {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+export function parseClientMessage(value: unknown): ClientMessage | undefined {
+  if (
+    !isRecord(value) ||
+    value.protocolVersion !== WEB_PROTOCOL_VERSION ||
+    typeof value.type !== "string"
+  )
+    return undefined;
+  if (value.type === "initialize") {
+    return hasExactKeys(value, ["protocolVersion", "type"])
+      ? { protocolVersion: WEB_PROTOCOL_VERSION, type: "initialize" }
+      : undefined;
+  }
+  if (
+    value.type !== "command" ||
+    !hasExactKeys(value, ["command", "protocolVersion", "requestId", "type"]) ||
+    typeof value.requestId !== "string" ||
+    value.requestId.length === 0 ||
+    !isRecord(value.command) ||
+    !hasExactKeys(value.command, ["type"]) ||
+    value.command.type !== "confirmPreparation"
+  )
+    return undefined;
+  return {
+    protocolVersion: WEB_PROTOCOL_VERSION,
+    type: "command",
+    requestId: value.requestId,
+    command: { type: "confirmPreparation" }
+  };
+}
+
+export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
+  if (
+    !isRecord(value) ||
+    value.protocolVersion !== WEB_PROTOCOL_VERSION ||
+    typeof value.type !== "string"
+  )
+    return undefined;
+  if (value.type === "snapshot") {
+    if (
+      !hasExactKeys(value, ["phase", "protocolVersion", "type"]) ||
+      (value.phase !== "preparation" && value.phase !== "running")
+    )
+      return undefined;
+    return {
+      protocolVersion: WEB_PROTOCOL_VERSION,
+      type: "snapshot",
+      phase: value.phase
+    };
+  }
+  if (value.type === "failure") {
+    if (
+      !hasExactKeys(value, ["code", "message", "protocolVersion", "type"]) ||
+      typeof value.code !== "string" ||
+      typeof value.message !== "string"
+    )
+      return undefined;
+    return {
+      protocolVersion: WEB_PROTOCOL_VERSION,
+      type: "failure",
+      code: value.code,
+      message: value.message
+    };
+  }
+  if (
+    value.type !== "result" ||
+    !hasExactKeys(value, [
+      "commands",
+      "eventStreamChecksum",
+      "finalStateChecksum",
+      "protocolVersion",
+      "terminalResult",
+      "terminalTick",
+      "type"
+    ]) ||
+    (value.terminalResult !== "victory" && value.terminalResult !== "defeat") ||
+    !Number.isSafeInteger(value.terminalTick) ||
+    (value.terminalTick as number) < 0 ||
+    !isHash(value.finalStateChecksum) ||
+    !isHash(value.eventStreamChecksum) ||
+    !Array.isArray(value.commands)
+  )
+    return undefined;
+  const commands = value.commands;
+  if (
+    commands.length !== 1 ||
+    !commands.every(
+      (envelope, index) =>
+        isRecord(envelope) &&
+        hasExactKeys(envelope, ["command", "sequence", "tick"]) &&
+        Number.isSafeInteger(envelope.tick) &&
+        (envelope.tick as number) >= 0 &&
+        (envelope.tick as number) <= (value.terminalTick as number) &&
+        Number.isSafeInteger(envelope.sequence) &&
+        envelope.sequence === index &&
+        isRecord(envelope.command) &&
+        hasExactKeys(envelope.command, ["atTick", "type"]) &&
+        Number.isSafeInteger(envelope.command.atTick) &&
+        (envelope.command.atTick as number) >= 0 &&
+        envelope.command.atTick === envelope.tick &&
+        envelope.command.type === "confirmPreparation"
+    )
+  )
+    return undefined;
+  return value as WorkerMessage;
+}
+
+export function failure(code: string, message: string): WorkerMessage {
+  return {
+    protocolVersion: WEB_PROTOCOL_VERSION,
+    type: "failure",
+    code,
+    message
+  };
+}
