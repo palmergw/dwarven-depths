@@ -41,7 +41,7 @@ export interface ShuttergateReferenceCalibrationEvidence {
   readonly schemaVersion: 1;
   readonly calibrationId: "calibration.shuttergate.unupgraded_warden.v1";
   readonly contentManifestHash: string;
-  readonly seed: "1";
+  readonly seed: string;
   readonly levelId: StableId;
   readonly placementPointId: StableId;
   readonly targetPolicy: DwarfTargetPolicy;
@@ -87,10 +87,16 @@ async function requireReferenceContent(
  * authoritative combat, reward, and terminal producer path. The result is a
  * compact calibration artifact rather than a second gameplay loop.
  */
-export async function runShuttergatePlacementCalibration(
+export async function runShuttergateSeedPlacementCalibration(
   content: CompiledContent,
+  seed: string,
   placementPointId: PlacementPointId
 ): Promise<ShuttergateReferenceCalibrationEvidence> {
+  if (!/^[1-9]\d{0,9}$/.test(seed) || BigInt(seed) > 0xffff_ffffn) {
+    throw new RangeError(
+      `Shuttergate calibration requires a canonical uint32 seed (${seed})`
+    );
+  }
   const referenceContent = await requireReferenceContent(content);
   const level = referenceContent.levels.get(levelId);
   const map =
@@ -105,7 +111,7 @@ export async function runShuttergatePlacementCalibration(
       `Shuttergate calibration requires an authored placement point (${placementPointId})`
     );
   }
-  const initial = createInitialState(referenceContent, levelId, "1");
+  const initial = createInitialState(referenceContent, levelId, seed);
   if (initial.battlefield === undefined)
     throw new Error("Shuttergate calibration requires battlefield state");
   const authority = createBattlefieldDwarfDeploymentAuthority(
@@ -200,7 +206,7 @@ export async function runShuttergatePlacementCalibration(
       schemaVersion: 1,
       calibrationId: "calibration.shuttergate.unupgraded_warden.v1",
       contentManifestHash: referenceContent.manifestHash,
-      seed: "1",
+      seed,
       levelId,
       placementPointId,
       targetPolicy,
@@ -227,6 +233,13 @@ export async function runShuttergatePlacementCalibration(
   throw new RangeError(
     `Shuttergate calibration did not terminate by safety tick ${maximumTick}`
   );
+}
+
+export async function runShuttergatePlacementCalibration(
+  content: CompiledContent,
+  placementPointId: PlacementPointId
+): Promise<ShuttergateReferenceCalibrationEvidence> {
+  return runShuttergateSeedPlacementCalibration(content, "1", placementPointId);
 }
 
 export async function runShuttergateReferenceCalibration(

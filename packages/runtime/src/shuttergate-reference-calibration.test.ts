@@ -6,7 +6,8 @@ import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json
 };
 import {
   runShuttergatePlacementCalibration,
-  runShuttergateReferenceCalibration
+  runShuttergateReferenceCalibration,
+  runShuttergateSeedPlacementCalibration
 } from "./shuttergate-reference-calibration.js";
 
 export const shuttergateCalibrationChecksum =
@@ -111,6 +112,32 @@ describe("Shuttergate reference balance calibration", () => {
     expect(await canonicalHash(keepGuard)).toBe(
       "e49176bf2a18740ab8d0b4a5aed12bd6be4fca0abc170ca239b320930d391391"
     );
+  }, 15_000);
+
+  it("binds a selected sweep seed into placement calibration evidence", async () => {
+    const content = await compileContent(shuttergateInput);
+    const evidence = await runShuttergateSeedPlacementCalibration(
+      content,
+      "2",
+      "placement.shuttergate_north_guard" as never
+    );
+
+    expect(evidence).toMatchObject({
+      seed: "2",
+      placementPointId: "placement.shuttergate_north_guard",
+      terminalResult: "defeat",
+      terminalTick: 1_833
+    });
+    expect(await canonicalHash(evidence)).toBe(
+      "bf26805308945fb816d41eb9fda570bb55c57517ed513be3d63e2b8f5e973314"
+    );
+    await expect(
+      runShuttergateSeedPlacementCalibration(
+        content,
+        "0",
+        "placement.shuttergate_north_guard" as never
+      )
+    ).rejects.toThrow("canonical uint32 seed (0)");
   }, 15_000);
 
   it("rejects placement points outside the pinned Shuttergate map", async () => {

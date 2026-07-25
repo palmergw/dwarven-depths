@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "scenario.conformance.shuttergate_placement_sweep_base",
+  "levelId": "level.shuttergate_hall",
+  "seed": "1",
+  "maximumTicks": 1,
+  "commands": [{ "atTick": 0, "type": "confirmPreparation" }]
+}
