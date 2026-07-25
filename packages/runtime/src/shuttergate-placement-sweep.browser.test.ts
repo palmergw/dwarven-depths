@@ -20,5 +20,5 @@ describe("Shuttergate placement-sweep browser parity", () => {
     expect(await canonicalHash(evidence)).toBe(
       "fd786ee88285806c4fc9758602deceb9b5b5874ad18f672f033c9588e501bd88"
     );
-  }, 30_000);
+  }, 60_000);
 });

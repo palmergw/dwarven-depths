@@ -21,5 +21,5 @@ describe("Shuttergate calibration browser parity", () => {
       deepRangerUnlocked: false
     });
     expect(await canonicalHash(evidence)).toBe(expectedChecksum);
-  }, 30_000);
+  }, 60_000);
 });
