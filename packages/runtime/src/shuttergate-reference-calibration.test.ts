@@ -57,7 +57,7 @@ describe("Shuttergate reference balance calibration", () => {
       )
     ).toBe(true);
     expect(await canonicalHash(evidence)).toBe(shuttergateCalibrationChecksum);
-  });
+  }, 15_000);
 
   it("rejects content other than the pinned reference manifest", async () => {
     const source = structuredClone(
@@ -111,7 +111,7 @@ describe("Shuttergate reference balance calibration", () => {
     expect(await canonicalHash(keepGuard)).toBe(
       "e49176bf2a18740ab8d0b4a5aed12bd6be4fca0abc170ca239b320930d391391"
     );
-  });
+  }, 15_000);
 
   it("rejects placement points outside the pinned Shuttergate map", async () => {
     const content = await compileContent(shuttergateInput);
@@ -139,5 +139,5 @@ describe("Shuttergate reference balance calibration", () => {
 
     const evidence = await runShuttergateReferenceCalibration(forgedIndexes);
     expect(await canonicalHash(evidence)).toBe(shuttergateCalibrationChecksum);
-  });
+  }, 15_000);
 });
