@@ -1673,10 +1673,34 @@ describe("simulation CLI", () => {
     );
     expect(readFileSync(calibrationPath, "utf8")).toBe(calibrationText);
 
-    const originalManifestText = readFileSync(
-      resolve(output, "campaign-manifest.json"),
-      "utf8"
+    const manifestPath = resolve(output, "campaign-manifest.json");
+    const currentManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    currentManifest.schemaVersion = 1;
+    delete currentManifest.calibrationReportChecksum;
+    writeFileSync(
+      manifestPath,
+      `${JSON.stringify(currentManifest, null, 2)}\n`
     );
+    rmSync(calibrationPath);
+    expect(
+      runCli(
+        "campaign",
+        "--scenario",
+        scenario,
+        "--out",
+        output,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(0);
+    expect(JSON.parse(readFileSync(manifestPath, "utf8"))).toMatchObject({
+      schemaVersion: 2,
+      calibrationReportChecksum:
+        "f797acbc3a071e569a9ddbc3ee8e88808ef5889db13afa807e94e199deb27ced"
+    });
+    expect(readFileSync(calibrationPath, "utf8")).toBe(calibrationText);
+
+    const originalManifestText = readFileSync(manifestPath, "utf8");
     const forgedCalibration = JSON.parse(calibrationText);
     forgedCalibration.comparison.terminalTickDelta = 41;
     writeFileSync(
@@ -1687,7 +1711,7 @@ describe("simulation CLI", () => {
     forgedCalibrationManifest.calibrationReportChecksum =
       await canonicalHash(forgedCalibration);
     writeFileSync(
-      resolve(output, "campaign-manifest.json"),
+      manifestPath,
       `${JSON.stringify(forgedCalibrationManifest, null, 2)}\n`
     );
     expect(
@@ -1705,10 +1729,7 @@ describe("simulation CLI", () => {
       '"terminalTickDelta": 41'
     );
     writeFileSync(calibrationPath, calibrationText);
-    writeFileSync(
-      resolve(output, "campaign-manifest.json"),
-      originalManifestText
-    );
+    writeFileSync(manifestPath, originalManifestText);
 
     const scenarioArtifactPath = resolve(output, "scenario.compiled.json");
     const manifestArtifactPath = resolve(output, "campaign-manifest.json");
@@ -1793,7 +1814,6 @@ describe("simulation CLI", () => {
     expect(extraArtifact.status).toBe(3);
     rmSync(resolve(output, "unexpected.json"));
 
-    const manifestPath = resolve(output, "campaign-manifest.json");
     const manifestText = readFileSync(manifestPath, "utf8");
     const hardlinkSource = resolve(directory, "hardlinked-manifest.json");
     writeFileSync(hardlinkSource, manifestText);
@@ -1842,7 +1862,7 @@ describe("simulation CLI", () => {
       error: { type: "input", code: "invalid_cli_input" }
     });
     expect(existsSync(invalidOutput)).toBe(false);
-  }, 120_000);
+  }, 180_000);
 
   it("expands a bounded seed sweep into ordered replay-verifiable runs", () => {
     const directory = temporaryDirectory();

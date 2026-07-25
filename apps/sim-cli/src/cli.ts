@@ -224,14 +224,14 @@ interface CampaignScenario {
 }
 
 interface CampaignManifestArtifact {
-  readonly schemaVersion: 2;
+  readonly schemaVersion: 1 | 2;
   readonly complete: true;
   readonly scenarioId: string;
   readonly scenarioHash: string;
   readonly contentManifestHash: string;
   readonly attemptCount: number;
   readonly campaignPayloadChecksum: string;
-  readonly calibrationReportChecksum: string;
+  readonly calibrationReportChecksum?: string;
 }
 
 interface MinimizationArtifactBody {
@@ -3408,14 +3408,18 @@ async function assertReplaceableCampaign(
     );
     const rootDirectory = `/proc/self/fd/${rootHandle.fd}`;
     const entries = (await readdir(rootDirectory)).sort();
+    const legacyEntries = [
+      "campaign-manifest.json",
+      "campaign.json",
+      "content.compiled.json",
+      "scenario.compiled.json"
+    ];
+    const currentEntries = ["campaign-calibration.json", ...legacyEntries];
+    const legacyBundle =
+      firstDifferencePath(entries, legacyEntries) === undefined;
     if (
-      firstDifferencePath(entries, [
-        "campaign-calibration.json",
-        "campaign-manifest.json",
-        "campaign.json",
-        "content.compiled.json",
-        "scenario.compiled.json"
-      ]) !== undefined
+      !legacyBundle &&
+      firstDifferencePath(entries, currentEntries) !== undefined
     ) {
       throw new Error(
         "campaign output contains an unexpected or missing artifact"
@@ -3431,14 +3435,16 @@ async function assertReplaceableCampaign(
       rootDirectory,
       "campaign.json"
     )) as ShuttergateCampaignArtifact;
-    const calibration = (await readArtifactJson(
-      rootDirectory,
-      "campaign-calibration.json"
-    )) as ShuttergateCampaignCalibrationReport;
     const manifest = requireRecord<CampaignManifestArtifact>(
       await readArtifactJson(rootDirectory, "campaign-manifest.json"),
       "campaign-manifest.json"
     );
+    const calibration = legacyBundle
+      ? undefined
+      : ((await readArtifactJson(
+          rootDirectory,
+          "campaign-calibration.json"
+        )) as ShuttergateCampaignCalibrationReport);
     requireExactKeys(
       manifest,
       [
@@ -3449,13 +3455,14 @@ async function assertReplaceableCampaign(
         "contentManifestHash",
         "attemptCount",
         "campaignPayloadChecksum",
-        "calibrationReportChecksum"
+        ...(manifest.schemaVersion === 2 ? ["calibrationReportChecksum"] : [])
       ],
       "campaign-manifest.json"
     );
     const scenarioHash = await canonicalHash(scenario);
     if (
-      manifest.schemaVersion !== 2 ||
+      (manifest.schemaVersion !== 1 && manifest.schemaVersion !== 2) ||
+      (manifest.schemaVersion === 1) !== legacyBundle ||
       manifest.complete !== true ||
       scenario.content !== "content.compiled.json" ||
       manifest.scenarioId !== scenario.id ||
@@ -3463,8 +3470,10 @@ async function assertReplaceableCampaign(
       manifest.contentManifestHash !== content.manifestHash ||
       manifest.attemptCount !== scenario.attemptCount ||
       manifest.campaignPayloadChecksum !== artifact.payloadChecksum ||
-      manifest.calibrationReportChecksum !==
-        (await canonicalHash(calibration)) ||
+      (manifest.schemaVersion === 2 &&
+        (calibration === undefined ||
+          manifest.calibrationReportChecksum !==
+            (await canonicalHash(calibration)))) ||
       artifact.attemptChecksums.length !== scenario.attemptCount ||
       artifact.profileSave.contentVersion !== content.bundle.contentVersion ||
       artifact.profileSave.applicationBuild !== scenario.applicationBuild ||
@@ -3486,6 +3495,7 @@ async function assertReplaceableCampaign(
         );
       }
       if (
+        calibration !== undefined &&
         firstDifferencePath(
           createShuttergateCampaignCalibrationReport(restored),
           calibration
