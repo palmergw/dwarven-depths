@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -195,7 +196,11 @@ describe("authoritative web worker", () => {
     const container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    root.render(<App />);
+    root.render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
 
     await vi.waitFor(
       () =>

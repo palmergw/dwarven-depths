@@ -160,6 +160,7 @@ function createBattlefieldRenderer(
     destroy() {
       scene = undefined;
       game.destroy(true);
+      parent.replaceChildren();
     }
   };
 }
@@ -171,18 +172,20 @@ export function Battlefield({
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<BattlefieldRenderer | undefined>(undefined);
-  const initialSnapshotRef = useRef(snapshot);
+  const latestSnapshotRef = useRef(snapshot);
+  latestSnapshotRef.current = snapshot;
 
   useEffect(() => {
     const parent = parentRef.current;
     if (parent === null) return;
-    const renderer = createBattlefieldRenderer(
-      parent,
-      initialSnapshotRef.current
-    );
-    rendererRef.current = renderer;
+    let renderer: BattlefieldRenderer | undefined;
+    const frame = requestAnimationFrame(() => {
+      renderer = createBattlefieldRenderer(parent, latestSnapshotRef.current);
+      rendererRef.current = renderer;
+    });
     return () => {
-      renderer.destroy();
+      cancelAnimationFrame(frame);
+      renderer?.destroy();
       rendererRef.current = undefined;
     };
   }, []);
