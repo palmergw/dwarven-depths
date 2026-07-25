@@ -1,3 +1,5 @@
+import { parseRenderSnapshot, type RenderSnapshot } from "./render-snapshot.js";
+
 export const WEB_PROTOCOL_VERSION = 1 as const;
 
 export type ClientMessage =
@@ -14,6 +16,11 @@ export type WorkerMessage =
       readonly protocolVersion: 1;
       readonly type: "snapshot";
       readonly phase: "preparation" | "running";
+    }
+  | {
+      readonly protocolVersion: 1;
+      readonly type: "render_snapshot";
+      readonly snapshot: RenderSnapshot;
     }
   | {
       readonly protocolVersion: 1;
@@ -55,6 +62,7 @@ type RecordValue = {
   tick?: unknown;
   sequence?: unknown;
   atTick?: unknown;
+  snapshot?: unknown;
 };
 
 function isRecord(value: unknown): value is RecordValue {
@@ -110,6 +118,18 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     typeof value.type !== "string"
   )
     return undefined;
+  if (value.type === "render_snapshot") {
+    if (!hasExactKeys(value, ["protocolVersion", "snapshot", "type"]))
+      return undefined;
+    const snapshot = parseRenderSnapshot(value.snapshot);
+    return snapshot === undefined
+      ? undefined
+      : {
+          protocolVersion: WEB_PROTOCOL_VERSION,
+          type: "render_snapshot",
+          snapshot
+        };
+  }
   if (value.type === "snapshot") {
     if (
       !hasExactKeys(value, ["phase", "protocolVersion", "type"]) ||
