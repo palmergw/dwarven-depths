@@ -36,12 +36,18 @@ the repository.
   increments the profile revision. Existing reward transitions preserve the
   selection.
 - Selected nodes derive immutable maximum-health, attack-damage, attack-range,
-  and future-cooldown-start modifier totals. Applying those totals to live
-  battlefield health, attacks, and cooldowns remains a later integration slice.
+  and future-cooldown-start modifier totals.
+- Authoritative deployment and live-selection boundaries apply those absolute
+  totals to every deployed owner. Maximum-health increases preserve missing
+  health, already-running cooldowns retain their completion tick, and active or
+  committed attacks retain their snapshotted damage, range, and cooldown while
+  future attacks use the new values. Reapplication is idempotent, live totals
+  cannot decrease, and ownership, overflow, lineage, and persisted battlefield
+  evidence are validated before acceptance.
 
 ## Not implemented yet
 
 Durable file/local-storage profile adapters, encounter reward-event production,
-catch-up experience, live battlefield skill-effect integration, Forge Ore
-purchases, saves and migrations, recycle transactions, campaign/sweep harnesses,
-and upgraded-build calibration remain later Phase 4 checkpoints.
+catch-up experience, Forge Ore purchases, saves and migrations, recycle
+transactions, campaign/sweep harnesses, and upgraded-build calibration remain
+later Phase 4 checkpoints.

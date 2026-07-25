@@ -3,6 +3,8 @@ import type { CompiledContent } from "@dwarven-depths/content-runtime";
 export * from "./attack-commitment.js";
 export * from "./authoritative-combat-tick.js";
 export {
+  applyBattlefieldCharacterModifiers,
+  type BattlefieldCharacterModifiers,
   type BattlefieldDwarfDeploymentAuthority,
   createBattlefieldDwarfDeploymentAuthority,
   deployBattlefieldDwarves,
