@@ -20,9 +20,9 @@ import {
 import { ironWardenSkillTree } from "./skill-tree.fixture.js";
 
 const checksum =
-  "5e84ccbbdae87f2bf498e917c111e9030c0d84c49290ea4406d80273c1c1db85";
+  "774434c523586726e3cd7d07339a04dbaab8541f5836a4f4f1e62790e8ffaf1f";
 const shieldPassiveEffectsIdentity =
-  '[[{"schemaVersion":1,"kind":"attack_damage_add","value":2},{"schemaVersion":1,"kind":"maximum_health_add","value":20}],[{"schemaVersion":1,"kind":"maximum_health_add","value":30}]]';
+  '{"upgradeId":"upgrade.ability.shield_slam","kind":"ability_rank","ownerId":"character.iron_warden","passiveEffectsByRank":[[{"schemaVersion":1,"kind":"attack_damage_add","value":2},{"schemaVersion":1,"kind":"maximum_health_add","value":20}],[{"schemaVersion":1,"kind":"maximum_health_add","value":30}]]}';
 
 function fundedProfile(forgeOre = 60) {
   return {
@@ -60,7 +60,8 @@ describe("Forge Ore purchased upgrades", () => {
           upgradeId: "upgrade.item.powder_cask",
           rank: 1,
           forgeOreSpent: 15,
-          passiveEffectsIdentity: "[[]]"
+          passiveEffectsIdentity:
+            '{"upgradeId":"upgrade.item.powder_cask","kind":"item_rank","ownerId":"item.powder_cask","passiveEffectsByRank":[[]]}'
         }
       ]
     });

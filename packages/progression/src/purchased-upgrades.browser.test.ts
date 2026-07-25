@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { purchasedUpgradeParityEvidence } from "./purchased-upgrades.fixture.js";
 
 const checksum =
-  "5e84ccbbdae87f2bf498e917c111e9030c0d84c49290ea4406d80273c1c1db85";
+  "774434c523586726e3cd7d07339a04dbaab8541f5836a4f4f1e62790e8ffaf1f";
 
 describe("Forge Ore purchase browser parity", () => {
   it("matches the literal Node evidence checksum", async () => {

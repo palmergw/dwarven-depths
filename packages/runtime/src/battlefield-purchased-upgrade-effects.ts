@@ -7,7 +7,8 @@ import {
   derivePurchasedUpgradeCharacterModifiers,
   type ProfileState,
   type PurchasedUpgradeCatalog,
-  type PurchasedUpgradeCharacterModifiers
+  type PurchasedUpgradeCharacterModifiers,
+  validatePurchasedUpgradeProfile
 } from "@dwarven-depths/progression";
 import type { BattlefieldDwarfDeploymentAuthority } from "@dwarven-depths/sim-core";
 import {
@@ -29,6 +30,28 @@ export interface BattlefieldPurchasedUpgradeEffectResolution {
   readonly battlefield: BattlefieldState;
   readonly purchasedModifiers: readonly PurchasedUpgradeCharacterModifiers[];
   readonly appliedModifiers: readonly BattlefieldCharacterModifiers[];
+}
+
+function requireDenseDataArray(
+  value: unknown,
+  description: string
+): readonly unknown[] {
+  if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype)
+    throw new TypeError(`${description} must be a standard array`);
+  if (Reflect.ownKeys(value).length !== value.length + 1)
+    throw new TypeError(`${description} must be a dense data array`);
+  return Array.from({ length: value.length }, (_, index) => {
+    const descriptor = Object.getOwnPropertyDescriptor(value, index);
+    if (
+      descriptor === undefined ||
+      !descriptor.enumerable ||
+      !("value" in descriptor)
+    )
+      throw new TypeError(
+        `${description} item ${index} must be own enumerable data`
+      );
+    return descriptor.value;
+  });
 }
 
 function requireRequest(
@@ -83,20 +106,30 @@ function requireRequest(
     battlefield: record["battlefield"] as BattlefieldState,
     profile: record["profile"] as ProfileState,
     catalog: record["catalog"] as PurchasedUpgradeCatalog,
-    skillTrees: record["skillTrees"] as readonly CharacterSkillTreeDefinition[]
+    skillTrees: Object.freeze(
+      requireDenseDataArray(
+        record["skillTrees"],
+        "battlefield purchased-upgrade effect request skillTrees"
+      ) as CharacterSkillTreeDefinition[]
+    )
   });
 }
 
 function deriveModifiers(input: BattlefieldPurchasedUpgradeEffectRequest) {
-  const purchasedModifiers = derivePurchasedUpgradeCharacterModifiers({
+  const profile = validatePurchasedUpgradeProfile({
     schemaVersion: 1,
     profile: input.profile,
+    catalog: input.catalog
+  });
+  const purchasedModifiers = derivePurchasedUpgradeCharacterModifiers({
+    schemaVersion: 1,
+    profile,
     catalog: input.catalog
   });
   const skillModifiers = input.skillTrees.map((tree) =>
     deriveCharacterSkillModifiers({
       schemaVersion: 1,
-      profile: input.profile,
+      profile,
       tree
     })
   );
@@ -105,6 +138,12 @@ function deriveModifiers(input: BattlefieldPurchasedUpgradeEffectRequest) {
     if (skillByCharacter.has(modifier.characterId))
       throw new RangeError("battlefield skill trees duplicate a character");
     skillByCharacter.set(modifier.characterId, modifier);
+  }
+  for (const selection of profile.selectedSkillNodes) {
+    if (!skillByCharacter.has(selection.characterId))
+      throw new RangeError(
+        `battlefield skill trees omit selected character (${selection.characterId})`
+      );
   }
   const purchasedByCharacter = new Map(
     purchasedModifiers.map((modifier) => [modifier.characterId, modifier])

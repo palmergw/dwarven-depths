@@ -94,6 +94,17 @@ function addSafe(total: number, value: number, description: string): number {
   return result;
 }
 
+function passiveEffectsIdentity(
+  definition: PurchasedUpgradeDefinition
+): string {
+  return JSON.stringify({
+    upgradeId: definition.upgradeId,
+    kind: definition.kind,
+    ownerId: definition.ownerId,
+    passiveEffectsByRank: definition.passiveEffectsByRank
+  });
+}
+
 function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
   const source = requireProfileRecord(
     value,
@@ -258,7 +269,7 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
         throw new RangeError(
           `purchased upgrade catalog cannot exceed ${maximumProfileRecords} total records`
         );
-      return Object.freeze({
+      const normalizedDefinition = Object.freeze({
         schemaVersion: 1,
         upgradeId,
         kind,
@@ -267,6 +278,11 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
         rankCosts: Object.freeze(rankCosts),
         passiveEffectsByRank: Object.freeze(passiveEffectsByRank)
       });
+      if (passiveEffectsIdentity(normalizedDefinition).length > 8_192)
+        throw new RangeError(
+          `${description} passive effect identity exceeds profile bound`
+        );
+      return normalizedDefinition;
     })
     .sort((left, right) => compareText(left.upgradeId, right.upgradeId));
   if (upgrades.length === 0)
@@ -309,12 +325,6 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
   if (visited !== upgrades.length)
     throw new RangeError("purchased upgrade prerequisites must be acyclic");
   return Object.freeze({ schemaVersion: 1, upgrades: Object.freeze(upgrades) });
-}
-
-function passiveEffectsIdentity(
-  definition: PurchasedUpgradeDefinition
-): string {
-  return JSON.stringify(definition.passiveEffectsByRank);
 }
 
 function expectedSpend(
