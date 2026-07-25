@@ -71,6 +71,7 @@ function profile(includeSecondNode: boolean): ProfileState {
     revision: includeSecondNode ? 2 : 1,
     forgeOre: 0,
     unlockedCharacterIds: ["character.iron_warden" as never],
+    unlockedItemIds: [],
     claimedRewardIds: [],
     characterExperienceStates: [
       {

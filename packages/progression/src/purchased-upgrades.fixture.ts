@@ -8,6 +8,7 @@ export const purchasedUpgradeCatalog = Object.freeze({
       schemaVersion: 1 as const,
       upgradeId: "upgrade.ability.shield_slam" as never,
       kind: "ability_rank" as const,
+      ownerId: "character.iron_warden" as never,
       prerequisiteUpgradeIds: Object.freeze([]),
       rankCosts: Object.freeze([10, 25])
     }),
@@ -15,6 +16,7 @@ export const purchasedUpgradeCatalog = Object.freeze({
       schemaVersion: 1 as const,
       upgradeId: "upgrade.item.powder_cask" as never,
       kind: "item_rank" as const,
+      ownerId: "item.powder_cask" as never,
       prerequisiteUpgradeIds: Object.freeze([
         "upgrade.ability.shield_slam" as never
       ]),
@@ -26,7 +28,8 @@ export const purchasedUpgradeCatalog = Object.freeze({
 export function purchasedUpgradeParityEvidence() {
   const initial = Object.freeze({
     ...createInitialProfile("character.iron_warden" as never),
-    forgeOre: 60
+    forgeOre: 60,
+    unlockedItemIds: Object.freeze(["item.powder_cask" as never])
   });
   const shieldRankOne = purchaseUpgradeRank({
     schemaVersion: 1,

@@ -45,9 +45,11 @@ the repository.
   cannot decrease, and ownership, overflow, lineage, and persisted battlefield
   evidence are validated before acceptance.
 - Authored shared upgrade catalogs define stable ability/item upgrade IDs,
-  positive ordered rank costs, and acyclic prerequisites. A Forge Ore purchase
-  commits exactly the next rank, preserves exact cumulative spend for later
-  full-recycle accounting, and increments the profile revision atomically.
+  unlocked character/item owners, positive ordered rank costs, and acyclic
+  prerequisites. A Forge Ore purchase commits exactly the next rank, preserves
+  exact cumulative spend for later full-recycle accounting, and increments the
+  profile revision atomically. Profile validation bounds unspent plus spent
+  Forge Ore as one exactly refundable safe-integer total.
   Catalog/profile validation rejects unaffordable, maximum-rank, forged-spend,
   missing-prerequisite, overflow, and malformed transactions without mutation;
   purchase evidence is canonical and browser-parity pinned.

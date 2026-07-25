@@ -6,6 +6,7 @@ export interface ProfileState {
   readonly revision: number;
   readonly forgeOre: number;
   readonly unlockedCharacterIds: readonly StableId[];
+  readonly unlockedItemIds: readonly StableId[];
   readonly claimedRewardIds: readonly StableId[];
   readonly characterExperienceStates: readonly CharacterExperienceState[];
   readonly claimedExperienceRewardEvents: readonly ClaimedExperienceRewardEvent[];
@@ -37,6 +38,7 @@ export interface ClaimedExperienceRewardEvent {
 export const maximumProfileRecords = 100_000;
 export const characterIdPattern =
   /^character\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
+export const itemIdPattern = /^item\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 export const rewardIdPattern = /^reward\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 export const experienceRewardEventIdPattern =
   /^event\.reward\.xp\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
@@ -300,6 +302,7 @@ export function normalizeProfileState(value: unknown): ProfileState {
       "revision",
       "forgeOre",
       "unlockedCharacterIds",
+      "unlockedItemIds",
       "claimedRewardIds",
       "characterExperienceStates",
       "claimedExperienceRewardEvents",
@@ -319,6 +322,12 @@ export function normalizeProfileState(value: unknown): ProfileState {
       characterIdPattern,
       `profile unlockedCharacterIds[${index}]`
     )
+  );
+  const unlockedItemIds = requireProfileArray(
+    source.unlockedItemIds,
+    "profile unlockedItemIds"
+  ).map((entry, index) =>
+    requireProfileId(entry, itemIdPattern, `profile unlockedItemIds[${index}]`)
   );
   const claimedRewardIds = requireProfileArray(
     source.claimedRewardIds,
@@ -348,6 +357,7 @@ export function normalizeProfileState(value: unknown): ProfileState {
   ).map(normalizePurchasedUpgrade);
   for (const [description, values] of [
     ["unlocked character IDs", unlockedCharacterIds],
+    ["unlocked item IDs", unlockedItemIds],
     ["claimed reward IDs", claimedRewardIds],
     [
       "character experience state IDs",
@@ -429,13 +439,23 @@ export function normalizeProfileState(value: unknown): ProfileState {
         );
     }
   }
+  const forgeOre = requireProfileUnsigned(source.forgeOre, "profile forgeOre");
+  let totalForgeOre = forgeOre;
+  for (const purchase of purchasedUpgrades) {
+    totalForgeOre += purchase.forgeOreSpent;
+    if (!Number.isSafeInteger(totalForgeOre))
+      throw new RangeError(
+        "profile Forge Ore balance and purchased spend exceed safe integer range"
+      );
+  }
   return Object.freeze({
     schemaVersion: 1,
     revision: requireProfileUnsigned(source.revision, "profile revision"),
-    forgeOre: requireProfileUnsigned(source.forgeOre, "profile forgeOre"),
+    forgeOre,
     unlockedCharacterIds: Object.freeze(
       [...unlockedCharacterIds].sort(compareText)
     ),
+    unlockedItemIds: Object.freeze([...unlockedItemIds].sort(compareText)),
     claimedRewardIds: Object.freeze([...claimedRewardIds].sort(compareText)),
     characterExperienceStates: Object.freeze(
       [...characterExperienceStates].sort((left, right) =>
@@ -474,6 +494,7 @@ export function createInitialProfile(ironWardenId: StableId): ProfileState {
     revision: 0,
     forgeOre: 0,
     unlockedCharacterIds: Object.freeze([characterId]),
+    unlockedItemIds: Object.freeze([]),
     claimedRewardIds: Object.freeze([]),
     characterExperienceStates: Object.freeze([
       Object.freeze({

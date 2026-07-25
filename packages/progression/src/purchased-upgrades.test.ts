@@ -19,12 +19,13 @@ import {
 import { ironWardenSkillTree } from "./skill-tree.fixture.js";
 
 const checksum =
-  "b5fe422ab5ab0465f94d8c3dcc3a2cc332b17fb967870f9af7e6889774c602ee";
+  "9211521865e0c892226be475a3e4a2e28defb44ea4b0105195decb8d18b1c9ec";
 
 function fundedProfile(forgeOre = 60) {
   return {
     ...createInitialProfile("character.iron_warden" as never),
-    forgeOre
+    forgeOre,
+    unlockedItemIds: ["item.powder_cask" as never]
   };
 }
 
@@ -42,6 +43,7 @@ describe("Forge Ore purchased upgrades", () => {
       ...createInitialProfile("character.iron_warden" as never),
       revision: 3,
       forgeOre: 10,
+      unlockedItemIds: ["item.powder_cask"],
       purchasedUpgrades: [
         {
           schemaVersion: 1,
@@ -164,6 +166,29 @@ describe("Forge Ore purchased upgrades", () => {
     expect(profile).toEqual(before);
   });
 
+  it("rejects ability and item purchases whose owner is not unlocked", () => {
+    expect(() =>
+      purchaseUpgradeRank({
+        schemaVersion: 1,
+        profile: {
+          ...fundedProfile(),
+          unlockedCharacterIds: [],
+          characterExperienceStates: []
+        },
+        catalog: purchasedUpgradeCatalog,
+        upgradeId: "upgrade.ability.shield_slam" as never
+      })
+    ).toThrow("owner is not unlocked");
+    expect(() =>
+      purchaseUpgradeRank({
+        schemaVersion: 1,
+        profile: { ...fundedProfile(), unlockedItemIds: [] },
+        catalog: purchasedUpgradeCatalog,
+        upgradeId: "upgrade.item.powder_cask" as never
+      })
+    ).toThrow("owner is not unlocked");
+  });
+
   it("rejects forged purchase history, malformed catalogs, cycles, and overflow", () => {
     expect(() =>
       purchaseUpgradeRank({
@@ -183,6 +208,24 @@ describe("Forge Ore purchased upgrades", () => {
         upgradeId: "upgrade.ability.shield_slam" as never
       })
     ).toThrow("spend does not match authored costs");
+    expect(() =>
+      purchaseUpgradeRank({
+        schemaVersion: 1,
+        profile: {
+          ...fundedProfile(Number.MAX_SAFE_INTEGER),
+          purchasedUpgrades: [
+            {
+              schemaVersion: 1,
+              upgradeId: "upgrade.ability.shield_slam" as never,
+              rank: 1,
+              forgeOreSpent: 10
+            }
+          ]
+        },
+        catalog: purchasedUpgradeCatalog,
+        upgradeId: "upgrade.ability.shield_slam" as never
+      })
+    ).toThrow("balance and purchased spend exceed safe integer range");
     expect(() =>
       purchaseUpgradeRank({
         schemaVersion: 1,

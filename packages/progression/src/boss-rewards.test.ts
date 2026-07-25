@@ -8,7 +8,7 @@ import {
 import { createInitialProfile, resolveBossDeathRewards } from "./index.js";
 
 const checksum =
-  "5bd2cd17fa2ec0cc17285a9abdb861c99dc3d822ebc8ccd425c92ff4719f77fa";
+  "10880bcd301681c0b093fcac7aed5d35ca1fa23d034c78762a8079e8dd15132c";
 
 describe("boss death rewards", () => {
   it("atomically commits rewards in stable boss order", async () => {
@@ -28,6 +28,7 @@ describe("boss death rewards", () => {
         "character.iron_warden",
         "character.rune_smith"
       ],
+      unlockedItemIds: [],
       claimedRewardIds: [
         "reward.boss.ancient",
         "reward.boss.gatebreaker_captain"
@@ -117,6 +118,26 @@ describe("boss death rewards", () => {
       })
     ).toThrow("Forge Ore total exceeds safe integer range");
     expect(nearLimit).toEqual(before);
+
+    expect(() =>
+      resolveBossDeathRewards({
+        schemaVersion: 1,
+        profile: {
+          ...profile,
+          forgeOre: Number.MAX_SAFE_INTEGER - 30,
+          purchasedUpgrades: [
+            {
+              schemaVersion: 1,
+              upgradeId: "upgrade.ability.shield_slam" as never,
+              rank: 1,
+              forgeOreSpent: 11
+            }
+          ]
+        },
+        bossDeaths: [bossDeaths[0]],
+        rewards: bossRewards
+      })
+    ).toThrow("balance and purchased spend exceed safe integer range");
   });
 
   it("rejects a claim that would exceed bounded profile collections", () => {
@@ -129,6 +150,7 @@ describe("boss death rewards", () => {
         { length: maximumRecords },
         (_, index) => `character.existing_${index}` as never
       ),
+      unlockedItemIds: [],
       claimedRewardIds: Array.from(
         { length: maximumRecords },
         (_, index) => `reward.existing_${index}` as never

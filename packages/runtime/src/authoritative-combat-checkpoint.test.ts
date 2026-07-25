@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { authoritativeCombatCheckpointParityEvidence } from "./authoritative-combat-checkpoint.fixture.js";
 
 const EXPECTED_CHECKSUM =
-  "f62b5729813d6c83f83ea06484fbf0ca662616e68d13e98a800a485d80682b04";
+  "f4db11285e5ee58ce8a04518e8a2d7fc5bfca765818db3bb9c6a613f57ce1f93";
 
 describe("authoritative combat reward and terminal checkpoint", () => {
   it("derives reward and terminal evidence from the resolved battlefield", async () => {
@@ -34,6 +34,7 @@ describe("authoritative combat reward and terminal checkpoint", () => {
             "character.deep_ranger",
             "character.iron_warden"
           ],
+          unlockedItemIds: [],
           claimedRewardIds: ["reward.boss.gatebreaker_captain"]
         },
         decisions: [

@@ -1,6 +1,8 @@
 import type { StableId } from "@dwarven-depths/contracts";
 import {
+  characterIdPattern,
   compareText,
+  itemIdPattern,
   maximumProfileRecords,
   normalizeProfileState,
   type ProfileState,
@@ -18,6 +20,7 @@ export interface PurchasedUpgradeDefinition {
   readonly schemaVersion: 1;
   readonly upgradeId: StableId;
   readonly kind: PurchasedUpgradeKind;
+  readonly ownerId: StableId;
   readonly prerequisiteUpgradeIds: readonly StableId[];
   readonly rankCosts: readonly number[];
 }
@@ -88,6 +91,7 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
           "schemaVersion",
           "upgradeId",
           "kind",
+          "ownerId",
           "prerequisiteUpgradeIds",
           "rankCosts"
         ],
@@ -108,6 +112,12 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
         !upgradeKinds.has(definition.kind as PurchasedUpgradeKind)
       )
         throw new RangeError(`${description} has unknown kind`);
+      const kind = definition.kind as PurchasedUpgradeKind;
+      const ownerId = requireProfileId(
+        definition.ownerId,
+        kind === "ability_rank" ? characterIdPattern : itemIdPattern,
+        `${description} ownerId`
+      );
       const prerequisites = requireProfileArray(
         definition.prerequisiteUpgradeIds,
         `${description} prerequisiteUpgradeIds`
@@ -148,7 +158,8 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
       return Object.freeze({
         schemaVersion: 1,
         upgradeId,
-        kind: definition.kind as PurchasedUpgradeKind,
+        kind,
+        ownerId,
         prerequisiteUpgradeIds: Object.freeze(prerequisites),
         rankCosts: Object.freeze(rankCosts)
       });
@@ -269,6 +280,14 @@ export function purchaseUpgradeRank(
   );
   if (definition === undefined)
     throw new RangeError(`purchased upgrade is not authored (${upgradeId})`);
+  const ownerIds =
+    definition.kind === "ability_rank"
+      ? profile.unlockedCharacterIds
+      : profile.unlockedItemIds;
+  if (!ownerIds.includes(definition.ownerId))
+    throw new RangeError(
+      `purchased upgrade owner is not unlocked (${definition.ownerId})`
+    );
   const purchases = validatePurchases(profile, catalog);
   const existing = purchases.get(upgradeId);
   const previousRank = existing?.rank ?? 0;

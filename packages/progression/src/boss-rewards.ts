@@ -293,11 +293,12 @@ export function resolveBossDeathRewards(
     throw new RangeError(
       `resolved claimedRewardIds cannot exceed ${maximumRecords} items`
     );
-  const resolvedProfile = Object.freeze({
+  const resolvedProfile = normalizeProfileState({
     schemaVersion: 1 as const,
     revision: startingProfile.revision + (changed ? 1 : 0),
     forgeOre,
     unlockedCharacterIds: Object.freeze([...unlocked].sort(compareText)),
+    unlockedItemIds: startingProfile.unlockedItemIds,
     claimedRewardIds: Object.freeze([...claimed].sort(compareText)),
     characterExperienceStates: startingProfile.characterExperienceStates,
     claimedExperienceRewardEvents:

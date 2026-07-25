@@ -10,6 +10,7 @@ describe("progression profile", () => {
       revision: 0,
       forgeOre: 0,
       unlockedCharacterIds: ["character.iron_warden"],
+      unlockedItemIds: [],
       claimedRewardIds: [],
       characterExperienceStates: [
         {
@@ -26,6 +27,7 @@ describe("progression profile", () => {
     });
     expect(Object.isFrozen(profile)).toBe(true);
     expect(Object.isFrozen(profile.unlockedCharacterIds)).toBe(true);
+    expect(Object.isFrozen(profile.unlockedItemIds)).toBe(true);
     expect(Object.isFrozen(profile.claimedRewardIds)).toBe(true);
     expect(Object.isFrozen(profile.characterExperienceStates)).toBe(true);
     expect(Object.isFrozen(profile.characterExperienceStates[0])).toBe(true);

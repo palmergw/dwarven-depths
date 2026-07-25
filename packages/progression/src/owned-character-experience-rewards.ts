@@ -269,6 +269,7 @@ export function resolveOwnedCharacterExperienceRewards(
     revision: profile.revision + (newClaimCount > 0 ? 1 : 0),
     forgeOre: profile.forgeOre,
     unlockedCharacterIds: profile.unlockedCharacterIds,
+    unlockedItemIds: profile.unlockedItemIds,
     claimedRewardIds: profile.claimedRewardIds,
     characterExperienceStates: Object.freeze(
       [...states.values()].sort((left, right) =>

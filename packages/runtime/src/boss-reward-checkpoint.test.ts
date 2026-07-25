@@ -5,7 +5,7 @@ import { resolveBossRewardCheckpoint } from "./boss-reward-checkpoint.js";
 import { terminalEvaluationRequest } from "./terminal-evaluation.fixture.js";
 
 const checksum =
-  "64e5b16cac4996ce6db308b29da406636488106888cc25c25832b2c117f46bfb";
+  "93a14497e18a90a06b102c6562da918c19df202980d9ebc1f8143c1a79638452";
 
 describe("boss reward and terminal checkpoint", () => {
   it("commits the boss unlock before evaluating same-step defeat", async () => {
@@ -24,6 +24,7 @@ describe("boss reward and terminal checkpoint", () => {
             "character.deep_ranger",
             "character.iron_warden"
           ],
+          unlockedItemIds: [],
           claimedRewardIds: ["reward.boss.gatebreaker_captain"]
         },
         decisions: [{ status: "claimed" }]
