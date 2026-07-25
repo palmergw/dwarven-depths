@@ -149,6 +149,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     ]) ||
     (value.terminalResult !== "victory" && value.terminalResult !== "defeat") ||
     !Number.isSafeInteger(value.terminalTick) ||
+    (value.terminalTick as number) < 0 ||
     !isHash(value.finalStateChecksum) ||
     !isHash(value.eventStreamChecksum) ||
     !Array.isArray(value.commands)
@@ -161,10 +162,13 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         isRecord(envelope) &&
         hasExactKeys(envelope, ["command", "sequence", "tick"]) &&
         Number.isSafeInteger(envelope.tick) &&
+        (envelope.tick as number) >= 0 &&
         Number.isSafeInteger(envelope.sequence) &&
+        (envelope.sequence as number) >= 0 &&
         isRecord(envelope.command) &&
         hasExactKeys(envelope.command, ["atTick", "type"]) &&
         Number.isSafeInteger(envelope.command.atTick) &&
+        (envelope.command.atTick as number) >= 0 &&
         envelope.command.type === "confirmPreparation"
     )
   )
