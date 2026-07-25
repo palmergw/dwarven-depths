@@ -103,7 +103,8 @@ export function normalizePendingCommittedAttacks(
     | BattlefieldEnemyCombatant
     | BattlefieldDwarfCombatant
   )[],
-  authorizedTargets?: ReadonlyMap<StableId, EntityId>
+  authorizedTargets?: ReadonlyMap<StableId, EntityId>,
+  authorizedAttacks?: ReadonlyMap<StableId, CommittedAttack>
 ): readonly CommittedAttack[] {
   const combatantsById = new Map<
     EntityId,
@@ -183,6 +184,7 @@ export function normalizePendingCommittedAttacks(
       data.range,
       `${description} range`
     );
+    const acceptedAttack = authorizedAttacks?.get(attackId);
     const startedAtTick = committedAtTick - source.basicAttack.windupTicks;
     const earliestStartTick =
       "admittedAtTick" in source ? source.admittedAtTick : 0;
@@ -196,9 +198,15 @@ export function normalizePendingCommittedAttacks(
       attackId !== expectedAttackId ||
       impactAtTick !== committedAtTick + source.basicAttack.impactDelayTicks ||
       cooldownCompleteAtTick !==
-        committedAtTick + source.basicAttack.cooldownTicks ||
-      damage !== source.basicAttack.damage ||
-      range !== source.basicAttack.range ||
+        (acceptedAttack?.cooldownCompleteAtTick ??
+          committedAtTick + source.basicAttack.cooldownTicks) ||
+      damage !== (acceptedAttack?.damage ?? source.basicAttack.damage) ||
+      range !== (acceptedAttack?.range ?? source.basicAttack.range) ||
+      (acceptedAttack !== undefined &&
+        (acceptedAttack.sourceEntityId !== sourceEntityId ||
+          acceptedAttack.targetEntityId !== data.targetEntityId ||
+          acceptedAttack.committedAtTick !== committedAtTick ||
+          acceptedAttack.impactAtTick !== impactAtTick)) ||
       range > maximumSafeRange
     )
       throw new RangeError(

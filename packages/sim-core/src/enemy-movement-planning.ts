@@ -20,6 +20,7 @@ import type {
 import { createAttackInstanceId } from "./attack-instance-id.js";
 import {
   type BattlefieldDwarfDeploymentAuthority,
+  getAuthorizedCommittedAttacks,
   getAuthorizedCommittedAttackTargets,
   normalizeBattlefieldDwarves,
   validateBattlefieldEnemyHealth
@@ -750,6 +751,13 @@ export function normalizeAuthoritativeBattlefieldEnemyState(
     dwarfAuthority === undefined
       ? undefined
       : getAuthorizedCommittedAttackTargets(
+          dwarfAuthority,
+          content,
+          sourceBattlefield
+        ),
+    dwarfAuthority === undefined
+      ? undefined
+      : getAuthorizedCommittedAttacks(
           dwarfAuthority,
           content,
           sourceBattlefield

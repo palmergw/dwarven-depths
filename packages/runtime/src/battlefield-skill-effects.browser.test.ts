@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { battlefieldSkillEffectParityEvidence } from "./battlefield-skill-effects.fixture.js";
 
 const checksum =
-  "c449431624fdb3f2689edf5b1bc4d2582c57eb88eddc5ae3d6365039408f5fff";
+  "cbeb101b84a97c5c02a32cb76ed399ee1799294a8ccd5e93c0bd6f76be2623dd";
 
 describe("live battlefield skill-effect browser parity", () => {
   it("matches Node evidence for health, future attacks, and committed work", async () => {
@@ -27,6 +27,20 @@ describe("live battlefield skill-effect browser parity", () => {
     });
     expect(upgraded.actionState.cooldownCompleteAtTick).toBe(32);
     expect(evidence.committedAfter).toEqual(evidence.committedBefore);
+    expect(evidence.windupAfterUpgrade?.actionState.activeBasicAttack).toEqual(
+      evidence.windupBefore?.actionState.activeBasicAttack
+    );
+    expect(evidence.windupCommitment).toMatchObject({
+      cooldownCompleteAtTick: 32,
+      damage: 18,
+      range: 2
+    });
+    expect(evidence.nextWindup?.actionState.activeBasicAttack).toMatchObject({
+      startedAtTick: 32,
+      cooldownDurationTicks: 22,
+      damage: 21,
+      range: 3
+    });
     expect(evidence.repeatedIsEquivalent).toBe(true);
     expect(await canonicalHash(evidence)).toBe(checksum);
   });

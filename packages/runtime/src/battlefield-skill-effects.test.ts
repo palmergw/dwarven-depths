@@ -6,7 +6,7 @@ import {
 } from "./battlefield-skill-effects.fixture.js";
 
 const checksum =
-  "c449431624fdb3f2689edf5b1bc4d2582c57eb88eddc5ae3d6365039408f5fff";
+  "cbeb101b84a97c5c02a32cb76ed399ee1799294a8ccd5e93c0bd6f76be2623dd";
 
 describe("live battlefield skill effects", () => {
   it("preserves missing health and committed work while updating future attacks", async () => {
@@ -49,6 +49,21 @@ describe("live battlefield skill effects", () => {
       damage: 21,
       range: 3,
       cooldownTicks: 22
+    });
+    expect(evidence.windupAfterUpgrade?.actionState.activeBasicAttack).toEqual(
+      evidence.windupBefore?.actionState.activeBasicAttack
+    );
+    expect(evidence.windupCommitment).toMatchObject({
+      committedAtTick: 8,
+      cooldownCompleteAtTick: 32,
+      damage: 18,
+      range: 2
+    });
+    expect(evidence.nextWindup?.actionState.activeBasicAttack).toMatchObject({
+      startedAtTick: 32,
+      cooldownDurationTicks: 22,
+      damage: 21,
+      range: 3
     });
     expect(evidence.repeatedIsEquivalent).toBe(true);
     expect(Object.isFrozen(evidence.afterSecond.battlefield)).toBe(true);

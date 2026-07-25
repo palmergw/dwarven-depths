@@ -88,9 +88,6 @@ importers:
       '@dwarven-depths/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@dwarven-depths/progression':
-        specifier: workspace:*
-        version: link:../progression
 
 packages:
 

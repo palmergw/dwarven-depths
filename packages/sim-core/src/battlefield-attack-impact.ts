@@ -572,6 +572,30 @@ export function getAuthorizedCommittedAttackTargets(
   return new Map(accepted);
 }
 
+/** Returns complete accepted snapshots for the battlefield's pending attacks. */
+export function getAuthorizedCommittedAttacks(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  battlefield: BattlefieldState
+): ReadonlyMap<StableId, CommittedAttack> {
+  const metadata = requireAuthorityMetadata(authority, content);
+  const targets = getAuthorizedCommittedAttackTargets(
+    authority,
+    content,
+    battlefield
+  );
+  return new Map(
+    [...targets].map(([attackId, targetEntityId]) => {
+      const attack = metadata.committedAttacks.get(attackId);
+      if (attack?.targetEntityId !== targetEntityId)
+        throw new RangeError(
+          `pending attack lacks complete accepted evidence (${attackId})`
+        );
+      return [attackId, attack] as const;
+    })
+  );
+}
+
 function authorizeBattlefieldDwarfHealth(
   authority: BattlefieldDwarfDeploymentAuthority,
   content: CompiledContent,

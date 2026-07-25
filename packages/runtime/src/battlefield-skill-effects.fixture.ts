@@ -283,6 +283,76 @@ export async function battlefieldSkillEffectParityEvidence() {
     commitment.authority
   );
 
+  const windup = await deployedRound();
+  const startedWindup = resolveAuthoritativeCombatTick(
+    {
+      schemaVersion: 1,
+      state: Object.freeze({ ...windup.state, tick: 0 }),
+      dwarfActionEntries: [
+        {
+          schemaVersion: 1,
+          dwarfEntityId: "entity.dwarf.warden" as never,
+          requestedPolicy: "nearest"
+        }
+      ]
+    },
+    windup.content,
+    windup.authority
+  ).state;
+  if (startedWindup.battlefield === undefined)
+    throw new Error("missing active-windup battlefield");
+  const windupBefore = startedWindup.battlefield.dwarfCombatants[0];
+  const upgradedWindup = applySelectedSkillEffectsToBattlefield(
+    {
+      schemaVersion: 1,
+      battlefield: startedWindup.battlefield,
+      profile: profile(true),
+      skillTrees: [skillTree]
+    },
+    windup.content,
+    windup.authority
+  );
+  let afterWindupUpgrade = Object.freeze({
+    ...startedWindup,
+    battlefield: upgradedWindup.battlefield
+  }) as SimulationState;
+  for (let index = 1; index <= 8; index += 1) {
+    afterWindupUpgrade = resolveAuthoritativeCombatTick(
+      {
+        schemaVersion: 1,
+        state: Object.freeze({ ...afterWindupUpgrade, tick: index }),
+        dwarfActionEntries: [
+          {
+            schemaVersion: 1,
+            dwarfEntityId: "entity.dwarf.warden" as never,
+            requestedPolicy: "nearest"
+          }
+        ]
+      },
+      windup.content,
+      windup.authority
+    ).state;
+  }
+  const windupCommitment =
+    afterWindupUpgrade.battlefield?.pendingCommittedAttacks[0];
+  for (let index = 9; index <= 32; index += 1) {
+    afterWindupUpgrade = resolveAuthoritativeCombatTick(
+      {
+        schemaVersion: 1,
+        state: Object.freeze({ ...afterWindupUpgrade, tick: index }),
+        dwarfActionEntries: [
+          {
+            schemaVersion: 1,
+            dwarfEntityId: "entity.dwarf.warden" as never,
+            requestedPolicy: "nearest"
+          }
+        ]
+      },
+      windup.content,
+      windup.authority
+    ).state;
+  }
+
   return Object.freeze({
     upgradedDeployment:
       upgradedDeployment.state.battlefield?.dwarfCombatants[0],
@@ -294,7 +364,11 @@ export async function battlefieldSkillEffectParityEvidence() {
       JSON.stringify(afterSecond.battlefield),
     committedBefore,
     committedAfter: upgradedCommitment.battlefield.pendingCommittedAttacks[0],
-    upgradedCommittedDwarf: upgradedCommitment.battlefield.dwarfCombatants[0]
+    upgradedCommittedDwarf: upgradedCommitment.battlefield.dwarfCombatants[0],
+    windupBefore,
+    windupAfterUpgrade: upgradedWindup.battlefield.dwarfCombatants[0],
+    windupCommitment,
+    nextWindup: afterWindupUpgrade.battlefield?.dwarfCombatants[0]
   });
 }
 

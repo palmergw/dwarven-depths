@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./battlefield-skill-effects-internal": {
+      "types": "./dist/battlefield-skill-effects-internal.d.ts",
+      "default": "./dist/battlefield-skill-effects-internal.js"
     }
   },
   "scripts": {
@@ -15,7 +19,6 @@
   },
   "dependencies": {
     "@dwarven-depths/contracts": "workspace:*",
-    "@dwarven-depths/content-runtime": "workspace:*",
-    "@dwarven-depths/progression": "workspace:*"
+    "@dwarven-depths/content-runtime": "workspace:*"
   }
 }
