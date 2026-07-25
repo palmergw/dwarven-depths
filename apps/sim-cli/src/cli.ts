@@ -250,6 +250,25 @@ interface MinimizationArtifact extends MinimizationArtifactBody {
   readonly artifactChecksum: string;
 }
 
+interface SafetyStopMinimizationArtifactBody {
+  readonly schemaVersion: 2;
+  readonly complete: true;
+  readonly assertionCode: "runtime_safety_stop";
+  readonly safetyStopCode: "tick_budget_exhausted";
+  readonly contentManifestHash: string;
+  readonly sourceScenarioHash: string;
+  readonly minimizedScenarioHash: string;
+  readonly originalCommandCount: number;
+  readonly minimizedCommandCount: number;
+  readonly retainedCommandIndexes: readonly number[];
+  readonly candidateEvaluationCount: number;
+}
+
+interface SafetyStopMinimizationArtifact
+  extends SafetyStopMinimizationArtifactBody {
+  readonly artifactChecksum: string;
+}
+
 class CliInputError extends Error {
   readonly code = "invalid_cli_input";
 
@@ -1494,6 +1513,196 @@ async function deriveTerminalAssertionMinimization(
   };
 }
 
+async function reproducesSafetyStop(
+  scenario: ReturnType<typeof compileScenario>,
+  content: Awaited<ReturnType<typeof compileContent>>,
+  retainedCommandIndexes: readonly number[],
+  maximumTicks = scenario.maximumTicks
+): Promise<boolean> {
+  try {
+    await runScenario(
+      scenarioWithoutExpectation(
+        scenario,
+        content,
+        retainedCommandIndexes,
+        maximumTicks
+      ),
+      content
+    );
+    return false;
+  } catch (error) {
+    if (error instanceof RuntimeSafetyStopError) {
+      return error.code === "tick_budget_exhausted";
+    }
+    if (error instanceof ContentValidationError) return false;
+    throw error;
+  }
+}
+
+async function deriveSafetyStopMinimization(
+  scenario: ReturnType<typeof compileScenario>,
+  content: Awaited<ReturnType<typeof compileContent>>
+): Promise<{
+  readonly retainedCommandIndexes: readonly number[];
+  readonly minimumTicks: number;
+  readonly candidateEvaluationCount: number;
+}> {
+  let retainedCommandIndexes = scenario.commands.map((_, index) => index);
+  let candidateEvaluationCount = 0;
+  let changed: boolean;
+  do {
+    changed = false;
+    for (
+      let position = retainedCommandIndexes.length - 1;
+      position >= 0;
+      position -= 1
+    ) {
+      const candidate = retainedCommandIndexes.filter(
+        (_, candidatePosition) => candidatePosition !== position
+      );
+      candidateEvaluationCount += 1;
+      if (await reproducesSafetyStop(scenario, content, candidate)) {
+        retainedCommandIndexes = candidate;
+        changed = true;
+      }
+    }
+  } while (changed);
+
+  let minimumTicks = 1;
+  let maximumTicks = scenario.maximumTicks;
+  while (minimumTicks < maximumTicks) {
+    const candidateTicks = Math.floor((minimumTicks + maximumTicks) / 2);
+    candidateEvaluationCount += 1;
+    if (
+      await reproducesSafetyStop(
+        scenario,
+        content,
+        retainedCommandIndexes,
+        candidateTicks
+      )
+    ) {
+      maximumTicks = candidateTicks;
+    } else {
+      minimumTicks = candidateTicks + 1;
+    }
+  }
+  return {
+    retainedCommandIndexes,
+    minimumTicks,
+    candidateEvaluationCount
+  };
+}
+
+async function assertSafetyStopMinimization(
+  artifact: SafetyStopMinimizationArtifact,
+  sourceScenario: ReturnType<typeof compileScenario>,
+  minimizedScenario: ReturnType<typeof compileScenario>,
+  content: Awaited<ReturnType<typeof compileContent>>
+): Promise<void> {
+  requireExactKeys(
+    artifact,
+    [
+      "schemaVersion",
+      "complete",
+      "assertionCode",
+      "safetyStopCode",
+      "contentManifestHash",
+      "sourceScenarioHash",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "minimizedCommandCount",
+      "retainedCommandIndexes",
+      "candidateEvaluationCount",
+      "artifactChecksum"
+    ],
+    "minimization.json"
+  );
+  const { artifactChecksum, ...artifactBody } = artifact;
+  const indexes = artifact.retainedCommandIndexes;
+  const validIndexes =
+    Array.isArray(indexes) &&
+    indexes.every(
+      (index, position) =>
+        Number.isSafeInteger(index) &&
+        index >= 0 &&
+        index < sourceScenario.commands.length &&
+        (position === 0 || index > (indexes[position - 1] as number))
+    );
+  if (
+    artifact.schemaVersion !== 2 ||
+    artifact.complete !== true ||
+    artifact.assertionCode !== "runtime_safety_stop" ||
+    artifact.safetyStopCode !== "tick_budget_exhausted" ||
+    sourceScenario.expectedTerminalResult !== undefined ||
+    minimizedScenario.expectedTerminalResult !== undefined ||
+    artifact.contentManifestHash !== content.manifestHash ||
+    artifact.sourceScenarioHash !== (await canonicalHash(sourceScenario)) ||
+    artifact.minimizedScenarioHash !==
+      (await canonicalHash(minimizedScenario)) ||
+    artifact.originalCommandCount !== sourceScenario.commands.length ||
+    artifact.minimizedCommandCount !== minimizedScenario.commands.length ||
+    artifact.minimizedCommandCount !== indexes.length ||
+    !validIndexes ||
+    firstDifferencePath(minimizedScenario, {
+      ...sourceScenario,
+      maximumTicks: minimizedScenario.maximumTicks,
+      commands: indexes.map((index) => sourceScenario.commands[index])
+    }) !== undefined ||
+    minimizedScenario.maximumTicks > sourceScenario.maximumTicks ||
+    !Number.isSafeInteger(artifact.candidateEvaluationCount) ||
+    artifact.candidateEvaluationCount < sourceScenario.commands.length ||
+    typeof artifactChecksum !== "string" ||
+    !/^[a-f0-9]{64}$/.test(artifactChecksum) ||
+    artifactChecksum !==
+      (await canonicalArtifactHash(artifactBody, "minimization.json"))
+  ) {
+    throw new Error("minimization.json contains invalid or unbound evidence");
+  }
+
+  const sourceIndexes = sourceScenario.commands.map((_, index) => index);
+  if (!(await reproducesSafetyStop(sourceScenario, content, sourceIndexes))) {
+    throw new Error("source scenario no longer reproduces its safety stop");
+  }
+  const derived = await deriveSafetyStopMinimization(sourceScenario, content);
+  if (
+    firstDifferencePath(derived.retainedCommandIndexes, indexes) !==
+      undefined ||
+    derived.minimumTicks !== minimizedScenario.maximumTicks ||
+    derived.candidateEvaluationCount !== artifact.candidateEvaluationCount
+  ) {
+    throw new Error(
+      "minimization evidence does not match deterministic source reduction"
+    );
+  }
+  const minimizedIndexes = minimizedScenario.commands.map((_, index) => index);
+  if (
+    !(await reproducesSafetyStop(minimizedScenario, content, minimizedIndexes))
+  ) {
+    throw new Error(
+      "minimized scenario does not reproduce the bound safety stop"
+    );
+  }
+  for (let index = 0; index < minimizedScenario.commands.length; index += 1) {
+    const retained = minimizedIndexes.filter(
+      (commandIndex) => commandIndex !== index
+    );
+    if (await reproducesSafetyStop(minimizedScenario, content, retained)) {
+      throw new Error("minimized scenario is not command-deletion 1-minimal");
+    }
+  }
+  if (
+    minimizedScenario.maximumTicks > 1 &&
+    (await reproducesSafetyStop(
+      minimizedScenario,
+      content,
+      minimizedIndexes,
+      minimizedScenario.maximumTicks - 1
+    ))
+  ) {
+    throw new Error("minimized scenario does not have a minimal tick budget");
+  }
+}
+
 async function assertReplaceableMinimization(directory: string): Promise<void> {
   let rootHandle: Awaited<ReturnType<typeof open>> | undefined;
   try {
@@ -1527,10 +1736,20 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
       await readArtifactJson(rootDirectory, "scenario.minimized.compiled.json"),
       content
     );
-    const artifact = requireRecord<MinimizationArtifact>(
+    const artifactInput = requireRecord<Record<string, unknown>>(
       await readArtifactJson(rootDirectory, "minimization.json"),
       "minimization.json"
     );
+    if (artifactInput["schemaVersion"] === 2) {
+      await assertSafetyStopMinimization(
+        artifactInput as unknown as SafetyStopMinimizationArtifact,
+        sourceScenario,
+        minimizedScenario,
+        content
+      );
+      return;
+    }
+    const artifact = artifactInput as unknown as MinimizationArtifact;
     requireExactKeys(
       artifact,
       [
@@ -1671,32 +1890,54 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
 async function minimize(args: ParsedArgs): Promise<void> {
   rejectUnknownFlags(args, new Set(["content", "scenario", "out", "replace"]));
   const { content, scenario } = await load(args);
-  if (scenario.expectedTerminalResult === undefined) {
-    throw new CliInputError(
-      "minimize requires a scenario with expectedTerminalResult"
-    );
-  }
-  try {
-    await runScenario(scenario, content);
-    throw new CliInputError(
-      "scenario does not reproduce unexpected_terminal_result"
-    );
-  } catch (error) {
-    if (!(error instanceof RuntimeAssertionError)) throw error;
-  }
   const allIndexes = scenario.commands.map((_, index) => index);
-  const actualTerminalResult = (
-    await runScenario(
-      scenarioWithoutExpectation(scenario, content, allIndexes),
-      content
-    )
-  ).terminalResult;
-  const { retainedCommandIndexes, minimumTicks, candidateEvaluationCount } =
-    await deriveTerminalAssertionMinimization(
+  let actualTerminalResult: string | undefined;
+  let reduction: Awaited<
+    ReturnType<typeof deriveTerminalAssertionMinimization>
+  >;
+  if (scenario.expectedTerminalResult !== undefined) {
+    try {
+      await runScenario(scenario, content);
+      throw new CliInputError(
+        "scenario does not reproduce unexpected_terminal_result"
+      );
+    } catch (error) {
+      if (!(error instanceof RuntimeAssertionError)) throw error;
+    }
+    actualTerminalResult = (
+      await runScenario(
+        scenarioWithoutExpectation(scenario, content, allIndexes),
+        content
+      )
+    ).terminalResult;
+    reduction = await deriveTerminalAssertionMinimization(
       scenario,
       content,
       actualTerminalResult
     );
+  } else {
+    try {
+      await runScenario(scenario, content);
+      throw new CliInputError(
+        "scenario does not reproduce tick_budget_exhausted"
+      );
+    } catch (error) {
+      if (
+        error instanceof RuntimeSafetyStopError &&
+        error.code === "tick_budget_exhausted"
+      ) {
+        reduction = await deriveSafetyStopMinimization(scenario, content);
+      } else if (error instanceof CliInputError) {
+        throw error;
+      } else {
+        throw new CliInputError(
+          "scenario does not reproduce tick_budget_exhausted"
+        );
+      }
+    }
+  }
+  const { retainedCommandIndexes, minimumTicks, candidateEvaluationCount } =
+    reduction;
 
   const minimizedScenario = compileScenario(
     {
@@ -1706,12 +1947,8 @@ async function minimize(args: ParsedArgs): Promise<void> {
     },
     content
   );
-  const artifactBody: MinimizationArtifactBody = {
-    schemaVersion: 1,
-    complete: true,
-    assertionCode: "unexpected_terminal_result",
-    expectedTerminalResult: scenario.expectedTerminalResult,
-    actualTerminalResult,
+  const sharedArtifactBody = {
+    complete: true as const,
     contentManifestHash: content.manifestHash,
     sourceScenarioHash: await canonicalHash(scenario),
     minimizedScenarioHash: await canonicalHash(minimizedScenario),
@@ -1720,7 +1957,24 @@ async function minimize(args: ParsedArgs): Promise<void> {
     retainedCommandIndexes,
     candidateEvaluationCount
   };
-  const artifact: MinimizationArtifact = {
+  const artifactBody:
+    | MinimizationArtifactBody
+    | SafetyStopMinimizationArtifactBody =
+    scenario.expectedTerminalResult === undefined
+      ? {
+          schemaVersion: 2,
+          assertionCode: "runtime_safety_stop",
+          safetyStopCode: "tick_budget_exhausted",
+          ...sharedArtifactBody
+        }
+      : {
+          schemaVersion: 1,
+          assertionCode: "unexpected_terminal_result",
+          expectedTerminalResult: scenario.expectedTerminalResult,
+          actualTerminalResult: actualTerminalResult as string,
+          ...sharedArtifactBody
+        };
+  const artifact = {
     ...artifactBody,
     artifactChecksum: await canonicalHash(artifactBody)
   };
@@ -1764,8 +2018,12 @@ async function minimize(args: ParsedArgs): Promise<void> {
       outputDirectory,
       scenarioId: scenario.id,
       assertionCode: artifact.assertionCode,
-      expectedTerminalResult: artifact.expectedTerminalResult,
-      actualTerminalResult: artifact.actualTerminalResult,
+      ...(artifact.schemaVersion === 1
+        ? {
+            expectedTerminalResult: artifact.expectedTerminalResult,
+            actualTerminalResult: artifact.actualTerminalResult
+          }
+        : { safetyStopCode: artifact.safetyStopCode }),
       originalCommandCount: artifact.originalCommandCount,
       minimizedCommandCount: artifact.minimizedCommandCount,
       artifactChecksum: artifact.artifactChecksum

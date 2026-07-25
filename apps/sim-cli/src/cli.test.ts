@@ -278,6 +278,132 @@ describe("simulation CLI", () => {
     expect(existsSync(nonFailingOutput)).toBe(false);
   });
 
+  it("minimizes tick-budget safety stops into self-verifying schema-2 evidence", () => {
+    const directory = temporaryDirectory();
+    const output = resolve(directory, "safety-stop-minimization");
+    const content = resolve("content/fixtures/nonterminating-content.json");
+    const scenario = resolve("scenarios/conformance/nonterminating.json");
+
+    const first = runCli(
+      "minimize",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      output
+    );
+    expect(first.status).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({
+      ok: true,
+      minimized: true,
+      assertionCode: "runtime_safety_stop",
+      safetyStopCode: "tick_budget_exhausted",
+      originalCommandCount: 1,
+      minimizedCommandCount: 1
+    });
+    const artifactPath = resolve(output, "minimization.json");
+    const artifactText = readFileSync(artifactPath, "utf8");
+    expect(JSON.parse(artifactText)).toMatchObject({
+      schemaVersion: 2,
+      complete: true,
+      assertionCode: "runtime_safety_stop",
+      safetyStopCode: "tick_budget_exhausted",
+      retainedCommandIndexes: [0],
+      candidateEvaluationCount: 2
+    });
+    expect(
+      JSON.parse(
+        readFileSync(
+          resolve(output, "scenario.minimized.compiled.json"),
+          "utf8"
+        )
+      )
+    ).toMatchObject({
+      maximumTicks: 1,
+      commands: [{ atTick: 0, type: "confirmPreparation" }]
+    });
+
+    const replaced = runCli(
+      "minimize",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(replaced.status).toBe(0);
+    expect(readFileSync(artifactPath, "utf8")).toBe(artifactText);
+
+    writeFileSync(
+      artifactPath,
+      artifactText.replace(
+        '"safetyStopCode": "tick_budget_exhausted"',
+        '"safetyStopCode": "simulation_stalled"'
+      )
+    );
+    const tampered = runCli(
+      "minimize",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(tampered.status).toBe(3);
+    expect(JSON.parse(tampered.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "report", code: "report_generation_failed" }
+    });
+    expect(
+      readFileSync(artifactPath, "utf8").includes("simulation_stalled")
+    ).toBe(true);
+
+    const terminalScenario = resolve(directory, "terminal-scenario.json");
+    const terminalContent = resolve(directory, "terminal-content.json");
+    const terminalOutput = resolve(directory, "terminal-output");
+    writeFileSync(
+      terminalContent,
+      JSON.stringify({
+        schemaVersion: 1,
+        contentVersion: "terminal-minimization-test",
+        definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+      })
+    );
+    writeFileSync(
+      terminalScenario,
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "scenario.test.non_failure",
+        levelId: "level.empty",
+        seed: "1",
+        maximumTicks: 64,
+        commands: [{ atTick: 0, type: "confirmPreparation" }]
+      })
+    );
+    const terminal = runCli(
+      "minimize",
+      "--content",
+      terminalContent,
+      "--scenario",
+      terminalScenario,
+      "--out",
+      terminalOutput
+    );
+    expect(terminal.status).toBe(2);
+    expect(JSON.parse(terminal.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "input", code: "invalid_cli_input" }
+    });
+    expect(existsSync(terminalOutput)).toBe(false);
+  });
+
   it("publishes and replay-validates a durable authoritative campaign", async () => {
     const directory = temporaryDirectory();
     const content = resolve(directory, "content.json");

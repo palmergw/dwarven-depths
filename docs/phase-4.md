@@ -200,8 +200,14 @@ the repository.
   checksum, and proves command-deletion 1-minimality plus tick-budget minimality
   before validated rollback-safe replacement. Replacement rejects malformed or
   non-reproducing evidence, extra artifacts, hardlinks, and symlinked outputs.
-  Replay-input minimization and additional assertion/invariant classes remain
-  later expansions.
+  A scenario without a terminal-result expectation can also minimize the bounded
+  `tick_budget_exhausted` runtime safety invariant. Schema-2 evidence preserves
+  the exact safety-stop code, source command indexes, smallest positive tick
+  budget, and deterministic candidate count, and receives the same independent
+  staging/replacement rederivation and filesystem protections as schema 1.
+  Terminal scenarios and the distinct `simulation_stalled` invariant are rejected
+  by this boundary rather than being relabeled. Replay-input minimization and
+  additional invariant classes remain later expansions.
 
 ## Not implemented yet
 
