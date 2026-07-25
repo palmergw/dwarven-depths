@@ -160,10 +160,20 @@ the repository.
   campaign transition must consume encounter evidence without reintroducing an
   event input or jointly replaceable attempt authority. Multi-attempt campaign
   policy transitions and artifact publication remain the next dependency.
+- A bounded process-local Shuttergate campaign authority now derives attempt IDs,
+  seeds, placement, target policy, purchased build, and the pinned reward policy
+  without caller-authored attempt identity or reward events. Each accepted
+  authority is consumed exactly once, including concurrent-use rejection, and a
+  failed transition releases it for safe retry. Productive defeats accumulate
+  owned Forge Ore; the deterministic purchase policy buys Shield Slam rank 1
+  only when affordable, and the following attempt deploys that purchased build.
+  Immutable three-attempt evidence is literal-checksum-pinned across Node,
+  Chromium, Firefox, and WebKit. This in-memory anti-fork boundary intentionally
+  precedes durable campaign artifact and save-envelope integration.
 
 ## Not implemented yet
 
-Additional historical save migrations, multi-attempt campaign policy transitions,
+Additional historical save migrations, durable campaign artifacts and policy variants,
 catch-up experience, active ability and item-rank behavior, full save scope,
 player-facing recycle confirmation, additional build and active-ability controller sweep axes,
 additional statistical sweep metrics, campaign/minimization harnesses, and upgraded-build
