@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { bossDeaths, bossRewards } from "./boss-rewards.fixture.js";
 import {
   createInitialProfile,
+  derivePurchasedUpgradeCharacterModifiers,
   purchaseUpgradeRank,
   resolveBossDeathRewards,
   resolveOwnedCharacterExperienceRewards,
@@ -19,7 +20,9 @@ import {
 import { ironWardenSkillTree } from "./skill-tree.fixture.js";
 
 const checksum =
-  "9211521865e0c892226be475a3e4a2e28defb44ea4b0105195decb8d18b1c9ec";
+  "774434c523586726e3cd7d07339a04dbaab8541f5836a4f4f1e62790e8ffaf1f";
+const shieldPassiveEffectsIdentity =
+  '{"upgradeId":"upgrade.ability.shield_slam","kind":"ability_rank","ownerId":"character.iron_warden","passiveEffectsByRank":[[{"schemaVersion":1,"kind":"attack_damage_add","value":2},{"schemaVersion":1,"kind":"maximum_health_add","value":20}],[{"schemaVersion":1,"kind":"maximum_health_add","value":30}]]}';
 
 function fundedProfile(forgeOre = 60) {
   return {
@@ -49,13 +52,16 @@ describe("Forge Ore purchased upgrades", () => {
           schemaVersion: 1,
           upgradeId: "upgrade.ability.shield_slam",
           rank: 2,
-          forgeOreSpent: 35
+          forgeOreSpent: 35,
+          passiveEffectsIdentity: shieldPassiveEffectsIdentity
         },
         {
           schemaVersion: 1,
           upgradeId: "upgrade.item.powder_cask",
           rank: 1,
-          forgeOreSpent: 15
+          forgeOreSpent: 15,
+          passiveEffectsIdentity:
+            '{"upgradeId":"upgrade.item.powder_cask","kind":"item_rank","ownerId":"item.powder_cask","passiveEffectsByRank":[[]]}'
         }
       ]
     });
@@ -70,6 +76,17 @@ describe("Forge Ore purchased upgrades", () => {
       status: "purchased",
       reason: "upgrade_rank_purchased"
     });
+    expect(evidence.modifiers).toEqual([
+      {
+        schemaVersion: 1,
+        characterId: "character.iron_warden",
+        maximumHealthAdd: 50,
+        attackDamageAdd: 2,
+        attackRangeAdd: 0,
+        futureCooldownReductionTicks: 0,
+        sourceUpgradeIds: ["upgrade.ability.shield_slam"]
+      }
+    ]);
     expect(await canonicalHash(evidence)).toBe(checksum);
   });
 
@@ -200,7 +217,8 @@ describe("Forge Ore purchased upgrades", () => {
               schemaVersion: 1,
               upgradeId: "upgrade.ability.shield_slam" as never,
               rank: 1,
-              forgeOreSpent: 11
+              forgeOreSpent: 11,
+              passiveEffectsIdentity: shieldPassiveEffectsIdentity
             }
           ]
         },
@@ -218,7 +236,8 @@ describe("Forge Ore purchased upgrades", () => {
               schemaVersion: 1,
               upgradeId: "upgrade.ability.shield_slam" as never,
               rank: 1,
-              forgeOreSpent: 10
+              forgeOreSpent: 10,
+              passiveEffectsIdentity: shieldPassiveEffectsIdentity
             }
           ]
         },
@@ -236,7 +255,8 @@ describe("Forge Ore purchased upgrades", () => {
               schemaVersion: 1,
               upgradeId: "upgrade.ability.shield_slam" as never,
               rank: 1,
-              forgeOreSpent: 10
+              forgeOreSpent: 10,
+              passiveEffectsIdentity: shieldPassiveEffectsIdentity
             }
           ]
         },
@@ -292,5 +312,88 @@ describe("Forge Ore purchased upgrades", () => {
         upgradeId: "upgrade.ability.shield_slam" as never
       })
     ).toThrow("must contain exactly");
+    expect(() =>
+      purchaseUpgradeRank({
+        schemaVersion: 1,
+        profile: fundedProfile(),
+        catalog: {
+          schemaVersion: 1,
+          upgrades: [
+            {
+              ...catalogUpgrade(1),
+              prerequisiteUpgradeIds: [],
+              passiveEffectsByRank: [
+                [
+                  {
+                    schemaVersion: 1,
+                    kind: "attack_damage_add",
+                    value: 1
+                  }
+                ]
+              ]
+            }
+          ]
+        },
+        upgradeId: "upgrade.item.powder_cask" as never
+      })
+    ).toThrow("item rank cannot define character passive effects");
+    expect(
+      derivePurchasedUpgradeCharacterModifiers({
+        schemaVersion: 1,
+        profile: purchasedUpgradeParityEvidence().shieldRankTwo.profile,
+        catalog: purchasedUpgradeCatalog
+      })
+    ).toEqual(purchasedUpgradeParityEvidence().modifiers);
+    expect(() =>
+      derivePurchasedUpgradeCharacterModifiers({
+        schemaVersion: 1,
+        profile: purchasedUpgradeParityEvidence().shieldRankOne.profile,
+        catalog: {
+          schemaVersion: 1,
+          upgrades: [
+            {
+              ...catalogUpgrade(0),
+              passiveEffectsByRank: [
+                [{ schemaVersion: 1, kind: "maximum_health_add", value: 21 }],
+                catalogUpgrade(0).passiveEffectsByRank[1] ?? []
+              ]
+            }
+          ]
+        }
+      })
+    ).toThrow("passive effects do not match authored catalog");
+    expect(() =>
+      purchaseUpgradeRank({
+        schemaVersion: 1,
+        profile: fundedProfile(),
+        catalog: {
+          schemaVersion: 1,
+          upgrades: [
+            {
+              ...catalogUpgrade(0),
+              upgradeId: "upgrade.item.wrong_namespace" as never
+            }
+          ]
+        },
+        upgradeId: "upgrade.item.wrong_namespace" as never
+      })
+    ).toThrow("upgradeId does not match kind");
+    expect(() =>
+      purchaseUpgradeRank({
+        schemaVersion: 1,
+        profile: fundedProfile(),
+        catalog: {
+          schemaVersion: 1,
+          upgrades: [
+            catalogUpgrade(0),
+            {
+              ...catalogUpgrade(0),
+              upgradeId: "upgrade.ability.second" as never
+            }
+          ]
+        },
+        upgradeId: "upgrade.ability.shield_slam" as never
+      })
+    ).toThrow("duplicate purchased upgrade owner");
   });
 });

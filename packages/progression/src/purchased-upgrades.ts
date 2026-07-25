@@ -13,6 +13,10 @@ import {
   requireProfileUnsigned,
   upgradeIdPattern
 } from "./profile-state.js";
+import type {
+  CharacterSkillEffect,
+  CharacterSkillEffectKind
+} from "./skill-tree.js";
 
 export type PurchasedUpgradeKind = "ability_rank" | "item_rank";
 
@@ -23,6 +27,7 @@ export interface PurchasedUpgradeDefinition {
   readonly ownerId: StableId;
   readonly prerequisiteUpgradeIds: readonly StableId[];
   readonly rankCosts: readonly number[];
+  readonly passiveEffectsByRank: readonly (readonly CharacterSkillEffect[])[];
 }
 
 export interface PurchasedUpgradeCatalog {
@@ -61,9 +66,25 @@ export interface PurchasedUpgradeValidationRequest {
   readonly catalog: PurchasedUpgradeCatalog;
 }
 
+export interface PurchasedUpgradeCharacterModifiers {
+  readonly schemaVersion: 1;
+  readonly characterId: StableId;
+  readonly maximumHealthAdd: number;
+  readonly attackDamageAdd: number;
+  readonly attackRangeAdd: number;
+  readonly futureCooldownReductionTicks: number;
+  readonly sourceUpgradeIds: readonly StableId[];
+}
+
 const upgradeKinds = new Set<PurchasedUpgradeKind>([
   "ability_rank",
   "item_rank"
+]);
+const passiveEffectKinds = new Set<CharacterSkillEffectKind>([
+  "maximum_health_add",
+  "attack_damage_add",
+  "attack_range_add",
+  "future_cooldown_reduction_ticks"
 ]);
 
 function addSafe(total: number, value: number, description: string): number {
@@ -71,6 +92,17 @@ function addSafe(total: number, value: number, description: string): number {
   if (!Number.isSafeInteger(result))
     throw new RangeError(`${description} exceeds safe integer range`);
   return result;
+}
+
+function passiveEffectsIdentity(
+  definition: PurchasedUpgradeDefinition
+): string {
+  return JSON.stringify({
+    upgradeId: definition.upgradeId,
+    kind: definition.kind,
+    ownerId: definition.ownerId,
+    passiveEffectsByRank: definition.passiveEffectsByRank
+  });
 }
 
 function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
@@ -84,6 +116,7 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
       "purchased upgrade catalog has unsupported schemaVersion"
     );
   const seen = new Set<StableId>();
+  const seenOwners = new Set<string>();
   let totalRecords = 0;
   const upgrades = requireProfileArray(
     source.upgrades,
@@ -99,7 +132,8 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
           "kind",
           "ownerId",
           "prerequisiteUpgradeIds",
-          "rankCosts"
+          "rankCosts",
+          "passiveEffectsByRank"
         ],
         description
       );
@@ -124,6 +158,18 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
         kind === "ability_rank" ? characterIdPattern : itemIdPattern,
         `${description} ownerId`
       );
+      const expectedUpgradePrefix =
+        kind === "ability_rank" ? "upgrade.ability." : "upgrade.item.";
+      if (!upgradeId.startsWith(expectedUpgradePrefix))
+        throw new RangeError(
+          `${description} upgradeId does not match kind (${upgradeId})`
+        );
+      const ownerKey = `${kind}:${ownerId}`;
+      if (seenOwners.has(ownerKey))
+        throw new RangeError(
+          `duplicate purchased upgrade owner (${kind}, ${ownerId})`
+        );
+      seenOwners.add(ownerKey);
       const prerequisites = requireProfileArray(
         definition.prerequisiteUpgradeIds,
         `${description} prerequisiteUpgradeIds`
@@ -156,19 +202,87 @@ function normalizeCatalog(value: unknown): PurchasedUpgradeCatalog {
         throw new RangeError(
           `${description} must contain at least one rank cost`
         );
-      totalRecords += 1 + prerequisites.length + rankCosts.length;
+      const passiveEffectsByRank = requireProfileArray(
+        definition.passiveEffectsByRank,
+        `${description} passiveEffectsByRank`
+      ).map((rankEffects, rankIndex) => {
+        const seenKinds = new Set<CharacterSkillEffectKind>();
+        const effects = requireProfileArray(
+          rankEffects,
+          `${description} passiveEffectsByRank[${rankIndex}]`
+        )
+          .map((effect, effectIndex): CharacterSkillEffect => {
+            const effectDescription = `${description} passiveEffectsByRank[${rankIndex}][${effectIndex}]`;
+            const effectSource = requireProfileRecord(
+              effect,
+              ["schemaVersion", "kind", "value"],
+              effectDescription
+            );
+            if (effectSource.schemaVersion !== 1)
+              throw new RangeError(
+                `${effectDescription} has unsupported schemaVersion`
+              );
+            if (
+              typeof effectSource.kind !== "string" ||
+              !passiveEffectKinds.has(
+                effectSource.kind as CharacterSkillEffectKind
+              )
+            )
+              throw new RangeError(`${effectDescription} has unknown kind`);
+            const effectKind = effectSource.kind as CharacterSkillEffectKind;
+            if (seenKinds.has(effectKind))
+              throw new RangeError(
+                `${description} rank ${rankIndex + 1} contains duplicate passive effect kind`
+              );
+            seenKinds.add(effectKind);
+            const value = requireProfileUnsigned(
+              effectSource.value,
+              `${effectDescription} value`
+            );
+            if (value === 0)
+              throw new RangeError(
+                `${effectDescription} value must be positive`
+              );
+            return Object.freeze({ schemaVersion: 1, kind: effectKind, value });
+          })
+          .sort((left, right) => compareText(left.kind, right.kind));
+        if (kind === "item_rank" && effects.length > 0)
+          throw new RangeError(
+            `${description} item rank cannot define character passive effects`
+          );
+        return Object.freeze(effects);
+      });
+      if (passiveEffectsByRank.length !== rankCosts.length)
+        throw new RangeError(
+          `${description} passiveEffectsByRank must match rankCosts length`
+        );
+      totalRecords +=
+        1 +
+        prerequisites.length +
+        rankCosts.length +
+        passiveEffectsByRank.length +
+        passiveEffectsByRank.reduce(
+          (total, effects) => total + effects.length,
+          0
+        );
       if (totalRecords > maximumProfileRecords)
         throw new RangeError(
           `purchased upgrade catalog cannot exceed ${maximumProfileRecords} total records`
         );
-      return Object.freeze({
+      const normalizedDefinition = Object.freeze({
         schemaVersion: 1,
         upgradeId,
         kind,
         ownerId,
         prerequisiteUpgradeIds: Object.freeze(prerequisites),
-        rankCosts: Object.freeze(rankCosts)
+        rankCosts: Object.freeze(rankCosts),
+        passiveEffectsByRank: Object.freeze(passiveEffectsByRank)
       });
+      if (passiveEffectsIdentity(normalizedDefinition).length > 8_192)
+        throw new RangeError(
+          `${description} passive effect identity exceeds profile bound`
+        );
+      return normalizedDefinition;
     })
     .sort((left, right) => compareText(left.upgradeId, right.upgradeId));
   if (upgrades.length === 0)
@@ -231,7 +345,8 @@ function expectedSpend(
 
 function validatePurchases(
   profile: ProfileState,
-  catalog: PurchasedUpgradeCatalog
+  catalog: PurchasedUpgradeCatalog,
+  requirePassiveEffectsIdentity = false
 ): ReadonlyMap<StableId, PurchasedUpgrade> {
   const definitions = new Map(
     catalog.upgrades.map((upgrade) => [upgrade.upgradeId, upgrade])
@@ -248,6 +363,13 @@ function validatePurchases(
     if (purchase.forgeOreSpent !== expectedSpend(definition, purchase.rank))
       throw new RangeError(
         `profile purchased upgrade spend does not match authored costs (${purchase.upgradeId})`
+      );
+    if (
+      requirePassiveEffectsIdentity &&
+      purchase.passiveEffectsIdentity !== passiveEffectsIdentity(definition)
+    )
+      throw new RangeError(
+        `profile purchased upgrade passive effects do not match authored catalog (${purchase.upgradeId})`
       );
     const ownerIds =
       definition.kind === "ability_rank"
@@ -285,6 +407,85 @@ export function validatePurchasedUpgradeProfile(
   const profile = normalizeProfileState(source.profile);
   validatePurchases(profile, normalizeCatalog(source.catalog));
   return profile;
+}
+
+/** Derives absolute character modifiers from catalog-validated purchased ranks. */
+export function derivePurchasedUpgradeCharacterModifiers(
+  request: PurchasedUpgradeValidationRequest
+): readonly PurchasedUpgradeCharacterModifiers[] {
+  const source = requireProfileRecord(
+    request,
+    ["schemaVersion", "profile", "catalog"],
+    "purchased upgrade modifier request"
+  );
+  if (source.schemaVersion !== 1)
+    throw new RangeError(
+      "purchased upgrade modifier request has unsupported schemaVersion"
+    );
+  const profile = normalizeProfileState(source.profile);
+  const catalog = normalizeCatalog(source.catalog);
+  const purchases = validatePurchases(profile, catalog, true);
+  const totals = new Map<
+    StableId,
+    {
+      maximumHealthAdd: number;
+      attackDamageAdd: number;
+      attackRangeAdd: number;
+      futureCooldownReductionTicks: number;
+      sourceUpgradeIds: StableId[];
+    }
+  >();
+  for (const definition of catalog.upgrades) {
+    if (definition.kind !== "ability_rank") continue;
+    const purchase = purchases.get(definition.upgradeId);
+    if (purchase === undefined) continue;
+    const total = totals.get(definition.ownerId) ?? {
+      maximumHealthAdd: 0,
+      attackDamageAdd: 0,
+      attackRangeAdd: 0,
+      futureCooldownReductionTicks: 0,
+      sourceUpgradeIds: []
+    };
+    for (let rankIndex = 0; rankIndex < purchase.rank; rankIndex += 1) {
+      const effects = definition.passiveEffectsByRank[rankIndex];
+      if (effects === undefined)
+        throw new RangeError(
+          `purchased upgrade rank has no authored passive effects (${definition.upgradeId})`
+        );
+      for (const effect of effects) {
+        const field =
+          effect.kind === "maximum_health_add"
+            ? "maximumHealthAdd"
+            : effect.kind === "attack_damage_add"
+              ? "attackDamageAdd"
+              : effect.kind === "attack_range_add"
+                ? "attackRangeAdd"
+                : "futureCooldownReductionTicks";
+        total[field] = addSafe(
+          total[field],
+          effect.value,
+          `purchased upgrade ${field}`
+        );
+      }
+    }
+    total.sourceUpgradeIds.push(definition.upgradeId);
+    totals.set(definition.ownerId, total);
+  }
+  return Object.freeze(
+    [...totals.entries()]
+      .sort(([left], [right]) => compareText(left, right))
+      .map(([characterId, total]) =>
+        Object.freeze({
+          schemaVersion: 1,
+          characterId,
+          maximumHealthAdd: total.maximumHealthAdd,
+          attackDamageAdd: total.attackDamageAdd,
+          attackRangeAdd: total.attackRangeAdd,
+          futureCooldownReductionTicks: total.futureCooldownReductionTicks,
+          sourceUpgradeIds: Object.freeze([...total.sourceUpgradeIds])
+        })
+      )
+  );
 }
 
 /** Purchases exactly the next authored rank with Forge Ore. */
@@ -356,7 +557,8 @@ export function purchaseUpgradeRank(
     schemaVersion: 1 as const,
     upgradeId,
     rank: previousRank + 1,
-    forgeOreSpent
+    forgeOreSpent,
+    passiveEffectsIdentity: passiveEffectsIdentity(definition)
   });
   const purchasedUpgrades = Object.freeze(
     [

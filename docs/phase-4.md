@@ -53,6 +53,16 @@ the repository.
   Catalog/profile validation rejects unaffordable, maximum-rank, forged-spend,
   missing-prerequisite, overflow, and malformed transactions without mutation;
   purchase evidence is canonical and browser-parity pinned.
+- Purchased ability ranks can author bounded passive maximum-health, basic-attack
+  damage/range, and future-cooldown modifiers per rank. Catalog-validated owned
+  ranks bind the exact normalized effect table into new purchase history, reject
+  later catalog substitution, combine with selected skill totals, and apply once
+  through the same authoritative deployment/live-state boundary, preserving
+  missing health and already-running or committed work. Item ranks cannot claim
+  character passive effects before a loadout owner exists. Reapplication is
+  idempotent and nondecreasing, and effect evidence is literal-checksum-pinned
+  across Node, Chromium, Firefox, and WebKit. Shield Slam activation/stagger,
+  item behavior, armor reduction, and boss specials remain uninferred.
 - Portable profile saves use a strict versioned envelope that binds content
   compatibility, simulation protocol, application build, write metadata, profile
   identity/revision, and a canonical payload checksum to normalized progression
@@ -122,7 +132,7 @@ the repository.
 ## Not implemented yet
 
 Additional historical save migrations, encounter reward-event production,
-catch-up experience, purchased-upgrade effect application, full save scope,
+catch-up experience, active ability and item-rank behavior, full save scope,
 player-facing recycle confirmation, build and active-ability controller sweep axes,
 additional statistical sweep metrics, campaign/minimization harnesses, and upgraded-build
 calibration remain later Phase 4 checkpoints.

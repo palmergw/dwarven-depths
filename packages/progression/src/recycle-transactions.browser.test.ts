@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { progressionRecycleParityEvidence } from "./recycle-transactions.fixture.js";
 
 const checksum =
-  "b9d540f8a0ec849e533d590c20f2c5e1359e2e7e78054e4221243dc0df4d176b";
+  "fde8ef18f09d63c95e111cf6b6e92d59b5b84724e8e64813ae4f01edac87a0fe";
 
 describe("progression recycle browser parity", () => {
   it("matches the literal Node evidence checksum", async () => {

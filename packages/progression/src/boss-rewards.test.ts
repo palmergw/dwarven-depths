@@ -130,7 +130,8 @@ describe("boss death rewards", () => {
               schemaVersion: 1,
               upgradeId: "upgrade.ability.shield_slam" as never,
               rank: 1,
-              forgeOreSpent: 11
+              forgeOreSpent: 11,
+              passiveEffectsIdentity: "test.passive-effects"
             }
           ]
         },

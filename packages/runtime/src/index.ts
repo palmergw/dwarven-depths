@@ -28,6 +28,12 @@ export {
   resolveAuthoritativeCombatCheckpoint
 } from "./authoritative-combat-checkpoint.js";
 export {
+  applyPurchasedUpgradeEffectsToBattlefield,
+  type BattlefieldPurchasedUpgradeEffectRequest,
+  type BattlefieldPurchasedUpgradeEffectResolution,
+  deployBattlefieldDwarvesWithPurchasedUpgradeEffects
+} from "./battlefield-purchased-upgrade-effects.js";
+export {
   type BattlefieldRenderFormat,
   type BattlefieldRenderLayer,
   type BattlefieldRenderRequest,
