@@ -1,17 +1,12 @@
 import { compileContent } from "@dwarven-depths/content-runtime";
 import { type ContentBundle, canonicalHash } from "@dwarven-depths/contracts";
 import * as progressionPublicApi from "@dwarven-depths/progression";
-import {
-  createInitialAttemptRewardLedger,
-  createInitialProfile
-} from "@dwarven-depths/progression";
 import { describe, expect, it } from "vitest";
 import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
   type: "json"
 };
 import {
   runShuttergateAttempt,
-  runShuttergateAttemptWithProgress,
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,
   runShuttergateSeedPlacementCalibration,
@@ -252,6 +247,7 @@ describe("Shuttergate reference balance calibration", () => {
     expect(await canonicalHash(result.rewardEvent)).toBe(
       "562b435c2f90110cdf3fa6b6a5bcf48676777ba6b7a1d6b132624054db50dcff"
     );
+    expect("resolveAttemptProgressRewards" in progressionPublicApi).toBe(false);
 
     const upgradedKeep = await runShuttergateAttempt(content, {
       schemaVersion: 1,
@@ -272,78 +268,6 @@ describe("Shuttergate reference balance calibration", () => {
       targetPolicy: "lowest_health",
       buildId: "build.warden.shield_slam_rank_1.v1"
     });
-  }, 15_000);
-
-  it("commits attempt progress without caller-authored outcome evidence", async () => {
-    const content = await compileContent(shuttergateInput);
-    const request = {
-      schemaVersion: 1 as const,
-      attemptId: "attempt.shuttergate.a0003" as never,
-      seed: "1",
-      placementPointId: "placement.shuttergate_north_guard" as never,
-      targetPolicy: "nearest" as const,
-      buildId: "build.profile.new_campaign.v1" as const
-    };
-    const waveIds = [1, 2, 3, 4, 5].map(
-      (wave) => `wave.shuttergate_${wave}` as never
-    );
-    const progressState = {
-      schemaVersion: 1 as const,
-      profile: createInitialProfile("character.iron_warden" as never),
-      ledger: createInitialAttemptRewardLedger(),
-      policy: {
-        schemaVersion: 1 as const,
-        policyId: "policy.attempt_reward.shuttergate.v1" as never,
-        levelId: "level.shuttergate_hall" as never,
-        waveIds,
-        forgeOrePerDefeatedEnemy: 1,
-        waveMilestoneRewards: waveIds.map((waveId, index) => ({
-          schemaVersion: 1 as const,
-          waveId,
-          forgeOre: index + 1
-        }))
-      }
-    };
-
-    const result = await runShuttergateAttemptWithProgress(
-      content,
-      request,
-      progressState
-    );
-    expect(result.progression.decisions).toEqual([
-      {
-        schemaVersion: 1,
-        rewardId: "reward.attempt.shuttergate.a0003",
-        attemptId: "attempt.shuttergate.a0003",
-        forgeOre: 11,
-        status: "claimed",
-        reason: "attempt_progress_reward_committed"
-      }
-    ]);
-    expect(result.progression.ledger.claims[0]).toMatchObject(
-      result.rewardEvent
-    );
-    expect(Object.isFrozen(result.progression)).toBe(true);
-
-    const replayed = await runShuttergateAttemptWithProgress(content, request, {
-      schemaVersion: 1,
-      profile: result.progression.profile,
-      ledger: result.progression.ledger,
-      policy: progressState.policy
-    });
-    expect(replayed.progression.decisions[0]).toMatchObject({
-      rewardId: "reward.attempt.shuttergate.a0003",
-      forgeOre: 0,
-      status: "already_claimed"
-    });
-
-    expect("resolveAttemptProgressRewards" in progressionPublicApi).toBe(false);
-    await expect(
-      runShuttergateAttemptWithProgress(content, request, {
-        ...progressState,
-        events: [result.rewardEvent]
-      } as never)
-    ).rejects.toThrow("progress state has invalid fields");
   }, 15_000);
 
   it("rejects malformed attempt identity before compiling encounter content", async () => {

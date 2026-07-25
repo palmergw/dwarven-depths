@@ -103,9 +103,7 @@ function normalizeWaveReward(
   });
 }
 
-export function normalizeAttemptProgressRewardPolicy(
-  value: unknown
-): AttemptProgressRewardPolicy {
+function normalizePolicy(value: unknown): AttemptProgressRewardPolicy {
   const source = requireProfileRecord(
     value,
     [
@@ -268,10 +266,7 @@ function normalizeClaim(
     },
     description
   );
-  const expectedClaim = createClaim(
-    event,
-    normalizeAttemptProgressRewardPolicy(source.policy)
-  );
+  const expectedClaim = createClaim(event, normalizePolicy(source.policy));
   const forgeOreAwarded = requireProfileUnsigned(
     source.forgeOreAwarded,
     `${description} forgeOreAwarded`
@@ -286,9 +281,7 @@ function normalizeClaim(
   });
 }
 
-export function normalizeAttemptProgressRewardLedger(
-  value: unknown
-): AttemptProgressRewardLedger {
+function normalizeLedger(value: unknown): AttemptProgressRewardLedger {
   const source = requireProfileRecord(
     value,
     ["schemaVersion", "claims"],
@@ -378,8 +371,8 @@ export function resolveAttemptProgressRewards(
       "attempt progress reward request has unsupported schemaVersion"
     );
   const profile = normalizeProfileState(source.profile);
-  const ledger = normalizeAttemptProgressRewardLedger(source.ledger);
-  const policy = normalizeAttemptProgressRewardPolicy(source.policy);
+  const ledger = normalizeLedger(source.ledger);
+  const policy = normalizePolicy(source.policy);
 
   const claimsByReward = new Map(
     ledger.claims.map((claim) => [claim.rewardId, claim])

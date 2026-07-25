@@ -2,25 +2,15 @@ import {
   type CompiledContent,
   compileContent
 } from "@dwarven-depths/content-runtime";
-import {
-  canonicalStringify,
-  type DwarfTargetPolicy,
-  type PlacementPointId,
-  type SimulationState,
-  type StableId
+import type {
+  DwarfTargetPolicy,
+  PlacementPointId,
+  SimulationState,
+  StableId
 } from "@dwarven-depths/contracts";
 import {
-  type AttemptProgressRewardClaim,
-  type AttemptProgressRewardLedger,
-  type AttemptProgressRewardPolicy,
-  type AttemptProgressRewardResolution,
   type CompletedAttemptRewardEvent,
-  compareText,
   createInitialProfile,
-  normalizeAttemptProgressRewardLedger,
-  normalizeAttemptProgressRewardPolicy,
-  normalizeProfileState,
-  type ProfileState,
   type PurchasedUpgradeCatalog,
   type PurchasedUpgradeCharacterModifiers,
   purchaseUpgradeRank
@@ -169,153 +159,6 @@ export interface ShuttergateAttemptResult {
   readonly schemaVersion: 1;
   readonly calibration: ShuttergateBuildCalibrationEvidence;
   readonly rewardEvent: CompletedAttemptRewardEvent;
-}
-
-export interface ShuttergateAttemptProgressState {
-  readonly schemaVersion: 1;
-  readonly profile: ProfileState;
-  readonly ledger: AttemptProgressRewardLedger;
-  readonly policy: AttemptProgressRewardPolicy;
-}
-
-export interface ShuttergateAttemptProgressResult
-  extends ShuttergateAttemptResult {
-  readonly progression: AttemptProgressRewardResolution;
-}
-
-function commitProducedAttemptProgressReward(
-  profileInput: ProfileState,
-  ledgerInput: AttemptProgressRewardLedger,
-  policyInput: AttemptProgressRewardPolicy,
-  event: CompletedAttemptRewardEvent
-): AttemptProgressRewardResolution {
-  const profile = normalizeProfileState(profileInput);
-  const ledger = normalizeAttemptProgressRewardLedger(ledgerInput);
-  const policy = normalizeAttemptProgressRewardPolicy(policyInput);
-  const claimsByReward = new Map(
-    ledger.claims.map((claim) => [claim.rewardId, claim])
-  );
-  for (const rewardId of profile.claimedRewardIds.filter((id) =>
-    id.startsWith("reward.attempt.")
-  )) {
-    if (!claimsByReward.has(rewardId))
-      throw new RangeError(
-        `profile attempt reward has no ledger evidence (${rewardId})`
-      );
-  }
-  const profileClaims = new Set(profile.claimedRewardIds);
-  for (const claim of ledger.claims) {
-    if (!profileClaims.has(claim.rewardId))
-      throw new RangeError(
-        `attempt reward ledger claim is not owned by the profile (${claim.rewardId})`
-      );
-  }
-  if (event.levelId !== policy.levelId)
-    throw new RangeError(
-      `attempt reward event does not match reward policy level (${event.levelId})`
-    );
-  if (
-    event.startedWaveIds.length > policy.waveIds.length ||
-    event.startedWaveIds.some(
-      (waveId, index) => policy.waveIds[index] !== waveId
-    )
-  )
-    throw new RangeError(
-      "attempt reward event startedWaveIds must be an authored wave prefix"
-    );
-  if (
-    event.terminalResult === "victory" &&
-    event.startedWaveIds.length !== policy.waveIds.length
-  )
-    throw new RangeError(
-      "victorious attempt reward must include every authored wave"
-    );
-  let forgeOreAwarded = event.defeatedEnemies * policy.forgeOrePerDefeatedEnemy;
-  if (!Number.isSafeInteger(forgeOreAwarded))
-    throw new RangeError(
-      "attempt progress Forge Ore reward exceeds safe integer range"
-    );
-  for (const reward of policy.waveMilestoneRewards.slice(
-    0,
-    event.startedWaveIds.length
-  )) {
-    forgeOreAwarded += reward.forgeOre;
-    if (!Number.isSafeInteger(forgeOreAwarded))
-      throw new RangeError(
-        "attempt progress Forge Ore reward exceeds safe integer range"
-      );
-  }
-  const expectedClaim: AttemptProgressRewardClaim = Object.freeze({
-    ...event,
-    policy,
-    forgeOreAwarded
-  });
-  const existing = claimsByReward.get(event.rewardId);
-  if (existing !== undefined) {
-    if (canonicalStringify(existing) !== canonicalStringify(expectedClaim))
-      throw new RangeError(
-        `attempt reward event conflicts with claimed attempt evidence (${event.rewardId})`
-      );
-    return Object.freeze({
-      schemaVersion: 1,
-      profile,
-      ledger,
-      decisions: Object.freeze([
-        Object.freeze({
-          schemaVersion: 1,
-          rewardId: event.rewardId,
-          attemptId: event.attemptId,
-          forgeOre: 0,
-          status: "already_claimed" as const,
-          reason: "attempt_progress_reward_previously_claimed" as const
-        })
-      ])
-    });
-  }
-  if (profileClaims.has(event.rewardId))
-    throw new RangeError(
-      `attempt reward event has claimed ownership without ledger evidence (${event.rewardId})`
-    );
-  if (ledger.claims.some((claim) => claim.attemptId === event.attemptId))
-    throw new RangeError(
-      `attempt ID already has reward ownership (${event.attemptId})`
-    );
-  const forgeOre = profile.forgeOre + forgeOreAwarded;
-  if (!Number.isSafeInteger(forgeOre))
-    throw new RangeError(
-      "attempt progress Forge Ore reward exceeds safe integer range"
-    );
-  if (profile.revision === Number.MAX_SAFE_INTEGER)
-    throw new RangeError("profile revision exceeds safe integer range");
-  const nextProfile = normalizeProfileState({
-    ...profile,
-    revision: profile.revision + 1,
-    forgeOre,
-    claimedRewardIds: [...profile.claimedRewardIds, event.rewardId]
-  });
-  const nextLedger = Object.freeze({
-    schemaVersion: 1 as const,
-    claims: Object.freeze(
-      [...ledger.claims, expectedClaim].sort((left, right) =>
-        compareText(left.rewardId, right.rewardId)
-      )
-    )
-  });
-  return Object.freeze({
-    schemaVersion: 1,
-    profile: nextProfile,
-    ledger: nextLedger,
-    decisions: Object.freeze([
-      Object.freeze({
-        schemaVersion: 1,
-        rewardId: event.rewardId,
-        attemptId: event.attemptId,
-        forgeOre: forgeOreAwarded,
-        status: "claimed" as const,
-        reason: "attempt_progress_reward_committed" as const
-      })
-    ])
-  });
 }
 
 async function requireReferenceContent(
@@ -655,67 +498,6 @@ export async function runShuttergateAttempt(
     startedWaveIds: Object.freeze([...terminalMilestone.startedWaveIds])
   });
   return Object.freeze({ schemaVersion: 1, calibration, rewardEvent });
-}
-
-/** Runs and commits one attempt without accepting caller-authored outcome evidence. */
-export async function runShuttergateAttemptWithProgress(
-  content: CompiledContent,
-  request: ShuttergateAttemptRequest,
-  progressState: ShuttergateAttemptProgressState
-): Promise<ShuttergateAttemptProgressResult> {
-  if (
-    typeof progressState !== "object" ||
-    progressState === null ||
-    Array.isArray(progressState)
-  )
-    throw new TypeError("Shuttergate attempt progress state must be an object");
-  const prototype = Object.getPrototypeOf(progressState);
-  if (prototype !== Object.prototype && prototype !== null)
-    throw new TypeError(
-      "Shuttergate attempt progress state must be a plain object"
-    );
-  const expectedKeys = ["ledger", "policy", "profile", "schemaVersion"];
-  const ownKeys = Reflect.ownKeys(progressState);
-  const actualKeys = ownKeys
-    .filter((key): key is string => typeof key === "string")
-    .sort();
-  if (
-    actualKeys.length !== ownKeys.length ||
-    actualKeys.length !== expectedKeys.length ||
-    actualKeys.some((key, index) => key !== expectedKeys[index])
-  )
-    throw new TypeError(
-      "Shuttergate attempt progress state has invalid fields"
-    );
-  const descriptors = Object.getOwnPropertyDescriptors(progressState);
-  if (
-    expectedKeys.some((key) => {
-      const descriptor = descriptors[key];
-      return (
-        descriptor === undefined ||
-        descriptor.enumerable !== true ||
-        !("value" in descriptor)
-      );
-    })
-  )
-    throw new TypeError(
-      "Shuttergate attempt progress state fields must be plain data properties"
-    );
-  if (descriptors.schemaVersion?.value !== 1)
-    throw new RangeError(
-      "Shuttergate attempt progress state has unsupported schemaVersion"
-    );
-
-  const attempt = await runShuttergateAttempt(content, request);
-  const progression = commitProducedAttemptProgressReward(
-    (descriptors.profile as PropertyDescriptor).value as ProfileState,
-    (descriptors.ledger as PropertyDescriptor)
-      .value as AttemptProgressRewardLedger,
-    (descriptors.policy as PropertyDescriptor)
-      .value as AttemptProgressRewardPolicy,
-    attempt.rewardEvent
-  );
-  return Object.freeze({ ...attempt, progression });
 }
 
 export async function runShuttergateSeedPlacementControllerCalibration(

@@ -6,9 +6,7 @@ export {
   type AttemptProgressRewardResolution,
   type AttemptWaveMilestoneReward,
   type CompletedAttemptRewardEvent,
-  createInitialAttemptRewardLedger,
-  normalizeAttemptProgressRewardLedger,
-  normalizeAttemptProgressRewardPolicy
+  createInitialAttemptRewardLedger
 } from "./attempt-progress-rewards.js";
 export * from "./boss-rewards.js";
 export * from "./character-experience.js";

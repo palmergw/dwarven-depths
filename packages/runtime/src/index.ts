@@ -70,14 +70,11 @@ export {
 } from "./run-explanation.js";
 export {
   runShuttergateAttempt,
-  runShuttergateAttemptWithProgress,
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,
   runShuttergateSeedPlacementCalibration,
   runShuttergateSeedPlacementControllerBuildCalibration,
   runShuttergateSeedPlacementControllerCalibration,
-  type ShuttergateAttemptProgressResult,
-  type ShuttergateAttemptProgressState,
   type ShuttergateAttemptRequest,
   type ShuttergateAttemptResult,
   type ShuttergateBuildCalibrationEvidence,
