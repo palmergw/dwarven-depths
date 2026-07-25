@@ -241,13 +241,23 @@ the repository.
   and tick reductions, and replacement requires the existing replay minimization
   to match the current invocation's complete source, minimized result, and bound
   artifact. Pre-execution identity and command mismatches remain rejected.
-  Checkpoint-sequence reduction and other non-checkpoint divergences remain
-  later expansions.
+  Checkpoint-sequence reduction and other non-checkpoint divergences are not
+  approved Phase 4 work. Minimization schemas 1–8 are capability-complete and
+  compatibility-frozen; any new divergence class or schema requires explicit
+  product-owner approval.
 
-## Not implemented yet
+## Phase 4 exit boundary
 
-Additional historical save migrations and campaign policy variants,
-catch-up experience, active ability and item-rank behavior, full save scope,
-player-facing recycle confirmation, additional build and active-ability controller sweep axes,
-additional statistical sweep metrics, campaign report variants, minimization expansions, and active-ability
-calibration remain later Phase 4 checkpoints.
+The remaining approved engineering work is one behavior-preserving consolidation
+of the existing schema 1–8 minimization and artifact implementation. It must add
+no user-facing minimization capability, preserve canonical output exactly, and
+close with backward-compatibility fixtures, focused adversarial probes, one
+stable-head full verification, exact-head independent review, PR CI, and
+post-merge `main` CI.
+
+Additional historical save migrations, campaign policy variants, catch-up
+experience, active ability and item-rank behavior, full save scope,
+player-facing recycle confirmation, additional controller axes or statistical
+metrics, report variants, and new minimization classes are outside this Phase 4
+exit. Active-ability work remains contract-blocked until the source-of-truth
+mechanics are intentionally amended.

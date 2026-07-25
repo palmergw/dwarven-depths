@@ -11,15 +11,19 @@
     "build": "pnpm -r --workspace-concurrency=1 build",
     "typecheck": "tsc -b --pretty false",
     "test": "pnpm build && vitest run",
+    "test:built": "vitest run",
     "test:browser": "pnpm build && vitest run --config vitest.browser.config.ts",
     "test:browser:docker": "./scripts/test-browser-docker.sh",
     "lint": "biome check .",
     "format:check": "biome format .",
     "check:artifacts": "node scripts/check-generated-artifacts.mjs",
     "sim": "pnpm build && node apps/sim-cli/dist/cli.js",
+    "sim:built": "node apps/sim-cli/dist/cli.js",
     "validate": "pnpm sim validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
+    "validate:built": "pnpm sim:built validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
     "verify:scenario": "pnpm sim run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0",
-    "verify": "pnpm lint && pnpm check:artifacts && pnpm typecheck && pnpm test && pnpm test:browser:docker && pnpm validate && pnpm verify:scenario"
+    "verify:scenario:built": "pnpm sim:built run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0",
+    "verify": "pnpm lint && pnpm check:artifacts && pnpm typecheck && pnpm build && pnpm test:built && DD_SKIP_BUILD=1 pnpm test:browser:docker && pnpm validate:built && pnpm verify:scenario:built"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.5",
