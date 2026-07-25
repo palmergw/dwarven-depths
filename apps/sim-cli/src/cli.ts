@@ -270,7 +270,7 @@ interface SafetyStopMinimizationArtifact
 }
 
 interface ReplayMinimizationArtifactBody {
-  readonly schemaVersion: 3;
+  readonly schemaVersion: 3 | 4;
   readonly complete: true;
   readonly assertionCode: "replay_divergence";
   readonly divergenceCode:
@@ -286,6 +286,8 @@ interface ReplayMinimizationArtifactBody {
   readonly minimizedCommandCount: number;
   readonly retainedCommandIndexes: readonly number[];
   readonly candidateEvaluationCount: number;
+  readonly originalMaximumTicks?: number;
+  readonly minimizedMaximumTicks?: number;
 }
 
 interface ReplayMinimizationArtifact extends ReplayMinimizationArtifactBody {
@@ -1636,7 +1638,8 @@ async function replayCandidate(
   sourceScenario: ReturnType<typeof compileScenario>,
   sourceReplay: ReplayDefinition,
   content: Awaited<ReturnType<typeof compileContent>>,
-  retainedCommandIndexes: readonly number[]
+  retainedCommandIndexes: readonly number[],
+  maximumTicks = sourceScenario.maximumTicks
 ): Promise<{
   readonly scenario: ReturnType<typeof compileScenario>;
   readonly replay: ReplayDefinition;
@@ -1644,6 +1647,7 @@ async function replayCandidate(
   const scenario = compileScenario(
     {
       ...sourceScenario,
+      maximumTicks,
       commands: retainedCommandIndexes.map(
         (index) => sourceScenario.commands[index]
       )
@@ -1667,18 +1671,21 @@ async function reproducesReplayDivergence(
   sourceReplay: ReplayDefinition,
   content: Awaited<ReturnType<typeof compileContent>>,
   retainedCommandIndexes: readonly number[],
-  expected: MinimizedReplayDivergence
+  expected: MinimizedReplayDivergence,
+  maximumTicks = sourceScenario.maximumTicks
 ): Promise<boolean> {
-  const candidate = await replayCandidate(
-    sourceScenario,
-    sourceReplay,
-    content,
-    retainedCommandIndexes
-  );
   try {
+    const candidate = await replayCandidate(
+      sourceScenario,
+      sourceReplay,
+      content,
+      retainedCommandIndexes,
+      maximumTicks
+    );
     await verifyReplay(candidate.replay, candidate.scenario, content);
     return false;
   } catch (error) {
+    if (error instanceof ContentValidationError) return false;
     const divergence = acceptedReplayDivergence(error);
     return (
       divergence?.code === expected.code &&
@@ -1691,9 +1698,11 @@ async function deriveReplayMinimization(
   scenario: ReturnType<typeof compileScenario>,
   replay: ReplayDefinition,
   content: Awaited<ReturnType<typeof compileContent>>,
-  divergence: MinimizedReplayDivergence
+  divergence: MinimizedReplayDivergence,
+  minimizeTicks = false
 ): Promise<{
   readonly retainedCommandIndexes: readonly number[];
+  readonly minimumTicks: number;
   readonly candidateEvaluationCount: number;
 }> {
   let retainedCommandIndexes = scenario.commands.map((_, index) => index);
@@ -1724,7 +1733,31 @@ async function deriveReplayMinimization(
       }
     }
   } while (changed);
-  return { retainedCommandIndexes, candidateEvaluationCount };
+  let minimumTicks = scenario.maximumTicks;
+  if (minimizeTicks) {
+    let lowerBound = 1;
+    let upperBound = scenario.maximumTicks;
+    while (lowerBound < upperBound) {
+      const candidateTicks = Math.floor((lowerBound + upperBound) / 2);
+      candidateEvaluationCount += 1;
+      if (
+        await reproducesReplayDivergence(
+          scenario,
+          replay,
+          content,
+          retainedCommandIndexes,
+          divergence,
+          candidateTicks
+        )
+      ) {
+        upperBound = candidateTicks;
+      } else {
+        lowerBound = candidateTicks + 1;
+      }
+    }
+    minimumTicks = lowerBound;
+  }
+  return { retainedCommandIndexes, minimumTicks, candidateEvaluationCount };
 }
 
 async function assertReplayMinimization(
@@ -1752,6 +1785,9 @@ async function assertReplayMinimization(
       "minimizedCommandCount",
       "retainedCommandIndexes",
       "candidateEvaluationCount",
+      ...(artifact.schemaVersion === 4
+        ? ["originalMaximumTicks", "minimizedMaximumTicks"]
+        : []),
       "artifactChecksum"
     ],
     "minimization.json"
@@ -1768,7 +1804,7 @@ async function assertReplayMinimization(
         (position === 0 || index > (indexes[position - 1] as number))
     );
   if (
-    artifact.schemaVersion !== 3 ||
+    (artifact.schemaVersion !== 3 && artifact.schemaVersion !== 4) ||
     artifact.complete !== true ||
     artifact.assertionCode !== "replay_divergence" ||
     (artifact.divergenceCode !== "state_checksum_mismatch" &&
@@ -1784,6 +1820,15 @@ async function assertReplayMinimization(
     artifact.originalCommandCount !== sourceScenario.commands.length ||
     artifact.minimizedCommandCount !== minimizedScenario.commands.length ||
     artifact.minimizedCommandCount !== indexes.length ||
+    (artifact.schemaVersion === 4 &&
+      (artifact.originalMaximumTicks !== sourceScenario.maximumTicks ||
+        artifact.minimizedMaximumTicks !== minimizedScenario.maximumTicks ||
+        !Number.isSafeInteger(artifact.minimizedMaximumTicks) ||
+        (artifact.minimizedMaximumTicks as number) < 1 ||
+        (artifact.minimizedMaximumTicks as number) >
+          sourceScenario.maximumTicks)) ||
+    (artifact.schemaVersion === 3 &&
+      minimizedScenario.maximumTicks !== sourceScenario.maximumTicks) ||
     !validIndexes ||
     !Number.isSafeInteger(artifact.candidateEvaluationCount) ||
     artifact.candidateEvaluationCount < sourceScenario.commands.length ||
@@ -1817,18 +1862,21 @@ async function assertReplayMinimization(
     sourceScenario,
     sourceReplay,
     content,
-    expected
+    expected,
+    artifact.schemaVersion === 4
   );
   const candidate = await replayCandidate(
     sourceScenario,
     sourceReplay,
     content,
-    indexes
+    indexes,
+    minimizedScenario.maximumTicks
   );
   if (
     firstDifferencePath(derived.retainedCommandIndexes, indexes) !==
       undefined ||
     derived.candidateEvaluationCount !== artifact.candidateEvaluationCount ||
+    derived.minimumTicks !== minimizedScenario.maximumTicks ||
     firstDifferencePath(candidate.scenario, minimizedScenario) !== undefined ||
     firstDifferencePath(candidate.replay, minimizedReplay) !== undefined
   ) {
@@ -1849,6 +1897,20 @@ async function assertReplayMinimization(
     ) {
       throw new Error("minimized replay is not command-deletion 1-minimal");
     }
+  }
+  if (
+    artifact.schemaVersion === 4 &&
+    minimizedScenario.maximumTicks > 1 &&
+    (await reproducesReplayDivergence(
+      sourceScenario,
+      sourceReplay,
+      content,
+      indexes,
+      expected,
+      minimizedScenario.maximumTicks - 1
+    ))
+  ) {
+    throw new Error("minimized replay does not have a minimal tick budget");
   }
 }
 
@@ -1979,7 +2041,8 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
       firstDifferencePath(entries, [
         "content.compiled.json",
         "minimization.json",
-        ...(artifactInput["schemaVersion"] === 3
+        ...(artifactInput["schemaVersion"] === 3 ||
+        artifactInput["schemaVersion"] === 4
           ? ["replay.minimized.json", "replay.source.json"]
           : []),
         "scenario.minimized.compiled.json",
@@ -2002,7 +2065,10 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
       await readArtifactJson(rootDirectory, "scenario.minimized.compiled.json"),
       content
     );
-    if (artifactInput["schemaVersion"] === 3) {
+    if (
+      artifactInput["schemaVersion"] === 3 ||
+      artifactInput["schemaVersion"] === 4
+    ) {
       await assertReplayMinimization(
         artifactInput as unknown as ReplayMinimizationArtifact,
         sourceScenario,
@@ -2167,11 +2233,15 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
 async function minimize(args: ParsedArgs): Promise<void> {
   rejectUnknownFlags(
     args,
-    new Set(["content", "scenario", "replay", "out", "replace"])
+    new Set(["content", "scenario", "replay", "replay-ticks", "out", "replace"])
   );
   const { content, scenario } = await load(args);
   const replayPath = args.flags.get("replay");
+  if (replayPath === undefined && args.flags.has("replay-ticks")) {
+    throw new CliInputError("--replay-ticks requires --replay");
+  }
   if (replayPath !== undefined) {
+    const minimizeReplayTicks = booleanFlag(args, "replay-ticks");
     const sourceReplay = compileReplay(await readJson(replayPath));
     let divergence: MinimizedReplayDivergence | undefined;
     try {
@@ -2191,16 +2261,18 @@ async function minimize(args: ParsedArgs): Promise<void> {
       scenario,
       sourceReplay,
       content,
-      divergence
+      divergence,
+      minimizeReplayTicks
     );
     const candidate = await replayCandidate(
       scenario,
       sourceReplay,
       content,
-      reduction.retainedCommandIndexes
+      reduction.retainedCommandIndexes,
+      reduction.minimumTicks
     );
     const artifactBody: ReplayMinimizationArtifactBody = {
-      schemaVersion: 3,
+      schemaVersion: minimizeReplayTicks ? 4 : 3,
       complete: true,
       assertionCode: "replay_divergence",
       divergenceCode: divergence.code,
@@ -2213,7 +2285,13 @@ async function minimize(args: ParsedArgs): Promise<void> {
       originalCommandCount: scenario.commands.length,
       minimizedCommandCount: candidate.scenario.commands.length,
       retainedCommandIndexes: reduction.retainedCommandIndexes,
-      candidateEvaluationCount: reduction.candidateEvaluationCount
+      candidateEvaluationCount: reduction.candidateEvaluationCount,
+      ...(minimizeReplayTicks
+        ? {
+            originalMaximumTicks: scenario.maximumTicks,
+            minimizedMaximumTicks: reduction.minimumTicks
+          }
+        : {})
     };
     const artifact: ReplayMinimizationArtifact = {
       ...artifactBody,
@@ -2269,6 +2347,12 @@ async function minimize(args: ParsedArgs): Promise<void> {
         assertionCode: artifact.assertionCode,
         divergenceCode: artifact.divergenceCode,
         checkpointTick: artifact.checkpointTick,
+        ...(artifact.schemaVersion === 4
+          ? {
+              originalMaximumTicks: artifact.originalMaximumTicks,
+              minimizedMaximumTicks: artifact.minimizedMaximumTicks
+            }
+          : {}),
         originalCommandCount: artifact.originalCommandCount,
         minimizedCommandCount: artifact.minimizedCommandCount,
         artifactChecksum: artifact.artifactChecksum
