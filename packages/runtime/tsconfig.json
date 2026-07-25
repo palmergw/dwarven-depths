@@ -10,6 +10,7 @@
     { "path": "../contracts" },
     { "path": "../content-runtime" },
     { "path": "../progression" },
+    { "path": "../save" },
     { "path": "../sim-core" }
   ],
   "include": ["src/**/*.ts"]
