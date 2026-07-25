@@ -1,0 +1,24 @@
+{
+  "name": "@dwarven-depths/save",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./json-file": {
+      "types": "./dist/json-file.d.ts",
+      "default": "./dist/json-file.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@dwarven-depths/contracts": "workspace:*",
+    "@dwarven-depths/progression": "workspace:*"
+  }
+}
