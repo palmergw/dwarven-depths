@@ -269,6 +269,29 @@ interface SafetyStopMinimizationArtifact
   readonly artifactChecksum: string;
 }
 
+interface ReplayMinimizationArtifactBody {
+  readonly schemaVersion: 3;
+  readonly complete: true;
+  readonly assertionCode: "replay_divergence";
+  readonly divergenceCode:
+    | "state_checksum_mismatch"
+    | "event_stream_checksum_mismatch";
+  readonly checkpointTick: number;
+  readonly contentManifestHash: string;
+  readonly sourceScenarioHash: string;
+  readonly minimizedScenarioHash: string;
+  readonly sourceReplayHash: string;
+  readonly minimizedReplayHash: string;
+  readonly originalCommandCount: number;
+  readonly minimizedCommandCount: number;
+  readonly retainedCommandIndexes: readonly number[];
+  readonly candidateEvaluationCount: number;
+}
+
+interface ReplayMinimizationArtifact extends ReplayMinimizationArtifactBody {
+  readonly artifactChecksum: string;
+}
+
 class CliInputError extends Error {
   readonly code = "invalid_cli_input";
 
@@ -1593,6 +1616,242 @@ async function deriveSafetyStopMinimization(
   };
 }
 
+type MinimizedReplayDivergence = {
+  readonly code: "state_checksum_mismatch" | "event_stream_checksum_mismatch";
+  readonly checkpointTick: number;
+};
+
+function acceptedReplayDivergence(
+  error: unknown
+): MinimizedReplayDivergence | undefined {
+  return error instanceof ReplayDivergenceError &&
+    (error.code === "state_checksum_mismatch" ||
+      error.code === "event_stream_checksum_mismatch") &&
+    error.checkpointTick !== undefined
+    ? { code: error.code, checkpointTick: error.checkpointTick }
+    : undefined;
+}
+
+async function replayCandidate(
+  sourceScenario: ReturnType<typeof compileScenario>,
+  sourceReplay: ReplayDefinition,
+  content: Awaited<ReturnType<typeof compileContent>>,
+  retainedCommandIndexes: readonly number[]
+): Promise<{
+  readonly scenario: ReturnType<typeof compileScenario>;
+  readonly replay: ReplayDefinition;
+}> {
+  const scenario = compileScenario(
+    {
+      ...sourceScenario,
+      commands: retainedCommandIndexes.map(
+        (index) => sourceScenario.commands[index]
+      )
+    },
+    content
+  );
+  const replay = compileReplay({
+    ...sourceReplay,
+    scenarioHash: await canonicalHash(scenario),
+    commands: scenario.commands.map((command, sequence) => ({
+      tick: command.atTick,
+      sequence,
+      command
+    }))
+  });
+  return { scenario, replay };
+}
+
+async function reproducesReplayDivergence(
+  sourceScenario: ReturnType<typeof compileScenario>,
+  sourceReplay: ReplayDefinition,
+  content: Awaited<ReturnType<typeof compileContent>>,
+  retainedCommandIndexes: readonly number[],
+  expected: MinimizedReplayDivergence
+): Promise<boolean> {
+  const candidate = await replayCandidate(
+    sourceScenario,
+    sourceReplay,
+    content,
+    retainedCommandIndexes
+  );
+  try {
+    await verifyReplay(candidate.replay, candidate.scenario, content);
+    return false;
+  } catch (error) {
+    const divergence = acceptedReplayDivergence(error);
+    return (
+      divergence?.code === expected.code &&
+      divergence.checkpointTick === expected.checkpointTick
+    );
+  }
+}
+
+async function deriveReplayMinimization(
+  scenario: ReturnType<typeof compileScenario>,
+  replay: ReplayDefinition,
+  content: Awaited<ReturnType<typeof compileContent>>,
+  divergence: MinimizedReplayDivergence
+): Promise<{
+  readonly retainedCommandIndexes: readonly number[];
+  readonly candidateEvaluationCount: number;
+}> {
+  let retainedCommandIndexes = scenario.commands.map((_, index) => index);
+  let candidateEvaluationCount = 0;
+  let changed: boolean;
+  do {
+    changed = false;
+    for (
+      let position = retainedCommandIndexes.length - 1;
+      position >= 0;
+      position -= 1
+    ) {
+      const candidate = retainedCommandIndexes.filter(
+        (_, candidatePosition) => candidatePosition !== position
+      );
+      candidateEvaluationCount += 1;
+      if (
+        await reproducesReplayDivergence(
+          scenario,
+          replay,
+          content,
+          candidate,
+          divergence
+        )
+      ) {
+        retainedCommandIndexes = candidate;
+        changed = true;
+      }
+    }
+  } while (changed);
+  return { retainedCommandIndexes, candidateEvaluationCount };
+}
+
+async function assertReplayMinimization(
+  artifact: ReplayMinimizationArtifact,
+  sourceScenario: ReturnType<typeof compileScenario>,
+  minimizedScenario: ReturnType<typeof compileScenario>,
+  sourceReplay: ReplayDefinition,
+  minimizedReplay: ReplayDefinition,
+  content: Awaited<ReturnType<typeof compileContent>>
+): Promise<void> {
+  requireExactKeys(
+    artifact,
+    [
+      "schemaVersion",
+      "complete",
+      "assertionCode",
+      "divergenceCode",
+      "checkpointTick",
+      "contentManifestHash",
+      "sourceScenarioHash",
+      "minimizedScenarioHash",
+      "sourceReplayHash",
+      "minimizedReplayHash",
+      "originalCommandCount",
+      "minimizedCommandCount",
+      "retainedCommandIndexes",
+      "candidateEvaluationCount",
+      "artifactChecksum"
+    ],
+    "minimization.json"
+  );
+  const { artifactChecksum, ...artifactBody } = artifact;
+  const indexes = artifact.retainedCommandIndexes;
+  const validIndexes =
+    Array.isArray(indexes) &&
+    indexes.every(
+      (index, position) =>
+        Number.isSafeInteger(index) &&
+        index >= 0 &&
+        index < sourceScenario.commands.length &&
+        (position === 0 || index > (indexes[position - 1] as number))
+    );
+  if (
+    artifact.schemaVersion !== 3 ||
+    artifact.complete !== true ||
+    artifact.assertionCode !== "replay_divergence" ||
+    (artifact.divergenceCode !== "state_checksum_mismatch" &&
+      artifact.divergenceCode !== "event_stream_checksum_mismatch") ||
+    !Number.isSafeInteger(artifact.checkpointTick) ||
+    artifact.checkpointTick < 0 ||
+    artifact.contentManifestHash !== content.manifestHash ||
+    artifact.sourceScenarioHash !== (await canonicalHash(sourceScenario)) ||
+    artifact.minimizedScenarioHash !==
+      (await canonicalHash(minimizedScenario)) ||
+    artifact.sourceReplayHash !== (await canonicalHash(sourceReplay)) ||
+    artifact.minimizedReplayHash !== (await canonicalHash(minimizedReplay)) ||
+    artifact.originalCommandCount !== sourceScenario.commands.length ||
+    artifact.minimizedCommandCount !== minimizedScenario.commands.length ||
+    artifact.minimizedCommandCount !== indexes.length ||
+    !validIndexes ||
+    !Number.isSafeInteger(artifact.candidateEvaluationCount) ||
+    artifact.candidateEvaluationCount < sourceScenario.commands.length ||
+    typeof artifactChecksum !== "string" ||
+    !/^[a-f0-9]{64}$/.test(artifactChecksum) ||
+    artifactChecksum !==
+      (await canonicalArtifactHash(artifactBody, "minimization.json"))
+  ) {
+    throw new Error(
+      "minimization.json contains invalid or unbound replay evidence"
+    );
+  }
+
+  const expected: MinimizedReplayDivergence = {
+    code: artifact.divergenceCode,
+    checkpointTick: artifact.checkpointTick
+  };
+  const sourceIndexes = sourceScenario.commands.map((_, index) => index);
+  if (
+    !(await reproducesReplayDivergence(
+      sourceScenario,
+      sourceReplay,
+      content,
+      sourceIndexes,
+      expected
+    ))
+  ) {
+    throw new Error("source replay no longer reproduces its bound divergence");
+  }
+  const derived = await deriveReplayMinimization(
+    sourceScenario,
+    sourceReplay,
+    content,
+    expected
+  );
+  const candidate = await replayCandidate(
+    sourceScenario,
+    sourceReplay,
+    content,
+    indexes
+  );
+  if (
+    firstDifferencePath(derived.retainedCommandIndexes, indexes) !==
+      undefined ||
+    derived.candidateEvaluationCount !== artifact.candidateEvaluationCount ||
+    firstDifferencePath(candidate.scenario, minimizedScenario) !== undefined ||
+    firstDifferencePath(candidate.replay, minimizedReplay) !== undefined
+  ) {
+    throw new Error(
+      "replay minimization evidence does not match deterministic source reduction"
+    );
+  }
+  for (let index = 0; index < indexes.length; index += 1) {
+    const retained = indexes.filter((_, position) => position !== index);
+    if (
+      await reproducesReplayDivergence(
+        sourceScenario,
+        sourceReplay,
+        content,
+        retained,
+        expected
+      )
+    ) {
+      throw new Error("minimized replay is not command-deletion 1-minimal");
+    }
+  }
+}
+
 async function assertSafetyStopMinimization(
   artifact: SafetyStopMinimizationArtifact,
   sourceScenario: ReturnType<typeof compileScenario>,
@@ -1711,11 +1970,18 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
       constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
     );
     const rootDirectory = `/proc/self/fd/${rootHandle.fd}`;
+    const artifactInput = requireRecord<Record<string, unknown>>(
+      await readArtifactJson(rootDirectory, "minimization.json"),
+      "minimization.json"
+    );
     const entries = (await readdir(rootDirectory)).sort();
     if (
       firstDifferencePath(entries, [
         "content.compiled.json",
         "minimization.json",
+        ...(artifactInput["schemaVersion"] === 3
+          ? ["replay.minimized.json", "replay.source.json"]
+          : []),
         "scenario.minimized.compiled.json",
         "scenario.source.compiled.json"
       ]) !== undefined
@@ -1736,10 +2002,21 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
       await readArtifactJson(rootDirectory, "scenario.minimized.compiled.json"),
       content
     );
-    const artifactInput = requireRecord<Record<string, unknown>>(
-      await readArtifactJson(rootDirectory, "minimization.json"),
-      "minimization.json"
-    );
+    if (artifactInput["schemaVersion"] === 3) {
+      await assertReplayMinimization(
+        artifactInput as unknown as ReplayMinimizationArtifact,
+        sourceScenario,
+        minimizedScenario,
+        compileReplay(
+          await readArtifactJson(rootDirectory, "replay.source.json")
+        ),
+        compileReplay(
+          await readArtifactJson(rootDirectory, "replay.minimized.json")
+        ),
+        content
+      );
+      return;
+    }
     if (artifactInput["schemaVersion"] === 2) {
       await assertSafetyStopMinimization(
         artifactInput as unknown as SafetyStopMinimizationArtifact,
@@ -1888,8 +2165,117 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
 }
 
 async function minimize(args: ParsedArgs): Promise<void> {
-  rejectUnknownFlags(args, new Set(["content", "scenario", "out", "replace"]));
+  rejectUnknownFlags(
+    args,
+    new Set(["content", "scenario", "replay", "out", "replace"])
+  );
   const { content, scenario } = await load(args);
+  const replayPath = args.flags.get("replay");
+  if (replayPath !== undefined) {
+    const sourceReplay = compileReplay(await readJson(replayPath));
+    let divergence: MinimizedReplayDivergence | undefined;
+    try {
+      await verifyReplay(sourceReplay, scenario, content);
+    } catch (error) {
+      divergence = acceptedReplayDivergence(error);
+      if (divergence === undefined) {
+        throw new CliInputError(
+          "replay does not reproduce a supported checkpoint checksum divergence"
+        );
+      }
+    }
+    if (divergence === undefined) {
+      throw new CliInputError("replay does not reproduce a divergence");
+    }
+    const reduction = await deriveReplayMinimization(
+      scenario,
+      sourceReplay,
+      content,
+      divergence
+    );
+    const candidate = await replayCandidate(
+      scenario,
+      sourceReplay,
+      content,
+      reduction.retainedCommandIndexes
+    );
+    const artifactBody: ReplayMinimizationArtifactBody = {
+      schemaVersion: 3,
+      complete: true,
+      assertionCode: "replay_divergence",
+      divergenceCode: divergence.code,
+      checkpointTick: divergence.checkpointTick,
+      contentManifestHash: content.manifestHash,
+      sourceScenarioHash: await canonicalHash(scenario),
+      minimizedScenarioHash: await canonicalHash(candidate.scenario),
+      sourceReplayHash: await canonicalHash(sourceReplay),
+      minimizedReplayHash: await canonicalHash(candidate.replay),
+      originalCommandCount: scenario.commands.length,
+      minimizedCommandCount: candidate.scenario.commands.length,
+      retainedCommandIndexes: reduction.retainedCommandIndexes,
+      candidateEvaluationCount: reduction.candidateEvaluationCount
+    };
+    const artifact: ReplayMinimizationArtifact = {
+      ...artifactBody,
+      artifactChecksum: await canonicalHash(artifactBody)
+    };
+    const outputDirectory = resolve(
+      args.flags.get("out") ?? `.ddh/minimizations/${scenario.id}`
+    );
+    try {
+      await publishDirectory(
+        outputDirectory,
+        booleanFlag(args, "replace"),
+        async (stagingDirectory) => {
+          await Promise.all([
+            writeJson(
+              resolve(stagingDirectory, "content.compiled.json"),
+              content.bundle
+            ),
+            writeJson(
+              resolve(stagingDirectory, "scenario.source.compiled.json"),
+              scenario
+            ),
+            writeJson(
+              resolve(stagingDirectory, "scenario.minimized.compiled.json"),
+              candidate.scenario
+            ),
+            writeJson(
+              resolve(stagingDirectory, "replay.source.json"),
+              sourceReplay
+            ),
+            writeJson(
+              resolve(stagingDirectory, "replay.minimized.json"),
+              candidate.replay
+            ),
+            writeJson(resolve(stagingDirectory, "minimization.json"), artifact)
+          ]);
+          await assertReplaceableMinimization(stagingDirectory);
+        },
+        assertReplaceableMinimization
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new ReportGenerationError(
+        `Unable to publish minimization at ${outputDirectory}: ${message}`
+      );
+    }
+    process.stdout.write(
+      `${JSON.stringify({
+        ok: true,
+        minimized: true,
+        outputDirectory,
+        scenarioId: scenario.id,
+        assertionCode: artifact.assertionCode,
+        divergenceCode: artifact.divergenceCode,
+        checkpointTick: artifact.checkpointTick,
+        originalCommandCount: artifact.originalCommandCount,
+        minimizedCommandCount: artifact.minimizedCommandCount,
+        artifactChecksum: artifact.artifactChecksum
+      })}\n`
+    );
+    return;
+  }
   const allIndexes = scenario.commands.map((_, index) => index);
   let actualTerminalResult: string | undefined;
   let reduction: Awaited<
