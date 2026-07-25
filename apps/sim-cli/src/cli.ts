@@ -231,6 +231,25 @@ interface CampaignManifestArtifact {
   readonly campaignPayloadChecksum: string;
 }
 
+interface MinimizationArtifactBody {
+  readonly schemaVersion: 1;
+  readonly complete: true;
+  readonly assertionCode: "unexpected_terminal_result";
+  readonly expectedTerminalResult: string;
+  readonly actualTerminalResult: string;
+  readonly contentManifestHash: string;
+  readonly sourceScenarioHash: string;
+  readonly minimizedScenarioHash: string;
+  readonly originalCommandCount: number;
+  readonly minimizedCommandCount: number;
+  readonly retainedCommandIndexes: readonly number[];
+  readonly candidateEvaluationCount: number;
+}
+
+interface MinimizationArtifact extends MinimizationArtifactBody {
+  readonly artifactChecksum: string;
+}
+
 class CliInputError extends Error {
   readonly code = "invalid_cli_input";
 
@@ -1340,6 +1359,416 @@ async function run(args: ParsedArgs): Promise<void> {
   );
   process.stdout.write(
     `${JSON.stringify({ ok: true, outputDirectory, ...summary })}\n`
+  );
+}
+
+function scenarioWithoutExpectation(
+  scenario: ReturnType<typeof compileScenario>,
+  content: Awaited<ReturnType<typeof compileContent>>,
+  retainedCommandIndexes: readonly number[],
+  maximumTicks = scenario.maximumTicks
+): ReturnType<typeof compileScenario> {
+  const { expectedTerminalResult: _expectedTerminalResult, ...input } =
+    scenario;
+  return compileScenario(
+    {
+      ...input,
+      maximumTicks,
+      commands: retainedCommandIndexes.map((index) => scenario.commands[index])
+    },
+    content
+  );
+}
+
+async function reproducesTerminalAssertion(
+  scenario: ReturnType<typeof compileScenario>,
+  content: Awaited<ReturnType<typeof compileContent>>,
+  retainedCommandIndexes: readonly number[],
+  actualTerminalResult: string
+): Promise<boolean> {
+  try {
+    const candidate = scenarioWithoutExpectation(
+      scenario,
+      content,
+      retainedCommandIndexes
+    );
+    return (
+      (await runScenario(candidate, content)).terminalResult ===
+      actualTerminalResult
+    );
+  } catch (error) {
+    if (error instanceof RuntimeSafetyStopError) return false;
+    throw error;
+  }
+}
+
+async function reproducesTerminalAssertionAtTickBudget(
+  scenario: ReturnType<typeof compileScenario>,
+  content: Awaited<ReturnType<typeof compileContent>>,
+  retainedCommandIndexes: readonly number[],
+  actualTerminalResult: string,
+  maximumTicks: number
+): Promise<boolean> {
+  try {
+    const candidate = scenarioWithoutExpectation(
+      scenario,
+      content,
+      retainedCommandIndexes,
+      maximumTicks
+    );
+    return (
+      (await runScenario(candidate, content)).terminalResult ===
+      actualTerminalResult
+    );
+  } catch (error) {
+    if (
+      error instanceof RuntimeSafetyStopError ||
+      error instanceof ContentValidationError
+    ) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function deriveTerminalAssertionMinimization(
+  scenario: ReturnType<typeof compileScenario>,
+  content: Awaited<ReturnType<typeof compileContent>>,
+  actualTerminalResult: string
+): Promise<{
+  readonly retainedCommandIndexes: readonly number[];
+  readonly minimumTicks: number;
+  readonly candidateEvaluationCount: number;
+}> {
+  let retainedCommandIndexes = scenario.commands.map((_, index) => index);
+  let candidateEvaluationCount = 0;
+  let changed: boolean;
+  do {
+    changed = false;
+    for (
+      let position = retainedCommandIndexes.length - 1;
+      position >= 0;
+      position -= 1
+    ) {
+      const candidate = retainedCommandIndexes.filter(
+        (_, candidatePosition) => candidatePosition !== position
+      );
+      candidateEvaluationCount += 1;
+      if (
+        await reproducesTerminalAssertion(
+          scenario,
+          content,
+          candidate,
+          actualTerminalResult
+        )
+      ) {
+        retainedCommandIndexes = candidate;
+        changed = true;
+      }
+    }
+  } while (changed);
+
+  let minimumTicks = 1;
+  let maximumTicks = scenario.maximumTicks;
+  while (minimumTicks < maximumTicks) {
+    const candidateTicks = Math.floor((minimumTicks + maximumTicks) / 2);
+    candidateEvaluationCount += 1;
+    if (
+      await reproducesTerminalAssertionAtTickBudget(
+        scenario,
+        content,
+        retainedCommandIndexes,
+        actualTerminalResult,
+        candidateTicks
+      )
+    ) {
+      maximumTicks = candidateTicks;
+    } else {
+      minimumTicks = candidateTicks + 1;
+    }
+  }
+  return {
+    retainedCommandIndexes,
+    minimumTicks,
+    candidateEvaluationCount
+  };
+}
+
+async function assertReplaceableMinimization(directory: string): Promise<void> {
+  let rootHandle: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    rootHandle = await open(
+      directory,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    const rootDirectory = `/proc/self/fd/${rootHandle.fd}`;
+    const entries = (await readdir(rootDirectory)).sort();
+    if (
+      firstDifferencePath(entries, [
+        "content.compiled.json",
+        "minimization.json",
+        "scenario.minimized.compiled.json",
+        "scenario.source.compiled.json"
+      ]) !== undefined
+    ) {
+      throw new Error(
+        "minimization output contains an unexpected or missing artifact"
+      );
+    }
+
+    const content = await compileContent(
+      await readArtifactJson(rootDirectory, "content.compiled.json")
+    );
+    const sourceScenario = compileScenario(
+      await readArtifactJson(rootDirectory, "scenario.source.compiled.json"),
+      content
+    );
+    const minimizedScenario = compileScenario(
+      await readArtifactJson(rootDirectory, "scenario.minimized.compiled.json"),
+      content
+    );
+    const artifact = requireRecord<MinimizationArtifact>(
+      await readArtifactJson(rootDirectory, "minimization.json"),
+      "minimization.json"
+    );
+    requireExactKeys(
+      artifact,
+      [
+        "schemaVersion",
+        "complete",
+        "assertionCode",
+        "expectedTerminalResult",
+        "actualTerminalResult",
+        "contentManifestHash",
+        "sourceScenarioHash",
+        "minimizedScenarioHash",
+        "originalCommandCount",
+        "minimizedCommandCount",
+        "retainedCommandIndexes",
+        "candidateEvaluationCount",
+        "artifactChecksum"
+      ],
+      "minimization.json"
+    );
+    const { artifactChecksum, ...artifactBody } = artifact;
+    const indexes = artifact.retainedCommandIndexes;
+    const validIndexes =
+      Array.isArray(indexes) &&
+      indexes.every(
+        (index, position) =>
+          Number.isSafeInteger(index) &&
+          index >= 0 &&
+          index < sourceScenario.commands.length &&
+          (position === 0 || index > (indexes[position - 1] as number))
+      );
+    if (
+      artifact.schemaVersion !== 1 ||
+      artifact.complete !== true ||
+      artifact.assertionCode !== "unexpected_terminal_result" ||
+      sourceScenario.expectedTerminalResult === undefined ||
+      minimizedScenario.expectedTerminalResult !==
+        sourceScenario.expectedTerminalResult ||
+      artifact.expectedTerminalResult !==
+        sourceScenario.expectedTerminalResult ||
+      artifact.actualTerminalResult === artifact.expectedTerminalResult ||
+      artifact.contentManifestHash !== content.manifestHash ||
+      artifact.sourceScenarioHash !== (await canonicalHash(sourceScenario)) ||
+      artifact.minimizedScenarioHash !==
+        (await canonicalHash(minimizedScenario)) ||
+      artifact.originalCommandCount !== sourceScenario.commands.length ||
+      artifact.minimizedCommandCount !== minimizedScenario.commands.length ||
+      artifact.minimizedCommandCount !== indexes.length ||
+      !validIndexes ||
+      firstDifferencePath(minimizedScenario, {
+        ...sourceScenario,
+        maximumTicks: minimizedScenario.maximumTicks,
+        commands: indexes.map((index) => sourceScenario.commands[index])
+      }) !== undefined ||
+      minimizedScenario.maximumTicks > sourceScenario.maximumTicks ||
+      !Number.isSafeInteger(artifact.candidateEvaluationCount) ||
+      artifact.candidateEvaluationCount < sourceScenario.commands.length ||
+      typeof artifactChecksum !== "string" ||
+      !/^[a-f0-9]{64}$/.test(artifactChecksum) ||
+      artifactChecksum !==
+        (await canonicalArtifactHash(artifactBody, "minimization.json"))
+    ) {
+      throw new Error("minimization.json contains invalid or unbound evidence");
+    }
+
+    try {
+      await runScenario(sourceScenario, content);
+      throw new Error(
+        "source scenario no longer reproduces its assertion failure"
+      );
+    } catch (error) {
+      if (!(error instanceof RuntimeAssertionError)) throw error;
+    }
+    const sourceIndexes = sourceScenario.commands.map((_, index) => index);
+    const sourceActual = await runScenario(
+      scenarioWithoutExpectation(sourceScenario, content, sourceIndexes),
+      content
+    );
+    const derived = await deriveTerminalAssertionMinimization(
+      sourceScenario,
+      content,
+      artifact.actualTerminalResult
+    );
+    if (
+      sourceActual.terminalResult !== artifact.actualTerminalResult ||
+      firstDifferencePath(derived.retainedCommandIndexes, indexes) !==
+        undefined ||
+      derived.minimumTicks !== minimizedScenario.maximumTicks ||
+      derived.candidateEvaluationCount !== artifact.candidateEvaluationCount
+    ) {
+      throw new Error(
+        "minimization evidence does not match deterministic source reduction"
+      );
+    }
+    const minimizedIndexes = minimizedScenario.commands.map(
+      (_, index) => index
+    );
+    const minimizedActual = await runScenario(
+      scenarioWithoutExpectation(minimizedScenario, content, minimizedIndexes),
+      content
+    );
+    if (minimizedActual.terminalResult !== artifact.actualTerminalResult) {
+      throw new Error(
+        "minimized scenario does not reproduce the bound assertion"
+      );
+    }
+    for (let index = 0; index < minimizedScenario.commands.length; index += 1) {
+      const retained = minimizedIndexes.filter(
+        (commandIndex) => commandIndex !== index
+      );
+      if (
+        await reproducesTerminalAssertion(
+          minimizedScenario,
+          content,
+          retained,
+          artifact.actualTerminalResult
+        )
+      ) {
+        throw new Error("minimized scenario is not command-deletion 1-minimal");
+      }
+    }
+    if (
+      minimizedScenario.maximumTicks > 1 &&
+      (await reproducesTerminalAssertionAtTickBudget(
+        minimizedScenario,
+        content,
+        minimizedIndexes,
+        artifact.actualTerminalResult,
+        minimizedScenario.maximumTicks - 1
+      ))
+    ) {
+      throw new Error("minimized scenario does not have a minimal tick budget");
+    }
+  } finally {
+    await rootHandle?.close().catch(() => undefined);
+  }
+}
+
+async function minimize(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["content", "scenario", "out", "replace"]));
+  const { content, scenario } = await load(args);
+  if (scenario.expectedTerminalResult === undefined) {
+    throw new CliInputError(
+      "minimize requires a scenario with expectedTerminalResult"
+    );
+  }
+  try {
+    await runScenario(scenario, content);
+    throw new CliInputError(
+      "scenario does not reproduce unexpected_terminal_result"
+    );
+  } catch (error) {
+    if (!(error instanceof RuntimeAssertionError)) throw error;
+  }
+  const allIndexes = scenario.commands.map((_, index) => index);
+  const actualTerminalResult = (
+    await runScenario(
+      scenarioWithoutExpectation(scenario, content, allIndexes),
+      content
+    )
+  ).terminalResult;
+  const { retainedCommandIndexes, minimumTicks, candidateEvaluationCount } =
+    await deriveTerminalAssertionMinimization(
+      scenario,
+      content,
+      actualTerminalResult
+    );
+
+  const minimizedScenario = compileScenario(
+    {
+      ...scenario,
+      maximumTicks: minimumTicks,
+      commands: retainedCommandIndexes.map((index) => scenario.commands[index])
+    },
+    content
+  );
+  const artifactBody: MinimizationArtifactBody = {
+    schemaVersion: 1,
+    complete: true,
+    assertionCode: "unexpected_terminal_result",
+    expectedTerminalResult: scenario.expectedTerminalResult,
+    actualTerminalResult,
+    contentManifestHash: content.manifestHash,
+    sourceScenarioHash: await canonicalHash(scenario),
+    minimizedScenarioHash: await canonicalHash(minimizedScenario),
+    originalCommandCount: scenario.commands.length,
+    minimizedCommandCount: minimizedScenario.commands.length,
+    retainedCommandIndexes,
+    candidateEvaluationCount
+  };
+  const artifact: MinimizationArtifact = {
+    ...artifactBody,
+    artifactChecksum: await canonicalHash(artifactBody)
+  };
+  const outputDirectory = resolve(
+    args.flags.get("out") ?? `.ddh/minimizations/${scenario.id}`
+  );
+  try {
+    await publishDirectory(
+      outputDirectory,
+      booleanFlag(args, "replace"),
+      async (stagingDirectory) => {
+        await Promise.all([
+          writeJson(
+            resolve(stagingDirectory, "content.compiled.json"),
+            content.bundle
+          ),
+          writeJson(
+            resolve(stagingDirectory, "scenario.source.compiled.json"),
+            scenario
+          ),
+          writeJson(
+            resolve(stagingDirectory, "scenario.minimized.compiled.json"),
+            minimizedScenario
+          ),
+          writeJson(resolve(stagingDirectory, "minimization.json"), artifact)
+        ]);
+      },
+      assertReplaceableMinimization
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new ReportGenerationError(
+      `Unable to publish minimization at ${outputDirectory}: ${message}`
+    );
+  }
+  process.stdout.write(
+    `${JSON.stringify({
+      ok: true,
+      minimized: true,
+      outputDirectory,
+      scenarioId: scenario.id,
+      assertionCode: artifact.assertionCode,
+      expectedTerminalResult: artifact.expectedTerminalResult,
+      actualTerminalResult: artifact.actualTerminalResult,
+      originalCommandCount: artifact.originalCommandCount,
+      minimizedCommandCount: artifact.minimizedCommandCount,
+      artifactChecksum: artifact.artifactChecksum
+    })}\n`
   );
 }
 
@@ -2616,9 +3045,12 @@ async function main(): Promise<void> {
     case "campaign":
       await campaign(args);
       break;
+    case "minimize":
+      await minimize(args);
+      break;
     default:
       throw new CliInputError(
-        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare|sweep|campaign> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>] [--matrix <file> --out <directory>] [--scenario <campaign-file> --out <directory>]"
+        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare|sweep|campaign|minimize> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>] [--matrix <file> --out <directory>] [--scenario <campaign-file> --out <directory>]"
       );
   }
 }
