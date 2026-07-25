@@ -1747,6 +1747,7 @@ async function minimize(args: ParsedArgs): Promise<void> {
           ),
           writeJson(resolve(stagingDirectory, "minimization.json"), artifact)
         ]);
+        await assertReplaceableMinimization(stagingDirectory);
       },
       assertReplaceableMinimization
     );

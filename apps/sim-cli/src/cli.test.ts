@@ -217,6 +217,45 @@ describe("simulation CLI", () => {
       ).status
     ).toBe(3);
 
+    const oversizedContent = resolve(directory, "oversized-content.json");
+    const oversizedScenario = resolve(directory, "oversized-scenario.json");
+    const oversizedOutput = resolve(directory, "oversized-output");
+    writeFileSync(
+      oversizedContent,
+      JSON.stringify({
+        schemaVersion: 1,
+        contentVersion: "oversized-minimization-test",
+        definitions: Array.from({ length: 80_001 }, (_, index) => ({
+          kind: "level",
+          id: `level.minimization.level_${index}`,
+          waveIds: []
+        }))
+      })
+    );
+    writeFileSync(
+      oversizedScenario,
+      JSON.stringify({
+        ...scenarioValue,
+        id: "scenario.test.oversized_minimization",
+        levelId: "level.minimization.level_0"
+      })
+    );
+    const oversized = runCli(
+      "minimize",
+      "--content",
+      oversizedContent,
+      "--scenario",
+      oversizedScenario,
+      "--out",
+      oversizedOutput
+    );
+    expect(oversized.status).toBe(3);
+    expect(JSON.parse(oversized.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "report", code: "report_generation_failed" }
+    });
+    expect(existsSync(oversizedOutput)).toBe(false);
+
     const nonFailingOutput = resolve(directory, "non-failing-output");
     writeFileSync(
       scenario,
