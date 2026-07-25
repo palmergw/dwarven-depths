@@ -229,6 +229,33 @@ describe("Forge Ore purchased upgrades", () => {
     expect(() =>
       purchaseUpgradeRank({
         schemaVersion: 1,
+        profile: {
+          ...fundedProfile(),
+          purchasedUpgrades: [
+            {
+              schemaVersion: 1,
+              upgradeId: "upgrade.ability.shield_slam" as never,
+              rank: 1,
+              forgeOreSpent: 10
+            }
+          ]
+        },
+        catalog: {
+          schemaVersion: 1,
+          upgrades: [
+            {
+              ...catalogUpgrade(0),
+              ownerId: "character.deep_ranger" as never
+            },
+            catalogUpgrade(1)
+          ]
+        },
+        upgradeId: "upgrade.item.powder_cask" as never
+      })
+    ).toThrow("profile purchased upgrade owner is not unlocked");
+    expect(() =>
+      purchaseUpgradeRank({
+        schemaVersion: 1,
         profile: fundedProfile(),
         catalog: {
           schemaVersion: 1,

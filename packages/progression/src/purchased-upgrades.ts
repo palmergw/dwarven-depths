@@ -243,6 +243,14 @@ function validatePurchases(
       throw new RangeError(
         `profile purchased upgrade spend does not match authored costs (${purchase.upgradeId})`
       );
+    const ownerIds =
+      definition.kind === "ability_rank"
+        ? profile.unlockedCharacterIds
+        : profile.unlockedItemIds;
+    if (!ownerIds.includes(definition.ownerId))
+      throw new RangeError(
+        `profile purchased upgrade owner is not unlocked (${definition.ownerId})`
+      );
     if (
       definition.prerequisiteUpgradeIds.some(
         (prerequisiteId) => !purchased.has(prerequisiteId)
