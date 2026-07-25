@@ -70,7 +70,7 @@ pnpm sim sweep \
 
 # Execute a sequence of attempts, purchases, and campaign decisions
 pnpm sim campaign \
-  --scenario scenarios/campaigns/vertical-slice-progression.yaml \
+  --scenario scenarios/conformance/shuttergate-campaign.json \
   --out reports/campaign-progression
 
 # Minimize a failing scenario while preserving its terminal-result assertion
@@ -496,7 +496,16 @@ assert:
   - noNegativePersistentDelta: true
 ```
 
-The output shows each attempt, upgrades selected, affordability, personal-best movement, reward sources, and why the policy chose each purchase. It supports questions such as:
+The executable Shuttergate boundary publishes `campaign-calibration.json` with
+ordered per-attempt build, outcome, terminal tick, deepest wave, defeated-enemy,
+reward, and purchase evidence. Its schema-2 manifest binds the report checksum,
+and validated replacement independently replays the durable attempt checksums and
+rederives the report. The first baseline-to-purchased-build comparison reports
+observed deltas only; it does not attribute active Shield Slam behavior that has
+not yet been contracted or implemented.
+
+The broader campaign contract will show affordability, personal-best movement,
+reward sources, and why each policy chose each purchase. It supports questions such as:
 
 - How many attempts does a reference policy need to unlock the Ranger?
 - Does a new upgrade improve expected progress?

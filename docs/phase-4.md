@@ -183,14 +183,19 @@ the repository.
   still relies on the save adapters' revision compare-and-swap boundary.
 - The `sim campaign` command accepts the strict versioned Shuttergate campaign scenario,
   executes 1–64 authoritative Shuttergate attempts, and publishes compiled
-  scenario/content, a durable campaign artifact, and a binding manifest as one
+  scenario/content, a durable campaign artifact, a calibration report, and a
+  binding schema-2 manifest as one
   rollback-safe directory. Validated replacement pins the directory with
   no-follow descriptors, rejects missing or extra artifacts, and independently
-  restores every attempt checksum before replacing prior evidence. The authored
+  restores every attempt checksum and rederives the report before replacing prior
+  evidence. The report records ordered build, outcome, terminal-tick, deepest-wave,
+  defeated-enemy, reward, and purchase evidence, then compares the first baseline
+  and purchased-build attempts without attributing unimplemented active behavior.
+  The authored
   three-attempt conformance scenario demonstrates productive-defeat Forge Ore,
   the deterministic Shield Slam rank-1 purchase, and subsequent upgraded-build
-  use without accepting caller-authored attempt, reward, purchase, or controller
-  decisions.
+  use with a 40-tick observed survival increase, without accepting caller-authored
+  attempt, reward, purchase, or controller decisions.
 - The first `sim minimize` boundary accepts a strict content bundle and a scenario
   that reproduces `unexpected_terminal_result`. It preserves the exact expected
   and actual terminal results while deterministically deleting commands and
@@ -244,5 +249,5 @@ the repository.
 Additional historical save migrations and campaign policy variants,
 catch-up experience, active ability and item-rank behavior, full save scope,
 player-facing recycle confirmation, additional build and active-ability controller sweep axes,
-additional statistical sweep metrics, campaign report variants, minimization expansions, and upgraded-build
+additional statistical sweep metrics, campaign report variants, minimization expansions, and active-ability
 calibration remain later Phase 4 checkpoints.
