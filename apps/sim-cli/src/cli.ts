@@ -1085,11 +1085,10 @@ function parseCampaignScenario(value: unknown): CampaignScenario {
   }
   if (
     typeof scenario["applicationBuild"] !== "string" ||
-    scenario["applicationBuild"].length === 0 ||
-    scenario["applicationBuild"].length > 128
+    !/^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$/.test(scenario["applicationBuild"])
   ) {
     throw new CliInputError(
-      "campaign scenario applicationBuild must be a nonempty string of at most 128 characters"
+      "campaign scenario applicationBuild must use 1–128 portable version characters"
     );
   }
   if (
@@ -1102,7 +1101,9 @@ function parseCampaignScenario(value: unknown): CampaignScenario {
   }
   if (
     typeof scenario["profileId"] !== "string" ||
-    !/^profile\.[a-z0-9][a-z0-9._-]{0,120}$/.test(scenario["profileId"])
+    !/^profile\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/.test(
+      scenario["profileId"]
+    )
   ) {
     throw new CliInputError(
       "campaign scenario profileId must be a stable profile.* ID"
@@ -1844,12 +1845,17 @@ async function assertReplaceableCampaign(
     if (
       manifest.schemaVersion !== 1 ||
       manifest.complete !== true ||
+      scenario.content !== "content.compiled.json" ||
       manifest.scenarioId !== scenario.id ||
       manifest.scenarioHash !== scenarioHash ||
       manifest.contentManifestHash !== content.manifestHash ||
       manifest.attemptCount !== scenario.attemptCount ||
       manifest.campaignPayloadChecksum !== artifact.payloadChecksum ||
-      artifact.attemptChecksums.length !== scenario.attemptCount
+      artifact.attemptChecksums.length !== scenario.attemptCount ||
+      artifact.profileSave.contentVersion !== content.bundle.contentVersion ||
+      artifact.profileSave.applicationBuild !== scenario.applicationBuild ||
+      artifact.profileSave.writtenAtEpochMs !== scenario.writtenAtEpochMs ||
+      artifact.profileSave.profileId !== scenario.profileId
     ) {
       throw new Error(
         "campaign manifest does not match its scenario, content, and durable artifact"
@@ -1878,7 +1884,11 @@ async function campaign(args: ParsedArgs): Promise<void> {
   const content = await compileContent(
     await readJson(resolve(dirname(scenarioPath), scenario.content))
   );
-  const scenarioHash = await canonicalHash(scenario);
+  const compiledScenario: CampaignScenario = {
+    ...scenario,
+    content: "content.compiled.json"
+  };
+  const scenarioHash = await canonicalHash(compiledScenario);
   let authority = createShuttergateCampaignAuthority();
   for (let index = 0; index < scenario.attemptCount; index += 1) {
     authority = (await runShuttergateCampaignTransition(content, authority))
@@ -1913,7 +1923,7 @@ async function campaign(args: ParsedArgs): Promise<void> {
         await Promise.all([
           writeJson(
             resolve(stagingDirectory, "scenario.compiled.json"),
-            scenario
+            compiledScenario
           ),
           writeJson(
             resolve(stagingDirectory, "content.compiled.json"),

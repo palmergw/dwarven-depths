@@ -56,7 +56,7 @@ afterEach(() => {
 });
 
 describe("simulation CLI", () => {
-  it("publishes and replay-validates a durable authoritative campaign", () => {
+  it("publishes and replay-validates a durable authoritative campaign", async () => {
     const directory = temporaryDirectory();
     const content = resolve(directory, "content.json");
     const scenario = resolve(directory, "campaign.json");
@@ -118,6 +118,48 @@ describe("simulation CLI", () => {
     expect(replaced.status).toBe(0);
     expect(readFileSync(resolve(output, "campaign.json"), "utf8")).toBe(
       firstArtifact
+    );
+
+    const scenarioArtifactPath = resolve(output, "scenario.compiled.json");
+    const manifestArtifactPath = resolve(output, "campaign-manifest.json");
+    const scenarioArtifact = JSON.parse(
+      readFileSync(scenarioArtifactPath, "utf8")
+    ) as typeof scenarioValue;
+    const forgedScenario = {
+      ...scenarioArtifact,
+      content: "forged-content.json",
+      applicationBuild: "forged-build"
+    };
+    writeFileSync(
+      scenarioArtifactPath,
+      `${JSON.stringify(forgedScenario, null, 2)}\n`
+    );
+    const forgedManifest = JSON.parse(
+      readFileSync(manifestArtifactPath, "utf8")
+    ) as { scenarioHash: string };
+    forgedManifest.scenarioHash = await canonicalHash(forgedScenario);
+    writeFileSync(
+      manifestArtifactPath,
+      `${JSON.stringify(forgedManifest, null, 2)}\n`
+    );
+    const forgedMetadata = runCli(
+      "campaign",
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(forgedMetadata.status).toBe(3);
+    writeFileSync(
+      scenarioArtifactPath,
+      `${JSON.stringify(scenarioArtifact, null, 2)}\n`
+    );
+    forgedManifest.scenarioHash = await canonicalHash(scenarioArtifact);
+    writeFileSync(
+      manifestArtifactPath,
+      `${JSON.stringify(forgedManifest, null, 2)}\n`
     );
 
     writeFileSync(
