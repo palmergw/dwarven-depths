@@ -232,6 +232,63 @@ describe("IndexedDB profile store", () => {
     }
   });
 
+  it("does not overwrite a valid envelope stored under the wrong profile key", async () => {
+    const name = databaseName("wrong-profile-key");
+    const current = await migrateProfileSaveEnvelope(
+      structuredClone(historicalProfileSaveV0Fixture)
+    );
+    const miskeyed = { ...current.envelope, profileId: "profile.other" };
+    await rawPut(name, "profiles", "profile.local", miskeyed);
+    const next = await createProfileSaveEnvelope({
+      contentVersion: current.envelope.contentVersion,
+      applicationBuild: "test-build-3",
+      writtenAtEpochMs: current.envelope.writtenAtEpochMs + 1,
+      profileId: "profile.local",
+      profile: { ...current.envelope.profile, revision: 3 }
+    });
+    const store = new IndexedDbProfileStore(name);
+    try {
+      await expect(
+        store.write({ expectedRevision: 2, envelope: next })
+      ).rejects.toMatchObject({ code: "save_corrupt" });
+      expect(await rawGet(name, "profiles", "profile.local")).toEqual(miskeyed);
+    } finally {
+      await store.close();
+      await deleteDatabase(name);
+    }
+  });
+
+  it("does not replace a corrupt or unsupported backup during migration", async () => {
+    for (const [label, backup] of [
+      ["corrupt-backup", { schemaVersion: 1, truncated: true }],
+      ["newer-backup", { schemaVersion: 2, opaqueFutureData: true }]
+    ] as const) {
+      const name = databaseName(label);
+      await rawPut(
+        name,
+        "profiles",
+        "profile.local",
+        structuredClone(historicalProfileSaveV0Fixture)
+      );
+      await rawPut(name, "profile-backups", "profile.local", backup);
+      const store = new IndexedDbProfileStore(name);
+      try {
+        await expect(store.load("profile.local")).rejects.toMatchObject({
+          code: "save_corrupt"
+        });
+        expect(await rawGet(name, "profiles", "profile.local")).toEqual(
+          historicalProfileSaveV0Fixture
+        );
+        expect(await rawGet(name, "profile-backups", "profile.local")).toEqual(
+          backup
+        );
+      } finally {
+        await store.close();
+        await deleteDatabase(name);
+      }
+    }
+  });
+
   it("does not overwrite corrupt or unsupported newer primary data", async () => {
     for (const [label, value] of [
       [

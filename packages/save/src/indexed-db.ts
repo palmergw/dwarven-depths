@@ -158,6 +158,7 @@ export class IndexedDbProfileStore {
   private async commitMigration(
     profileId: string,
     previous: unknown,
+    previousBackup: unknown,
     envelope: ProfileSaveEnvelope
   ): Promise<void> {
     const database = await this.database;
@@ -171,13 +172,24 @@ export class IndexedDbProfileStore {
         throw callbackError ?? error;
       }
     );
-    const request = transaction.objectStore(primaryStoreName).get(profileId);
-    request.onsuccess = () => {
+    const primaryRequest = transaction
+      .objectStore(primaryStoreName)
+      .get(profileId);
+    const backupRequest = transaction
+      .objectStore(backupStoreName)
+      .get(profileId);
+    let primaryReady = false;
+    let backupReady = false;
+    const commitWhenReady = () => {
+      if (!primaryReady || !backupReady) return;
       try {
-        if (fingerprint(request.result) !== fingerprint(previous))
+        if (
+          fingerprint(primaryRequest.result) !== fingerprint(previous) ||
+          fingerprint(backupRequest.result) !== fingerprint(previousBackup)
+        )
           throw new IndexedDbProfileStoreError(
             "save_conflict",
-            "profile changed while its migration was being committed"
+            "profile or backup changed while migration was being committed"
           );
         transaction.objectStore(backupStoreName).put(previous, profileId);
         transaction.objectStore(primaryStoreName).put(envelope, profileId);
@@ -187,9 +199,21 @@ export class IndexedDbProfileStore {
         transaction.abort();
       }
     };
-    request.onerror = () => {
+    primaryRequest.onsuccess = () => {
+      primaryReady = true;
+      commitWhenReady();
+    };
+    backupRequest.onsuccess = () => {
+      backupReady = true;
+      commitWhenReady();
+    };
+    primaryRequest.onerror = () => {
       callbackError =
-        request.error ?? new Error("could not read migration source");
+        primaryRequest.error ?? new Error("could not read migration source");
+    };
+    backupRequest.onerror = () => {
+      callbackError =
+        backupRequest.error ?? new Error("could not read migration backup");
     };
     await completion;
   }
@@ -223,8 +247,29 @@ export class IndexedDbProfileStore {
           envelope: migrated.envelope,
           migratedFromSchemaVersion: null
         });
+      const previousBackup = await this.readRaw(profileId, backupStoreName);
+      if (previousBackup !== undefined) {
+        try {
+          const backup = await migrateProfileSaveEnvelope(previousBackup);
+          if (backup.envelope.profileId !== profileId)
+            throw new RangeError(
+              "backup profileId does not match its storage key"
+            );
+        } catch (error) {
+          throw new IndexedDbProfileStoreError(
+            "save_corrupt",
+            "existing IndexedDB profile backup is invalid and was not overwritten",
+            { cause: error }
+          );
+        }
+      }
       try {
-        await this.commitMigration(profileId, raw, migrated.envelope);
+        await this.commitMigration(
+          profileId,
+          raw,
+          previousBackup,
+          migrated.envelope
+        );
         return Object.freeze({
           status: "loaded",
           source: "primary",
@@ -296,6 +341,11 @@ export class IndexedDbProfileStore {
         throw new IndexedDbProfileStoreError(
           "save_migration_required",
           "existing IndexedDB profile must be loaded and migrated before writing"
+        );
+      if (migrated.envelope.profileId !== envelope.profileId)
+        throw new IndexedDbProfileStoreError(
+          "save_corrupt",
+          "existing IndexedDB profile key does not match its envelope profileId"
         );
       previousRevision = migrated.envelope.profileRevision;
     }
