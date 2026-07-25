@@ -110,11 +110,19 @@ the repository.
   content, reruns every pair, and rejects reordered, foreign, duplicate, or
   tampered identity/evidence. Existing seed-only schema-2 run bundles remain
   unchanged and replay-verifiable.
+- An optional versioned target-policy controller axis expands authoritative
+  placement sweeps in seed-major, placement-middle, controller-minor order.
+  Controller IDs map only to the Iron Warden's already-authored target policies;
+  active-ability behavior is not inferred. Controller sweeps use artifact schema
+  4, remain bounded to 64 Cartesian samples, bind controller identity and applied
+  target policy into canonical evidence, and rerun every sample during validated
+  replacement. Existing schema-2 seed and schema-3 seed × placement artifacts
+  remain unchanged.
 
 ## Not implemented yet
 
 Additional historical save migrations, encounter reward-event production,
 catch-up experience, purchased-upgrade effect application, full save scope,
-player-facing recycle confirmation, build/controller sweep axes,
+player-facing recycle confirmation, build and active-ability controller sweep axes,
 additional statistical sweep metrics, campaign/minimization harnesses, and upgraded-build
 calibration remain later Phase 4 checkpoints.
