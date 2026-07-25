@@ -8,6 +8,7 @@ import {
   createShuttergateCampaignAuthority,
   runShuttergateCampaignTransition
 } from "./shuttergate-campaign.js";
+import { createShuttergateCampaignCalibrationReport } from "./shuttergate-campaign-calibration.js";
 
 describe("authoritative Shuttergate campaign browser parity", () => {
   it("matches three literal campaign transitions", async () => {
@@ -32,5 +33,10 @@ describe("authoritative Shuttergate campaign browser parity", () => {
         third: third.transition
       })
     ).toBe("50fe1e71ecb2379b977bf13505ebc77c3788e9f1f60939ded0dca2dad7e1c070");
+    expect(
+      await canonicalHash(
+        createShuttergateCampaignCalibrationReport(third.authority)
+      )
+    ).toBe("f797acbc3a071e569a9ddbc3ee8e88808ef5889db13afa807e94e199deb27ced");
   }, 120_000);
 });
