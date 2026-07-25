@@ -1,0 +1,225 @@
+[
+  {
+    "schemaVersion": 1,
+    "files": [
+      "content.compiled.json",
+      "minimization.json",
+      "scenario.minimized.compiled.json",
+      "scenario.source.compiled.json"
+    ],
+    "artifactKeys": [
+      "actualTerminalResult",
+      "artifactChecksum",
+      "assertionCode",
+      "candidateEvaluationCount",
+      "complete",
+      "contentManifestHash",
+      "expectedTerminalResult",
+      "minimizedCommandCount",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "retainedCommandIndexes",
+      "schemaVersion",
+      "sourceScenarioHash"
+    ]
+  },
+  {
+    "schemaVersion": 2,
+    "files": [
+      "content.compiled.json",
+      "minimization.json",
+      "scenario.minimized.compiled.json",
+      "scenario.source.compiled.json"
+    ],
+    "artifactKeys": [
+      "artifactChecksum",
+      "assertionCode",
+      "candidateEvaluationCount",
+      "complete",
+      "contentManifestHash",
+      "minimizedCommandCount",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "retainedCommandIndexes",
+      "safetyStopCode",
+      "schemaVersion",
+      "sourceScenarioHash"
+    ]
+  },
+  {
+    "schemaVersion": 3,
+    "files": [
+      "content.compiled.json",
+      "minimization.json",
+      "replay.minimized.json",
+      "replay.source.json",
+      "scenario.minimized.compiled.json",
+      "scenario.source.compiled.json"
+    ],
+    "artifactKeys": [
+      "artifactChecksum",
+      "assertionCode",
+      "candidateEvaluationCount",
+      "checkpointTick",
+      "complete",
+      "contentManifestHash",
+      "divergenceCode",
+      "minimizedCommandCount",
+      "minimizedReplayHash",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "retainedCommandIndexes",
+      "schemaVersion",
+      "sourceReplayHash",
+      "sourceScenarioHash"
+    ]
+  },
+  {
+    "schemaVersion": 4,
+    "files": [
+      "content.compiled.json",
+      "minimization.json",
+      "replay.minimized.json",
+      "replay.source.json",
+      "scenario.minimized.compiled.json",
+      "scenario.source.compiled.json"
+    ],
+    "artifactKeys": [
+      "artifactChecksum",
+      "assertionCode",
+      "candidateEvaluationCount",
+      "checkpointTick",
+      "complete",
+      "contentManifestHash",
+      "divergenceCode",
+      "minimizedCommandCount",
+      "minimizedMaximumTicks",
+      "minimizedReplayHash",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "originalMaximumTicks",
+      "retainedCommandIndexes",
+      "schemaVersion",
+      "sourceReplayHash",
+      "sourceScenarioHash"
+    ]
+  },
+  {
+    "schemaVersion": 5,
+    "files": [
+      "content.compiled.json",
+      "minimization.json",
+      "replay.minimized.json",
+      "replay.source.json",
+      "scenario.minimized.compiled.json",
+      "scenario.source.compiled.json"
+    ],
+    "artifactKeys": [
+      "artifactChecksum",
+      "assertionCode",
+      "candidateEvaluationCount",
+      "checkpointTick",
+      "complete",
+      "contentManifestHash",
+      "divergenceActual",
+      "divergenceCode",
+      "divergenceExpected",
+      "minimizedCommandCount",
+      "minimizedReplayHash",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "retainedCommandIndexes",
+      "schemaVersion",
+      "sourceReplayHash",
+      "sourceScenarioHash"
+    ]
+  },
+  {
+    "schemaVersion": 6,
+    "files": [
+      "content.compiled.json",
+      "minimization.json",
+      "scenario.minimized.compiled.json",
+      "scenario.source.compiled.json"
+    ],
+    "artifactKeys": [
+      "artifactChecksum",
+      "assertionCode",
+      "candidateEvaluationCount",
+      "complete",
+      "contentManifestHash",
+      "minimizedCommandCount",
+      "minimizedMaximumTicks",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "originalMaximumTicks",
+      "retainedCommandIndexes",
+      "safetyStopCode",
+      "schemaVersion",
+      "sourceScenarioHash",
+      "stalledTick"
+    ]
+  },
+  {
+    "schemaVersion": 7,
+    "files": [
+      "content.compiled.json",
+      "minimization.json",
+      "replay.minimized.json",
+      "replay.source.json",
+      "scenario.minimized.compiled.json",
+      "scenario.source.compiled.json"
+    ],
+    "artifactKeys": [
+      "artifactChecksum",
+      "assertionCode",
+      "candidateEvaluationCount",
+      "checkpointTick",
+      "complete",
+      "contentManifestHash",
+      "divergenceActual",
+      "divergenceCode",
+      "divergenceExpected",
+      "minimizedCommandCount",
+      "minimizedReplayHash",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "retainedCommandIndexes",
+      "schemaVersion",
+      "sourceReplayHash",
+      "sourceScenarioHash"
+    ]
+  },
+  {
+    "schemaVersion": 8,
+    "files": [
+      "content.compiled.json",
+      "minimization.json",
+      "replay.minimized.json",
+      "replay.source.json",
+      "scenario.minimized.compiled.json",
+      "scenario.source.compiled.json"
+    ],
+    "artifactKeys": [
+      "artifactChecksum",
+      "assertionCode",
+      "candidateEvaluationCount",
+      "checkpointTick",
+      "complete",
+      "contentManifestHash",
+      "divergenceActual",
+      "divergenceCode",
+      "divergenceExpected",
+      "minimizedCommandCount",
+      "minimizedMaximumTicks",
+      "minimizedReplayHash",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "originalMaximumTicks",
+      "retainedCommandIndexes",
+      "schemaVersion",
+      "sourceReplayHash",
+      "sourceScenarioHash"
+    ]
+  }
+]
