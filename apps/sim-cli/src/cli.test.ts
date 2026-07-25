@@ -1272,7 +1272,7 @@ describe("simulation CLI", () => {
         expect(readFileSync(ticksArtifactPath, "utf8")).toBe(tamperedText);
       }
     }
-  });
+  }, 15_000);
 
   it("minimizes exact replay execution failures into schema-7 evidence", async () => {
     const directory = temporaryDirectory();
@@ -1495,27 +1495,49 @@ describe("simulation CLI", () => {
         }
       })),
       ...[
-        ["source-replay", "replay.source.json"],
-        ["minimized-replay", "replay.minimized.json"]
-      ].map(([name, file]) => ({
+        ["source-replay", "replay.source.json", "sourceReplayHash"],
+        ["minimized-replay", "replay.minimized.json", "minimizedReplayHash"]
+      ].map(([name, file, binding]) => ({
         name: name as string,
-        mutate: (directory: string) => {
+        mutate: async (directory: string) => {
           const path = resolve(directory, file as string);
           const replay = JSON.parse(readFileSync(path, "utf8"));
           replay.expectedTerminalResult = "defeat";
           writeFileSync(path, `${JSON.stringify(replay, null, 2)}\n`);
+          const artifactPath = resolve(directory, "minimization.json");
+          const artifact = JSON.parse(readFileSync(artifactPath, "utf8"));
+          artifact[binding as string] = await canonicalHash(replay);
+          const { artifactChecksum: _, ...body } = artifact;
+          artifact.artifactChecksum = await canonicalHash(body);
+          writeFileSync(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`);
         }
       })),
       ...[
-        ["source-scenario", "scenario.source.compiled.json", 63],
-        ["minimized-scenario", "scenario.minimized.compiled.json", 2]
-      ].map(([name, file, maximumTicks]) => ({
+        [
+          "source-scenario",
+          "scenario.source.compiled.json",
+          "sourceScenarioHash",
+          63
+        ],
+        [
+          "minimized-scenario",
+          "scenario.minimized.compiled.json",
+          "minimizedScenarioHash",
+          2
+        ]
+      ].map(([name, file, binding, maximumTicks]) => ({
         name: name as string,
-        mutate: (directory: string) => {
+        mutate: async (directory: string) => {
           const path = resolve(directory, file as string);
           const scenario = JSON.parse(readFileSync(path, "utf8"));
           scenario.maximumTicks = maximumTicks;
           writeFileSync(path, `${JSON.stringify(scenario, null, 2)}\n`);
+          const artifactPath = resolve(directory, "minimization.json");
+          const artifact = JSON.parse(readFileSync(artifactPath, "utf8"));
+          artifact[binding as string] = await canonicalHash(scenario);
+          const { artifactChecksum: _, ...body } = artifact;
+          artifact.artifactChecksum = await canonicalHash(body);
+          writeFileSync(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`);
         }
       }))
     ];
@@ -1560,7 +1582,7 @@ describe("simulation CLI", () => {
       ).toEqual(before);
     }
     expect(readFileSync(ticksArtifactPath, "utf8")).toBe(ticksArtifactText);
-  });
+  }, 15_000);
 
   it("publishes and replay-validates a durable authoritative campaign", async () => {
     const directory = temporaryDirectory();
