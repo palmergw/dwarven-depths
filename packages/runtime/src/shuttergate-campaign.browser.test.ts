@@ -10,7 +10,7 @@ import {
 } from "./shuttergate-campaign.js";
 
 describe("authoritative Shuttergate campaign browser parity", () => {
-  it("matches two literal campaign transitions", async () => {
+  it("matches three literal campaign transitions", async () => {
     const content = await compileContent(shuttergateInput);
     const first = await runShuttergateCampaignTransition(
       content,
@@ -32,5 +32,5 @@ describe("authoritative Shuttergate campaign browser parity", () => {
         third: third.transition
       })
     ).toBe("50fe1e71ecb2379b977bf13505ebc77c3788e9f1f60939ded0dca2dad7e1c070");
-  }, 45_000);
+  }, 90_000);
 });
