@@ -278,6 +278,26 @@ describe("JSON profile store", () => {
     await firstWrite;
   });
 
+  it("elects exactly one winner from simultaneous compare-and-swap writers", async () => {
+    const path = await testPath();
+    const writes = await Promise.allSettled(
+      Array.from({ length: 16 }, async (_, index) =>
+        new JsonProfileStore(path).write({
+          expectedRevision: null,
+          envelope: await envelope(0, index)
+        })
+      )
+    );
+    expect(
+      writes.filter((result) => result.status === "fulfilled")
+    ).toHaveLength(1);
+    expect(await new JsonProfileStore(path).load()).toMatchObject({
+      status: "loaded",
+      source: "primary"
+    });
+    await expectCleanArtifacts(path);
+  });
+
   it("recovers an ownership-verified stale lock and orphaned temporary generation", async () => {
     const path = await testPath();
     await new JsonProfileStore(path).write({
@@ -322,16 +342,17 @@ describe("JSON profile store", () => {
   it("reclaims a unique stale entry when its PID has been reused", async () => {
     const path = await testPath();
     const store = new JsonProfileStore(path);
-    const nonce = `${process.pid}-00000000-0000-4000-8000-000000000000`;
+    const nonce = `${process.pid}-999999-00000000-0000-4000-8000-000000000000`;
     const entry = join(store.lockPath, nonce);
     await mkdir(entry, { recursive: true });
     await writeFile(
-      join(entry, "owner.json"),
+      join(entry, "owner.pending"),
       `${JSON.stringify({
         schemaVersion: 1,
         pid: process.pid,
-        processStartToken: "definitely-not-this-process",
-        nonce
+        processStartToken: "999999",
+        nonce,
+        ticket: 1
       })}\n`,
       "utf8"
     );

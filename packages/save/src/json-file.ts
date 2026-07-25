@@ -8,9 +8,11 @@ import {
   readFile,
   rename,
   rm,
-  rmdir
+  rmdir,
+  stat
 } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import {
   normalizeProfileSaveEnvelope,
   type ProfileSaveEnvelope
@@ -70,9 +72,11 @@ interface LockOwner {
   readonly pid: number;
   readonly processStartToken: string;
   readonly nonce: string;
+  readonly ticket: number;
 }
 
-const lockNoncePattern = /^[1-9][0-9]*-[a-f0-9-]{36}$/;
+const lockNoncePattern =
+  /^([1-9][0-9]*)-([1-9][0-9]*|unknown)-([a-f0-9-]{36})$/;
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -266,7 +270,7 @@ function parseLockOwner(text: string): LockOwner {
   const record = value as Record<string, unknown>;
   if (
     Object.keys(record).sort().join(",") !==
-    "nonce,pid,processStartToken,schemaVersion"
+    "nonce,pid,processStartToken,schemaVersion,ticket"
   )
     throw new TypeError("save lock metadata has an invalid shape");
   if (
@@ -275,14 +279,17 @@ function parseLockOwner(text: string): LockOwner {
     (record["pid"] as number) <= 0 ||
     typeof record["processStartToken"] !== "string" ||
     typeof record["nonce"] !== "string" ||
-    !lockNoncePattern.test(record["nonce"])
+    !lockNoncePattern.test(record["nonce"]) ||
+    !Number.isSafeInteger(record["ticket"]) ||
+    (record["ticket"] as number) < 1
   )
     throw new TypeError("save lock metadata is invalid");
   return {
     schemaVersion: 1,
     pid: record["pid"] as number,
     processStartToken: record["processStartToken"],
-    nonce: record["nonce"]
+    nonce: record["nonce"],
+    ticket: record["ticket"] as number
   };
 }
 
@@ -302,6 +309,18 @@ async function ownerIsAlive(owner: LockOwner): Promise<boolean> {
   if (owner.processStartToken === "unknown") return true;
   const currentToken = await processStartToken(owner.pid);
   return currentToken === undefined || currentToken === owner.processStartToken;
+}
+
+function ownerFromEntryName(entryName: string): LockOwner {
+  const match = lockNoncePattern.exec(entryName);
+  if (match === null) throw new TypeError("save lock entry name is invalid");
+  return {
+    schemaVersion: 1,
+    pid: Number(match[1]),
+    processStartToken: match[2] ?? "unknown",
+    nonce: entryName,
+    ticket: 1
+  };
 }
 
 function existingInvalid(
@@ -336,8 +355,11 @@ export class JsonProfileStore {
     ];
   }
 
-  private async readLockOwner(entryName: string): Promise<LockOwner> {
-    const metadataPath = join(this.lockPath, entryName, "owner.json");
+  private async readLockOwner(
+    entryName: string,
+    fileName = "owner.json"
+  ): Promise<LockOwner> {
+    const metadataPath = join(this.lockPath, entryName, fileName);
     let handle: Awaited<ReturnType<typeof open>> | undefined;
     try {
       handle = await open(
@@ -362,6 +384,40 @@ export class JsonProfileStore {
     }
   }
 
+  private async readContendingOwner(
+    entryName: string
+  ): Promise<LockOwner | undefined> {
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      try {
+        return await this.readLockOwner(entryName);
+      } catch {
+        try {
+          return await this.readLockOwner(entryName, "owner.pending");
+        } catch {
+          try {
+            await stat(join(this.lockPath, entryName));
+          } catch (error) {
+            if (
+              typeof error === "object" &&
+              error !== null &&
+              "code" in error &&
+              error.code === "ENOENT"
+            )
+              return undefined;
+            throw error;
+          }
+          const fallback = ownerFromEntryName(entryName);
+          if (!(await ownerIsAlive(fallback))) return fallback;
+          await delay(1);
+        }
+      }
+    }
+    throw new JsonProfileStoreError(
+      "save_busy",
+      "profile save has an incomplete live lock entry"
+    );
+  }
+
   private async removeLockDirectoryIfEmpty(): Promise<void> {
     try {
       await rmdir(this.lockPath);
@@ -376,47 +432,54 @@ export class JsonProfileStore {
     }
   }
 
-  private async acquireLock(owner: LockOwner): Promise<void> {
+  private async acquireLock(owner: LockOwner): Promise<LockOwner> {
     await mkdir(this.lockPath, { recursive: true, mode: 0o700 });
     const entryPath = join(this.lockPath, owner.nonce);
     await mkdir(entryPath, { mode: 0o700 });
-    const metadata = await open(join(entryPath, "owner.json"), "wx", 0o600);
     try {
-      await metadata.writeFile(`${JSON.stringify(owner)}\n`, "utf8");
-      await metadata.sync();
-    } finally {
-      await metadata.close();
-    }
-    try {
+      let maximumTicket = 0;
       for (const entryName of await readdir(this.lockPath)) {
         if (entryName === owner.nonce) continue;
+        try {
+          const candidate = await this.readLockOwner(entryName);
+          if (await ownerIsAlive(candidate))
+            maximumTicket = Math.max(maximumTicket, candidate.ticket);
+        } catch {
+          // A concurrent writer may still be choosing its ticket.
+        }
+      }
+      const assignedOwner = { ...owner, ticket: maximumTicket + 1 };
+      const pendingPath = join(entryPath, "owner.pending");
+      const metadata = await open(pendingPath, "wx", 0o600);
+      try {
+        await metadata.writeFile(`${JSON.stringify(assignedOwner)}\n`, "utf8");
+        await metadata.sync();
+      } finally {
+        await metadata.close();
+      }
+      await rename(pendingPath, join(entryPath, "owner.json"));
+
+      for (const entryName of await readdir(this.lockPath)) {
+        if (entryName === assignedOwner.nonce) continue;
         if (!lockNoncePattern.test(entryName))
           throw new JsonProfileStoreError(
             "save_busy",
             "profile save has an invalid lock entry that requires manual recovery"
           );
-        let previousOwner: LockOwner;
-        try {
-          previousOwner = await this.readLockOwner(entryName);
-        } catch (lockError) {
-          previousOwner = {
-            schemaVersion: 1,
-            pid: Number(entryName.slice(0, entryName.indexOf("-"))),
-            processStartToken: "unknown",
-            nonce: entryName
-          };
-          if (await ownerIsAlive(previousOwner))
+        const previousOwner = await this.readContendingOwner(entryName);
+        if (previousOwner === undefined) continue;
+        if (await ownerIsAlive(previousOwner)) {
+          if (
+            previousOwner.ticket < assignedOwner.ticket ||
+            (previousOwner.ticket === assignedOwner.ticket &&
+              previousOwner.nonce < assignedOwner.nonce)
+          )
             throw new JsonProfileStoreError(
               "save_busy",
-              "profile save has an incomplete live lock entry",
-              { cause: lockError }
+              "profile save is locked by another writer"
             );
+          continue;
         }
-        if (await ownerIsAlive(previousOwner))
-          throw new JsonProfileStoreError(
-            "save_busy",
-            "profile save is locked by another writer"
-          );
         await rm(join(this.lockPath, entryName), {
           recursive: true,
           force: true
@@ -428,6 +491,7 @@ export class JsonProfileStore {
           rm(orphanedBackup, { force: true })
         ]);
       }
+      return assignedOwner;
     } catch (error) {
       await rm(entryPath, { recursive: true, force: true });
       await this.removeLockDirectoryIfEmpty();
@@ -488,13 +552,15 @@ export class JsonProfileStore {
     const directory = dirname(this.primaryPath);
     await mkdir(directory, { recursive: true });
 
-    const owner: LockOwner = {
+    const startToken = (await processStartToken(process.pid)) ?? "unknown";
+    let owner: LockOwner = {
       schemaVersion: 1,
       pid: process.pid,
-      processStartToken: (await processStartToken(process.pid)) ?? "unknown",
-      nonce: `${process.pid}-${randomUUID()}`
+      processStartToken: startToken,
+      nonce: `${process.pid}-${startToken}-${randomUUID()}`,
+      ticket: 0
     };
-    await this.acquireLock(owner);
+    owner = await this.acquireLock(owner);
     const [temporaryPath, backupTemporaryPath] = this.temporaryPaths(owner);
     try {
       const [primary, backup] = await Promise.all([
