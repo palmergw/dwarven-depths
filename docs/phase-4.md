@@ -137,10 +137,21 @@ the repository.
   and reruns the authoritative deployment/combat/reward/terminal path. The
   Cartesian product remains bounded to 64 samples, and earlier sweep schemas
   remain unchanged.
+- A strict versioned attempt-progress reward policy can commit authored Forge Ore
+  for defeated-enemy and ordered started-wave evidence. Completed-attempt events
+  are normalized and committed in stable reward-ID order; one batch increments
+  the profile revision once, while replay is an explicit no-op. Existing profile
+  reward ownership is paired with a canonical attempt-reward ledger so a claimed
+  ID cannot be replayed with substituted level, attempt, outcome, progress, or
+  policy evidence. Ledger/profile disagreement, non-prefix waves, impossible
+  partial-wave victories, duplicates, malformed input, and arithmetic overflow
+  fail atomically. The immutable nonempty evidence is literal-checksum-pinned
+  across Node, Chromium, Firefox, and WebKit. Campaign artifact and save-envelope
+  integration of this ledger remain later work.
 
 ## Not implemented yet
 
-Additional historical save migrations, encounter reward-event production,
+Additional historical save migrations, authoritative encounter-to-attempt reward-event production,
 catch-up experience, active ability and item-rank behavior, full save scope,
 player-facing recycle confirmation, additional build and active-ability controller sweep axes,
 additional statistical sweep metrics, campaign/minimization harnesses, and upgraded-build
