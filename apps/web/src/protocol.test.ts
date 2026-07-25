@@ -67,6 +67,19 @@ describe("web worker protocol", () => {
         ]
       })
     ).toBeUndefined();
+    expect(parseWorkerMessage({ ...result, commands: [] })).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...result,
+        commands: [
+          {
+            tick: 0,
+            sequence: 7,
+            command: { atTick: 1, type: "confirmPreparation" }
+          }
+        ]
+      })
+    ).toBeUndefined();
     expect(parseWorkerMessage({ ...result, unexpected: true })).toBeUndefined();
   });
 });

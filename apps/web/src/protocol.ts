@@ -157,18 +157,21 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     return undefined;
   const commands = value.commands;
   if (
+    commands.length !== 1 ||
     !commands.every(
-      (envelope) =>
+      (envelope, index) =>
         isRecord(envelope) &&
         hasExactKeys(envelope, ["command", "sequence", "tick"]) &&
         Number.isSafeInteger(envelope.tick) &&
         (envelope.tick as number) >= 0 &&
+        (envelope.tick as number) <= (value.terminalTick as number) &&
         Number.isSafeInteger(envelope.sequence) &&
-        (envelope.sequence as number) >= 0 &&
+        envelope.sequence === index &&
         isRecord(envelope.command) &&
         hasExactKeys(envelope.command, ["atTick", "type"]) &&
         Number.isSafeInteger(envelope.command.atTick) &&
         (envelope.command.atTick as number) >= 0 &&
+        envelope.command.atTick === envelope.tick &&
         envelope.command.type === "confirmPreparation"
     )
   )
