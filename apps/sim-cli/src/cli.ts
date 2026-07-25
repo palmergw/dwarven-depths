@@ -144,14 +144,28 @@ interface SweepSampleArtifact {
   readonly eventStreamChecksum: string;
 }
 
+interface SweepAggregateArtifact {
+  readonly terminalResultCounts: readonly {
+    readonly terminalResult: string;
+    readonly count: number;
+  }[];
+  readonly terminalTick: {
+    readonly minimum: number;
+    readonly maximum: number;
+    readonly p50NearestRank: number;
+    readonly p90NearestRank: number;
+  };
+}
+
 interface SweepArtifact {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly complete: true;
   readonly matrixId: string;
   readonly matrixHash: string;
   readonly contentManifestHash: string;
   readonly scenarioHash: string;
   readonly sampleCount: number;
+  readonly aggregate: SweepAggregateArtifact;
   readonly samples: readonly SweepSampleArtifact[];
 }
 
@@ -838,6 +852,46 @@ function resolveMatrixInput(matrixDirectory: string, path: string): string {
   return resolve(matrixDirectory, path);
 }
 
+function deriveSweepAggregate(
+  samples: readonly SweepSampleArtifact[]
+): SweepAggregateArtifact {
+  if (samples.length === 0) {
+    throw new Error("cannot aggregate an empty sweep");
+  }
+  const counts = new Map<string, number>();
+  const terminalTicks: number[] = [];
+  for (const sample of samples) {
+    counts.set(
+      sample.terminalResult,
+      (counts.get(sample.terminalResult) ?? 0) + 1
+    );
+    terminalTicks.push(sample.terminalTick);
+  }
+  terminalTicks.sort((left, right) => left - right);
+  const nearestRank = (percent: number): number => {
+    const index = Math.ceil((terminalTicks.length * percent) / 100) - 1;
+    const value = terminalTicks[index];
+    if (value === undefined) throw new Error("missing sweep percentile value");
+    return value;
+  };
+  const minimum = terminalTicks[0];
+  const maximum = terminalTicks.at(-1);
+  if (minimum === undefined || maximum === undefined) {
+    throw new Error("missing sweep terminal-tick boundary");
+  }
+  return {
+    terminalResultCounts: [...counts.entries()]
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(([terminalResult, count]) => ({ terminalResult, count })),
+    terminalTick: {
+      minimum,
+      maximum,
+      p50NearestRank: nearestRank(50),
+      p90NearestRank: nearestRank(90)
+    }
+  };
+}
+
 async function validate(args: ParsedArgs): Promise<void> {
   rejectUnknownFlags(args, new Set(["content", "scenario"]));
   const { content, scenario } = await load(args);
@@ -1034,12 +1088,13 @@ async function assertReplaceableSweep(directory: string): Promise<void> {
         "contentManifestHash",
         "scenarioHash",
         "sampleCount",
+        "aggregate",
         "samples"
       ],
       "sweep.json"
     );
     if (
-      artifact.schemaVersion !== 1 ||
+      artifact.schemaVersion !== 2 ||
       artifact.complete !== true ||
       artifact.matrixId !== matrix.id ||
       artifact.matrixHash !== (await canonicalHash(matrix)) ||
@@ -1079,11 +1134,28 @@ async function assertReplaceableSweep(directory: string): Promise<void> {
         !/^[1-9]\d{0,9}$/.test(sample.seed) ||
         BigInt(sample.seed) > 0xffff_ffffn ||
         seenSeeds.has(sample.seed) ||
-        sample.runDirectory !== expectedRunDirectory
+        sample.runDirectory !== expectedRunDirectory ||
+        typeof sample.scenarioHash !== "string" ||
+        !/^[a-f0-9]{64}$/.test(sample.scenarioHash) ||
+        typeof sample.terminalResult !== "string" ||
+        sample.terminalResult.length === 0 ||
+        !Number.isSafeInteger(sample.terminalTick) ||
+        sample.terminalTick < 0 ||
+        sample.terminalTick > 0xffff_ffff ||
+        typeof sample.finalStateChecksum !== "string" ||
+        !/^[a-f0-9]{64}$/.test(sample.finalStateChecksum) ||
+        typeof sample.eventStreamChecksum !== "string" ||
+        !/^[a-f0-9]{64}$/.test(sample.eventStreamChecksum)
       ) {
         throw new Error(`sweep sample ${index} has invalid identity evidence`);
       }
       seenSeeds.add(sample.seed);
+    }
+    const expectedAggregate = deriveSweepAggregate(artifact.samples);
+    if (
+      firstDifferencePath(expectedAggregate, artifact.aggregate) !== undefined
+    ) {
+      throw new Error("sweep aggregate does not match its sample evidence");
     }
     const runEntries = (await readdir(runsDirectory)).sort();
     const expectedEntries = artifact.samples
@@ -1186,13 +1258,14 @@ async function sweep(args: ParsedArgs): Promise<void> {
           });
         }
         const artifact: SweepArtifact = {
-          schemaVersion: 1,
+          schemaVersion: 2,
           complete: true,
           matrixId: matrix.id,
           matrixHash,
           contentManifestHash: content.manifestHash,
           scenarioHash,
           sampleCount: samples.length,
+          aggregate: deriveSweepAggregate(samples),
           samples
         };
         await writeJson(resolve(stagingDirectory, "sweep.json"), artifact);
