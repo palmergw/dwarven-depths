@@ -63,10 +63,17 @@ the repository.
   be loaded read-only when the primary is unavailable. Fault-injection evidence
   covers validation, durable replacement, backup replacement, and interrupted
   acknowledgement boundaries.
+- The browser IndexedDB adapter stores current profile envelopes behind an
+  explicit platform entry point and enforces profile-revision compare-and-swap
+  writes. The first pure consecutive migration upgrades historical envelope
+  schema 0 to schema 1, validates before and after the step, and preserves the
+  exact historical generation as a backup in the same atomic transaction.
+  Interrupted migrations expose neither a partial backup nor a partial current
+  save, while corrupt and unsupported-newer records remain untouched.
 
 ## Not implemented yet
 
-IndexedDB profile storage, historical save migrations, encounter reward-event
-production, catch-up experience, purchased-upgrade effect application, full save
-scope, recycle transactions, campaign/sweep harnesses, and upgraded-build
-calibration remain later Phase 4 checkpoints.
+Additional historical save migrations, encounter reward-event production,
+catch-up experience, purchased-upgrade effect application, full save scope,
+recycle transactions, campaign/sweep harnesses, and upgraded-build calibration
+remain later Phase 4 checkpoints.
