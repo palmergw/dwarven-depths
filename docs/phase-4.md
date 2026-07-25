@@ -82,10 +82,20 @@ the repository.
   Chromium, Firefox, and WebKit. Player-facing destructive confirmation and
   unmodeled settings, codex, achievement, and complete campaign-save integration
   remain outside this executable boundary.
+- The simulation CLI accepts a strict versioned JSON seed-sweep matrix through
+  `sim sweep`. Matrix content and scenario paths are relative to the matrix and
+  cannot be absolute. A bounded nonempty set of unique canonical uint32 seeds
+  expands in authored order through the shared content compiler and authoritative
+  runtime. Every sample is a normal self-contained, replay-verifiable run bundle,
+  and the completed aggregate binds matrix, content, and base-scenario hashes to
+  ordered terminal/checksum evidence and relative constituent-run paths. Aggregate
+  publication and validated replacement are rollback-safe; invalid matrices and
+  failed samples do not expose a completed sweep.
 
 ## Not implemented yet
 
 Additional historical save migrations, encounter reward-event production,
 catch-up experience, purchased-upgrade effect application, full save scope,
-player-facing recycle confirmation, campaign/sweep harnesses, and upgraded-build
+player-facing recycle confirmation, placement/build/controller sweep axes,
+statistical sweep aggregation, campaign/minimization harnesses, and upgraded-build
 calibration remain later Phase 4 checkpoints.

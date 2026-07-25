@@ -125,6 +125,36 @@ interface VerifiedRunBundle {
   readonly scenario: ReturnType<typeof compileScenario>;
 }
 
+interface SweepMatrix {
+  readonly schemaVersion: 1;
+  readonly id: string;
+  readonly content: string;
+  readonly scenario: string;
+  readonly axes: { readonly seed: readonly string[] };
+}
+
+interface SweepSampleArtifact {
+  readonly index: number;
+  readonly seed: string;
+  readonly runDirectory: string;
+  readonly scenarioHash: string;
+  readonly terminalResult: string;
+  readonly terminalTick: number;
+  readonly finalStateChecksum: string;
+  readonly eventStreamChecksum: string;
+}
+
+interface SweepArtifact {
+  readonly schemaVersion: 1;
+  readonly complete: true;
+  readonly matrixId: string;
+  readonly matrixHash: string;
+  readonly contentManifestHash: string;
+  readonly scenarioHash: string;
+  readonly sampleCount: number;
+  readonly samples: readonly SweepSampleArtifact[];
+}
+
 class CliInputError extends Error {
   readonly code = "invalid_cli_input";
 
@@ -590,10 +620,13 @@ async function assertReplaceableRunBundle(
   }
 }
 
-async function publishRunBundle(
+async function publishDirectory(
   outputDirectory: string,
   replace: boolean,
-  writeBundle: (stagingDirectory: string) => Promise<void>
+  writeBundle: (stagingDirectory: string) => Promise<void>,
+  validateExisting: (
+    directory: string
+  ) => Promise<void> = assertReplaceableRunBundle
 ): Promise<void> {
   const currentDirectoryFromOutput = relative(outputDirectory, process.cwd());
   if (
@@ -632,7 +665,7 @@ async function publishRunBundle(
       }
       const expectedDevice = existing.dev;
       const expectedInode = existing.ino;
-      await assertReplaceableRunBundle(outputDirectory);
+      await validateExisting(outputDirectory);
       backupRoot = await mkdtemp(
         resolve(parentDirectory, `.${outputName}.backup-`)
       );
@@ -660,7 +693,7 @@ async function publishRunBundle(
 
     try {
       if (previousBundle !== undefined) {
-        await assertReplaceableRunBundle(previousBundle);
+        await validateExisting(previousBundle);
       }
       await rename(stagingDirectory, outputDirectory);
     } catch (error) {
@@ -712,6 +745,99 @@ async function load(args: ParsedArgs) {
   return { content, scenario };
 }
 
+function requireSweepRecord(
+  value: unknown,
+  path: string
+): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new CliInputError(`${path} must be an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function requireSweepKeys(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+  path: string
+): void {
+  const actual = Object.keys(value);
+  const unknown = actual.find((key) => !keys.includes(key));
+  const missing = keys.find((key) => !actual.includes(key));
+  if (unknown !== undefined)
+    throw new CliInputError(`${path} contains unknown property ${unknown}`);
+  if (missing !== undefined)
+    throw new CliInputError(`${path} is missing required property ${missing}`);
+}
+
+function parseSweepMatrix(value: unknown): SweepMatrix {
+  const matrix = requireSweepRecord(value, "sweep matrix");
+  requireSweepKeys(
+    matrix,
+    ["schemaVersion", "id", "content", "scenario", "axes"],
+    "sweep matrix"
+  );
+  if (matrix["schemaVersion"] !== 1)
+    throw new CliInputError("sweep matrix schemaVersion must equal 1");
+  if (
+    typeof matrix["id"] !== "string" ||
+    !/^matrix\.[a-z0-9][a-z0-9._-]{0,126}$/.test(matrix["id"])
+  ) {
+    throw new CliInputError("sweep matrix id must be a stable matrix.* ID");
+  }
+  for (const property of ["content", "scenario"] as const) {
+    const path = matrix[property];
+    if (
+      typeof path !== "string" ||
+      path.length === 0 ||
+      path.length > 1024 ||
+      isAbsolute(path)
+    ) {
+      throw new CliInputError(
+        `sweep matrix ${property} must be a nonempty relative path`
+      );
+    }
+  }
+  const axes = requireSweepRecord(matrix["axes"], "sweep matrix axes");
+  requireSweepKeys(axes, ["seed"], "sweep matrix axes");
+  if (!Array.isArray(axes["seed"]) || axes["seed"].length === 0) {
+    throw new CliInputError("sweep matrix axes.seed must be a nonempty array");
+  }
+  if (axes["seed"].length > 64)
+    throw new CliInputError(
+      "sweep matrix axes.seed must not exceed 64 samples"
+    );
+  const seeds: string[] = [];
+  const uniqueSeeds = new Set<string>();
+  for (const [index, seed] of axes["seed"].entries()) {
+    if (
+      typeof seed !== "string" ||
+      !/^[1-9]\d{0,9}$/.test(seed) ||
+      BigInt(seed) > 0xffff_ffffn
+    ) {
+      throw new CliInputError(
+        `sweep matrix axes.seed[${index}] must be a canonical uint32 string`
+      );
+    }
+    if (uniqueSeeds.has(seed))
+      throw new CliInputError(
+        `sweep matrix axes.seed contains duplicate ${seed}`
+      );
+    uniqueSeeds.add(seed);
+    seeds.push(seed);
+  }
+  return {
+    schemaVersion: 1,
+    id: matrix["id"],
+    content: matrix["content"] as string,
+    scenario: matrix["scenario"] as string,
+    axes: { seed: seeds }
+  };
+}
+
+function resolveMatrixInput(matrixDirectory: string, path: string): string {
+  return resolve(matrixDirectory, path);
+}
+
 async function validate(args: ParsedArgs): Promise<void> {
   rejectUnknownFlags(args, new Set(["content", "scenario"]));
   const { content, scenario } = await load(args);
@@ -720,16 +846,18 @@ async function validate(args: ParsedArgs): Promise<void> {
   );
 }
 
-async function run(args: ParsedArgs): Promise<void> {
-  rejectUnknownFlags(args, new Set(["content", "scenario", "out", "replace"]));
-  const replace = booleanFlag(args, "replace");
-  const { content, scenario } = await load(args);
-  const outputDirectory = resolve(
-    args.flags.get("out") ?? `.ddh/runs/${scenario.id}`
-  );
+async function executeAndPublishRun(
+  content: Awaited<ReturnType<typeof compileContent>>,
+  scenario: ReturnType<typeof compileScenario>,
+  outputDirectory: string,
+  replace: boolean,
+  providedProvenance?: Awaited<ReturnType<typeof collectProvenance>>
+) {
   const [result, provenance] = await Promise.all([
     runScenario(scenario, content),
-    collectProvenance()
+    providedProvenance === undefined
+      ? collectProvenance()
+      : Promise.resolve(providedProvenance)
   ]);
   const replay = createReplayDefinition(result, scenario, content);
   const timeline = createTimelineRecords(result.events, replay);
@@ -779,7 +907,7 @@ async function run(args: ParsedArgs): Promise<void> {
   };
 
   try {
-    await publishRunBundle(
+    await publishDirectory(
       outputDirectory,
       replace,
       async (stagingDirectory) => {
@@ -837,8 +965,264 @@ async function run(args: ParsedArgs): Promise<void> {
     );
   }
 
+  return summary;
+}
+
+async function run(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["content", "scenario", "out", "replace"]));
+  const replace = booleanFlag(args, "replace");
+  const { content, scenario } = await load(args);
+  const outputDirectory = resolve(
+    args.flags.get("out") ?? `.ddh/runs/${scenario.id}`
+  );
+  const summary = await executeAndPublishRun(
+    content,
+    scenario,
+    outputDirectory,
+    replace
+  );
   process.stdout.write(
     `${JSON.stringify({ ok: true, outputDirectory, ...summary })}\n`
+  );
+}
+
+async function assertReplaceableSweep(directory: string): Promise<void> {
+  let rootHandle: Awaited<ReturnType<typeof open>> | undefined;
+  let runsHandle: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    rootHandle = await open(
+      directory,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    const rootDirectory = `/proc/self/fd/${rootHandle.fd}`;
+    const entries = (await readdir(rootDirectory)).sort();
+    if (
+      firstDifferencePath(entries, [
+        "matrix.compiled.json",
+        "runs",
+        "scenario.base.compiled.json",
+        "sweep.json"
+      ]) !== undefined
+    ) {
+      throw new Error(
+        "sweep output must contain exactly matrix, base scenario, runs, and sweep artifacts"
+      );
+    }
+    runsHandle = await open(
+      resolve(rootDirectory, "runs"),
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    const runsDirectory = `/proc/self/fd/${runsHandle.fd}`;
+    const matrix = parseSweepMatrix(
+      await readArtifactJson(rootDirectory, "matrix.compiled.json")
+    );
+    const baseScenarioInput = await readArtifactJson(
+      rootDirectory,
+      "scenario.base.compiled.json"
+    );
+    const artifact = requireRecord<SweepArtifact>(
+      await readArtifactJson(rootDirectory, "sweep.json"),
+      "sweep.json"
+    );
+    requireExactKeys(
+      artifact,
+      [
+        "schemaVersion",
+        "complete",
+        "matrixId",
+        "matrixHash",
+        "contentManifestHash",
+        "scenarioHash",
+        "sampleCount",
+        "samples"
+      ],
+      "sweep.json"
+    );
+    if (
+      artifact.schemaVersion !== 1 ||
+      artifact.complete !== true ||
+      artifact.matrixId !== matrix.id ||
+      artifact.matrixHash !== (await canonicalHash(matrix)) ||
+      typeof artifact.contentManifestHash !== "string" ||
+      typeof artifact.scenarioHash !== "string" ||
+      !Array.isArray(artifact.samples) ||
+      artifact.sampleCount !== artifact.samples.length ||
+      artifact.samples.length === 0 ||
+      artifact.samples.length > 64 ||
+      firstDifferencePath(
+        matrix.axes.seed,
+        artifact.samples.map((sample) => sample.seed)
+      ) !== undefined
+    ) {
+      throw new Error("sweep.json does not describe a complete bound sweep");
+    }
+    const seenSeeds = new Set<string>();
+    for (const [index, sample] of artifact.samples.entries()) {
+      requireExactKeys(
+        sample,
+        [
+          "index",
+          "seed",
+          "runDirectory",
+          "scenarioHash",
+          "terminalResult",
+          "terminalTick",
+          "finalStateChecksum",
+          "eventStreamChecksum"
+        ],
+        `sweep.json sample ${index}`
+      );
+      const expectedRunDirectory = `runs/${String(index).padStart(4, "0")}-seed-${sample.seed}`;
+      if (
+        sample.index !== index ||
+        typeof sample.seed !== "string" ||
+        !/^[1-9]\d{0,9}$/.test(sample.seed) ||
+        BigInt(sample.seed) > 0xffff_ffffn ||
+        seenSeeds.has(sample.seed) ||
+        sample.runDirectory !== expectedRunDirectory
+      ) {
+        throw new Error(`sweep sample ${index} has invalid identity evidence`);
+      }
+      seenSeeds.add(sample.seed);
+    }
+    const runEntries = (await readdir(runsDirectory)).sort();
+    const expectedEntries = artifact.samples
+      .map((sample) => basename(sample.runDirectory))
+      .sort();
+    if (firstDifferencePath(expectedEntries, runEntries) !== undefined) {
+      throw new Error("sweep run directory set does not match sweep.json");
+    }
+    for (const sample of artifact.samples) {
+      const verified = await verifyRunDirectory(
+        resolve(runsDirectory, basename(sample.runDirectory)),
+        false
+      );
+      const expectedScenario = compileScenario(
+        {
+          ...requireSweepRecord(baseScenarioInput, "base scenario"),
+          seed: sample.seed
+        },
+        verified.content
+      );
+      if (
+        verified.content.manifestHash !== artifact.contentManifestHash ||
+        (await canonicalHash(
+          compileScenario(baseScenarioInput, verified.content)
+        )) !== artifact.scenarioHash ||
+        firstDifferencePath(expectedScenario, verified.scenario) !==
+          undefined ||
+        verified.result.scenarioHash !== sample.scenarioHash ||
+        verified.result.terminalResult !== sample.terminalResult ||
+        verified.result.terminalTick !== sample.terminalTick ||
+        verified.result.finalStateChecksum !== sample.finalStateChecksum ||
+        verified.result.eventStreamChecksum !== sample.eventStreamChecksum
+      ) {
+        throw new Error(
+          "sweep sample evidence does not match its verified run"
+        );
+      }
+    }
+  } finally {
+    await runsHandle?.close().catch(() => undefined);
+    await rootHandle?.close().catch(() => undefined);
+  }
+}
+
+async function sweep(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["matrix", "out", "replace"]));
+  const matrixPath = resolve(requiredFlag(args, "matrix"));
+  const matrix = parseSweepMatrix(await readJson(matrixPath));
+  const matrixDirectory = dirname(matrixPath);
+  const content = await compileContent(
+    await readJson(resolveMatrixInput(matrixDirectory, matrix.content))
+  );
+  const scenarioInput = requireSweepRecord(
+    await readJson(resolveMatrixInput(matrixDirectory, matrix.scenario)),
+    "sweep scenario"
+  );
+  const baseScenario = compileScenario(scenarioInput, content);
+  const [matrixHash, scenarioHash, provenance] = await Promise.all([
+    canonicalHash(matrix),
+    canonicalHash(baseScenario),
+    collectProvenance()
+  ]);
+  const outputDirectory = resolve(
+    args.flags.get("out") ?? `.ddh/sweeps/${matrix.id}`
+  );
+  try {
+    await publishDirectory(
+      outputDirectory,
+      booleanFlag(args, "replace"),
+      async (stagingDirectory) => {
+        const runsDirectory = resolve(stagingDirectory, "runs");
+        await mkdir(runsDirectory);
+        await Promise.all([
+          writeJson(resolve(stagingDirectory, "matrix.compiled.json"), matrix),
+          writeJson(
+            resolve(stagingDirectory, "scenario.base.compiled.json"),
+            baseScenario
+          )
+        ]);
+        const samples: SweepSampleArtifact[] = [];
+        for (const [index, seed] of matrix.axes.seed.entries()) {
+          const scenario = compileScenario({ ...scenarioInput, seed }, content);
+          const runDirectory = `runs/${String(index).padStart(4, "0")}-seed-${seed}`;
+          const summary = await executeAndPublishRun(
+            content,
+            scenario,
+            resolve(stagingDirectory, runDirectory),
+            false,
+            provenance
+          );
+          samples.push({
+            index,
+            seed,
+            runDirectory,
+            scenarioHash: summary.scenarioHash,
+            terminalResult: summary.terminalResult,
+            terminalTick: summary.terminalTick,
+            finalStateChecksum: summary.finalStateChecksum,
+            eventStreamChecksum: summary.eventStreamChecksum
+          });
+        }
+        const artifact: SweepArtifact = {
+          schemaVersion: 1,
+          complete: true,
+          matrixId: matrix.id,
+          matrixHash,
+          contentManifestHash: content.manifestHash,
+          scenarioHash,
+          sampleCount: samples.length,
+          samples
+        };
+        await writeJson(resolve(stagingDirectory, "sweep.json"), artifact);
+      },
+      assertReplaceableSweep
+    );
+  } catch (error) {
+    if (
+      error instanceof RuntimeAssertionError ||
+      error instanceof RuntimeSafetyStopError ||
+      error instanceof ContentValidationError ||
+      error instanceof CliInputError ||
+      error instanceof ReportGenerationError
+    ) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    throw new ReportGenerationError(
+      `Unable to publish sweep at ${outputDirectory}: ${message}`
+    );
+  }
+  process.stdout.write(
+    `${JSON.stringify({
+      ok: true,
+      swept: true,
+      outputDirectory,
+      matrixId: matrix.id,
+      matrixHash,
+      sampleCount: matrix.axes.seed.length
+    })}\n`
   );
 }
 
@@ -1494,9 +1878,12 @@ async function main(): Promise<void> {
     case "compare":
       await compare(args);
       break;
+    case "sweep":
+      await sweep(args);
+      break;
     default:
       throw new CliInputError(
-        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>]"
+        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare|sweep> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>] [--matrix <file> --out <directory>]"
       );
   }
 }
