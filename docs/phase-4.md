@@ -155,8 +155,11 @@ the repository.
   its reward ID, level, result, destroyed-enemy count, and ordered started-wave
   prefix. Existing calibration APIs and checksums remain unchanged. The result is
   immutable and its nonempty reward event is literal-checksum-pinned across Node,
-  Chromium, Firefox, and WebKit. Multi-attempt campaign policy transitions and
-  artifact publication remain the next dependency.
+  Chromium, Firefox, and WebKit. The authority-preserving progress entry point
+  runs that encounter and commits its derived event in one call; its progress
+  state accepts no event or outcome fields, and canonical attempt/reward identity
+  is also enforced by the lower-level ledger validator. Multi-attempt campaign
+  policy transitions and artifact publication remain the next dependency.
 
 ## Not implemented yet
 
