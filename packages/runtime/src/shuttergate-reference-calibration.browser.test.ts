@@ -58,5 +58,18 @@ describe("Shuttergate calibration browser parity", () => {
     await expect(
       runShuttergateAttempt(content, accessorRequest as never)
     ).rejects.toThrow("plain data properties");
+
+    const hiddenFieldRequest = {
+      schemaVersion: 1,
+      attemptId: "attempt.shuttergate.a0001",
+      seed: "1",
+      placementPointId: "placement.shuttergate_north_guard",
+      targetPolicy: "nearest",
+      buildId: "build.profile.new_campaign.v1",
+      [Symbol("hidden")]: true
+    };
+    await expect(
+      runShuttergateAttempt(content, hiddenFieldRequest as never)
+    ).rejects.toThrow("invalid fields");
   }, 60_000);
 });

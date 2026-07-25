@@ -306,6 +306,24 @@ describe("Shuttergate reference balance calibration", () => {
     ).rejects.toThrow("plain data properties");
   });
 
+  it("rejects hidden and symbol attempt request fields", async () => {
+    const content = await compileContent(shuttergateInput);
+    const request = {
+      schemaVersion: 1,
+      attemptId: "attempt.shuttergate.a0001",
+      seed: "1",
+      placementPointId: "placement.shuttergate_north_guard",
+      targetPolicy: "nearest",
+      buildId: "build.profile.new_campaign.v1"
+    } as Record<PropertyKey, unknown>;
+    Object.defineProperty(request, "hidden", { value: true });
+    request[Symbol("hidden")] = true;
+
+    await expect(
+      runShuttergateAttempt(content, request as never)
+    ).rejects.toThrow("invalid fields");
+  });
+
   it("rejects placement points outside the pinned Shuttergate map", async () => {
     const content = await compileContent(shuttergateInput);
 

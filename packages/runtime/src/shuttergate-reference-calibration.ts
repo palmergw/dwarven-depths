@@ -431,8 +431,12 @@ export async function runShuttergateAttempt(
     "seed",
     "targetPolicy"
   ];
-  const actualKeys = Object.keys(request).sort();
+  const ownKeys = Reflect.ownKeys(request);
+  const actualKeys = ownKeys
+    .filter((key): key is string => typeof key === "string")
+    .sort();
   if (
+    actualKeys.length !== ownKeys.length ||
     actualKeys.length !== expectedKeys.length ||
     actualKeys.some((key, index) => key !== expectedKeys[index])
   )
@@ -441,7 +445,11 @@ export async function runShuttergateAttempt(
   if (
     expectedKeys.some((key) => {
       const descriptor = descriptors[key];
-      return descriptor === undefined || !("value" in descriptor);
+      return (
+        descriptor === undefined ||
+        descriptor.enumerable !== true ||
+        !("value" in descriptor)
+      );
     })
   )
     throw new TypeError(
