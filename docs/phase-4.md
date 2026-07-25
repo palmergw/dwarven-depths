@@ -205,8 +205,11 @@ the repository.
   the exact safety-stop code, source command indexes, smallest positive tick
   budget, and deterministic candidate count, and receives the same independent
   staging/replacement rederivation and filesystem protections as schema 1.
-  Terminal scenarios and the distinct `simulation_stalled` invariant are rejected
-  by this boundary rather than being relabeled. A strict replay input can also
+  The distinct `simulation_stalled` invariant is published as schema-6 evidence,
+  binding the exact stalled tick plus original and smallest reproducing positive
+  tick budgets. Staging and replacement independently rederive command-deletion
+  1-minimality, exact-tick reproduction, and budget minimality without relabeling
+  the failure. Terminal scenarios remain rejected. A strict replay input can also
   preserve an exact terminal checkpoint state or event-stream checksum divergence
   while commands are deleted in deterministic reverse-index passes. Schema-3
   evidence binds source and minimized scenarios and replays, retained source
@@ -221,9 +224,8 @@ the repository.
   divergences can also be reduced by deterministic command deletion. Schema-5
   evidence binds the exact divergence code, expected value, actual value, and
   observed terminal tick, and independently rederives command-deletion
-  1-minimality before publication or replacement. Checkpoint-sequence reduction,
-  other non-checkpoint divergences, and additional invariant classes remain later
-  expansions.
+  1-minimality before publication or replacement. Checkpoint-sequence reduction
+  and other non-checkpoint divergences remain later expansions.
 
 ## Not implemented yet
 

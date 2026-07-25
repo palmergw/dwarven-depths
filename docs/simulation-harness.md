@@ -81,6 +81,8 @@ pnpm sim minimize \
 
 # The same command accepts a scenario without expectedTerminalResult when it
 # reproduces the bounded tick_budget_exhausted runtime safety invariant.
+# It also preserves the exact stalled tick for simulation_stalled and minimizes
+# that scenario's tick budget without relabeling the failure.
 
 # A strict divergent replay can be supplied with --replay to minimize its
 # commands while preserving an exact terminal checkpoint checksum divergence.

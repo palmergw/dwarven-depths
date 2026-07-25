@@ -171,7 +171,8 @@ describe("shared runtime", () => {
 
     await expect(runScenario(scenario, content)).rejects.toMatchObject({
       name: "RuntimeSafetyStopError",
-      code: "tick_budget_exhausted"
+      code: "tick_budget_exhausted",
+      tick: scenario.maximumTicks
     } satisfies Partial<RuntimeSafetyStopError>);
   });
 
@@ -192,6 +193,7 @@ describe("shared runtime", () => {
     await expect(runScenario(scenario, content)).rejects.toMatchObject({
       name: "RuntimeSafetyStopError",
       code: "simulation_stalled",
+      tick: 0,
       message: expect.stringContaining("tick 0")
     } satisfies Partial<RuntimeSafetyStopError>);
   });
