@@ -181,11 +181,21 @@ the repository.
   shape, checksum, and over-bound substitutions are rejected. The same
   state cannot be restored twice within one process; cross-process publication
   still relies on the save adapters' revision compare-and-swap boundary.
+- The `sim campaign` command accepts a strict versioned JSON campaign scenario,
+  executes 1–64 authoritative Shuttergate attempts, and publishes compiled
+  scenario/content, a durable campaign artifact, and a binding manifest as one
+  rollback-safe directory. Validated replacement pins the directory with
+  no-follow descriptors, rejects missing or extra artifacts, and independently
+  restores every attempt checksum before replacing prior evidence. The authored
+  three-attempt conformance scenario demonstrates productive-defeat Forge Ore,
+  the deterministic Shield Slam rank-1 purchase, and subsequent upgraded-build
+  use without accepting caller-authored attempt, reward, purchase, or controller
+  decisions.
 
 ## Not implemented yet
 
 Additional historical save migrations and campaign policy variants,
 catch-up experience, active ability and item-rank behavior, full save scope,
 player-facing recycle confirmation, additional build and active-ability controller sweep axes,
-additional statistical sweep metrics, campaign/minimization harnesses, and upgraded-build
+additional statistical sweep metrics, campaign report variants, minimization harnesses, and upgraded-build
 calibration remain later Phase 4 checkpoints.

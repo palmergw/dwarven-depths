@@ -56,6 +56,161 @@ afterEach(() => {
 });
 
 describe("simulation CLI", () => {
+  it("publishes and replay-validates a durable authoritative campaign", () => {
+    const directory = temporaryDirectory();
+    const content = resolve(directory, "content.json");
+    const scenario = resolve(directory, "campaign.json");
+    const output = resolve(directory, "campaign-output");
+    writeFileSync(
+      content,
+      readFileSync(resolve("content/fixtures/phase-3-shuttergate.json"))
+    );
+    const scenarioValue = {
+      schemaVersion: 1,
+      id: "campaign_scenario.test.shuttergate_progression",
+      content: "content.json",
+      attemptCount: 3,
+      applicationBuild: "cli-test",
+      writtenAtEpochMs: 1_725_000_000_000,
+      profileId: "profile.test.campaign"
+    };
+    writeFileSync(scenario, JSON.stringify(scenarioValue));
+
+    const first = runCli("campaign", "--scenario", scenario, "--out", output);
+    expect(first.status).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({
+      ok: true,
+      campaigned: true,
+      scenarioId: "campaign_scenario.test.shuttergate_progression",
+      attemptCount: 3
+    });
+    const firstArtifact = readFileSync(
+      resolve(output, "campaign.json"),
+      "utf8"
+    );
+    const artifact = JSON.parse(firstArtifact) as {
+      attemptChecksums: string[];
+      profileSave: {
+        profile: {
+          forgeOre: number;
+          purchasedUpgrades: Array<{ upgradeId: string; rank: number }>;
+        };
+      };
+    };
+    expect(artifact.attemptChecksums).toHaveLength(3);
+    expect(artifact.profileSave.profile.forgeOre).toBeGreaterThan(0);
+    expect(artifact.profileSave.profile.purchasedUpgrades).toEqual([
+      expect.objectContaining({
+        upgradeId: "upgrade.ability.shield_slam",
+        rank: 1
+      })
+    ]);
+
+    const replaced = runCli(
+      "campaign",
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(replaced.status).toBe(0);
+    expect(readFileSync(resolve(output, "campaign.json"), "utf8")).toBe(
+      firstArtifact
+    );
+
+    writeFileSync(
+      resolve(output, "campaign.json"),
+      firstArtifact.replace(
+        artifact.attemptChecksums[0] as string,
+        "0".repeat(64)
+      )
+    );
+    const tampered = runCli(
+      "campaign",
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(tampered.status).toBe(3);
+    expect(JSON.parse(tampered.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "report", code: "report_generation_failed" }
+    });
+    expect(
+      JSON.parse(readFileSync(resolve(output, "campaign.json"), "utf8"))
+        .attemptChecksums[0]
+    ).toBe("0".repeat(64));
+
+    writeFileSync(resolve(output, "campaign.json"), firstArtifact);
+    writeFileSync(resolve(output, "unexpected.json"), "{}\n");
+    const extraArtifact = runCli(
+      "campaign",
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(extraArtifact.status).toBe(3);
+    rmSync(resolve(output, "unexpected.json"));
+
+    const manifestPath = resolve(output, "campaign-manifest.json");
+    const manifestText = readFileSync(manifestPath, "utf8");
+    const hardlinkSource = resolve(directory, "hardlinked-manifest.json");
+    writeFileSync(hardlinkSource, manifestText);
+    rmSync(manifestPath);
+    linkSync(hardlinkSource, manifestPath);
+    const hardlinkedArtifact = runCli(
+      "campaign",
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(hardlinkedArtifact.status).toBe(3);
+    rmSync(hardlinkSource);
+
+    const symlinkedOutput = resolve(directory, "symlinked-output");
+    symlinkSync(output, symlinkedOutput, "dir");
+    const symlinked = runCli(
+      "campaign",
+      "--scenario",
+      scenario,
+      "--out",
+      symlinkedOutput,
+      "--replace",
+      "true"
+    );
+    expect(symlinked.status).toBe(3);
+
+    const invalidOutput = resolve(directory, "invalid-output");
+    writeFileSync(
+      scenario,
+      JSON.stringify({ ...scenarioValue, attemptCount: 0 })
+    );
+    const invalid = runCli(
+      "campaign",
+      "--scenario",
+      scenario,
+      "--out",
+      invalidOutput
+    );
+    expect(invalid.status).toBe(2);
+    expect(JSON.parse(invalid.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "input", code: "invalid_cli_input" }
+    });
+    expect(existsSync(invalidOutput)).toBe(false);
+  }, 90_000);
+
   it("expands a bounded seed sweep into ordered replay-verifiable runs", () => {
     const directory = temporaryDirectory();
     const content = resolve(directory, "content.json");
