@@ -217,8 +217,12 @@ the repository.
   default schema-3 output byte-stable, then binds the original and smallest
   reproducing positive scenario tick budgets after command deletion. Staging and
   replacement independently rederive both reductions and reject a nonminimal,
-  malformed, or tampered budget. Checkpoint-sequence reduction,
-  non-checkpoint divergences, and additional invariant classes remain later
+  malformed, or tampered budget. Terminal-result and terminal-tick replay
+  divergences can also be reduced by deterministic command deletion. Schema-5
+  evidence binds the exact divergence code, expected value, actual value, and
+  observed terminal tick, and independently rederives command-deletion
+  1-minimality before publication or replacement. Checkpoint-sequence reduction,
+  other non-checkpoint divergences, and additional invariant classes remain later
   expansions.
 
 ## Not implemented yet

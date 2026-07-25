@@ -86,6 +86,8 @@ pnpm sim minimize \
 # commands while preserving an exact terminal checkpoint checksum divergence.
 # Add --replay-ticks true to also reduce the scenario tick budget to the
 # smallest positive value that preserves that exact divergence.
+# Exact terminal-result and terminal-tick replay divergences are minimized by
+# command deletion with their expected, actual, and observed-tick evidence bound.
 
 # Render text, JSON, CSV, or optional SVG diagnostics
 pnpm sim render \
