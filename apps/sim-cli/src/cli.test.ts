@@ -1188,6 +1188,89 @@ describe("simulation CLI", () => {
           ).toEqual(before);
         }
       }
+
+      const ticksOutput = resolve(
+        directory,
+        `${testCase.name}-ticks-minimization`
+      );
+      const ticks = runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        testCase.scenario,
+        "--replay",
+        testCase.replay,
+        "--replay-ticks",
+        "true",
+        "--out",
+        ticksOutput
+      );
+      expect(ticks.status, ticks.stderr).toBe(0);
+      expect(JSON.parse(ticks.stdout)).toMatchObject({
+        divergenceCode: testCase.code,
+        checkpointTick: 0,
+        originalMaximumTicks: 4,
+        minimizedMaximumTicks: 1
+      });
+      const ticksArtifactPath = resolve(ticksOutput, "minimization.json");
+      const ticksArtifactText = readFileSync(ticksArtifactPath, "utf8");
+      expect(JSON.parse(ticksArtifactText)).toMatchObject({
+        schemaVersion: 8,
+        divergenceCode: testCase.code,
+        divergenceExpected: testCase.expected,
+        divergenceActual: testCase.actual,
+        originalMaximumTicks: 4,
+        minimizedMaximumTicks: 1
+      });
+      expect(
+        runCli(
+          "minimize",
+          "--content",
+          compiledContent,
+          "--scenario",
+          testCase.scenario,
+          "--replay",
+          testCase.replay,
+          "--replay-ticks",
+          "true",
+          "--out",
+          ticksOutput,
+          "--replace",
+          "true"
+        ).status
+      ).toBe(0);
+      expect(readFileSync(ticksArtifactPath, "utf8")).toBe(ticksArtifactText);
+
+      if (testCase.name === "result") {
+        const tamperedArtifact = JSON.parse(ticksArtifactText);
+        tamperedArtifact.minimizedMaximumTicks = 2;
+        const { artifactChecksum: _, ...tamperedBody } = tamperedArtifact;
+        tamperedArtifact.artifactChecksum = await canonicalHash(tamperedBody);
+        writeFileSync(
+          ticksArtifactPath,
+          `${JSON.stringify(tamperedArtifact, null, 2)}\n`
+        );
+        const tamperedText = readFileSync(ticksArtifactPath, "utf8");
+        expect(
+          runCli(
+            "minimize",
+            "--content",
+            compiledContent,
+            "--scenario",
+            testCase.scenario,
+            "--replay",
+            testCase.replay,
+            "--replay-ticks",
+            "true",
+            "--out",
+            ticksOutput,
+            "--replace",
+            "true"
+          ).status
+        ).toBe(3);
+        expect(readFileSync(ticksArtifactPath, "utf8")).toBe(tamperedText);
+      }
     }
   });
 
@@ -1359,22 +1442,37 @@ describe("simulation CLI", () => {
     }
 
     const ticksOutput = resolve(directory, "execution-failure-ticks");
+    const ticks = runCli(
+      "minimize",
+      "--content",
+      compiledContent,
+      "--scenario",
+      sourceScenarioPath,
+      "--replay",
+      sourceReplayPath,
+      "--replay-ticks",
+      "true",
+      "--out",
+      ticksOutput
+    );
+    expect(ticks.status, ticks.stderr).toBe(0);
+    expect(JSON.parse(ticks.stdout)).toMatchObject({
+      divergenceCode: "execution_failed",
+      checkpointTick: 2,
+      originalMaximumTicks: 2,
+      minimizedMaximumTicks: 2
+    });
     expect(
-      runCli(
-        "minimize",
-        "--content",
-        compiledContent,
-        "--scenario",
-        sourceScenarioPath,
-        "--replay",
-        sourceReplayPath,
-        "--replay-ticks",
-        "true",
-        "--out",
-        ticksOutput
-      ).status
-    ).toBe(2);
-    expect(existsSync(ticksOutput)).toBe(false);
+      JSON.parse(
+        readFileSync(resolve(ticksOutput, "minimization.json"), "utf8")
+      )
+    ).toMatchObject({
+      schemaVersion: 8,
+      divergenceExpected: "victory",
+      divergenceActual: "tick_budget_exhausted",
+      originalMaximumTicks: 2,
+      minimizedMaximumTicks: 2
+    });
   });
 
   it("publishes and replay-validates a durable authoritative campaign", async () => {
