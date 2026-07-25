@@ -79,6 +79,9 @@ pnpm sim minimize \
   --scenario scenarios/failing-case.json \
   --out reports/minimized-failing-case
 
+# The same command accepts a scenario without expectedTerminalResult when it
+# reproduces the bounded tick_budget_exhausted runtime safety invariant.
+
 # Render text, JSON, CSV, or optional SVG diagnostics
 pnpm sim render \
   --run reports/warden-baseline \
