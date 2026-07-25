@@ -83,6 +83,12 @@ export {
   type ShuttergateCampaignArtifact
 } from "./shuttergate-campaign-artifact.js";
 export {
+  createShuttergateCampaignCalibrationReport,
+  type ShuttergateCampaignCalibrationAttempt,
+  type ShuttergateCampaignCalibrationComparison,
+  type ShuttergateCampaignCalibrationReport
+} from "./shuttergate-campaign-calibration.js";
+export {
   runShuttergateAttempt,
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,

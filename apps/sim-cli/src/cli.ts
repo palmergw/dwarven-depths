@@ -44,6 +44,7 @@ import {
   createRunExplanation,
   createShuttergateCampaignArtifact,
   createShuttergateCampaignAuthority,
+  createShuttergateCampaignCalibrationReport,
   createTimelineRecords,
   ReplayDivergenceError,
   RuntimeAssertionError,
@@ -60,6 +61,7 @@ import {
   type ShuttergateBuildCalibrationEvidence,
   type ShuttergateCalibrationBuildId,
   type ShuttergateCampaignArtifact,
+  type ShuttergateCampaignCalibrationReport,
   type ShuttergateReferenceCalibrationEvidence,
   shuttergateCalibrationBuildIds,
   verifyReplay
@@ -222,13 +224,14 @@ interface CampaignScenario {
 }
 
 interface CampaignManifestArtifact {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly complete: true;
   readonly scenarioId: string;
   readonly scenarioHash: string;
   readonly contentManifestHash: string;
   readonly attemptCount: number;
   readonly campaignPayloadChecksum: string;
+  readonly calibrationReportChecksum: string;
 }
 
 interface MinimizationArtifactBody {
@@ -3407,6 +3410,7 @@ async function assertReplaceableCampaign(
     const entries = (await readdir(rootDirectory)).sort();
     if (
       firstDifferencePath(entries, [
+        "campaign-calibration.json",
         "campaign-manifest.json",
         "campaign.json",
         "content.compiled.json",
@@ -3427,6 +3431,10 @@ async function assertReplaceableCampaign(
       rootDirectory,
       "campaign.json"
     )) as ShuttergateCampaignArtifact;
+    const calibration = (await readArtifactJson(
+      rootDirectory,
+      "campaign-calibration.json"
+    )) as ShuttergateCampaignCalibrationReport;
     const manifest = requireRecord<CampaignManifestArtifact>(
       await readArtifactJson(rootDirectory, "campaign-manifest.json"),
       "campaign-manifest.json"
@@ -3440,13 +3448,14 @@ async function assertReplaceableCampaign(
         "scenarioHash",
         "contentManifestHash",
         "attemptCount",
-        "campaignPayloadChecksum"
+        "campaignPayloadChecksum",
+        "calibrationReportChecksum"
       ],
       "campaign-manifest.json"
     );
     const scenarioHash = await canonicalHash(scenario);
     if (
-      manifest.schemaVersion !== 1 ||
+      manifest.schemaVersion !== 2 ||
       manifest.complete !== true ||
       scenario.content !== "content.compiled.json" ||
       manifest.scenarioId !== scenario.id ||
@@ -3454,6 +3463,8 @@ async function assertReplaceableCampaign(
       manifest.contentManifestHash !== content.manifestHash ||
       manifest.attemptCount !== scenario.attemptCount ||
       manifest.campaignPayloadChecksum !== artifact.payloadChecksum ||
+      manifest.calibrationReportChecksum !==
+        (await canonicalHash(calibration)) ||
       artifact.attemptChecksums.length !== scenario.attemptCount ||
       artifact.profileSave.contentVersion !== content.bundle.contentVersion ||
       artifact.profileSave.applicationBuild !== scenario.applicationBuild ||
@@ -3472,6 +3483,16 @@ async function assertReplaceableCampaign(
       if (restored.attempts.length !== scenario.attemptCount) {
         throw new Error(
           "campaign artifact replay does not match the configured attempt count"
+        );
+      }
+      if (
+        firstDifferencePath(
+          createShuttergateCampaignCalibrationReport(restored),
+          calibration
+        ) !== undefined
+      ) {
+        throw new Error(
+          "campaign calibration report does not match authoritative replay evidence"
         );
       }
     }
@@ -3497,6 +3518,7 @@ async function campaign(args: ParsedArgs): Promise<void> {
     authority = (await runShuttergateCampaignTransition(content, authority))
       .authority;
   }
+  const calibration = createShuttergateCampaignCalibrationReport(authority);
   const artifact = await createShuttergateCampaignArtifact({
     schemaVersion: 1,
     content,
@@ -3506,13 +3528,14 @@ async function campaign(args: ParsedArgs): Promise<void> {
     profileId: scenario.profileId
   });
   const manifest: CampaignManifestArtifact = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     complete: true,
     scenarioId: scenario.id,
     scenarioHash,
     contentManifestHash: content.manifestHash,
     attemptCount: scenario.attemptCount,
-    campaignPayloadChecksum: artifact.payloadChecksum
+    campaignPayloadChecksum: artifact.payloadChecksum,
+    calibrationReportChecksum: await canonicalHash(calibration)
   };
   const outputDirectory = resolve(
     args.flags.get("out") ?? `.ddh/campaigns/${scenario.id}`
@@ -3533,6 +3556,10 @@ async function campaign(args: ParsedArgs): Promise<void> {
             content.bundle
           ),
           writeJson(resolve(stagingDirectory, "campaign.json"), artifact),
+          writeJson(
+            resolve(stagingDirectory, "campaign-calibration.json"),
+            calibration
+          ),
           writeJson(
             resolve(stagingDirectory, "campaign-manifest.json"),
             manifest
@@ -3558,7 +3585,8 @@ async function campaign(args: ParsedArgs): Promise<void> {
       scenarioId: scenario.id,
       scenarioHash,
       attemptCount: scenario.attemptCount,
-      campaignPayloadChecksum: artifact.payloadChecksum
+      campaignPayloadChecksum: artifact.payloadChecksum,
+      calibrationReportChecksum: manifest.calibrationReportChecksum
     })}\n`
   );
 }
