@@ -2552,6 +2552,72 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
   }
 }
 
+async function assertMatchingReplayMinimization(
+  directory: string,
+  expected: {
+    readonly content: Awaited<ReturnType<typeof compileContent>>["bundle"];
+    readonly sourceScenario: ReturnType<typeof compileScenario>;
+    readonly minimizedScenario: ReturnType<typeof compileScenario>;
+    readonly sourceReplay: ReplayDefinition;
+    readonly minimizedReplay: ReplayDefinition;
+    readonly artifact: ReplayMinimizationArtifact;
+  }
+): Promise<void> {
+  let rootHandle: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    await assertReplaceableMinimization(directory);
+    rootHandle = await open(
+      directory,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    const rootDirectory = `/proc/self/fd/${rootHandle.fd}`;
+    const [
+      content,
+      sourceScenario,
+      minimizedScenario,
+      sourceReplay,
+      minimizedReplay,
+      artifact
+    ] = await Promise.all([
+      readArtifactJson(rootDirectory, "content.compiled.json"),
+      readArtifactJson(rootDirectory, "scenario.source.compiled.json"),
+      readArtifactJson(rootDirectory, "scenario.minimized.compiled.json"),
+      readArtifactJson(rootDirectory, "replay.source.json"),
+      readArtifactJson(rootDirectory, "replay.minimized.json"),
+      readArtifactJson(rootDirectory, "minimization.json")
+    ]);
+    const differences = [
+      ["content", firstDifferencePath(content, expected.content)],
+      [
+        "source scenario",
+        firstDifferencePath(sourceScenario, expected.sourceScenario)
+      ],
+      [
+        "minimized scenario",
+        firstDifferencePath(minimizedScenario, expected.minimizedScenario)
+      ],
+      [
+        "source replay",
+        firstDifferencePath(sourceReplay, expected.sourceReplay)
+      ],
+      [
+        "minimized replay",
+        firstDifferencePath(minimizedReplay, expected.minimizedReplay)
+      ],
+      ["artifact", firstDifferencePath(artifact, expected.artifact)]
+    ].filter((entry): entry is [string, string] => entry[1] !== undefined);
+    if (differences.length > 0) {
+      throw new Error(
+        `existing replay minimization does not match the current invocation: ${differences
+          .map(([name, path]) => `${name} ${path}`)
+          .join(", ")}`
+      );
+    }
+  } finally {
+    await rootHandle?.close().catch(() => undefined);
+  }
+}
+
 async function minimize(args: ParsedArgs): Promise<void> {
   rejectUnknownFlags(
     args,
@@ -2670,7 +2736,15 @@ async function minimize(args: ParsedArgs): Promise<void> {
           ]);
           await assertReplaceableMinimization(stagingDirectory);
         },
-        assertReplaceableMinimization
+        (directory) =>
+          assertMatchingReplayMinimization(directory, {
+            content: content.bundle,
+            sourceScenario: scenario,
+            minimizedScenario: candidate.scenario,
+            sourceReplay,
+            minimizedReplay: candidate.replay,
+            artifact
+          })
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

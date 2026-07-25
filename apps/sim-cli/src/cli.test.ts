@@ -603,21 +603,20 @@ describe("simulation CLI", () => {
         .commands
     ).toHaveLength(1);
 
-    expect(
-      runCli(
-        "minimize",
-        "--content",
-        compiledContent,
-        "--scenario",
-        compiledScenario,
-        "--replay",
-        divergentReplay,
-        "--out",
-        output,
-        "--replace",
-        "true"
-      ).status
-    ).toBe(0);
+    const replaced = runCli(
+      "minimize",
+      "--content",
+      compiledContent,
+      "--scenario",
+      compiledScenario,
+      "--replay",
+      divergentReplay,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(replaced.status, replaced.stderr).toBe(0);
     expect(readFileSync(artifactPath, "utf8")).toBe(artifactText);
 
     writeFileSync(
@@ -1535,6 +1534,14 @@ describe("simulation CLI", () => {
           const artifactPath = resolve(directory, "minimization.json");
           const artifact = JSON.parse(readFileSync(artifactPath, "utf8"));
           artifact[binding as string] = await canonicalHash(scenario);
+          if (name === "source-scenario") {
+            const replayPath = resolve(directory, "replay.source.json");
+            const replay = JSON.parse(readFileSync(replayPath, "utf8"));
+            replay.scenarioHash = artifact.sourceScenarioHash;
+            writeFileSync(replayPath, `${JSON.stringify(replay, null, 2)}\n`);
+            artifact.sourceReplayHash = await canonicalHash(replay);
+            artifact.originalMaximumTicks = maximumTicks;
+          }
           const { artifactChecksum: _, ...body } = artifact;
           artifact.artifactChecksum = await canonicalHash(body);
           writeFileSync(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`);

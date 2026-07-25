@@ -233,7 +233,9 @@ the repository.
   terminal-tick, and execution-failure evidence to schema 8, binding the original
   and smallest positive reproducing tick budgets while preserving the exact
   divergence tuple. Staging and replacement independently rederive both command
-  and tick reductions. Pre-execution identity and command mismatches remain rejected.
+  and tick reductions, and replacement requires the existing replay minimization
+  to match the current invocation's complete source, minimized result, and bound
+  artifact. Pre-execution identity and command mismatches remain rejected.
   Checkpoint-sequence reduction and other non-checkpoint divergences remain
   later expansions.
 
