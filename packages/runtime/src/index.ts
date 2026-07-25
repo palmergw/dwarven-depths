@@ -69,6 +69,13 @@ export {
   renderRunExplanationMarkdown
 } from "./run-explanation.js";
 export {
+  createShuttergateCampaignAuthority,
+  runShuttergateCampaignTransition,
+  type ShuttergateCampaignAttemptEvidence,
+  type ShuttergateCampaignAuthority,
+  type ShuttergateCampaignTransitionResult
+} from "./shuttergate-campaign.js";
+export {
   runShuttergateAttempt,
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,

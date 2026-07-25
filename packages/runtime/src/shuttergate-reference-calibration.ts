@@ -43,33 +43,34 @@ const targetPolicies: readonly DwarfTargetPolicy[] = Object.freeze([
 ]);
 const maximumTick = 4_500;
 const shieldSlamUpgradeId = "upgrade.ability.shield_slam" as StableId;
-const referenceBuildCatalog: PurchasedUpgradeCatalog = Object.freeze({
-  schemaVersion: 1,
-  upgrades: Object.freeze([
-    Object.freeze({
-      schemaVersion: 1,
-      upgradeId: shieldSlamUpgradeId,
-      kind: "ability_rank" as const,
-      ownerId: wardenCharacterId,
-      prerequisiteUpgradeIds: Object.freeze([]),
-      rankCosts: Object.freeze([10]),
-      passiveEffectsByRank: Object.freeze([
-        Object.freeze([
-          Object.freeze({
-            schemaVersion: 1,
-            kind: "maximum_health_add" as const,
-            value: 20
-          }),
-          Object.freeze({
-            schemaVersion: 1,
-            kind: "attack_damage_add" as const,
-            value: 2
-          })
+export const shuttergateReferenceBuildCatalog: PurchasedUpgradeCatalog =
+  Object.freeze({
+    schemaVersion: 1,
+    upgrades: Object.freeze([
+      Object.freeze({
+        schemaVersion: 1,
+        upgradeId: shieldSlamUpgradeId,
+        kind: "ability_rank" as const,
+        ownerId: wardenCharacterId,
+        prerequisiteUpgradeIds: Object.freeze([]),
+        rankCosts: Object.freeze([10]),
+        passiveEffectsByRank: Object.freeze([
+          Object.freeze([
+            Object.freeze({
+              schemaVersion: 1,
+              kind: "maximum_health_add" as const,
+              value: 20
+            }),
+            Object.freeze({
+              schemaVersion: 1,
+              kind: "attack_damage_add" as const,
+              value: 2
+            })
+          ])
         ])
-      ])
-    })
-  ])
-});
+      })
+    ])
+  });
 
 export type ShuttergateCalibrationBuildId =
   | "build.profile.new_campaign.v1"
@@ -239,7 +240,7 @@ async function runShuttergateCalibration(
     profile = purchaseUpgradeRank({
       schemaVersion: 1,
       profile: Object.freeze({ ...profile, forgeOre: 10 }),
-      catalog: referenceBuildCatalog,
+      catalog: shuttergateReferenceBuildCatalog,
       upgradeId: shieldSlamUpgradeId
     }).profile;
   } else if (
@@ -267,7 +268,7 @@ async function runShuttergateCalibration(
             schemaVersion: 1,
             battlefield: initial.battlefield,
             profile,
-            catalog: referenceBuildCatalog,
+            catalog: shuttergateReferenceBuildCatalog,
             skillTrees: referenceSkillTrees
           },
           referenceContent,
