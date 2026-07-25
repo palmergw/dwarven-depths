@@ -6,6 +6,10 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
-  "references": [{ "path": "../contracts" }, { "path": "../content-runtime" }],
+  "references": [
+    { "path": "../contracts" },
+    { "path": "../content-runtime" },
+    { "path": "../progression" }
+  ],
   "include": ["src/**/*.ts"]
 }

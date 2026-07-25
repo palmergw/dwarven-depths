@@ -1538,7 +1538,59 @@ export function deployBattlefieldDwarves(
   return deployed;
 }
 
-/** Applies absolute selected-skill totals without rewriting committed work. */
+/** @internal Runtime integration after persisted skill validation. */
+export function deployBattlefieldDwarvesWithCharacterModifiers(
+  battlefield: BattlefieldState,
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  value: readonly BattlefieldCharacterModifiers[]
+): BattlefieldState {
+  const metadata = requireAuthorityMetadata(authority, content);
+  if (metadata.deploymentBattlefield !== undefined)
+    throw new RangeError("battlefield dwarves are already initialized");
+  const deployedCharacterIds = new Set(
+    authority.deployments.map((deployment) => deployment.characterDefinitionId)
+  );
+  const nextModifiers = new Map<StableId, BattlefieldCharacterModifiers>();
+  for (const [index, item] of requireArray(
+    value,
+    "battlefield character modifiers"
+  ).entries()) {
+    const modifiers = requireCharacterModifiers(
+      item,
+      `battlefield character modifiers ${index}`
+    );
+    if (!deployedCharacterIds.has(modifiers.characterDefinitionId))
+      throw new RangeError(
+        `battlefield character modifiers ${index} does not own a deployed dwarf`
+      );
+    if (nextModifiers.has(modifiers.characterDefinitionId))
+      throw new RangeError(
+        "battlefield character modifiers duplicate a character"
+      );
+    const character = content.characters.get(modifiers.characterDefinitionId);
+    if (character === undefined)
+      throw new RangeError(
+        "battlefield character modifiers reference unknown character"
+      );
+    modifiedCharacterStats(character, modifiers);
+    nextModifiers.set(modifiers.characterDefinitionId, modifiers);
+  }
+  if (nextModifiers.size !== deployedCharacterIds.size)
+    throw new RangeError(
+      "battlefield character modifiers must cover every deployed character"
+    );
+  for (const [characterId, modifiers] of nextModifiers)
+    metadata.characterModifiers.set(characterId, modifiers);
+  try {
+    return deployBattlefieldDwarves(battlefield, authority, content);
+  } catch (error) {
+    metadata.characterModifiers.clear();
+    throw error;
+  }
+}
+
+/** @internal Applies validated totals without rewriting committed work. */
 export function applyBattlefieldCharacterModifiers(
   battlefield: BattlefieldState,
   authority: BattlefieldDwarfDeploymentAuthority,

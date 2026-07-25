@@ -103,7 +103,7 @@ function profile(includeSecondNode: boolean): ProfileState {
   };
 }
 
-async function deployedRound(selectedProfile?: ProfileState) {
+async function preparedRound() {
   const content = await compileContent({
     ...mapContent,
     contentVersion: "phase-4-live-skill-effects-v1",
@@ -161,6 +161,14 @@ async function deployedRound(selectedProfile?: ProfileState) {
     undefined,
     authority
   );
+  if (admitted.state.battlefield === undefined)
+    throw new Error("missing admitted battlefield");
+  return { content, authority, admitted };
+}
+
+async function deployedRound(selectedProfile?: ProfileState) {
+  const prepared = await preparedRound();
+  const { content, authority, admitted } = prepared;
   if (admitted.state.battlefield === undefined)
     throw new Error("missing admitted battlefield");
   const battlefield =
@@ -304,6 +312,27 @@ export async function battlefieldSkillEffectValidationEvidence() {
   if (round.state.battlefield === undefined)
     throw new Error("missing validation battlefield");
   const base = round.state.battlefield;
+  let accessorReads = 0;
+  const accessorTrees: CharacterSkillTreeDefinition[] = [];
+  Object.defineProperty(accessorTrees, 0, {
+    enumerable: true,
+    get() {
+      accessorReads += 1;
+      return skillTree;
+    }
+  });
+  const accessorTreeError = captureError(() =>
+    applySelectedSkillEffectsToBattlefield(
+      {
+        schemaVersion: 1,
+        battlefield: base,
+        profile: profile(false),
+        skillTrees: accessorTrees
+      },
+      round.content,
+      round.authority
+    )
+  );
   const missingTreeError = captureError(() =>
     applySelectedSkillEffectsToBattlefield(
       {
@@ -354,6 +383,32 @@ export async function battlefieldSkillEffectValidationEvidence() {
       round.content,
       round.authority
     )
+  );
+  const deployment = await preparedRound();
+  const deploymentBattlefield = deployment.admitted.state.battlefield;
+  if (deploymentBattlefield === undefined)
+    throw new Error("missing deployment validation battlefield");
+  const deploymentOverflowError = captureError(() =>
+    deployBattlefieldDwarvesWithSelectedSkillEffects(
+      {
+        schemaVersion: 1,
+        battlefield: deploymentBattlefield,
+        profile: profile(false),
+        skillTrees: [overflowTree]
+      },
+      deployment.content,
+      deployment.authority
+    )
+  );
+  const recoveredDeployment = deployBattlefieldDwarvesWithSelectedSkillEffects(
+    {
+      schemaVersion: 1,
+      battlefield: deploymentBattlefield,
+      profile: profile(true),
+      skillTrees: [skillTree]
+    },
+    deployment.content,
+    deployment.authority
   );
   const root = applySelectedSkillEffectsToBattlefield(
     {
@@ -416,11 +471,15 @@ export async function battlefieldSkillEffectValidationEvidence() {
     round.authority
   );
   return Object.freeze({
+    accessorTreeError,
+    accessorReads,
     missingTreeError,
     duplicateTreeError,
     overflowError,
+    deploymentOverflowError,
     decreaseError,
     forgedError,
-    recoveredDwarf: recovered.battlefield.dwarfCombatants[0]
+    recoveredDwarf: recovered.battlefield.dwarfCombatants[0],
+    recoveredDeploymentDwarf: recoveredDeployment.battlefield.dwarfCombatants[0]
   });
 }

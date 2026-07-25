@@ -59,15 +59,25 @@ describe("live battlefield skill effects", () => {
   it("rejects incomplete, duplicate, overflowing, decreasing, and forged input atomically", async () => {
     const evidence = await battlefieldSkillEffectValidationEvidence();
     expect(evidence).toMatchObject({
+      accessorTreeError:
+        "battlefield skill-effect request skillTrees item 0 must be own enumerable data",
+      accessorReads: 0,
       missingTreeError:
         "battlefield character modifiers must cover every deployed character",
       duplicateTreeError: "battlefield skill trees duplicate a character",
       overflowError:
         "modified character maximumHealth exceeds safe integer range",
+      deploymentOverflowError:
+        "modified character maximumHealth exceeds safe integer range",
       decreaseError: "live battlefield character modifiers cannot decrease",
       forgedError:
         "battlefield does not belong to the accepted preparation round",
       recoveredDwarf: {
+        currentHealth: 265,
+        maximumHealth: 265,
+        basicAttack: { damage: 21, range: 3, cooldownTicks: 22 }
+      },
+      recoveredDeploymentDwarf: {
         currentHealth: 265,
         maximumHealth: 265,
         basicAttack: { damage: 21, range: 3, cooldownTicks: 22 }
