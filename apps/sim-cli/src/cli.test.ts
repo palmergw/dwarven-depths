@@ -15,6 +15,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
+import {
+  compileContent,
+  compileScenario
+} from "@dwarven-depths/content-runtime";
 import { canonicalHash } from "@dwarven-depths/contracts";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -1185,6 +1189,192 @@ describe("simulation CLI", () => {
         }
       }
     }
+  });
+
+  it("minimizes exact replay execution failures into schema-7 evidence", async () => {
+    const directory = temporaryDirectory();
+    const content = resolve("content/fixtures/nonterminating-content.json");
+    const sourceScenarioPath = resolve(
+      "scenarios/conformance/nonterminating.json"
+    );
+    const validContent = resolve(directory, "valid-content.json");
+    const validScenario = resolve(directory, "valid-scenario.json");
+    const runOutput = resolve(directory, "source-run");
+    writeFileSync(
+      validContent,
+      JSON.stringify({
+        schemaVersion: 1,
+        contentVersion: "replay-execution-failure-minimization-test",
+        definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+      })
+    );
+    writeFileSync(
+      validScenario,
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "scenario.test.replay_execution_failure_minimization",
+        levelId: "level.empty",
+        seed: "1",
+        maximumTicks: 4,
+        commands: [{ atTick: 0, type: "confirmPreparation" }],
+        expectedTerminalResult: "victory"
+      })
+    );
+    expect(
+      runCli(
+        "run",
+        "--content",
+        validContent,
+        "--scenario",
+        validScenario,
+        "--out",
+        runOutput
+      ).status
+    ).toBe(0);
+
+    const compiledSource = await compileContent(
+      JSON.parse(readFileSync(content, "utf8"))
+    );
+    const sourceScenario = compileScenario(
+      JSON.parse(readFileSync(sourceScenarioPath, "utf8")),
+      compiledSource
+    );
+    const compiledContent = resolve(directory, "compiled-content.json");
+    const sourceReplayPath = resolve(directory, "stalled-replay.json");
+    writeFileSync(compiledContent, JSON.stringify(compiledSource.bundle));
+    const sourceReplay = {
+      ...(JSON.parse(
+        readFileSync(resolve(runOutput, "replay.json"), "utf8")
+      ) as Record<string, unknown>),
+      contentManifestHash: compiledSource.manifestHash,
+      contentVersion: compiledSource.bundle.contentVersion,
+      scenarioId: sourceScenario.id,
+      levelId: sourceScenario.levelId,
+      seed: sourceScenario.seed,
+      scenarioHash: await canonicalHash(sourceScenario),
+      commands: sourceScenario.commands.map((command, sequence) => ({
+        tick: command.atTick,
+        sequence,
+        command
+      }))
+    };
+    writeFileSync(sourceReplayPath, JSON.stringify(sourceReplay));
+
+    const output = resolve(directory, "execution-failure-minimization");
+    const first = runCli(
+      "minimize",
+      "--content",
+      compiledContent,
+      "--scenario",
+      sourceScenarioPath,
+      "--replay",
+      sourceReplayPath,
+      "--out",
+      output
+    );
+    expect(first.status, first.stderr).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({
+      divergenceCode: "execution_failed",
+      checkpointTick: 2,
+      originalCommandCount: 1,
+      minimizedCommandCount: 1
+    });
+    const artifactPath = resolve(output, "minimization.json");
+    const artifactText = readFileSync(artifactPath, "utf8");
+    expect(JSON.parse(artifactText)).toMatchObject({
+      schemaVersion: 7,
+      divergenceCode: "execution_failed",
+      checkpointTick: 2,
+      divergenceExpected: "victory",
+      divergenceActual: "tick_budget_exhausted",
+      retainedCommandIndexes: [0]
+    });
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        sourceScenarioPath,
+        "--replay",
+        sourceReplayPath,
+        "--out",
+        output,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(0);
+    expect(readFileSync(artifactPath, "utf8")).toBe(artifactText);
+
+    for (const [name, field, value] of [
+      ["expected", "divergenceExpected", "defeat"],
+      ["actual", "divergenceActual", "simulation_stalled"],
+      ["tick", "checkpointTick", 1]
+    ] as const) {
+      const tamperedOutput = resolve(directory, `tampered-execution-${name}`);
+      cpSync(output, tamperedOutput, { recursive: true });
+      const tamperedArtifactPath = resolve(tamperedOutput, "minimization.json");
+      const tamperedArtifact = JSON.parse(
+        readFileSync(tamperedArtifactPath, "utf8")
+      );
+      tamperedArtifact[field] = value;
+      const { artifactChecksum: _, ...body } = tamperedArtifact;
+      tamperedArtifact.artifactChecksum = await canonicalHash(body);
+      writeFileSync(
+        tamperedArtifactPath,
+        `${JSON.stringify(tamperedArtifact, null, 2)}\n`
+      );
+      const before = readdirSync(tamperedOutput)
+        .sort()
+        .map((entry) => [
+          entry,
+          lstatSync(resolve(tamperedOutput, entry)).nlink,
+          readFileSync(resolve(tamperedOutput, entry), "utf8")
+        ]);
+      expect(
+        runCli(
+          "minimize",
+          "--content",
+          compiledContent,
+          "--scenario",
+          sourceScenarioPath,
+          "--replay",
+          sourceReplayPath,
+          "--out",
+          tamperedOutput,
+          "--replace",
+          "true"
+        ).status,
+        name
+      ).toBe(3);
+      expect(
+        readdirSync(tamperedOutput)
+          .sort()
+          .map((entry) => [
+            entry,
+            lstatSync(resolve(tamperedOutput, entry)).nlink,
+            readFileSync(resolve(tamperedOutput, entry), "utf8")
+          ])
+      ).toEqual(before);
+    }
+
+    const ticksOutput = resolve(directory, "execution-failure-ticks");
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        sourceScenarioPath,
+        "--replay",
+        sourceReplayPath,
+        "--replay-ticks",
+        "true",
+        "--out",
+        ticksOutput
+      ).status
+    ).toBe(2);
+    expect(existsSync(ticksOutput)).toBe(false);
   });
 
   it("publishes and replay-validates a durable authoritative campaign", async () => {

@@ -90,6 +90,9 @@ pnpm sim minimize \
 # smallest positive value that preserves that exact divergence.
 # Exact terminal-result and terminal-tick replay divergences are minimized by
 # command deletion with their expected, actual, and observed-tick evidence bound.
+# Post-admission execution_failed divergences are also minimized by command
+# deletion while preserving the expected result, exact runtime failure code,
+# and observed failure tick. Tick-budget reduction remains checksum-only.
 
 # Render text, JSON, CSV, or optional SVG diagnostics
 pnpm sim render \

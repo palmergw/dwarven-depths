@@ -224,8 +224,14 @@ the repository.
   divergences can also be reduced by deterministic command deletion. Schema-5
   evidence binds the exact divergence code, expected value, actual value, and
   observed terminal tick, and independently rederives command-deletion
-  1-minimality before publication or replacement. Checkpoint-sequence reduction
-  and other non-checkpoint divergences remain later expansions.
+  1-minimality before publication or replacement. Post-admission replay
+  execution failures can also be reduced as schema-7 evidence. The artifact
+  binds the expected terminal result, exact runtime assertion or safety-stop
+  code, and observed failure tick, then independently rederives exact-tuple
+  reproduction and command-deletion 1-minimality during staging and validated
+  replacement. Pre-execution identity and command mismatches remain rejected.
+  Checkpoint-sequence reduction and other non-checkpoint divergences remain
+  later expansions.
 
 ## Not implemented yet
 
