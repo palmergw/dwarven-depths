@@ -42,6 +42,8 @@ import {
   createLifecycleDiagnostics,
   createReplayDefinition,
   createRunExplanation,
+  createShuttergateCampaignArtifact,
+  createShuttergateCampaignAuthority,
   createTimelineRecords,
   ReplayDivergenceError,
   RuntimeAssertionError,
@@ -49,12 +51,15 @@ import {
   renderBattlefieldSvg,
   renderBattlefieldText,
   renderRunExplanationMarkdown,
+  restoreShuttergateCampaignArtifact,
   runScenario,
+  runShuttergateCampaignTransition,
   runShuttergateSeedPlacementCalibration,
   runShuttergateSeedPlacementControllerBuildCalibration,
   runShuttergateSeedPlacementControllerCalibration,
   type ShuttergateBuildCalibrationEvidence,
   type ShuttergateCalibrationBuildId,
+  type ShuttergateCampaignArtifact,
   type ShuttergateReferenceCalibrationEvidence,
   shuttergateCalibrationBuildIds,
   verifyReplay
@@ -81,6 +86,7 @@ const runBundleFiles = [
 const maximumArtifactBytes = 4 * 1024 * 1024;
 const maximumBundleBytes = 16 * 1024 * 1024;
 const maximumNdjsonRecords = 100_000;
+const shuttergateCampaignScenarioId = "campaign_scenario.shuttergate.v1";
 const sweepControllers = Object.freeze({
   "controller.target.nearest.v1": "nearest",
   "controller.target.lowest_health.v1": "lowest_health",
@@ -203,6 +209,26 @@ interface SweepArtifact {
   readonly sampleCount: number;
   readonly aggregate: SweepAggregateArtifact;
   readonly samples: readonly SweepSampleArtifact[];
+}
+
+interface CampaignScenario {
+  readonly schemaVersion: 1;
+  readonly id: string;
+  readonly content: string;
+  readonly attemptCount: number;
+  readonly applicationBuild: string;
+  readonly writtenAtEpochMs: number;
+  readonly profileId: string;
+}
+
+interface CampaignManifestArtifact {
+  readonly schemaVersion: 1;
+  readonly complete: true;
+  readonly scenarioId: string;
+  readonly scenarioHash: string;
+  readonly contentManifestHash: string;
+  readonly attemptCount: number;
+  readonly campaignPayloadChecksum: string;
 }
 
 class CliInputError extends Error {
@@ -1014,6 +1040,84 @@ function parseSweepMatrix(value: unknown): SweepMatrix {
   };
 }
 
+function parseCampaignScenario(value: unknown): CampaignScenario {
+  const scenario = requireSweepRecord(value, "campaign scenario");
+  requireSweepKeys(
+    scenario,
+    [
+      "schemaVersion",
+      "id",
+      "content",
+      "attemptCount",
+      "applicationBuild",
+      "writtenAtEpochMs",
+      "profileId"
+    ],
+    "campaign scenario"
+  );
+  if (scenario["schemaVersion"] !== 1)
+    throw new CliInputError("campaign scenario schemaVersion must equal 1");
+  if (scenario["id"] !== shuttergateCampaignScenarioId) {
+    throw new CliInputError(
+      `campaign scenario id must equal ${shuttergateCampaignScenarioId}`
+    );
+  }
+  if (
+    typeof scenario["content"] !== "string" ||
+    scenario["content"].length === 0 ||
+    scenario["content"].length > 1024 ||
+    isAbsolute(scenario["content"])
+  ) {
+    throw new CliInputError(
+      "campaign scenario content must be a nonempty relative path"
+    );
+  }
+  if (
+    !Number.isSafeInteger(scenario["attemptCount"]) ||
+    (scenario["attemptCount"] as number) < 1 ||
+    (scenario["attemptCount"] as number) > 64
+  ) {
+    throw new CliInputError(
+      "campaign scenario attemptCount must be an integer from 1 through 64"
+    );
+  }
+  if (
+    typeof scenario["applicationBuild"] !== "string" ||
+    !/^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$/.test(scenario["applicationBuild"])
+  ) {
+    throw new CliInputError(
+      "campaign scenario applicationBuild must use 1–128 portable version characters"
+    );
+  }
+  if (
+    !Number.isSafeInteger(scenario["writtenAtEpochMs"]) ||
+    (scenario["writtenAtEpochMs"] as number) < 0
+  ) {
+    throw new CliInputError(
+      "campaign scenario writtenAtEpochMs must be a nonnegative safe integer"
+    );
+  }
+  if (
+    typeof scenario["profileId"] !== "string" ||
+    !/^profile\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/.test(
+      scenario["profileId"]
+    )
+  ) {
+    throw new CliInputError(
+      "campaign scenario profileId must be a stable profile.* ID"
+    );
+  }
+  return {
+    schemaVersion: 1,
+    id: shuttergateCampaignScenarioId,
+    content: scenario["content"],
+    attemptCount: scenario["attemptCount"] as number,
+    applicationBuild: scenario["applicationBuild"],
+    writtenAtEpochMs: scenario["writtenAtEpochMs"] as number,
+    profileId: scenario["profileId"]
+  };
+}
+
 function resolveMatrixInput(matrixDirectory: string, path: string): string {
   return resolve(matrixDirectory, path);
 }
@@ -1684,6 +1788,176 @@ async function sweep(args: ParsedArgs): Promise<void> {
   );
 }
 
+async function assertReplaceableCampaign(
+  directory: string,
+  replayAttempts: boolean
+): Promise<void> {
+  let rootHandle: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    rootHandle = await open(
+      directory,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    const rootDirectory = `/proc/self/fd/${rootHandle.fd}`;
+    const entries = (await readdir(rootDirectory)).sort();
+    if (
+      firstDifferencePath(entries, [
+        "campaign-manifest.json",
+        "campaign.json",
+        "content.compiled.json",
+        "scenario.compiled.json"
+      ]) !== undefined
+    ) {
+      throw new Error(
+        "campaign output contains an unexpected or missing artifact"
+      );
+    }
+    const scenario = parseCampaignScenario(
+      await readArtifactJson(rootDirectory, "scenario.compiled.json")
+    );
+    const content = await compileContent(
+      await readArtifactJson(rootDirectory, "content.compiled.json")
+    );
+    const artifact = (await readArtifactJson(
+      rootDirectory,
+      "campaign.json"
+    )) as ShuttergateCampaignArtifact;
+    const manifest = requireRecord<CampaignManifestArtifact>(
+      await readArtifactJson(rootDirectory, "campaign-manifest.json"),
+      "campaign-manifest.json"
+    );
+    requireExactKeys(
+      manifest,
+      [
+        "schemaVersion",
+        "complete",
+        "scenarioId",
+        "scenarioHash",
+        "contentManifestHash",
+        "attemptCount",
+        "campaignPayloadChecksum"
+      ],
+      "campaign-manifest.json"
+    );
+    const scenarioHash = await canonicalHash(scenario);
+    if (
+      manifest.schemaVersion !== 1 ||
+      manifest.complete !== true ||
+      scenario.content !== "content.compiled.json" ||
+      manifest.scenarioId !== scenario.id ||
+      manifest.scenarioHash !== scenarioHash ||
+      manifest.contentManifestHash !== content.manifestHash ||
+      manifest.attemptCount !== scenario.attemptCount ||
+      manifest.campaignPayloadChecksum !== artifact.payloadChecksum ||
+      artifact.attemptChecksums.length !== scenario.attemptCount ||
+      artifact.profileSave.contentVersion !== content.bundle.contentVersion ||
+      artifact.profileSave.applicationBuild !== scenario.applicationBuild ||
+      artifact.profileSave.writtenAtEpochMs !== scenario.writtenAtEpochMs ||
+      artifact.profileSave.profileId !== scenario.profileId
+    ) {
+      throw new Error(
+        "campaign manifest does not match its scenario, content, and durable artifact"
+      );
+    }
+    if (replayAttempts) {
+      const restored = await restoreShuttergateCampaignArtifact(
+        content,
+        artifact
+      );
+      if (restored.attempts.length !== scenario.attemptCount) {
+        throw new Error(
+          "campaign artifact replay does not match the configured attempt count"
+        );
+      }
+    }
+  } finally {
+    await rootHandle?.close().catch(() => undefined);
+  }
+}
+
+async function campaign(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["scenario", "out", "replace"]));
+  const scenarioPath = resolve(requiredFlag(args, "scenario"));
+  const scenario = parseCampaignScenario(await readJson(scenarioPath));
+  const content = await compileContent(
+    await readJson(resolve(dirname(scenarioPath), scenario.content))
+  );
+  const compiledScenario: CampaignScenario = {
+    ...scenario,
+    content: "content.compiled.json"
+  };
+  const scenarioHash = await canonicalHash(compiledScenario);
+  let authority = createShuttergateCampaignAuthority();
+  for (let index = 0; index < scenario.attemptCount; index += 1) {
+    authority = (await runShuttergateCampaignTransition(content, authority))
+      .authority;
+  }
+  const artifact = await createShuttergateCampaignArtifact({
+    schemaVersion: 1,
+    content,
+    authority,
+    applicationBuild: scenario.applicationBuild,
+    writtenAtEpochMs: scenario.writtenAtEpochMs,
+    profileId: scenario.profileId
+  });
+  const manifest: CampaignManifestArtifact = {
+    schemaVersion: 1,
+    complete: true,
+    scenarioId: scenario.id,
+    scenarioHash,
+    contentManifestHash: content.manifestHash,
+    attemptCount: scenario.attemptCount,
+    campaignPayloadChecksum: artifact.payloadChecksum
+  };
+  const outputDirectory = resolve(
+    args.flags.get("out") ?? `.ddh/campaigns/${scenario.id}`
+  );
+  let campaignValidationPass = 0;
+  try {
+    await publishDirectory(
+      outputDirectory,
+      booleanFlag(args, "replace"),
+      async (stagingDirectory) => {
+        await Promise.all([
+          writeJson(
+            resolve(stagingDirectory, "scenario.compiled.json"),
+            compiledScenario
+          ),
+          writeJson(
+            resolve(stagingDirectory, "content.compiled.json"),
+            content.bundle
+          ),
+          writeJson(resolve(stagingDirectory, "campaign.json"), artifact),
+          writeJson(
+            resolve(stagingDirectory, "campaign-manifest.json"),
+            manifest
+          )
+        ]);
+      },
+      async (directory) => {
+        campaignValidationPass += 1;
+        await assertReplaceableCampaign(directory, campaignValidationPass > 1);
+      }
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new ReportGenerationError(
+      `Unable to publish campaign at ${outputDirectory}: ${message}`
+    );
+  }
+  process.stdout.write(
+    `${JSON.stringify({
+      ok: true,
+      campaigned: true,
+      outputDirectory,
+      scenarioId: scenario.id,
+      scenarioHash,
+      attemptCount: scenario.attemptCount,
+      campaignPayloadChecksum: artifact.payloadChecksum
+    })}\n`
+  );
+}
+
 async function verifyRunDirectory(
   runDirectory: string,
   emitVerification: boolean
@@ -2339,9 +2613,12 @@ async function main(): Promise<void> {
     case "sweep":
       await sweep(args);
       break;
+    case "campaign":
+      await campaign(args);
+      break;
     default:
       throw new CliInputError(
-        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare|sweep> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>] [--matrix <file> --out <directory>]"
+        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare|sweep|campaign> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>] [--matrix <file> --out <directory>] [--scenario <campaign-file> --out <directory>]"
       );
   }
 }
