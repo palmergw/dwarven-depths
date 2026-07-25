@@ -4,6 +4,7 @@ import {
 } from "@dwarven-depths/content-runtime";
 import type {
   DwarfTargetPolicy,
+  PlacementPointId,
   SimulationState,
   StableId
 } from "@dwarven-depths/contracts";
@@ -20,7 +21,8 @@ const referenceManifestHash =
 const levelId = "level.shuttergate_hall" as StableId;
 const wardenCharacterId = "character.iron_warden" as StableId;
 const wardenEntityId = "entity.dwarf.warden" as never;
-const placementPointId = "placement.shuttergate_north_guard" as never;
+const referencePlacementPointId =
+  "placement.shuttergate_north_guard" as PlacementPointId;
 const bossEntityId = "entity.enemy.shuttergate_010" as never;
 const deepRangerId = "character.deep_ranger" as StableId;
 const targetPolicy: DwarfTargetPolicy = "nearest";
@@ -85,10 +87,24 @@ async function requireReferenceContent(
  * authoritative combat, reward, and terminal producer path. The result is a
  * compact calibration artifact rather than a second gameplay loop.
  */
-export async function runShuttergateReferenceCalibration(
-  content: CompiledContent
+export async function runShuttergatePlacementCalibration(
+  content: CompiledContent,
+  placementPointId: PlacementPointId
 ): Promise<ShuttergateReferenceCalibrationEvidence> {
   const referenceContent = await requireReferenceContent(content);
+  const level = referenceContent.levels.get(levelId);
+  const map =
+    level?.mapId === undefined
+      ? undefined
+      : referenceContent.maps.get(level.mapId);
+  if (
+    map === undefined ||
+    !map.placementPoints.some((point) => point.id === placementPointId)
+  ) {
+    throw new RangeError(
+      `Shuttergate calibration requires an authored placement point (${placementPointId})`
+    );
+  }
   const initial = createInitialState(referenceContent, levelId, "1");
   if (initial.battlefield === undefined)
     throw new Error("Shuttergate calibration requires battlefield state");
@@ -211,4 +227,10 @@ export async function runShuttergateReferenceCalibration(
   throw new RangeError(
     `Shuttergate calibration did not terminate by safety tick ${maximumTick}`
   );
+}
+
+export async function runShuttergateReferenceCalibration(
+  content: CompiledContent
+): Promise<ShuttergateReferenceCalibrationEvidence> {
+  return runShuttergatePlacementCalibration(content, referencePlacementPointId);
 }
