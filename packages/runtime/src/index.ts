@@ -405,10 +405,12 @@ export function createLifecycleDiagnostics(
 
 export class RuntimeAssertionError extends Error {
   readonly code = "unexpected_terminal_result";
+  readonly tick: number;
 
-  constructor(message: string) {
+  constructor(message: string, tick: number) {
     super(message);
     this.name = "RuntimeAssertionError";
+    this.tick = tick;
   }
 }
 
@@ -518,7 +520,8 @@ async function executeScenario(
     state.terminalResult !== scenario.expectedTerminalResult
   ) {
     throw new RuntimeAssertionError(
-      `Scenario ${scenario.id} expected ${scenario.expectedTerminalResult} but produced ${state.terminalResult}`
+      `Scenario ${scenario.id} expected ${scenario.expectedTerminalResult} but produced ${state.terminalResult}`,
+      state.tick
     );
   }
 
@@ -698,7 +701,7 @@ export async function verifyReplay(
         `Replay execution failed: ${error.code}`,
         replay.expectedTerminalResult,
         error.code,
-        replay.expectedTerminalTick
+        error.tick
       );
     }
     throw error;
