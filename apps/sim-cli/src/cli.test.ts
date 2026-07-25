@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync
@@ -133,6 +134,43 @@ describe("simulation CLI", () => {
       firstArtifact
     );
 
+    const matrixArtifactPath = resolve(output, "matrix.compiled.json");
+    const matrixArtifact = readFileSync(matrixArtifactPath, "utf8");
+    writeFileSync(
+      matrixArtifactPath,
+      matrixArtifact.replace("matrix.test.seed_sweep", "matrix.test.forged")
+    );
+    const forgedReplacement = runCli(
+      "sweep",
+      "--matrix",
+      matrix,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(forgedReplacement.status).toBe(3);
+    expect(JSON.parse(forgedReplacement.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "report", code: "report_generation_failed" }
+    });
+    writeFileSync(matrixArtifactPath, matrixArtifact);
+
+    const externalRuns = resolve(directory, "external-runs");
+    renameSync(resolve(output, "runs"), externalRuns);
+    symlinkSync(externalRuns, resolve(output, "runs"), "dir");
+    const symlinkedReplacement = runCli(
+      "sweep",
+      "--matrix",
+      matrix,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(symlinkedReplacement.status).toBe(3);
+    expect(existsSync(externalRuns)).toBe(true);
+
     writeFileSync(
       matrix,
       JSON.stringify({ ...matrixValue, axes: { seed: ["1", "1"] } })
@@ -151,6 +189,34 @@ describe("simulation CLI", () => {
       error: { type: "input", code: "invalid_cli_input" }
     });
     expect(existsSync(rejectedOutput)).toBe(false);
+
+    writeFileSync(matrix, JSON.stringify(matrixValue));
+    writeFileSync(
+      scenario,
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "scenario.test.sweep",
+        levelId: "level.empty",
+        seed: "99",
+        maximumTicks: 1,
+        commands: [{ atTick: 0, type: "confirmPreparation" }],
+        expectedTerminalResult: "defeat"
+      })
+    );
+    const assertionOutput = resolve(directory, "assertion-output");
+    const assertion = runCli(
+      "sweep",
+      "--matrix",
+      matrix,
+      "--out",
+      assertionOutput
+    );
+    expect(assertion.status).toBe(1);
+    expect(JSON.parse(assertion.stderr)).toMatchObject({
+      ok: false,
+      error: { type: "assertion", code: "unexpected_terminal_result" }
+    });
+    expect(existsSync(assertionOutput)).toBe(false);
   });
 
   it("compares verified bundles while ignoring provenance metadata", async () => {

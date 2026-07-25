@@ -987,101 +987,144 @@ async function run(args: ParsedArgs): Promise<void> {
 }
 
 async function assertReplaceableSweep(directory: string): Promise<void> {
-  const entries = (await readdir(directory)).sort();
-  if (
-    entries.length !== 2 ||
-    entries[0] !== "runs" ||
-    entries[1] !== "sweep.json"
-  ) {
-    throw new Error("sweep output must contain exactly runs and sweep.json");
-  }
-  const artifact = requireRecord<SweepArtifact>(
-    await readArtifactJson(directory, "sweep.json"),
-    "sweep.json"
-  );
-  requireExactKeys(
-    artifact,
-    [
-      "schemaVersion",
-      "complete",
-      "matrixId",
-      "matrixHash",
-      "contentManifestHash",
-      "scenarioHash",
-      "sampleCount",
-      "samples"
-    ],
-    "sweep.json"
-  );
-  if (
-    artifact.schemaVersion !== 1 ||
-    artifact.complete !== true ||
-    typeof artifact.matrixId !== "string" ||
-    typeof artifact.matrixHash !== "string" ||
-    typeof artifact.contentManifestHash !== "string" ||
-    typeof artifact.scenarioHash !== "string" ||
-    !Array.isArray(artifact.samples) ||
-    artifact.sampleCount !== artifact.samples.length ||
-    artifact.samples.length === 0 ||
-    artifact.samples.length > 64
-  ) {
-    throw new Error("sweep.json does not describe a complete bounded sweep");
-  }
-  const seenSeeds = new Set<string>();
-  for (const [index, sample] of artifact.samples.entries()) {
+  let rootHandle: Awaited<ReturnType<typeof open>> | undefined;
+  let runsHandle: Awaited<ReturnType<typeof open>> | undefined;
+  try {
+    rootHandle = await open(
+      directory,
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    const rootDirectory = `/proc/self/fd/${rootHandle.fd}`;
+    const entries = (await readdir(rootDirectory)).sort();
+    if (
+      firstDifferencePath(entries, [
+        "matrix.compiled.json",
+        "runs",
+        "scenario.base.compiled.json",
+        "sweep.json"
+      ]) !== undefined
+    ) {
+      throw new Error(
+        "sweep output must contain exactly matrix, base scenario, runs, and sweep artifacts"
+      );
+    }
+    runsHandle = await open(
+      resolve(rootDirectory, "runs"),
+      constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+    );
+    const runsDirectory = `/proc/self/fd/${runsHandle.fd}`;
+    const matrix = parseSweepMatrix(
+      await readArtifactJson(rootDirectory, "matrix.compiled.json")
+    );
+    const baseScenarioInput = await readArtifactJson(
+      rootDirectory,
+      "scenario.base.compiled.json"
+    );
+    const artifact = requireRecord<SweepArtifact>(
+      await readArtifactJson(rootDirectory, "sweep.json"),
+      "sweep.json"
+    );
     requireExactKeys(
-      sample,
+      artifact,
       [
-        "index",
-        "seed",
-        "runDirectory",
+        "schemaVersion",
+        "complete",
+        "matrixId",
+        "matrixHash",
+        "contentManifestHash",
         "scenarioHash",
-        "terminalResult",
-        "terminalTick",
-        "finalStateChecksum",
-        "eventStreamChecksum"
+        "sampleCount",
+        "samples"
       ],
-      `sweep.json sample ${index}`
-    );
-    const expectedRunDirectory = `runs/${String(index).padStart(4, "0")}-seed-${sample.seed}`;
-    if (
-      sample.index !== index ||
-      typeof sample.seed !== "string" ||
-      !/^[1-9]\d{0,9}$/.test(sample.seed) ||
-      BigInt(sample.seed) > 0xffff_ffffn ||
-      seenSeeds.has(sample.seed) ||
-      sample.runDirectory !== expectedRunDirectory
-    ) {
-      throw new Error(`sweep sample ${index} has invalid identity evidence`);
-    }
-    seenSeeds.add(sample.seed);
-  }
-  const runEntries = (await readdir(resolve(directory, "runs"))).sort();
-  const expectedEntries = artifact.samples
-    .map((sample) => sample.runDirectory.replace(/^runs\//, ""))
-    .sort();
-  if (
-    expectedEntries.some((entry) => !/^\d{4}-seed-[1-9]\d{0,9}$/.test(entry)) ||
-    firstDifferencePath(expectedEntries, runEntries) !== undefined
-  ) {
-    throw new Error("sweep run directory set does not match sweep.json");
-  }
-  for (const sample of artifact.samples) {
-    const verified = await verifyRunDirectory(
-      resolve(directory, sample.runDirectory),
-      false
+      "sweep.json"
     );
     if (
-      verified.content.manifestHash !== artifact.contentManifestHash ||
-      verified.scenario.seed !== sample.seed ||
-      verified.result.scenarioHash !== sample.scenarioHash ||
-      verified.result.terminalResult !== sample.terminalResult ||
-      verified.result.terminalTick !== sample.terminalTick ||
-      verified.result.finalStateChecksum !== sample.finalStateChecksum ||
-      verified.result.eventStreamChecksum !== sample.eventStreamChecksum
+      artifact.schemaVersion !== 1 ||
+      artifact.complete !== true ||
+      artifact.matrixId !== matrix.id ||
+      artifact.matrixHash !== (await canonicalHash(matrix)) ||
+      typeof artifact.contentManifestHash !== "string" ||
+      typeof artifact.scenarioHash !== "string" ||
+      !Array.isArray(artifact.samples) ||
+      artifact.sampleCount !== artifact.samples.length ||
+      artifact.samples.length === 0 ||
+      artifact.samples.length > 64 ||
+      firstDifferencePath(
+        matrix.axes.seed,
+        artifact.samples.map((sample) => sample.seed)
+      ) !== undefined
     ) {
-      throw new Error("sweep sample evidence does not match its verified run");
+      throw new Error("sweep.json does not describe a complete bound sweep");
     }
+    const seenSeeds = new Set<string>();
+    for (const [index, sample] of artifact.samples.entries()) {
+      requireExactKeys(
+        sample,
+        [
+          "index",
+          "seed",
+          "runDirectory",
+          "scenarioHash",
+          "terminalResult",
+          "terminalTick",
+          "finalStateChecksum",
+          "eventStreamChecksum"
+        ],
+        `sweep.json sample ${index}`
+      );
+      const expectedRunDirectory = `runs/${String(index).padStart(4, "0")}-seed-${sample.seed}`;
+      if (
+        sample.index !== index ||
+        typeof sample.seed !== "string" ||
+        !/^[1-9]\d{0,9}$/.test(sample.seed) ||
+        BigInt(sample.seed) > 0xffff_ffffn ||
+        seenSeeds.has(sample.seed) ||
+        sample.runDirectory !== expectedRunDirectory
+      ) {
+        throw new Error(`sweep sample ${index} has invalid identity evidence`);
+      }
+      seenSeeds.add(sample.seed);
+    }
+    const runEntries = (await readdir(runsDirectory)).sort();
+    const expectedEntries = artifact.samples
+      .map((sample) => basename(sample.runDirectory))
+      .sort();
+    if (firstDifferencePath(expectedEntries, runEntries) !== undefined) {
+      throw new Error("sweep run directory set does not match sweep.json");
+    }
+    for (const sample of artifact.samples) {
+      const verified = await verifyRunDirectory(
+        resolve(runsDirectory, basename(sample.runDirectory)),
+        false
+      );
+      const expectedScenario = compileScenario(
+        {
+          ...requireSweepRecord(baseScenarioInput, "base scenario"),
+          seed: sample.seed
+        },
+        verified.content
+      );
+      if (
+        verified.content.manifestHash !== artifact.contentManifestHash ||
+        (await canonicalHash(
+          compileScenario(baseScenarioInput, verified.content)
+        )) !== artifact.scenarioHash ||
+        firstDifferencePath(expectedScenario, verified.scenario) !==
+          undefined ||
+        verified.result.scenarioHash !== sample.scenarioHash ||
+        verified.result.terminalResult !== sample.terminalResult ||
+        verified.result.terminalTick !== sample.terminalTick ||
+        verified.result.finalStateChecksum !== sample.finalStateChecksum ||
+        verified.result.eventStreamChecksum !== sample.eventStreamChecksum
+      ) {
+        throw new Error(
+          "sweep sample evidence does not match its verified run"
+        );
+      }
+    }
+  } finally {
+    await runsHandle?.close().catch(() => undefined);
+    await rootHandle?.close().catch(() => undefined);
   }
 }
 
@@ -1113,6 +1156,13 @@ async function sweep(args: ParsedArgs): Promise<void> {
       async (stagingDirectory) => {
         const runsDirectory = resolve(stagingDirectory, "runs");
         await mkdir(runsDirectory);
+        await Promise.all([
+          writeJson(resolve(stagingDirectory, "matrix.compiled.json"), matrix),
+          writeJson(
+            resolve(stagingDirectory, "scenario.base.compiled.json"),
+            baseScenario
+          )
+        ]);
         const samples: SweepSampleArtifact[] = [];
         for (const [index, seed] of matrix.axes.seed.entries()) {
           const scenario = compileScenario({ ...scenarioInput, seed }, content);
@@ -1150,6 +1200,15 @@ async function sweep(args: ParsedArgs): Promise<void> {
       assertReplaceableSweep
     );
   } catch (error) {
+    if (
+      error instanceof RuntimeAssertionError ||
+      error instanceof RuntimeSafetyStopError ||
+      error instanceof ContentValidationError ||
+      error instanceof CliInputError ||
+      error instanceof ReportGenerationError
+    ) {
+      throw error;
+    }
     const message = error instanceof Error ? error.message : String(error);
     throw new ReportGenerationError(
       `Unable to publish sweep at ${outputDirectory}: ${message}`
