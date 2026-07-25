@@ -46,9 +46,7 @@ export interface CompletedAttemptRewardEvent {
 
 export interface AttemptProgressRewardClaim
   extends CompletedAttemptRewardEvent {
-  readonly policyId: StableId;
-  readonly forgeOrePerDefeatedEnemy: number;
-  readonly startedWaveRewards: readonly AttemptWaveMilestoneReward[];
+  readonly policy: AttemptProgressRewardPolicy;
   readonly forgeOreAwarded: number;
 }
 
@@ -245,9 +243,7 @@ function normalizeClaim(
       "terminalResult",
       "defeatedEnemies",
       "startedWaveIds",
-      "policyId",
-      "forgeOrePerDefeatedEnemy",
-      "startedWaveRewards",
+      "policy",
       "forgeOreAwarded"
     ],
     description
@@ -264,58 +260,17 @@ function normalizeClaim(
     },
     description
   );
-  const forgeOrePerDefeatedEnemy = requireProfileUnsigned(
-    source.forgeOrePerDefeatedEnemy,
-    `${description} forgeOrePerDefeatedEnemy`
-  );
-  const startedWaveRewards = Object.freeze(
-    requireProfileArray(
-      source.startedWaveRewards,
-      `${description} startedWaveRewards`
-    ).map((entry, rewardIndex) =>
-      normalizeWaveReward(
-        entry,
-        `${description} startedWaveRewards[${rewardIndex}]`
-      )
-    )
-  );
-  if (
-    startedWaveRewards.length !== event.startedWaveIds.length ||
-    startedWaveRewards.some(
-      (reward, rewardIndex) =>
-        reward.waveId !== event.startedWaveIds[rewardIndex]
-    )
-  )
-    throw new RangeError(
-      `${description} rewards must match started wave evidence`
-    );
-  let expectedForgeOre = event.defeatedEnemies * forgeOrePerDefeatedEnemy;
-  if (!Number.isSafeInteger(expectedForgeOre))
-    throw new RangeError(`${description} Forge Ore exceeds safe integer range`);
-  for (const reward of startedWaveRewards) {
-    expectedForgeOre += reward.forgeOre;
-    if (!Number.isSafeInteger(expectedForgeOre))
-      throw new RangeError(
-        `${description} Forge Ore exceeds safe integer range`
-      );
-  }
+  const expectedClaim = createClaim(event, normalizePolicy(source.policy));
   const forgeOreAwarded = requireProfileUnsigned(
     source.forgeOreAwarded,
     `${description} forgeOreAwarded`
   );
-  if (forgeOreAwarded !== expectedForgeOre)
+  if (forgeOreAwarded !== expectedClaim.forgeOreAwarded)
     throw new RangeError(
       `${description} Forge Ore does not match reward evidence`
     );
   return Object.freeze({
-    ...event,
-    policyId: requireProfileId(
-      source.policyId,
-      policyIdPattern,
-      `${description} policyId`
-    ),
-    forgeOrePerDefeatedEnemy,
-    startedWaveRewards,
+    ...expectedClaim,
     forgeOreAwarded
   });
 }
@@ -387,9 +342,7 @@ function createClaim(
   }
   return Object.freeze({
     ...event,
-    policyId: policy.policyId,
-    forgeOrePerDefeatedEnemy: policy.forgeOrePerDefeatedEnemy,
-    startedWaveRewards: Object.freeze(startedWaveRewards),
+    policy,
     forgeOreAwarded
   });
 }

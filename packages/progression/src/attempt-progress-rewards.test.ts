@@ -12,7 +12,7 @@ import {
 } from "./index.js";
 
 const checksum =
-  "ed32af16d6ac5e39fc57c2ca58e2ed8970d1d2b8d959d212e82ef3c985d4fe95";
+  "a054d7ab58d97532058c520ec567b5168788ce1f3c103f514994d36790d9d4a7";
 
 describe("attempt progress rewards", () => {
   it("commits canonical kill and wave progress rewards exactly once", async () => {
@@ -199,5 +199,23 @@ describe("attempt progress rewards", () => {
         events: []
       })
     ).toThrow("Forge Ore does not match reward evidence");
+    expect(() =>
+      resolveAttemptProgressRewards({
+        schemaVersion: 1,
+        profile: committed.profile,
+        ledger: committed.ledger,
+        policy: {
+          ...shuttergateAttemptRewardPolicy,
+          waveMilestoneRewards:
+            shuttergateAttemptRewardPolicy.waveMilestoneRewards.map(
+              (reward, index) =>
+                index === 4
+                  ? { ...reward, forgeOre: reward.forgeOre + 1 }
+                  : reward
+            )
+        },
+        events: [shuttergateAttemptRewardEvents[0]]
+      })
+    ).toThrow("conflicts with claimed attempt evidence");
   });
 });

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { attemptProgressRewardParityEvidence } from "./attempt-progress-rewards.fixture.js";
 
 const checksum =
-  "ed32af16d6ac5e39fc57c2ca58e2ed8970d1d2b8d959d212e82ef3c985d4fe95";
+  "a054d7ab58d97532058c520ec567b5168788ce1f3c103f514994d36790d9d4a7";
 
 describe("attempt progress reward browser parity", () => {
   it("matches literal Node persistent reward evidence", async () => {
