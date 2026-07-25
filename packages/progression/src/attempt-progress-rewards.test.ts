@@ -5,10 +5,10 @@ import {
   shuttergateAttemptRewardEvents,
   shuttergateAttemptRewardPolicy
 } from "./attempt-progress-rewards.fixture.js";
+import { resolveAttemptProgressRewards } from "./attempt-progress-rewards.js";
 import {
   createInitialAttemptRewardLedger,
-  createInitialProfile,
-  resolveAttemptProgressRewards
+  createInitialProfile
 } from "./index.js";
 
 const checksum =

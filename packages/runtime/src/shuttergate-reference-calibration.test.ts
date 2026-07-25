@@ -1,9 +1,9 @@
 import { compileContent } from "@dwarven-depths/content-runtime";
 import { type ContentBundle, canonicalHash } from "@dwarven-depths/contracts";
+import * as progressionPublicApi from "@dwarven-depths/progression";
 import {
   createInitialAttemptRewardLedger,
-  createInitialProfile,
-  resolveAttemptProgressRewards
+  createInitialProfile
 } from "@dwarven-depths/progression";
 import { describe, expect, it } from "vitest";
 import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
@@ -325,20 +325,19 @@ describe("Shuttergate reference balance calibration", () => {
     );
     expect(Object.isFrozen(result.progression)).toBe(true);
 
-    expect(() =>
-      resolveAttemptProgressRewards({
-        ...progressState,
-        events: [
-          {
-            ...result.rewardEvent,
-            rewardId: "reward.attempt.shuttergate.substituted" as never,
-            terminalResult: "victory",
-            defeatedEnemies: 999,
-            startedWaveIds: waveIds
-          }
-        ]
-      })
-    ).toThrow("rewardId must be canonically derived from attemptId");
+    const replayed = await runShuttergateAttemptWithProgress(content, request, {
+      schemaVersion: 1,
+      profile: result.progression.profile,
+      ledger: result.progression.ledger,
+      policy: progressState.policy
+    });
+    expect(replayed.progression.decisions[0]).toMatchObject({
+      rewardId: "reward.attempt.shuttergate.a0003",
+      forgeOre: 0,
+      status: "already_claimed"
+    });
+
+    expect("resolveAttemptProgressRewards" in progressionPublicApi).toBe(false);
     await expect(
       runShuttergateAttemptWithProgress(content, request, {
         ...progressState,
