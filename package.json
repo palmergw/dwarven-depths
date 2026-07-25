@@ -14,7 +14,7 @@
     "test:browser": "pnpm build && vitest run --config vitest.browser.config.ts",
     "test:browser:docker": "./scripts/test-browser-docker.sh",
     "lint": "biome check .",
-    "format:check": "biome format . --check",
+    "format:check": "biome format .",
     "check:artifacts": "node scripts/check-generated-artifacts.mjs",
     "sim": "pnpm build && node apps/sim-cli/dist/cli.js",
     "validate": "pnpm sim validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
