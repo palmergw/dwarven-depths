@@ -414,14 +414,17 @@ export class RuntimeAssertionError extends Error {
 
 export class RuntimeSafetyStopError extends Error {
   readonly code: "simulation_stalled" | "tick_budget_exhausted";
+  readonly tick: number;
 
   constructor(
     code: "simulation_stalled" | "tick_budget_exhausted",
-    message: string
+    message: string,
+    tick: number
   ) {
     super(message);
     this.name = "RuntimeSafetyStopError";
     this.code = code;
+    this.tick = tick;
   }
 }
 
@@ -494,7 +497,8 @@ async function executeScenario(
     if (result.state === previousState) {
       throw new RuntimeSafetyStopError(
         "simulation_stalled",
-        `Scenario ${scenario.id} made no progress at tick ${state.tick}`
+        `Scenario ${scenario.id} made no progress at tick ${state.tick}`,
+        state.tick
       );
     }
     state = result.state;
@@ -504,7 +508,8 @@ async function executeScenario(
   if (state.phase !== "TERMINAL" || !state.terminalResult) {
     throw new RuntimeSafetyStopError(
       "tick_budget_exhausted",
-      `Scenario ${scenario.id} did not terminate within ${scenario.maximumTicks} ticks`
+      `Scenario ${scenario.id} did not terminate within ${scenario.maximumTicks} ticks`,
+      state.tick
     );
   }
   if (

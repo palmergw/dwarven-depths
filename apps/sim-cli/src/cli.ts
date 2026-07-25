@@ -269,6 +269,27 @@ interface SafetyStopMinimizationArtifact
   readonly artifactChecksum: string;
 }
 
+interface StalledMinimizationArtifactBody {
+  readonly schemaVersion: 6;
+  readonly complete: true;
+  readonly assertionCode: "runtime_safety_stop";
+  readonly safetyStopCode: "simulation_stalled";
+  readonly stalledTick: number;
+  readonly contentManifestHash: string;
+  readonly sourceScenarioHash: string;
+  readonly minimizedScenarioHash: string;
+  readonly originalCommandCount: number;
+  readonly minimizedCommandCount: number;
+  readonly retainedCommandIndexes: readonly number[];
+  readonly candidateEvaluationCount: number;
+  readonly originalMaximumTicks: number;
+  readonly minimizedMaximumTicks: number;
+}
+
+interface StalledMinimizationArtifact extends StalledMinimizationArtifactBody {
+  readonly artifactChecksum: string;
+}
+
 interface ReplayMinimizationArtifactBody {
   readonly schemaVersion: 3 | 4 | 5;
   readonly complete: true;
@@ -1622,6 +1643,92 @@ async function deriveSafetyStopMinimization(
   };
 }
 
+async function reproducesSimulationStall(
+  scenario: ReturnType<typeof compileScenario>,
+  content: Awaited<ReturnType<typeof compileContent>>,
+  retainedCommandIndexes: readonly number[],
+  stalledTick: number,
+  maximumTicks = scenario.maximumTicks
+): Promise<boolean> {
+  try {
+    await runScenario(
+      scenarioWithoutExpectation(
+        scenario,
+        content,
+        retainedCommandIndexes,
+        maximumTicks
+      ),
+      content
+    );
+    return false;
+  } catch (error) {
+    if (error instanceof RuntimeSafetyStopError) {
+      return error.code === "simulation_stalled" && error.tick === stalledTick;
+    }
+    if (error instanceof ContentValidationError) return false;
+    throw error;
+  }
+}
+
+async function deriveSimulationStallMinimization(
+  scenario: ReturnType<typeof compileScenario>,
+  content: Awaited<ReturnType<typeof compileContent>>,
+  stalledTick: number
+): Promise<{
+  readonly retainedCommandIndexes: readonly number[];
+  readonly minimumTicks: number;
+  readonly candidateEvaluationCount: number;
+}> {
+  let retainedCommandIndexes = scenario.commands.map((_, index) => index);
+  let candidateEvaluationCount = 0;
+  let changed: boolean;
+  do {
+    changed = false;
+    for (
+      let position = retainedCommandIndexes.length - 1;
+      position >= 0;
+      position -= 1
+    ) {
+      const candidate = retainedCommandIndexes.filter(
+        (_, candidatePosition) => candidatePosition !== position
+      );
+      candidateEvaluationCount += 1;
+      if (
+        await reproducesSimulationStall(
+          scenario,
+          content,
+          candidate,
+          stalledTick
+        )
+      ) {
+        retainedCommandIndexes = candidate;
+        changed = true;
+      }
+    }
+  } while (changed);
+
+  let minimumTicks = 1;
+  let maximumTicks = scenario.maximumTicks;
+  while (minimumTicks < maximumTicks) {
+    const candidateTicks = Math.floor((minimumTicks + maximumTicks) / 2);
+    candidateEvaluationCount += 1;
+    if (
+      await reproducesSimulationStall(
+        scenario,
+        content,
+        retainedCommandIndexes,
+        stalledTick,
+        candidateTicks
+      )
+    ) {
+      maximumTicks = candidateTicks;
+    } else {
+      minimumTicks = candidateTicks + 1;
+    }
+  }
+  return { retainedCommandIndexes, minimumTicks, candidateEvaluationCount };
+}
+
 type MinimizedReplayDivergence = {
   readonly code:
     | "state_checksum_mismatch"
@@ -2064,6 +2171,147 @@ async function assertSafetyStopMinimization(
   }
 }
 
+async function assertStalledMinimization(
+  artifact: StalledMinimizationArtifact,
+  sourceScenario: ReturnType<typeof compileScenario>,
+  minimizedScenario: ReturnType<typeof compileScenario>,
+  content: Awaited<ReturnType<typeof compileContent>>
+): Promise<void> {
+  requireExactKeys(
+    artifact,
+    [
+      "schemaVersion",
+      "complete",
+      "assertionCode",
+      "safetyStopCode",
+      "stalledTick",
+      "contentManifestHash",
+      "sourceScenarioHash",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "minimizedCommandCount",
+      "retainedCommandIndexes",
+      "candidateEvaluationCount",
+      "originalMaximumTicks",
+      "minimizedMaximumTicks",
+      "artifactChecksum"
+    ],
+    "minimization.json"
+  );
+  const { artifactChecksum, ...artifactBody } = artifact;
+  const indexes = artifact.retainedCommandIndexes;
+  const validIndexes =
+    Array.isArray(indexes) &&
+    indexes.every(
+      (index, position) =>
+        Number.isSafeInteger(index) &&
+        index >= 0 &&
+        index < sourceScenario.commands.length &&
+        (position === 0 || index > (indexes[position - 1] as number))
+    );
+  if (
+    artifact.schemaVersion !== 6 ||
+    artifact.complete !== true ||
+    artifact.assertionCode !== "runtime_safety_stop" ||
+    artifact.safetyStopCode !== "simulation_stalled" ||
+    !Number.isSafeInteger(artifact.stalledTick) ||
+    artifact.stalledTick < 0 ||
+    sourceScenario.expectedTerminalResult !== undefined ||
+    minimizedScenario.expectedTerminalResult !== undefined ||
+    artifact.contentManifestHash !== content.manifestHash ||
+    artifact.sourceScenarioHash !== (await canonicalHash(sourceScenario)) ||
+    artifact.minimizedScenarioHash !==
+      (await canonicalHash(minimizedScenario)) ||
+    artifact.originalCommandCount !== sourceScenario.commands.length ||
+    artifact.minimizedCommandCount !== minimizedScenario.commands.length ||
+    artifact.minimizedCommandCount !== indexes.length ||
+    !validIndexes ||
+    firstDifferencePath(minimizedScenario, {
+      ...sourceScenario,
+      maximumTicks: minimizedScenario.maximumTicks,
+      commands: indexes.map((index) => sourceScenario.commands[index])
+    }) !== undefined ||
+    artifact.originalMaximumTicks !== sourceScenario.maximumTicks ||
+    artifact.minimizedMaximumTicks !== minimizedScenario.maximumTicks ||
+    minimizedScenario.maximumTicks > sourceScenario.maximumTicks ||
+    !Number.isSafeInteger(artifact.candidateEvaluationCount) ||
+    artifact.candidateEvaluationCount < sourceScenario.commands.length ||
+    typeof artifactChecksum !== "string" ||
+    !/^[a-f0-9]{64}$/.test(artifactChecksum) ||
+    artifactChecksum !==
+      (await canonicalArtifactHash(artifactBody, "minimization.json"))
+  ) {
+    throw new Error(
+      "minimization.json contains invalid or unbound stall evidence"
+    );
+  }
+
+  const sourceIndexes = sourceScenario.commands.map((_, index) => index);
+  if (
+    !(await reproducesSimulationStall(
+      sourceScenario,
+      content,
+      sourceIndexes,
+      artifact.stalledTick
+    ))
+  ) {
+    throw new Error("source scenario no longer reproduces its bound stall");
+  }
+  const derived = await deriveSimulationStallMinimization(
+    sourceScenario,
+    content,
+    artifact.stalledTick
+  );
+  if (
+    firstDifferencePath(derived.retainedCommandIndexes, indexes) !==
+      undefined ||
+    derived.minimumTicks !== minimizedScenario.maximumTicks ||
+    derived.candidateEvaluationCount !== artifact.candidateEvaluationCount
+  ) {
+    throw new Error(
+      "stall minimization evidence does not match deterministic source reduction"
+    );
+  }
+  const minimizedIndexes = minimizedScenario.commands.map((_, index) => index);
+  if (
+    !(await reproducesSimulationStall(
+      minimizedScenario,
+      content,
+      minimizedIndexes,
+      artifact.stalledTick
+    ))
+  ) {
+    throw new Error("minimized scenario does not reproduce the bound stall");
+  }
+  for (let index = 0; index < minimizedScenario.commands.length; index += 1) {
+    const retained = minimizedIndexes.filter(
+      (commandIndex) => commandIndex !== index
+    );
+    if (
+      await reproducesSimulationStall(
+        minimizedScenario,
+        content,
+        retained,
+        artifact.stalledTick
+      )
+    ) {
+      throw new Error("minimized stall is not command-deletion 1-minimal");
+    }
+  }
+  if (
+    minimizedScenario.maximumTicks > 1 &&
+    (await reproducesSimulationStall(
+      minimizedScenario,
+      content,
+      minimizedIndexes,
+      artifact.stalledTick,
+      minimizedScenario.maximumTicks - 1
+    ))
+  ) {
+    throw new Error("minimized stall does not have a minimal tick budget");
+  }
+}
+
 async function assertReplaceableMinimization(directory: string): Promise<void> {
   let rootHandle: Awaited<ReturnType<typeof open>> | undefined;
   try {
@@ -2128,6 +2376,15 @@ async function assertReplaceableMinimization(directory: string): Promise<void> {
     if (artifactInput["schemaVersion"] === 2) {
       await assertSafetyStopMinimization(
         artifactInput as unknown as SafetyStopMinimizationArtifact,
+        sourceScenario,
+        minimizedScenario,
+        content
+      );
+      return;
+    }
+    if (artifactInput["schemaVersion"] === 6) {
+      await assertStalledMinimization(
+        artifactInput as unknown as StalledMinimizationArtifact,
         sourceScenario,
         minimizedScenario,
         content
@@ -2418,6 +2675,7 @@ async function minimize(args: ParsedArgs): Promise<void> {
   }
   const allIndexes = scenario.commands.map((_, index) => index);
   let actualTerminalResult: string | undefined;
+  let stalledTick: number | undefined;
   let reduction: Awaited<
     ReturnType<typeof deriveTerminalAssertionMinimization>
   >;
@@ -2453,11 +2711,21 @@ async function minimize(args: ParsedArgs): Promise<void> {
         error.code === "tick_budget_exhausted"
       ) {
         reduction = await deriveSafetyStopMinimization(scenario, content);
+      } else if (
+        error instanceof RuntimeSafetyStopError &&
+        error.code === "simulation_stalled"
+      ) {
+        stalledTick = error.tick;
+        reduction = await deriveSimulationStallMinimization(
+          scenario,
+          content,
+          stalledTick
+        );
       } else if (error instanceof CliInputError) {
         throw error;
       } else {
         throw new CliInputError(
-          "scenario does not reproduce tick_budget_exhausted"
+          "scenario does not reproduce a supported runtime safety stop"
         );
       }
     }
@@ -2484,23 +2752,35 @@ async function minimize(args: ParsedArgs): Promise<void> {
   };
   const artifactBody:
     | MinimizationArtifactBody
-    | SafetyStopMinimizationArtifactBody =
-    scenario.expectedTerminalResult === undefined
+    | SafetyStopMinimizationArtifactBody
+    | StalledMinimizationArtifactBody =
+    stalledTick !== undefined
       ? {
-          schemaVersion: 2,
+          schemaVersion: 6,
           complete: true,
           assertionCode: "runtime_safety_stop",
-          safetyStopCode: "tick_budget_exhausted",
-          ...sharedArtifactBody
+          safetyStopCode: "simulation_stalled",
+          stalledTick,
+          ...sharedArtifactBody,
+          originalMaximumTicks: scenario.maximumTicks,
+          minimizedMaximumTicks: minimizedScenario.maximumTicks
         }
-      : {
-          schemaVersion: 1,
-          complete: true,
-          assertionCode: "unexpected_terminal_result",
-          expectedTerminalResult: scenario.expectedTerminalResult,
-          actualTerminalResult: actualTerminalResult as string,
-          ...sharedArtifactBody
-        };
+      : scenario.expectedTerminalResult === undefined
+        ? {
+            schemaVersion: 2,
+            complete: true,
+            assertionCode: "runtime_safety_stop",
+            safetyStopCode: "tick_budget_exhausted",
+            ...sharedArtifactBody
+          }
+        : {
+            schemaVersion: 1,
+            complete: true,
+            assertionCode: "unexpected_terminal_result",
+            expectedTerminalResult: scenario.expectedTerminalResult,
+            actualTerminalResult: actualTerminalResult as string,
+            ...sharedArtifactBody
+          };
   const artifact = {
     ...artifactBody,
     artifactChecksum: await canonicalHash(artifactBody)
@@ -2550,7 +2830,16 @@ async function minimize(args: ParsedArgs): Promise<void> {
             expectedTerminalResult: artifact.expectedTerminalResult,
             actualTerminalResult: artifact.actualTerminalResult
           }
-        : { safetyStopCode: artifact.safetyStopCode }),
+        : {
+            safetyStopCode: artifact.safetyStopCode,
+            ...(artifact.schemaVersion === 6
+              ? {
+                  stalledTick: artifact.stalledTick,
+                  originalMaximumTicks: artifact.originalMaximumTicks,
+                  minimizedMaximumTicks: artifact.minimizedMaximumTicks
+                }
+              : {})
+          }),
       originalCommandCount: artifact.originalCommandCount,
       minimizedCommandCount: artifact.minimizedCommandCount,
       artifactChecksum: artifact.artifactChecksum

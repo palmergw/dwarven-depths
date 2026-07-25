@@ -420,6 +420,105 @@ describe("simulation CLI", () => {
     expect(existsSync(terminalOutput)).toBe(false);
   });
 
+  it("minimizes an exact simulation stall into self-verifying schema-6 evidence", async () => {
+    const directory = temporaryDirectory();
+    const content = resolve(directory, "content.json");
+    const scenario = resolve(directory, "scenario.json");
+    const output = resolve(directory, "stall-minimization");
+    writeFileSync(
+      content,
+      JSON.stringify({
+        schemaVersion: 1,
+        contentVersion: "stall-minimization-test",
+        definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+      })
+    );
+    writeFileSync(
+      scenario,
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "scenario.test.stall_minimization",
+        levelId: "level.empty",
+        seed: "1",
+        maximumTicks: 64,
+        commands: []
+      })
+    );
+
+    const first = runCli(
+      "minimize",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      output
+    );
+    expect(first.status, first.stderr).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({
+      assertionCode: "runtime_safety_stop",
+      safetyStopCode: "simulation_stalled",
+      stalledTick: 0,
+      originalMaximumTicks: 64,
+      minimizedMaximumTicks: 1,
+      originalCommandCount: 0,
+      minimizedCommandCount: 0
+    });
+    const artifactPath = resolve(output, "minimization.json");
+    const artifactText = readFileSync(artifactPath, "utf8");
+    expect(JSON.parse(artifactText)).toMatchObject({
+      schemaVersion: 6,
+      safetyStopCode: "simulation_stalled",
+      stalledTick: 0,
+      retainedCommandIndexes: [],
+      originalMaximumTicks: 64,
+      minimizedMaximumTicks: 1
+    });
+    expect(
+      JSON.parse(
+        readFileSync(
+          resolve(output, "scenario.minimized.compiled.json"),
+          "utf8"
+        )
+      )
+    ).toMatchObject({ maximumTicks: 1, commands: [] });
+
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        output,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(0);
+    expect(readFileSync(artifactPath, "utf8")).toBe(artifactText);
+
+    const artifact = JSON.parse(artifactText);
+    artifact.stalledTick = 1;
+    const { artifactChecksum: _, ...body } = artifact;
+    artifact.artifactChecksum = await canonicalHash(body);
+    writeFileSync(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`);
+    const tamperedText = readFileSync(artifactPath, "utf8");
+    const tampered = runCli(
+      "minimize",
+      "--content",
+      content,
+      "--scenario",
+      scenario,
+      "--out",
+      output,
+      "--replace",
+      "true"
+    );
+    expect(tampered.status).toBe(3);
+    expect(readFileSync(artifactPath, "utf8")).toBe(tamperedText);
+  });
+
   it("minimizes replay checkpoint divergences into schema-3 evidence", () => {
     const directory = temporaryDirectory();
     const content = resolve(directory, "content.json");
