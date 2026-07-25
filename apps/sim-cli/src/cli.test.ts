@@ -33,6 +33,12 @@ const minimizationCompatibilityFixtures = JSON.parse(
   files: string[];
   artifactKeys: string[];
 }>;
+const legacyMinimizationEvidence = JSON.parse(
+  readFileSync(
+    resolve("apps/sim-cli/src/fixtures/minimization-legacy-evidence.json"),
+    "utf8"
+  )
+) as Array<{ artifactChecksum: string }>;
 
 function expectCompatibleMinimization(
   directory: string,
@@ -45,9 +51,17 @@ function expectCompatibleMinimization(
   expect(readdirSync(directory).sort()).toEqual(fixture?.files);
   const artifact = JSON.parse(
     readFileSync(resolve(directory, "minimization.json"), "utf8")
-  ) as { schemaVersion?: unknown } & Record<string, unknown>;
+  ) as { schemaVersion?: unknown; artifactChecksum?: unknown } & Record<
+    string,
+    unknown
+  >;
   expect(artifact.schemaVersion).toBe(schemaVersion);
   expect(Object.keys(artifact).sort()).toEqual(fixture?.artifactKeys);
+  expect(
+    legacyMinimizationEvidence.find(
+      (evidence) => evidence.artifactChecksum === artifact.artifactChecksum
+    )
+  ).toEqual(artifact);
 }
 
 function artifactDirectorySnapshot(directory: string): unknown[] {
