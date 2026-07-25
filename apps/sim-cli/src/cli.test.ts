@@ -473,6 +473,125 @@ describe("simulation CLI", () => {
     }
   }, 60_000);
 
+  it("expands and verifies the purchased-build sweep axis", () => {
+    const directory = temporaryDirectory();
+    const content = resolve(directory, "content.json");
+    const scenario = resolve(directory, "scenario.json");
+    const matrix = resolve(directory, "matrix.json");
+    const output = resolve(directory, "build-sweep-output");
+    writeFileSync(
+      content,
+      readFileSync(resolve("content/fixtures/phase-3-shuttergate.json"))
+    );
+    writeFileSync(
+      scenario,
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "scenario.test.build_sweep",
+        levelId: "level.shuttergate_hall",
+        seed: "99",
+        maximumTicks: 1,
+        commands: [{ atTick: 0, type: "confirmPreparation" }]
+      })
+    );
+    const matrixValue = {
+      schemaVersion: 1,
+      id: "matrix.test.build_sweep",
+      content: "content.json",
+      scenario: "scenario.json",
+      axes: {
+        seed: ["2"],
+        placement: ["placement.shuttergate_north_guard"],
+        controller: ["controller.target.nearest.v1"],
+        build: [
+          "build.profile.new_campaign.v1",
+          "build.warden.shield_slam_rank_1.v1"
+        ]
+      }
+    };
+    writeFileSync(matrix, JSON.stringify(matrixValue));
+
+    const result = runCli("sweep", "--matrix", matrix, "--out", output);
+    expect(result.status, result.stderr).toBe(0);
+    const artifact = JSON.parse(
+      readFileSync(resolve(output, "sweep.json"), "utf8")
+    ) as {
+      schemaVersion: number;
+      samples: Array<{
+        buildId: string;
+        calibrationChecksum: string;
+        calibrationEvidence: {
+          buildId: string;
+          deployedWardenMaximumHealth: number;
+          deployedWardenAttackDamage: number;
+        };
+      }>;
+    };
+    expect(artifact.schemaVersion).toBe(5);
+    expect(artifact.samples.map((sample) => sample.buildId)).toEqual(
+      matrixValue.axes.build
+    );
+    expect(
+      artifact.samples.map((sample) => [
+        sample.calibrationEvidence.buildId,
+        sample.calibrationEvidence.deployedWardenMaximumHealth,
+        sample.calibrationEvidence.deployedWardenAttackDamage,
+        sample.calibrationChecksum
+      ])
+    ).toEqual([
+      [
+        "build.profile.new_campaign.v1",
+        240,
+        18,
+        "e0bd85a5aad379a8fe662c2e7be82b247c1848b56993e8e6a0147009525b0100"
+      ],
+      [
+        "build.warden.shield_slam_rank_1.v1",
+        260,
+        20,
+        "58e6f8047ccf310e4a80d3110e1b6e761508169b0447483488f5e679c778154f"
+      ]
+    ]);
+
+    writeFileSync(
+      resolve(output, "sweep.json"),
+      JSON.stringify({
+        ...artifact,
+        samples: artifact.samples.map((sample, index) =>
+          index === 0
+            ? { ...sample, buildId: "build.warden.shield_slam_rank_1.v1" }
+            : sample
+        )
+      })
+    );
+    expect(
+      runCli("sweep", "--matrix", matrix, "--out", output, "--replace", "true")
+        .status
+    ).toBe(3);
+
+    for (const build of [
+      ["toString"],
+      ["build.profile.new_campaign.v1", "build.profile.new_campaign.v1"]
+    ]) {
+      writeFileSync(
+        matrix,
+        JSON.stringify({
+          ...matrixValue,
+          axes: { ...matrixValue.axes, build }
+        })
+      );
+      expect(
+        runCli(
+          "sweep",
+          "--matrix",
+          matrix,
+          "--out",
+          resolve(directory, `invalid-build-${build.length}`)
+        ).status
+      ).toBe(2);
+    }
+  }, 60_000);
+
   it("compares verified bundles while ignoring provenance metadata", async () => {
     const directory = temporaryDirectory();
     const content = temporaryFile("content.json", {

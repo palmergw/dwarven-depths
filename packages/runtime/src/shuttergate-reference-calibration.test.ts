@@ -8,6 +8,7 @@ import {
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,
   runShuttergateSeedPlacementCalibration,
+  runShuttergateSeedPlacementControllerBuildCalibration,
   runShuttergateSeedPlacementControllerCalibration
 } from "./shuttergate-reference-calibration.js";
 
@@ -158,6 +159,57 @@ describe("Shuttergate reference balance calibration", () => {
     });
     expect(await canonicalHash(evidence)).toBe(
       "fd786ee88285806c4fc9758602deceb9b5b5874ad18f672f033c9588e501bd88"
+    );
+  }, 15_000);
+
+  it("binds purchased passive build effects into authoritative calibration", async () => {
+    const content = await compileContent(shuttergateInput);
+    const unupgraded =
+      await runShuttergateSeedPlacementControllerBuildCalibration(
+        content,
+        "2",
+        "placement.shuttergate_north_guard" as never,
+        "nearest",
+        "build.profile.new_campaign.v1"
+      );
+    const upgraded =
+      await runShuttergateSeedPlacementControllerBuildCalibration(
+        content,
+        "2",
+        "placement.shuttergate_north_guard" as never,
+        "nearest",
+        "build.warden.shield_slam_rank_1.v1"
+      );
+
+    expect(unupgraded).toMatchObject({
+      schemaVersion: 2,
+      calibrationId: "calibration.shuttergate.warden_build.v1",
+      buildId: "build.profile.new_campaign.v1",
+      deployedWardenMaximumHealth: 240,
+      deployedWardenAttackDamage: 18,
+      purchasedModifiers: []
+    });
+    expect(upgraded).toMatchObject({
+      schemaVersion: 2,
+      buildId: "build.warden.shield_slam_rank_1.v1",
+      deployedWardenMaximumHealth: 260,
+      deployedWardenAttackDamage: 20,
+      purchasedModifiers: [
+        {
+          characterId: "character.iron_warden",
+          maximumHealthAdd: 20,
+          attackDamageAdd: 2,
+          sourceUpgradeIds: ["upgrade.ability.shield_slam"]
+        }
+      ]
+    });
+    expect(upgraded.terminalTick).toBeGreaterThan(unupgraded.terminalTick);
+    expect(Object.isFrozen(upgraded.purchasedModifiers)).toBe(true);
+    expect(await canonicalHash(unupgraded)).toBe(
+      "e0bd85a5aad379a8fe662c2e7be82b247c1848b56993e8e6a0147009525b0100"
+    );
+    expect(await canonicalHash(upgraded)).toBe(
+      "58e6f8047ccf310e4a80d3110e1b6e761508169b0447483488f5e679c778154f"
     );
   }, 15_000);
 

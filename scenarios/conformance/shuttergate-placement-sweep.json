@@ -12,6 +12,10 @@
     "controller": [
       "controller.target.nearest.v1",
       "controller.target.lowest_health.v1"
+    ],
+    "build": [
+      "build.profile.new_campaign.v1",
+      "build.warden.shield_slam_rank_1.v1"
     ]
   }
 }

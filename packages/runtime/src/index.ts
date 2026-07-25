@@ -72,9 +72,13 @@ export {
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,
   runShuttergateSeedPlacementCalibration,
+  runShuttergateSeedPlacementControllerBuildCalibration,
   runShuttergateSeedPlacementControllerCalibration,
+  type ShuttergateBuildCalibrationEvidence,
+  type ShuttergateCalibrationBuildId,
   type ShuttergateCalibrationMilestone,
-  type ShuttergateReferenceCalibrationEvidence
+  type ShuttergateReferenceCalibrationEvidence,
+  shuttergateCalibrationBuildIds
 } from "./shuttergate-reference-calibration.js";
 export {
   evaluateTerminalState,
