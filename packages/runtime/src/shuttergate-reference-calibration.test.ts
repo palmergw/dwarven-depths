@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
   type: "json"
 };
-import { runShuttergateReferenceCalibration } from "./shuttergate-reference-calibration.js";
+import {
+  runShuttergatePlacementCalibration,
+  runShuttergateReferenceCalibration
+} from "./shuttergate-reference-calibration.js";
 
 export const shuttergateCalibrationChecksum =
   "4076169e8e506f82e5e1825ecd5a9cab210245a053edf7ebc12a0475ba4dd669";
@@ -79,6 +82,48 @@ describe("Shuttergate reference balance calibration", () => {
     await expect(
       runShuttergateReferenceCalibration(forgedManifest)
     ).rejects.toThrow("pinned reference content manifest");
+  });
+
+  it("runs each authored Warden placement through the same authority", async () => {
+    const content = await compileContent(shuttergateInput);
+    const keepGuard = await runShuttergatePlacementCalibration(
+      content,
+      "placement.shuttergate_keep_guard" as never
+    );
+
+    expect(keepGuard).toMatchObject({
+      schemaVersion: 1,
+      placementPointId: "placement.shuttergate_keep_guard",
+      terminalTick: 1_869,
+      terminalResult: "defeat",
+      terminalReason: "all_dwarves_downed",
+      deepestStartedWaveId: "wave.shuttergate_3",
+      firedSpawns: 7,
+      defeatedEnemies: 5,
+      survivingEnemies: 2,
+      wardenHealth: 0,
+      wardenLifecycle: "downed",
+      bossRewardClaimed: false,
+      deepRangerUnlocked: false
+    });
+    expect(Object.isFrozen(keepGuard)).toBe(true);
+    expect(Object.isFrozen(keepGuard.milestones)).toBe(true);
+    expect(await canonicalHash(keepGuard)).toBe(
+      "e49176bf2a18740ab8d0b4a5aed12bd6be4fca0abc170ca239b320930d391391"
+    );
+  });
+
+  it("rejects placement points outside the pinned Shuttergate map", async () => {
+    const content = await compileContent(shuttergateInput);
+
+    await expect(
+      runShuttergatePlacementCalibration(
+        content,
+        "placement.some_other_map" as never
+      )
+    ).rejects.toThrow(
+      "requires an authored placement point (placement.some_other_map)"
+    );
   });
 
   it("recompiles canonical bundle data instead of trusting supplied indexes", async () => {

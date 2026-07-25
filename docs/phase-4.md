@@ -95,6 +95,11 @@ the repository.
   maximum, p50, and p90 metrics. Percentiles use the deterministic nearest-rank
   method over sorted integer ticks. Replacement recomputes these metrics from
   replay-verified constituent evidence and rejects aggregate tampering.
+- The pinned authoritative Shuttergate calibration can execute either authored
+  Warden placement point through one shared combat, reward, and terminal path.
+  The original north-guard reference API and checksum remain stable, while
+  unknown or foreign placement IDs are rejected before combat. This is the
+  executable prerequisite for, but not yet the CLI placement sweep axis.
 
 ## Not implemented yet
 
