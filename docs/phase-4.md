@@ -206,8 +206,15 @@ the repository.
   budget, and deterministic candidate count, and receives the same independent
   staging/replacement rederivation and filesystem protections as schema 1.
   Terminal scenarios and the distinct `simulation_stalled` invariant are rejected
-  by this boundary rather than being relabeled. Replay-input minimization and
-  additional invariant classes remain later expansions.
+  by this boundary rather than being relabeled. A strict replay input can also
+  preserve an exact terminal checkpoint state or event-stream checksum divergence
+  while commands are deleted in deterministic reverse-index passes. Schema-3
+  evidence binds source and minimized scenarios and replays, retained source
+  indexes, divergence code/checkpoint tick, candidate count, and canonical
+  checksums. Publication independently rederives the command-deletion 1-minimal
+  result and retains the same filesystem protections. Replay tick-budget
+  reduction, non-checkpoint divergences, and additional invariant classes remain
+  later expansions.
 
 ## Not implemented yet
 

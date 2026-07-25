@@ -419,6 +419,164 @@ describe("simulation CLI", () => {
     expect(existsSync(terminalOutput)).toBe(false);
   });
 
+  it("minimizes replay checkpoint divergences into schema-3 evidence", () => {
+    const directory = temporaryDirectory();
+    const content = resolve(directory, "content.json");
+    const scenario = resolve(directory, "scenario.json");
+    const runOutput = resolve(directory, "source-run");
+    const output = resolve(directory, "replay-minimization");
+    writeFileSync(
+      content,
+      JSON.stringify({
+        schemaVersion: 1,
+        contentVersion: "replay-minimization-test",
+        definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+      })
+    );
+    writeFileSync(
+      scenario,
+      JSON.stringify({
+        schemaVersion: 1,
+        id: "scenario.test.replay_minimization",
+        levelId: "level.empty",
+        seed: "1",
+        maximumTicks: 4,
+        commands: [{ atTick: 0, type: "confirmPreparation" }],
+        expectedTerminalResult: "victory"
+      })
+    );
+    expect(
+      runCli(
+        "run",
+        "--content",
+        content,
+        "--scenario",
+        scenario,
+        "--out",
+        runOutput
+      ).status
+    ).toBe(0);
+    const compiledContent = resolve(runOutput, "content.compiled.json");
+    const compiledScenario = resolve(runOutput, "scenario.compiled.json");
+    const validReplay = resolve(runOutput, "replay.json");
+    const divergentReplay = resolve(directory, "divergent-replay.json");
+    const replayValue = JSON.parse(readFileSync(validReplay, "utf8")) as {
+      checkpoints: Array<{ stateChecksum: string }>;
+    };
+    const finalCheckpoint = replayValue.checkpoints[0];
+    expect(finalCheckpoint).toBeDefined();
+    if (finalCheckpoint === undefined) throw new Error("missing checkpoint");
+    finalCheckpoint.stateChecksum = "0".repeat(64);
+    writeFileSync(divergentReplay, JSON.stringify(replayValue));
+
+    const first = runCli(
+      "minimize",
+      "--content",
+      compiledContent,
+      "--scenario",
+      compiledScenario,
+      "--replay",
+      divergentReplay,
+      "--out",
+      output
+    );
+    expect(first.status).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({
+      assertionCode: "replay_divergence",
+      divergenceCode: "state_checksum_mismatch",
+      checkpointTick: 0,
+      originalCommandCount: 1,
+      minimizedCommandCount: 1
+    });
+    const artifactPath = resolve(output, "minimization.json");
+    const artifactText = readFileSync(artifactPath, "utf8");
+    expect(JSON.parse(artifactText)).toMatchObject({
+      schemaVersion: 3,
+      retainedCommandIndexes: [0]
+    });
+    expect(
+      JSON.parse(readFileSync(resolve(output, "replay.minimized.json"), "utf8"))
+        .commands
+    ).toHaveLength(1);
+
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        compiledScenario,
+        "--replay",
+        divergentReplay,
+        "--out",
+        output,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(0);
+    expect(readFileSync(artifactPath, "utf8")).toBe(artifactText);
+
+    writeFileSync(
+      artifactPath,
+      artifactText.replace(
+        '"divergenceCode": "state_checksum_mismatch"',
+        '"divergenceCode": "event_stream_checksum_mismatch"'
+      )
+    );
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        compiledScenario,
+        "--replay",
+        divergentReplay,
+        "--out",
+        output,
+        "--replace",
+        "true"
+      ).status
+    ).toBe(3);
+
+    const validOutput = resolve(directory, "valid-replay-output");
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        compiledScenario,
+        "--replay",
+        validReplay,
+        "--out",
+        validOutput
+      ).status
+    ).toBe(2);
+    expect(existsSync(validOutput)).toBe(false);
+
+    const identityReplay = resolve(directory, "identity-replay.json");
+    writeFileSync(
+      identityReplay,
+      JSON.stringify({ ...replayValue, scenarioId: "scenario.test.foreign" })
+    );
+    const identityOutput = resolve(directory, "identity-output");
+    expect(
+      runCli(
+        "minimize",
+        "--content",
+        compiledContent,
+        "--scenario",
+        compiledScenario,
+        "--replay",
+        identityReplay,
+        "--out",
+        identityOutput
+      ).status
+    ).toBe(2);
+    expect(existsSync(identityOutput)).toBe(false);
+  });
+
   it("publishes and replay-validates a durable authoritative campaign", async () => {
     const directory = temporaryDirectory();
     const content = resolve(directory, "content.json");

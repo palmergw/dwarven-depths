@@ -82,6 +82,9 @@ pnpm sim minimize \
 # The same command accepts a scenario without expectedTerminalResult when it
 # reproduces the bounded tick_budget_exhausted runtime safety invariant.
 
+# A strict divergent replay can be supplied with --replay to minimize its
+# commands while preserving an exact terminal checkpoint checksum divergence.
+
 # Render text, JSON, CSV, or optional SVG diagnostics
 pnpm sim render \
   --run reports/warden-baseline \
