@@ -21,7 +21,8 @@ describe("progression profile", () => {
         }
       ],
       claimedExperienceRewardEvents: [],
-      selectedSkillNodes: []
+      selectedSkillNodes: [],
+      purchasedUpgrades: []
     });
     expect(Object.isFrozen(profile)).toBe(true);
     expect(Object.isFrozen(profile.unlockedCharacterIds)).toBe(true);
@@ -30,5 +31,6 @@ describe("progression profile", () => {
     expect(Object.isFrozen(profile.characterExperienceStates[0])).toBe(true);
     expect(Object.isFrozen(profile.claimedExperienceRewardEvents)).toBe(true);
     expect(Object.isFrozen(profile.selectedSkillNodes)).toBe(true);
+    expect(Object.isFrozen(profile.purchasedUpgrades)).toBe(true);
   });
 });

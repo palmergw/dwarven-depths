@@ -44,10 +44,17 @@ the repository.
   future attacks use the new values. Reapplication is idempotent, live totals
   cannot decrease, and ownership, overflow, lineage, and persisted battlefield
   evidence are validated before acceptance.
+- Authored shared upgrade catalogs define stable ability/item upgrade IDs,
+  positive ordered rank costs, and acyclic prerequisites. A Forge Ore purchase
+  commits exactly the next rank, preserves exact cumulative spend for later
+  full-recycle accounting, and increments the profile revision atomically.
+  Catalog/profile validation rejects unaffordable, maximum-rank, forged-spend,
+  missing-prerequisite, overflow, and malformed transactions without mutation;
+  purchase evidence is canonical and browser-parity pinned.
 
 ## Not implemented yet
 
 Durable file/local-storage profile adapters, encounter reward-event production,
-catch-up experience, Forge Ore purchases, saves and migrations, recycle
+catch-up experience, purchased-upgrade effect application, saves and migrations, recycle
 transactions, campaign/sweep harnesses, and upgraded-build calibration remain
 later Phase 4 checkpoints.

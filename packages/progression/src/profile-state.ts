@@ -10,6 +10,14 @@ export interface ProfileState {
   readonly characterExperienceStates: readonly CharacterExperienceState[];
   readonly claimedExperienceRewardEvents: readonly ClaimedExperienceRewardEvent[];
   readonly selectedSkillNodes: readonly SelectedSkillNode[];
+  readonly purchasedUpgrades: readonly PurchasedUpgrade[];
+}
+
+export interface PurchasedUpgrade {
+  readonly schemaVersion: 1;
+  readonly upgradeId: StableId;
+  readonly rank: number;
+  readonly forgeOreSpent: number;
 }
 
 export interface SelectedSkillNode {
@@ -34,6 +42,8 @@ export const experienceRewardEventIdPattern =
   /^event\.reward\.xp\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 export const skillNodeIdPattern =
   /^skill\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
+export const upgradeIdPattern =
+  /^upgrade\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/;
 
 export function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -250,6 +260,38 @@ function normalizeSelectedSkillNode(
   });
 }
 
+function normalizePurchasedUpgrade(
+  value: unknown,
+  index: number
+): PurchasedUpgrade {
+  const description = `profile purchasedUpgrades[${index}]`;
+  const source = requireProfileRecord(
+    value,
+    ["schemaVersion", "upgradeId", "rank", "forgeOreSpent"],
+    description
+  );
+  if (source.schemaVersion !== 1)
+    throw new RangeError(`${description} has unsupported schemaVersion`);
+  const rank = requireProfileUnsigned(source.rank, `${description} rank`);
+  if (rank === 0) throw new RangeError(`${description} rank must be positive`);
+  const forgeOreSpent = requireProfileUnsigned(
+    source.forgeOreSpent,
+    `${description} forgeOreSpent`
+  );
+  if (forgeOreSpent === 0)
+    throw new RangeError(`${description} forgeOreSpent must be positive`);
+  return Object.freeze({
+    schemaVersion: 1,
+    upgradeId: requireProfileId(
+      source.upgradeId,
+      upgradeIdPattern,
+      `${description} upgradeId`
+    ),
+    rank,
+    forgeOreSpent
+  });
+}
+
 export function normalizeProfileState(value: unknown): ProfileState {
   const source = requireProfileRecord(
     value,
@@ -261,7 +303,8 @@ export function normalizeProfileState(value: unknown): ProfileState {
       "claimedRewardIds",
       "characterExperienceStates",
       "claimedExperienceRewardEvents",
-      "selectedSkillNodes"
+      "selectedSkillNodes",
+      "purchasedUpgrades"
     ],
     "profile"
   );
@@ -299,6 +342,10 @@ export function normalizeProfileState(value: unknown): ProfileState {
     source.selectedSkillNodes,
     "profile selectedSkillNodes"
   ).map(normalizeSelectedSkillNode);
+  const purchasedUpgrades = requireProfileArray(
+    source.purchasedUpgrades,
+    "profile purchasedUpgrades"
+  ).map(normalizePurchasedUpgrade);
   for (const [description, values] of [
     ["unlocked character IDs", unlockedCharacterIds],
     ["claimed reward IDs", claimedRewardIds],
@@ -310,7 +357,11 @@ export function normalizeProfileState(value: unknown): ProfileState {
       "claimed experience reward event IDs",
       claimedExperienceRewardEvents.map((event) => event.eventId)
     ],
-    ["selected skill node IDs", selectedSkillNodes.map((entry) => entry.nodeId)]
+    [
+      "selected skill node IDs",
+      selectedSkillNodes.map((entry) => entry.nodeId)
+    ],
+    ["purchased upgrade IDs", purchasedUpgrades.map((entry) => entry.upgradeId)]
   ] as const) {
     if (new Set(values).size !== values.length)
       throw new RangeError(`profile contains duplicate ${description}`);
@@ -403,6 +454,11 @@ export function normalizeProfileState(value: unknown): ProfileState {
           left.spentSkillPointLevel - right.spentSkillPointLevel ||
           compareText(left.nodeId, right.nodeId)
       )
+    ),
+    purchasedUpgrades: Object.freeze(
+      [...purchasedUpgrades].sort((left, right) =>
+        compareText(left.upgradeId, right.upgradeId)
+      )
     )
   });
 }
@@ -429,6 +485,7 @@ export function createInitialProfile(ironWardenId: StableId): ProfileState {
       })
     ]),
     claimedExperienceRewardEvents: Object.freeze([]),
-    selectedSkillNodes: Object.freeze([])
+    selectedSkillNodes: Object.freeze([]),
+    purchasedUpgrades: Object.freeze([])
   });
 }

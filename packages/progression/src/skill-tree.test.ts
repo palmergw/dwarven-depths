@@ -13,7 +13,7 @@ import {
 } from "./skill-tree.js";
 
 const checksum =
-  "d57e377abef2fd808d0a7a35eec4b6e6765df31f70f0573a89778486578b571a";
+  "bac5ee49d37108256ea90eef0df6a5de59790730034944841b966eaf39dd7ba6";
 
 describe("authored character skill trees", () => {
   it("consumes ordered points, persists choices, and derives effects", async () => {

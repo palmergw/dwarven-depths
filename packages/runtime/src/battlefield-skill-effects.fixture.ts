@@ -99,7 +99,8 @@ function profile(includeSecondNode: boolean): ProfileState {
             }
           ]
         : [])
-    ]
+    ],
+    purchasedUpgrades: []
   };
 }
 

@@ -13,7 +13,7 @@ import {
 } from "./owned-character-experience-rewards.fixture.js";
 
 const checksum =
-  "f543d8d6bddc3b7e5b5d5d837267cad8565fcd85804743b5242590eff6361e89";
+  "664e0a909ba322e5094940eecd3cecc2759d22ad9ea63c346bb9a43247594483";
 
 describe("owned character experience rewards", () => {
   it("commits ordered event ownership into persistent character state", async () => {

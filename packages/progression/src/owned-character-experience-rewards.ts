@@ -280,7 +280,8 @@ export function resolveOwnedCharacterExperienceRewards(
         compareText(left.eventId, right.eventId)
       )
     ),
-    selectedSkillNodes: profile.selectedSkillNodes
+    selectedSkillNodes: profile.selectedSkillNodes,
+    purchasedUpgrades: profile.purchasedUpgrades
   });
   return Object.freeze({
     schemaVersion: 1,

@@ -302,7 +302,8 @@ export function resolveBossDeathRewards(
     characterExperienceStates: startingProfile.characterExperienceStates,
     claimedExperienceRewardEvents:
       startingProfile.claimedExperienceRewardEvents,
-    selectedSkillNodes: startingProfile.selectedSkillNodes
+    selectedSkillNodes: startingProfile.selectedSkillNodes,
+    purchasedUpgrades: startingProfile.purchasedUpgrades
   });
   return Object.freeze({
     schemaVersion: 1,
