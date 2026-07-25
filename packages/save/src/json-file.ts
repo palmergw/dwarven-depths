@@ -1,5 +1,14 @@
+import { randomUUID } from "node:crypto";
 import { constants } from "node:fs";
-import { copyFile, mkdir, open, rename, rm } from "node:fs/promises";
+import {
+  copyFile,
+  link,
+  mkdir,
+  open,
+  readFile,
+  rename,
+  rm
+} from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import {
   normalizeProfileSaveEnvelope,
@@ -55,8 +64,104 @@ type Generation =
   | { readonly status: "valid"; readonly envelope: ProfileSaveEnvelope }
   | { readonly status: "invalid"; readonly error: string };
 
+interface LockOwner {
+  readonly schemaVersion: 1;
+  readonly pid: number;
+  readonly processStartToken: string;
+  readonly nonce: string;
+}
+
+const lockNoncePattern = /^[1-9][0-9]*-[a-f0-9-]{36}$/;
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function rejectDuplicateJsonObjectKeys(text: string): void {
+  let offset = 0;
+  const skipWhitespace = () => {
+    while (/\s/.test(text[offset] ?? "")) offset += 1;
+  };
+  const parseString = (): string => {
+    const start = offset;
+    if (text[offset] !== '"') throw new SyntaxError("expected JSON string");
+    offset += 1;
+    while (offset < text.length) {
+      const character = text[offset];
+      if (character === '"') {
+        offset += 1;
+        return JSON.parse(text.slice(start, offset)) as string;
+      }
+      if (character === "\\") offset += 1;
+      offset += 1;
+    }
+    throw new SyntaxError("unterminated JSON string");
+  };
+  const parseValue = (depth: number): void => {
+    if (depth > 100) throw new RangeError("JSON nesting exceeds 100 levels");
+    skipWhitespace();
+    const character = text[offset];
+    if (character === '"') {
+      parseString();
+      return;
+    }
+    if (character === "{") {
+      offset += 1;
+      skipWhitespace();
+      const keys = new Set<string>();
+      if (text[offset] === "}") {
+        offset += 1;
+        return;
+      }
+      while (true) {
+        skipWhitespace();
+        const key = parseString();
+        if (keys.has(key))
+          throw new SyntaxError(`duplicate JSON object key ${key}`);
+        keys.add(key);
+        skipWhitespace();
+        if (text[offset] !== ":") throw new SyntaxError("expected JSON colon");
+        offset += 1;
+        parseValue(depth + 1);
+        skipWhitespace();
+        if (text[offset] === "}") {
+          offset += 1;
+          return;
+        }
+        if (text[offset] !== ",") throw new SyntaxError("expected JSON comma");
+        offset += 1;
+      }
+    }
+    if (character === "[") {
+      offset += 1;
+      skipWhitespace();
+      if (text[offset] === "]") {
+        offset += 1;
+        return;
+      }
+      while (true) {
+        parseValue(depth + 1);
+        skipWhitespace();
+        if (text[offset] === "]") {
+          offset += 1;
+          return;
+        }
+        if (text[offset] !== ",") throw new SyntaxError("expected JSON comma");
+        offset += 1;
+      }
+    }
+    const scalar = text
+      .slice(offset)
+      .match(
+        /^(?:true|false|null|-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)/
+      )?.[0];
+    if (scalar === undefined) throw new SyntaxError("invalid JSON value");
+    offset += scalar.length;
+  };
+  parseValue(0);
+  skipWhitespace();
+  if (offset !== text.length)
+    throw new SyntaxError("unexpected trailing JSON data");
 }
 
 async function readGeneration(path: string): Promise<Generation> {
@@ -89,6 +194,7 @@ async function readGeneration(path: string): Promise<Generation> {
         error: `save generation exceeds ${maximumJsonProfileSaveBytes} bytes`
       };
     const text = bytes.toString("utf8", 0, length);
+    rejectDuplicateJsonObjectKeys(text);
     const parsed: unknown = JSON.parse(text);
     return {
       status: "valid",
@@ -139,6 +245,64 @@ async function flushDirectory(path: string): Promise<void> {
   }
 }
 
+async function processStartToken(pid: number): Promise<string | undefined> {
+  try {
+    const value = await readFile(`/proc/${pid}/stat`, "utf8");
+    const fields = value
+      .slice(value.lastIndexOf(")") + 2)
+      .trim()
+      .split(/\s+/);
+    return fields[19];
+  } catch {
+    return undefined;
+  }
+}
+
+function parseLockOwner(text: string): LockOwner {
+  const value = JSON.parse(text) as unknown;
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    throw new TypeError("save lock metadata must be an object");
+  const record = value as Record<string, unknown>;
+  if (
+    Object.keys(record).sort().join(",") !==
+    "nonce,pid,processStartToken,schemaVersion"
+  )
+    throw new TypeError("save lock metadata has an invalid shape");
+  if (
+    record["schemaVersion"] !== 1 ||
+    !Number.isSafeInteger(record["pid"]) ||
+    (record["pid"] as number) <= 0 ||
+    typeof record["processStartToken"] !== "string" ||
+    typeof record["nonce"] !== "string" ||
+    !lockNoncePattern.test(record["nonce"])
+  )
+    throw new TypeError("save lock metadata is invalid");
+  return {
+    schemaVersion: 1,
+    pid: record["pid"] as number,
+    processStartToken: record["processStartToken"],
+    nonce: record["nonce"]
+  };
+}
+
+async function ownerIsAlive(owner: LockOwner): Promise<boolean> {
+  try {
+    process.kill(owner.pid, 0);
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "ESRCH"
+    )
+      return false;
+    return true;
+  }
+  if (owner.processStartToken === "unknown") return true;
+  const currentToken = await processStartToken(owner.pid);
+  return currentToken === undefined || currentToken === owner.processStartToken;
+}
+
 function existingInvalid(
   name: "primary" | "backup",
   generation: Generation
@@ -162,6 +326,81 @@ export class JsonProfileStore {
     this.primaryPath = resolve(path);
     this.backupPath = `${this.primaryPath}.bak`;
     this.lockPath = `${this.primaryPath}.lock`;
+  }
+
+  private temporaryPaths(owner: LockOwner): readonly [string, string] {
+    return [
+      `${this.primaryPath}.tmp-${owner.nonce}`,
+      `${this.backupPath}.tmp-${owner.nonce}`
+    ];
+  }
+
+  private async acquireLock(owner: LockOwner): Promise<void> {
+    const candidatePath = `${this.lockPath}.candidate-${owner.nonce}`;
+    const candidate = await open(candidatePath, "wx", 0o600);
+    try {
+      await candidate.writeFile(`${JSON.stringify(owner)}\n`, "utf8");
+      await candidate.sync();
+    } finally {
+      await candidate.close();
+    }
+    try {
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          await link(candidatePath, this.lockPath);
+          return;
+        } catch (error) {
+          if (
+            typeof error !== "object" ||
+            error === null ||
+            !("code" in error) ||
+            error.code !== "EEXIST"
+          )
+            throw error;
+          let previousOwner: LockOwner;
+          try {
+            const lockText = await readFile(this.lockPath, "utf8");
+            if (Buffer.byteLength(lockText, "utf8") > 1_024)
+              throw new RangeError("save lock metadata is too large");
+            previousOwner = parseLockOwner(lockText);
+          } catch (lockError) {
+            throw new JsonProfileStoreError(
+              "save_busy",
+              "profile save has an invalid lock that requires manual recovery",
+              { cause: lockError }
+            );
+          }
+          if (await ownerIsAlive(previousOwner))
+            throw new JsonProfileStoreError(
+              "save_busy",
+              "profile save is locked by another writer"
+            );
+          await rm(this.lockPath);
+          const [orphanedPrimary, orphanedBackup] =
+            this.temporaryPaths(previousOwner);
+          await Promise.allSettled([
+            rm(orphanedPrimary, { force: true }),
+            rm(orphanedBackup, { force: true })
+          ]);
+        }
+      }
+      throw new JsonProfileStoreError(
+        "save_busy",
+        "profile save lock changed during stale-lock recovery"
+      );
+    } finally {
+      await rm(candidatePath, { force: true });
+    }
+  }
+
+  private async releaseLock(owner: LockOwner): Promise<void> {
+    const currentOwner = parseLockOwner(await readFile(this.lockPath, "utf8"));
+    if (currentOwner.nonce !== owner.nonce)
+      throw new JsonProfileStoreError(
+        "save_busy",
+        "profile save lock ownership changed before release"
+      );
+    await rm(this.lockPath);
   }
 
   public async load(): Promise<JsonProfileLoadResult> {
@@ -206,20 +445,14 @@ export class JsonProfileStore {
     const directory = dirname(this.primaryPath);
     await mkdir(directory, { recursive: true });
 
-    let lock: Awaited<ReturnType<typeof open>>;
-    try {
-      lock = await open(this.lockPath, "wx", 0o600);
-    } catch (error) {
-      throw new JsonProfileStoreError(
-        "save_busy",
-        "profile save is locked by another writer",
-        { cause: error }
-      );
-    }
-
-    const nonce = `${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const temporaryPath = `${this.primaryPath}.tmp-${nonce}`;
-    const backupTemporaryPath = `${this.backupPath}.tmp-${nonce}`;
+    const owner: LockOwner = {
+      schemaVersion: 1,
+      pid: process.pid,
+      processStartToken: (await processStartToken(process.pid)) ?? "unknown",
+      nonce: `${process.pid}-${randomUUID()}`
+    };
+    await this.acquireLock(owner);
+    const [temporaryPath, backupTemporaryPath] = this.temporaryPaths(owner);
     try {
       const [primary, backup] = await Promise.all([
         readGeneration(this.primaryPath),
@@ -287,8 +520,7 @@ export class JsonProfileStore {
         rm(temporaryPath, { force: true }),
         rm(backupTemporaryPath, { force: true })
       ]);
-      await lock.close();
-      await rm(this.lockPath, { force: true });
+      await this.releaseLock(owner);
     }
   }
 }

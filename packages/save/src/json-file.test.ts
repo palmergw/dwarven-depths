@@ -1,6 +1,9 @@
+import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createInitialProfile } from "@dwarven-depths/progression";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -197,6 +200,17 @@ describe("JSON profile store", () => {
     });
   });
 
+  it("rejects duplicate JSON object keys without rewriting the generation", async () => {
+    const path = await testPath();
+    const valid = `${JSON.stringify(await envelope(0, 0), null, 2)}\n`;
+    const ambiguous = valid.replace("{", '{\n  "schemaVersion": 999,');
+    await writeFile(path, ambiguous, "utf8");
+    await expect(new JsonProfileStore(path).load()).rejects.toThrow(
+      "duplicate JSON object key schemaVersion"
+    );
+    expect(await readFile(path, "utf8")).toBe(ambiguous);
+  });
+
   it("does not overwrite an invalid backup even when the primary is valid", async () => {
     const path = await testPath();
     await new JsonProfileStore(path).write({
@@ -255,5 +269,46 @@ describe("JSON profile store", () => {
     ).rejects.toMatchObject({ code: "save_busy" });
     releaseWriter?.();
     await firstWrite;
+  });
+
+  it("recovers an ownership-verified stale lock and orphaned temporary generation", async () => {
+    const path = await testPath();
+    await new JsonProfileStore(path).write({
+      expectedRevision: null,
+      envelope: await envelope(0, 0)
+    });
+    const fixture = fileURLToPath(
+      new URL("../dist/json-file-crash.fixture.js", import.meta.url)
+    );
+    const child = spawn(process.execPath, [fixture, path], {
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let output = "";
+    await new Promise<void>((resolve, reject) => {
+      child.once("error", reject);
+      child.stdout.on("data", (chunk: Buffer) => {
+        output += chunk.toString("utf8");
+        if (output.includes("READY\n")) resolve();
+      });
+    });
+    child.kill("SIGKILL");
+    await once(child, "exit");
+    const abandoned = await readdir(join(path, ".."));
+    expect(abandoned.some((name) => name.endsWith(".lock"))).toBe(true);
+    expect(abandoned.some((name) => name.includes(".tmp-"))).toBe(true);
+
+    const recovered = await envelope(1, 20);
+    await expect(
+      new JsonProfileStore(path).write({
+        expectedRevision: 0,
+        envelope: recovered
+      })
+    ).resolves.toEqual(recovered);
+    expect(await new JsonProfileStore(path).load()).toMatchObject({
+      status: "loaded",
+      source: "primary",
+      envelope: recovered
+    });
+    await expectCleanArtifacts(path);
   });
 });
