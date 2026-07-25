@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "campaign_scenario.conformance.shuttergate_progression",
+  "id": "campaign_scenario.shuttergate.v1",
   "content": "../../content/fixtures/phase-3-shuttergate.json",
   "attemptCount": 3,
   "applicationBuild": "phase-4-conformance",

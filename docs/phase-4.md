@@ -181,7 +181,7 @@ the repository.
   shape, checksum, and over-bound substitutions are rejected. The same
   state cannot be restored twice within one process; cross-process publication
   still relies on the save adapters' revision compare-and-swap boundary.
-- The `sim campaign` command accepts a strict versioned JSON campaign scenario,
+- The `sim campaign` command accepts the strict versioned Shuttergate campaign scenario,
   executes 1–64 authoritative Shuttergate attempts, and publishes compiled
   scenario/content, a durable campaign artifact, and a binding manifest as one
   rollback-safe directory. Validated replacement pins the directory with

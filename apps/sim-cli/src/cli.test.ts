@@ -67,7 +67,7 @@ describe("simulation CLI", () => {
     );
     const scenarioValue = {
       schemaVersion: 1,
-      id: "campaign_scenario.test.shuttergate_progression",
+      id: "campaign_scenario.shuttergate.v1",
       content: "content.json",
       attemptCount: 3,
       applicationBuild: "cli-test",
@@ -81,7 +81,7 @@ describe("simulation CLI", () => {
     expect(JSON.parse(first.stdout)).toMatchObject({
       ok: true,
       campaigned: true,
-      scenarioId: "campaign_scenario.test.shuttergate_progression",
+      scenarioId: "campaign_scenario.shuttergate.v1",
       attemptCount: 3
     });
     const firstArtifact = readFileSync(
@@ -127,6 +127,7 @@ describe("simulation CLI", () => {
     ) as typeof scenarioValue;
     const forgedScenario = {
       ...scenarioArtifact,
+      id: "campaign_scenario.forged",
       content: "forged-content.json",
       applicationBuild: "forged-build"
     };

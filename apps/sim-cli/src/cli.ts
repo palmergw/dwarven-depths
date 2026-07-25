@@ -86,6 +86,7 @@ const runBundleFiles = [
 const maximumArtifactBytes = 4 * 1024 * 1024;
 const maximumBundleBytes = 16 * 1024 * 1024;
 const maximumNdjsonRecords = 100_000;
+const shuttergateCampaignScenarioId = "campaign_scenario.shuttergate.v1";
 const sweepControllers = Object.freeze({
   "controller.target.nearest.v1": "nearest",
   "controller.target.lowest_health.v1": "lowest_health",
@@ -1056,12 +1057,9 @@ function parseCampaignScenario(value: unknown): CampaignScenario {
   );
   if (scenario["schemaVersion"] !== 1)
     throw new CliInputError("campaign scenario schemaVersion must equal 1");
-  if (
-    typeof scenario["id"] !== "string" ||
-    !/^campaign_scenario\.[a-z0-9][a-z0-9._-]{0,109}$/.test(scenario["id"])
-  ) {
+  if (scenario["id"] !== shuttergateCampaignScenarioId) {
     throw new CliInputError(
-      "campaign scenario id must be a stable campaign_scenario.* ID"
+      `campaign scenario id must equal ${shuttergateCampaignScenarioId}`
     );
   }
   if (
@@ -1111,7 +1109,7 @@ function parseCampaignScenario(value: unknown): CampaignScenario {
   }
   return {
     schemaVersion: 1,
-    id: scenario["id"],
+    id: shuttergateCampaignScenarioId,
     content: scenario["content"],
     attemptCount: scenario["attemptCount"] as number,
     applicationBuild: scenario["applicationBuild"],
