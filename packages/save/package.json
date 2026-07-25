@@ -11,6 +11,10 @@
     "./json-file": {
       "types": "./dist/json-file.d.ts",
       "default": "./dist/json-file.js"
+    },
+    "./indexed-db": {
+      "types": "./dist/indexed-db.d.ts",
+      "default": "./dist/indexed-db.js"
     }
   },
   "scripts": {
