@@ -208,6 +208,60 @@ describe("authored character skill trees", () => {
         tree: ironWardenSkillTree
       })
     ).toThrow("unselected prerequisite");
+    expect(() =>
+      deriveCharacterSkillEligibility({
+        schemaVersion: 1,
+        profile: {
+          ...profile,
+          characterExperienceStates: profile.characterExperienceStates.map(
+            (state) => ({ ...state, pendingSkillPointLevels: [2] })
+          )
+        },
+        tree: ironWardenSkillTree
+      })
+    ).toThrow("account for every earned level");
+    const selected = characterSkillTreeParityEvidence().second.profile;
+    expect(() =>
+      deriveCharacterSkillModifiers({
+        schemaVersion: 1,
+        profile: {
+          ...selected,
+          selectedSkillNodes: selected.selectedSkillNodes.map((entry) => ({
+            ...entry,
+            spentSkillPointLevel: entry.spentSkillPointLevel === 2 ? 3 : 2
+          }))
+        },
+        tree: ironWardenSkillTree
+      })
+    ).toThrow("prerequisite was not selected earlier");
+  });
+
+  it("validates a deep authored prerequisite chain without recursion", () => {
+    const nodeCount = 12_000;
+    const nodes = Array.from({ length: nodeCount }, (_, index) => ({
+      schemaVersion: 1 as const,
+      nodeId: `skill.deep.node_${index}` as never,
+      prerequisiteNodeIds:
+        index === 0 ? [] : ([`skill.deep.node_${index - 1}`] as never),
+      effects: [
+        {
+          schemaVersion: 1 as const,
+          kind: "attack_damage_add" as const,
+          value: 1
+        }
+      ]
+    }));
+    expect(
+      deriveCharacterSkillEligibility({
+        schemaVersion: 1,
+        profile: createProfileWithTwoPendingSkillPoints(),
+        tree: {
+          schemaVersion: 1,
+          characterId: "character.iron_warden" as never,
+          nodes
+        }
+      }).eligibleNodeIds
+    ).toEqual(["skill.deep.node_0"]);
   });
 
   it("rejects strict-shape and modifier overflow failures", () => {

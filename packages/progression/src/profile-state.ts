@@ -338,6 +338,7 @@ export function normalizeProfileState(value: unknown): ProfileState {
     characterExperienceStates.map((state) => [state.characterId, state])
   );
   const spentPointKeys = new Set<string>();
+  const spentLevelsByCharacter = new Map<StableId, Set<number>>();
   for (const entry of selectedSkillNodes) {
     const experienceState = experienceByCharacter.get(entry.characterId);
     if (
@@ -361,6 +362,21 @@ export function normalizeProfileState(value: unknown): ProfileState {
         "profile contains duplicate spent skill point levels"
       );
     spentPointKeys.add(pointKey);
+    const spentLevels =
+      spentLevelsByCharacter.get(entry.characterId) ?? new Set();
+    spentLevels.add(entry.spentSkillPointLevel);
+    spentLevelsByCharacter.set(entry.characterId, spentLevels);
+  }
+  for (const experienceState of characterExperienceStates) {
+    const pendingLevels = new Set(experienceState.pendingSkillPointLevels);
+    const spentLevels =
+      spentLevelsByCharacter.get(experienceState.characterId) ?? new Set();
+    for (let level = 2; level <= experienceState.level; level += 1) {
+      if (!pendingLevels.has(level) && !spentLevels.has(level))
+        throw new RangeError(
+          "profile pending and selected skill points must account for every earned level"
+        );
+    }
   }
   return Object.freeze({
     schemaVersion: 1,

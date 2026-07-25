@@ -104,8 +104,10 @@ function normalizeTree(value: unknown): CharacterSkillTreeDefinition {
     "character skill tree characterId"
   );
   const seenNodeIds = new Set<StableId>();
+  let authoredRecordCount = 0;
   const nodes = requireProfileArray(source.nodes, "character skill tree nodes")
     .map((entry, index): CharacterSkillNodeDefinition => {
+      authoredRecordCount += 1;
       const description = `character skill tree node ${index}`;
       const nodeSource = requireProfileRecord(
         entry,
@@ -134,6 +136,7 @@ function normalizeTree(value: unknown): CharacterSkillTreeDefinition {
           )
         )
         .sort(compareText);
+      authoredRecordCount += prerequisiteNodeIds.length;
       if (new Set(prerequisiteNodeIds).size !== prerequisiteNodeIds.length)
         throw new RangeError(`${description} contains duplicate prerequisites`);
       if (prerequisiteNodeIds.includes(nodeId))
@@ -178,6 +181,11 @@ function normalizeTree(value: unknown): CharacterSkillTreeDefinition {
           });
         })
         .sort((left, right) => compareText(left.kind, right.kind));
+      authoredRecordCount += effects.length;
+      if (authoredRecordCount > maximumProfileRecords)
+        throw new RangeError(
+          `character skill tree cannot exceed ${maximumProfileRecords} total records`
+        );
       if (effects.length === 0)
         throw new RangeError(`${description} must contain at least one effect`);
       return Object.freeze({
@@ -199,23 +207,33 @@ function normalizeTree(value: unknown): CharacterSkillTreeDefinition {
         );
     }
   }
-  const visiting = new Set<StableId>();
-  const visited = new Set<StableId>();
-  const visit = (nodeId: StableId): void => {
-    if (visiting.has(nodeId))
-      throw new RangeError(
-        "character skill tree prerequisites must be acyclic"
-      );
-    if (visited.has(nodeId)) return;
-    visiting.add(nodeId);
-    const node = nodeById.get(nodeId);
-    if (node === undefined) throw new Error("unreachable authored skill node");
-    for (const prerequisiteId of node.prerequisiteNodeIds)
-      visit(prerequisiteId);
-    visiting.delete(nodeId);
-    visited.add(nodeId);
-  };
-  for (const node of nodes) visit(node.nodeId);
+  const indegree = new Map(
+    nodes.map((node) => [node.nodeId, node.prerequisiteNodeIds.length])
+  );
+  const dependents = new Map<StableId, StableId[]>();
+  for (const node of nodes) {
+    for (const prerequisiteId of node.prerequisiteNodeIds) {
+      const entries = dependents.get(prerequisiteId) ?? [];
+      entries.push(node.nodeId);
+      dependents.set(prerequisiteId, entries);
+    }
+  }
+  const ready = nodes
+    .filter((node) => indegree.get(node.nodeId) === 0)
+    .map((node) => node.nodeId);
+  let visitedCount = 0;
+  for (let readyIndex = 0; readyIndex < ready.length; readyIndex += 1) {
+    const nodeId = ready[readyIndex];
+    if (nodeId === undefined) throw new Error("unreachable ready skill node");
+    visitedCount += 1;
+    for (const dependentId of dependents.get(nodeId) ?? []) {
+      const remaining = (indegree.get(dependentId) ?? 0) - 1;
+      indegree.set(dependentId, remaining);
+      if (remaining === 0) ready.push(dependentId);
+    }
+  }
+  if (visitedCount !== nodes.length)
+    throw new RangeError("character skill tree prerequisites must be acyclic");
   return Object.freeze({
     schemaVersion: 1,
     characterId,
@@ -246,6 +264,9 @@ function validateCharacterSelection(
   );
   const nodeById = new Map(tree.nodes.map((node) => [node.nodeId, node]));
   const selectedIds = new Set(selected.map((entry) => entry.nodeId));
+  const spentLevelByNode = new Map(
+    selected.map((entry) => [entry.nodeId, entry.spentSkillPointLevel])
+  );
   for (const entry of selected) {
     const node = nodeById.get(entry.nodeId);
     if (node === undefined)
@@ -259,6 +280,16 @@ function validateCharacterSelection(
     )
       throw new RangeError(
         `selected skill node has an unselected prerequisite (${entry.nodeId})`
+      );
+    if (
+      node.prerequisiteNodeIds.some(
+        (prerequisiteId) =>
+          (spentLevelByNode.get(prerequisiteId) ?? Number.MAX_SAFE_INTEGER) >=
+          entry.spentSkillPointLevel
+      )
+    )
+      throw new RangeError(
+        `selected skill node prerequisite was not selected earlier (${entry.nodeId})`
       );
   }
   return {

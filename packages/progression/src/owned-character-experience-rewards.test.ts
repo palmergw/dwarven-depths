@@ -138,7 +138,8 @@ describe("owned character experience rewards", () => {
             {
               ...initialExperienceState,
               experience: Number.MAX_SAFE_INTEGER,
-              level: 4
+              level: 4,
+              pendingSkillPointLevels: [2, 3, 4]
             }
           ]
         },
