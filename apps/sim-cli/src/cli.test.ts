@@ -106,6 +106,21 @@ describe("simulation CLI", () => {
       candidateEvaluationCount: number;
       actualTerminalResult: string;
     };
+    expect(Object.keys(JSON.parse(artifactText))).toEqual([
+      "schemaVersion",
+      "complete",
+      "assertionCode",
+      "expectedTerminalResult",
+      "actualTerminalResult",
+      "contentManifestHash",
+      "sourceScenarioHash",
+      "minimizedScenarioHash",
+      "originalCommandCount",
+      "minimizedCommandCount",
+      "retainedCommandIndexes",
+      "candidateEvaluationCount",
+      "artifactChecksum"
+    ]);
     expect(artifact.retainedCommandIndexes).toEqual([0]);
     expect(artifact.candidateEvaluationCount).toBeGreaterThan(1);
     expect(

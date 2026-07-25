@@ -1948,7 +1948,6 @@ async function minimize(args: ParsedArgs): Promise<void> {
     content
   );
   const sharedArtifactBody = {
-    complete: true as const,
     contentManifestHash: content.manifestHash,
     sourceScenarioHash: await canonicalHash(scenario),
     minimizedScenarioHash: await canonicalHash(minimizedScenario),
@@ -1963,12 +1962,14 @@ async function minimize(args: ParsedArgs): Promise<void> {
     scenario.expectedTerminalResult === undefined
       ? {
           schemaVersion: 2,
+          complete: true,
           assertionCode: "runtime_safety_stop",
           safetyStopCode: "tick_budget_exhausted",
           ...sharedArtifactBody
         }
       : {
           schemaVersion: 1,
+          complete: true,
           assertionCode: "unexpected_terminal_result",
           expectedTerminalResult: scenario.expectedTerminalResult,
           actualTerminalResult: actualTerminalResult as string,
