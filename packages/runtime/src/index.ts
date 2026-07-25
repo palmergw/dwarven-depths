@@ -76,6 +76,13 @@ export {
   type ShuttergateCampaignTransitionResult
 } from "./shuttergate-campaign.js";
 export {
+  type CreateShuttergateCampaignArtifactRequest,
+  createShuttergateCampaignArtifact,
+  maximumShuttergateCampaignArtifactAttempts,
+  restoreShuttergateCampaignArtifact,
+  type ShuttergateCampaignArtifact
+} from "./shuttergate-campaign-artifact.js";
+export {
   runShuttergateAttempt,
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,

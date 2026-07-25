@@ -17,6 +17,7 @@
     "@dwarven-depths/contracts": "workspace:*",
     "@dwarven-depths/content-runtime": "workspace:*",
     "@dwarven-depths/progression": "workspace:*",
+    "@dwarven-depths/save": "workspace:*",
     "@dwarven-depths/sim-core": "workspace:*"
   }
 }

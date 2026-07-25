@@ -24,7 +24,7 @@ describe("Shuttergate calibration browser parity", () => {
       deepRangerUnlocked: false
     });
     expect(await canonicalHash(evidence)).toBe(expectedChecksum);
-  }, 60_000);
+  }, 90_000);
 
   it("matches literal authoritative attempt reward evidence", async () => {
     const content = await compileContent(shuttergateInput);

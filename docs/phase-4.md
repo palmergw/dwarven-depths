@@ -170,10 +170,21 @@ the repository.
   Immutable three-attempt evidence is literal-checksum-pinned across Node,
   Chromium, Firefox, and WebKit. This in-memory anti-fork boundary intentionally
   precedes durable campaign artifact and save-envelope integration.
+- A strict schema-1 campaign artifact now hands an accepted campaign authority
+  into durable evidence and consumes the in-memory source on successful creation.
+  The compact artifact binds the recompiled pinned-content manifest, current
+  portable profile save envelope, authoritative reward-ledger checksum, and up to
+  64 ordered attempt checksums with separate canonical state and payload checksums.
+  Restoration validates the save envelope and checksums, then independently
+  replays every attempt and reconstructs the full ledger before accepting a
+  one-use continuation authority. Profile, ledger, attempt, content, ordering,
+  shape, checksum, and over-bound substitutions are rejected. The same
+  state cannot be restored twice within one process; cross-process publication
+  still relies on the save adapters' revision compare-and-swap boundary.
 
 ## Not implemented yet
 
-Additional historical save migrations, durable campaign artifacts and policy variants,
+Additional historical save migrations and campaign policy variants,
 catch-up experience, active ability and item-rank behavior, full save scope,
 player-facing recycle confirmation, additional build and active-ability controller sweep axes,
 additional statistical sweep metrics, campaign/minimization harnesses, and upgraded-build

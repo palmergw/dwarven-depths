@@ -76,6 +76,9 @@ importers:
       '@dwarven-depths/progression':
         specifier: workspace:*
         version: link:../progression
+      '@dwarven-depths/save':
+        specifier: workspace:*
+        version: link:../save
       '@dwarven-depths/sim-core':
         specifier: workspace:*
         version: link:../sim-core

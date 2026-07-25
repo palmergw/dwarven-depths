@@ -75,6 +75,11 @@ interface CampaignAuthorityMetadata {
   status: "available" | "in_progress" | "consumed";
 }
 
+export interface ShuttergateCampaignAuthorityReservation {
+  readonly commit: () => void;
+  readonly release: () => void;
+}
+
 const campaignAuthorityMetadata = new WeakMap<
   ShuttergateCampaignAuthority,
   CampaignAuthorityMetadata
@@ -105,6 +110,34 @@ export function createShuttergateCampaignAuthority(): ShuttergateCampaignAuthori
   );
 }
 
+/** Package-private reservation shared by transitions and durable handoff. */
+export function reserveShuttergateCampaignAuthority(
+  authority: ShuttergateCampaignAuthority
+): ShuttergateCampaignAuthorityReservation {
+  const metadata = campaignAuthorityMetadata.get(authority);
+  if (metadata === undefined)
+    throw new RangeError("not accepted campaign authority");
+  if (metadata.status !== "available")
+    throw new RangeError(
+      "campaign authority is already consumed or in progress"
+    );
+  metadata.status = "in_progress";
+  let settled = false;
+  return Object.freeze({
+    commit: () => {
+      if (settled || metadata.status !== "in_progress")
+        throw new Error("campaign authority reservation is already settled");
+      settled = true;
+      metadata.status = "consumed";
+    },
+    release: () => {
+      if (settled) return;
+      settled = true;
+      metadata.status = "available";
+    }
+  });
+}
+
 function campaignBuild(profile: ProfileState): ShuttergateCalibrationBuildId {
   return profile.purchasedUpgrades.some(
     (upgrade) => upgrade.upgradeId === shieldSlamUpgradeId && upgrade.rank >= 1
@@ -126,18 +159,11 @@ export async function runShuttergateCampaignTransition(
   content: CompiledContent,
   authority: ShuttergateCampaignAuthority
 ): Promise<ShuttergateCampaignTransitionResult> {
-  const metadata = campaignAuthorityMetadata.get(authority);
-  if (metadata === undefined)
-    throw new RangeError("not accepted campaign authority");
-  if (metadata.status !== "available")
-    throw new RangeError(
-      "campaign authority is already consumed or in progress"
-    );
   if (authority.attempts.length >= maximumCampaignAttempts)
     throw new RangeError(
       `Shuttergate campaign cannot exceed ${maximumCampaignAttempts} attempts`
     );
-  metadata.status = "in_progress";
+  const reservation = reserveShuttergateCampaignAuthority(authority);
 
   try {
     const attemptNumber = authority.attempts.length + 1;
@@ -193,14 +219,14 @@ export async function runShuttergateCampaignTransition(
       ...authority.attempts,
       transition
     ]);
-    metadata.status = "consumed";
+    reservation.commit();
     return Object.freeze({
       schemaVersion: 1,
       authority: nextAuthority,
       transition
     });
   } catch (error) {
-    metadata.status = "available";
+    reservation.release();
     throw error;
   }
 }
