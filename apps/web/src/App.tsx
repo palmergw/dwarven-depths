@@ -32,6 +32,32 @@ type ViewState =
     }
   | { readonly phase: "failure"; readonly message: string };
 
+const motionPreferenceStorageKey =
+  "dwarven-depths.presentation.motion-preference.v1";
+const motionPreferences = ["device", "reduce", "allow"] as const;
+type MotionPreference = (typeof motionPreferences)[number];
+
+function isMotionPreference(value: unknown): value is MotionPreference {
+  return motionPreferences.some((preference) => preference === value);
+}
+
+function readMotionPreference(): MotionPreference {
+  try {
+    const stored = window.localStorage.getItem(motionPreferenceStorageKey);
+    return isMotionPreference(stored) ? stored : "device";
+  } catch {
+    return "device";
+  }
+}
+
+function storeMotionPreference(preference: MotionPreference): void {
+  try {
+    window.localStorage.setItem(motionPreferenceStorageKey, preference);
+  } catch {
+    // The in-memory presentation preference remains usable without storage.
+  }
+}
+
 function createSimulationWorker(): Worker {
   return new Worker(new URL("./simulation.worker.ts", import.meta.url), {
     type: "module"
@@ -51,12 +77,18 @@ export function App({
   const [pendingAbilityKeys, setPendingAbilityKeys] = useState<
     ReadonlySet<string>
   >(new Set());
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [motionPreference, setMotionPreference] =
+    useState<MotionPreference>(readMotionPreference);
   const workerRef = useRef<Worker | undefined>(undefined);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
   const pendingAbilityKeysRef = useRef(new Set<string>());
   const resultHeadingRef = useRef<HTMLHeadingElement>(null);
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const settingsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const settingsWasOpenRef = useRef(false);
 
   function clearPendingAbilities(): void {
     pendingAbilityKeysRef.current.clear();
@@ -259,13 +291,19 @@ export function App({
     if (view.phase === "result") resultHeadingRef.current?.focus();
   }, [view]);
 
+  useLayoutEffect(() => {
+    if (settingsOpen) settingsHeadingRef.current?.focus();
+    else if (settingsWasOpenRef.current) settingsButtonRef.current?.focus();
+    settingsWasOpenRef.current = settingsOpen;
+  }, [settingsOpen]);
+
   return (
-    <main>
+    <main data-motion-preference={motionPreference}>
       <p className="eyebrow">Authoritative checkpoint</p>
       <h1>Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
         <h2 id="run-heading">Empty Level Conformance Run</h2>
-        {view.phase === "checkpoint" && (
+        {view.phase === "checkpoint" && !settingsOpen && (
           <dl className="checkpoint-context" aria-label="Current checkpoint">
             <div>
               <dt>Current level</dt>
@@ -319,8 +357,11 @@ export function App({
           aria-live="polite"
           aria-atomic="true"
         >
-          {view.phase === "checkpoint" && (
+          {view.phase === "checkpoint" && !settingsOpen && (
             <p>Checkpoint ready. Begin when you are ready to prepare.</p>
+          )}
+          {view.phase === "checkpoint" && settingsOpen && (
+            <p>Presentation settings are open.</p>
           )}
           {view.phase === "preparation" && (
             <p>Preparation is ready. Confirm when your company is prepared.</p>
@@ -337,10 +378,55 @@ export function App({
             <p>Run complete: {view.result.terminalResult}.</p>
           )}
         </div>
-        {view.phase === "checkpoint" && (
-          <button type="button" onClick={startPreparation}>
-            Begin preparation
-          </button>
+        {view.phase === "checkpoint" && settingsOpen && (
+          <section
+            className="settings"
+            aria-labelledby="presentation-settings-heading"
+          >
+            <h3
+              id="presentation-settings-heading"
+              ref={settingsHeadingRef}
+              tabIndex={-1}
+            >
+              Presentation settings
+            </h3>
+            <label htmlFor="motion-preference">Motion preference</label>
+            <select
+              id="motion-preference"
+              value={motionPreference}
+              onChange={(event) => {
+                const preference = event.currentTarget.value;
+                if (!isMotionPreference(preference)) return;
+                setMotionPreference(preference);
+                storeMotionPreference(preference);
+              }}
+            >
+              <option value="device">Use device setting</option>
+              <option value="reduce">Reduce motion</option>
+              <option value="allow">Allow motion</option>
+            </select>
+            <p className="settings-help">
+              This preference affects presentation only and never changes the
+              authoritative simulation.
+            </p>
+            <button type="button" onClick={() => setSettingsOpen(false)}>
+              Close settings
+            </button>
+          </section>
+        )}
+        {view.phase === "checkpoint" && !settingsOpen && (
+          <div className="checkpoint-actions">
+            <button type="button" onClick={startPreparation}>
+              Begin preparation
+            </button>
+            <button
+              type="button"
+              ref={settingsButtonRef}
+              onClick={() => setSettingsOpen(true)}
+            >
+              Settings
+            </button>
+          </div>
         )}
         {view.phase === "preparation" && (
           <button type="button" onClick={confirmPreparation}>
