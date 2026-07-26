@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import { buildBattlefieldPrimitives } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
@@ -22,14 +22,17 @@ const expected = {
 } as const;
 const motionPreferenceStorageKey =
   "dwarven-depths.presentation.motion-preference.v1";
+const textScaleStorageKey = "dwarven-depths.presentation.text-scale.v1";
 
 let root: Root | undefined;
-afterEach(() => {
+afterEach(async () => {
   root?.unmount();
   root = undefined;
   document.body.replaceChildren();
   window.localStorage.removeItem(motionPreferenceStorageKey);
+  window.localStorage.removeItem(textScaleStorageKey);
   vi.restoreAllMocks();
+  await page.viewport(1280, 720);
 });
 
 function waitForMessage(
@@ -173,6 +176,12 @@ function appliedMotionPreference(): string | null {
   );
 }
 
+function appliedTextScale(): string | null {
+  return (
+    document.querySelector("main")?.getAttribute("data-text-scale") ?? null
+  );
+}
+
 describe("presentation settings", () => {
   it("opens and closes by keyboard with deterministic focus restoration", async () => {
     renderApp();
@@ -235,6 +244,65 @@ describe("presentation settings", () => {
     });
     renderApp();
     await vi.waitFor(() => expect(appliedMotionPreference()).toBe("device"));
+  });
+
+  it("applies a keyboard-selected text scale", async () => {
+    renderApp();
+    await userEvent.click(await buttonWithText("Settings"));
+    const select = document.querySelector("#text-scale");
+    expect(select).toBeInstanceOf(HTMLSelectElement);
+    (select as HTMLSelectElement).focus();
+    await userEvent.keyboard("{ArrowDown}");
+
+    await vi.waitFor(() => expect(appliedTextScale()).toBe("large"));
+    expect(window.localStorage.getItem(textScaleStorageKey)).toBe("large");
+  });
+
+  it("persists a mouse-selected text scale across remounts", async () => {
+    renderApp();
+    await userEvent.click(await buttonWithText("Settings"));
+    const select = document.querySelector("#text-scale");
+    expect(select).toBeInstanceOf(HTMLSelectElement);
+    await userEvent.selectOptions(select as HTMLSelectElement, "extra-large");
+    expect(appliedTextScale()).toBe("extra-large");
+
+    root?.unmount();
+    root = undefined;
+    document.body.replaceChildren();
+    renderApp();
+    await vi.waitFor(() => expect(appliedTextScale()).toBe("extra-large"));
+  });
+
+  it("falls back to default text scale for malformed or unavailable storage", async () => {
+    window.localStorage.setItem(textScaleStorageKey, "unexpected");
+    renderApp();
+    await vi.waitFor(() => expect(appliedTextScale()).toBe("default"));
+
+    root?.unmount();
+    root = undefined;
+    document.body.replaceChildren();
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+    renderApp();
+    await vi.waitFor(() => expect(appliedTextScale()).toBe("default"));
+  });
+
+  it("reflows extra-large settings at the supported narrow viewport", async () => {
+    await page.viewport(320, 720);
+    window.localStorage.setItem(textScaleStorageKey, "extra-large");
+    renderApp();
+    await userEvent.click(await buttonWithText("Settings"));
+
+    await vi.waitFor(() => expect(appliedTextScale()).toBe("extra-large"));
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+      document.documentElement.clientWidth
+    );
+    for (const control of document.querySelectorAll("select, button")) {
+      const bounds = control.getBoundingClientRect();
+      expect(bounds.left).toBeGreaterThanOrEqual(0);
+      expect(bounds.right).toBeLessThanOrEqual(window.innerWidth);
+    }
   });
 });
 

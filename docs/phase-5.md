@@ -25,6 +25,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - a semantic results action that downloads deterministic, versioned authoritative run evidence with a stable checksum-derived filename, without presenting that evidence document as a CLI replay format.
 - an outcome-specific authoritative results region that receives keyboard focus after each strictly validated terminal result and is removed when returning to checkpoint.
 - a checkpoint presentation-settings view with deterministic focus restoration and a strictly validated, durable reduced-motion preference that cannot affect simulation authority.
+- a strictly validated, durable default/large/extra-large text-scale preference with responsive narrow-viewport reflow that cannot affect simulation authority.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 

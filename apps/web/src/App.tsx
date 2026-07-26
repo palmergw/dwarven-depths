@@ -36,6 +36,9 @@ const motionPreferenceStorageKey =
   "dwarven-depths.presentation.motion-preference.v1";
 const motionPreferences = ["device", "reduce", "allow"] as const;
 type MotionPreference = (typeof motionPreferences)[number];
+const textScaleStorageKey = "dwarven-depths.presentation.text-scale.v1";
+const textScales = ["default", "large", "extra-large"] as const;
+type TextScale = (typeof textScales)[number];
 
 function isMotionPreference(value: unknown): value is MotionPreference {
   return motionPreferences.some((preference) => preference === value);
@@ -53,6 +56,27 @@ function readMotionPreference(): MotionPreference {
 function storeMotionPreference(preference: MotionPreference): void {
   try {
     window.localStorage.setItem(motionPreferenceStorageKey, preference);
+  } catch {
+    // The in-memory presentation preference remains usable without storage.
+  }
+}
+
+function isTextScale(value: unknown): value is TextScale {
+  return textScales.some((scale) => scale === value);
+}
+
+function readTextScale(): TextScale {
+  try {
+    const stored = window.localStorage.getItem(textScaleStorageKey);
+    return isTextScale(stored) ? stored : "default";
+  } catch {
+    return "default";
+  }
+}
+
+function storeTextScale(scale: TextScale): void {
+  try {
+    window.localStorage.setItem(textScaleStorageKey, scale);
   } catch {
     // The in-memory presentation preference remains usable without storage.
   }
@@ -80,6 +104,7 @@ export function App({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [motionPreference, setMotionPreference] =
     useState<MotionPreference>(readMotionPreference);
+  const [textScale, setTextScale] = useState<TextScale>(readTextScale);
   const workerRef = useRef<Worker | undefined>(undefined);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
@@ -298,7 +323,7 @@ export function App({
   }, [settingsOpen]);
 
   return (
-    <main data-motion-preference={motionPreference}>
+    <main data-motion-preference={motionPreference} data-text-scale={textScale}>
       <p className="eyebrow">Authoritative checkpoint</p>
       <h1>Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
@@ -404,6 +429,21 @@ export function App({
               <option value="device">Use device setting</option>
               <option value="reduce">Reduce motion</option>
               <option value="allow">Allow motion</option>
+            </select>
+            <label htmlFor="text-scale">Text size</label>
+            <select
+              id="text-scale"
+              value={textScale}
+              onChange={(event) => {
+                const scale = event.currentTarget.value;
+                if (!isTextScale(scale)) return;
+                setTextScale(scale);
+                storeTextScale(scale);
+              }}
+            >
+              <option value="default">Default</option>
+              <option value="large">Large</option>
+              <option value="extra-large">Extra large</option>
             </select>
             <p className="settings-help">
               This preference affects presentation only and never changes the
