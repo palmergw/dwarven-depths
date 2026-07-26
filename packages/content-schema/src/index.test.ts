@@ -566,6 +566,53 @@ describe("scenario validation", () => {
     ).toBe("scenario.conformance.empty");
   });
 
+  it("accepts a stable-ID target-policy command", () => {
+    const scenario = validateScenario({
+      schemaVersion: 1,
+      id: "scenario.conformance.target_policy",
+      levelId: "level.empty",
+      seed: "1",
+      maximumTicks: 2,
+      commands: [
+        { atTick: 0, type: "confirmPreparation" },
+        {
+          atTick: 1,
+          type: "setTargetPolicy",
+          dwarfEntityId: "entity.dwarf.warden",
+          requestedPolicy: "boss_or_elite_first"
+        }
+      ]
+    });
+
+    expect(scenario.commands[1]).toEqual({
+      atTick: 1,
+      type: "setTargetPolicy",
+      dwarfEntityId: "entity.dwarf.warden",
+      requestedPolicy: "boss_or_elite_first"
+    });
+  });
+
+  it("rejects malformed target-policy command IDs, policies, and fields", () => {
+    expect(() =>
+      validateScenario({
+        schemaVersion: 1,
+        id: "scenario.conformance.target_policy",
+        levelId: "level.empty",
+        seed: "1",
+        maximumTicks: 2,
+        commands: [
+          {
+            atTick: 1,
+            type: "setTargetPolicy",
+            dwarfEntityId: "character.iron_warden",
+            requestedPolicy: "foreign_policy",
+            foreign: true
+          }
+        ]
+      })
+    ).toThrow(/entity\..*nearest.*Unrecognized key/s);
+  });
+
   it.each(["0", "01", "4294967296", "999999999999999999999"])(
     "rejects seed %s outside the PRNG domain",
     (seed) => {
@@ -648,6 +695,36 @@ describe("replay validation", () => {
       schemaVersion: 1,
       rngAlgorithm: "xorshift32-v1",
       expectedTerminalResult: "victory"
+    });
+  });
+
+  it("accepts a replay-recorded target-policy command", () => {
+    const replay = validateReplay({
+      ...validReplay,
+      commands: [
+        validReplay.commands[0],
+        {
+          tick: 1,
+          sequence: 1,
+          command: {
+            atTick: 1,
+            type: "setTargetPolicy",
+            dwarfEntityId: "entity.dwarf.warden",
+            requestedPolicy: "lowest_health"
+          }
+        }
+      ],
+      checkpoints: [
+        { tick: 1, stateChecksum: checksum, eventStreamChecksum: checksum }
+      ],
+      expectedTerminalTick: 1
+    });
+
+    expect(replay.commands[1]?.command).toEqual({
+      atTick: 1,
+      type: "setTargetPolicy",
+      dwarfEntityId: "entity.dwarf.warden",
+      requestedPolicy: "lowest_health"
     });
   });
 

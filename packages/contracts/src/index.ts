@@ -338,6 +338,28 @@ export interface DwarfActionPhaseEntry {
   readonly requestedPolicy: DwarfTargetPolicy;
 }
 
+export type TargetPolicyCommandReason =
+  | "target_policy_changed"
+  | "duplicate_dwarf_command"
+  | "dwarf_unavailable"
+  | "dwarf_downed"
+  | "policy_unsupported";
+
+export interface TargetPolicyCommandDecision {
+  readonly schemaVersion: 1;
+  readonly sequence: number;
+  readonly dwarfEntityId: EntityId;
+  readonly requestedPolicy: DwarfTargetPolicy;
+  readonly status: "accepted" | "rejected";
+  readonly reason: TargetPolicyCommandReason;
+}
+
+export interface TargetPolicyCommandResolution {
+  readonly schemaVersion: 1;
+  readonly entries: readonly DwarfActionPhaseEntry[];
+  readonly decisions: readonly TargetPolicyCommandDecision[];
+}
+
 export interface DwarfActionPhaseRequest {
   readonly schemaVersion: 1;
   readonly currentTick: number;
@@ -1089,10 +1111,21 @@ export interface ContentBundle {
   readonly definitions: readonly ContentDefinition[];
 }
 
-export interface ScenarioCommand {
+export interface ConfirmPreparationCommand {
   readonly atTick: number;
   readonly type: "confirmPreparation";
 }
+
+export interface SetTargetPolicyCommand {
+  readonly atTick: number;
+  readonly type: "setTargetPolicy";
+  readonly dwarfEntityId: EntityId;
+  readonly requestedPolicy: DwarfTargetPolicy;
+}
+
+export type ScenarioCommand =
+  | ConfirmPreparationCommand
+  | SetTargetPolicyCommand;
 
 export interface ScenarioDefinition {
   readonly schemaVersion: 1;

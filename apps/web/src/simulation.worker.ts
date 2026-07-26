@@ -121,6 +121,14 @@ async function executePreparedScenario(): Promise<void> {
     return;
   try {
     const result = await runScenario(preparedScenario, preparedContent);
+    if (
+      result.commands.some(
+        (envelope) => envelope.command.type !== "confirmPreparation"
+      )
+    )
+      throw new Error(
+        "The empty web fixture produced an unsupported replay command."
+      );
     terminal = true;
     postRenderSnapshot(
       createRenderSnapshot(
@@ -138,7 +146,10 @@ async function executePreparedScenario(): Promise<void> {
       terminalTick: result.terminalTick,
       finalStateChecksum: result.finalStateChecksum,
       eventStreamChecksum: result.eventStreamChecksum,
-      commands: result.commands
+      commands: result.commands as Extract<
+        WorkerMessage,
+        { type: "result" }
+      >["commands"]
     });
   } catch (error) {
     terminal = true;

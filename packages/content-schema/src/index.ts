@@ -9,6 +9,7 @@ import type {
   OpaqueRegionId,
   PlacementPointId,
   ReplayDefinition,
+  ScenarioCommand,
   ScenarioDefinition,
   StableId
 } from "@dwarven-depths/contracts";
@@ -212,12 +213,30 @@ const contentBundleSchema = z
   })
   .strict();
 
-const scenarioCommandSchema = z
-  .object({
-    atTick: z.int().nonnegative(),
-    type: z.literal("confirmPreparation")
-  })
-  .strict();
+const scenarioCommandSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      atTick: z.int().nonnegative(),
+      type: z.literal("confirmPreparation")
+    })
+    .strict(),
+  z
+    .object({
+      atTick: z.int().nonnegative(),
+      type: z.literal("setTargetPolicy"),
+      dwarfEntityId: entityIdSchema,
+      requestedPolicy: dwarfTargetPolicySchema
+    })
+    .strict()
+]);
+
+function normalizeScenarioCommand(
+  command: z.infer<typeof scenarioCommandSchema>
+): ScenarioCommand {
+  return command.type === "confirmPreparation"
+    ? command
+    : { ...command, dwarfEntityId: command.dwarfEntityId as EntityId };
+}
 
 const scenarioDefinitionSchema = z
   .object({
@@ -899,7 +918,10 @@ export function validateScenario(input: unknown): ScenarioDefinition {
         message: `must be less than maximumTicks (${parsed.data.maximumTicks})`
       });
     }
-    const key = `${command.atTick}:${command.type}`;
+    const key =
+      command.type === "setTargetPolicy"
+        ? `${command.atTick}:${command.type}:${command.dwarfEntityId}`
+        : `${command.atTick}:${command.type}`;
     if (commands.has(key)) {
       issues.push({
         path: `$/commands/${index}`,
@@ -917,7 +939,7 @@ export function validateScenario(input: unknown): ScenarioDefinition {
     levelId: parsed.data.levelId as StableId,
     seed: parsed.data.seed,
     maximumTicks: parsed.data.maximumTicks,
-    commands: parsed.data.commands,
+    commands: parsed.data.commands.map(normalizeScenarioCommand),
     ...(parsed.data.expectedTerminalResult === undefined
       ? {}
       : { expectedTerminalResult: parsed.data.expectedTerminalResult })
@@ -995,7 +1017,10 @@ export function validateReplay(input: unknown): ReplayDefinition {
     ...parsed.data,
     scenarioId: parsed.data.scenarioId as StableId,
     levelId: parsed.data.levelId as StableId,
-    commands: parsed.data.commands,
+    commands: parsed.data.commands.map((envelope) => ({
+      ...envelope,
+      command: normalizeScenarioCommand(envelope.command)
+    })),
     checkpoints: parsed.data.checkpoints
   };
 }
