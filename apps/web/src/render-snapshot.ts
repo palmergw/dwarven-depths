@@ -29,6 +29,10 @@ export interface RenderSnapshot {
   readonly entities: readonly RenderEntity[];
 }
 
+export function compareRenderIds(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 type UnknownRecord = {
   schemaVersion?: unknown;
   levelId?: unknown;
@@ -78,7 +82,10 @@ function hasCanonicalUniqueIds(
 ): boolean {
   return values.every((value, index) => {
     const previous = values[index - 1];
-    return index === 0 || (previous !== undefined && previous.id < value.id);
+    return (
+      index === 0 ||
+      (previous !== undefined && compareRenderIds(previous.id, value.id) < 0)
+    );
   });
 }
 

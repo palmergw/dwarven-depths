@@ -156,15 +156,15 @@ describe("authoritative web worker", () => {
       tick: 2,
       phase: "running",
       nodes: [
-        { id: "node.b", x: 10, y: 0 },
-        { id: "node.a", x: 0, y: 0 }
+        { id: "node:1", x: 10, y: 0 },
+        { id: "node.1", x: 0, y: 0 }
       ],
       connections: [
-        { id: "connection.a-b", fromNodeId: "node.a", toNodeId: "node.b" }
+        { id: "connection.a-b", fromNodeId: "node.1", toNodeId: "node:1" }
       ],
       entities: [
-        { id: "enemy.2", nodeId: "node.b", faction: "enemy" },
-        { id: "dwarf.1", nodeId: "node.a", faction: "dwarf" }
+        { id: "unit:2", nodeId: "node:1", faction: "enemy" },
+        { id: "unit.1", nodeId: "node.1", faction: "dwarf" }
       ]
     } as const satisfies RenderSnapshot;
     const reversed = {
@@ -178,7 +178,7 @@ describe("authoritative web worker", () => {
     );
     expect(
       buildBattlefieldPrimitives(snapshot).entities.map((entity) => entity.id)
-    ).toEqual(["dwarf.1", "enemy.2"]);
+    ).toEqual(["unit.1", "unit:2"]);
   });
 
   it("keeps terminal evidence independent of presentation frames", async () => {

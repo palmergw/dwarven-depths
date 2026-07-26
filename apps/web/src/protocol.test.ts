@@ -91,17 +91,17 @@ describe("web worker protocol", () => {
       tick: 3,
       phase: "running",
       nodes: [
-        { id: "node.a", x: 0, y: 0 },
-        { id: "node.b", x: 1, y: 0 }
+        { id: "node.1", x: 0, y: 0 },
+        { id: "node:1", x: 1, y: 0 }
       ],
       connections: [
         {
           id: "connection.a-b",
-          fromNodeId: "node.a",
-          toNodeId: "node.b"
+          fromNodeId: "node.1",
+          toNodeId: "node:1"
         }
       ],
-      entities: [{ id: "enemy.1", nodeId: "node.b", faction: "enemy" }]
+      entities: [{ id: "enemy.1", nodeId: "node:1", faction: "enemy" }]
     };
     const message = { protocolVersion: 1, type: "render_snapshot", snapshot };
     expect(parseWorkerMessage(message)).toEqual(message);

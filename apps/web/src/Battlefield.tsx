@@ -1,6 +1,10 @@
 import Phaser from "phaser";
 import { useEffect, useRef } from "react";
-import type { RenderEntity, RenderSnapshot } from "./render-snapshot.js";
+import {
+  compareRenderIds,
+  type RenderEntity,
+  type RenderSnapshot
+} from "./render-snapshot.js";
 
 const WIDTH = 640;
 const HEIGHT = 360;
@@ -27,7 +31,7 @@ export function buildBattlefieldPrimitives(
   snapshot: RenderSnapshot
 ): BattlefieldPrimitives {
   const orderedNodes = [...snapshot.nodes].sort((left, right) =>
-    left.id.localeCompare(right.id)
+    compareRenderIds(left.id, right.id)
   );
   const minimumX = Math.min(...orderedNodes.map((node) => node.x), 0);
   const maximumX = Math.max(...orderedNodes.map((node) => node.x), 0);
@@ -47,14 +51,14 @@ export function buildBattlefieldPrimitives(
   return {
     nodes,
     connections: [...snapshot.connections]
-      .sort((left, right) => left.id.localeCompare(right.id))
+      .sort((left, right) => compareRenderIds(left.id, right.id))
       .map((connection) => ({
         id: connection.id,
         fromId: connection.fromNodeId,
         toId: connection.toNodeId
       })),
     entities: [...snapshot.entities]
-      .sort((left, right) => left.id.localeCompare(right.id))
+      .sort((left, right) => compareRenderIds(left.id, right.id))
       .map((entity) => {
         const position = positions.get(entity.nodeId);
         if (position === undefined)

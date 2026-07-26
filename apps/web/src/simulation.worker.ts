@@ -17,7 +17,11 @@ import {
   WEB_PROTOCOL_VERSION,
   type WorkerMessage
 } from "./protocol.js";
-import type { RenderPhase, RenderSnapshot } from "./render-snapshot.js";
+import {
+  compareRenderIds,
+  type RenderPhase,
+  type RenderSnapshot
+} from "./render-snapshot.js";
 
 declare const self: DedicatedWorkerGlobalScope;
 
@@ -53,17 +57,17 @@ function createRenderSnapshot(
     tick,
     phase,
     nodes: [...(map?.nodes ?? [])]
-      .sort((left, right) => left.id.localeCompare(right.id))
+      .sort((left, right) => compareRenderIds(left.id, right.id))
       .map(({ id, x, y }) => ({ id, x, y })),
     connections: [...(map?.connections ?? [])]
-      .sort((left, right) => left.id.localeCompare(right.id))
+      .sort((left, right) => compareRenderIds(left.id, right.id))
       .map(({ id, nodeIds }) => ({
         id,
         fromNodeId: nodeIds[0],
         toNodeId: nodeIds[1]
       })),
     entities: [...(battlefield?.occupancy ?? [])]
-      .sort((left, right) => left.entityId.localeCompare(right.entityId))
+      .sort((left, right) => compareRenderIds(left.entityId, right.entityId))
       .map(({ entityId, nodeId }) => ({
         id: entityId,
         nodeId,
