@@ -20,7 +20,8 @@ import {
   createCheckpointProfileStore,
   isCheckpointProfileSaveConflict,
   loadCheckpointProfile,
-  purchaseCheckpointUpgrade
+  purchaseCheckpointUpgrade,
+  recycleCheckpointUpgrades
 } from "./checkpoint-profile.js";
 import {
   parseWorkerMessage,
@@ -186,6 +187,7 @@ export function App({
   >(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [upgradeInventoryOpen, setUpgradeInventoryOpen] = useState(false);
+  const [recycleConfirmationOpen, setRecycleConfirmationOpen] = useState(false);
   const [upgradePurchaseStatus, setUpgradePurchaseStatus] =
     useState<UpgradePurchaseStatus>({ kind: "idle" });
   const [checkpointProfile, setCheckpointProfile] = useState<
@@ -210,6 +212,9 @@ export function App({
   const upgradeInventoryButtonRef = useRef<HTMLButtonElement>(null);
   const upgradeInventoryHeadingRef = useRef<HTMLHeadingElement>(null);
   const upgradeInventoryWasOpenRef = useRef(false);
+  const recycleButtonRef = useRef<HTMLButtonElement>(null);
+  const recycleHeadingRef = useRef<HTMLHeadingElement>(null);
+  const recycleConfirmationWasOpenRef = useRef(false);
 
   function clearPendingAbilities(): void {
     pendingAbilityKeysRef.current.clear();
@@ -290,6 +295,57 @@ export function App({
         kind: "failure",
         message:
           "The upgrade was not saved. Your last confirmed progression is unchanged; retry after checking local storage."
+      });
+    } finally {
+      upgradePurchasePendingRef.current = false;
+    }
+  }
+
+  async function recycleUpgrades(): Promise<void> {
+    if (
+      upgradePurchasePendingRef.current ||
+      checkpointProfile.status !== "ready" ||
+      profileStoreRef.current === undefined
+    )
+      return;
+    upgradePurchasePendingRef.current = true;
+    setUpgradePurchaseStatus({
+      kind: "pending",
+      upgradeId: "upgrade.recycle" as StableId
+    });
+    try {
+      const profile = await recycleCheckpointUpgrades(
+        profileStoreRef.current,
+        checkpointProfile.profile
+      );
+      setCheckpointProfile({ status: "ready", profile });
+      setRecycleConfirmationOpen(false);
+      setUpgradePurchaseStatus({
+        kind: "success",
+        message: `Shared upgrades recycled. ${profile.forgeOre} Forge Ore is now available.`
+      });
+    } catch (error) {
+      if (isCheckpointProfileSaveConflict(error)) {
+        const refreshed = await loadCheckpointProfile(
+          profileStoreRef.current,
+          Date.now,
+          false
+        );
+        if (refreshed.status === "ready") {
+          setCheckpointProfile(refreshed);
+          setRecycleConfirmationOpen(false);
+          setUpgradePurchaseStatus({
+            kind: "failure",
+            message:
+              "Progression changed in another tab. The latest saved progression is loaded; review it before recycling."
+          });
+          return;
+        }
+      }
+      setUpgradePurchaseStatus({
+        kind: "failure",
+        message:
+          "The recycle was not saved. Your last confirmed progression is unchanged; retry after checking local storage."
       });
     } finally {
       upgradePurchasePendingRef.current = false;
@@ -496,6 +552,13 @@ export function App({
       upgradeInventoryButtonRef.current?.focus();
     upgradeInventoryWasOpenRef.current = upgradeInventoryOpen;
   }, [upgradeInventoryOpen]);
+
+  useLayoutEffect(() => {
+    if (recycleConfirmationOpen) recycleHeadingRef.current?.focus();
+    else if (recycleConfirmationWasOpenRef.current)
+      recycleButtonRef.current?.focus();
+    recycleConfirmationWasOpenRef.current = recycleConfirmationOpen;
+  }, [recycleConfirmationOpen]);
 
   return (
     <main
@@ -770,6 +833,60 @@ export function App({
                   );
                 })}
               </div>
+              {checkpointProfile.profile.purchasedUpgrades.length > 0 &&
+                !recycleConfirmationOpen && (
+                  <button
+                    type="button"
+                    ref={recycleButtonRef}
+                    disabled={upgradePurchaseStatus.kind === "pending"}
+                    onClick={() => setRecycleConfirmationOpen(true)}
+                  >
+                    Recycle all shared upgrades
+                  </button>
+                )}
+              {recycleConfirmationOpen && (
+                <section
+                  className="recycle-confirmation"
+                  aria-labelledby="recycle-confirmation-heading"
+                >
+                  <h4
+                    id="recycle-confirmation-heading"
+                    ref={recycleHeadingRef}
+                    tabIndex={-1}
+                  >
+                    Confirm shared upgrade recycle
+                  </h4>
+                  <p>
+                    This removes every shared purchased upgrade and refunds
+                    exactly{" "}
+                    {checkpointProfile.profile.purchasedUpgrades.reduce(
+                      (total, purchase) => total + purchase.forgeOreSpent,
+                      0
+                    )}{" "}
+                    Forge Ore. Campaign access returns to the first level.
+                    Characters, experience, unlocks, items, rewards, settings,
+                    and unspent Forge Ore remain.
+                  </p>
+                  <div className="recycle-actions">
+                    <button
+                      type="button"
+                      disabled={upgradePurchaseStatus.kind === "pending"}
+                      onClick={() => void recycleUpgrades()}
+                    >
+                      {upgradePurchaseStatus.kind === "pending"
+                        ? "Saving recycle…"
+                        : "Confirm recycle"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={upgradePurchaseStatus.kind === "pending"}
+                      onClick={() => setRecycleConfirmationOpen(false)}
+                    >
+                      Cancel recycle
+                    </button>
+                  </div>
+                </section>
+              )}
               {upgradePurchaseStatus.kind !== "idle" &&
                 upgradePurchaseStatus.kind !== "pending" && (
                   <p
@@ -784,6 +901,7 @@ export function App({
                 type="button"
                 onClick={() => {
                   setUpgradePurchaseStatus({ kind: "idle" });
+                  setRecycleConfirmationOpen(false);
                   setUpgradeInventoryOpen(false);
                 }}
               >
@@ -811,6 +929,7 @@ export function App({
                   ref={upgradeInventoryButtonRef}
                   onClick={() => {
                     setUpgradePurchaseStatus({ kind: "idle" });
+                    setRecycleConfirmationOpen(false);
                     setUpgradeInventoryOpen(true);
                   }}
                 >

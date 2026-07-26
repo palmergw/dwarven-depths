@@ -29,6 +29,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - a strictly validated, durable standard/high-contrast preference that applies a coherent current-shell palette without affecting simulation authority.
 - a semantic checkpoint upgrade-inventory view that presents validated persistent purchases and Forge Ore with an explicit empty state and deterministic focus restoration, without mutating progression.
 - a durable checkpoint purchase flow over the finite authored vertical-slice upgrade catalog that resolves through shared progression authority, uses optimistic save revisions, updates only from confirmed canonical envelopes, and exposes reasoned unavailable states plus accessible failure recovery.
+- a destructive checkpoint confirmation that recycles all shared purchased upgrades through progression authority, refunds authored Forge Ore spend exactly, preserves retained profile state, and updates only from a revision-checked canonical save.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
@@ -53,5 +54,6 @@ Broader Phase 5 work remains unimplemented until explicitly approved and added t
 - `pnpm test:built -- apps/web/src/protocol.test.ts`
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/App.browser.test.tsx`
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/upgrade-purchase.browser.test.tsx`
+- `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/upgrade-recycle.browser.test.tsx`
 - `pnpm test:browser:docker`
 - `pnpm run verify`
