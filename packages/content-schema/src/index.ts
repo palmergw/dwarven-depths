@@ -986,7 +986,7 @@ export function validateScenario(input: unknown): ScenarioDefinition {
         : command.type === "activateAbility"
           ? `${command.atTick}:${command.type}:${command.dwarfEntityId}:${command.abilityId}`
           : `${command.atTick}:${command.type}`;
-    if (commands.has(key)) {
+    if (command.type !== "activateAbility" && commands.has(key)) {
       issues.push({
         path: `$/commands/${index}`,
         code: "duplicate_command",

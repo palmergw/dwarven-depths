@@ -1,12 +1,14 @@
 import { compileContent } from "@dwarven-depths/content-runtime";
 import {
   type BattlefieldState,
-  canonicalHash
+  canonicalHash,
+  type SimulationEvent,
+  type SimulationState
 } from "@dwarven-depths/contracts";
 import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
   type: "json"
 };
-import { resolveActiveAbilityTick } from "./active-ability.js";
+import { stepSimulation } from "./index.js";
 
 export async function shieldSlamCanonicalEvidence() {
   const content = await compileContent(shuttergateInput);
@@ -95,41 +97,31 @@ export async function shieldSlamCanonicalEvidence() {
       abilityId: "ability.iron_warden.shield_slam" as never
     }
   };
-  const committed = resolveActiveAbilityTick(
-    {
-      schemaVersion: 1,
-      currentTick: 0,
-      phase: "COMBAT_RUNNING",
-      battlefield,
-      commands: [command],
-      cooldowns: [],
-      statuses: [],
-      committedAbilities: []
-    },
-    content
-  );
-  const impacted = resolveActiveAbilityTick(
-    {
-      schemaVersion: 1,
-      currentTick: 7,
-      phase: "COMBAT_RUNNING",
-      battlefield,
-      commands: [],
-      cooldowns: committed.cooldowns,
-      statuses: committed.statuses,
-      committedAbilities: committed.committedAbilities
-    },
-    content
-  );
+  let state: SimulationState = {
+    schemaVersion: 1,
+    contentVersion: content.bundle.contentVersion,
+    tick: 0,
+    seed: "1",
+    rngState: 1,
+    levelId: "level.shuttergate_hall" as never,
+    phase: "COMBAT_RUNNING",
+    eventSequence: 0,
+    battlefield
+  };
+  const events: SimulationEvent[] = [];
+  for (let tick = 0; tick <= 7; tick += 1) {
+    const result = stepSimulation(state, tick === 0 ? [command] : [], content);
+    state = result.state;
+    events.push(...result.events);
+  }
   const evidence = Object.freeze({
     schemaVersion: 1 as const,
     contentManifestHash: content.manifestHash,
     commands: Object.freeze([command]),
-    activation: committed.activations,
-    impact: impacted.impacts,
-    cooldowns: impacted.cooldowns,
-    statuses: impacted.statuses,
-    battlefield: impacted.battlefield
+    events: Object.freeze(events),
+    cooldowns: state.activeCooldowns,
+    statuses: state.activeStatuses,
+    battlefield: state.battlefield
   });
   return Object.freeze({ evidence, checksum: await canonicalHash(evidence) });
 }

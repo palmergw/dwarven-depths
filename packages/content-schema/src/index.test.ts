@@ -629,6 +629,32 @@ describe("scenario validation", () => {
     });
   });
 
+  it("preserves duplicate ability attempts for authoritative rejection", () => {
+    const scenario = validateScenario({
+      schemaVersion: 1,
+      id: "scenario.conformance.duplicate_ability",
+      levelId: "level.empty",
+      seed: "1",
+      maximumTicks: 2,
+      commands: [
+        {
+          atTick: 1,
+          type: "activateAbility",
+          dwarfEntityId: "entity.dwarf.warden",
+          abilityId: "ability.iron_warden.shield_slam"
+        },
+        {
+          atTick: 1,
+          type: "activateAbility",
+          dwarfEntityId: "entity.dwarf.warden",
+          abilityId: "ability.iron_warden.shield_slam"
+        }
+      ]
+    });
+
+    expect(scenario.commands).toHaveLength(2);
+  });
+
   it("rejects malformed target-policy command IDs, policies, and fields", () => {
     expect(() =>
       validateScenario({

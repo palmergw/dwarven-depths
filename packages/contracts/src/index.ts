@@ -422,6 +422,8 @@ export interface AbilityImpactDecision {
   readonly targetEntityIds: readonly EntityId[];
   readonly interruptedAttackIds: readonly StableId[];
   readonly statusId: StatusId;
+  readonly damage: number;
+  readonly staggerExpiresAtTick: number;
   readonly reason: "shield_slam_impacted";
 }
 
@@ -446,6 +448,7 @@ export interface ActiveAbilityTickResolution {
   readonly impacts: readonly AbilityImpactDecision[];
   readonly cooldownDecisions: readonly CooldownTimerDecision[];
   readonly statusDecisions: readonly StatusTimerDecision[];
+  readonly statusApplicationDecisions: readonly StatusApplicationDecision[];
 }
 
 export interface DwarfActionPhaseRequest {
@@ -1316,7 +1319,36 @@ export interface AbilityImpactSimulationEvent extends SimulationEventBase {
   readonly targetEntityIds: readonly EntityId[];
   readonly interruptedAttackIds: readonly StableId[];
   readonly statusId: StatusId;
+  readonly damage: number;
+  readonly staggerExpiresAtTick: number;
   readonly reasonCode: AbilityImpactDecision["reason"];
+}
+
+export interface AbilityDamageSimulationEvent extends SimulationEventBase {
+  readonly type: "ability.damage";
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId: EntityId;
+  readonly abilityId: StableId;
+  readonly damage: number;
+  readonly reasonCode: "shield_slam_damage_applied";
+}
+
+export interface AbilityStatusSimulationEvent extends SimulationEventBase {
+  readonly type: "ability.status.applied" | "ability.status.refreshed";
+  readonly ownerEntityId: EntityId;
+  readonly abilityId: StableId;
+  readonly statusId: StatusId;
+  readonly expiresAtTick: number;
+  readonly reasonCode: StatusApplicationDecision["reason"];
+}
+
+export interface AbilityTimerSimulationEvent extends SimulationEventBase {
+  readonly type: "ability.cooldown.completed" | "ability.status.expired";
+  readonly ownerEntityId: EntityId;
+  readonly timerId: StableId;
+  readonly reasonCode:
+    | CooldownTimerDecision["reason"]
+    | StatusTimerDecision["reason"];
 }
 
 export type SimulationEvent =
@@ -1326,7 +1358,10 @@ export type SimulationEvent =
   | SpawnSimulationEvent
   | MovementSimulationEvent
   | AbilityActivationSimulationEvent
-  | AbilityImpactSimulationEvent;
+  | AbilityImpactSimulationEvent
+  | AbilityDamageSimulationEvent
+  | AbilityStatusSimulationEvent
+  | AbilityTimerSimulationEvent;
 
 export interface CommandEnvelope {
   readonly tick: number;

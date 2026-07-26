@@ -145,6 +145,34 @@ function request(
 }
 
 describe("Shield Slam active ability", () => {
+  it.each(["PREPARATION", "TERMINAL"] as const)(
+    "emits a stable rejection without advancing %s gameplay",
+    (phase) => {
+      const state: SimulationState = {
+        schemaVersion: 1,
+        contentVersion: content.bundle.contentVersion,
+        tick: 0,
+        seed: "1",
+        rngState: 1,
+        levelId: "level.shuttergate_hall" as never,
+        phase,
+        eventSequence: 0,
+        battlefield: battlefield(),
+        ...(phase === "TERMINAL" ? { terminalResult: "defeat" as const } : {})
+      };
+
+      const result = stepSimulation(state, [command()], content);
+      expect(result.state.tick).toBe(0);
+      expect(result.events).toMatchObject([
+        {
+          id: "event.000000",
+          type: "ability.activation.rejected",
+          reasonCode: "phase_unavailable"
+        }
+      ]);
+    }
+  );
+
   it("persists accepted work through the simulation kernel until impact", () => {
     let state: SimulationState = {
       schemaVersion: 1,
@@ -175,20 +203,40 @@ describe("Shield Slam active ability", () => {
       state = result.state;
       if (tick < 7) expect(result.events).toEqual([]);
       else {
-        expect(result.events).toMatchObject([
-          {
-            id: "event.000001",
-            type: "ability.impact",
-            targetEntityIds: ["entity.enemy.a", "entity.enemy.b"],
-            reasonCode: "shield_slam_impacted"
-          }
+        expect(result.events.map(({ type }) => type)).toEqual([
+          "ability.impact",
+          "ability.damage",
+          "ability.damage",
+          "ability.status.applied",
+          "ability.status.applied"
         ]);
+        expect(result.events[0]).toMatchObject({
+          id: "event.000001",
+          targetEntityIds: ["entity.enemy.a", "entity.enemy.b"],
+          damage: 24,
+          staggerExpiresAtTick: 25,
+          reasonCode: "shield_slam_impacted"
+        });
       }
     }
 
     expect(state.tick).toBe(8);
     expect(state.committedAbilities).toEqual([]);
     expect(state.activeStatuses).toHaveLength(2);
+
+    const timerEvents: string[] = [];
+    while (state.tick <= 90) {
+      const result = stepSimulation(state, [], content);
+      state = result.state;
+      timerEvents.push(...result.events.map(({ type }) => type));
+    }
+    expect(timerEvents).toEqual([
+      "ability.status.expired",
+      "ability.status.expired",
+      "ability.cooldown.completed"
+    ]);
+    expect(state.activeStatuses).toEqual([]);
+    expect(state.activeCooldowns).toEqual([]);
   });
 
   it("uses inclusive exact integer range and cone boundaries", () => {
@@ -296,6 +344,8 @@ describe("Shield Slam active ability", () => {
         targetEntityIds: ["entity.enemy.a", "entity.enemy.b"],
         interruptedAttackIds: ["attack.instance.enemy_a"],
         statusId: "status.staggered",
+        damage: 24,
+        staggerExpiresAtTick: 25,
         reason: "shield_slam_impacted"
       }
     ]);

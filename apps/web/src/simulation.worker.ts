@@ -6,14 +6,17 @@ import {
 import type {
   BattlefieldState,
   ContentBundle,
-  ScenarioDefinition
+  ScenarioDefinition,
+  SimulationState
 } from "@dwarven-depths/contracts";
 import {
   createLiveScenarioHost,
   type LiveScenarioHost
 } from "@dwarven-depths/runtime";
-import contentFixture from "../../../content/fixtures/empty-content.json";
-import scenarioFixture from "../../../scenarios/conformance/empty-level.json";
+import emptyContentFixture from "../../../content/fixtures/empty-content.json";
+import shieldSlamContentFixture from "../../../content/fixtures/phase-3-shuttergate.json";
+import emptyScenarioFixture from "../../../scenarios/conformance/empty-level.json";
+import shieldSlamScenarioFixture from "../../../scenarios/conformance/shield-slam.json";
 import {
   type CombatControlDwarf,
   EMPTY_CONTENT_MANIFEST_HASH,
@@ -42,10 +45,97 @@ let pendingExecutionRequestId: string | null = null;
 const acceptedRequestIds = new Set<string>();
 const scheduledTargetPolicies = new Set<string>();
 const scheduledAbilities = new Set<string>();
+const abilityRejections = new Map<string, string>();
 let protocolVersion: 1 | 2 | 3 | 4 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
 let liveHost: LiveScenarioHost | undefined;
+
+function createShieldSlamPreparationState(
+  content: CompiledContent,
+  scenario: ScenarioDefinition
+): SimulationState {
+  const character = content.characters.get("character.iron_warden" as never);
+  const enemy = content.enemies.get("enemy.goblin_cutter" as never);
+  const level = content.levels.get(scenario.levelId);
+  if (
+    character === undefined ||
+    enemy === undefined ||
+    level?.mapId === undefined
+  )
+    throw new Error(
+      "The Shield Slam web scenario is missing authored content."
+    );
+  return Object.freeze({
+    schemaVersion: 1,
+    contentVersion: content.bundle.contentVersion,
+    tick: 0,
+    seed: scenario.seed,
+    rngState: 1,
+    levelId: scenario.levelId,
+    phase: "PREPARATION",
+    eventSequence: 0,
+    battlefield: Object.freeze({
+      schemaVersion: 1,
+      mapId: level.mapId,
+      startedWaveIds: Object.freeze([]),
+      firedSpawnIds: Object.freeze([]),
+      pendingSpawns: Object.freeze([]),
+      enemyAdmissions: Object.freeze([]),
+      occupancy: Object.freeze([
+        Object.freeze({
+          entityId: "entity.dwarf.warden" as never,
+          nodeId: "node.shuttergate_north_guard" as never
+        }),
+        Object.freeze({
+          entityId: "entity.enemy.shield_slam_target" as never,
+          nodeId: "node.shuttergate_gate" as never
+        })
+      ]),
+      pendingCommittedAttacks: Object.freeze([]),
+      dwarfCombatants: Object.freeze([
+        Object.freeze({
+          schemaVersion: 1,
+          entityId: "entity.dwarf.warden" as never,
+          characterDefinitionId: character.id,
+          placementPointId: "placement.shuttergate_north_guard" as never,
+          currentHealth: character.maximumHealth,
+          maximumHealth: character.maximumHealth,
+          lifecycleState: "active" as const,
+          basicAttack: character.basicAttack,
+          actionState: Object.freeze({
+            schemaVersion: 1,
+            currentTargetEntityId: "entity.enemy.shield_slam_target" as never,
+            activeBasicAttack: null,
+            cooldownCompleteAtTick: null
+          })
+        })
+      ]),
+      enemyCombatants: Object.freeze([
+        Object.freeze({
+          schemaVersion: 1,
+          entityId: "entity.enemy.shield_slam_target" as never,
+          enemyDefinitionId: enemy.id,
+          classification: enemy.classification,
+          currentHealth: enemy.maximumHealth,
+          maximumHealth: enemy.maximumHealth,
+          armor: enemy.armor,
+          movementIntervalTicks: enemy.movementIntervalTicks,
+          admittedAtTick: 0,
+          lifecycleState: "active" as const,
+          basicAttack: enemy.basicAttack,
+          actionState: Object.freeze({
+            schemaVersion: 1,
+            nextMovementAtTick: 0,
+            currentTargetEntityId: "entity.dwarf.warden" as never,
+            activeBasicAttack: null,
+            cooldownCompleteAtTick: null
+          })
+        })
+      ])
+    })
+  });
+}
 
 function post(message: WorkerMessage): void {
   self.postMessage(message);
@@ -144,8 +234,18 @@ function authoritativeCombatControls(): readonly CombatControlDwarf[] {
                 .sort((left, right) => compareRenderIds(left.id, right.id))
                 .map((ability) => ({
                   abilityId: ability.id,
-                  cooldownCompleteAtTick: null,
-                  rejectionReason: null
+                  cooldownCompleteAtTick:
+                    liveHost?.state.activeCooldowns?.find(
+                      (cooldown) =>
+                        cooldown.ownerEntityId === dwarf.entityId &&
+                        cooldown.cooldownId.startsWith(
+                          `${ability.id}.cooldown.`
+                        )
+                    )?.completeAtTick ?? null,
+                  rejectionReason:
+                    abilityRejections.get(
+                      `${dwarf.entityId}\u0000${ability.id}`
+                    ) ?? null
                 }))
             })
       };
@@ -187,6 +287,14 @@ async function executePreparedScenario(): Promise<void> {
     const step = liveHost.step();
     scheduledTargetPolicies.clear();
     scheduledAbilities.clear();
+    abilityRejections.clear();
+    for (const event of step.events) {
+      if (event.type === "ability.activation.rejected")
+        abilityRejections.set(
+          `${event.dwarfEntityId}\u0000${event.abilityId}`,
+          event.reasonCode
+        );
+    }
     if (step.state.phase === "TERMINAL") terminal = true;
     postRenderSnapshot(
       createRenderSnapshot(
@@ -289,6 +397,12 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     initialized = true;
     protocolVersion = message.protocolVersion;
     try {
+      const contentFixture =
+        protocolVersion === 4 ? shieldSlamContentFixture : emptyContentFixture;
+      const scenarioFixture =
+        protocolVersion === 4
+          ? shieldSlamScenarioFixture
+          : emptyScenarioFixture;
       preparedContent = await compileContent(
         contentFixture as unknown as ContentBundle
       );
@@ -296,12 +410,19 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         scenarioFixture as unknown as ScenarioDefinition,
         preparedContent
       );
-      liveHost = createLiveScenarioHost(preparedScenario, preparedContent);
+      liveHost = createLiveScenarioHost(
+        preparedScenario,
+        preparedContent,
+        protocolVersion === 4
+          ? createShieldSlamPreparationState(preparedContent, preparedScenario)
+          : undefined
+      );
       const preparationSnapshot = createRenderSnapshot(
         preparedContent,
         preparedScenario,
         "preparation",
-        0
+        0,
+        liveHost.state.battlefield
       );
       const preparedLevel = preparedContent.levels.get(
         preparedScenario.levelId

@@ -494,14 +494,43 @@ export class LiveScenarioHost {
   #events: SimulationEvent[] = [];
   #failed = false;
 
-  constructor(scenario: ScenarioDefinition, content: CompiledContent) {
+  constructor(
+    scenario: ScenarioDefinition,
+    content: CompiledContent,
+    initialState?: SimulationState
+  ) {
     this.#scenario = scenario;
     this.#content = content;
     this.#effectiveScenario = compileScenario(
       { ...scenario, commands: [] },
       content
     );
-    this.#state = createInitialState(content, scenario.levelId, scenario.seed);
+    const canonicalInitialState = createInitialState(
+      content,
+      scenario.levelId,
+      scenario.seed
+    );
+    if (
+      initialState !== undefined &&
+      (initialState.schemaVersion !== 1 ||
+        initialState.contentVersion !== content.bundle.contentVersion ||
+        initialState.levelId !== scenario.levelId ||
+        initialState.seed !== scenario.seed ||
+        initialState.rngState !== canonicalInitialState.rngState ||
+        initialState.tick !== 0 ||
+        initialState.phase !== "PREPARATION" ||
+        initialState.eventSequence !== 0 ||
+        initialState.terminalResult !== undefined ||
+        initialState.battlefield?.mapId !==
+          canonicalInitialState.battlefield?.mapId)
+    )
+      throw new RangeError(
+        "live scenario initial state does not match its canonical preparation identity"
+      );
+    this.#state =
+      initialState === undefined
+        ? canonicalInitialState
+        : Object.freeze({ ...initialState });
   }
 
   get state(): SimulationState {
@@ -617,9 +646,10 @@ export class LiveScenarioHost {
 
 export function createLiveScenarioHost(
   scenario: ScenarioDefinition,
-  content: CompiledContent
+  content: CompiledContent,
+  initialState?: SimulationState
 ): LiveScenarioHost {
-  return new LiveScenarioHost(scenario, content);
+  return new LiveScenarioHost(scenario, content, initialState);
 }
 
 async function createRuntimeResult(

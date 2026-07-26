@@ -14,7 +14,8 @@ import type {
   CommittedActiveAbility,
   EntityId,
   NavigationNodeDefinition,
-  StableId
+  StableId,
+  StatusApplicationDecision
 } from "@dwarven-depths/contracts";
 import {
   applyStatusApplications,
@@ -171,6 +172,7 @@ export function resolveActiveAbilityTick(
   ];
   const activations: AbilityActivationDecision[] = [];
   const impacts: AbilityImpactDecision[] = [];
+  const statusApplicationDecisions: StatusApplicationDecision[] = [];
   const map = content.maps.get(request.battlefield.mapId);
   if (map === undefined)
     throw new RangeError("active ability battlefield map is unknown");
@@ -398,7 +400,7 @@ export function resolveActiveAbilityTick(
       (enemy) =>
         targetIds.has(enemy.entityId) && enemy.lifecycleState === "active"
     );
-    statuses = applyStatusApplications({
+    const statusApplication = applyStatusApplications({
       currentTick: request.currentTick,
       statuses,
       applications: livingTargets.map((enemy) => ({
@@ -408,7 +410,9 @@ export function resolveActiveAbilityTick(
         durationTicks: ability.staggerTicks,
         magnitude: 1
       }))
-    }).statuses;
+    });
+    statuses = statusApplication.statuses;
+    statusApplicationDecisions.push(...statusApplication.decisions);
     const living = new Set(
       enemyCombatants
         .filter(({ lifecycleState }) => lifecycleState === "active")
@@ -436,6 +440,8 @@ export function resolveActiveAbilityTick(
         ),
         interruptedAttackIds: Object.freeze(interrupted.sort(compareText)),
         statusId: STAGGER_STATUS_ID as never,
+        damage: ability.damage,
+        staggerExpiresAtTick: request.currentTick + ability.staggerTicks,
         reason: "shield_slam_impacted"
       })
     );
@@ -456,6 +462,7 @@ export function resolveActiveAbilityTick(
     activations: Object.freeze(activations),
     impacts: Object.freeze(impacts),
     cooldownDecisions: timers.cooldownDecisions,
-    statusDecisions: timers.statusDecisions
+    statusDecisions: timers.statusDecisions,
+    statusApplicationDecisions: Object.freeze(statusApplicationDecisions)
   });
 }
