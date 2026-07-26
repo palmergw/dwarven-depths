@@ -15,6 +15,7 @@ import {
   type WorkerMessage
 } from "./protocol.js";
 import type { RenderSnapshot } from "./render-snapshot.js";
+import { downloadRunEvidence } from "./run-evidence.js";
 
 type ViewState =
   | { readonly phase: "checkpoint" }
@@ -379,9 +380,17 @@ export function App({
           </dl>
         )}
         {view.phase === "result" && (
-          <button type="button" onClick={returnToCheckpoint}>
-            Return to checkpoint
-          </button>
+          <div className="result-actions">
+            <button
+              type="button"
+              onClick={() => downloadRunEvidence(view.result)}
+            >
+              Download run evidence
+            </button>
+            <button type="button" onClick={returnToCheckpoint}>
+              Return to checkpoint
+            </button>
+          </div>
         )}
       </section>
     </main>
