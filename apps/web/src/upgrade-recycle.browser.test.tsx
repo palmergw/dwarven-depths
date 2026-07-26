@@ -107,6 +107,7 @@ describe("checkpoint shared-upgrade recycle", () => {
     );
     const confirm = await button("Confirm recycle");
     confirm.focus();
+    await vi.waitFor(() => expect(confirm).toHaveFocus());
     await userEvent.keyboard("{Enter}");
 
     await vi.waitFor(() => expect(writes).toHaveLength(1));

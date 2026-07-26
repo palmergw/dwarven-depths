@@ -92,6 +92,7 @@ describe("checkpoint upgrade purchasing", () => {
     await userEvent.click(await button("Upgrade inventory"));
     const purchase = await button("Purchase rank 1 for 10 Forge Ore");
     purchase.focus();
+    await vi.waitFor(() => expect(purchase).toHaveFocus());
     await userEvent.keyboard("{Enter}");
 
     await vi.waitFor(() => expect(writes).toHaveLength(1));
