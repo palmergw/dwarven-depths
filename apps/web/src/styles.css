@@ -83,10 +83,12 @@ button:focus-visible {
   outline-offset: 3px;
 }
 .checkpoint-context,
+.preparation-summary,
 .evidence {
   margin: 1.5rem 0 0;
 }
 .checkpoint-context div,
+.preparation-summary div,
 .evidence div {
   display: grid;
   grid-template-columns: minmax(9rem, 1fr) 2fr;
@@ -107,6 +109,7 @@ code {
 }
 @media (max-width: 32rem) {
   .checkpoint-context div,
+  .preparation-summary div,
   .evidence div {
     grid-template-columns: 1fr;
     gap: 0.25rem;

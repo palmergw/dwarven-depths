@@ -83,6 +83,33 @@ describe("web worker protocol", () => {
     expect(parseWorkerMessage({ ...result, unexpected: true })).toBeUndefined();
   });
 
+  it("accepts only complete authoritative preparation summaries", () => {
+    const snapshot = {
+      protocolVersion: 1,
+      type: "snapshot",
+      phase: "preparation",
+      levelId: "level.empty",
+      deployableEntityCount: 0,
+      placementPointCount: 0
+    };
+    expect(parseWorkerMessage(snapshot)).toEqual(snapshot);
+    expect(
+      parseWorkerMessage({ ...snapshot, deployableEntityCount: -1 })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...snapshot, placementPointCount: 0.5 })
+    ).toBeUndefined();
+    const { levelId: _levelId, ...missingLevel } = snapshot;
+    expect(parseWorkerMessage(missingLevel)).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        protocolVersion: 1,
+        type: "snapshot",
+        phase: "running"
+      })
+    ).toBeDefined();
+  });
+
   it("accepts only canonical, internally consistent render snapshots", () => {
     const snapshot = {
       schemaVersion: 1,

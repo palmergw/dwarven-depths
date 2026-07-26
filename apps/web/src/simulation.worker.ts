@@ -119,18 +119,29 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         scenarioFixture as unknown as ScenarioDefinition,
         preparedContent
       );
-      postRenderSnapshot(
-        createRenderSnapshot(
-          preparedContent,
-          preparedScenario,
-          "preparation",
-          0
-        )
+      const preparationSnapshot = createRenderSnapshot(
+        preparedContent,
+        preparedScenario,
+        "preparation",
+        0
       );
+      const preparedLevel = preparedContent.levels.get(
+        preparedScenario.levelId
+      );
+      const preparedMap =
+        preparedLevel?.mapId === undefined
+          ? undefined
+          : preparedContent.maps.get(preparedLevel.mapId);
+      postRenderSnapshot(preparationSnapshot);
       post({
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "snapshot",
-        phase: "preparation"
+        phase: "preparation",
+        levelId: preparationSnapshot.levelId,
+        deployableEntityCount: preparationSnapshot.entities.filter(
+          (entity) => entity.faction === "deployable"
+        ).length,
+        placementPointCount: preparedMap?.placementPoints.length ?? 0
       });
     } catch (error) {
       post(
