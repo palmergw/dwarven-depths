@@ -285,6 +285,29 @@ describe("shared runtime", () => {
     await expect(host.result()).rejects.toThrow(/no terminal result/);
   });
 
+  it("binds newly admitted commands into its replayable scenario", async () => {
+    const content = await compileContent(contentInput);
+    const scenario = compileScenario(
+      { ...scenarioInput, commands: [] },
+      content
+    );
+    const host = createLiveScenarioHost(scenario, content);
+    host.scheduleCommand({ atTick: 0, type: "confirmPreparation" });
+    host.step();
+
+    const result = await host.result();
+    expect(host.scenario.commands).toEqual([
+      { atTick: 0, type: "confirmPreparation" }
+    ]);
+    await expect(
+      verifyReplay(
+        createReplayDefinition(result, host.scenario, content),
+        host.scenario,
+        content
+      )
+    ).resolves.toEqual(result);
+  });
+
   it("creates and verifies replay evidence with stable divergence codes", async () => {
     const content = await compileContent(contentInput);
     const scenario = compileScenario(scenarioInput, content);

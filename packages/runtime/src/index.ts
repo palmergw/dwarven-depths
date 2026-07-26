@@ -486,6 +486,7 @@ export class ReplayDivergenceError extends Error {
 export class LiveScenarioHost {
   readonly #scenario: ScenarioDefinition;
   readonly #content: CompiledContent;
+  #effectiveScenario: ScenarioDefinition;
   #state: SimulationState;
   #nextCommandSequence = 0;
   #pendingCommands: CommandEnvelope[] = [];
@@ -496,11 +497,20 @@ export class LiveScenarioHost {
   constructor(scenario: ScenarioDefinition, content: CompiledContent) {
     this.#scenario = scenario;
     this.#content = content;
+    this.#effectiveScenario = compileScenario(
+      { ...scenario, commands: [] },
+      content
+    );
     this.#state = createInitialState(content, scenario.levelId, scenario.seed);
   }
 
   get state(): SimulationState {
     return this.#state;
+  }
+
+  /** The replayable scenario identity containing commands admitted so far. */
+  get scenario(): ScenarioDefinition {
+    return this.#effectiveScenario;
   }
 
   scheduleCommand(command: CommandEnvelope["command"]): CommandEnvelope {
@@ -517,7 +527,7 @@ export class LiveScenarioHost {
       throw new RangeError(
         `live command tick must equal authoritative tick ${this.#state.tick}`
       );
-    const validatedCommand = compileScenario(
+    const effectiveScenario = compileScenario(
       {
         ...this.#scenario,
         commands: [
@@ -527,7 +537,8 @@ export class LiveScenarioHost {
         ]
       },
       this.#content
-    ).commands.at(-1);
+    );
+    const validatedCommand = effectiveScenario.commands.at(-1);
     if (validatedCommand === undefined)
       throw new TypeError("live command validation produced no command");
     const envelope = Object.freeze({
@@ -535,6 +546,7 @@ export class LiveScenarioHost {
       sequence: this.#nextCommandSequence++,
       command: Object.freeze({ ...validatedCommand })
     }) as CommandEnvelope;
+    this.#effectiveScenario = effectiveScenario;
     this.#pendingCommands.push(envelope);
     return envelope;
   }
@@ -589,7 +601,7 @@ export class LiveScenarioHost {
         this.#state.tick
       );
     return createRuntimeResult(
-      this.#scenario,
+      this.#effectiveScenario,
       this.#state,
       this.#commands,
       this.#events
