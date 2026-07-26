@@ -12,7 +12,7 @@ import { runScenario } from "@dwarven-depths/runtime";
 import contentFixture from "../../../content/fixtures/empty-content.json";
 import scenarioFixture from "../../../scenarios/conformance/empty-level.json";
 import {
-  type CombatControlDwarf,
+  EMPTY_CONTENT_MANIFEST_HASH,
   failure,
   parseClientMessage,
   WEB_PROTOCOL_VERSION,
@@ -95,36 +95,6 @@ function postRenderSnapshot(snapshot: RenderSnapshot): void {
     type: "render_snapshot",
     snapshot
   });
-}
-
-function createCombatControlDwarves(
-  content: CompiledContent,
-  battlefield?: BattlefieldState
-): readonly CombatControlDwarf[] {
-  const targetPolicyOrder = [
-    "nearest",
-    "lowest_health",
-    "highest_health",
-    "highest_armor"
-  ] as const;
-  return [...(battlefield?.dwarfCombatants ?? [])]
-    .sort((left, right) => compareRenderIds(left.entityId, right.entityId))
-    .map((combatant) => {
-      const character = content.characters.get(combatant.characterDefinitionId);
-      if (character === undefined)
-        throw new Error(
-          `Combat-control dwarf ${combatant.entityId} has an unknown character definition.`
-        );
-      const supported = new Set(character.supportedTargetPolicies);
-      return {
-        entityId: combatant.entityId,
-        characterId: character.id,
-        supportedTargetPolicies: targetPolicyOrder.filter((policy) =>
-          supported.has(policy)
-        ),
-        abilityIds: []
-      };
-    });
 }
 
 function postRunningSnapshot(): void {
@@ -243,10 +213,15 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
           : preparedContent.maps.get(preparedLevel.mapId);
       postRenderSnapshot(preparationSnapshot);
       if (protocolVersion === 3) {
+        if (preparedContent.manifestHash !== EMPTY_CONTENT_MANIFEST_HASH)
+          throw new Error(
+            "The combat-control snapshot does not match the empty content manifest."
+          );
         post({
           protocolVersion: 3,
           type: "combat_controls",
-          dwarves: createCombatControlDwarves(preparedContent)
+          contentManifestHash: preparedContent.manifestHash,
+          dwarves: []
         });
       }
       post({

@@ -5,6 +5,7 @@ import { userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import { buildBattlefieldPrimitives } from "./Battlefield.js";
 import {
+  EMPTY_CONTENT_MANIFEST_HASH,
   parseWorkerMessage,
   WEB_PROTOCOL_VERSION,
   type WorkerMessage
@@ -151,6 +152,7 @@ describe("authoritative web worker", () => {
       });
       expect(combatControlsMessage).toMatchObject({
         protocolVersion: WEB_PROTOCOL_VERSION,
+        contentManifestHash: EMPTY_CONTENT_MANIFEST_HASH,
         dwarves: []
       });
 

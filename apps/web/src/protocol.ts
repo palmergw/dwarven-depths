@@ -2,26 +2,8 @@ import { parseRenderSnapshot, type RenderSnapshot } from "./render-snapshot.js";
 
 export const WEB_PROTOCOL_VERSION = 3 as const;
 type WebProtocolVersion = 1 | 2 | 3;
-
-export type TargetPolicy =
-  | "nearest"
-  | "lowest_health"
-  | "highest_health"
-  | "highest_armor";
-
-export type CombatControlDwarf = {
-  readonly entityId: string;
-  readonly characterId: string;
-  readonly supportedTargetPolicies: readonly TargetPolicy[];
-  readonly abilityIds: readonly string[];
-};
-
-const targetPolicies: readonly TargetPolicy[] = [
-  "nearest",
-  "lowest_health",
-  "highest_health",
-  "highest_armor"
-];
+export const EMPTY_CONTENT_MANIFEST_HASH =
+  "3166e781fc4cce29240c01099919f4475ebe03294a76987706214eb24e398abe";
 
 export type ClientMessage =
   | { readonly protocolVersion: 1; readonly type: "initialize" }
@@ -70,7 +52,8 @@ export type WorkerMessage =
   | {
       readonly protocolVersion: 3;
       readonly type: "combat_controls";
-      readonly dwarves: readonly CombatControlDwarf[];
+      readonly contentManifestHash: typeof EMPTY_CONTENT_MANIFEST_HASH;
+      readonly dwarves: readonly [];
     }
   | {
       readonly protocolVersion: WebProtocolVersion;
@@ -125,10 +108,7 @@ type RecordValue = {
   atTick?: unknown;
   snapshot?: unknown;
   dwarves?: unknown;
-  entityId?: unknown;
-  characterId?: unknown;
-  supportedTargetPolicies?: unknown;
-  abilityIds?: unknown;
+  contentManifestHash?: unknown;
 };
 
 function isRecord(value: unknown): value is RecordValue {
@@ -162,33 +142,6 @@ function isRequestId(value: unknown): value is string {
     value.length <= 128 &&
     /^[A-Za-z0-9._:-]+$/.test(value)
   );
-}
-
-function isStableId(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length > 0 &&
-    value.length <= 128 &&
-    /^[a-z][a-z0-9_.:-]*$/.test(value)
-  );
-}
-
-function isCanonicalStrings(values: readonly string[]): boolean {
-  return values.every(
-    (value, index) => index === 0 || (values[index - 1] as string) < value
-  );
-}
-
-function isCanonicalTargetPolicies(
-  values: readonly unknown[]
-): values is TargetPolicy[] {
-  let previousIndex = -1;
-  return values.every((value) => {
-    const index = targetPolicies.indexOf(value as TargetPolicy);
-    if (index <= previousIndex) return false;
-    previousIndex = index;
-    return index >= 0;
-  });
 }
 
 export function parseClientMessage(value: unknown): ClientMessage | undefined {
@@ -269,32 +222,15 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
   if (value.type === "combat_controls") {
     if (
       value.protocolVersion !== 3 ||
-      !hasExactKeys(value, ["dwarves", "protocolVersion", "type"]) ||
-      !Array.isArray(value.dwarves)
-    )
-      return undefined;
-    const dwarves = value.dwarves;
-    if (
-      !dwarves.every(
-        (dwarf) =>
-          isRecord(dwarf) &&
-          hasExactKeys(dwarf, [
-            "abilityIds",
-            "characterId",
-            "entityId",
-            "supportedTargetPolicies"
-          ]) &&
-          isStableId(dwarf.entityId) &&
-          isStableId(dwarf.characterId) &&
-          Array.isArray(dwarf.supportedTargetPolicies) &&
-          isCanonicalTargetPolicies(dwarf.supportedTargetPolicies) &&
-          Array.isArray(dwarf.abilityIds) &&
-          dwarf.abilityIds.every(isStableId) &&
-          isCanonicalStrings(dwarf.abilityIds)
-      ) ||
-      !isCanonicalStrings(
-        dwarves.map((dwarf) => (dwarf as CombatControlDwarf).entityId)
-      )
+      !hasExactKeys(value, [
+        "contentManifestHash",
+        "dwarves",
+        "protocolVersion",
+        "type"
+      ]) ||
+      value.contentManifestHash !== EMPTY_CONTENT_MANIFEST_HASH ||
+      !Array.isArray(value.dwarves) ||
+      value.dwarves.length !== 0
     )
       return undefined;
     return value as WorkerMessage;

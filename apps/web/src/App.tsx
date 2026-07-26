@@ -195,7 +195,7 @@ export function App() {
             <CombatHud snapshot={renderSnapshot} />
           )}
         {view.phase === "running" && combatControls !== undefined && (
-          <CombatControls dwarves={combatControls.dwarves} />
+          <CombatControls />
         )}
         {view.phase === "preparation" && (
           <dl className="preparation-summary" aria-label="Preparation summary">

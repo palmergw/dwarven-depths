@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseClientMessage, parseWorkerMessage } from "./protocol.js";
+import {
+  EMPTY_CONTENT_MANIFEST_HASH,
+  parseClientMessage,
+  parseWorkerMessage
+} from "./protocol.js";
 
 describe("web worker protocol", () => {
   it("accepts only the versioned preparation command shape", () => {
@@ -187,31 +191,18 @@ describe("web worker protocol", () => {
     ).toBeUndefined();
   });
 
-  it("accepts only canonical combat-control availability", () => {
+  it("accepts only the empty manifest-bound combat-control availability", () => {
     const controls = {
       protocolVersion: 3,
       type: "combat_controls",
-      dwarves: [
-        {
-          entityId: "entity.dwarf.a",
-          characterId: "character.iron_warden",
-          supportedTargetPolicies: ["nearest", "lowest_health"],
-          abilityIds: ["ability.a", "ability.b"]
-        },
-        {
-          entityId: "entity.dwarf.b",
-          characterId: "character.deep_ranger",
-          supportedTargetPolicies: ["highest_health"],
-          abilityIds: []
-        }
-      ]
+      contentManifestHash: EMPTY_CONTENT_MANIFEST_HASH,
+      dwarves: []
     };
     expect(parseWorkerMessage(controls)).toEqual(controls);
-    expect(parseWorkerMessage({ ...controls, dwarves: [] })).toBeDefined();
     expect(
       parseWorkerMessage({
         ...controls,
-        dwarves: [...controls.dwarves].reverse()
+        contentManifestHash: "a".repeat(64)
       })
     ).toBeUndefined();
     expect(
@@ -219,17 +210,11 @@ describe("web worker protocol", () => {
         ...controls,
         dwarves: [
           {
-            ...controls.dwarves[0],
-            supportedTargetPolicies: ["lowest_health", "nearest"]
+            entityId: "foreign.entity",
+            characterId: "foreign.character",
+            supportedTargetPolicies: ["nearest"],
+            abilityIds: ["foreign.ability"]
           }
-        ]
-      })
-    ).toBeUndefined();
-    expect(
-      parseWorkerMessage({
-        ...controls,
-        dwarves: [
-          { ...controls.dwarves[0], abilityIds: ["ability.b", "ability.a"] }
         ]
       })
     ).toBeUndefined();
