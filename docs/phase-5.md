@@ -22,6 +22,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - a backward-compatible protocol-v4 target-policy input path with worker-derived, manifest-bound dwarf capabilities, strict canonical command/result validation, and semantic keyboard/mouse controls; the empty fixture continues to expose the authoritative unavailable state.
 - the approved deterministic Shield Slam content, strict replay command, integer cone/cooldown/impact/interruption/stagger resolver, reason-coded evidence, and accessible protocol-v4 activation control with authoritative phase/cooldown feedback and duplicate-safe queued presentation; Shuttergate content deliberately migrates to `phase-5-shuttergate-shield-slam-v2` while historical no-ability fixtures retain their prior bytes and checksums.
 - a semantic terminal-results action that disposes the completed worker, clears attempt-local presentation and input state, and returns to a fresh checkpoint for a deterministic repeat attempt.
+- a semantic results action that downloads deterministic, versioned authoritative run evidence with a stable checksum-derived filename, without presenting that evidence document as a CLI replay format.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
@@ -44,5 +45,6 @@ Broader Phase 5 work remains unimplemented until explicitly approved and added t
 
 - `pnpm --filter @dwarven-depths/web build`
 - `pnpm test:built -- apps/web/src/protocol.test.ts`
+- `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/App.browser.test.tsx`
 - `pnpm test:browser:docker`
 - `pnpm run verify`

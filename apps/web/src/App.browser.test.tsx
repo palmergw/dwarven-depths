@@ -927,6 +927,87 @@ describe("authoritative web worker", () => {
     expect(workers[1]?.terminated).toBe(true);
   });
 
+  it("downloads byte-identical versioned run evidence with keyboard input", async () => {
+    const workers: ControlledResultWorker[] = [];
+    const createWorker = (): Worker => {
+      const worker = new ControlledResultWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const blobs: Blob[] = [];
+    const createObjectUrl = vi
+      .spyOn(URL, "createObjectURL")
+      .mockImplementation((blob) => {
+        expect(blob).toBeInstanceOf(Blob);
+        blobs.push(blob as Blob);
+        return `blob:run-evidence-${blobs.length}`;
+      });
+    const revokeObjectUrl = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => undefined);
+    const downloads: { readonly download: string; readonly href: string }[] =
+      [];
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function (this: HTMLAnchorElement) {
+        downloads.push({ download: this.download, href: this.href });
+      });
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={createWorker} />);
+
+    await completeAppAttempt();
+    const downloadButton = await buttonWithText("Download run evidence");
+    downloadButton.focus();
+    await userEvent.keyboard("{Enter}");
+
+    expect(createObjectUrl).toHaveBeenCalledOnce();
+    expect(anchorClick).toHaveBeenCalledOnce();
+    expect(downloads).toEqual([
+      {
+        download: `dwarven-depths-run-evidence-v1-${expected.finalStateChecksum}.json`,
+        href: "blob:run-evidence-1"
+      }
+    ]);
+    expect(revokeObjectUrl).toHaveBeenCalledWith("blob:run-evidence-1");
+    const firstBytes = await blobs[0]?.text();
+    expect(firstBytes).toBe(
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          terminalResult: expected.terminalResult,
+          terminalTick: 1,
+          finalStateChecksum: expected.finalStateChecksum,
+          eventStreamChecksum: expected.eventStreamChecksum,
+          commands: [
+            {
+              tick: 0,
+              sequence: 0,
+              command: { atTick: 0, type: "confirmPreparation" }
+            }
+          ]
+        },
+        null,
+        2
+      )}\n`
+    );
+
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    expect(document.body.textContent).not.toContain("Download run evidence");
+    await completeAppAttempt();
+    await userEvent.click(await buttonWithText("Download run evidence"));
+    expect(await blobs[1]?.text()).toBe(firstBytes);
+    expect(downloads[1]).toEqual({
+      download: downloads[0]?.download,
+      href: "blob:run-evidence-2"
+    });
+    expect(revokeObjectUrl).toHaveBeenLastCalledWith("blob:run-evidence-2");
+  });
+
   it("supports keyboard-only confirmation and announces the result", async () => {
     const container = document.createElement("div");
     document.body.append(container);
