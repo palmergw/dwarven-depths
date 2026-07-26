@@ -135,6 +135,7 @@ export function App({
     ReadonlySet<string>
   >(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [upgradeInventoryOpen, setUpgradeInventoryOpen] = useState(false);
   const [checkpointProfile, setCheckpointProfile] = useState<
     CheckpointProfileResult | { readonly status: "loading" }
   >({ status: "loading" });
@@ -152,6 +153,9 @@ export function App({
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsHeadingRef = useRef<HTMLHeadingElement>(null);
   const settingsWasOpenRef = useRef(false);
+  const upgradeInventoryButtonRef = useRef<HTMLButtonElement>(null);
+  const upgradeInventoryHeadingRef = useRef<HTMLHeadingElement>(null);
+  const upgradeInventoryWasOpenRef = useRef(false);
 
   function clearPendingAbilities(): void {
     pendingAbilityKeysRef.current.clear();
@@ -381,6 +385,13 @@ export function App({
     settingsWasOpenRef.current = settingsOpen;
   }, [settingsOpen]);
 
+  useLayoutEffect(() => {
+    if (upgradeInventoryOpen) upgradeInventoryHeadingRef.current?.focus();
+    else if (upgradeInventoryWasOpenRef.current)
+      upgradeInventoryButtonRef.current?.focus();
+    upgradeInventoryWasOpenRef.current = upgradeInventoryOpen;
+  }, [upgradeInventoryOpen]);
+
   return (
     <main
       data-contrast-preference={contrastPreference}
@@ -391,52 +402,57 @@ export function App({
       <h1>Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
         <h2 id="run-heading">Empty Level Conformance Run</h2>
-        {view.phase === "checkpoint" && !settingsOpen && (
-          <>
-            <dl className="checkpoint-context" aria-label="Current checkpoint">
-              <div>
-                <dt>Current level</dt>
-                <dd>Empty Level</dd>
-              </div>
-              <div>
-                <dt>Next step</dt>
-                <dd>Prepare the company</dd>
-              </div>
-            </dl>
-            <section
-              className="profile-summary"
-              aria-labelledby="profile-summary-heading"
-            >
-              <h3 id="profile-summary-heading">Company progression</h3>
-              {checkpointProfile.status === "loading" && (
-                <p>Loading local progression…</p>
-              )}
-              {checkpointProfile.status === "unavailable" && (
-                <p>{checkpointProfile.message}</p>
-              )}
-              {checkpointProfile.status === "ready" && (
-                <dl>
-                  <div className="profile-summary-row">
-                    <dt>Profile status</dt>
-                    <dd className="profile-summary-value">Ready</dd>
-                  </div>
-                  <div className="profile-summary-row">
-                    <dt>Forge Ore</dt>
-                    <dd className="profile-summary-value">
-                      {checkpointProfile.profile.forgeOre}
-                    </dd>
-                  </div>
-                  <div className="profile-summary-row">
-                    <dt>Unlocked dwarves</dt>
-                    <dd className="profile-summary-value">
-                      {checkpointProfile.profile.unlockedCharacterIds.length}
-                    </dd>
-                  </div>
-                </dl>
-              )}
-            </section>
-          </>
-        )}
+        {view.phase === "checkpoint" &&
+          !settingsOpen &&
+          !upgradeInventoryOpen && (
+            <>
+              <dl
+                className="checkpoint-context"
+                aria-label="Current checkpoint"
+              >
+                <div>
+                  <dt>Current level</dt>
+                  <dd>Empty Level</dd>
+                </div>
+                <div>
+                  <dt>Next step</dt>
+                  <dd>Prepare the company</dd>
+                </div>
+              </dl>
+              <section
+                className="profile-summary"
+                aria-labelledby="profile-summary-heading"
+              >
+                <h3 id="profile-summary-heading">Company progression</h3>
+                {checkpointProfile.status === "loading" && (
+                  <p>Loading local progression…</p>
+                )}
+                {checkpointProfile.status === "unavailable" && (
+                  <p>{checkpointProfile.message}</p>
+                )}
+                {checkpointProfile.status === "ready" && (
+                  <dl>
+                    <div className="profile-summary-row">
+                      <dt>Profile status</dt>
+                      <dd className="profile-summary-value">Ready</dd>
+                    </div>
+                    <div className="profile-summary-row">
+                      <dt>Forge Ore</dt>
+                      <dd className="profile-summary-value">
+                        {checkpointProfile.profile.forgeOre}
+                      </dd>
+                    </div>
+                    <div className="profile-summary-row">
+                      <dt>Unlocked dwarves</dt>
+                      <dd className="profile-summary-value">
+                        {checkpointProfile.profile.unlockedCharacterIds.length}
+                      </dd>
+                    </div>
+                  </dl>
+                )}
+              </section>
+            </>
+          )}
         {renderSnapshot !== undefined && (
           <Battlefield snapshot={renderSnapshot} />
         )}
@@ -479,11 +495,16 @@ export function App({
           aria-live="polite"
           aria-atomic="true"
         >
-          {view.phase === "checkpoint" && !settingsOpen && (
-            <p>Checkpoint ready. Begin when you are ready to prepare.</p>
-          )}
+          {view.phase === "checkpoint" &&
+            !settingsOpen &&
+            !upgradeInventoryOpen && (
+              <p>Checkpoint ready. Begin when you are ready to prepare.</p>
+            )}
           {view.phase === "checkpoint" && settingsOpen && (
             <p>Presentation settings are open.</p>
+          )}
+          {view.phase === "checkpoint" && upgradeInventoryOpen && (
+            <p>Upgrade inventory is open.</p>
           )}
           {view.phase === "preparation" && (
             <p>Preparation is ready. Confirm when your company is prepared.</p>
@@ -565,20 +586,73 @@ export function App({
             </button>
           </section>
         )}
-        {view.phase === "checkpoint" && !settingsOpen && (
-          <div className="checkpoint-actions">
-            <button type="button" onClick={startPreparation}>
-              Begin preparation
-            </button>
-            <button
-              type="button"
-              ref={settingsButtonRef}
-              onClick={() => setSettingsOpen(true)}
+        {view.phase === "checkpoint" &&
+          upgradeInventoryOpen &&
+          checkpointProfile.status === "ready" && (
+            <section
+              className="upgrades"
+              aria-labelledby="upgrade-inventory-heading"
             >
-              Settings
-            </button>
-          </div>
-        )}
+              <h3
+                id="upgrade-inventory-heading"
+                ref={upgradeInventoryHeadingRef}
+                tabIndex={-1}
+              >
+                Upgrade inventory
+              </h3>
+              <p>Available Forge Ore: {checkpointProfile.profile.forgeOre}</p>
+              {checkpointProfile.profile.purchasedUpgrades.length === 0 ? (
+                <p>No upgrades purchased.</p>
+              ) : (
+                <dl className="upgrade-inventory-list">
+                  {checkpointProfile.profile.purchasedUpgrades.map(
+                    (upgrade) => (
+                      <div key={upgrade.upgradeId}>
+                        <dt>
+                          <code>{upgrade.upgradeId}</code>
+                        </dt>
+                        <dd>
+                          Rank {upgrade.rank}; {upgrade.forgeOreSpent} Forge Ore
+                          spent
+                        </dd>
+                      </div>
+                    )
+                  )}
+                </dl>
+              )}
+              <button
+                type="button"
+                onClick={() => setUpgradeInventoryOpen(false)}
+              >
+                Close upgrade inventory
+              </button>
+            </section>
+          )}
+        {view.phase === "checkpoint" &&
+          !settingsOpen &&
+          !upgradeInventoryOpen && (
+            <div className="checkpoint-actions">
+              <button type="button" onClick={startPreparation}>
+                Begin preparation
+              </button>
+              <button
+                type="button"
+                ref={settingsButtonRef}
+                onClick={() => setSettingsOpen(true)}
+              >
+                Settings
+              </button>
+              {checkpointProfile.status === "ready" && (
+                <button
+                  type="button"
+                  ref={upgradeInventoryButtonRef}
+                  onClick={() => setUpgradeInventoryOpen(true)}
+                >
+                  Upgrade inventory
+                </button>
+              )}
+            </div>
+          )}
         {view.phase === "preparation" && (
           <button type="button" onClick={confirmPreparation}>
             Confirm preparation

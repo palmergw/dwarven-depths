@@ -89,7 +89,8 @@ button:focus-visible {
   outline-offset: 3px;
 }
 .results h3:focus,
-.settings h3:focus {
+.settings h3:focus,
+.upgrades h3:focus {
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
@@ -120,14 +121,16 @@ button:focus-visible {
   margin: 0;
   font-weight: 700;
 }
-.settings {
+.settings,
+.upgrades {
   margin-top: 1rem;
   padding: 1rem;
   border: 1px solid #80683f;
   border-radius: 0.5rem;
   background: #211b14;
 }
-.settings h3 {
+.settings h3,
+.upgrades h3 {
   margin-top: 0;
 }
 .settings label,
@@ -153,6 +156,16 @@ button:focus-visible {
 }
 .settings-help {
   color: #c5b695;
+}
+.upgrade-inventory-list {
+  margin: 1rem 0;
+}
+.upgrade-inventory-list div {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) 1fr;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid #4e4232;
 }
 main[data-motion-preference="reduce"] *,
 main[data-motion-preference="reduce"] *::before,
@@ -223,6 +236,12 @@ code {
   color: #f0c66f;
   font-size: 0.8em;
 }
+.upgrade-inventory-list dt {
+  min-width: 0;
+}
+.upgrade-inventory-list code {
+  overflow-wrap: anywhere;
+}
 body:has(main[data-contrast-preference="high"]),
 main[data-contrast-preference="high"] {
   background: #000;
@@ -240,6 +259,7 @@ main[data-contrast-preference="high"] code {
 main[data-contrast-preference="high"] .panel,
 main[data-contrast-preference="high"] .battlefield-canvas,
 main[data-contrast-preference="high"] .settings,
+main[data-contrast-preference="high"] .upgrades,
 main[data-contrast-preference="high"] .combat-hud,
 main[data-contrast-preference="high"] .combat-controls,
 main[data-contrast-preference="high"] .combat-controls fieldset {
@@ -263,14 +283,16 @@ main[data-contrast-preference="high"] .settings select {
 main[data-contrast-preference="high"] .checkpoint-context div,
 main[data-contrast-preference="high"] .preparation-summary div,
 main[data-contrast-preference="high"] .combat-hud dl div,
-main[data-contrast-preference="high"] .evidence div {
+main[data-contrast-preference="high"] .evidence div,
+main[data-contrast-preference="high"] .upgrade-inventory-list div {
   border-color: #fff;
 }
 @media (max-width: 32rem) {
   .checkpoint-context div,
   .preparation-summary div,
   .combat-hud dl div,
-  .evidence div {
+  .evidence div,
+  .upgrade-inventory-list div {
     grid-template-columns: 1fr;
     gap: 0.25rem;
   }
