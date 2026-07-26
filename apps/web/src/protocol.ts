@@ -92,6 +92,15 @@ function isHash(value: unknown): value is string {
   return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
 }
 
+function isStableId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 128 &&
+    /^[a-z0-9][a-z0-9._:-]*$/.test(value)
+  );
+}
+
 export function parseClientMessage(value: unknown): ClientMessage | undefined {
   if (
     !isRecord(value) ||
@@ -161,8 +170,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         "protocolVersion",
         "type"
       ]) ||
-      typeof value.levelId !== "string" ||
-      value.levelId.length === 0 ||
+      !isStableId(value.levelId) ||
       !Number.isSafeInteger(value.deployableEntityCount) ||
       (value.deployableEntityCount as number) < 0 ||
       !Number.isSafeInteger(value.placementPointCount) ||

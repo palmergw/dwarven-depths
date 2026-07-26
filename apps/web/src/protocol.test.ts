@@ -101,6 +101,10 @@ describe("web worker protocol", () => {
     ).toBeUndefined();
     const { levelId: _levelId, ...missingLevel } = snapshot;
     expect(parseWorkerMessage(missingLevel)).toBeUndefined();
+    expect(parseWorkerMessage({ ...snapshot, levelId: " " })).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...snapshot, levelId: `level.${"a".repeat(128)}` })
+    ).toBeUndefined();
     expect(
       parseWorkerMessage({
         protocolVersion: 1,
