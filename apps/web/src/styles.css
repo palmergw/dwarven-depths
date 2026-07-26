@@ -18,9 +18,15 @@ main {
   margin: 0 auto;
   padding: 10vh 0 4rem;
 }
+main[data-text-scale="large"] {
+  font-size: 1.125rem;
+}
+main[data-text-scale="extra-large"] {
+  font-size: 1.25rem;
+}
 .eyebrow {
   color: #e6b85c;
-  font-size: 0.8rem;
+  font-size: 0.8em;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -28,7 +34,7 @@ main {
 h1 {
   margin: 0.25rem 0 2rem;
   font-family: Georgia, serif;
-  font-size: clamp(2.5rem, 9vw, 5rem);
+  font-size: clamp(2.5em, 9vw, 5em);
   line-height: 0.95;
 }
 .panel {
@@ -40,7 +46,7 @@ h1 {
 }
 h2 {
   margin-top: 0;
-  font-size: 1.25rem;
+  font-size: 1.25em;
 }
 .battlefield {
   margin: 1.25rem 0;
@@ -59,7 +65,7 @@ h2 {
 .battlefield figcaption {
   margin-top: 0.5rem;
   color: #c5b695;
-  font-size: 0.9rem;
+  font-size: 0.9em;
 }
 .status {
   min-height: 3rem;
@@ -106,6 +112,9 @@ button:focus-visible {
 .settings label,
 .settings select {
   display: block;
+}
+.settings label:not(:first-of-type) {
+  margin-top: 1rem;
 }
 .settings select {
   width: min(100%, 24rem);
@@ -169,7 +178,7 @@ main[data-motion-preference="reduce"] *::after {
 .combat-hud h3,
 .combat-controls h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1em;
 }
 .combat-controls fieldset {
   margin-top: 1rem;
@@ -191,7 +200,7 @@ dd {
 }
 code {
   color: #f0c66f;
-  font-size: 0.8rem;
+  font-size: 0.8em;
 }
 @media (max-width: 32rem) {
   .checkpoint-context div,
