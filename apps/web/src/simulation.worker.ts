@@ -29,7 +29,6 @@ let initialized = false;
 let commandAccepted = false;
 let manualPaused = false;
 let terminal = false;
-let executionScheduled = false;
 let protocolVersion: 1 | 2 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
@@ -148,15 +147,6 @@ async function executePreparedScenario(): Promise<void> {
   }
 }
 
-function scheduleExecution(): void {
-  if (executionScheduled || manualPaused || terminal) return;
-  executionScheduled = true;
-  setTimeout(() => {
-    executionScheduled = false;
-    void executePreparedScenario();
-  }, 0);
-}
-
 self.addEventListener("message", async (event: MessageEvent<unknown>) => {
   const message = parseClientMessage(event.data);
   if (message === undefined) {
@@ -229,6 +219,17 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     return;
   }
 
+  if (message.protocolVersion !== protocolVersion) {
+    post(
+      failure(
+        "invalid_message",
+        "The command protocol version does not match the initialized session.",
+        protocolVersion
+      )
+    );
+    return;
+  }
+
   if (message.command.type === "setManualPause") {
     if (
       !initialized ||
@@ -247,7 +248,21 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     }
     manualPaused = message.command.paused;
     postRunningSnapshot();
-    if (!manualPaused) scheduleExecution();
+    return;
+  }
+
+  if (message.command.type === "commitManualResume") {
+    if (!initialized || !commandAccepted || terminal || manualPaused) {
+      post(
+        failure(
+          "command_rejected",
+          "The manual resume is not available for execution.",
+          protocolVersion
+        )
+      );
+      return;
+    }
+    await executePreparedScenario();
     return;
   }
 

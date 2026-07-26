@@ -29,6 +29,14 @@ describe("web worker protocol", () => {
     });
     expect(
       parseClientMessage({
+        protocolVersion: 2,
+        type: "command",
+        requestId: "commit-1",
+        command: { type: "commitManualResume" }
+      })
+    ).toBeDefined();
+    expect(
+      parseClientMessage({
         protocolVersion: 1,
         type: "command",
         requestId: "pause-legacy",

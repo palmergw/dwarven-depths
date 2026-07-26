@@ -98,6 +98,12 @@ async function runWithPresentationFrames(
       requestId: "resume",
       command: { type: "setManualPause", paused: false }
     });
+    worker.postMessage({
+      protocolVersion: WEB_PROTOCOL_VERSION,
+      type: "command",
+      requestId: "commit-resume",
+      command: { type: "commitManualResume" }
+    });
     const message = await result;
     if (message.type !== "result") throw new Error("expected result");
     return message;
@@ -165,6 +171,18 @@ describe("authoritative web worker", () => {
           message.manualPaused
       );
       expect(paused).toMatchObject({ manualPaused: true });
+      const mixedVersionRejection = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "failure" && message.code === "invalid_message"
+      );
+      worker.postMessage({
+        protocolVersion: 1,
+        type: "command",
+        requestId: "mixed-version-confirmation",
+        command: { type: "confirmPreparation" }
+      });
+      await mixedVersionRejection;
       const duplicatePauseRejection = waitForMessage(
         worker,
         (message) =>
@@ -182,6 +200,12 @@ describe("authoritative web worker", () => {
         type: "command",
         requestId: "resume",
         command: { type: "setManualPause", paused: false }
+      });
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "commit-resume",
+        command: { type: "commitManualResume" }
       });
       const [result] = await Promise.all([resultPromise, rejectionPromise]);
       expect(result).toMatchObject(expected);
@@ -376,6 +400,7 @@ describe("authoritative web worker", () => {
       )
     );
 
+    (document.querySelector("button") as HTMLButtonElement).click();
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
     await new Promise((resolve) => window.setTimeout(resolve, 100));

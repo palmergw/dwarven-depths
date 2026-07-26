@@ -29,6 +29,7 @@ export function App() {
   const workerRef = useRef<Worker | undefined>(undefined);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
+  const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
 
   useEffect(
     () => () => {
@@ -56,6 +57,21 @@ export function App() {
       } else if (message.type === "render_snapshot") {
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "snapshot") {
+        if (message.phase === "running" && message.protocolVersion === 2) {
+          if (manualPauseRequestedRef.current === undefined)
+            manualPauseRequestedRef.current = message.manualPaused;
+          if (
+            !message.manualPaused &&
+            manualPauseRequestedRef.current === false
+          ) {
+            worker.postMessage({
+              protocolVersion: WEB_PROTOCOL_VERSION,
+              type: "command",
+              requestId: crypto.randomUUID(),
+              command: { type: "commitManualResume" }
+            });
+          }
+        }
         setView(
           message.phase === "preparation"
             ? {
@@ -101,7 +117,12 @@ export function App() {
 
   const setManualPause = useCallback(
     (paused: boolean): void => {
-      if (view.phase !== "running" || view.manualPaused === paused) return;
+      if (
+        view.phase !== "running" ||
+        manualPauseRequestedRef.current === paused
+      )
+        return;
+      manualPauseRequestedRef.current = paused;
       workerRef.current?.postMessage({
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "command",
@@ -117,10 +138,11 @@ export function App() {
       if (event.key !== "Escape" || event.repeat || view.phase !== "running")
         return;
       event.preventDefault();
-      setManualPause(!view.manualPaused);
+      setManualPause(!(manualPauseRequestedRef.current ?? view.manualPaused));
     };
     const onBlur = () => {
-      if (view.phase === "running" && !view.manualPaused) setManualPause(true);
+      if (view.phase === "running" && manualPauseRequestedRef.current === false)
+        setManualPause(true);
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("blur", onBlur);

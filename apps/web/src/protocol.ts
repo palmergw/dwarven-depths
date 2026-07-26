@@ -18,6 +18,7 @@ export type ClientMessage =
       readonly requestId: string;
       readonly command:
         | { readonly type: "confirmPreparation" }
+        | { readonly type: "commitManualResume" }
         | { readonly type: "setManualPause"; readonly paused: boolean };
     };
 
@@ -153,6 +154,18 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
       type: "command",
       requestId: value.requestId,
       command: { type: "setManualPause", paused: value.command.paused }
+    };
+  }
+  if (
+    value.protocolVersion === WEB_PROTOCOL_VERSION &&
+    value.command.type === "commitManualResume" &&
+    hasExactKeys(value.command, ["type"])
+  ) {
+    return {
+      protocolVersion: WEB_PROTOCOL_VERSION,
+      type: "command",
+      requestId: value.requestId,
+      command: { type: "commitManualResume" }
     };
   }
   if (
