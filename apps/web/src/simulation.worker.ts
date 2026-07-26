@@ -199,18 +199,32 @@ async function executePreparedScenario(): Promise<void> {
       throw new Error(
         "The empty web fixture produced an unsupported replay command."
       );
-    post({
-      protocolVersion,
-      type: "result",
+    const terminalEvidence = {
       terminalResult: result.terminalResult,
       terminalTick: result.terminalTick,
       finalStateChecksum: result.finalStateChecksum,
-      eventStreamChecksum: result.eventStreamChecksum,
-      commands: result.commands as Extract<
-        WorkerMessage,
-        { type: "result" }
-      >["commands"]
-    });
+      eventStreamChecksum: result.eventStreamChecksum
+    };
+    if (protocolVersion === 4)
+      post({
+        protocolVersion: 4,
+        type: "result",
+        ...terminalEvidence,
+        commands: result.commands as Extract<
+          WorkerMessage,
+          { protocolVersion: 4; type: "result" }
+        >["commands"]
+      });
+    else
+      post({
+        protocolVersion,
+        type: "result",
+        ...terminalEvidence,
+        commands: result.commands as Extract<
+          WorkerMessage,
+          { protocolVersion: 1 | 2 | 3; type: "result" }
+        >["commands"]
+      });
   } catch (error) {
     terminal = true;
     post(

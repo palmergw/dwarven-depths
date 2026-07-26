@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  type ClientMessage,
   EMPTY_CONTENT_MANIFEST_HASH,
   parseClientMessage,
-  parseWorkerMessage
+  parseWorkerMessage,
+  type WorkerMessage
 } from "./protocol.js";
 
 describe("web worker protocol", () => {
@@ -115,6 +117,31 @@ describe("web worker protocol", () => {
     ).toBeUndefined();
   });
 
+  it("keeps legacy static protocol meanings frozen", () => {
+    type LegacyTargetCommand = Extract<
+      Extract<
+        ClientMessage,
+        { protocolVersion: 3; type: "command" }
+      >["command"],
+      { type: "setTargetPolicy" }
+    >;
+    type LegacyTargetResultCommand = Extract<
+      Extract<
+        WorkerMessage,
+        { protocolVersion: 3; type: "result" }
+      >["commands"][number]["command"],
+      { type: "setTargetPolicy" }
+    >;
+    // @ts-expect-error target-policy input was not part of protocol version 3
+    const legacyCommand: LegacyTargetCommand = { type: "setTargetPolicy" };
+    // @ts-expect-error target-policy evidence was not part of protocol version 3
+    const legacyResultCommand: LegacyTargetResultCommand = {
+      type: "setTargetPolicy"
+    };
+    expect(legacyCommand).toBeDefined();
+    expect(legacyResultCommand).toBeDefined();
+  });
+
   it("rejects malformed or extended authoritative results", () => {
     const result = {
       protocolVersion: 1,
@@ -208,6 +235,31 @@ describe("web worker protocol", () => {
             ...targetCommand,
             command: { ...targetCommand.command, requestedPolicy: "foreign" }
           }
+        ]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...result,
+        terminalTick: 5,
+        commands: [
+          result.commands[0],
+          {
+            ...targetCommand,
+            tick: 5,
+            command: { ...targetCommand.command, atTick: 5 }
+          },
+          { ...targetCommand, sequence: 2, tick: 2 }
+        ]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...result,
+        commands: [
+          result.commands[0],
+          targetCommand,
+          { ...targetCommand, sequence: 2 }
         ]
       })
     ).toBeUndefined();

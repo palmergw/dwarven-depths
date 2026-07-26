@@ -33,7 +33,19 @@ export type ClientMessage =
       readonly command: { readonly type: "confirmPreparation" };
     }
   | {
-      readonly protocolVersion: 2 | 3 | 4;
+      readonly protocolVersion: 2 | 3;
+      readonly type: "command";
+      readonly requestId: string;
+      readonly command:
+        | { readonly type: "confirmPreparation" }
+        | {
+            readonly type: "commitManualResume";
+            readonly resumeRequestId: string;
+          }
+        | { readonly type: "setManualPause"; readonly paused: boolean };
+    }
+  | {
+      readonly protocolVersion: 4;
       readonly type: "command";
       readonly requestId: string;
       readonly command:
@@ -89,7 +101,23 @@ export type WorkerMessage =
       readonly snapshot: RenderSnapshot;
     }
   | {
-      readonly protocolVersion: WebProtocolVersion;
+      readonly protocolVersion: 1 | 2 | 3;
+      readonly type: "result";
+      readonly terminalResult: "victory" | "defeat";
+      readonly terminalTick: number;
+      readonly finalStateChecksum: string;
+      readonly eventStreamChecksum: string;
+      readonly commands: readonly {
+        readonly tick: number;
+        readonly sequence: number;
+        readonly command: {
+          readonly atTick: number;
+          readonly type: "confirmPreparation";
+        };
+      }[];
+    }
+  | {
+      readonly protocolVersion: 4;
       readonly type: "result";
       readonly terminalResult: "victory" | "defeat";
       readonly terminalTick: number;
@@ -99,10 +127,7 @@ export type WorkerMessage =
         readonly tick: number;
         readonly sequence: number;
         readonly command:
-          | {
-              readonly atTick: number;
-              readonly type: "confirmPreparation";
-            }
+          | { readonly atTick: number; readonly type: "confirmPreparation" }
           | {
               readonly atTick: number;
               readonly type: "setTargetPolicy";
@@ -463,6 +488,22 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
   )
     return undefined;
   if (value.protocolVersion !== 4 && commands.length !== 1) return undefined;
+  let previousCommandTick = -1;
+  const targetPolicyKeys = new Set<string>();
+  for (const envelope of commands) {
+    if (!isRecord(envelope)) return undefined;
+    const { command, tick } = envelope;
+    if (typeof tick !== "number" || tick < previousCommandTick)
+      return undefined;
+    previousCommandTick = tick;
+    if (isRecord(command) && command.type === "setTargetPolicy") {
+      const { dwarfEntityId } = command;
+      if (typeof dwarfEntityId !== "string") return undefined;
+      const key = `${tick}:${dwarfEntityId}`;
+      if (targetPolicyKeys.has(key)) return undefined;
+      targetPolicyKeys.add(key);
+    }
+  }
   return value as WorkerMessage;
 }
 
