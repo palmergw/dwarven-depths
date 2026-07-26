@@ -84,17 +84,30 @@ button:focus-visible {
 }
 .checkpoint-context,
 .preparation-summary,
+.combat-hud dl,
 .evidence {
   margin: 1.5rem 0 0;
 }
 .checkpoint-context div,
 .preparation-summary div,
+.combat-hud dl div,
 .evidence div {
   display: grid;
   grid-template-columns: minmax(9rem, 1fr) 2fr;
   gap: 1rem;
   padding: 0.65rem 0;
   border-top: 1px solid #4e4232;
+}
+.combat-hud {
+  margin: 1.5rem 0 0;
+  padding: 1rem;
+  border: 1px solid #80683f;
+  border-radius: 0.5rem;
+  background: #211b14;
+}
+.combat-hud h3 {
+  margin: 0;
+  font-size: 1rem;
 }
 dt {
   color: #c5b695;
@@ -110,6 +123,7 @@ code {
 @media (max-width: 32rem) {
   .checkpoint-context div,
   .preparation-summary div,
+  .combat-hud dl div,
   .evidence div {
     grid-template-columns: 1fr;
     gap: 0.25rem;

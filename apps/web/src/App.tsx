@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Battlefield } from "./Battlefield.js";
+import { CombatHud } from "./CombatHud.js";
 import {
   parseWorkerMessage,
   WEB_PROTOCOL_VERSION,
@@ -115,6 +116,11 @@ export function App() {
         {renderSnapshot !== undefined && (
           <Battlefield snapshot={renderSnapshot} />
         )}
+        {renderSnapshot !== undefined &&
+          (renderSnapshot.phase === "running" ||
+            renderSnapshot.phase === "terminal") && (
+            <CombatHud snapshot={renderSnapshot} />
+          )}
         {view.phase === "preparation" && (
           <dl className="preparation-summary" aria-label="Preparation summary">
             <div>

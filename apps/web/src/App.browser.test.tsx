@@ -252,6 +252,14 @@ describe("authoritative web worker", () => {
     expect(document.querySelector("figcaption")?.textContent).toContain(
       "Battlefield level.empty: terminal at tick 0; 0 entities"
     );
+    const combatStatus = document.querySelector(
+      '[aria-label="Authoritative combat status"]'
+    );
+    expect(combatStatus?.textContent).toContain("Levellevel.empty");
+    expect(combatStatus?.textContent).toContain("PhaseCombat complete");
+    expect(combatStatus?.textContent).toContain("Simulation tick0");
+    expect(combatStatus?.textContent).toContain("Allied dwarves0");
+    expect(combatStatus?.textContent).toContain("Hostile enemies0");
     expect(
       document.querySelectorAll(".battlefield-canvas canvas")
     ).toHaveLength(1);
