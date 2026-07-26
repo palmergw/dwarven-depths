@@ -1265,7 +1265,11 @@ describe("authoritative web worker", () => {
     root = createRoot(container);
     root.render(
       <StrictMode>
-        <App />
+        <App
+          createProfileStore={() => {
+            throw new DOMException("blocked", "SecurityError");
+          }}
+        />
       </StrictMode>
     );
 
@@ -1273,6 +1277,9 @@ describe("authoritative web worker", () => {
       expect(document.body.textContent).toContain("Checkpoint ready")
     );
     expect(document.body.textContent).toContain("Current levelEmpty Level");
+    expect(document.querySelector(".profile-summary")?.textContent).toContain(
+      "Local progression storage is unavailable"
+    );
     expect(document.querySelector("figcaption")).toBeNull();
     const beginButton = document.querySelector("button");
     if (beginButton === null) throw new Error("expected checkpoint button");

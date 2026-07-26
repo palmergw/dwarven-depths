@@ -14,7 +14,9 @@
   "references": [
     { "path": "../../packages/contracts" },
     { "path": "../../packages/content-runtime" },
-    { "path": "../../packages/runtime" }
+    { "path": "../../packages/progression" },
+    { "path": "../../packages/runtime" },
+    { "path": "../../packages/save" }
   ],
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }
