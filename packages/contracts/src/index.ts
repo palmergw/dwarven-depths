@@ -1246,6 +1246,10 @@ export interface SimulationState {
   readonly phase: SimulationPhase;
   readonly eventSequence: number;
   readonly battlefield?: BattlefieldState;
+  /** Present once active-ability authority has processed this attempt. */
+  readonly activeCooldowns?: readonly ActiveCooldown[];
+  readonly activeStatuses?: readonly ActiveStatus[];
+  readonly committedAbilities?: readonly CommittedActiveAbility[];
   readonly terminalResult?: TerminalResult;
 }
 
@@ -1296,12 +1300,33 @@ export interface MovementSimulationEvent extends SimulationEventBase {
   readonly reasonCode: MovementDecisionReason;
 }
 
+export interface AbilityActivationSimulationEvent extends SimulationEventBase {
+  readonly type: "ability.activation.accepted" | "ability.activation.rejected";
+  readonly dwarfEntityId: EntityId;
+  readonly abilityId: StableId;
+  readonly commandSequence: number;
+  readonly reasonCode: AbilityActivationReason;
+  readonly cooldownCompleteAtTick?: number;
+}
+
+export interface AbilityImpactSimulationEvent extends SimulationEventBase {
+  readonly type: "ability.impact";
+  readonly sourceEntityId: EntityId;
+  readonly abilityId: StableId;
+  readonly targetEntityIds: readonly EntityId[];
+  readonly interruptedAttackIds: readonly StableId[];
+  readonly statusId: StatusId;
+  readonly reasonCode: AbilityImpactDecision["reason"];
+}
+
 export type SimulationEvent =
   | LifecycleSimulationEvent
   | WaveStartedSimulationEvent
   | SpawnEnqueuedSimulationEvent
   | SpawnSimulationEvent
-  | MovementSimulationEvent;
+  | MovementSimulationEvent
+  | AbilityActivationSimulationEvent
+  | AbilityImpactSimulationEvent;
 
 export interface CommandEnvelope {
   readonly tick: number;

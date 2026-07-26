@@ -1,4 +1,5 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
+import { resolveActiveAbilityTick } from "./active-ability.js";
 
 export * from "./active-ability.js";
 export * from "./attack-commitment.js";
@@ -2046,6 +2047,82 @@ export function stepSimulation(
   }
 
   if (state.phase === "PREPARATION") return { state, events: [] };
+
+  const hasActiveAbilityAuthority =
+    commands.some(({ command }) => command.type === "activateAbility") ||
+    state.activeCooldowns !== undefined ||
+    state.activeStatuses !== undefined ||
+    state.committedAbilities !== undefined;
+  if (hasActiveAbilityAuthority && state.battlefield !== undefined) {
+    const ability = resolveActiveAbilityTick(
+      {
+        schemaVersion: 1,
+        currentTick: state.tick,
+        phase: state.phase,
+        battlefield: state.battlefield,
+        commands,
+        cooldowns: state.activeCooldowns ?? [],
+        statuses: state.activeStatuses ?? [],
+        committedAbilities: state.committedAbilities ?? []
+      },
+      content
+    );
+    const events: SimulationEvent[] = [];
+    for (const activation of ability.activations) {
+      const sequence = state.eventSequence + events.length;
+      events.push(
+        Object.freeze({
+          id: `event.${String(sequence).padStart(6, "0")}`,
+          tick: state.tick,
+          sequence,
+          type:
+            activation.status === "accepted"
+              ? "ability.activation.accepted"
+              : "ability.activation.rejected",
+          ruleId: "SIM-ACTIVE-ABILITY-001",
+          dwarfEntityId: activation.dwarfEntityId,
+          abilityId: activation.abilityId,
+          commandSequence: activation.sequence,
+          reasonCode: activation.reason,
+          ...(activation.cooldownCompleteAtTick === undefined
+            ? {}
+            : {
+                cooldownCompleteAtTick: activation.cooldownCompleteAtTick
+              })
+        })
+      );
+    }
+    for (const impact of ability.impacts) {
+      const sequence = state.eventSequence + events.length;
+      events.push(
+        Object.freeze({
+          id: `event.${String(sequence).padStart(6, "0")}`,
+          tick: state.tick,
+          sequence,
+          type: "ability.impact",
+          ruleId: "SIM-SHIELD-SLAM-IMPACT-001",
+          sourceEntityId: impact.sourceEntityId,
+          abilityId: impact.abilityId,
+          targetEntityIds: impact.targetEntityIds,
+          interruptedAttackIds: impact.interruptedAttackIds,
+          statusId: impact.statusId,
+          reasonCode: impact.reason
+        })
+      );
+    }
+    return {
+      state: {
+        ...state,
+        tick: state.tick + 1,
+        eventSequence: state.eventSequence + events.length,
+        battlefield: ability.battlefield,
+        activeCooldowns: ability.cooldowns,
+        activeStatuses: ability.statuses,
+        committedAbilities: ability.committedAbilities
+      },
+      events
+    };
+  }
 
   return {
     state: {

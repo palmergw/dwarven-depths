@@ -2,7 +2,8 @@ import { compileContent } from "@dwarven-depths/content-runtime";
 import type {
   ActiveAbilityTickRequest,
   BattlefieldState,
-  CommandEnvelope
+  CommandEnvelope,
+  SimulationState
 } from "@dwarven-depths/contracts";
 import { beforeAll, describe, expect, it } from "vitest";
 import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
@@ -13,6 +14,7 @@ import {
   isPointInsideActiveAbilityCone,
   resolveActiveAbilityTick
 } from "./active-ability.js";
+import { stepSimulation } from "./index.js";
 
 let content: Awaited<ReturnType<typeof compileContent>>;
 
@@ -143,6 +145,52 @@ function request(
 }
 
 describe("Shield Slam active ability", () => {
+  it("persists accepted work through the simulation kernel until impact", () => {
+    let state: SimulationState = {
+      schemaVersion: 1,
+      contentVersion: content.bundle.contentVersion,
+      tick: 0,
+      seed: "1",
+      rngState: 1,
+      levelId: "level.shuttergate" as never,
+      phase: "COMBAT_RUNNING",
+      eventSequence: 0,
+      battlefield: battlefield()
+    };
+
+    const accepted = stepSimulation(state, [command()], content);
+    expect(accepted.events).toMatchObject([
+      {
+        id: "event.000000",
+        type: "ability.activation.accepted",
+        reasonCode: "ability_committed"
+      }
+    ]);
+    expect(accepted.state.activeCooldowns).toHaveLength(1);
+    expect(accepted.state.committedAbilities).toHaveLength(1);
+
+    state = accepted.state;
+    for (let tick = 1; tick <= 7; tick += 1) {
+      const result = stepSimulation(state, [], content);
+      state = result.state;
+      if (tick < 7) expect(result.events).toEqual([]);
+      else {
+        expect(result.events).toMatchObject([
+          {
+            id: "event.000001",
+            type: "ability.impact",
+            targetEntityIds: ["entity.enemy.a", "entity.enemy.b"],
+            reasonCode: "shield_slam_impacted"
+          }
+        ]);
+      }
+    }
+
+    expect(state.tick).toBe(8);
+    expect(state.committedAbilities).toEqual([]);
+    expect(state.activeStatuses).toHaveLength(2);
+  });
+
   it("uses inclusive exact integer range and cone boundaries", () => {
     const ability = {
       schemaVersion: 1 as const,
