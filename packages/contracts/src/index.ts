@@ -1089,10 +1089,21 @@ export interface ContentBundle {
   readonly definitions: readonly ContentDefinition[];
 }
 
-export interface ScenarioCommand {
+export interface ConfirmPreparationCommand {
   readonly atTick: number;
   readonly type: "confirmPreparation";
 }
+
+export interface SetTargetPolicyCommand {
+  readonly atTick: number;
+  readonly type: "setTargetPolicy";
+  readonly dwarfEntityId: EntityId;
+  readonly requestedPolicy: DwarfTargetPolicy;
+}
+
+export type ScenarioCommand =
+  | ConfirmPreparationCommand
+  | SetTargetPolicyCommand;
 
 export interface ScenarioDefinition {
   readonly schemaVersion: 1;
