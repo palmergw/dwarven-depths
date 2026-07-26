@@ -577,13 +577,19 @@ export class LiveScenarioHost {
         previousState.tick
       );
     }
-    this.#state = result.state;
+    const immutableState = Object.freeze({ ...result.state });
+    const immutableEvents = Object.freeze(
+      result.events.map((simulationEvent) =>
+        Object.freeze({ ...simulationEvent })
+      )
+    );
+    this.#state = immutableState;
     this.#commands.push(...commands);
-    this.#events.push(...result.events);
+    this.#events.push(...immutableEvents);
     return Object.freeze({
-      state: this.#state,
+      state: immutableState,
       commands: Object.freeze([...commands]),
-      events: Object.freeze([...result.events])
+      events: immutableEvents
     });
   }
 

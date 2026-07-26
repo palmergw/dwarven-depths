@@ -249,7 +249,11 @@ describe("shared runtime", () => {
       host.scheduleCommand({ atTick: 0, type: "confirmPreparation" })
     ).toThrow(/duplicates an earlier/);
 
-    expect(host.step().state.phase).toBe("TERMINAL");
+    const step = host.step();
+    expect(step.state.phase).toBe("TERMINAL");
+    expect(Object.isFrozen(step.state)).toBe(true);
+    expect(Object.isFrozen(step.events)).toBe(true);
+    expect(Object.isFrozen(step.events[0])).toBe(true);
     const liveResult = await host.result();
     const batchResult = await runScenario(scenario, content);
     expect(liveResult).toEqual(batchResult);
