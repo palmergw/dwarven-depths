@@ -2,7 +2,7 @@
 
 ## Implemented boundary
 
-Phase 5 currently includes seven dependency-ordered vertical slices in `apps/web`:
+Phase 5 currently includes eight dependency-ordered slices:
 
 - a React/Vite static application with checkpoint, preparation, running, result, and failure views;
 - the shared authoritative runtime executing the canonical empty-level fixture in a real module Web Worker;
@@ -17,6 +17,7 @@ Phase 5 currently includes seven dependency-ordered vertical slices in `apps/web
 - a semantic DOM combat HUD that reports authoritative level, phase, tick, allied dwarf count, and hostile enemy count from validated render snapshots through the terminal result.
 - a versioned worker-authoritative manual-pause gate with shared button/Escape semantics and focus-loss pausing that never resumes automatically.
 - a strictly validated worker-authoritative combat-control availability snapshot and semantic HUD region that explains why the empty authoritative roster exposes no target-policy or ability actions.
+- a strict replay-compatible `setTargetPolicy` command contract and deterministic reducer that orders same-tick input, reason-codes rejection, and feeds stable action entries into authoritative dwarf target acquisition.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
@@ -29,7 +30,7 @@ Protocol version 1 and its canonical fixture checksums are compatibility evidenc
 ## Explicitly not implemented
 
 - the Shuttergate encounter UI;
-- sprite assets, animation polish, camera controls, placement editing, target-policy mutation and ability activation, health/cooldown details, upgrades, settings, respec, audio, or final visual design;
+- sprite assets, animation polish, camera controls, placement editing, live target-policy host scheduling and UI, ability activation, health/cooldown details, upgrades, settings, respec, audio, or final visual design;
 - new gameplay mechanics;
 - new minimization schemas or divergence classes.
 

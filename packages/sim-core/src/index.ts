@@ -25,6 +25,7 @@ export * from "./enemy-target-acquisition.js";
 export * from "./range-line-of-sight.js";
 export * from "./stable-tables.js";
 export * from "./target-locks.js";
+export * from "./target-policy-command.js";
 export * from "./target-selection.js";
 export * from "./wave-schedule.js";
 

@@ -918,7 +918,10 @@ export function validateScenario(input: unknown): ScenarioDefinition {
         message: `must be less than maximumTicks (${parsed.data.maximumTicks})`
       });
     }
-    const key = `${command.atTick}:${command.type}`;
+    const key =
+      command.type === "setTargetPolicy"
+        ? `${command.atTick}:${command.type}:${command.dwarfEntityId}`
+        : `${command.atTick}:${command.type}`;
     if (commands.has(key)) {
       issues.push({
         path: `$/commands/${index}`,

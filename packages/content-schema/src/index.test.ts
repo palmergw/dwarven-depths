@@ -698,6 +698,36 @@ describe("replay validation", () => {
     });
   });
 
+  it("accepts a replay-recorded target-policy command", () => {
+    const replay = validateReplay({
+      ...validReplay,
+      commands: [
+        validReplay.commands[0],
+        {
+          tick: 1,
+          sequence: 1,
+          command: {
+            atTick: 1,
+            type: "setTargetPolicy",
+            dwarfEntityId: "entity.dwarf.warden",
+            requestedPolicy: "lowest_health"
+          }
+        }
+      ],
+      checkpoints: [
+        { tick: 1, stateChecksum: checksum, eventStreamChecksum: checksum }
+      ],
+      expectedTerminalTick: 1
+    });
+
+    expect(replay.commands[1]?.command).toEqual({
+      atTick: 1,
+      type: "setTargetPolicy",
+      dwarfEntityId: "entity.dwarf.warden",
+      requestedPolicy: "lowest_health"
+    });
+  });
+
   it("rejects malformed checksums and unknown fields", () => {
     expect(() =>
       validateReplay({
