@@ -51,6 +51,10 @@ class ControlledResultWorker {
   readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
   terminated = false;
 
+  constructor(
+    readonly terminalResult: "victory" | "defeat" = expected.terminalResult
+  ) {}
+
   addEventListener(
     type: string,
     listener: (event: MessageEvent<unknown>) => void
@@ -94,7 +98,7 @@ class ControlledResultWorker {
       this.emit({
         protocolVersion: 4,
         type: "result",
-        terminalResult: expected.terminalResult,
+        terminalResult: this.terminalResult,
         terminalTick: 1,
         finalStateChecksum: expected.finalStateChecksum,
         eventStreamChecksum: expected.eventStreamChecksum,
@@ -140,6 +144,15 @@ async function completeAppAttempt(): Promise<string> {
     /Run complete: (victory|defeat)\./
   );
   return evidence ?? "";
+}
+
+async function resultHeading(text: string): Promise<HTMLHeadingElement> {
+  return vi.waitFor(() => {
+    const heading = document.querySelector("#results-heading");
+    expect(heading).toBeInstanceOf(HTMLHeadingElement);
+    expect(heading?.textContent).toBe(text);
+    return heading as HTMLHeadingElement;
+  });
 }
 
 async function runWithPresentationFrames(
@@ -877,8 +890,9 @@ describe("authoritative web worker", () => {
 
   it("returns from terminal evidence to a fresh deterministic checkpoint", async () => {
     const workers: ControlledResultWorker[] = [];
+    const outcomes = ["victory", "defeat"] as const;
     const createWorker = (): Worker => {
-      const worker = new ControlledResultWorker();
+      const worker = new ControlledResultWorker(outcomes[workers.length]);
       workers.push(worker);
       return worker as unknown as Worker;
     };
@@ -888,6 +902,8 @@ describe("authoritative web worker", () => {
     root.render(<App createWorker={createWorker} />);
 
     const firstEvidence = await completeAppAttempt();
+    const victoryHeading = await resultHeading("Victory results");
+    expect(document.activeElement).toBe(victoryHeading);
     const returnButton = Array.from(document.querySelectorAll("button")).find(
       (button) => button.textContent === "Return to checkpoint"
     );
@@ -902,19 +918,34 @@ describe("authoritative web worker", () => {
       )
     );
     expect(document.querySelector(".evidence")).toBeNull();
+    expect(document.querySelector(".results")).toBeNull();
     expect(document.querySelector("figcaption")).toBeNull();
     expect(document.body.textContent).toContain("Checkpoint ready");
     expect(workers[0]?.terminated).toBe(true);
     workers[0]?.emit({
       protocolVersion: 4,
-      type: "failure",
-      code: "stale_worker",
-      message: "A completed worker must not replace the fresh checkpoint."
+      type: "result",
+      terminalResult: "victory",
+      terminalTick: 1,
+      finalStateChecksum: expected.finalStateChecksum,
+      eventStreamChecksum: expected.eventStreamChecksum,
+      commands: [
+        {
+          tick: 0,
+          sequence: 0,
+          command: { atTick: 0, type: "confirmPreparation" }
+        }
+      ]
     });
-    expect(document.body.textContent).not.toContain("stale_worker");
+    await vi.waitFor(() => {
+      expect(document.body.textContent).toContain("Checkpoint ready");
+      expect(document.querySelector(".results")).toBeNull();
+    });
 
     const secondEvidence = await completeAppAttempt();
-    expect(secondEvidence).toBe(firstEvidence);
+    expect(secondEvidence.replace("defeat", "victory")).toBe(firstEvidence);
+    const defeatHeading = await resultHeading("Defeat results");
+    expect(document.activeElement).toBe(defeatHeading);
     await userEvent.click(
       Array.from(document.querySelectorAll("button")).find(
         (button) => button.textContent === "Return to checkpoint"

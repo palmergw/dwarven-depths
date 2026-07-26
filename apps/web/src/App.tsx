@@ -56,6 +56,7 @@ export function App({
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
   const pendingAbilityKeysRef = useRef(new Set<string>());
+  const resultHeadingRef = useRef<HTMLHeadingElement>(null);
 
   function clearPendingAbilities(): void {
     pendingAbilityKeysRef.current.clear();
@@ -254,6 +255,10 @@ export function App({
     };
   }, [view, setManualPause]);
 
+  useLayoutEffect(() => {
+    if (view.phase === "result") resultHeadingRef.current?.focus();
+  }, [view]);
+
   return (
     <main>
       <p className="eyebrow">Authoritative checkpoint</p>
@@ -352,45 +357,50 @@ export function App({
           </button>
         )}
         {view.phase === "result" && (
-          <dl className="evidence">
-            <div>
-              <dt>Terminal result</dt>
-              <dd>{view.result.terminalResult}</dd>
+          <section className="results" aria-labelledby="results-heading">
+            <h3 id="results-heading" ref={resultHeadingRef} tabIndex={-1}>
+              {view.result.terminalResult === "victory"
+                ? "Victory results"
+                : "Defeat results"}
+            </h3>
+            <dl className="evidence">
+              <div>
+                <dt>Terminal result</dt>
+                <dd>{view.result.terminalResult}</dd>
+              </div>
+              <div>
+                <dt>Terminal tick</dt>
+                <dd>{view.result.terminalTick}</dd>
+              </div>
+              <div>
+                <dt>Final state checksum</dt>
+                <dd>
+                  <code>{view.result.finalStateChecksum}</code>
+                </dd>
+              </div>
+              <div>
+                <dt>Event checksum</dt>
+                <dd>
+                  <code>{view.result.eventStreamChecksum}</code>
+                </dd>
+              </div>
+              <div>
+                <dt>Replay commands</dt>
+                <dd>{view.result.commands.length}</dd>
+              </div>
+            </dl>
+            <div className="result-actions">
+              <button
+                type="button"
+                onClick={() => downloadRunEvidence(view.result)}
+              >
+                Download run evidence
+              </button>
+              <button type="button" onClick={returnToCheckpoint}>
+                Return to checkpoint
+              </button>
             </div>
-            <div>
-              <dt>Terminal tick</dt>
-              <dd>{view.result.terminalTick}</dd>
-            </div>
-            <div>
-              <dt>Final state checksum</dt>
-              <dd>
-                <code>{view.result.finalStateChecksum}</code>
-              </dd>
-            </div>
-            <div>
-              <dt>Event checksum</dt>
-              <dd>
-                <code>{view.result.eventStreamChecksum}</code>
-              </dd>
-            </div>
-            <div>
-              <dt>Replay commands</dt>
-              <dd>{view.result.commands.length}</dd>
-            </div>
-          </dl>
-        )}
-        {view.phase === "result" && (
-          <div className="result-actions">
-            <button
-              type="button"
-              onClick={() => downloadRunEvidence(view.result)}
-            >
-              Download run evidence
-            </button>
-            <button type="button" onClick={returnToCheckpoint}>
-              Return to checkpoint
-            </button>
-          </div>
+          </section>
         )}
       </section>
     </main>

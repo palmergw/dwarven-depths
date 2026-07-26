@@ -82,6 +82,10 @@ button:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
+.results h3:focus {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
 .checkpoint-context,
 .preparation-summary,
 .combat-hud dl,
