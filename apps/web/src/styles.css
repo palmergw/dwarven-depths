@@ -84,6 +84,12 @@ button {
 button:hover {
   background: #d69a43;
 }
+button:disabled {
+  border-color: #8d806c;
+  background: #51483c;
+  color: #ddd3c2;
+  cursor: not-allowed;
+}
 button:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 3px;
@@ -166,6 +172,28 @@ button:focus-visible {
   gap: 1rem;
   padding: 0.65rem 0;
   border-top: 1px solid #4e4232;
+}
+.upgrade-catalog {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.upgrade-catalog section {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #4e4232;
+  border-radius: 0.35rem;
+}
+.upgrade-catalog h5 {
+  margin: 0;
+  font-size: 1em;
+  overflow-wrap: anywhere;
+}
+.purchase-success {
+  color: #bdeba7;
+}
+.purchase-failure {
+  color: #ffb3a9;
 }
 main[data-motion-preference="reduce"] *,
 main[data-motion-preference="reduce"] *::before,

@@ -1,7 +1,9 @@
 import type { StableId } from "@dwarven-depths/contracts";
 import {
   createInitialProfile,
-  type ProfileState
+  type ProfileState,
+  purchasedUpgradeCatalog,
+  purchaseUpgradeRank
 } from "@dwarven-depths/progression";
 import {
   createProfileSaveEnvelope,
@@ -46,7 +48,8 @@ async function initialEnvelope(
 
 export async function loadCheckpointProfile(
   store: CheckpointProfileStore,
-  now: () => number = Date.now
+  now: () => number = Date.now,
+  closeAfterLoad = true
 ): Promise<CheckpointProfileResult> {
   try {
     const loaded = await store.load(profileId);
@@ -81,10 +84,38 @@ export async function loadCheckpointProfile(
         : "Local progression storage is unavailable. You can still run the conformance level."
     };
   } finally {
-    try {
-      await store.close();
-    } catch {
-      // Loading has already produced the user-visible storage result.
+    if (closeAfterLoad) {
+      try {
+        await store.close();
+      } catch {
+        // Loading has already produced the user-visible storage result.
+      }
     }
   }
+}
+
+export async function purchaseCheckpointUpgrade(
+  store: CheckpointProfileStore,
+  profile: ProfileState,
+  upgradeId: StableId,
+  now: () => number = Date.now
+): Promise<ProfileState> {
+  const resolution = purchaseUpgradeRank({
+    schemaVersion: 1,
+    profile,
+    catalog: purchasedUpgradeCatalog,
+    upgradeId
+  });
+  const envelope = await createProfileSaveEnvelope({
+    contentVersion: "content.empty-level.v1",
+    applicationBuild: "phase-5-web",
+    writtenAtEpochMs: now(),
+    profileId,
+    profile: resolution.profile
+  });
+  const written = await store.write({
+    expectedRevision: profile.revision,
+    envelope
+  });
+  return written.profile;
 }
