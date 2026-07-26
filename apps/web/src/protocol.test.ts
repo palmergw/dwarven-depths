@@ -55,7 +55,7 @@ describe("web worker protocol", () => {
       })
     ).toBeUndefined();
     expect(
-      parseClientMessage({ protocolVersion: 3, type: "initialize" })
+      parseClientMessage({ protocolVersion: 4, type: "initialize" })
     ).toBeUndefined();
     expect(
       parseClientMessage({
@@ -187,6 +187,60 @@ describe("web worker protocol", () => {
     ).toBeUndefined();
   });
 
+  it("accepts only canonical combat-control availability", () => {
+    const controls = {
+      protocolVersion: 3,
+      type: "combat_controls",
+      dwarves: [
+        {
+          entityId: "entity.dwarf.a",
+          characterId: "character.iron_warden",
+          supportedTargetPolicies: ["nearest", "lowest_health"],
+          abilityIds: ["ability.a", "ability.b"]
+        },
+        {
+          entityId: "entity.dwarf.b",
+          characterId: "character.deep_ranger",
+          supportedTargetPolicies: ["highest_health"],
+          abilityIds: []
+        }
+      ]
+    };
+    expect(parseWorkerMessage(controls)).toEqual(controls);
+    expect(parseWorkerMessage({ ...controls, dwarves: [] })).toBeDefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        dwarves: [...controls.dwarves].reverse()
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        dwarves: [
+          {
+            ...controls.dwarves[0],
+            supportedTargetPolicies: ["lowest_health", "nearest"]
+          }
+        ]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        dwarves: [
+          { ...controls.dwarves[0], abilityIds: ["ability.b", "ability.a"] }
+        ]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...controls, protocolVersion: 2 })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...controls, unexpected: true })
+    ).toBeUndefined();
+  });
+
   it("accepts only canonical, internally consistent render snapshots", () => {
     const snapshot = {
       schemaVersion: 1,
@@ -210,7 +264,7 @@ describe("web worker protocol", () => {
     const message = { protocolVersion: 1, type: "render_snapshot", snapshot };
     expect(parseWorkerMessage(message)).toEqual(message);
     expect(
-      parseWorkerMessage({ ...message, protocolVersion: 3 })
+      parseWorkerMessage({ ...message, protocolVersion: 4 })
     ).toBeUndefined();
     expect(
       parseWorkerMessage({ ...message, snapshot: { ...snapshot, extra: true } })

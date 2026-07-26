@@ -12,6 +12,7 @@ import { runScenario } from "@dwarven-depths/runtime";
 import contentFixture from "../../../content/fixtures/empty-content.json";
 import scenarioFixture from "../../../scenarios/conformance/empty-level.json";
 import {
+  type CombatControlDwarf,
   failure,
   parseClientMessage,
   WEB_PROTOCOL_VERSION,
@@ -34,7 +35,7 @@ let terminal = false;
 let resumeRequestId: string | null = null;
 let pendingExecutionRequestId: string | null = null;
 const acceptedRequestIds = new Set<string>();
-let protocolVersion: 1 | 2 = WEB_PROTOCOL_VERSION;
+let protocolVersion: 1 | 2 | 3 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
 
@@ -96,12 +97,42 @@ function postRenderSnapshot(snapshot: RenderSnapshot): void {
   });
 }
 
+function createCombatControlDwarves(
+  content: CompiledContent,
+  battlefield?: BattlefieldState
+): readonly CombatControlDwarf[] {
+  const targetPolicyOrder = [
+    "nearest",
+    "lowest_health",
+    "highest_health",
+    "highest_armor"
+  ] as const;
+  return [...(battlefield?.dwarfCombatants ?? [])]
+    .sort((left, right) => compareRenderIds(left.entityId, right.entityId))
+    .map((combatant) => {
+      const character = content.characters.get(combatant.characterDefinitionId);
+      if (character === undefined)
+        throw new Error(
+          `Combat-control dwarf ${combatant.entityId} has an unknown character definition.`
+        );
+      const supported = new Set(character.supportedTargetPolicies);
+      return {
+        entityId: combatant.entityId,
+        characterId: character.id,
+        supportedTargetPolicies: targetPolicyOrder.filter((policy) =>
+          supported.has(policy)
+        ),
+        abilityIds: []
+      };
+    });
+}
+
 function postRunningSnapshot(): void {
   post(
     protocolVersion === 1
       ? { protocolVersion: 1, type: "snapshot", phase: "running" }
       : {
-          protocolVersion: 2,
+          protocolVersion,
           type: "snapshot",
           phase: "running",
           manualPaused,
@@ -211,6 +242,13 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
           ? undefined
           : preparedContent.maps.get(preparedLevel.mapId);
       postRenderSnapshot(preparationSnapshot);
+      if (protocolVersion === 3) {
+        post({
+          protocolVersion: 3,
+          type: "combat_controls",
+          dwarves: createCombatControlDwarves(preparedContent)
+        });
+      }
       post({
         protocolVersion,
         type: "snapshot",
@@ -322,7 +360,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     return;
   }
   commandAccepted = true;
-  manualPaused = protocolVersion === 2;
+  manualPaused = protocolVersion !== 1;
   resumeRequestId = null;
   pendingExecutionRequestId = null;
   postRunningSnapshot();

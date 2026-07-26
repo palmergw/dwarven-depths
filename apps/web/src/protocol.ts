@@ -1,11 +1,32 @@
 import { parseRenderSnapshot, type RenderSnapshot } from "./render-snapshot.js";
 
-export const WEB_PROTOCOL_VERSION = 2 as const;
-type WebProtocolVersion = 1 | 2;
+export const WEB_PROTOCOL_VERSION = 3 as const;
+type WebProtocolVersion = 1 | 2 | 3;
+
+export type TargetPolicy =
+  | "nearest"
+  | "lowest_health"
+  | "highest_health"
+  | "highest_armor";
+
+export type CombatControlDwarf = {
+  readonly entityId: string;
+  readonly characterId: string;
+  readonly supportedTargetPolicies: readonly TargetPolicy[];
+  readonly abilityIds: readonly string[];
+};
+
+const targetPolicies: readonly TargetPolicy[] = [
+  "nearest",
+  "lowest_health",
+  "highest_health",
+  "highest_armor"
+];
 
 export type ClientMessage =
   | { readonly protocolVersion: 1; readonly type: "initialize" }
   | { readonly protocolVersion: 2; readonly type: "initialize" }
+  | { readonly protocolVersion: 3; readonly type: "initialize" }
   | {
       readonly protocolVersion: 1;
       readonly type: "command";
@@ -13,7 +34,7 @@ export type ClientMessage =
       readonly command: { readonly type: "confirmPreparation" };
     }
   | {
-      readonly protocolVersion: 2;
+      readonly protocolVersion: 2 | 3;
       readonly type: "command";
       readonly requestId: string;
       readonly command:
@@ -40,11 +61,16 @@ export type WorkerMessage =
       readonly phase: "running";
     }
   | {
-      readonly protocolVersion: 2;
+      readonly protocolVersion: 2 | 3;
       readonly type: "snapshot";
       readonly phase: "running";
       readonly manualPaused: boolean;
       readonly resumeRequestId: string | null;
+    }
+  | {
+      readonly protocolVersion: 3;
+      readonly type: "combat_controls";
+      readonly dwarves: readonly CombatControlDwarf[];
     }
   | {
       readonly protocolVersion: WebProtocolVersion;
@@ -98,6 +124,11 @@ type RecordValue = {
   sequence?: unknown;
   atTick?: unknown;
   snapshot?: unknown;
+  dwarves?: unknown;
+  entityId?: unknown;
+  characterId?: unknown;
+  supportedTargetPolicies?: unknown;
+  abilityIds?: unknown;
 };
 
 function isRecord(value: unknown): value is RecordValue {
@@ -133,10 +164,38 @@ function isRequestId(value: unknown): value is string {
   );
 }
 
+function isStableId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 128 &&
+    /^[a-z][a-z0-9_.:-]*$/.test(value)
+  );
+}
+
+function isCanonicalStrings(values: readonly string[]): boolean {
+  return values.every(
+    (value, index) => index === 0 || (values[index - 1] as string) < value
+  );
+}
+
+function isCanonicalTargetPolicies(
+  values: readonly unknown[]
+): values is TargetPolicy[] {
+  let previousIndex = -1;
+  return values.every((value) => {
+    const index = targetPolicies.indexOf(value as TargetPolicy);
+    if (index <= previousIndex) return false;
+    previousIndex = index;
+    return index >= 0;
+  });
+}
+
 export function parseClientMessage(value: unknown): ClientMessage | undefined {
   if (
     !isRecord(value) ||
     (value.protocolVersion !== 1 &&
+      value.protocolVersion !== 2 &&
       value.protocolVersion !== WEB_PROTOCOL_VERSION) ||
     typeof value.type !== "string"
   )
@@ -157,26 +216,26 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
   )
     return undefined;
   if (
-    value.protocolVersion === WEB_PROTOCOL_VERSION &&
+    (value.protocolVersion === 2 || value.protocolVersion === 3) &&
     value.command.type === "setManualPause" &&
     hasExactKeys(value.command, ["paused", "type"]) &&
     typeof value.command.paused === "boolean"
   ) {
     return {
-      protocolVersion: WEB_PROTOCOL_VERSION,
+      protocolVersion: value.protocolVersion,
       type: "command",
       requestId: value.requestId,
       command: { type: "setManualPause", paused: value.command.paused }
     };
   }
   if (
-    value.protocolVersion === WEB_PROTOCOL_VERSION &&
+    (value.protocolVersion === 2 || value.protocolVersion === 3) &&
     value.command.type === "commitManualResume" &&
     hasExactKeys(value.command, ["resumeRequestId", "type"]) &&
     isRequestId(value.command.resumeRequestId)
   ) {
     return {
-      protocolVersion: WEB_PROTOCOL_VERSION,
+      protocolVersion: value.protocolVersion,
       type: "command",
       requestId: value.requestId,
       command: {
@@ -202,10 +261,44 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
   if (
     !isRecord(value) ||
     (value.protocolVersion !== 1 &&
+      value.protocolVersion !== 2 &&
       value.protocolVersion !== WEB_PROTOCOL_VERSION) ||
     typeof value.type !== "string"
   )
     return undefined;
+  if (value.type === "combat_controls") {
+    if (
+      value.protocolVersion !== 3 ||
+      !hasExactKeys(value, ["dwarves", "protocolVersion", "type"]) ||
+      !Array.isArray(value.dwarves)
+    )
+      return undefined;
+    const dwarves = value.dwarves;
+    if (
+      !dwarves.every(
+        (dwarf) =>
+          isRecord(dwarf) &&
+          hasExactKeys(dwarf, [
+            "abilityIds",
+            "characterId",
+            "entityId",
+            "supportedTargetPolicies"
+          ]) &&
+          isStableId(dwarf.entityId) &&
+          isStableId(dwarf.characterId) &&
+          Array.isArray(dwarf.supportedTargetPolicies) &&
+          isCanonicalTargetPolicies(dwarf.supportedTargetPolicies) &&
+          Array.isArray(dwarf.abilityIds) &&
+          dwarf.abilityIds.every(isStableId) &&
+          isCanonicalStrings(dwarf.abilityIds)
+      ) ||
+      !isCanonicalStrings(
+        dwarves.map((dwarf) => (dwarf as CombatControlDwarf).entityId)
+      )
+    )
+      return undefined;
+    return value as WorkerMessage;
+  }
   if (value.type === "render_snapshot") {
     if (!hasExactKeys(value, ["protocolVersion", "snapshot", "type"]))
       return undefined;
@@ -235,7 +328,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         ((value.manualPaused === true && value.resumeRequestId === null) ||
           (value.manualPaused === false && isRequestId(value.resumeRequestId)))
         ? {
-            protocolVersion: WEB_PROTOCOL_VERSION,
+            protocolVersion: value.protocolVersion,
             type: "snapshot",
             phase: "running",
             manualPaused: value.manualPaused,
