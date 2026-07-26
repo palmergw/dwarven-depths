@@ -82,4 +82,70 @@ describe("web worker protocol", () => {
     ).toBeUndefined();
     expect(parseWorkerMessage({ ...result, unexpected: true })).toBeUndefined();
   });
+
+  it("accepts only canonical, internally consistent render snapshots", () => {
+    const snapshot = {
+      schemaVersion: 1,
+      levelId: "level.test",
+      mapId: "map.test",
+      tick: 3,
+      phase: "running",
+      nodes: [
+        { id: "node.1", x: 0, y: 0 },
+        { id: "node:1", x: 1, y: 0 }
+      ],
+      connections: [
+        {
+          id: "connection.a-b",
+          fromNodeId: "node.1",
+          toNodeId: "node:1"
+        }
+      ],
+      entities: [{ id: "enemy.1", nodeId: "node:1", faction: "enemy" }]
+    };
+    const message = { protocolVersion: 1, type: "render_snapshot", snapshot };
+    expect(parseWorkerMessage(message)).toEqual(message);
+    expect(
+      parseWorkerMessage({ ...message, protocolVersion: 2 })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...message, snapshot: { ...snapshot, extra: true } })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...message,
+        snapshot: {
+          ...snapshot,
+          nodes: [snapshot.nodes[1], snapshot.nodes[0]]
+        }
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...message,
+        snapshot: {
+          ...snapshot,
+          nodes: [snapshot.nodes[0], snapshot.nodes[0]]
+        }
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...message,
+        snapshot: {
+          ...snapshot,
+          nodes: [{ ...snapshot.nodes[0], x: Number.MAX_SAFE_INTEGER + 1 }]
+        }
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...message,
+        snapshot: {
+          ...snapshot,
+          entities: [{ ...snapshot.entities[0], nodeId: "node.unknown" }]
+        }
+      })
+    ).toBeUndefined();
+  });
 });

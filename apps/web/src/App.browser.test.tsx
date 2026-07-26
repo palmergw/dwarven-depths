@@ -1,12 +1,15 @@
+import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { App } from "./App.js";
+import { buildBattlefieldPrimitives } from "./Battlefield.js";
 import {
   parseWorkerMessage,
   WEB_PROTOCOL_VERSION,
   type WorkerMessage
 } from "./protocol.js";
+import type { RenderSnapshot } from "./render-snapshot.js";
 
 const expected = {
   terminalResult: "victory",
@@ -42,6 +45,53 @@ function waitForMessage(
   });
 }
 
+async function runWithPresentationFrames(
+  presentationFrames: boolean
+): Promise<Extract<WorkerMessage, { type: "result" }>> {
+  const worker = new Worker(
+    new URL("./simulation.worker.ts", import.meta.url),
+    { type: "module" }
+  );
+  let frame = 0;
+  try {
+    const preparation = waitForMessage(
+      worker,
+      (message) =>
+        message.type === "snapshot" && message.phase === "preparation"
+    );
+    worker.postMessage({
+      protocolVersion: WEB_PROTOCOL_VERSION,
+      type: "initialize"
+    });
+    await preparation;
+    if (presentationFrames) {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve())
+      );
+      const animate = () => {
+        frame = requestAnimationFrame(animate);
+      };
+      frame = requestAnimationFrame(animate);
+    }
+    const result = waitForMessage(
+      worker,
+      (message) => message.type === "result"
+    );
+    worker.postMessage({
+      protocolVersion: WEB_PROTOCOL_VERSION,
+      type: "command",
+      requestId: presentationFrames ? "animated" : "idle",
+      command: { type: "confirmPreparation" }
+    });
+    const message = await result;
+    if (message.type !== "result") throw new Error("expected result");
+    return message;
+  } finally {
+    if (frame !== 0) cancelAnimationFrame(frame);
+    worker.terminate();
+  }
+}
+
 describe("authoritative web worker", () => {
   it("matches the pinned CLI/runtime result and rejects duplicate authority", async () => {
     const worker = new Worker(
@@ -54,11 +104,17 @@ describe("authoritative web worker", () => {
         (message) =>
           message.type === "snapshot" && message.phase === "preparation"
       );
+      const renderPreparation = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "render_snapshot" &&
+          message.snapshot.phase === "preparation"
+      );
       worker.postMessage({
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "initialize"
       });
-      await preparation;
+      await Promise.all([preparation, renderPreparation]);
 
       const resultPromise = waitForMessage(
         worker,
@@ -92,11 +148,59 @@ describe("authoritative web worker", () => {
     }
   });
 
+  it("projects entities deterministically by stable ID", () => {
+    const snapshot = {
+      schemaVersion: 1,
+      levelId: "level.test",
+      mapId: "map.test",
+      tick: 2,
+      phase: "running",
+      nodes: [
+        { id: "node:1", x: 10, y: 0 },
+        { id: "node.1", x: 0, y: 0 }
+      ],
+      connections: [
+        { id: "connection.a-b", fromNodeId: "node.1", toNodeId: "node:1" }
+      ],
+      entities: [
+        { id: "unit:2", nodeId: "node:1", faction: "enemy" },
+        { id: "unit.1", nodeId: "node.1", faction: "dwarf" }
+      ]
+    } as const satisfies RenderSnapshot;
+    const reversed = {
+      ...snapshot,
+      nodes: [...snapshot.nodes].reverse(),
+      connections: [...snapshot.connections].reverse(),
+      entities: [...snapshot.entities].reverse()
+    };
+    expect(buildBattlefieldPrimitives(snapshot)).toEqual(
+      buildBattlefieldPrimitives(reversed)
+    );
+    expect(
+      buildBattlefieldPrimitives(snapshot).entities.map((entity) => entity.id)
+    ).toEqual(["unit.1", "unit:2"]);
+  });
+
+  it("keeps terminal evidence independent of presentation frames", async () => {
+    const [idle, animated] = await Promise.all([
+      runWithPresentationFrames(false),
+      runWithPresentationFrames(true)
+    ]);
+    expect(idle).toMatchObject(expected);
+    expect(animated).toMatchObject(expected);
+    expect(animated.finalStateChecksum).toBe(idle.finalStateChecksum);
+    expect(animated.eventStreamChecksum).toBe(idle.eventStreamChecksum);
+  });
+
   it("supports keyboard-only confirmation and announces the result", async () => {
     const container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    root.render(<App />);
+    root.render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
 
     await vi.waitFor(
       () =>
@@ -117,6 +221,12 @@ describe("authoritative web worker", () => {
       { timeout: 10_000 }
     );
     expect(document.body.textContent).toContain(expected.finalStateChecksum);
+    expect(document.querySelector("figcaption")?.textContent).toContain(
+      "Battlefield level.empty: terminal at tick 0; 0 entities"
+    );
+    expect(
+      document.querySelectorAll(".battlefield-canvas canvas")
+    ).toHaveLength(1);
     expect(document.querySelectorAll("button")).toHaveLength(0);
   });
 });

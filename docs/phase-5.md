@@ -2,7 +2,7 @@
 
 ## Implemented boundary
 
-Phase 5 currently includes one playable vertical slice in `apps/web`:
+Phase 5 currently includes two playable vertical slices in `apps/web`:
 
 - a React/Vite static application with checkpoint, preparation, running, result, and failure views;
 - the shared authoritative runtime executing the canonical empty-level fixture in a real module Web Worker;
@@ -10,20 +10,21 @@ Phase 5 currently includes one playable vertical slice in `apps/web`:
 - replay-compatible preparation command evidence and visible terminal result, final-state checksum, and event-stream checksum;
 - deterministic protocol tests plus Chromium, Firefox, and WebKit worker/UI coverage;
 - keyboard activation and live accessible status/result announcements.
+- a Phaser canvas that renders the authoritative level, map graph, and stable-ID-ordered entities from strictly validated render snapshots;
+- a canvas-independent DOM battlefield summary and browser evidence that presentation-frame scheduling cannot alter terminal checksums.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
 ## Authority and compatibility
 
-React renders worker messages and may show a pending state, but it does not step or resolve gameplay. The worker compiles the same checked-in content and scenario fixture used by the CLI, then invokes `@dwarven-depths/runtime`. Protocol messages reject unknown versions, malformed shapes, and additional properties. A worker accepts preparation authority only once.
+React and Phaser render worker messages and may retain the latest render snapshot, but they do not step or resolve gameplay. The worker compiles the same checked-in content and scenario fixture used by the CLI, derives canonical map/entity presentation data from compiled content and runtime state, then invokes `@dwarven-depths/runtime`. Protocol messages reject unknown versions, malformed shapes, noncanonical entity ordering, invalid references, and additional properties. A worker accepts preparation authority only once.
 
 Protocol version 1 and its canonical fixture checksums are compatibility evidence. Future protocol changes must be explicitly versioned; existing message meanings must not be silently changed.
 
 ## Explicitly not implemented
 
-- Phaser or battlefield rendering;
 - the Shuttergate encounter UI;
-- placement editing, combat HUD, upgrades, settings, respec, audio, or final visual design;
+- sprite assets, animation polish, camera controls, placement editing, combat HUD, upgrades, settings, respec, audio, or final visual design;
 - new gameplay mechanics;
 - new minimization schemas or divergence classes.
 

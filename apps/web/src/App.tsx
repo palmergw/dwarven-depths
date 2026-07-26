@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { Battlefield } from "./Battlefield.js";
 import {
   parseWorkerMessage,
   WEB_PROTOCOL_VERSION,
   type WorkerMessage
 } from "./protocol.js";
+import type { RenderSnapshot } from "./render-snapshot.js";
 
 type ViewState =
   | { readonly phase: "checkpoint" }
@@ -17,6 +19,7 @@ type ViewState =
 
 export function App() {
   const [view, setView] = useState<ViewState>({ phase: "checkpoint" });
+  const [renderSnapshot, setRenderSnapshot] = useState<RenderSnapshot>();
   const workerRef = useRef<Worker | undefined>(undefined);
   const submittedRef = useRef(false);
 
@@ -33,6 +36,8 @@ export function App() {
           phase: "failure",
           message: "The application rejected an invalid worker response."
         });
+      } else if (message.type === "render_snapshot") {
+        setRenderSnapshot(message.snapshot);
       } else if (message.type === "snapshot") {
         setView({ phase: message.phase });
       } else if (message.type === "result") {
@@ -71,6 +76,9 @@ export function App() {
       <h1>Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
         <h2 id="run-heading">Empty Level Conformance Run</h2>
+        {renderSnapshot !== undefined && (
+          <Battlefield snapshot={renderSnapshot} />
+        )}
         <div
           className="status"
           role="status"
