@@ -3,7 +3,8 @@ import {
   createInitialProfile,
   type ProfileState,
   purchasedUpgradeCatalog,
-  purchaseUpgradeRank
+  purchaseUpgradeRank,
+  recycleProgression
 } from "@dwarven-depths/progression";
 import {
   createProfileSaveEnvelope,
@@ -105,6 +106,45 @@ export async function purchaseCheckpointUpgrade(
     profile,
     catalog: purchasedUpgradeCatalog,
     upgradeId
+  });
+  const envelope = await createProfileSaveEnvelope({
+    contentVersion: "content.empty-level.v1",
+    applicationBuild: "phase-5-web",
+    writtenAtEpochMs: now(),
+    profileId,
+    profile: resolution.profile
+  });
+  const written = await store.write({
+    expectedRevision: profile.revision,
+    envelope
+  });
+  return written.profile;
+}
+
+export async function recycleCheckpointUpgrades(
+  store: CheckpointProfileStore,
+  profile: ProfileState,
+  now: () => number = Date.now
+): Promise<ProfileState> {
+  const resolution = recycleProgression({
+    schemaVersion: 1,
+    profile,
+    campaign: {
+      schemaVersion: 1,
+      campaignId: "campaign.conformance" as StableId,
+      levelIds: ["level.empty" as StableId]
+    },
+    campaignAccess: {
+      schemaVersion: 1,
+      campaignId: "campaign.conformance" as StableId,
+      currentLevelId: "level.empty" as StableId,
+      unlockedLevelIds: ["level.empty" as StableId]
+    },
+    scope: {
+      schemaVersion: 1,
+      kind: "shared_purchased_upgrades",
+      catalog: purchasedUpgradeCatalog
+    }
   });
   const envelope = await createProfileSaveEnvelope({
     contentVersion: "content.empty-level.v1",

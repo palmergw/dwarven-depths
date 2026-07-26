@@ -195,6 +195,21 @@ button:focus-visible {
 .purchase-failure {
   color: #ffb3a9;
 }
+.recycle-confirmation {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 2px solid #e6b85c;
+  border-radius: 0.35rem;
+}
+.recycle-confirmation h4:focus {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+.recycle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
 main[data-motion-preference="reduce"] *,
 main[data-motion-preference="reduce"] *::before,
 main[data-motion-preference="reduce"] *::after {
