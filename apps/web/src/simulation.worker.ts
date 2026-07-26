@@ -30,6 +30,7 @@ let commandAccepted = false;
 let manualPaused = false;
 let terminal = false;
 let resumeRequestId: string | null = null;
+const acceptedRequestIds = new Set<string>();
 let protocolVersion: 1 | 2 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
@@ -231,6 +232,21 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     );
     return;
   }
+
+  if (
+    acceptedRequestIds.has(message.requestId) ||
+    acceptedRequestIds.size >= 1024
+  ) {
+    post(
+      failure(
+        "command_rejected",
+        "The command request ID is duplicated or the session limit was reached.",
+        protocolVersion
+      )
+    );
+    return;
+  }
+  acceptedRequestIds.add(message.requestId);
 
   if (message.command.type === "setManualPause") {
     if (

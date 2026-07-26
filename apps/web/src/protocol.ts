@@ -124,6 +124,15 @@ function isLevelId(value: unknown): value is string {
   );
 }
 
+function isRequestId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 128 &&
+    /^[A-Za-z0-9._:-]+$/.test(value)
+  );
+}
+
 export function parseClientMessage(value: unknown): ClientMessage | undefined {
   if (
     !isRecord(value) ||
@@ -143,8 +152,7 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
   if (
     value.type !== "command" ||
     !hasExactKeys(value, ["command", "protocolVersion", "requestId", "type"]) ||
-    typeof value.requestId !== "string" ||
-    value.requestId.length === 0 ||
+    !isRequestId(value.requestId) ||
     !isRecord(value.command)
   )
     return undefined;
@@ -165,8 +173,7 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
     value.protocolVersion === WEB_PROTOCOL_VERSION &&
     value.command.type === "commitManualResume" &&
     hasExactKeys(value.command, ["resumeRequestId", "type"]) &&
-    typeof value.command.resumeRequestId === "string" &&
-    value.command.resumeRequestId.length > 0
+    isRequestId(value.command.resumeRequestId)
   ) {
     return {
       protocolVersion: WEB_PROTOCOL_VERSION,
@@ -226,9 +233,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         "type"
       ]) &&
         ((value.manualPaused === true && value.resumeRequestId === null) ||
-          (value.manualPaused === false &&
-            typeof value.resumeRequestId === "string" &&
-            value.resumeRequestId.length > 0))
+          (value.manualPaused === false && isRequestId(value.resumeRequestId)))
         ? {
             protocolVersion: WEB_PROTOCOL_VERSION,
             type: "snapshot",

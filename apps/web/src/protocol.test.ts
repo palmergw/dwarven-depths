@@ -72,6 +72,14 @@ describe("web worker protocol", () => {
         command: { type: "confirmPreparation" }
       })
     ).toBeUndefined();
+    expect(
+      parseClientMessage({
+        protocolVersion: 2,
+        type: "command",
+        requestId: "x".repeat(129),
+        command: { type: "confirmPreparation" }
+      })
+    ).toBeUndefined();
   });
 
   it("rejects malformed or extended authoritative results", () => {

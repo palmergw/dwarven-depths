@@ -195,6 +195,48 @@ describe("authoritative web worker", () => {
         command: { type: "setManualPause", paused: true }
       });
       await duplicatePauseRejection;
+      const unpaused = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 2 &&
+          !message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "stale-resume",
+        command: { type: "setManualPause", paused: false }
+      });
+      await unpaused;
+      const repaused = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 2 &&
+          message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "focus-pause",
+        command: { type: "setManualPause", paused: true }
+      });
+      await repaused;
+      const staleResumeRejection = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "failure" && message.code === "command_rejected"
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "stale-resume",
+        command: { type: "setManualPause", paused: false }
+      });
+      await staleResumeRejection;
       worker.postMessage({
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "command",
