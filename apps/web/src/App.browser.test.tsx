@@ -23,6 +23,8 @@ const expected = {
 const motionPreferenceStorageKey =
   "dwarven-depths.presentation.motion-preference.v1";
 const textScaleStorageKey = "dwarven-depths.presentation.text-scale.v1";
+const contrastPreferenceStorageKey =
+  "dwarven-depths.presentation.contrast-preference.v1";
 
 let root: Root | undefined;
 afterEach(async () => {
@@ -31,6 +33,7 @@ afterEach(async () => {
   document.body.replaceChildren();
   window.localStorage.removeItem(motionPreferenceStorageKey);
   window.localStorage.removeItem(textScaleStorageKey);
+  window.localStorage.removeItem(contrastPreferenceStorageKey);
   vi.restoreAllMocks();
   await page.viewport(1280, 720);
 });
@@ -182,6 +185,13 @@ function appliedTextScale(): string | null {
   );
 }
 
+function appliedContrastPreference(): string | null {
+  return (
+    document.querySelector("main")?.getAttribute("data-contrast-preference") ??
+    null
+  );
+}
+
 describe("presentation settings", () => {
   it("opens and closes by keyboard with deterministic focus restoration", async () => {
     renderApp();
@@ -303,6 +313,64 @@ describe("presentation settings", () => {
       expect(bounds.left).toBeGreaterThanOrEqual(0);
       expect(bounds.right).toBeLessThanOrEqual(window.innerWidth);
     }
+  });
+
+  it("applies keyboard-selected high contrast to the current shell", async () => {
+    renderApp();
+    await userEvent.click(await buttonWithText("Settings"));
+    const select = document.querySelector("#contrast-preference");
+    expect(select).toBeInstanceOf(HTMLSelectElement);
+    (select as HTMLSelectElement).focus();
+    await userEvent.keyboard("{ArrowDown}");
+
+    await vi.waitFor(() => expect(appliedContrastPreference()).toBe("high"));
+    expect(window.localStorage.getItem(contrastPreferenceStorageKey)).toBe(
+      "high"
+    );
+    const panel = document.querySelector(".panel");
+    const settings = document.querySelector(".settings");
+    const button = await buttonWithText("Close settings");
+    expect(getComputedStyle(panel as Element).backgroundColor).toBe(
+      "rgb(0, 0, 0)"
+    );
+    expect(getComputedStyle(settings as Element).borderTopColor).toBe(
+      "rgb(255, 255, 255)"
+    );
+    expect(getComputedStyle(button).color).toBe("rgb(0, 0, 0)");
+  });
+
+  it("persists mouse-selected high contrast across remounts", async () => {
+    renderApp();
+    await userEvent.click(await buttonWithText("Settings"));
+    const select = document.querySelector("#contrast-preference");
+    expect(select).toBeInstanceOf(HTMLSelectElement);
+    await userEvent.selectOptions(select as HTMLSelectElement, "high");
+    expect(appliedContrastPreference()).toBe("high");
+
+    root?.unmount();
+    root = undefined;
+    document.body.replaceChildren();
+    renderApp();
+    await vi.waitFor(() => expect(appliedContrastPreference()).toBe("high"));
+  });
+
+  it("falls back to standard contrast for malformed or unavailable storage", async () => {
+    window.localStorage.setItem(contrastPreferenceStorageKey, "unexpected");
+    renderApp();
+    await vi.waitFor(() =>
+      expect(appliedContrastPreference()).toBe("standard")
+    );
+
+    root?.unmount();
+    root = undefined;
+    document.body.replaceChildren();
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+    renderApp();
+    await vi.waitFor(() =>
+      expect(appliedContrastPreference()).toBe("standard")
+    );
   });
 });
 

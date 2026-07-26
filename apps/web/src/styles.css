@@ -202,6 +202,49 @@ code {
   color: #f0c66f;
   font-size: 0.8em;
 }
+body:has(main[data-contrast-preference="high"]),
+main[data-contrast-preference="high"] {
+  background: #000;
+  color: #fff;
+}
+main[data-contrast-preference="high"] .eyebrow,
+main[data-contrast-preference="high"] .battlefield figcaption,
+main[data-contrast-preference="high"] .status,
+main[data-contrast-preference="high"] .settings-help,
+main[data-contrast-preference="high"] .control-entity-id,
+main[data-contrast-preference="high"] dt,
+main[data-contrast-preference="high"] code {
+  color: #fff;
+}
+main[data-contrast-preference="high"] .panel,
+main[data-contrast-preference="high"] .battlefield-canvas,
+main[data-contrast-preference="high"] .settings,
+main[data-contrast-preference="high"] .combat-hud,
+main[data-contrast-preference="high"] .combat-controls,
+main[data-contrast-preference="high"] .combat-controls fieldset {
+  border-color: #fff;
+  background: #000;
+  box-shadow: none;
+}
+main[data-contrast-preference="high"] button {
+  border-color: #fff;
+  background: #fff;
+  color: #000;
+}
+main[data-contrast-preference="high"] button:hover {
+  background: #ddd;
+}
+main[data-contrast-preference="high"] .settings select {
+  border-color: #fff;
+  background: #000;
+  color: #fff;
+}
+main[data-contrast-preference="high"] .checkpoint-context div,
+main[data-contrast-preference="high"] .preparation-summary div,
+main[data-contrast-preference="high"] .combat-hud dl div,
+main[data-contrast-preference="high"] .evidence div {
+  border-color: #fff;
+}
 @media (max-width: 32rem) {
   .checkpoint-context div,
   .preparation-summary div,
