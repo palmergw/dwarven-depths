@@ -119,3 +119,10 @@ export async function purchaseCheckpointUpgrade(
   });
   return written.profile;
 }
+
+export function isCheckpointProfileSaveConflict(error: unknown): boolean {
+  return (
+    error instanceof IndexedDbProfileStoreError &&
+    error.code === "save_conflict"
+  );
+}

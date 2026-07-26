@@ -18,6 +18,7 @@ import {
   type CheckpointProfileResult,
   type CheckpointProfileStore,
   createCheckpointProfileStore,
+  isCheckpointProfileSaveConflict,
   loadCheckpointProfile,
   purchaseCheckpointUpgrade
 } from "./checkpoint-profile.js";
@@ -268,7 +269,23 @@ export function App({
         kind: "success",
         message: `${upgradeId} rank purchased. ${profile.forgeOre} Forge Ore remains.`
       });
-    } catch {
+    } catch (error) {
+      if (isCheckpointProfileSaveConflict(error)) {
+        const refreshed = await loadCheckpointProfile(
+          profileStoreRef.current,
+          Date.now,
+          false
+        );
+        if (refreshed.status === "ready") {
+          setCheckpointProfile(refreshed);
+          setUpgradePurchaseStatus({
+            kind: "failure",
+            message:
+              "Progression changed in another tab. The latest saved progression is loaded; review it and retry."
+          });
+          return;
+        }
+      }
       setUpgradePurchaseStatus({
         kind: "failure",
         message:

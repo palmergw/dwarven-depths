@@ -1,7 +1,9 @@
 import type { StableId } from "@dwarven-depths/contracts";
 import {
   createInitialProfile,
-  type ProfileState
+  type ProfileState,
+  purchasedUpgradeCatalog,
+  purchaseUpgradeRank
 } from "@dwarven-depths/progression";
 import {
   createProfileSaveEnvelope,
@@ -11,6 +13,7 @@ import type {
   IndexedDbProfileLoadResult,
   IndexedDbProfileWriteRequest
 } from "@dwarven-depths/save/indexed-db";
+import { IndexedDbProfileStoreError } from "@dwarven-depths/save/indexed-db";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
@@ -157,5 +160,63 @@ describe("checkpoint upgrade purchasing", () => {
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
       window.innerWidth
     );
+  });
+
+  it("reloads a conflicting canonical save before allowing a retry", async () => {
+    const initial = await envelope({
+      ...createInitialProfile("character.iron_warden" as StableId),
+      forgeOre: 40
+    });
+    const concurrent = await envelope(
+      purchaseUpgradeRank({
+        schemaVersion: 1,
+        profile: initial.profile,
+        catalog: purchasedUpgradeCatalog,
+        upgradeId: "upgrade.ability.shield_slam" as StableId
+      }).profile
+    );
+    let current = initial;
+    const expectedRevisions: (number | null)[] = [];
+    const store: CheckpointProfileStore = {
+      load: async (): Promise<IndexedDbProfileLoadResult> => ({
+        status: "loaded",
+        source: "primary",
+        envelope: current,
+        migratedFromSchemaVersion: null
+      }),
+      write: async (request) => {
+        expectedRevisions.push(request.expectedRevision);
+        if (expectedRevisions.length === 1) {
+          current = concurrent;
+          throw new IndexedDbProfileStoreError(
+            "save_conflict",
+            "concurrent profile revision"
+          );
+        }
+        current = request.envelope as ProfileSaveEnvelope;
+        return current;
+      },
+      close: async () => undefined
+    };
+    renderWithStore(store);
+
+    await userEvent.click(await button("Upgrade inventory"));
+    await userEvent.click(await button("Purchase rank 1 for 10 Forge Ore"));
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector(".purchase-failure")?.textContent
+      ).toContain("latest saved progression is loaded")
+    );
+    expect(document.querySelector(".upgrades")?.textContent).toContain(
+      "Available Forge Ore: 30"
+    );
+
+    await userEvent.click(await button("Purchase rank 2 for 25 Forge Ore"));
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector(".purchase-success")?.textContent
+      ).toContain("5 Forge Ore remains")
+    );
+    expect(expectedRevisions).toEqual([0, 1]);
   });
 });
