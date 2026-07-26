@@ -5,6 +5,7 @@ import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import { buildBattlefieldPrimitives } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
+import "./styles.css";
 import {
   EMPTY_CONTENT_MANIFEST_HASH,
   parseWorkerMessage,
