@@ -2,7 +2,7 @@
 
 ## Implemented boundary
 
-Phase 5 currently includes two playable vertical slices in `apps/web`:
+Phase 5 currently includes five dependency-ordered vertical slices in `apps/web`:
 
 - a React/Vite static application with checkpoint, preparation, running, result, and failure views;
 - the shared authoritative runtime executing the canonical empty-level fixture in a real module Web Worker;
@@ -14,6 +14,7 @@ Phase 5 currently includes two playable vertical slices in `apps/web`:
 - a canvas-independent DOM battlefield summary and browser evidence that presentation-frame scheduling cannot alter terminal checksums.
 - an explicit level checkpoint showing attempt context before a keyboard- and mouse-operable action initializes preparation authority.
 - a strictly validated worker-owned preparation summary identifying the authoritative empty level, empty roster, and zero authored placement points before confirmation is enabled.
+- a semantic DOM combat HUD that reports authoritative level, phase, tick, allied dwarf count, and hostile enemy count from validated render snapshots through the terminal result.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
@@ -26,7 +27,7 @@ Protocol version 1 and its canonical fixture checksums are compatibility evidenc
 ## Explicitly not implemented
 
 - the Shuttergate encounter UI;
-- sprite assets, animation polish, camera controls, placement editing, combat HUD, upgrades, settings, respec, audio, or final visual design;
+- sprite assets, animation polish, camera controls, placement editing, pause, target-policy and ability controls, health/cooldown details, upgrades, settings, respec, audio, or final visual design;
 - new gameplay mechanics;
 - new minimization schemas or divergence classes.
 
