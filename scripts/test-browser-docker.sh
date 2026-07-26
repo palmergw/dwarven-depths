@@ -10,6 +10,11 @@ else
   TEST_COMMAND='./node_modules/.bin/tsc -b --pretty false && ./node_modules/.bin/vitest run --config vitest.browser.config.ts'
 fi
 
+if (( $# > 0 )); then
+  printf -v TEST_ARGUMENTS ' %q' "$@"
+  TEST_COMMAND+="$TEST_ARGUMENTS"
+fi
+
 docker run --rm \
   --user "$(id -u):$(id -g)" \
   --env HOME=/tmp \

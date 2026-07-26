@@ -45,5 +45,6 @@ Broader Phase 5 work remains unimplemented until explicitly approved and added t
 
 - `pnpm --filter @dwarven-depths/web build`
 - `pnpm test:built -- apps/web/src/protocol.test.ts`
+- `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/App.browser.test.tsx`
 - `pnpm test:browser:docker`
 - `pnpm run verify`
