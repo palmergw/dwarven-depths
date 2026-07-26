@@ -116,9 +116,7 @@ export function App() {
       } else if (message.type === "result") {
         clearPendingAbilities();
         setView({ phase: "result", result: message });
-      } else if (message.code === "command_rejected") {
-        clearPendingAbilities();
-      } else {
+      } else if (message.code !== "command_rejected") {
         setView({ phase: "failure", message: message.message });
       }
     });

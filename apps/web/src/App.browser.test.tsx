@@ -860,6 +860,16 @@ describe("authoritative web worker", () => {
     await userEvent.keyboard("{Enter}");
     expect(shieldSlam.disabled).toBe(true);
     expect(combatControls?.textContent).toContain("Activation queued");
+    const nearest = Array.from(document.querySelectorAll("button")).find(
+      (candidate) => candidate.textContent === "Nearest"
+    );
+    if (!(nearest instanceof HTMLButtonElement))
+      throw new Error("expected Nearest target-policy button");
+    await userEvent.click(nearest);
+    await userEvent.click(nearest);
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+    expect(shieldSlam.disabled).toBe(true);
+    expect(combatControls?.textContent).toContain("Activation queued");
     await userEvent.click(resumeButton);
     await vi.waitFor(
       () =>
