@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  type ClientMessage,
   EMPTY_CONTENT_MANIFEST_HASH,
   parseClientMessage,
-  parseWorkerMessage
+  parseWorkerMessage,
+  type WorkerMessage
 } from "./protocol.js";
 
 describe("web worker protocol", () => {
@@ -59,7 +61,7 @@ describe("web worker protocol", () => {
       })
     ).toBeUndefined();
     expect(
-      parseClientMessage({ protocolVersion: 4, type: "initialize" })
+      parseClientMessage({ protocolVersion: 5, type: "initialize" })
     ).toBeUndefined();
     expect(
       parseClientMessage({
@@ -84,6 +86,60 @@ describe("web worker protocol", () => {
         command: { type: "confirmPreparation" }
       })
     ).toBeUndefined();
+  });
+
+  it("strictly validates version 4 target-policy commands", () => {
+    const command = {
+      protocolVersion: 4,
+      type: "command",
+      requestId: "policy-1",
+      command: {
+        type: "setTargetPolicy",
+        dwarfEntityId: "entity.dwarf.warden",
+        requestedPolicy: "highest_armor"
+      }
+    };
+    expect(parseClientMessage(command)).toEqual(command);
+    expect(
+      parseClientMessage({ ...command, protocolVersion: 3 })
+    ).toBeUndefined();
+    expect(
+      parseClientMessage({
+        ...command,
+        command: { ...command.command, requestedPolicy: "foreign" }
+      })
+    ).toBeUndefined();
+    expect(
+      parseClientMessage({
+        ...command,
+        command: { ...command.command, dwarfEntityId: "../foreign" }
+      })
+    ).toBeUndefined();
+  });
+
+  it("keeps legacy static protocol meanings frozen", () => {
+    type LegacyTargetCommand = Extract<
+      Extract<
+        ClientMessage,
+        { protocolVersion: 3; type: "command" }
+      >["command"],
+      { type: "setTargetPolicy" }
+    >;
+    type LegacyTargetResultCommand = Extract<
+      Extract<
+        WorkerMessage,
+        { protocolVersion: 3; type: "result" }
+      >["commands"][number]["command"],
+      { type: "setTargetPolicy" }
+    >;
+    // @ts-expect-error target-policy input was not part of protocol version 3
+    const legacyCommand: LegacyTargetCommand = { type: "setTargetPolicy" };
+    // @ts-expect-error target-policy evidence was not part of protocol version 3
+    const legacyResultCommand: LegacyTargetResultCommand = {
+      type: "setTargetPolicy"
+    };
+    expect(legacyCommand).toBeDefined();
+    expect(legacyResultCommand).toBeDefined();
   });
 
   it("rejects malformed or extended authoritative results", () => {
@@ -133,6 +189,96 @@ describe("web worker protocol", () => {
       })
     ).toBeUndefined();
     expect(parseWorkerMessage({ ...result, unexpected: true })).toBeUndefined();
+  });
+
+  it("strictly parses canonical target-policy replay evidence", () => {
+    const result = {
+      protocolVersion: 4,
+      type: "result",
+      terminalResult: "victory",
+      terminalTick: 1,
+      finalStateChecksum: "a".repeat(64),
+      eventStreamChecksum: "b".repeat(64),
+      commands: [
+        {
+          tick: 0,
+          sequence: 0,
+          command: { atTick: 0, type: "confirmPreparation" }
+        },
+        {
+          tick: 1,
+          sequence: 1,
+          command: {
+            atTick: 1,
+            type: "setTargetPolicy",
+            dwarfEntityId: "entity.dwarf.warden",
+            requestedPolicy: "fastest"
+          }
+        }
+      ]
+    };
+    const targetCommand = result.commands.at(1);
+    if (targetCommand === undefined) throw new Error("missing target command");
+    expect(parseWorkerMessage(result)).toEqual(result);
+    expect(
+      parseWorkerMessage({ ...result, commands: [targetCommand] })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...result,
+        commands: [
+          {
+            ...result.commands[0],
+            tick: 1,
+            command: { atTick: 1, type: "confirmPreparation" }
+          },
+          targetCommand
+        ]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...result,
+        commands: result.commands.slice().reverse()
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...result,
+        commands: [
+          result.commands[0],
+          {
+            ...targetCommand,
+            command: { ...targetCommand.command, requestedPolicy: "foreign" }
+          }
+        ]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...result,
+        terminalTick: 5,
+        commands: [
+          result.commands[0],
+          {
+            ...targetCommand,
+            tick: 5,
+            command: { ...targetCommand.command, atTick: 5 }
+          },
+          { ...targetCommand, sequence: 2, tick: 2 }
+        ]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...result,
+        commands: [
+          result.commands[0],
+          targetCommand,
+          { ...targetCommand, sequence: 2 }
+        ]
+      })
+    ).toBeUndefined();
   });
 
   it("accepts only complete authoritative preparation summaries", () => {
@@ -226,6 +372,45 @@ describe("web worker protocol", () => {
     ).toBeUndefined();
   });
 
+  it("accepts only canonical version 4 combat-control capabilities", () => {
+    const controls = {
+      protocolVersion: 4,
+      type: "combat_controls",
+      contentManifestHash: "a".repeat(64),
+      dwarves: [
+        {
+          entityId: "entity.dwarf.warden",
+          characterId: "character.iron_warden",
+          supportedTargetPolicies: ["nearest", "highest_armor"]
+        }
+      ]
+    };
+    expect(parseWorkerMessage(controls)).toEqual(controls);
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        dwarves: [
+          {
+            ...controls.dwarves[0],
+            supportedTargetPolicies: ["highest_armor", "nearest"]
+          }
+        ]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        dwarves: [controls.dwarves[0], controls.dwarves[0]]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        dwarves: [{ ...controls.dwarves[0], foreign: true }]
+      })
+    ).toBeUndefined();
+  });
+
   it("accepts only canonical, internally consistent render snapshots", () => {
     const snapshot = {
       schemaVersion: 1,
@@ -249,7 +434,7 @@ describe("web worker protocol", () => {
     const message = { protocolVersion: 1, type: "render_snapshot", snapshot };
     expect(parseWorkerMessage(message)).toEqual(message);
     expect(
-      parseWorkerMessage({ ...message, protocolVersion: 4 })
+      parseWorkerMessage({ ...message, protocolVersion: 5 })
     ).toBeUndefined();
     expect(
       parseWorkerMessage({ ...message, snapshot: { ...snapshot, extra: true } })

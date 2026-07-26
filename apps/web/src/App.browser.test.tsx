@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import { buildBattlefieldPrimitives } from "./Battlefield.js";
+import { CombatControls } from "./CombatControls.js";
 import {
   EMPTY_CONTENT_MANIFEST_HASH,
   parseWorkerMessage,
@@ -113,6 +114,42 @@ async function runWithPresentationFrames(
     worker.terminate();
   }
 }
+
+describe("semantic combat controls", () => {
+  it("submits an authoritative stable dwarf and target-policy pair by keyboard", async () => {
+    const onSetTargetPolicy = vi.fn();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <CombatControls
+        dwarves={[
+          {
+            entityId: "entity.dwarf.warden",
+            characterId: "character.iron_warden",
+            supportedTargetPolicies: ["nearest", "highest_armor"]
+          }
+        ]}
+        onSetTargetPolicy={onSetTargetPolicy}
+      />
+    );
+
+    await vi.waitFor(() =>
+      expect(document.querySelectorAll("fieldset button")).toHaveLength(2)
+    );
+    const highestArmor = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent === "Highest armor"
+    );
+    if (!(highestArmor instanceof HTMLButtonElement))
+      throw new Error("expected target-policy button");
+    highestArmor.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(onSetTargetPolicy).toHaveBeenCalledWith(
+      "entity.dwarf.warden",
+      "highest_armor"
+    );
+  });
+});
 
 describe("authoritative web worker", () => {
   it("matches the pinned CLI/runtime result and rejects duplicate authority", async () => {
@@ -343,6 +380,60 @@ describe("authoritative web worker", () => {
     }
   });
 
+  it("rejects a target-policy command absent from worker capabilities", async () => {
+    const worker = new Worker(
+      new URL("./simulation.worker.ts", import.meta.url),
+      { type: "module" }
+    );
+    try {
+      const preparation = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" && message.phase === "preparation"
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "initialize"
+      });
+      await preparation;
+      const paused = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 4 &&
+          message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "prepare-policy-rejection",
+        command: { type: "confirmPreparation" }
+      });
+      await paused;
+      const rejection = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "failure" && message.code === "command_rejected"
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "unavailable-policy",
+        command: {
+          type: "setTargetPolicy",
+          dwarfEntityId: "entity.dwarf.warden",
+          requestedPolicy: "nearest"
+        }
+      });
+      await expect(rejection).resolves.toMatchObject({
+        message: expect.stringContaining("unavailable")
+      });
+    } finally {
+      worker.terminate();
+    }
+  });
+
   it("projects entities deterministically by stable ID", () => {
     const snapshot = {
       schemaVersion: 1,
@@ -374,6 +465,64 @@ describe("authoritative web worker", () => {
     expect(
       buildBattlefieldPrimitives(snapshot).entities.map((entity) => entity.id)
     ).toEqual(["unit.1", "unit:2"]);
+  });
+
+  it("preserves the protocol-v3 combat-control message sequence", async () => {
+    const worker = new Worker(
+      new URL("./simulation.worker.ts", import.meta.url),
+      { type: "module" }
+    );
+    let combatControlCount = 0;
+    worker.addEventListener("message", (event: MessageEvent<unknown>) => {
+      const message = parseWorkerMessage(event.data);
+      if (message?.type === "combat_controls") combatControlCount += 1;
+    });
+    try {
+      const preparation = waitForMessage(
+        worker,
+        (message) =>
+          message.protocolVersion === 3 &&
+          message.type === "snapshot" &&
+          message.phase === "preparation"
+      );
+      worker.postMessage({ protocolVersion: 3, type: "initialize" });
+      await preparation;
+      const paused = waitForMessage(
+        worker,
+        (message) =>
+          message.protocolVersion === 3 &&
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: 3,
+        type: "command",
+        requestId: "v3-confirm",
+        command: { type: "confirmPreparation" }
+      });
+      await paused;
+      const result = waitForMessage(
+        worker,
+        (message) => message.type === "result"
+      );
+      worker.postMessage({
+        protocolVersion: 3,
+        type: "command",
+        requestId: "v3-resume",
+        command: { type: "setManualPause", paused: false }
+      });
+      worker.postMessage({
+        protocolVersion: 3,
+        type: "command",
+        requestId: "v3-commit",
+        command: { type: "commitManualResume", resumeRequestId: "v3-resume" }
+      });
+      await result;
+      expect(combatControlCount).toBe(1);
+    } finally {
+      worker.terminate();
+    }
   });
 
   it("preserves the protocol-v1 preparation and result flow", async () => {

@@ -10,6 +10,7 @@ import { CombatControls } from "./CombatControls.js";
 import { CombatHud } from "./CombatHud.js";
 import {
   parseWorkerMessage,
+  type TargetPolicy,
   WEB_PROTOCOL_VERSION,
   type WorkerMessage
 } from "./protocol.js";
@@ -149,6 +150,28 @@ export function App() {
     [view]
   );
 
+  const setTargetPolicy = useCallback(
+    (dwarfEntityId: string, requestedPolicy: TargetPolicy): void => {
+      if (view.phase !== "running" || combatControls?.protocolVersion !== 4)
+        return;
+      const dwarf = combatControls.dwarves.find(
+        (candidate) => candidate.entityId === dwarfEntityId
+      );
+      if (!dwarf?.supportedTargetPolicies.includes(requestedPolicy)) return;
+      workerRef.current?.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: crypto.randomUUID(),
+        command: {
+          type: "setTargetPolicy",
+          dwarfEntityId,
+          requestedPolicy
+        }
+      });
+    },
+    [combatControls, view]
+  );
+
   useLayoutEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.repeat || view.phase !== "running")
@@ -195,7 +218,10 @@ export function App() {
             <CombatHud snapshot={renderSnapshot} />
           )}
         {view.phase === "running" && combatControls !== undefined && (
-          <CombatControls />
+          <CombatControls
+            dwarves={combatControls.dwarves}
+            onSetTargetPolicy={setTargetPolicy}
+          />
         )}
         {view.phase === "preparation" && (
           <dl className="preparation-summary" aria-label="Preparation summary">
