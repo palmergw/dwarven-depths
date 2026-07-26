@@ -102,7 +102,7 @@ async function runWithPresentationFrames(
       protocolVersion: WEB_PROTOCOL_VERSION,
       type: "command",
       requestId: "commit-resume",
-      command: { type: "commitManualResume" }
+      command: { type: "commitManualResume", resumeRequestId: "resume" }
     });
     const message = await result;
     if (message.type !== "result") throw new Error("expected result");
@@ -205,7 +205,7 @@ describe("authoritative web worker", () => {
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "command",
         requestId: "commit-resume",
-        command: { type: "commitManualResume" }
+        command: { type: "commitManualResume", resumeRequestId: "resume" }
       });
       const [result] = await Promise.all([resultPromise, rejectionPromise]);
       expect(result).toMatchObject(expected);
@@ -404,6 +404,8 @@ describe("authoritative web worker", () => {
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
     await new Promise((resolve) => window.setTimeout(resolve, 100));
+    if (document.querySelector("button") === null)
+      throw new Error(`unexpected terminal view: ${document.body.textContent}`);
     expect(document.querySelector("button")?.textContent).toBe("Resume combat");
 
     await userEvent.click(

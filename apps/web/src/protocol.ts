@@ -18,7 +18,10 @@ export type ClientMessage =
       readonly requestId: string;
       readonly command:
         | { readonly type: "confirmPreparation" }
-        | { readonly type: "commitManualResume" }
+        | {
+            readonly type: "commitManualResume";
+            readonly resumeRequestId: string;
+          }
         | { readonly type: "setManualPause"; readonly paused: boolean };
     };
 
@@ -41,6 +44,7 @@ export type WorkerMessage =
       readonly type: "snapshot";
       readonly phase: "running";
       readonly manualPaused: boolean;
+      readonly resumeRequestId: string | null;
     }
   | {
       readonly protocolVersion: WebProtocolVersion;
@@ -78,6 +82,7 @@ type RecordValue = {
   command?: unknown;
   manualPaused?: unknown;
   paused?: unknown;
+  resumeRequestId?: unknown;
   phase?: unknown;
   levelId?: unknown;
   deployableEntityCount?: unknown;
@@ -159,13 +164,18 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
   if (
     value.protocolVersion === WEB_PROTOCOL_VERSION &&
     value.command.type === "commitManualResume" &&
-    hasExactKeys(value.command, ["type"])
+    hasExactKeys(value.command, ["resumeRequestId", "type"]) &&
+    typeof value.command.resumeRequestId === "string" &&
+    value.command.resumeRequestId.length > 0
   ) {
     return {
       protocolVersion: WEB_PROTOCOL_VERSION,
       type: "command",
       requestId: value.requestId,
-      command: { type: "commitManualResume" }
+      command: {
+        type: "commitManualResume",
+        resumeRequestId: value.command.resumeRequestId
+      }
     };
   }
   if (
@@ -212,13 +222,19 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         "manualPaused",
         "phase",
         "protocolVersion",
+        "resumeRequestId",
         "type"
-      ]) && typeof value.manualPaused === "boolean"
+      ]) &&
+        ((value.manualPaused === true && value.resumeRequestId === null) ||
+          (value.manualPaused === false &&
+            typeof value.resumeRequestId === "string" &&
+            value.resumeRequestId.length > 0))
         ? {
             protocolVersion: WEB_PROTOCOL_VERSION,
             type: "snapshot",
             phase: "running",
-            manualPaused: value.manualPaused
+            manualPaused: value.manualPaused,
+            resumeRequestId: value.resumeRequestId as string | null
           }
         : undefined;
     }

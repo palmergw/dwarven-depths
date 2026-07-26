@@ -29,6 +29,7 @@ let initialized = false;
 let commandAccepted = false;
 let manualPaused = false;
 let terminal = false;
+let resumeRequestId: string | null = null;
 let protocolVersion: 1 | 2 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
@@ -99,7 +100,8 @@ function postRunningSnapshot(): void {
           protocolVersion: 2,
           type: "snapshot",
           phase: "running",
-          manualPaused
+          manualPaused,
+          resumeRequestId
         }
   );
 }
@@ -247,12 +249,19 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       return;
     }
     manualPaused = message.command.paused;
+    resumeRequestId = manualPaused ? null : message.requestId;
     postRunningSnapshot();
     return;
   }
 
   if (message.command.type === "commitManualResume") {
-    if (!initialized || !commandAccepted || terminal || manualPaused) {
+    if (
+      !initialized ||
+      !commandAccepted ||
+      terminal ||
+      manualPaused ||
+      message.command.resumeRequestId !== resumeRequestId
+    ) {
       post(
         failure(
           "command_rejected",
@@ -262,6 +271,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       );
       return;
     }
+    resumeRequestId = null;
     await executePreparedScenario();
     return;
   }
@@ -283,6 +293,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
   }
   commandAccepted = true;
   manualPaused = protocolVersion === 2;
+  resumeRequestId = null;
   postRunningSnapshot();
   postRenderSnapshot(
     createRenderSnapshot(preparedContent, preparedScenario, "running", 0)

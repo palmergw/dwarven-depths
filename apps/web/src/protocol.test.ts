@@ -32,7 +32,10 @@ describe("web worker protocol", () => {
         protocolVersion: 2,
         type: "command",
         requestId: "commit-1",
-        command: { type: "commitManualResume" }
+        command: {
+          type: "commitManualResume",
+          resumeRequestId: "resume-1"
+        }
       })
     ).toBeDefined();
     expect(
@@ -163,7 +166,8 @@ describe("web worker protocol", () => {
         protocolVersion: 2,
         type: "snapshot",
         phase: "running",
-        manualPaused: true
+        manualPaused: true,
+        resumeRequestId: null
       })
     ).toBeDefined();
     expect(

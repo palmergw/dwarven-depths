@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from "react";
 import { Battlefield } from "./Battlefield.js";
 import { CombatHud } from "./CombatHud.js";
 import {
@@ -62,13 +68,17 @@ export function App() {
             manualPauseRequestedRef.current = message.manualPaused;
           if (
             !message.manualPaused &&
+            message.resumeRequestId !== null &&
             manualPauseRequestedRef.current === false
           ) {
             worker.postMessage({
               protocolVersion: WEB_PROTOCOL_VERSION,
               type: "command",
               requestId: crypto.randomUUID(),
-              command: { type: "commitManualResume" }
+              command: {
+                type: "commitManualResume",
+                resumeRequestId: message.resumeRequestId
+              }
             });
           }
         }
@@ -88,7 +98,7 @@ export function App() {
         );
       } else if (message.type === "result") {
         setView({ phase: "result", result: message });
-      } else {
+      } else if (message.code !== "command_rejected") {
         setView({ phase: "failure", message: message.message });
       }
     });
@@ -133,7 +143,7 @@ export function App() {
     [view]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.repeat || view.phase !== "running")
         return;
