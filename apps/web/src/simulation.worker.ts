@@ -25,11 +25,14 @@ import {
 
 declare const self: DedicatedWorkerGlobalScope;
 
+const FOCUS_LOSS_GUARD_MILLISECONDS = 100;
+
 let initialized = false;
 let commandAccepted = false;
 let manualPaused = false;
 let terminal = false;
 let resumeRequestId: string | null = null;
+let pendingExecutionRequestId: string | null = null;
 const acceptedRequestIds = new Set<string>();
 let protocolVersion: 1 | 2 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
@@ -150,6 +153,16 @@ async function executePreparedScenario(): Promise<void> {
   }
 }
 
+function schedulePreparedScenario(requestId: string): void {
+  pendingExecutionRequestId = requestId;
+  setTimeout(() => {
+    if (pendingExecutionRequestId !== requestId || manualPaused || terminal)
+      return;
+    pendingExecutionRequestId = null;
+    void executePreparedScenario();
+  }, FOCUS_LOSS_GUARD_MILLISECONDS);
+}
+
 self.addEventListener("message", async (event: MessageEvent<unknown>) => {
   const message = parseClientMessage(event.data);
   if (message === undefined) {
@@ -265,6 +278,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       return;
     }
     manualPaused = message.command.paused;
+    if (manualPaused) pendingExecutionRequestId = null;
     resumeRequestId = manualPaused ? null : message.requestId;
     postRunningSnapshot();
     return;
@@ -288,7 +302,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       return;
     }
     resumeRequestId = null;
-    await executePreparedScenario();
+    schedulePreparedScenario(message.command.resumeRequestId);
     return;
   }
 
@@ -310,6 +324,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
   commandAccepted = true;
   manualPaused = protocolVersion === 2;
   resumeRequestId = null;
+  pendingExecutionRequestId = null;
   postRunningSnapshot();
   postRenderSnapshot(
     createRenderSnapshot(preparedContent, preparedScenario, "running", 0)

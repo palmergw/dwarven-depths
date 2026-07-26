@@ -237,6 +237,55 @@ describe("authoritative web worker", () => {
         command: { type: "setManualPause", paused: false }
       });
       await staleResumeRejection;
+      const interruptedResume = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 2 &&
+          !message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "interrupted-resume",
+        command: { type: "setManualPause", paused: false }
+      });
+      await interruptedResume;
+      const interruptedResult = waitForMessage(
+        worker,
+        (message) => message.type === "result"
+      ).then(() => true);
+      const commitFocusPause = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 2 &&
+          message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "interrupted-commit",
+        command: {
+          type: "commitManualResume",
+          resumeRequestId: "interrupted-resume"
+        }
+      });
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "commit-focus-pause",
+        command: { type: "setManualPause", paused: true }
+      });
+      await commitFocusPause;
+      expect(
+        await Promise.race([
+          interruptedResult,
+          new Promise<false>((resolve) => setTimeout(() => resolve(false), 50))
+        ])
+      ).toBe(false);
       worker.postMessage({
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "command",
