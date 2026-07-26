@@ -184,7 +184,7 @@ async function executePreparedScenario(): Promise<void> {
         step.state.battlefield
       )
     );
-    postCombatControls();
+    if (protocolVersion === 4) postCombatControls();
     if (step.state.phase !== "TERMINAL") {
       schedulePreparedScenario("live-host");
       return;

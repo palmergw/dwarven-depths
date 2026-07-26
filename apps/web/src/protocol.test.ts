@@ -221,6 +221,22 @@ describe("web worker protocol", () => {
     if (targetCommand === undefined) throw new Error("missing target command");
     expect(parseWorkerMessage(result)).toEqual(result);
     expect(
+      parseWorkerMessage({ ...result, commands: [targetCommand] })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...result,
+        commands: [
+          {
+            ...result.commands[0],
+            tick: 1,
+            command: { atTick: 1, type: "confirmPreparation" }
+          },
+          targetCommand
+        ]
+      })
+    ).toBeUndefined();
+    expect(
       parseWorkerMessage({
         ...result,
         commands: result.commands.slice().reverse()

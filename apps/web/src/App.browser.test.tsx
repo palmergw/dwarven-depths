@@ -467,6 +467,64 @@ describe("authoritative web worker", () => {
     ).toEqual(["unit.1", "unit:2"]);
   });
 
+  it("preserves the protocol-v3 combat-control message sequence", async () => {
+    const worker = new Worker(
+      new URL("./simulation.worker.ts", import.meta.url),
+      { type: "module" }
+    );
+    let combatControlCount = 0;
+    worker.addEventListener("message", (event: MessageEvent<unknown>) => {
+      const message = parseWorkerMessage(event.data);
+      if (message?.type === "combat_controls") combatControlCount += 1;
+    });
+    try {
+      const preparation = waitForMessage(
+        worker,
+        (message) =>
+          message.protocolVersion === 3 &&
+          message.type === "snapshot" &&
+          message.phase === "preparation"
+      );
+      worker.postMessage({ protocolVersion: 3, type: "initialize" });
+      await preparation;
+      const paused = waitForMessage(
+        worker,
+        (message) =>
+          message.protocolVersion === 3 &&
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: 3,
+        type: "command",
+        requestId: "v3-confirm",
+        command: { type: "confirmPreparation" }
+      });
+      await paused;
+      const result = waitForMessage(
+        worker,
+        (message) => message.type === "result"
+      );
+      worker.postMessage({
+        protocolVersion: 3,
+        type: "command",
+        requestId: "v3-resume",
+        command: { type: "setManualPause", paused: false }
+      });
+      worker.postMessage({
+        protocolVersion: 3,
+        type: "command",
+        requestId: "v3-commit",
+        command: { type: "commitManualResume", resumeRequestId: "v3-resume" }
+      });
+      await result;
+      expect(combatControlCount).toBe(1);
+    } finally {
+      worker.terminate();
+    }
+  });
+
   it("preserves the protocol-v1 preparation and result flow", async () => {
     const worker = new Worker(
       new URL("./simulation.worker.ts", import.meta.url),

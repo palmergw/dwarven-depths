@@ -488,6 +488,15 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
   )
     return undefined;
   if (value.protocolVersion !== 4 && commands.length !== 1) return undefined;
+  const firstEnvelope = commands[0];
+  if (!isRecord(firstEnvelope)) return undefined;
+  const firstCommand = firstEnvelope.command;
+  if (
+    firstEnvelope.tick !== 0 ||
+    !isRecord(firstCommand) ||
+    firstCommand.type !== "confirmPreparation"
+  )
+    return undefined;
   let previousCommandTick = -1;
   const targetPolicyKeys = new Set<string>();
   for (const envelope of commands) {
