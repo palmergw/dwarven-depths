@@ -202,6 +202,16 @@ describe("authoritative web worker", () => {
       </StrictMode>
     );
 
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    expect(document.body.textContent).toContain("Current levelEmpty Level");
+    expect(document.querySelector("figcaption")).toBeNull();
+    const beginButton = document.querySelector("button");
+    if (beginButton === null) throw new Error("expected checkpoint button");
+    expect(beginButton.textContent).toBe("Begin preparation");
+    await userEvent.click(beginButton);
+
     await vi.waitFor(
       () =>
         expect(document.querySelector("button")?.textContent).toBe(

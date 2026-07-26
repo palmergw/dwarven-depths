@@ -82,9 +82,11 @@ button:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
+.checkpoint-context,
 .evidence {
   margin: 1.5rem 0 0;
 }
+.checkpoint-context div,
 .evidence div {
   display: grid;
   grid-template-columns: minmax(9rem, 1fr) 2fr;
@@ -104,6 +106,7 @@ code {
   font-size: 0.8rem;
 }
 @media (max-width: 32rem) {
+  .checkpoint-context div,
   .evidence div {
     grid-template-columns: 1fr;
     gap: 0.25rem;

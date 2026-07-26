@@ -12,6 +12,7 @@ Phase 5 currently includes two playable vertical slices in `apps/web`:
 - keyboard activation and live accessible status/result announcements.
 - a Phaser canvas that renders the authoritative level, map graph, and stable-ID-ordered entities from strictly validated render snapshots;
 - a canvas-independent DOM battlefield summary and browser evidence that presentation-frame scheduling cannot alter terminal checksums.
+- an explicit level checkpoint showing attempt context before a keyboard- and mouse-operable action initializes preparation authority.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 

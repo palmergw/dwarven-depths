@@ -21,9 +21,20 @@ export function App() {
   const [view, setView] = useState<ViewState>({ phase: "checkpoint" });
   const [renderSnapshot, setRenderSnapshot] = useState<RenderSnapshot>();
   const workerRef = useRef<Worker | undefined>(undefined);
+  const initializedRef = useRef(false);
   const submittedRef = useRef(false);
 
-  useEffect(() => {
+  useEffect(
+    () => () => {
+      workerRef.current?.terminate();
+      workerRef.current = undefined;
+    },
+    []
+  );
+
+  function startPreparation(): void {
+    if (initializedRef.current || view.phase !== "checkpoint") return;
+    initializedRef.current = true;
     const worker = new Worker(
       new URL("./simulation.worker.ts", import.meta.url),
       { type: "module" }
@@ -56,8 +67,7 @@ export function App() {
       protocolVersion: WEB_PROTOCOL_VERSION,
       type: "initialize"
     });
-    return () => worker.terminate();
-  }, []);
+  }
 
   function confirmPreparation(): void {
     if (submittedRef.current || view.phase !== "preparation") return;
@@ -76,6 +86,18 @@ export function App() {
       <h1>Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
         <h2 id="run-heading">Empty Level Conformance Run</h2>
+        {view.phase === "checkpoint" && (
+          <dl className="checkpoint-context" aria-label="Current checkpoint">
+            <div>
+              <dt>Current level</dt>
+              <dd>Empty Level</dd>
+            </div>
+            <div>
+              <dt>Next step</dt>
+              <dd>Prepare the company</dd>
+            </div>
+          </dl>
+        )}
         {renderSnapshot !== undefined && (
           <Battlefield snapshot={renderSnapshot} />
         )}
@@ -85,7 +107,9 @@ export function App() {
           aria-live="polite"
           aria-atomic="true"
         >
-          {view.phase === "checkpoint" && <p>Loading checkpoint…</p>}
+          {view.phase === "checkpoint" && (
+            <p>Checkpoint ready. Begin when you are ready to prepare.</p>
+          )}
           {view.phase === "preparation" && (
             <p>Preparation is ready. Confirm when your company is prepared.</p>
           )}
@@ -97,6 +121,11 @@ export function App() {
             <p>Run complete: {view.result.terminalResult}.</p>
           )}
         </div>
+        {view.phase === "checkpoint" && (
+          <button type="button" onClick={startPreparation}>
+            Begin preparation
+          </button>
+        )}
         {view.phase === "preparation" && (
           <button type="button" onClick={confirmPreparation}>
             Confirm preparation
