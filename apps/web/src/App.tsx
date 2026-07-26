@@ -39,6 +39,10 @@ type MotionPreference = (typeof motionPreferences)[number];
 const textScaleStorageKey = "dwarven-depths.presentation.text-scale.v1";
 const textScales = ["default", "large", "extra-large"] as const;
 type TextScale = (typeof textScales)[number];
+const contrastPreferenceStorageKey =
+  "dwarven-depths.presentation.contrast-preference.v1";
+const contrastPreferences = ["standard", "high"] as const;
+type ContrastPreference = (typeof contrastPreferences)[number];
 
 function isMotionPreference(value: unknown): value is MotionPreference {
   return motionPreferences.some((preference) => preference === value);
@@ -82,6 +86,27 @@ function storeTextScale(scale: TextScale): void {
   }
 }
 
+function isContrastPreference(value: unknown): value is ContrastPreference {
+  return contrastPreferences.some((preference) => preference === value);
+}
+
+function readContrastPreference(): ContrastPreference {
+  try {
+    const stored = window.localStorage.getItem(contrastPreferenceStorageKey);
+    return isContrastPreference(stored) ? stored : "standard";
+  } catch {
+    return "standard";
+  }
+}
+
+function storeContrastPreference(preference: ContrastPreference): void {
+  try {
+    window.localStorage.setItem(contrastPreferenceStorageKey, preference);
+  } catch {
+    // The in-memory presentation preference remains usable without storage.
+  }
+}
+
 function createSimulationWorker(): Worker {
   return new Worker(new URL("./simulation.worker.ts", import.meta.url), {
     type: "module"
@@ -105,6 +130,8 @@ export function App({
   const [motionPreference, setMotionPreference] =
     useState<MotionPreference>(readMotionPreference);
   const [textScale, setTextScale] = useState<TextScale>(readTextScale);
+  const [contrastPreference, setContrastPreference] =
+    useState<ContrastPreference>(readContrastPreference);
   const workerRef = useRef<Worker | undefined>(undefined);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
@@ -323,7 +350,11 @@ export function App({
   }, [settingsOpen]);
 
   return (
-    <main data-motion-preference={motionPreference} data-text-scale={textScale}>
+    <main
+      data-contrast-preference={contrastPreference}
+      data-motion-preference={motionPreference}
+      data-text-scale={textScale}
+    >
       <p className="eyebrow">Authoritative checkpoint</p>
       <h1>Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
@@ -444,6 +475,20 @@ export function App({
               <option value="default">Default</option>
               <option value="large">Large</option>
               <option value="extra-large">Extra large</option>
+            </select>
+            <label htmlFor="contrast-preference">Contrast</label>
+            <select
+              id="contrast-preference"
+              value={contrastPreference}
+              onChange={(event) => {
+                const preference = event.currentTarget.value;
+                if (!isContrastPreference(preference)) return;
+                setContrastPreference(preference);
+                storeContrastPreference(preference);
+              }}
+            >
+              <option value="standard">Standard</option>
+              <option value="high">High contrast</option>
             </select>
             <p className="settings-help">
               This preference affects presentation only and never changes the
