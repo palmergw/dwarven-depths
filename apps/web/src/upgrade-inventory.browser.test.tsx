@@ -89,6 +89,12 @@ describe("checkpoint upgrade inventory", () => {
             upgradeId: "upgrade.item.powder_cask" as StableId,
             rank: 1,
             forgeOreSpent: 7
+          },
+          {
+            schemaVersion: 1,
+            upgradeId: `upgrade.ability.${"a".repeat(300)}` as StableId,
+            rank: 1,
+            forgeOreSpent: 1
           }
         ]
       })
@@ -115,6 +121,9 @@ describe("checkpoint upgrade inventory", () => {
     );
 
     await page.viewport(320, 720);
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+      window.innerWidth
+    );
     const closeButton = await button("Close upgrade inventory");
     closeButton.focus();
     await userEvent.keyboard("{Enter}");

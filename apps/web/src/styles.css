@@ -236,6 +236,12 @@ code {
   color: #f0c66f;
   font-size: 0.8em;
 }
+.upgrade-inventory-list dt {
+  min-width: 0;
+}
+.upgrade-inventory-list code {
+  overflow-wrap: anywhere;
+}
 body:has(main[data-contrast-preference="high"]),
 main[data-contrast-preference="high"] {
   background: #000;
