@@ -1,5 +1,6 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
 
+export * from "./active-ability.js";
 export * from "./attack-commitment.js";
 export * from "./authoritative-combat-tick.js";
 export {

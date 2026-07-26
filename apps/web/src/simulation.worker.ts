@@ -41,6 +41,7 @@ let resumeRequestId: string | null = null;
 let pendingExecutionRequestId: string | null = null;
 const acceptedRequestIds = new Set<string>();
 const scheduledTargetPolicies = new Set<string>();
+const scheduledAbilities = new Set<string>();
 let protocolVersion: 1 | 2 | 3 | 4 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
@@ -135,7 +136,18 @@ function authoritativeCombatControls(): readonly CombatControlDwarf[] {
         characterId: character.id,
         supportedTargetPolicies: TARGET_POLICIES.filter((policy) =>
           character.supportedTargetPolicies.includes(policy)
-        )
+        ),
+        ...(character.activeAbilities === undefined
+          ? {}
+          : {
+              activeAbilities: [...character.activeAbilities]
+                .sort((left, right) => compareRenderIds(left.id, right.id))
+                .map((ability) => ({
+                  abilityId: ability.id,
+                  cooldownCompleteAtTick: null,
+                  rejectionReason: null
+                }))
+            })
       };
     });
 }
@@ -174,6 +186,7 @@ async function executePreparedScenario(): Promise<void> {
   try {
     const step = liveHost.step();
     scheduledTargetPolicies.clear();
+    scheduledAbilities.clear();
     if (step.state.phase === "TERMINAL") terminal = true;
     postRenderSnapshot(
       createRenderSnapshot(
@@ -348,6 +361,42 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     return;
   }
   acceptedRequestIds.add(message.requestId);
+
+  if (message.command.type === "activateAbility") {
+    const command = message.command;
+    const dwarf = authoritativeCombatControls().find(
+      ({ entityId }) => entityId === command.dwarfEntityId
+    );
+    const commandKey = `${liveHost?.state.tick ?? -1}:${command.dwarfEntityId}:${command.abilityId}`;
+    if (
+      protocolVersion !== 4 ||
+      !initialized ||
+      !commandAccepted ||
+      terminal ||
+      liveHost === undefined ||
+      dwarf?.activeAbilities?.some(
+        ({ abilityId }) => abilityId === command.abilityId
+      ) !== true ||
+      scheduledAbilities.has(commandKey)
+    ) {
+      post(
+        failure(
+          "command_rejected",
+          "The requested ability is stale, unavailable, unsupported, cooling down, or duplicated for this tick.",
+          protocolVersion
+        )
+      );
+      return;
+    }
+    liveHost.scheduleCommand({
+      atTick: liveHost.state.tick,
+      type: "activateAbility",
+      dwarfEntityId: command.dwarfEntityId as never,
+      abilityId: command.abilityId as never
+    });
+    scheduledAbilities.add(commandKey);
+    return;
+  }
 
   if (message.command.type === "setTargetPolicy") {
     const command = message.command;

@@ -177,6 +177,17 @@ A character or ability declares which policies it supports.
 - If a target becomes invalid before the attack's commit point, the attack cancels and reacquires normally.
 - Default cooldown starts only when an attack or ability commits.
 
+### Iron Warden Shield Slam
+
+- `activateAbility { atTick, dwarfEntityId, abilityId }` is applied in command-envelope sequence order during phase 1. Only `ability.iron_warden.shield_slam`, authored on `character.iron_warden`, is supported in the slice.
+- A command is rejected without state mutation when its owner is unavailable or downed, its ability is unsupported, the phase is preparation or terminal, no living locked hostile supplies a nonzero aim vector, its snapshotted cooldown is active, it duplicates the same dwarf/ability in one tick, or its owner has conflicting committed work.
+- Acceptance commits Shield Slam at that tick, snapshots damage, range, cone, and stagger values, and starts its authored cooldown. Later upgrades change neither committed work nor a running cooldown. Impact occurs after the authored windup and impact delay.
+- Facing is the integer vector from the Warden's authored placement node to the current valid locked target's occupied navigation node. Impact uses inclusive squared range and exact integer dot-product cone tests; supported authored half-angles are 0, 30, 45, 60, and 90 degrees. Floating-point trigonometry and render facing are nonauthoritative.
+- At impact, all living hostile enemy centers in the snapshotted cone are ordered by squared distance and stable entity ID. Ability impacts resolve by commitment sequence then source entity ID before enemy basic-attack completions in phase 7, and their damage participates in the phase-8 simultaneous damage/death boundary.
+- Shield Slam cancels an affected enemy's active basic-attack windup only when its commit tick is strictly after the impact tick. Work committed at or before impact is preserved.
+- Impact applies `status.staggered` through `impactTick + staggerTicks`. A staggered enemy cannot move, acquire/start an attack, or advance an uncommitted windup. Phase-4 expiry permits action later on the exact expiry tick. Reapplication refreshes duration, retains the stronger magnitude, and never creates a duplicate status record.
+- Activation, rejection, cooldown, impact, interruption, damage, and status evidence uses stable IDs and reason codes and is replay/checksum input. Clients only request activation and present authoritative feedback.
+
 ## Damage, statuses, death, and deployables
 
 - Health, damage, armor, healing, and status magnitudes use deterministic integer values.

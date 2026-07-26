@@ -149,6 +149,50 @@ describe("semantic combat controls", () => {
       "highest_armor"
     );
   });
+
+  it("submits Shield Slam accessibly and presents authoritative cooldown feedback", async () => {
+    const onActivateAbility = vi.fn();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <CombatControls
+        dwarves={[
+          {
+            entityId: "entity.dwarf.warden",
+            characterId: "character.iron_warden",
+            supportedTargetPolicies: ["nearest"],
+            activeAbilities: [
+              {
+                abilityId: "ability.iron_warden.shield_slam",
+                cooldownCompleteAtTick: null,
+                rejectionReason: null
+              }
+            ]
+          }
+        ]}
+        onSetTargetPolicy={vi.fn()}
+        onActivateAbility={onActivateAbility}
+      />
+    );
+    const shieldSlam = await vi.waitFor(() => {
+      const button = Array.from(document.querySelectorAll("button")).find(
+        (candidate) => candidate.textContent === "Shield Slam"
+      );
+      expect(button).toBeInstanceOf(HTMLButtonElement);
+      return button as HTMLButtonElement;
+    });
+    expect(shieldSlam.getAttribute("aria-describedby")).not.toBeNull();
+    expect(document.querySelector('[role="status"]')?.textContent).toBe(
+      "Ready"
+    );
+    shieldSlam.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(onActivateAbility).toHaveBeenCalledWith(
+      "entity.dwarf.warden",
+      "ability.iron_warden.shield_slam"
+    );
+  });
 });
 
 describe("authoritative web worker", () => {

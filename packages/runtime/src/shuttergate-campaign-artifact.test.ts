@@ -58,7 +58,7 @@ describe("durable Shuttergate campaign artifact", () => {
     const { content, first, artifact } = await oneAttemptArtifact();
 
     expect(await canonicalHash(artifact)).toBe(
-      "3b5a5740e8ebf626b3ad09635b42037cc82271ade46a808efeb5f88f31c2c929"
+      "5bcf884631f0e0b9d9a8a323dc40a825de528195fc3f36fa441d43693327ac05"
     );
     expect(Object.isFrozen(artifact)).toBe(true);
     expect(Object.isFrozen(artifact.attemptChecksums)).toBe(true);

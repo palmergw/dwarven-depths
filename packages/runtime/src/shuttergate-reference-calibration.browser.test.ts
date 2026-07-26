@@ -10,7 +10,7 @@ import {
 } from "./shuttergate-reference-calibration.js";
 
 const expectedChecksum =
-  "4076169e8e506f82e5e1825ecd5a9cab210245a053edf7ebc12a0475ba4dd669";
+  "6ab8bd8643a045d1d8b25969107ad3275a533ca66f421d018d59205f2a143bf2";
 
 describe("Shuttergate calibration browser parity", () => {
   it("matches the literal Node outcome checksum", async () => {

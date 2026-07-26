@@ -172,6 +172,31 @@ export function App() {
     [combatControls, view]
   );
 
+  const activateAbility = useCallback(
+    (dwarfEntityId: string, abilityId: string): void => {
+      if (view.phase !== "running" || combatControls?.protocolVersion !== 4)
+        return;
+      const ability = combatControls.dwarves
+        .find((dwarf) => dwarf.entityId === dwarfEntityId)
+        ?.activeAbilities?.find(
+          (candidate) => candidate.abilityId === abilityId
+        );
+      if (
+        ability === undefined ||
+        ability.cooldownCompleteAtTick !== null ||
+        ability.rejectionReason !== null
+      )
+        return;
+      workerRef.current?.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: crypto.randomUUID(),
+        command: { type: "activateAbility", dwarfEntityId, abilityId }
+      });
+    },
+    [combatControls, view]
+  );
+
   useLayoutEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.repeat || view.phase !== "running")
@@ -221,6 +246,7 @@ export function App() {
           <CombatControls
             dwarves={combatControls.dwarves}
             onSetTargetPolicy={setTargetPolicy}
+            onActivateAbility={activateAbility}
           />
         )}
         {view.phase === "preparation" && (

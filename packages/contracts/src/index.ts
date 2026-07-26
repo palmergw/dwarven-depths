@@ -86,6 +86,21 @@ export interface CharacterDefinition {
   readonly armor: number;
   readonly supportedTargetPolicies: readonly DwarfTargetPolicy[];
   readonly basicAttack: AuthoredBasicAttackDefinition;
+  /** Authored active abilities owned by this character. Absent on historical content. */
+  readonly activeAbilities?: readonly AuthoredActiveAbilityDefinition[];
+}
+
+export interface AuthoredActiveAbilityDefinition {
+  readonly schemaVersion: 1;
+  readonly id: StableId;
+  readonly windupTicks: number;
+  readonly impactDelayTicks: number;
+  readonly cooldownTicks: number;
+  readonly damage: number;
+  readonly range: number;
+  /** Supported exact integer dot-product cones: 0, 30, 45, 60, or 90. */
+  readonly frontalHalfAngleDegrees: 0 | 30 | 45 | 60 | 90;
+  readonly staggerTicks: number;
 }
 
 export interface EnemyDefinition {
@@ -358,6 +373,79 @@ export interface TargetPolicyCommandResolution {
   readonly schemaVersion: 1;
   readonly entries: readonly DwarfActionPhaseEntry[];
   readonly decisions: readonly TargetPolicyCommandDecision[];
+}
+
+export type AbilityActivationReason =
+  | "ability_committed"
+  | "duplicate_ability_command"
+  | "owner_unavailable"
+  | "owner_downed"
+  | "ability_unsupported"
+  | "phase_unavailable"
+  | "target_or_facing_unavailable"
+  | "cooldown_active"
+  | "committed_action_conflict";
+
+export interface AbilityActivationDecision {
+  readonly schemaVersion: 1;
+  readonly sequence: number;
+  readonly dwarfEntityId: EntityId;
+  readonly abilityId: StableId;
+  readonly status: "accepted" | "rejected";
+  readonly reason: AbilityActivationReason;
+  readonly committedAtTick?: number;
+  readonly impactAtTick?: number;
+  readonly cooldownCompleteAtTick?: number;
+}
+
+export interface CommittedActiveAbility {
+  readonly schemaVersion: 1;
+  readonly abilityId: StableId;
+  readonly sourceEntityId: EntityId;
+  readonly commitmentSequence: number;
+  readonly committedAtTick: number;
+  readonly impactAtTick: number;
+  readonly sourceX: number;
+  readonly sourceY: number;
+  readonly aimDeltaX: number;
+  readonly aimDeltaY: number;
+  readonly damage: number;
+  readonly range: number;
+  readonly frontalHalfAngleDegrees: 0 | 30 | 45 | 60 | 90;
+  readonly staggerTicks: number;
+}
+
+export interface AbilityImpactDecision {
+  readonly schemaVersion: 1;
+  readonly abilityId: StableId;
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityIds: readonly EntityId[];
+  readonly interruptedAttackIds: readonly StableId[];
+  readonly statusId: StatusId;
+  readonly reason: "shield_slam_impacted";
+}
+
+export interface ActiveAbilityTickRequest {
+  readonly schemaVersion: 1;
+  readonly currentTick: number;
+  readonly phase: SimulationPhase;
+  readonly battlefield: BattlefieldState;
+  readonly commands: readonly CommandEnvelope[];
+  readonly cooldowns: readonly ActiveCooldown[];
+  readonly statuses: readonly ActiveStatus[];
+  readonly committedAbilities: readonly CommittedActiveAbility[];
+}
+
+export interface ActiveAbilityTickResolution {
+  readonly schemaVersion: 1;
+  readonly battlefield: BattlefieldState;
+  readonly cooldowns: readonly ActiveCooldown[];
+  readonly statuses: readonly ActiveStatus[];
+  readonly committedAbilities: readonly CommittedActiveAbility[];
+  readonly activations: readonly AbilityActivationDecision[];
+  readonly impacts: readonly AbilityImpactDecision[];
+  readonly cooldownDecisions: readonly CooldownTimerDecision[];
+  readonly statusDecisions: readonly StatusTimerDecision[];
 }
 
 export interface DwarfActionPhaseRequest {
@@ -1123,9 +1211,17 @@ export interface SetTargetPolicyCommand {
   readonly requestedPolicy: DwarfTargetPolicy;
 }
 
+export interface ActivateAbilityCommand {
+  readonly atTick: number;
+  readonly type: "activateAbility";
+  readonly dwarfEntityId: EntityId;
+  readonly abilityId: StableId;
+}
+
 export type ScenarioCommand =
   | ConfirmPreparationCommand
-  | SetTargetPolicyCommand;
+  | SetTargetPolicyCommand
+  | ActivateAbilityCommand;
 
 export interface ScenarioDefinition {
   readonly schemaVersion: 1;

@@ -370,6 +370,43 @@ describe("content validation", () => {
     expect(waves.flatMap((wave) => wave.spawnEvents)).toHaveLength(18);
   });
 
+  it("strictly validates Shield Slam fields and ownership", () => {
+    const unknownField = structuredClone(shuttergateInput) as unknown as {
+      definitions: Array<{
+        kind: string;
+        id: string;
+        activeAbilities?: Array<Record<string, unknown>>;
+      }>;
+    };
+    const warden = unknownField.definitions.find(
+      ({ id }) => id === "character.iron_warden"
+    );
+    const shieldSlam = warden?.activeAbilities?.[0];
+    if (shieldSlam === undefined)
+      throw new Error("missing Shield Slam fixture");
+    Object.assign(shieldSlam, { unexpected: true });
+    expect(() => validateContentBundle(unknownField)).toThrow(
+      /Unrecognized key/
+    );
+
+    const unsupportedOwner = structuredClone(shuttergateInput) as unknown as {
+      definitions: Array<{
+        kind: string;
+        id: string;
+        activeAbilities?: Array<Record<string, unknown>>;
+      }>;
+    };
+    const unsupportedWarden = unsupportedOwner.definitions.find(
+      ({ id }) => id === "character.iron_warden"
+    );
+    if (unsupportedWarden === undefined)
+      throw new Error("missing Iron Warden fixture");
+    unsupportedWarden.id = "character.foreign";
+    expect(() => validateContentBundle(unsupportedOwner)).toThrow(
+      /only ability.*owned by character\.iron_warden/
+    );
+  });
+
   it("rejects malformed combatant definitions at precise paths", () => {
     const invalid = structuredClone(referenceCombatantsInput);
     const character = invalid.definitions[0];

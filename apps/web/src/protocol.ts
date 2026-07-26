@@ -19,6 +19,11 @@ export interface CombatControlDwarf {
   readonly entityId: string;
   readonly characterId: string;
   readonly supportedTargetPolicies: readonly TargetPolicy[];
+  readonly activeAbilities?: readonly {
+    readonly abilityId: string;
+    readonly cooldownCompleteAtTick: number | null;
+    readonly rejectionReason: string | null;
+  }[];
 }
 
 export type ClientMessage =
@@ -59,6 +64,11 @@ export type ClientMessage =
             readonly type: "setTargetPolicy";
             readonly dwarfEntityId: string;
             readonly requestedPolicy: TargetPolicy;
+          }
+        | {
+            readonly type: "activateAbility";
+            readonly dwarfEntityId: string;
+            readonly abilityId: string;
           };
     };
 
@@ -133,6 +143,12 @@ export type WorkerMessage =
               readonly type: "setTargetPolicy";
               readonly dwarfEntityId: string;
               readonly requestedPolicy: TargetPolicy;
+            }
+          | {
+              readonly atTick: number;
+              readonly type: "activateAbility";
+              readonly dwarfEntityId: string;
+              readonly abilityId: string;
             };
       }[];
     }
@@ -173,6 +189,10 @@ type RecordValue = {
   characterId?: unknown;
   supportedTargetPolicies?: unknown;
   requestedPolicy?: unknown;
+  activeAbilities?: unknown;
+  abilityId?: unknown;
+  cooldownCompleteAtTick?: unknown;
+  rejectionReason?: unknown;
 };
 
 function isRecord(value: unknown): value is RecordValue {
@@ -294,6 +314,24 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
     };
   }
   if (
+    value.protocolVersion === 4 &&
+    value.command.type === "activateAbility" &&
+    hasExactKeys(value.command, ["abilityId", "dwarfEntityId", "type"]) &&
+    isStableId(value.command.dwarfEntityId) &&
+    isStableId(value.command.abilityId)
+  ) {
+    return {
+      protocolVersion: 4,
+      type: "command",
+      requestId: value.requestId,
+      command: {
+        type: "activateAbility",
+        dwarfEntityId: value.command.dwarfEntityId,
+        abilityId: value.command.abilityId
+      }
+    };
+  }
+  if (
     !hasExactKeys(value.command, ["type"]) ||
     value.command.type !== "confirmPreparation"
   )
@@ -338,11 +376,17 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     for (const dwarf of value.dwarves) {
       if (
         !isRecord(dwarf) ||
-        !hasExactKeys(dwarf, [
+        (!hasExactKeys(dwarf, [
           "characterId",
           "entityId",
           "supportedTargetPolicies"
-        ])
+        ]) &&
+          !hasExactKeys(dwarf, [
+            "activeAbilities",
+            "characterId",
+            "entityId",
+            "supportedTargetPolicies"
+          ]))
       )
         return undefined;
       const { characterId, entityId, supportedTargetPolicies } = dwarf;
@@ -363,6 +407,29 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
       )
         return undefined;
       previousEntityId = entityId;
+      if (dwarf.activeAbilities !== undefined) {
+        if (!Array.isArray(dwarf.activeAbilities)) return undefined;
+        let previousAbilityId = "";
+        for (const ability of dwarf.activeAbilities) {
+          if (
+            !isRecord(ability) ||
+            !hasExactKeys(ability, [
+              "abilityId",
+              "cooldownCompleteAtTick",
+              "rejectionReason"
+            ]) ||
+            !isStableId(ability.abilityId) ||
+            ability.abilityId <= previousAbilityId ||
+            (ability.cooldownCompleteAtTick !== null &&
+              (!Number.isSafeInteger(ability.cooldownCompleteAtTick) ||
+                (ability.cooldownCompleteAtTick as number) < 0)) ||
+            (ability.rejectionReason !== null &&
+              typeof ability.rejectionReason !== "string")
+          )
+            return undefined;
+          previousAbilityId = ability.abilityId;
+        }
+      }
     }
     return value as WorkerMessage;
   }
@@ -475,15 +542,24 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         envelope.command.type === "confirmPreparation"
           ? index === 0
           : value.protocolVersion === 4 &&
-            hasExactKeys(envelope.command, [
+            ((hasExactKeys(envelope.command, [
               "atTick",
               "dwarfEntityId",
               "requestedPolicy",
               "type"
             ]) &&
-            envelope.command.type === "setTargetPolicy" &&
-            isStableId(envelope.command.dwarfEntityId) &&
-            isTargetPolicy(envelope.command.requestedPolicy))
+              envelope.command.type === "setTargetPolicy" &&
+              isStableId(envelope.command.dwarfEntityId) &&
+              isTargetPolicy(envelope.command.requestedPolicy)) ||
+              (hasExactKeys(envelope.command, [
+                "abilityId",
+                "atTick",
+                "dwarfEntityId",
+                "type"
+              ]) &&
+                envelope.command.type === "activateAbility" &&
+                isStableId(envelope.command.dwarfEntityId) &&
+                isStableId(envelope.command.abilityId))))
     )
   )
     return undefined;
@@ -499,6 +575,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     return undefined;
   let previousCommandTick = -1;
   const targetPolicyKeys = new Set<string>();
+  const abilityKeys = new Set<string>();
   for (const envelope of commands) {
     if (!isRecord(envelope)) return undefined;
     const { command, tick } = envelope;
@@ -511,6 +588,13 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
       const key = `${tick}:${dwarfEntityId}`;
       if (targetPolicyKeys.has(key)) return undefined;
       targetPolicyKeys.add(key);
+    } else if (isRecord(command) && command.type === "activateAbility") {
+      const { abilityId, dwarfEntityId } = command;
+      if (typeof dwarfEntityId !== "string" || typeof abilityId !== "string")
+        return undefined;
+      const key = `${tick}:${dwarfEntityId}:${abilityId}`;
+      if (abilityKeys.has(key)) return undefined;
+      abilityKeys.add(key);
     }
   }
   return value as WorkerMessage;

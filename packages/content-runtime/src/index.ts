@@ -150,7 +150,16 @@ function freezeDefinition(definition: ContentDefinition): ContentDefinition {
       supportedTargetPolicies: Object.freeze([
         ...definition.supportedTargetPolicies
       ]),
-      basicAttack: Object.freeze({ ...definition.basicAttack })
+      basicAttack: Object.freeze({ ...definition.basicAttack }),
+      ...(definition.activeAbilities === undefined
+        ? {}
+        : {
+            activeAbilities: Object.freeze(
+              definition.activeAbilities.map((ability) =>
+                Object.freeze({ ...ability })
+              )
+            )
+          })
     });
   if (definition.kind === "enemy")
     return Object.freeze({
