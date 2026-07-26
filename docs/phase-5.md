@@ -23,6 +23,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - the approved deterministic Shield Slam content, strict replay command, integer cone/cooldown/impact/interruption/stagger resolver, reason-coded evidence, and accessible protocol-v4 activation control with authoritative phase/cooldown feedback and duplicate-safe queued presentation; Shuttergate content deliberately migrates to `phase-5-shuttergate-shield-slam-v2` while historical no-ability fixtures retain their prior bytes and checksums.
 - a semantic terminal-results action that disposes the completed worker, clears attempt-local presentation and input state, and returns to a fresh checkpoint for a deterministic repeat attempt.
 - a semantic results action that downloads deterministic, versioned authoritative run evidence with a stable checksum-derived filename, without presenting that evidence document as a CLI replay format.
+- an outcome-specific authoritative results region that receives keyboard focus after each strictly validated terminal result and is removed when returning to checkpoint.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
