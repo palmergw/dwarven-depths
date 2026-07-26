@@ -9,7 +9,12 @@ import type { RenderSnapshot } from "./render-snapshot.js";
 
 type ViewState =
   | { readonly phase: "checkpoint" }
-  | { readonly phase: "preparation" }
+  | {
+      readonly phase: "preparation";
+      readonly levelId: string;
+      readonly deployableEntityCount: number;
+      readonly placementPointCount: number;
+    }
   | { readonly phase: "running" }
   | {
       readonly phase: "result";
@@ -50,7 +55,16 @@ export function App() {
       } else if (message.type === "render_snapshot") {
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "snapshot") {
-        setView({ phase: message.phase });
+        setView(
+          message.phase === "preparation"
+            ? {
+                phase: "preparation",
+                levelId: message.levelId,
+                deployableEntityCount: message.deployableEntityCount,
+                placementPointCount: message.placementPointCount
+              }
+            : { phase: "running" }
+        );
       } else if (message.type === "result") {
         setView({ phase: "result", result: message });
       } else {
@@ -100,6 +114,26 @@ export function App() {
         )}
         {renderSnapshot !== undefined && (
           <Battlefield snapshot={renderSnapshot} />
+        )}
+        {view.phase === "preparation" && (
+          <dl className="preparation-summary" aria-label="Preparation summary">
+            <div>
+              <dt>Authoritative level</dt>
+              <dd>{view.levelId}</dd>
+            </div>
+            <div>
+              <dt>Company roster</dt>
+              <dd>
+                {view.deployableEntityCount === 0
+                  ? "Empty — no dwarves require placement"
+                  : `${view.deployableEntityCount} dwarves`}
+              </dd>
+            </div>
+            <div>
+              <dt>Placement points</dt>
+              <dd>{view.placementPointCount}</dd>
+            </div>
+          </dl>
         )}
         <div
           className="status"

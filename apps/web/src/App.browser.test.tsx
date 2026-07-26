@@ -114,7 +114,15 @@ describe("authoritative web worker", () => {
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "initialize"
       });
-      await Promise.all([preparation, renderPreparation]);
+      const [preparationMessage] = await Promise.all([
+        preparation,
+        renderPreparation
+      ]);
+      expect(preparationMessage).toMatchObject({
+        levelId: "level.empty",
+        deployableEntityCount: 0,
+        placementPointCount: 0
+      });
 
       const resultPromise = waitForMessage(
         worker,
@@ -219,6 +227,16 @@ describe("authoritative web worker", () => {
         ),
       { timeout: 10_000 }
     );
+    const preparationSummary = document.querySelector(
+      '[aria-label="Preparation summary"]'
+    );
+    expect(preparationSummary?.textContent).toContain(
+      "Authoritative levellevel.empty"
+    );
+    expect(preparationSummary?.textContent).toContain(
+      "Company rosterEmpty — no dwarves require placement"
+    );
+    expect(preparationSummary?.textContent).toContain("Placement points0");
     const button = document.querySelector("button");
     if (button === null) throw new Error("expected preparation button");
     button.focus();

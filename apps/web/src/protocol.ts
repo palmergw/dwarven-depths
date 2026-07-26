@@ -15,7 +15,15 @@ export type WorkerMessage =
   | {
       readonly protocolVersion: 1;
       readonly type: "snapshot";
-      readonly phase: "preparation" | "running";
+      readonly phase: "preparation";
+      readonly levelId: string;
+      readonly deployableEntityCount: number;
+      readonly placementPointCount: number;
+    }
+  | {
+      readonly protocolVersion: 1;
+      readonly type: "snapshot";
+      readonly phase: "running";
     }
   | {
       readonly protocolVersion: 1;
@@ -52,6 +60,9 @@ type RecordValue = {
   requestId?: unknown;
   command?: unknown;
   phase?: unknown;
+  levelId?: unknown;
+  deployableEntityCount?: unknown;
+  placementPointCount?: unknown;
   code?: unknown;
   message?: unknown;
   terminalResult?: unknown;
@@ -79,6 +90,14 @@ function hasExactKeys(value: RecordValue, keys: readonly string[]): boolean {
 
 function isHash(value: unknown): value is string {
   return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+function isLevelId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length <= 128 &&
+    /^level\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/.test(value)
+  );
 }
 
 export function parseClientMessage(value: unknown): ClientMessage | undefined {
@@ -131,16 +150,33 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         };
   }
   if (value.type === "snapshot") {
+    if (value.phase === "running") {
+      return hasExactKeys(value, ["phase", "protocolVersion", "type"])
+        ? {
+            protocolVersion: WEB_PROTOCOL_VERSION,
+            type: "snapshot",
+            phase: "running"
+          }
+        : undefined;
+    }
     if (
-      !hasExactKeys(value, ["phase", "protocolVersion", "type"]) ||
-      (value.phase !== "preparation" && value.phase !== "running")
+      value.phase !== "preparation" ||
+      !hasExactKeys(value, [
+        "deployableEntityCount",
+        "levelId",
+        "phase",
+        "placementPointCount",
+        "protocolVersion",
+        "type"
+      ]) ||
+      !isLevelId(value.levelId) ||
+      !Number.isSafeInteger(value.deployableEntityCount) ||
+      (value.deployableEntityCount as number) < 0 ||
+      !Number.isSafeInteger(value.placementPointCount) ||
+      (value.placementPointCount as number) < 0
     )
       return undefined;
-    return {
-      protocolVersion: WEB_PROTOCOL_VERSION,
-      type: "snapshot",
-      phase: value.phase
-    };
+    return value as WorkerMessage;
   }
   if (value.type === "failure") {
     if (
