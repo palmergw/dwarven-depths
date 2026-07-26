@@ -243,9 +243,11 @@ function authoritativeCombatControls(): readonly CombatControlDwarf[] {
                         )
                     )?.completeAtTick ?? null,
                   rejectionReason:
-                    abilityRejections.get(
-                      `${dwarf.entityId}\u0000${ability.id}`
-                    ) ?? null
+                    liveHost?.state.phase !== "COMBAT_RUNNING"
+                      ? "phase_unavailable"
+                      : (abilityRejections.get(
+                          `${dwarf.entityId}\u0000${ability.id}`
+                        ) ?? null)
                 }))
             })
       };

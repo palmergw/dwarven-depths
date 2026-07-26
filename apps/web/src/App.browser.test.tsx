@@ -193,6 +193,49 @@ describe("semantic combat controls", () => {
       "ability.iron_warden.shield_slam"
     );
   });
+
+  it("prevents repeated ability input while authoritative feedback is pending", async () => {
+    const onActivateAbility = vi.fn();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <CombatControls
+        dwarves={[
+          {
+            entityId: "entity.dwarf.warden",
+            characterId: "character.iron_warden",
+            supportedTargetPolicies: ["nearest"],
+            activeAbilities: [
+              {
+                abilityId: "ability.iron_warden.shield_slam",
+                cooldownCompleteAtTick: null,
+                rejectionReason: null
+              }
+            ]
+          }
+        ]}
+        pendingAbilityKeys={
+          new Set(["entity.dwarf.warden\u0000ability.iron_warden.shield_slam"])
+        }
+        onSetTargetPolicy={vi.fn()}
+        onActivateAbility={onActivateAbility}
+      />
+    );
+
+    const shieldSlam = await vi.waitFor(() => {
+      const button = Array.from(document.querySelectorAll("button")).find(
+        (candidate) => candidate.textContent === "Shield Slam"
+      );
+      expect(button).toBeInstanceOf(HTMLButtonElement);
+      return button as HTMLButtonElement;
+    });
+    expect(shieldSlam.disabled).toBe(true);
+    expect(document.querySelector('[role="status"]')?.textContent).toBe(
+      "Activation queued"
+    );
+    expect(onActivateAbility).not.toHaveBeenCalled();
+  });
 });
 
 describe("authoritative web worker", () => {
@@ -424,7 +467,7 @@ describe("authoritative web worker", () => {
     }
   });
 
-  it("publishes authoritative Shield Slam readiness", async () => {
+  it("publishes authoritative Shield Slam availability", async () => {
     const worker = new Worker(
       new URL("./simulation.worker.ts", import.meta.url),
       { type: "module" }
@@ -446,7 +489,7 @@ describe("authoritative web worker", () => {
               {
                 abilityId: "ability.iron_warden.shield_slam",
                 cooldownCompleteAtTick: null,
-                rejectionReason: null
+                rejectionReason: "phase_unavailable"
               }
             ]
           }
@@ -791,9 +834,37 @@ describe("authoritative web worker", () => {
     );
     expect(combatControls?.textContent).toContain("Combat controls");
     expect(combatControls?.textContent).toContain("Shield Slam");
-    expect(combatControls?.textContent).toContain("Ready");
+    expect(combatControls?.textContent).toContain("phase_unavailable");
     expect(document.querySelector("figcaption")?.textContent).toContain(
       "Battlefield level.shuttergate_hall"
+    );
+    await userEvent.click(resumeButton);
+    await vi.waitFor(
+      () => {
+        expect(resumeButton.textContent).toBe("Pause combat");
+        expect(combatControls?.textContent).toContain("Ready");
+      },
+      { timeout: 10_000 }
+    );
+    await userEvent.click(resumeButton);
+    await vi.waitFor(
+      () => expect(resumeButton.textContent).toBe("Resume combat"),
+      { timeout: 10_000 }
+    );
+    const shieldSlam = Array.from(document.querySelectorAll("button")).find(
+      (candidate) => candidate.textContent === "Shield Slam"
+    );
+    if (!(shieldSlam instanceof HTMLButtonElement))
+      throw new Error("expected Shield Slam button");
+    shieldSlam.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(shieldSlam.disabled).toBe(true);
+    expect(combatControls?.textContent).toContain("Activation queued");
+    await userEvent.click(resumeButton);
+    await vi.waitFor(
+      () =>
+        expect(combatControls?.textContent).toMatch(/Cooldown until tick \d+/),
+      { timeout: 10_000 }
     );
   });
 

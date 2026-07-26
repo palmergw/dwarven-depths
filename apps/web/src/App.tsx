@@ -37,10 +37,19 @@ export function App() {
   const [combatControls, setCombatControls] = useState<
     Extract<WorkerMessage, { type: "combat_controls" }> | undefined
   >();
+  const [pendingAbilityKeys, setPendingAbilityKeys] = useState<
+    ReadonlySet<string>
+  >(new Set());
   const workerRef = useRef<Worker | undefined>(undefined);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
+  const pendingAbilityKeysRef = useRef(new Set<string>());
+
+  function clearPendingAbilities(): void {
+    pendingAbilityKeysRef.current.clear();
+    setPendingAbilityKeys(new Set());
+  }
 
   useEffect(
     () => () => {
@@ -68,6 +77,7 @@ export function App() {
       } else if (message.type === "render_snapshot") {
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "combat_controls") {
+        clearPendingAbilities();
         setCombatControls(message);
       } else if (message.type === "snapshot") {
         if (message.phase === "running" && message.protocolVersion !== 1) {
@@ -104,8 +114,11 @@ export function App() {
               }
         );
       } else if (message.type === "result") {
+        clearPendingAbilities();
         setView({ phase: "result", result: message });
-      } else if (message.code !== "command_rejected") {
+      } else if (message.code === "command_rejected") {
+        clearPendingAbilities();
+      } else {
         setView({ phase: "failure", message: message.message });
       }
     });
@@ -187,6 +200,10 @@ export function App() {
         ability.rejectionReason !== null
       )
         return;
+      const pendingKey = `${dwarfEntityId}\u0000${abilityId}`;
+      if (pendingAbilityKeysRef.current.has(pendingKey)) return;
+      pendingAbilityKeysRef.current.add(pendingKey);
+      setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current));
       workerRef.current?.postMessage({
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "command",
@@ -245,6 +262,7 @@ export function App() {
         {view.phase === "running" && combatControls !== undefined && (
           <CombatControls
             dwarves={combatControls.dwarves}
+            pendingAbilityKeys={pendingAbilityKeys}
             onSetTargetPolicy={setTargetPolicy}
             onActivateAbility={activateAbility}
           />

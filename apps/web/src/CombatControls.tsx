@@ -11,6 +11,7 @@ const TARGET_POLICY_LABELS: Readonly<Record<TargetPolicy, string>> = {
 
 interface CombatControlsProps {
   readonly dwarves: readonly CombatControlDwarf[];
+  readonly pendingAbilityKeys?: ReadonlySet<string>;
   readonly onSetTargetPolicy: (
     dwarfEntityId: string,
     requestedPolicy: TargetPolicy
@@ -23,6 +24,7 @@ interface CombatControlsProps {
 
 export function CombatControls({
   dwarves,
+  pendingAbilityKeys = new Set(),
   onSetTargetPolicy,
   onActivateAbility
 }: CombatControlsProps) {
@@ -53,7 +55,11 @@ export function CombatControls({
             ))}
             {(dwarf.activeAbilities ?? []).map((ability) => {
               const feedbackId = `${dwarf.entityId}-${ability.abilityId}-feedback`;
+              const pending = pendingAbilityKeys.has(
+                `${dwarf.entityId}\u0000${ability.abilityId}`
+              );
               const disabled =
+                pending ||
                 ability.cooldownCompleteAtTick !== null ||
                 ability.rejectionReason !== null;
               return (
@@ -69,10 +75,12 @@ export function CombatControls({
                     Shield Slam
                   </button>
                   <span id={feedbackId} role="status">
-                    {ability.rejectionReason ??
-                      (ability.cooldownCompleteAtTick === null
-                        ? "Ready"
-                        : `Cooldown until tick ${ability.cooldownCompleteAtTick}`)}
+                    {pending
+                      ? "Activation queued"
+                      : (ability.rejectionReason ??
+                        (ability.cooldownCompleteAtTick === null
+                          ? "Ready"
+                          : `Cooldown until tick ${ability.cooldownCompleteAtTick}`))}
                   </span>
                 </span>
               );
