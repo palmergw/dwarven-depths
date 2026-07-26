@@ -77,11 +77,32 @@ async function runWithPresentationFrames(
       worker,
       (message) => message.type === "result"
     );
+    const paused = waitForMessage(
+      worker,
+      (message) =>
+        message.type === "snapshot" &&
+        message.phase === "running" &&
+        message.protocolVersion === 2 &&
+        message.manualPaused
+    );
     worker.postMessage({
       protocolVersion: WEB_PROTOCOL_VERSION,
       type: "command",
       requestId: presentationFrames ? "animated" : "idle",
       command: { type: "confirmPreparation" }
+    });
+    await paused;
+    worker.postMessage({
+      protocolVersion: WEB_PROTOCOL_VERSION,
+      type: "command",
+      requestId: "resume",
+      command: { type: "setManualPause", paused: false }
+    });
+    worker.postMessage({
+      protocolVersion: WEB_PROTOCOL_VERSION,
+      type: "command",
+      requestId: "commit-resume",
+      command: { type: "commitManualResume", resumeRequestId: "resume" }
     });
     const message = await result;
     if (message.type !== "result") throw new Error("expected result");
@@ -141,6 +162,142 @@ describe("authoritative web worker", () => {
       } as const;
       worker.postMessage(command);
       worker.postMessage({ ...command, requestId: "command-2" });
+      const paused = await waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 2 &&
+          message.manualPaused
+      );
+      expect(paused).toMatchObject({ manualPaused: true });
+      const mixedVersionRejection = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "failure" && message.code === "invalid_message"
+      );
+      worker.postMessage({
+        protocolVersion: 1,
+        type: "command",
+        requestId: "mixed-version-confirmation",
+        command: { type: "confirmPreparation" }
+      });
+      await mixedVersionRejection;
+      const duplicatePauseRejection = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "failure" && message.code === "command_rejected"
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "duplicate-pause",
+        command: { type: "setManualPause", paused: true }
+      });
+      await duplicatePauseRejection;
+      const unpaused = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 2 &&
+          !message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "stale-resume",
+        command: { type: "setManualPause", paused: false }
+      });
+      await unpaused;
+      const repaused = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 2 &&
+          message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "focus-pause",
+        command: { type: "setManualPause", paused: true }
+      });
+      await repaused;
+      const staleResumeRejection = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "failure" && message.code === "command_rejected"
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "stale-resume",
+        command: { type: "setManualPause", paused: false }
+      });
+      await staleResumeRejection;
+      const interruptedResume = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 2 &&
+          !message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "interrupted-resume",
+        command: { type: "setManualPause", paused: false }
+      });
+      await interruptedResume;
+      const interruptedResult = waitForMessage(
+        worker,
+        (message) => message.type === "result"
+      ).then(() => true);
+      const commitFocusPause = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 2 &&
+          message.manualPaused
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "interrupted-commit",
+        command: {
+          type: "commitManualResume",
+          resumeRequestId: "interrupted-resume"
+        }
+      });
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "commit-focus-pause",
+        command: { type: "setManualPause", paused: true }
+      });
+      await commitFocusPause;
+      expect(
+        await Promise.race([
+          interruptedResult,
+          new Promise<false>((resolve) => setTimeout(() => resolve(false), 50))
+        ])
+      ).toBe(false);
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "resume",
+        command: { type: "setManualPause", paused: false }
+      });
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "commit-resume",
+        command: { type: "commitManualResume", resumeRequestId: "resume" }
+      });
       const [result] = await Promise.all([resultPromise, rejectionPromise]);
       expect(result).toMatchObject(expected);
       if (result.type !== "result") throw new Error("expected result");
@@ -187,6 +344,37 @@ describe("authoritative web worker", () => {
     expect(
       buildBattlefieldPrimitives(snapshot).entities.map((entity) => entity.id)
     ).toEqual(["unit.1", "unit:2"]);
+  });
+
+  it("preserves the protocol-v1 preparation and result flow", async () => {
+    const worker = new Worker(
+      new URL("./simulation.worker.ts", import.meta.url),
+      { type: "module" }
+    );
+    try {
+      const preparation = waitForMessage(
+        worker,
+        (message) =>
+          message.protocolVersion === 1 &&
+          message.type === "snapshot" &&
+          message.phase === "preparation"
+      );
+      worker.postMessage({ protocolVersion: 1, type: "initialize" });
+      await preparation;
+      const result = waitForMessage(
+        worker,
+        (message) => message.protocolVersion === 1 && message.type === "result"
+      );
+      worker.postMessage({
+        protocolVersion: 1,
+        type: "command",
+        requestId: "legacy-confirmation",
+        command: { type: "confirmPreparation" }
+      });
+      expect(await result).toMatchObject(expected);
+    } finally {
+      worker.terminate();
+    }
   });
 
   it("keeps terminal evidence independent of presentation frames", async () => {
@@ -241,6 +429,15 @@ describe("authoritative web worker", () => {
     if (button === null) throw new Error("expected preparation button");
     button.focus();
     await userEvent.keyboard("{Enter}");
+    await vi.waitFor(() =>
+      expect(document.querySelector("button")?.textContent).toBe(
+        "Resume combat"
+      )
+    );
+    expect(document.querySelector("button")?.getAttribute("aria-pressed")).toBe(
+      "true"
+    );
+    await userEvent.keyboard("{Escape}");
     await vi.waitFor(
       () =>
         expect(
@@ -264,5 +461,59 @@ describe("authoritative web worker", () => {
       document.querySelectorAll(".battlefield-canvas canvas")
     ).toHaveLength(1);
     expect(document.querySelectorAll("button")).toHaveLength(0);
+  });
+
+  it("pauses on focus loss and never resumes on focus restoration", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App />);
+
+    await vi.waitFor(() =>
+      expect(document.querySelector("button")?.textContent).toBe(
+        "Begin preparation"
+      )
+    );
+    await userEvent.click(
+      document.querySelector("button") as HTMLButtonElement
+    );
+    await vi.waitFor(
+      () =>
+        expect(document.querySelector("button")?.textContent).toBe(
+          "Confirm preparation"
+        ),
+      { timeout: 10_000 }
+    );
+    await userEvent.click(
+      document.querySelector("button") as HTMLButtonElement
+    );
+    await vi.waitFor(
+      () =>
+        expect(document.querySelector("button")?.textContent).toBe(
+          "Resume combat"
+        ),
+      { timeout: 10_000 }
+    );
+
+    (document.querySelector("button") as HTMLButtonElement).click();
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+    if (document.querySelector("button") === null)
+      throw new Error(`unexpected terminal view: ${document.body.textContent}`);
+    expect(document.querySelector("button")?.textContent).toBe("Resume combat");
+
+    await userEvent.click(
+      document.querySelector("button") as HTMLButtonElement
+    );
+    await vi.waitFor(
+      () =>
+        expect(
+          document.querySelector('[role="status"]')?.textContent
+        ).toContain("Run complete: victory"),
+      { timeout: 10_000 }
+    );
+    expect(document.body.textContent).toContain(expected.finalStateChecksum);
+    expect(document.body.textContent).toContain(expected.eventStreamChecksum);
   });
 });

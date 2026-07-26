@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from "react";
 import { Battlefield } from "./Battlefield.js";
 import { CombatHud } from "./CombatHud.js";
 import {
@@ -16,7 +22,7 @@ type ViewState =
       readonly deployableEntityCount: number;
       readonly placementPointCount: number;
     }
-  | { readonly phase: "running" }
+  | { readonly phase: "running"; readonly manualPaused: boolean }
   | {
       readonly phase: "result";
       readonly result: Extract<WorkerMessage, { type: "result" }>;
@@ -29,6 +35,7 @@ export function App() {
   const workerRef = useRef<Worker | undefined>(undefined);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
+  const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
 
   useEffect(
     () => () => {
@@ -56,6 +63,25 @@ export function App() {
       } else if (message.type === "render_snapshot") {
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "snapshot") {
+        if (message.phase === "running" && message.protocolVersion === 2) {
+          if (manualPauseRequestedRef.current === undefined)
+            manualPauseRequestedRef.current = message.manualPaused;
+          if (
+            !message.manualPaused &&
+            message.resumeRequestId !== null &&
+            manualPauseRequestedRef.current === false
+          ) {
+            worker.postMessage({
+              protocolVersion: WEB_PROTOCOL_VERSION,
+              type: "command",
+              requestId: crypto.randomUUID(),
+              command: {
+                type: "commitManualResume",
+                resumeRequestId: message.resumeRequestId
+              }
+            });
+          }
+        }
         setView(
           message.phase === "preparation"
             ? {
@@ -64,11 +90,15 @@ export function App() {
                 deployableEntityCount: message.deployableEntityCount,
                 placementPointCount: message.placementPointCount
               }
-            : { phase: "running" }
+            : {
+                phase: "running",
+                manualPaused:
+                  message.protocolVersion === 2 && message.manualPaused
+              }
         );
       } else if (message.type === "result") {
         setView({ phase: "result", result: message });
-      } else {
+      } else if (message.code !== "command_rejected") {
         setView({ phase: "failure", message: message.message });
       }
     });
@@ -94,6 +124,43 @@ export function App() {
       command: { type: "confirmPreparation" }
     });
   }
+
+  const setManualPause = useCallback(
+    (paused: boolean): void => {
+      if (
+        view.phase !== "running" ||
+        manualPauseRequestedRef.current === paused
+      )
+        return;
+      manualPauseRequestedRef.current = paused;
+      workerRef.current?.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: crypto.randomUUID(),
+        command: { type: "setManualPause", paused }
+      });
+    },
+    [view]
+  );
+
+  useLayoutEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.repeat || view.phase !== "running")
+        return;
+      event.preventDefault();
+      setManualPause(!(manualPauseRequestedRef.current ?? view.manualPaused));
+    };
+    const onBlur = () => {
+      if (view.phase === "running" && manualPauseRequestedRef.current === false)
+        setManualPause(true);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [view, setManualPause]);
 
   return (
     <main>
@@ -154,7 +221,11 @@ export function App() {
             <p>Preparation is ready. Confirm when your company is prepared.</p>
           )}
           {view.phase === "running" && (
-            <p>The authoritative worker is resolving the run…</p>
+            <p>
+              {view.manualPaused
+                ? "Combat is manually paused."
+                : "The authoritative worker is resolving the run…"}
+            </p>
           )}
           {view.phase === "failure" && <p>Run failed: {view.message}</p>}
           {view.phase === "result" && (
@@ -169,6 +240,15 @@ export function App() {
         {view.phase === "preparation" && (
           <button type="button" onClick={confirmPreparation}>
             Confirm preparation
+          </button>
+        )}
+        {view.phase === "running" && (
+          <button
+            type="button"
+            aria-pressed={view.manualPaused}
+            onClick={() => setManualPause(!view.manualPaused)}
+          >
+            {view.manualPaused ? "Resume combat" : "Pause combat"}
           </button>
         )}
         {view.phase === "result" && (
