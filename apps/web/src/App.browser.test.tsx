@@ -20,12 +20,16 @@ const expected = {
   eventStreamChecksum:
     "d081b5fbde5b7d474a38545e401939cbd0b63ecc6ad2558aedeaea0be4fb0d59"
 } as const;
+const motionPreferenceStorageKey =
+  "dwarven-depths.presentation.motion-preference.v1";
 
 let root: Root | undefined;
 afterEach(() => {
   root?.unmount();
   root = undefined;
   document.body.replaceChildren();
+  window.localStorage.removeItem(motionPreferenceStorageKey);
+  vi.restoreAllMocks();
 });
 
 function waitForMessage(
@@ -154,6 +158,85 @@ async function resultHeading(text: string): Promise<HTMLHeadingElement> {
     return heading as HTMLHeadingElement;
   });
 }
+
+function renderApp(): void {
+  const container = document.createElement("div");
+  document.body.append(container);
+  root = createRoot(container);
+  root.render(<App />);
+}
+
+function appliedMotionPreference(): string | null {
+  return (
+    document.querySelector("main")?.getAttribute("data-motion-preference") ??
+    null
+  );
+}
+
+describe("presentation settings", () => {
+  it("opens and closes by keyboard with deterministic focus restoration", async () => {
+    renderApp();
+    const settingsButton = await buttonWithText("Settings");
+    settingsButton.focus();
+    await userEvent.keyboard("{Enter}");
+
+    const heading = await vi.waitFor(() => {
+      const candidate = document.querySelector(
+        "#presentation-settings-heading"
+      );
+      expect(candidate).toBeInstanceOf(HTMLHeadingElement);
+      return candidate as HTMLHeadingElement;
+    });
+    expect(document.activeElement).toBe(heading);
+
+    const closeButton = await buttonWithText("Close settings");
+    closeButton.focus();
+    await userEvent.keyboard("{Enter}");
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(
+        Array.from(document.querySelectorAll("button")).find(
+          (button) => button.textContent === "Settings"
+        )
+      )
+    );
+    expect(document.querySelector("#presentation-settings-heading")).toBeNull();
+  });
+
+  it("applies and persists a mouse-selected presentation preference", async () => {
+    renderApp();
+    await userEvent.click(await buttonWithText("Settings"));
+    const select = document.querySelector("#motion-preference");
+    expect(select).toBeInstanceOf(HTMLSelectElement);
+    await userEvent.selectOptions(select as HTMLSelectElement, "reduce");
+
+    expect(appliedMotionPreference()).toBe("reduce");
+    expect(window.localStorage.getItem(motionPreferenceStorageKey)).toBe(
+      "reduce"
+    );
+    await userEvent.click(await buttonWithText("Close settings"));
+    root?.unmount();
+    root = undefined;
+    document.body.replaceChildren();
+
+    renderApp();
+    await vi.waitFor(() => expect(appliedMotionPreference()).toBe("reduce"));
+  });
+
+  it("falls back to device motion when storage is malformed or unavailable", async () => {
+    window.localStorage.setItem(motionPreferenceStorageKey, "unexpected");
+    renderApp();
+    await vi.waitFor(() => expect(appliedMotionPreference()).toBe("device"));
+
+    root?.unmount();
+    root = undefined;
+    document.body.replaceChildren();
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+    renderApp();
+    await vi.waitFor(() => expect(appliedMotionPreference()).toBe("device"));
+  });
+});
 
 async function runWithPresentationFrames(
   presentationFrames: boolean

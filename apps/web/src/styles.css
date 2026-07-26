@@ -82,9 +82,65 @@ button:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
-.results h3:focus {
+.results h3:focus,
+.settings h3:focus {
   outline: 3px solid #fff;
   outline-offset: 3px;
+}
+.checkpoint-actions,
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.settings {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #80683f;
+  border-radius: 0.5rem;
+  background: #211b14;
+}
+.settings h3 {
+  margin-top: 0;
+}
+.settings label,
+.settings select {
+  display: block;
+}
+.settings select {
+  width: min(100%, 24rem);
+  margin-top: 0.5rem;
+  padding: 0.65rem;
+  border: 1px solid #f0c66f;
+  border-radius: 0.35rem;
+  background: #17130f;
+  color: #f4ead5;
+  font: inherit;
+}
+.settings select:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+.settings-help {
+  color: #c5b695;
+}
+main[data-motion-preference="reduce"] *,
+main[data-motion-preference="reduce"] *::before,
+main[data-motion-preference="reduce"] *::after {
+  scroll-behavior: auto;
+  animation-duration: 0.001ms;
+  animation-iteration-count: 1;
+  transition-duration: 0.001ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  main[data-motion-preference="device"] *,
+  main[data-motion-preference="device"] *::before,
+  main[data-motion-preference="device"] *::after {
+    scroll-behavior: auto;
+    animation-duration: 0.001ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.001ms;
+  }
 }
 .checkpoint-context,
 .preparation-summary,
