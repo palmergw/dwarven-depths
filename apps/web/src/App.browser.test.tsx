@@ -47,6 +47,101 @@ function waitForMessage(
   });
 }
 
+class ControlledResultWorker {
+  readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
+  terminated = false;
+
+  addEventListener(
+    type: string,
+    listener: (event: MessageEvent<unknown>) => void
+  ): void {
+    if (type === "message") this.listeners.add(listener);
+  }
+
+  postMessage(message: unknown): void {
+    if (typeof message !== "object" || message === null) return;
+    const candidate = message as {
+      readonly type?: string;
+      readonly command?: { readonly type?: string };
+    };
+    if (candidate.type === "initialize") {
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "preparation",
+        levelId: "level.shuttergate_hall",
+        deployableEntityCount: 0,
+        placementPointCount: 2
+      });
+    } else if (
+      candidate.type === "command" &&
+      candidate.command?.type === "confirmPreparation"
+    ) {
+      this.emit({
+        protocolVersion: 4,
+        type: "render_snapshot",
+        snapshot: {
+          schemaVersion: 1,
+          levelId: "level.shuttergate_hall",
+          mapId: null,
+          tick: 1,
+          phase: "terminal",
+          nodes: [],
+          connections: [],
+          entities: []
+        }
+      });
+      this.emit({
+        protocolVersion: 4,
+        type: "result",
+        terminalResult: expected.terminalResult,
+        terminalTick: 1,
+        finalStateChecksum: expected.finalStateChecksum,
+        eventStreamChecksum: expected.eventStreamChecksum,
+        commands: [
+          {
+            tick: 0,
+            sequence: 0,
+            command: { atTick: 0, type: "confirmPreparation" }
+          }
+        ]
+      });
+    }
+  }
+
+  emit(message: unknown): void {
+    const event = new MessageEvent("message", { data: message });
+    for (const listener of this.listeners) listener(event);
+  }
+
+  terminate(): void {
+    this.terminated = true;
+  }
+}
+
+async function buttonWithText(text: string): Promise<HTMLButtonElement> {
+  return vi.waitFor(() => {
+    const candidate = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent === text
+    );
+    expect(candidate).toBeInstanceOf(HTMLButtonElement);
+    return candidate as HTMLButtonElement;
+  });
+}
+
+async function completeAppAttempt(): Promise<string> {
+  await userEvent.click(await buttonWithText("Begin preparation"));
+  await userEvent.click(await buttonWithText("Confirm preparation"));
+  await buttonWithText("Return to checkpoint");
+  const evidence = document.querySelector(".evidence")?.textContent;
+  expect(evidence).toContain("Terminal result");
+  expect(evidence).toContain("Final state checksum");
+  expect(document.querySelector('[role="status"]')?.textContent).toMatch(
+    /Run complete: (victory|defeat)\./
+  );
+  return evidence ?? "";
+}
+
 async function runWithPresentationFrames(
   presentationFrames: boolean
 ): Promise<Extract<WorkerMessage, { type: "result" }>> {
@@ -778,6 +873,58 @@ describe("authoritative web worker", () => {
     expect(animated).toMatchObject(expected);
     expect(animated.finalStateChecksum).toBe(idle.finalStateChecksum);
     expect(animated.eventStreamChecksum).toBe(idle.eventStreamChecksum);
+  });
+
+  it("returns from terminal evidence to a fresh deterministic checkpoint", async () => {
+    const workers: ControlledResultWorker[] = [];
+    const createWorker = (): Worker => {
+      const worker = new ControlledResultWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={createWorker} />);
+
+    const firstEvidence = await completeAppAttempt();
+    const returnButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent === "Return to checkpoint"
+    );
+    if (!(returnButton instanceof HTMLButtonElement))
+      throw new Error("expected result checkpoint button");
+    returnButton.focus();
+    await userEvent.keyboard("{Enter}");
+
+    await vi.waitFor(() =>
+      expect(document.querySelector("button")?.textContent).toBe(
+        "Begin preparation"
+      )
+    );
+    expect(document.querySelector(".evidence")).toBeNull();
+    expect(document.querySelector("figcaption")).toBeNull();
+    expect(document.body.textContent).toContain("Checkpoint ready");
+    expect(workers[0]?.terminated).toBe(true);
+    workers[0]?.emit({
+      protocolVersion: 4,
+      type: "failure",
+      code: "stale_worker",
+      message: "A completed worker must not replace the fresh checkpoint."
+    });
+    expect(document.body.textContent).not.toContain("stale_worker");
+
+    const secondEvidence = await completeAppAttempt();
+    expect(secondEvidence).toBe(firstEvidence);
+    await userEvent.click(
+      Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent === "Return to checkpoint"
+      ) as HTMLButtonElement
+    );
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    expect(workers).toHaveLength(2);
+    expect(workers[1]?.terminated).toBe(true);
   });
 
   it("supports keyboard-only confirmation and announces the result", async () => {

@@ -2,7 +2,7 @@
 
 ## Implemented boundary
 
-Phase 5 currently includes ten dependency-ordered slices:
+Phase 5 currently includes these dependency-ordered slices:
 
 - a React/Vite static application with checkpoint, preparation, running, result, and failure views;
 - the shared authoritative runtime executing the canonical empty-level fixture in a real module Web Worker;
@@ -21,6 +21,7 @@ Phase 5 currently includes ten dependency-ordered slices:
 - an incremental runtime host that owns fixed-step advancement, current-tick command sequencing, replayable effective-scenario identity, event accumulation, and canonical terminal evidence, with the empty web worker's pause-gated execution routed through that host.
 - a backward-compatible protocol-v4 target-policy input path with worker-derived, manifest-bound dwarf capabilities, strict canonical command/result validation, and semantic keyboard/mouse controls; the empty fixture continues to expose the authoritative unavailable state.
 - the approved deterministic Shield Slam content, strict replay command, integer cone/cooldown/impact/interruption/stagger resolver, reason-coded evidence, and accessible protocol-v4 activation control with authoritative phase/cooldown feedback and duplicate-safe queued presentation; Shuttergate content deliberately migrates to `phase-5-shuttergate-shield-slam-v2` while historical no-ability fixtures retain their prior bytes and checksums.
+- a semantic terminal-results action that disposes the completed worker, clears attempt-local presentation and input state, and returns to a fresh checkpoint for a deterministic repeat attempt.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
