@@ -77,11 +77,26 @@ async function runWithPresentationFrames(
       worker,
       (message) => message.type === "result"
     );
+    const paused = waitForMessage(
+      worker,
+      (message) =>
+        message.type === "snapshot" &&
+        message.phase === "running" &&
+        message.protocolVersion === 2 &&
+        message.manualPaused
+    );
     worker.postMessage({
       protocolVersion: WEB_PROTOCOL_VERSION,
       type: "command",
       requestId: presentationFrames ? "animated" : "idle",
       command: { type: "confirmPreparation" }
+    });
+    await paused;
+    worker.postMessage({
+      protocolVersion: WEB_PROTOCOL_VERSION,
+      type: "command",
+      requestId: "resume",
+      command: { type: "setManualPause", paused: false }
     });
     const message = await result;
     if (message.type !== "result") throw new Error("expected result");
@@ -141,6 +156,33 @@ describe("authoritative web worker", () => {
       } as const;
       worker.postMessage(command);
       worker.postMessage({ ...command, requestId: "command-2" });
+      const paused = await waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 2 &&
+          message.manualPaused
+      );
+      expect(paused).toMatchObject({ manualPaused: true });
+      const duplicatePauseRejection = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "failure" && message.code === "command_rejected"
+      );
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "duplicate-pause",
+        command: { type: "setManualPause", paused: true }
+      });
+      await duplicatePauseRejection;
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "resume",
+        command: { type: "setManualPause", paused: false }
+      });
       const [result] = await Promise.all([resultPromise, rejectionPromise]);
       expect(result).toMatchObject(expected);
       if (result.type !== "result") throw new Error("expected result");
@@ -187,6 +229,37 @@ describe("authoritative web worker", () => {
     expect(
       buildBattlefieldPrimitives(snapshot).entities.map((entity) => entity.id)
     ).toEqual(["unit.1", "unit:2"]);
+  });
+
+  it("preserves the protocol-v1 preparation and result flow", async () => {
+    const worker = new Worker(
+      new URL("./simulation.worker.ts", import.meta.url),
+      { type: "module" }
+    );
+    try {
+      const preparation = waitForMessage(
+        worker,
+        (message) =>
+          message.protocolVersion === 1 &&
+          message.type === "snapshot" &&
+          message.phase === "preparation"
+      );
+      worker.postMessage({ protocolVersion: 1, type: "initialize" });
+      await preparation;
+      const result = waitForMessage(
+        worker,
+        (message) => message.protocolVersion === 1 && message.type === "result"
+      );
+      worker.postMessage({
+        protocolVersion: 1,
+        type: "command",
+        requestId: "legacy-confirmation",
+        command: { type: "confirmPreparation" }
+      });
+      expect(await result).toMatchObject(expected);
+    } finally {
+      worker.terminate();
+    }
   });
 
   it("keeps terminal evidence independent of presentation frames", async () => {
@@ -241,6 +314,15 @@ describe("authoritative web worker", () => {
     if (button === null) throw new Error("expected preparation button");
     button.focus();
     await userEvent.keyboard("{Enter}");
+    await vi.waitFor(() =>
+      expect(document.querySelector("button")?.textContent).toBe(
+        "Resume combat"
+      )
+    );
+    expect(document.querySelector("button")?.getAttribute("aria-pressed")).toBe(
+      "true"
+    );
+    await userEvent.keyboard("{Escape}");
     await vi.waitFor(
       () =>
         expect(
@@ -264,5 +346,52 @@ describe("authoritative web worker", () => {
       document.querySelectorAll(".battlefield-canvas canvas")
     ).toHaveLength(1);
     expect(document.querySelectorAll("button")).toHaveLength(0);
+  });
+
+  it("pauses on focus loss and never resumes on focus restoration", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App />);
+
+    await vi.waitFor(() =>
+      expect(document.querySelector("button")?.textContent).toBe(
+        "Begin preparation"
+      )
+    );
+    await userEvent.click(
+      document.querySelector("button") as HTMLButtonElement
+    );
+    await vi.waitFor(() =>
+      expect(document.querySelector("button")?.textContent).toBe(
+        "Confirm preparation"
+      )
+    );
+    await userEvent.click(
+      document.querySelector("button") as HTMLButtonElement
+    );
+    await vi.waitFor(() =>
+      expect(document.querySelector("button")?.textContent).toBe(
+        "Resume combat"
+      )
+    );
+
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+    expect(document.querySelector("button")?.textContent).toBe("Resume combat");
+
+    await userEvent.click(
+      document.querySelector("button") as HTMLButtonElement
+    );
+    await vi.waitFor(
+      () =>
+        expect(
+          document.querySelector('[role="status"]')?.textContent
+        ).toContain("Run complete: victory"),
+      { timeout: 10_000 }
+    );
+    expect(document.body.textContent).toContain(expected.finalStateChecksum);
+    expect(document.body.textContent).toContain(expected.eventStreamChecksum);
   });
 });

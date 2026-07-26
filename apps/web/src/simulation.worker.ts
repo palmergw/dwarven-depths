@@ -27,6 +27,10 @@ declare const self: DedicatedWorkerGlobalScope;
 
 let initialized = false;
 let commandAccepted = false;
+let manualPaused = false;
+let terminal = false;
+let executionScheduled = false;
+let protocolVersion: 1 | 2 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
 
@@ -82,10 +86,75 @@ function createRenderSnapshot(
 
 function postRenderSnapshot(snapshot: RenderSnapshot): void {
   post({
-    protocolVersion: WEB_PROTOCOL_VERSION,
+    protocolVersion,
     type: "render_snapshot",
     snapshot
   });
+}
+
+function postRunningSnapshot(): void {
+  post(
+    protocolVersion === 1
+      ? { protocolVersion: 1, type: "snapshot", phase: "running" }
+      : {
+          protocolVersion: 2,
+          type: "snapshot",
+          phase: "running",
+          manualPaused
+        }
+  );
+}
+
+async function executePreparedScenario(): Promise<void> {
+  if (
+    terminal ||
+    manualPaused ||
+    preparedContent === undefined ||
+    preparedScenario === undefined
+  )
+    return;
+  try {
+    const result = await runScenario(preparedScenario, preparedContent);
+    terminal = true;
+    postRenderSnapshot(
+      createRenderSnapshot(
+        preparedContent,
+        preparedScenario,
+        "terminal",
+        result.finalState.tick,
+        result.finalState.battlefield
+      )
+    );
+    post({
+      protocolVersion,
+      type: "result",
+      terminalResult: result.terminalResult,
+      terminalTick: result.terminalTick,
+      finalStateChecksum: result.finalStateChecksum,
+      eventStreamChecksum: result.eventStreamChecksum,
+      commands: result.commands
+    });
+  } catch (error) {
+    terminal = true;
+    post(
+      failure(
+        "runtime_failure",
+        error instanceof Error
+          ? error.message
+          : "The authoritative runtime failed.",
+        protocolVersion
+      )
+    );
+  }
+}
+
+function scheduleExecution(): void {
+  if (executionScheduled || manualPaused || terminal) return;
+  executionScheduled = true;
+  setTimeout(() => {
+    executionScheduled = false;
+    void executePreparedScenario();
+  }, 0);
 }
 
 self.addEventListener("message", async (event: MessageEvent<unknown>) => {
@@ -94,7 +163,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     post(
       failure(
         "invalid_message",
-        "The worker rejected a malformed or unsupported message."
+        "The worker rejected a malformed or unsupported message.",
+        protocolVersion
       )
     );
     return;
@@ -105,12 +175,14 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       post(
         failure(
           "already_initialized",
-          "The simulation worker is already initialized."
+          "The simulation worker is already initialized.",
+          protocolVersion
         )
       );
       return;
     }
     initialized = true;
+    protocolVersion = message.protocolVersion;
     try {
       preparedContent = await compileContent(
         contentFixture as unknown as ContentBundle
@@ -134,7 +206,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
           : preparedContent.maps.get(preparedLevel.mapId);
       postRenderSnapshot(preparationSnapshot);
       post({
-        protocolVersion: WEB_PROTOCOL_VERSION,
+        protocolVersion,
         type: "snapshot",
         phase: "preparation",
         levelId: preparationSnapshot.levelId,
@@ -149,10 +221,33 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
           "runtime_failure",
           error instanceof Error
             ? error.message
-            : "The authoritative runtime failed."
+            : "The authoritative runtime failed.",
+          protocolVersion
         )
       );
     }
+    return;
+  }
+
+  if (message.command.type === "setManualPause") {
+    if (
+      !initialized ||
+      !commandAccepted ||
+      terminal ||
+      message.command.paused === manualPaused
+    ) {
+      post(
+        failure(
+          "command_rejected",
+          "The requested manual-pause state is not available.",
+          protocolVersion
+        )
+      );
+      return;
+    }
+    manualPaused = message.command.paused;
+    postRunningSnapshot();
+    if (!manualPaused) scheduleExecution();
     return;
   }
 
@@ -163,48 +258,20 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     preparedScenario === undefined
   ) {
     post(
-      failure("command_rejected", "Preparation confirmation is not available.")
+      failure(
+        "command_rejected",
+        "Preparation confirmation is not available.",
+        protocolVersion
+      )
     );
     return;
   }
   commandAccepted = true;
-  post({
-    protocolVersion: WEB_PROTOCOL_VERSION,
-    type: "snapshot",
-    phase: "running"
-  });
+  manualPaused = protocolVersion === 2;
+  postRunningSnapshot();
   postRenderSnapshot(
     createRenderSnapshot(preparedContent, preparedScenario, "running", 0)
   );
 
-  try {
-    const result = await runScenario(preparedScenario, preparedContent);
-    postRenderSnapshot(
-      createRenderSnapshot(
-        preparedContent,
-        preparedScenario,
-        "terminal",
-        result.finalState.tick,
-        result.finalState.battlefield
-      )
-    );
-    post({
-      protocolVersion: WEB_PROTOCOL_VERSION,
-      type: "result",
-      terminalResult: result.terminalResult,
-      terminalTick: result.terminalTick,
-      finalStateChecksum: result.finalStateChecksum,
-      eventStreamChecksum: result.eventStreamChecksum,
-      commands: result.commands
-    });
-  } catch (error) {
-    post(
-      failure(
-        "runtime_failure",
-        error instanceof Error
-          ? error.message
-          : "The authoritative runtime failed."
-      )
-    );
-  }
+  if (protocolVersion === 1) await executePreparedScenario();
 });

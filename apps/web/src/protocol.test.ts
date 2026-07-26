@@ -15,7 +15,36 @@ describe("web worker protocol", () => {
       })
     ).toBeDefined();
     expect(
-      parseClientMessage({ protocolVersion: 2, type: "initialize" })
+      parseClientMessage({
+        protocolVersion: 2,
+        type: "command",
+        requestId: "pause-1",
+        command: { type: "setManualPause", paused: true }
+      })
+    ).toEqual({
+      protocolVersion: 2,
+      type: "command",
+      requestId: "pause-1",
+      command: { type: "setManualPause", paused: true }
+    });
+    expect(
+      parseClientMessage({
+        protocolVersion: 1,
+        type: "command",
+        requestId: "pause-legacy",
+        command: { type: "setManualPause", paused: true }
+      })
+    ).toBeUndefined();
+    expect(
+      parseClientMessage({
+        protocolVersion: 2,
+        type: "command",
+        requestId: "pause-malformed",
+        command: { type: "setManualPause", paused: "yes" }
+      })
+    ).toBeUndefined();
+    expect(
+      parseClientMessage({ protocolVersion: 3, type: "initialize" })
     ).toBeUndefined();
     expect(
       parseClientMessage({
@@ -121,6 +150,21 @@ describe("web worker protocol", () => {
         phase: "running"
       })
     ).toBeDefined();
+    expect(
+      parseWorkerMessage({
+        protocolVersion: 2,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: true
+      })
+    ).toBeDefined();
+    expect(
+      parseWorkerMessage({
+        protocolVersion: 2,
+        type: "snapshot",
+        phase: "running"
+      })
+    ).toBeUndefined();
   });
 
   it("accepts only canonical, internally consistent render snapshots", () => {
@@ -146,7 +190,7 @@ describe("web worker protocol", () => {
     const message = { protocolVersion: 1, type: "render_snapshot", snapshot };
     expect(parseWorkerMessage(message)).toEqual(message);
     expect(
-      parseWorkerMessage({ ...message, protocolVersion: 2 })
+      parseWorkerMessage({ ...message, protocolVersion: 3 })
     ).toBeUndefined();
     expect(
       parseWorkerMessage({ ...message, snapshot: { ...snapshot, extra: true } })

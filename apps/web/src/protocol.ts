@@ -1,19 +1,29 @@
 import { parseRenderSnapshot, type RenderSnapshot } from "./render-snapshot.js";
 
-export const WEB_PROTOCOL_VERSION = 1 as const;
+export const WEB_PROTOCOL_VERSION = 2 as const;
+type WebProtocolVersion = 1 | 2;
 
 export type ClientMessage =
   | { readonly protocolVersion: 1; readonly type: "initialize" }
+  | { readonly protocolVersion: 2; readonly type: "initialize" }
   | {
       readonly protocolVersion: 1;
       readonly type: "command";
       readonly requestId: string;
       readonly command: { readonly type: "confirmPreparation" };
+    }
+  | {
+      readonly protocolVersion: 2;
+      readonly type: "command";
+      readonly requestId: string;
+      readonly command:
+        | { readonly type: "confirmPreparation" }
+        | { readonly type: "setManualPause"; readonly paused: boolean };
     };
 
 export type WorkerMessage =
   | {
-      readonly protocolVersion: 1;
+      readonly protocolVersion: WebProtocolVersion;
       readonly type: "snapshot";
       readonly phase: "preparation";
       readonly levelId: string;
@@ -26,12 +36,18 @@ export type WorkerMessage =
       readonly phase: "running";
     }
   | {
-      readonly protocolVersion: 1;
+      readonly protocolVersion: 2;
+      readonly type: "snapshot";
+      readonly phase: "running";
+      readonly manualPaused: boolean;
+    }
+  | {
+      readonly protocolVersion: WebProtocolVersion;
       readonly type: "render_snapshot";
       readonly snapshot: RenderSnapshot;
     }
   | {
-      readonly protocolVersion: 1;
+      readonly protocolVersion: WebProtocolVersion;
       readonly type: "result";
       readonly terminalResult: "victory" | "defeat";
       readonly terminalTick: number;
@@ -47,7 +63,7 @@ export type WorkerMessage =
       }[];
     }
   | {
-      readonly protocolVersion: 1;
+      readonly protocolVersion: WebProtocolVersion;
       readonly type: "failure";
       readonly code: string;
       readonly message: string;
@@ -59,6 +75,8 @@ type RecordValue = {
   type?: unknown;
   requestId?: unknown;
   command?: unknown;
+  manualPaused?: unknown;
+  paused?: unknown;
   phase?: unknown;
   levelId?: unknown;
   deployableEntityCount?: unknown;
@@ -103,13 +121,17 @@ function isLevelId(value: unknown): value is string {
 export function parseClientMessage(value: unknown): ClientMessage | undefined {
   if (
     !isRecord(value) ||
-    value.protocolVersion !== WEB_PROTOCOL_VERSION ||
+    (value.protocolVersion !== 1 &&
+      value.protocolVersion !== WEB_PROTOCOL_VERSION) ||
     typeof value.type !== "string"
   )
     return undefined;
   if (value.type === "initialize") {
     return hasExactKeys(value, ["protocolVersion", "type"])
-      ? { protocolVersion: WEB_PROTOCOL_VERSION, type: "initialize" }
+      ? {
+          protocolVersion: value.protocolVersion as WebProtocolVersion,
+          type: "initialize"
+        }
       : undefined;
   }
   if (
@@ -117,13 +139,29 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
     !hasExactKeys(value, ["command", "protocolVersion", "requestId", "type"]) ||
     typeof value.requestId !== "string" ||
     value.requestId.length === 0 ||
-    !isRecord(value.command) ||
+    !isRecord(value.command)
+  )
+    return undefined;
+  if (
+    value.protocolVersion === WEB_PROTOCOL_VERSION &&
+    value.command.type === "setManualPause" &&
+    hasExactKeys(value.command, ["paused", "type"]) &&
+    typeof value.command.paused === "boolean"
+  ) {
+    return {
+      protocolVersion: WEB_PROTOCOL_VERSION,
+      type: "command",
+      requestId: value.requestId,
+      command: { type: "setManualPause", paused: value.command.paused }
+    };
+  }
+  if (
     !hasExactKeys(value.command, ["type"]) ||
     value.command.type !== "confirmPreparation"
   )
     return undefined;
   return {
-    protocolVersion: WEB_PROTOCOL_VERSION,
+    protocolVersion: value.protocolVersion as WebProtocolVersion,
     type: "command",
     requestId: value.requestId,
     command: { type: "confirmPreparation" }
@@ -133,7 +171,8 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
 export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
   if (
     !isRecord(value) ||
-    value.protocolVersion !== WEB_PROTOCOL_VERSION ||
+    (value.protocolVersion !== 1 &&
+      value.protocolVersion !== WEB_PROTOCOL_VERSION) ||
     typeof value.type !== "string"
   )
     return undefined;
@@ -144,18 +183,29 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     return snapshot === undefined
       ? undefined
       : {
-          protocolVersion: WEB_PROTOCOL_VERSION,
+          protocolVersion: value.protocolVersion as WebProtocolVersion,
           type: "render_snapshot",
           snapshot
         };
   }
   if (value.type === "snapshot") {
     if (value.phase === "running") {
-      return hasExactKeys(value, ["phase", "protocolVersion", "type"])
+      if (value.protocolVersion === 1) {
+        return hasExactKeys(value, ["phase", "protocolVersion", "type"])
+          ? { protocolVersion: 1, type: "snapshot", phase: "running" }
+          : undefined;
+      }
+      return hasExactKeys(value, [
+        "manualPaused",
+        "phase",
+        "protocolVersion",
+        "type"
+      ]) && typeof value.manualPaused === "boolean"
         ? {
             protocolVersion: WEB_PROTOCOL_VERSION,
             type: "snapshot",
-            phase: "running"
+            phase: "running",
+            manualPaused: value.manualPaused
           }
         : undefined;
     }
@@ -186,7 +236,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     )
       return undefined;
     return {
-      protocolVersion: WEB_PROTOCOL_VERSION,
+      protocolVersion: value.protocolVersion as WebProtocolVersion,
       type: "failure",
       code: value.code,
       message: value.message
@@ -235,9 +285,13 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
   return value as WorkerMessage;
 }
 
-export function failure(code: string, message: string): WorkerMessage {
+export function failure(
+  code: string,
+  message: string,
+  protocolVersion: WebProtocolVersion = WEB_PROTOCOL_VERSION
+): WorkerMessage {
   return {
-    protocolVersion: WEB_PROTOCOL_VERSION,
+    protocolVersion,
     type: "failure",
     code,
     message
