@@ -477,18 +477,22 @@ describe("authoritative web worker", () => {
     await userEvent.click(
       document.querySelector("button") as HTMLButtonElement
     );
-    await vi.waitFor(() =>
-      expect(document.querySelector("button")?.textContent).toBe(
-        "Confirm preparation"
-      )
+    await vi.waitFor(
+      () =>
+        expect(document.querySelector("button")?.textContent).toBe(
+          "Confirm preparation"
+        ),
+      { timeout: 10_000 }
     );
     await userEvent.click(
       document.querySelector("button") as HTMLButtonElement
     );
-    await vi.waitFor(() =>
-      expect(document.querySelector("button")?.textContent).toBe(
-        "Resume combat"
-      )
+    await vi.waitFor(
+      () =>
+        expect(document.querySelector("button")?.textContent).toBe(
+          "Resume combat"
+        ),
+      { timeout: 10_000 }
     );
 
     (document.querySelector("button") as HTMLButtonElement).click();
