@@ -2,7 +2,7 @@
 
 ## Implemented boundary
 
-Phase 5 currently includes nine dependency-ordered slices:
+Phase 5 currently includes ten dependency-ordered slices:
 
 - a React/Vite static application with checkpoint, preparation, running, result, and failure views;
 - the shared authoritative runtime executing the canonical empty-level fixture in a real module Web Worker;
@@ -19,6 +19,7 @@ Phase 5 currently includes nine dependency-ordered slices:
 - a strictly validated worker-authoritative combat-control availability snapshot and semantic HUD region that explains why the empty authoritative roster exposes no target-policy or ability actions.
 - a strict replay-compatible `setTargetPolicy` command contract and deterministic reducer that orders same-tick input, reason-codes rejection, and feeds stable action entries into authoritative dwarf target acquisition.
 - an incremental runtime host that owns fixed-step advancement, current-tick command sequencing, replayable effective-scenario identity, event accumulation, and canonical terminal evidence, with the empty web worker's pause-gated execution routed through that host.
+- a backward-compatible protocol-v4 target-policy input path with worker-derived, manifest-bound dwarf capabilities, strict canonical command/result validation, and semantic keyboard/mouse controls; the empty fixture continues to expose the authoritative unavailable state.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
@@ -26,12 +27,12 @@ The web build participates in the root workspace build and the browser tests par
 
 React and Phaser render worker messages and may retain the latest render snapshot, but they do not step or resolve gameplay. The worker compiles the same checked-in content and scenario fixture used by the CLI, derives canonical map/entity presentation data from compiled content and runtime state, then invokes `@dwarven-depths/runtime`. Protocol messages reject unknown versions, malformed shapes, noncanonical entity ordering, invalid references, and additional properties. A worker accepts preparation authority only once.
 
-Protocol version 1 and its canonical fixture checksums are compatibility evidence. Future protocol changes must be explicitly versioned; existing message meanings must not be silently changed.
+Protocol versions 1–4 and the canonical empty-fixture checksums are compatibility evidence. Future protocol changes must be explicitly versioned; existing message meanings must not be silently changed.
 
 ## Explicitly not implemented
 
 - the Shuttergate encounter UI;
-- sprite assets, animation polish, camera controls, placement editing, nonempty target-policy UI, ability activation, health/cooldown details, upgrades, settings, respec, audio, or final visual design;
+- sprite assets, animation polish, camera controls, placement editing, a nonempty playable encounter/roster, ability activation, health/cooldown details, upgrades, settings, respec, audio, or final visual design;
 - new gameplay mechanics;
 - new minimization schemas or divergence classes.
 

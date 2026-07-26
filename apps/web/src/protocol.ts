@@ -1,14 +1,31 @@
 import { parseRenderSnapshot, type RenderSnapshot } from "./render-snapshot.js";
 
-export const WEB_PROTOCOL_VERSION = 3 as const;
-type WebProtocolVersion = 1 | 2 | 3;
+export const WEB_PROTOCOL_VERSION = 4 as const;
+type WebProtocolVersion = 1 | 2 | 3 | 4;
 export const EMPTY_CONTENT_MANIFEST_HASH =
   "3166e781fc4cce29240c01099919f4475ebe03294a76987706214eb24e398abe";
+
+export const TARGET_POLICIES = [
+  "nearest",
+  "lowest_health",
+  "highest_health",
+  "highest_armor",
+  "fastest",
+  "boss_or_elite_first"
+] as const;
+export type TargetPolicy = (typeof TARGET_POLICIES)[number];
+
+export interface CombatControlDwarf {
+  readonly entityId: string;
+  readonly characterId: string;
+  readonly supportedTargetPolicies: readonly TargetPolicy[];
+}
 
 export type ClientMessage =
   | { readonly protocolVersion: 1; readonly type: "initialize" }
   | { readonly protocolVersion: 2; readonly type: "initialize" }
   | { readonly protocolVersion: 3; readonly type: "initialize" }
+  | { readonly protocolVersion: 4; readonly type: "initialize" }
   | {
       readonly protocolVersion: 1;
       readonly type: "command";
@@ -16,7 +33,7 @@ export type ClientMessage =
       readonly command: { readonly type: "confirmPreparation" };
     }
   | {
-      readonly protocolVersion: 2 | 3;
+      readonly protocolVersion: 2 | 3 | 4;
       readonly type: "command";
       readonly requestId: string;
       readonly command:
@@ -25,7 +42,12 @@ export type ClientMessage =
             readonly type: "commitManualResume";
             readonly resumeRequestId: string;
           }
-        | { readonly type: "setManualPause"; readonly paused: boolean };
+        | { readonly type: "setManualPause"; readonly paused: boolean }
+        | {
+            readonly type: "setTargetPolicy";
+            readonly dwarfEntityId: string;
+            readonly requestedPolicy: TargetPolicy;
+          };
     };
 
 export type WorkerMessage =
@@ -43,7 +65,7 @@ export type WorkerMessage =
       readonly phase: "running";
     }
   | {
-      readonly protocolVersion: 2 | 3;
+      readonly protocolVersion: 2 | 3 | 4;
       readonly type: "snapshot";
       readonly phase: "running";
       readonly manualPaused: boolean;
@@ -54,6 +76,12 @@ export type WorkerMessage =
       readonly type: "combat_controls";
       readonly contentManifestHash: typeof EMPTY_CONTENT_MANIFEST_HASH;
       readonly dwarves: readonly [];
+    }
+  | {
+      readonly protocolVersion: 4;
+      readonly type: "combat_controls";
+      readonly contentManifestHash: string;
+      readonly dwarves: readonly CombatControlDwarf[];
     }
   | {
       readonly protocolVersion: WebProtocolVersion;
@@ -70,10 +98,17 @@ export type WorkerMessage =
       readonly commands: readonly {
         readonly tick: number;
         readonly sequence: number;
-        readonly command: {
-          readonly atTick: number;
-          readonly type: "confirmPreparation";
-        };
+        readonly command:
+          | {
+              readonly atTick: number;
+              readonly type: "confirmPreparation";
+            }
+          | {
+              readonly atTick: number;
+              readonly type: "setTargetPolicy";
+              readonly dwarfEntityId: string;
+              readonly requestedPolicy: TargetPolicy;
+            };
       }[];
     }
   | {
@@ -109,6 +144,10 @@ type RecordValue = {
   snapshot?: unknown;
   dwarves?: unknown;
   contentManifestHash?: unknown;
+  dwarfEntityId?: unknown;
+  characterId?: unknown;
+  supportedTargetPolicies?: unknown;
+  requestedPolicy?: unknown;
 };
 
 function isRecord(value: unknown): value is RecordValue {
@@ -144,11 +183,25 @@ function isRequestId(value: unknown): value is string {
   );
 }
 
+function isStableId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 128 &&
+    /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(value)
+  );
+}
+
+function isTargetPolicy(value: unknown): value is TargetPolicy {
+  return TARGET_POLICIES.some((policy) => policy === value);
+}
+
 export function parseClientMessage(value: unknown): ClientMessage | undefined {
   if (
     !isRecord(value) ||
     (value.protocolVersion !== 1 &&
       value.protocolVersion !== 2 &&
+      value.protocolVersion !== 3 &&
       value.protocolVersion !== WEB_PROTOCOL_VERSION) ||
     typeof value.type !== "string"
   )
@@ -169,7 +222,7 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
   )
     return undefined;
   if (
-    (value.protocolVersion === 2 || value.protocolVersion === 3) &&
+    value.protocolVersion !== 1 &&
     value.command.type === "setManualPause" &&
     hasExactKeys(value.command, ["paused", "type"]) &&
     typeof value.command.paused === "boolean"
@@ -182,7 +235,7 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
     };
   }
   if (
-    (value.protocolVersion === 2 || value.protocolVersion === 3) &&
+    value.protocolVersion !== 1 &&
     value.command.type === "commitManualResume" &&
     hasExactKeys(value.command, ["resumeRequestId", "type"]) &&
     isRequestId(value.command.resumeRequestId)
@@ -194,6 +247,24 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
       command: {
         type: "commitManualResume",
         resumeRequestId: value.command.resumeRequestId
+      }
+    };
+  }
+  if (
+    value.protocolVersion === 4 &&
+    value.command.type === "setTargetPolicy" &&
+    hasExactKeys(value.command, ["dwarfEntityId", "requestedPolicy", "type"]) &&
+    isStableId(value.command.dwarfEntityId) &&
+    isTargetPolicy(value.command.requestedPolicy)
+  ) {
+    return {
+      protocolVersion: 4,
+      type: "command",
+      requestId: value.requestId,
+      command: {
+        type: "setTargetPolicy",
+        dwarfEntityId: value.command.dwarfEntityId,
+        requestedPolicy: value.command.requestedPolicy
       }
     };
   }
@@ -215,24 +286,59 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     !isRecord(value) ||
     (value.protocolVersion !== 1 &&
       value.protocolVersion !== 2 &&
+      value.protocolVersion !== 3 &&
       value.protocolVersion !== WEB_PROTOCOL_VERSION) ||
     typeof value.type !== "string"
   )
     return undefined;
   if (value.type === "combat_controls") {
     if (
-      value.protocolVersion !== 3 ||
+      (value.protocolVersion !== 3 && value.protocolVersion !== 4) ||
       !hasExactKeys(value, [
         "contentManifestHash",
         "dwarves",
         "protocolVersion",
         "type"
       ]) ||
-      value.contentManifestHash !== EMPTY_CONTENT_MANIFEST_HASH ||
-      !Array.isArray(value.dwarves) ||
-      value.dwarves.length !== 0
+      !isHash(value.contentManifestHash) ||
+      !Array.isArray(value.dwarves)
     )
       return undefined;
+    if (value.protocolVersion === 3)
+      return value.contentManifestHash === EMPTY_CONTENT_MANIFEST_HASH &&
+        value.dwarves.length === 0
+        ? (value as WorkerMessage)
+        : undefined;
+    let previousEntityId = "";
+    for (const dwarf of value.dwarves) {
+      if (
+        !isRecord(dwarf) ||
+        !hasExactKeys(dwarf, [
+          "characterId",
+          "entityId",
+          "supportedTargetPolicies"
+        ])
+      )
+        return undefined;
+      const { characterId, entityId, supportedTargetPolicies } = dwarf;
+      if (
+        !isStableId(entityId) ||
+        entityId <= previousEntityId ||
+        !isStableId(characterId) ||
+        !Array.isArray(supportedTargetPolicies) ||
+        supportedTargetPolicies.length === 0 ||
+        !supportedTargetPolicies.every(
+          (policy, index, policies) =>
+            isTargetPolicy(policy) &&
+            (index === 0 ||
+              (isTargetPolicy(policies[index - 1]) &&
+                TARGET_POLICIES.indexOf(policies[index - 1]) <
+                  TARGET_POLICIES.indexOf(policy)))
+        )
+      )
+        return undefined;
+      previousEntityId = entityId;
+    }
     return value as WorkerMessage;
   }
   if (value.type === "render_snapshot") {
@@ -326,7 +432,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     return undefined;
   const commands = value.commands;
   if (
-    commands.length !== 1 ||
+    commands.length < 1 ||
     !commands.every(
       (envelope, index) =>
         isRecord(envelope) &&
@@ -337,14 +443,26 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         Number.isSafeInteger(envelope.sequence) &&
         envelope.sequence === index &&
         isRecord(envelope.command) &&
-        hasExactKeys(envelope.command, ["atTick", "type"]) &&
         Number.isSafeInteger(envelope.command.atTick) &&
         (envelope.command.atTick as number) >= 0 &&
         envelope.command.atTick === envelope.tick &&
+        (hasExactKeys(envelope.command, ["atTick", "type"]) &&
         envelope.command.type === "confirmPreparation"
+          ? index === 0
+          : value.protocolVersion === 4 &&
+            hasExactKeys(envelope.command, [
+              "atTick",
+              "dwarfEntityId",
+              "requestedPolicy",
+              "type"
+            ]) &&
+            envelope.command.type === "setTargetPolicy" &&
+            isStableId(envelope.command.dwarfEntityId) &&
+            isTargetPolicy(envelope.command.requestedPolicy))
     )
   )
     return undefined;
+  if (value.protocolVersion !== 4 && commands.length !== 1) return undefined;
   return value as WorkerMessage;
 }
 

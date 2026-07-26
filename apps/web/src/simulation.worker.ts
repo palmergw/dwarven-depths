@@ -15,9 +15,11 @@ import {
 import contentFixture from "../../../content/fixtures/empty-content.json";
 import scenarioFixture from "../../../scenarios/conformance/empty-level.json";
 import {
+  type CombatControlDwarf,
   EMPTY_CONTENT_MANIFEST_HASH,
   failure,
   parseClientMessage,
+  TARGET_POLICIES,
   WEB_PROTOCOL_VERSION,
   type WorkerMessage
 } from "./protocol.js";
@@ -38,7 +40,8 @@ let terminal = false;
 let resumeRequestId: string | null = null;
 let pendingExecutionRequestId: string | null = null;
 const acceptedRequestIds = new Set<string>();
-let protocolVersion: 1 | 2 | 3 = WEB_PROTOCOL_VERSION;
+const scheduledTargetPolicies = new Set<string>();
+let protocolVersion: 1 | 2 | 3 | 4 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
 let liveHost: LiveScenarioHost | undefined;
@@ -115,6 +118,50 @@ function postRunningSnapshot(): void {
   );
 }
 
+function authoritativeCombatControls(): readonly CombatControlDwarf[] {
+  if (preparedContent === undefined || liveHost === undefined) return [];
+  return [...(liveHost.state.battlefield?.dwarfCombatants ?? [])]
+    .sort((left, right) => compareRenderIds(left.entityId, right.entityId))
+    .map((dwarf) => {
+      const character = preparedContent?.characters.get(
+        dwarf.characterDefinitionId
+      );
+      if (character === undefined)
+        throw new Error(
+          `Combat-control dwarf references unknown character ${dwarf.characterDefinitionId}.`
+        );
+      return {
+        entityId: dwarf.entityId,
+        characterId: character.id,
+        supportedTargetPolicies: TARGET_POLICIES.filter((policy) =>
+          character.supportedTargetPolicies.includes(policy)
+        )
+      };
+    });
+}
+
+function postCombatControls(): void {
+  if (protocolVersion === 3) {
+    if (preparedContent?.manifestHash !== EMPTY_CONTENT_MANIFEST_HASH)
+      throw new Error(
+        "The combat-control snapshot does not match the empty content manifest."
+      );
+    post({
+      protocolVersion: 3,
+      type: "combat_controls",
+      contentManifestHash: EMPTY_CONTENT_MANIFEST_HASH,
+      dwarves: []
+    });
+  } else if (protocolVersion === 4 && preparedContent !== undefined) {
+    post({
+      protocolVersion: 4,
+      type: "combat_controls",
+      contentManifestHash: preparedContent.manifestHash,
+      dwarves: authoritativeCombatControls()
+    });
+  }
+}
+
 async function executePreparedScenario(): Promise<void> {
   if (
     terminal ||
@@ -126,6 +173,7 @@ async function executePreparedScenario(): Promise<void> {
     return;
   try {
     const step = liveHost.step();
+    scheduledTargetPolicies.clear();
     if (step.state.phase === "TERMINAL") terminal = true;
     postRenderSnapshot(
       createRenderSnapshot(
@@ -136,12 +184,14 @@ async function executePreparedScenario(): Promise<void> {
         step.state.battlefield
       )
     );
+    postCombatControls();
     if (step.state.phase !== "TERMINAL") {
       schedulePreparedScenario("live-host");
       return;
     }
     const result = await liveHost.result();
     if (
+      protocolVersion !== 4 &&
       result.commands.some(
         (envelope) => envelope.command.type !== "confirmPreparation"
       )
@@ -234,18 +284,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
           ? undefined
           : preparedContent.maps.get(preparedLevel.mapId);
       postRenderSnapshot(preparationSnapshot);
-      if (protocolVersion === 3) {
-        if (preparedContent.manifestHash !== EMPTY_CONTENT_MANIFEST_HASH)
-          throw new Error(
-            "The combat-control snapshot does not match the empty content manifest."
-          );
-        post({
-          protocolVersion: 3,
-          type: "combat_controls",
-          contentManifestHash: preparedContent.manifestHash,
-          dwarves: []
-        });
-      }
+      postCombatControls();
       post({
         protocolVersion,
         type: "snapshot",
@@ -295,6 +334,41 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     return;
   }
   acceptedRequestIds.add(message.requestId);
+
+  if (message.command.type === "setTargetPolicy") {
+    const command = message.command;
+    const dwarf = authoritativeCombatControls().find(
+      ({ entityId }) => entityId === command.dwarfEntityId
+    );
+    const commandKey = `${liveHost?.state.tick ?? -1}:${command.dwarfEntityId}`;
+    if (
+      protocolVersion !== 4 ||
+      !initialized ||
+      !commandAccepted ||
+      terminal ||
+      liveHost === undefined ||
+      dwarf === undefined ||
+      !dwarf.supportedTargetPolicies.includes(command.requestedPolicy) ||
+      scheduledTargetPolicies.has(commandKey)
+    ) {
+      post(
+        failure(
+          "command_rejected",
+          "The requested target policy is stale, unavailable, unsupported, or duplicated for this tick.",
+          protocolVersion
+        )
+      );
+      return;
+    }
+    liveHost.scheduleCommand({
+      atTick: liveHost.state.tick,
+      type: "setTargetPolicy",
+      dwarfEntityId: command.dwarfEntityId as never,
+      requestedPolicy: command.requestedPolicy
+    });
+    scheduledTargetPolicies.add(commandKey);
+    return;
+  }
 
   if (message.command.type === "setManualPause") {
     if (

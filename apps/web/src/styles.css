@@ -111,6 +111,17 @@ button:focus-visible {
   margin: 0;
   font-size: 1rem;
 }
+.combat-controls fieldset {
+  margin-top: 1rem;
+  border: 1px solid #4e4232;
+}
+.combat-controls button {
+  margin: 0.5rem 0.5rem 0 0;
+}
+.control-entity-id {
+  color: #c5b695;
+  overflow-wrap: anywhere;
+}
 dt {
   color: #c5b695;
 }
