@@ -15,4 +15,5 @@ export * from "./profile-state.js";
 export * from "./purchased-upgrades.catalog.js";
 export * from "./purchased-upgrades.js";
 export * from "./recycle-transactions.js";
+export * from "./skill-tree.catalog.js";
 export * from "./skill-tree.js";
