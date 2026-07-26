@@ -245,6 +245,9 @@ describe("shared runtime", () => {
       sequence: 0,
       command: { atTick: 0, type: "confirmPreparation" }
     });
+    expect(() =>
+      host.scheduleCommand({ atTick: 0, type: "confirmPreparation" })
+    ).toThrow(/duplicates an earlier/);
 
     expect(host.step().state.phase).toBe("TERMINAL");
     const liveResult = await host.result();
@@ -261,6 +264,25 @@ describe("shared runtime", () => {
       host.scheduleCommand({ atTick: 0, type: "confirmPreparation" })
     ).toThrow(/after terminal/);
     expect(() => host.step()).toThrow(/terminal live scenario/);
+  });
+
+  it("poisons a live host after a failed authoritative step", async () => {
+    const content = await compileContent(contentInput);
+    const scenario = compileScenario(scenarioInput, content);
+    const host = createLiveScenarioHost(scenario, content);
+    host.scheduleCommand({
+      atTick: 0,
+      type: "setTargetPolicy",
+      dwarfEntityId: "entity.dwarf.warden" as never,
+      requestedPolicy: "boss_or_elite_first"
+    });
+
+    expect(() => host.step()).toThrow(/made no progress/);
+    expect(() =>
+      host.scheduleCommand({ atTick: 0, type: "confirmPreparation" })
+    ).toThrow(/failed live scenario/);
+    expect(() => host.step()).toThrow(/failed live scenario/);
+    await expect(host.result()).rejects.toThrow(/no terminal result/);
   });
 
   it("creates and verifies replay evidence with stable divergence codes", async () => {

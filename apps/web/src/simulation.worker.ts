@@ -126,6 +126,7 @@ async function executePreparedScenario(): Promise<void> {
     return;
   try {
     const step = liveHost.step();
+    if (step.state.phase === "TERMINAL") terminal = true;
     postRenderSnapshot(
       createRenderSnapshot(
         preparedContent,
@@ -148,7 +149,6 @@ async function executePreparedScenario(): Promise<void> {
       throw new Error(
         "The empty web fixture produced an unsupported replay command."
       );
-    terminal = true;
     post({
       protocolVersion,
       type: "result",

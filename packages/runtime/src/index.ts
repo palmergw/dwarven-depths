@@ -491,6 +491,7 @@ export class LiveScenarioHost {
   #pendingCommands: CommandEnvelope[] = [];
   #commands: CommandEnvelope[] = [];
   #events: SimulationEvent[] = [];
+  #failed = false;
 
   constructor(scenario: ScenarioDefinition, content: CompiledContent) {
     this.#scenario = scenario;
@@ -503,6 +504,10 @@ export class LiveScenarioHost {
   }
 
   scheduleCommand(command: CommandEnvelope["command"]): CommandEnvelope {
+    if (this.#failed)
+      throw new RangeError(
+        "cannot schedule a command on a failed live scenario"
+      );
     if (this.#state.phase === "TERMINAL")
       throw new RangeError("cannot schedule a command after terminal state");
     if (
@@ -513,9 +518,16 @@ export class LiveScenarioHost {
         `live command tick must equal authoritative tick ${this.#state.tick}`
       );
     const validatedCommand = compileScenario(
-      { ...this.#scenario, commands: [command] },
+      {
+        ...this.#scenario,
+        commands: [
+          ...this.#commands.map(({ command: executed }) => executed),
+          ...this.#pendingCommands.map(({ command: pending }) => pending),
+          command
+        ]
+      },
       this.#content
-    ).commands[0];
+    ).commands.at(-1);
     if (validatedCommand === undefined)
       throw new TypeError("live command validation produced no command");
     const envelope = Object.freeze({
@@ -528,24 +540,31 @@ export class LiveScenarioHost {
   }
 
   step(): LiveScenarioStep {
+    if (this.#failed)
+      throw new RangeError("cannot advance a failed live scenario");
     if (this.#state.phase === "TERMINAL")
       throw new RangeError("cannot advance a terminal live scenario");
-    if (this.#state.tick >= this.#scenario.maximumTicks)
+    if (this.#state.tick >= this.#scenario.maximumTicks) {
+      this.#failed = true;
       throw new RuntimeSafetyStopError(
         "tick_budget_exhausted",
         `Scenario ${this.#scenario.id} did not terminate within ${this.#scenario.maximumTicks} ticks`,
         this.#state.tick
       );
+    }
     const commands = this.#pendingCommands;
     this.#pendingCommands = [];
     const previousState = this.#state;
     const result = stepSimulation(previousState, commands, this.#content);
-    if (result.state === previousState)
+    if (result.state === previousState) {
+      this.#failed = true;
+      this.#pendingCommands = [];
       throw new RuntimeSafetyStopError(
         "simulation_stalled",
         `Scenario ${this.#scenario.id} made no progress at tick ${previousState.tick}`,
         previousState.tick
       );
+    }
     this.#state = result.state;
     this.#commands.push(...commands);
     this.#events.push(...result.events);
@@ -557,6 +576,8 @@ export class LiveScenarioHost {
   }
 
   async result(): Promise<RuntimeResult> {
+    if (this.#failed)
+      throw new RangeError("failed live scenario has no terminal result");
     if (this.#state.phase !== "TERMINAL" || !this.#state.terminalResult)
       throw new RangeError("live scenario has not reached terminal state");
     if (
