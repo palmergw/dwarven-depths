@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "contentVersion": "phase-3-shuttergate-v1",
+  "contentVersion": "phase-5-shuttergate-shield-slam-v2",
   "definitions": [
     {
       "kind": "level",
@@ -381,7 +381,20 @@
         "damage": 18,
         "range": 2,
         "requiresLineOfSight": false
-      }
+      },
+      "activeAbilities": [
+        {
+          "schemaVersion": 1,
+          "id": "ability.iron_warden.shield_slam",
+          "windupTicks": 6,
+          "impactDelayTicks": 1,
+          "cooldownTicks": 90,
+          "damage": 24,
+          "range": 3,
+          "frontalHalfAngleDegrees": 60,
+          "staggerTicks": 18
+        }
+      ]
     },
     {
       "kind": "enemy",

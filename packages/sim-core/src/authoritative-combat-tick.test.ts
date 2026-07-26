@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { authoritativeCombatTickParityEvidence } from "./authoritative-combat-tick.fixture.js";
 
 const EXPECTED_CHECKSUM =
-  "49a26373a49cb8d6cbb739cb7bf422d36b0f4a8c336af05b74d9e88c92ced0cf";
+  "0a8893e62ea55fbc75c376206c9201ec08170d91d7912f7c1a373b001a118387";
 
 describe("authoritative combat tick", () => {
   it("composes Shuttergate scheduling, actions, movement, and impacts", async () => {

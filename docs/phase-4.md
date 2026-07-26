@@ -61,8 +61,9 @@ the repository.
   missing health and already-running or committed work. Item ranks cannot claim
   character passive effects before a loadout owner exists. Reapplication is
   idempotent and nondecreasing, and effect evidence is literal-checksum-pinned
-  across Node, Chromium, Firefox, and WebKit. Shield Slam activation/stagger,
-  item behavior, armor reduction, and boss specials remain uninferred.
+  across Node, Chromium, Firefox, and WebKit. Shield Slam activation/stagger is
+  implemented by the approved Phase 5 contract; item behavior, armor reduction,
+  and boss specials remain uninferred.
 - Portable profile saves use a strict versioned envelope that binds content
   compatibility, simulation protocol, application build, write metadata, profile
   identity/revision, and a canonical payload checksum to normalized progression

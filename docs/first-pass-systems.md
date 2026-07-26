@@ -23,6 +23,8 @@ The first-pass roster contains six dwarves. The unlock order deliberately introd
 | 5 | **Hearthkeeper** | Sustain and timed buffs | **Rallying Draught:** grants a temporary defensive and attack-speed aura | Extends a blocking formation's survival and accelerates ally effects |
 | 6 | **Oathbreaker** | High-risk area damage | **Reckoning:** converts missing health into a powerful melee sweep | Benefits strongly from Warden protection and Hearthkeeper sustain |
 
+The initial Shuttergate Shield Slam definition uses a 6-tick windup, 1-tick impact delay, 90-tick cooldown, 24 damage, range 3, a 60-degree frontal half-angle, and 18 ticks of stagger. These are versioned authored content values, not a permanent balance claim.
+
 **Oathbreaker** is an in-world title for a dwarf seeking redemption rather than a moral alignment. Names and exact abilities remain editable content, but the order of mechanical complexity is intentional.
 
 ### Roster capacity

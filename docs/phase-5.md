@@ -20,6 +20,7 @@ Phase 5 currently includes ten dependency-ordered slices:
 - a strict replay-compatible `setTargetPolicy` command contract and deterministic reducer that orders same-tick input, reason-codes rejection, and feeds stable action entries into authoritative dwarf target acquisition.
 - an incremental runtime host that owns fixed-step advancement, current-tick command sequencing, replayable effective-scenario identity, event accumulation, and canonical terminal evidence, with the empty web worker's pause-gated execution routed through that host.
 - a backward-compatible protocol-v4 target-policy input path with worker-derived, manifest-bound dwarf capabilities, strict canonical command/result validation, and semantic keyboard/mouse controls; the empty fixture continues to expose the authoritative unavailable state.
+- the approved deterministic Shield Slam content, strict replay command, integer cone/cooldown/impact/interruption/stagger resolver, reason-coded evidence, and accessible protocol-v4 activation control; Shuttergate content deliberately migrates to `phase-5-shuttergate-shield-slam-v2` while historical no-ability fixtures retain their prior bytes and checksums.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
@@ -32,7 +33,7 @@ Protocol versions 1–4 and the canonical empty-fixture checksums are compatibil
 ## Explicitly not implemented
 
 - the Shuttergate encounter UI;
-- sprite assets, animation polish, camera controls, placement editing, a nonempty playable encounter/roster, ability activation, health/cooldown details, upgrades, settings, respec, audio, or final visual design;
+- sprite assets, animation polish, camera controls, placement editing, a nonempty playable encounter/roster, generalized abilities, health presentation beyond Shield Slam cooldown/rejection feedback, upgrades, settings, respec, audio, or final visual design;
 - new gameplay mechanics;
 - new minimization schemas or divergence classes.
 

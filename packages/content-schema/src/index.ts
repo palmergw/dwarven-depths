@@ -113,6 +113,25 @@ const authoredBasicAttackSchema = z
     requiresLineOfSight: z.boolean()
   })
   .strict();
+const authoredActiveAbilitySchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    id: domainIdSchema("ability"),
+    windupTicks: boundedCombatIntegerSchema,
+    impactDelayTicks: boundedCombatIntegerSchema,
+    cooldownTicks: positiveCombatIntegerSchema,
+    damage: positiveCombatIntegerSchema,
+    range: z.int().nonnegative().max(94_906_265),
+    frontalHalfAngleDegrees: z.union([
+      z.literal(0),
+      z.literal(30),
+      z.literal(45),
+      z.literal(60),
+      z.literal(90)
+    ]),
+    staggerTicks: positiveCombatIntegerSchema
+  })
+  .strict();
 const characterDefinitionSchema = z
   .object({
     kind: z.literal("character"),
@@ -120,7 +139,8 @@ const characterDefinitionSchema = z
     maximumHealth: positiveCombatIntegerSchema,
     armor: boundedCombatIntegerSchema,
     supportedTargetPolicies: z.array(dwarfTargetPolicySchema).nonempty(),
-    basicAttack: authoredBasicAttackSchema
+    basicAttack: authoredBasicAttackSchema,
+    activeAbilities: z.array(authoredActiveAbilitySchema).nonempty().optional()
   })
   .strict();
 const enemyDefinitionSchema = z
@@ -227,15 +247,28 @@ const scenarioCommandSchema = z.discriminatedUnion("type", [
       dwarfEntityId: entityIdSchema,
       requestedPolicy: dwarfTargetPolicySchema
     })
+    .strict(),
+  z
+    .object({
+      atTick: z.int().nonnegative(),
+      type: z.literal("activateAbility"),
+      dwarfEntityId: entityIdSchema,
+      abilityId: domainIdSchema("ability")
+    })
     .strict()
 ]);
 
 function normalizeScenarioCommand(
   command: z.infer<typeof scenarioCommandSchema>
 ): ScenarioCommand {
-  return command.type === "confirmPreparation"
-    ? command
-    : { ...command, dwarfEntityId: command.dwarfEntityId as EntityId };
+  if (command.type === "confirmPreparation") return command;
+  if (command.type === "activateAbility")
+    return {
+      ...command,
+      dwarfEntityId: command.dwarfEntityId as EntityId,
+      abilityId: command.abilityId as StableId
+    };
+  return { ...command, dwarfEntityId: command.dwarfEntityId as EntityId };
 }
 
 const scenarioDefinitionSchema = z
@@ -629,6 +662,25 @@ export function validateContentBundle(input: unknown): ContentBundle {
         `$/definitions/${definitionIndex}/supportedTargetPolicies`,
         issues
       );
+      if (definition.activeAbilities !== undefined) {
+        validateUniqueReferences(
+          definition.activeAbilities.map(({ id }) => id),
+          `$/definitions/${definitionIndex}/activeAbilities`,
+          issues
+        );
+        definition.activeAbilities.forEach((ability, abilityIndex) => {
+          if (
+            definition.id !== "character.iron_warden" ||
+            ability.id !== "ability.iron_warden.shield_slam"
+          )
+            issues.push({
+              path: `$/definitions/${definitionIndex}/activeAbilities/${abilityIndex}/id`,
+              code: "unsupported_ownership",
+              message:
+                "only ability.iron_warden.shield_slam owned by character.iron_warden is supported"
+            });
+        });
+      }
     }
     if (definition.kind === "character" || definition.kind === "enemy") {
       const attackPath = `$/definitions/${definitionIndex}/basicAttack/id`;
@@ -820,16 +872,26 @@ export function validateContentBundle(input: unknown): ContentBundle {
             entranceId: event.entranceId as EnemyEntranceId
           }))
         };
-      if (definition.kind === "character")
+      if (definition.kind === "character") {
+        const { activeAbilities, ...character } = definition;
         return {
-          ...definition,
+          ...character,
           id: definition.id as StableId,
           supportedTargetPolicies: [...definition.supportedTargetPolicies],
           basicAttack: {
             ...definition.basicAttack,
             id: definition.basicAttack.id as StableId
-          }
+          },
+          ...(activeAbilities === undefined
+            ? {}
+            : {
+                activeAbilities: activeAbilities.map((ability) => ({
+                  ...ability,
+                  id: ability.id as StableId
+                }))
+              })
         };
+      }
       if (definition.kind === "enemy")
         return {
           ...definition,
@@ -921,8 +983,10 @@ export function validateScenario(input: unknown): ScenarioDefinition {
     const key =
       command.type === "setTargetPolicy"
         ? `${command.atTick}:${command.type}:${command.dwarfEntityId}`
-        : `${command.atTick}:${command.type}`;
-    if (commands.has(key)) {
+        : command.type === "activateAbility"
+          ? `${command.atTick}:${command.type}:${command.dwarfEntityId}:${command.abilityId}`
+          : `${command.atTick}:${command.type}`;
+    if (command.type !== "activateAbility" && commands.has(key)) {
       issues.push({
         path: `$/commands/${index}`,
         code: "duplicate_command",

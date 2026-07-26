@@ -72,7 +72,7 @@ describe("authoritative Shuttergate campaign transitions", () => {
         second: second.transition,
         third: third.transition
       })
-    ).toBe("50fe1e71ecb2379b977bf13505ebc77c3788e9f1f60939ded0dca2dad7e1c070");
+    ).toBe("59e18f5342df481a4c64db3f98ef7e764fe878f903afb7dafea180995832d14e");
   }, 45_000);
 
   it("consumes accepted authority exactly once and rejects clones", async () => {

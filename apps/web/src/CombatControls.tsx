@@ -15,11 +15,16 @@ interface CombatControlsProps {
     dwarfEntityId: string,
     requestedPolicy: TargetPolicy
   ) => void;
+  readonly onActivateAbility?: (
+    dwarfEntityId: string,
+    abilityId: string
+  ) => void;
 }
 
 export function CombatControls({
   dwarves,
-  onSetTargetPolicy
+  onSetTargetPolicy,
+  onActivateAbility
 }: CombatControlsProps) {
   return (
     <section
@@ -46,6 +51,32 @@ export function CombatControls({
                 {TARGET_POLICY_LABELS[policy]}
               </button>
             ))}
+            {(dwarf.activeAbilities ?? []).map((ability) => {
+              const feedbackId = `${dwarf.entityId}-${ability.abilityId}-feedback`;
+              const disabled =
+                ability.cooldownCompleteAtTick !== null ||
+                ability.rejectionReason !== null;
+              return (
+                <span key={ability.abilityId}>
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    aria-describedby={feedbackId}
+                    onClick={() =>
+                      onActivateAbility?.(dwarf.entityId, ability.abilityId)
+                    }
+                  >
+                    Shield Slam
+                  </button>
+                  <span id={feedbackId} role="status">
+                    {ability.rejectionReason ??
+                      (ability.cooldownCompleteAtTick === null
+                        ? "Ready"
+                        : `Cooldown until tick ${ability.cooldownCompleteAtTick}`)}
+                  </span>
+                </span>
+              );
+            })}
           </fieldset>
         ))
       )}
