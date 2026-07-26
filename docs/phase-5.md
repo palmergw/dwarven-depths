@@ -27,6 +27,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - a checkpoint presentation-settings view with deterministic focus restoration and a strictly validated, durable reduced-motion preference that cannot affect simulation authority.
 - a strictly validated, durable default/large/extra-large text-scale preference with responsive narrow-viewport reflow that cannot affect simulation authority.
 - a strictly validated, durable standard/high-contrast preference that applies a coherent current-shell palette without affecting simulation authority.
+- a semantic checkpoint upgrade-inventory view that presents validated persistent purchases and Forge Ore with an explicit empty state and deterministic focus restoration, without mutating progression.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
@@ -39,7 +40,7 @@ Protocol versions 1–4 and the canonical empty-fixture checksums are compatibil
 ## Explicitly not implemented
 
 - the Shuttergate encounter UI;
-- sprite assets, animation polish, camera controls, placement editing, a nonempty playable encounter/roster, generalized abilities, health presentation beyond Shield Slam cooldown/rejection feedback, upgrades, settings, respec, audio, or final visual design;
+- sprite assets, animation polish, camera controls, placement editing, a nonempty playable encounter/roster, generalized abilities, health presentation beyond Shield Slam cooldown/rejection feedback, upgrade purchasing/effects, respec, audio, or final visual design;
 - new gameplay mechanics;
 - new minimization schemas or divergence classes.
 
