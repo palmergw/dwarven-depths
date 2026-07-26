@@ -303,12 +303,31 @@ describe("authoritative web worker", () => {
         requestId: "resume",
         command: { type: "setManualPause", paused: false }
       });
+      const terminalRender = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "render_snapshot" &&
+          message.snapshot.phase === "terminal"
+      );
+      const postTerminalRejection = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "failure" && message.code === "command_rejected"
+      );
       worker.postMessage({
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "command",
         requestId: "commit-resume",
         command: { type: "commitManualResume", resumeRequestId: "resume" }
       });
+      await terminalRender;
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: "post-terminal-pause",
+        command: { type: "setManualPause", paused: true }
+      });
+      await postTerminalRejection;
       const [result] = await Promise.all([resultPromise, rejectionPromise]);
       expect(result).toMatchObject(expected);
       if (result.type !== "result") throw new Error("expected result");

@@ -8,7 +8,10 @@ import type {
   ContentBundle,
   ScenarioDefinition
 } from "@dwarven-depths/contracts";
-import { runScenario } from "@dwarven-depths/runtime";
+import {
+  createLiveScenarioHost,
+  type LiveScenarioHost
+} from "@dwarven-depths/runtime";
 import contentFixture from "../../../content/fixtures/empty-content.json";
 import scenarioFixture from "../../../scenarios/conformance/empty-level.json";
 import {
@@ -38,6 +41,7 @@ const acceptedRequestIds = new Set<string>();
 let protocolVersion: 1 | 2 | 3 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
+let liveHost: LiveScenarioHost | undefined;
 
 function post(message: WorkerMessage): void {
   self.postMessage(message);
@@ -116,11 +120,27 @@ async function executePreparedScenario(): Promise<void> {
     terminal ||
     manualPaused ||
     preparedContent === undefined ||
-    preparedScenario === undefined
+    preparedScenario === undefined ||
+    liveHost === undefined
   )
     return;
   try {
-    const result = await runScenario(preparedScenario, preparedContent);
+    const step = liveHost.step();
+    if (step.state.phase === "TERMINAL") terminal = true;
+    postRenderSnapshot(
+      createRenderSnapshot(
+        preparedContent,
+        preparedScenario,
+        step.state.phase === "TERMINAL" ? "terminal" : "running",
+        step.state.tick,
+        step.state.battlefield
+      )
+    );
+    if (step.state.phase !== "TERMINAL") {
+      schedulePreparedScenario("live-host");
+      return;
+    }
+    const result = await liveHost.result();
     if (
       result.commands.some(
         (envelope) => envelope.command.type !== "confirmPreparation"
@@ -129,16 +149,6 @@ async function executePreparedScenario(): Promise<void> {
       throw new Error(
         "The empty web fixture produced an unsupported replay command."
       );
-    terminal = true;
-    postRenderSnapshot(
-      createRenderSnapshot(
-        preparedContent,
-        preparedScenario,
-        "terminal",
-        result.finalState.tick,
-        result.finalState.battlefield
-      )
-    );
     post({
       protocolVersion,
       type: "result",
@@ -209,6 +219,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         scenarioFixture as unknown as ScenarioDefinition,
         preparedContent
       );
+      liveHost = createLiveScenarioHost(preparedScenario, preparedContent);
       const preparationSnapshot = createRenderSnapshot(
         preparedContent,
         preparedScenario,
@@ -334,7 +345,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     !initialized ||
     commandAccepted ||
     preparedContent === undefined ||
-    preparedScenario === undefined
+    preparedScenario === undefined ||
+    liveHost === undefined
   ) {
     post(
       failure(
@@ -346,6 +358,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     return;
   }
   commandAccepted = true;
+  liveHost.scheduleCommand({ atTick: liveHost.state.tick, ...message.command });
   manualPaused = protocolVersion !== 1;
   resumeRequestId = null;
   pendingExecutionRequestId = null;

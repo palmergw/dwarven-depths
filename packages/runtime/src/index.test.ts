@@ -23,6 +23,7 @@ import nonterminatingScenarioInput from "../../../scenarios/conformance/nontermi
 import {
   compareRunEvidence,
   createLifecycleDiagnostics,
+  createLiveScenarioHost,
   createReplayDefinition,
   createTimelineRecords,
   type ReplayDivergenceError,
@@ -226,6 +227,89 @@ describe("shared runtime", () => {
     expect(Object.isFrozen(left.events[0])).toBe(true);
     expect(Object.isFrozen(left.commands)).toBe(true);
     expect(Object.isFrozen(left.commands[0])).toBe(true);
+  });
+
+  it("live-hosts current-tick input with canonical replay parity", async () => {
+    const content = await compileContent(contentInput);
+    const scenario = compileScenario(scenarioInput, content);
+    const host = createLiveScenarioHost(scenario, content);
+
+    await expect(host.result()).rejects.toThrow(/not reached terminal/);
+    expect(() =>
+      host.scheduleCommand({ atTick: 1, type: "confirmPreparation" })
+    ).toThrow(/authoritative tick 0/);
+    expect(
+      host.scheduleCommand({ atTick: 0, type: "confirmPreparation" })
+    ).toEqual({
+      tick: 0,
+      sequence: 0,
+      command: { atTick: 0, type: "confirmPreparation" }
+    });
+    expect(() =>
+      host.scheduleCommand({ atTick: 0, type: "confirmPreparation" })
+    ).toThrow(/duplicates an earlier/);
+
+    const step = host.step();
+    expect(step.state.phase).toBe("TERMINAL");
+    expect(Object.isFrozen(step.state)).toBe(true);
+    expect(Object.isFrozen(step.events)).toBe(true);
+    expect(Object.isFrozen(step.events[0])).toBe(true);
+    const liveResult = await host.result();
+    const batchResult = await runScenario(scenario, content);
+    expect(liveResult).toEqual(batchResult);
+    await expect(
+      verifyReplay(
+        createReplayDefinition(liveResult, scenario, content),
+        scenario,
+        content
+      )
+    ).resolves.toEqual(liveResult);
+    expect(() =>
+      host.scheduleCommand({ atTick: 0, type: "confirmPreparation" })
+    ).toThrow(/after terminal/);
+    expect(() => host.step()).toThrow(/terminal live scenario/);
+  });
+
+  it("poisons a live host after a failed authoritative step", async () => {
+    const content = await compileContent(contentInput);
+    const scenario = compileScenario(scenarioInput, content);
+    const host = createLiveScenarioHost(scenario, content);
+    host.scheduleCommand({
+      atTick: 0,
+      type: "setTargetPolicy",
+      dwarfEntityId: "entity.dwarf.warden" as never,
+      requestedPolicy: "boss_or_elite_first"
+    });
+
+    expect(() => host.step()).toThrow(/made no progress/);
+    expect(() =>
+      host.scheduleCommand({ atTick: 0, type: "confirmPreparation" })
+    ).toThrow(/failed live scenario/);
+    expect(() => host.step()).toThrow(/failed live scenario/);
+    await expect(host.result()).rejects.toThrow(/no terminal result/);
+  });
+
+  it("binds newly admitted commands into its replayable scenario", async () => {
+    const content = await compileContent(contentInput);
+    const scenario = compileScenario(
+      { ...scenarioInput, commands: [] },
+      content
+    );
+    const host = createLiveScenarioHost(scenario, content);
+    host.scheduleCommand({ atTick: 0, type: "confirmPreparation" });
+    host.step();
+
+    const result = await host.result();
+    expect(host.scenario.commands).toEqual([
+      { atTick: 0, type: "confirmPreparation" }
+    ]);
+    await expect(
+      verifyReplay(
+        createReplayDefinition(result, host.scenario, content),
+        host.scenario,
+        content
+      )
+    ).resolves.toEqual(result);
   });
 
   it("creates and verifies replay evidence with stable divergence codes", async () => {
