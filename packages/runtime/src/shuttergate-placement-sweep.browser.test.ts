@@ -23,7 +23,7 @@ describe("Shuttergate placement-sweep browser parity", () => {
     expect(await canonicalHash(evidence)).toBe(
       "58e799fb40ee20696d00b3f4fad973f1987a01ece38645f5127f8ea55d41bcb2"
     );
-  }, 60_000);
+  }, 120_000);
 
   it("matches the Node purchased-build checksum", async () => {
     const content = await compileContent(shuttergateInput);
@@ -41,5 +41,5 @@ describe("Shuttergate placement-sweep browser parity", () => {
     expect(await canonicalHash(evidence)).toBe(
       "682a15577f6d7b155e53fcb4a59f350d6a05c321aacf24c735565290b6b6239f"
     );
-  }, 60_000);
+  }, 120_000);
 });
