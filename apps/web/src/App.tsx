@@ -31,7 +31,17 @@ type ViewState =
     }
   | { readonly phase: "failure"; readonly message: string };
 
-export function App() {
+function createSimulationWorker(): Worker {
+  return new Worker(new URL("./simulation.worker.ts", import.meta.url), {
+    type: "module"
+  });
+}
+
+export function App({
+  createWorker = createSimulationWorker
+}: {
+  readonly createWorker?: () => Worker;
+}) {
   const [view, setView] = useState<ViewState>({ phase: "checkpoint" });
   const [renderSnapshot, setRenderSnapshot] = useState<RenderSnapshot>();
   const [combatControls, setCombatControls] = useState<
@@ -62,12 +72,10 @@ export function App() {
   function startPreparation(): void {
     if (initializedRef.current || view.phase !== "checkpoint") return;
     initializedRef.current = true;
-    const worker = new Worker(
-      new URL("./simulation.worker.ts", import.meta.url),
-      { type: "module" }
-    );
+    const worker = createWorker();
     workerRef.current = worker;
     worker.addEventListener("message", (event: MessageEvent<unknown>) => {
+      if (workerRef.current !== worker) return;
       const message = parseWorkerMessage(event.data);
       if (message === undefined) {
         setView({
@@ -121,6 +129,7 @@ export function App() {
       }
     });
     worker.addEventListener("error", () => {
+      if (workerRef.current !== worker) return;
       setView({
         phase: "failure",
         message: "The simulation worker could not start."
@@ -141,6 +150,19 @@ export function App() {
       requestId: crypto.randomUUID(),
       command: { type: "confirmPreparation" }
     });
+  }
+
+  function returnToCheckpoint(): void {
+    if (view.phase !== "result") return;
+    workerRef.current?.terminate();
+    workerRef.current = undefined;
+    initializedRef.current = false;
+    submittedRef.current = false;
+    manualPauseRequestedRef.current = undefined;
+    clearPendingAbilities();
+    setCombatControls(undefined);
+    setRenderSnapshot(undefined);
+    setView({ phase: "checkpoint" });
   }
 
   const setManualPause = useCallback(
@@ -355,6 +377,11 @@ export function App() {
               <dd>{view.result.commands.length}</dd>
             </div>
           </dl>
+        )}
+        {view.phase === "result" && (
+          <button type="button" onClick={returnToCheckpoint}>
+            Return to checkpoint
+          </button>
         )}
       </section>
     </main>
