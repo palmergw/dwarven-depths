@@ -103,6 +103,15 @@ describe("web worker protocol", () => {
     expect(parseWorkerMessage(missingLevel)).toBeUndefined();
     expect(parseWorkerMessage({ ...snapshot, levelId: " " })).toBeUndefined();
     expect(
+      parseWorkerMessage({ ...snapshot, levelId: "map.not_a_level" })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...snapshot, levelId: "level:empty" })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...snapshot, levelId: "level.-bad" })
+    ).toBeUndefined();
+    expect(
       parseWorkerMessage({ ...snapshot, levelId: `level.${"a".repeat(128)}` })
     ).toBeUndefined();
     expect(

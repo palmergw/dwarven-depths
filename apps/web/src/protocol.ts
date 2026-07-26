@@ -92,12 +92,11 @@ function isHash(value: unknown): value is string {
   return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
 }
 
-function isStableId(value: unknown): value is string {
+function isLevelId(value: unknown): value is string {
   return (
     typeof value === "string" &&
-    value.length > 0 &&
     value.length <= 128 &&
-    /^[a-z0-9][a-z0-9._:-]*$/.test(value)
+    /^level\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/.test(value)
   );
 }
 
@@ -170,7 +169,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         "protocolVersion",
         "type"
       ]) ||
-      !isStableId(value.levelId) ||
+      !isLevelId(value.levelId) ||
       !Number.isSafeInteger(value.deployableEntityCount) ||
       (value.deployableEntityCount as number) < 0 ||
       !Number.isSafeInteger(value.placementPointCount) ||
