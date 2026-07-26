@@ -97,8 +97,7 @@ export function resolveTargetPolicyCommands(
     const dwarf = battlefield.dwarfCombatants.find(
       ({ entityId }) => entityId === command.dwarfEntityId
     );
-    const currentEntry = entries.get(command.dwarfEntityId);
-    if (dwarf === undefined || currentEntry === undefined) {
+    if (dwarf === undefined) {
       decisions.push(
         decision(envelope.sequence, command, "rejected", "dwarf_unavailable")
       );
@@ -107,6 +106,13 @@ export function resolveTargetPolicyCommands(
     if (dwarf.lifecycleState === "downed") {
       decisions.push(
         decision(envelope.sequence, command, "rejected", "dwarf_downed")
+      );
+      continue;
+    }
+    const currentEntry = entries.get(command.dwarfEntityId);
+    if (currentEntry === undefined) {
+      decisions.push(
+        decision(envelope.sequence, command, "rejected", "dwarf_unavailable")
       );
       continue;
     }

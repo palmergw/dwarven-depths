@@ -129,16 +129,24 @@ describe("target-policy commands", () => {
     const downedResult = resolveTargetPolicyCommands(
       6,
       downed,
-      [nearestEntry],
+      [],
       [command(2, "nearest"), command(4, "highest_health"), unavailable],
       evidence.content
     );
-    expect(downedResult.entries).toEqual([nearestEntry]);
+    expect(downedResult.entries).toEqual([]);
     expect(downedResult.decisions.map(({ reason }) => reason)).toEqual([
       "dwarf_downed",
       "dwarf_unavailable",
       "duplicate_dwarf_command"
     ]);
+    expect(() =>
+      resolveNormalizedDwarfActions(
+        downed,
+        6,
+        downedResult.entries,
+        evidence.content
+      )
+    ).not.toThrow();
 
     const warden = evidence.content.characters.get(
       "character.iron_warden" as never
