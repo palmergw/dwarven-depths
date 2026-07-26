@@ -99,6 +99,27 @@ button:focus-visible {
   flex-wrap: wrap;
   gap: 0.75rem;
 }
+.profile-summary {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #6f5a3d;
+}
+.profile-summary h3 {
+  margin-top: 0;
+}
+.profile-summary dl {
+  display: grid;
+  gap: 0.75rem;
+}
+.profile-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.profile-summary-value {
+  margin: 0;
+  font-weight: 700;
+}
 .settings {
   margin-top: 1rem;
   padding: 1rem;

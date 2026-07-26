@@ -47,9 +47,15 @@ importers:
       '@dwarven-depths/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@dwarven-depths/progression':
+        specifier: workspace:*
+        version: link:../../packages/progression
       '@dwarven-depths/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
+      '@dwarven-depths/save':
+        specifier: workspace:*
+        version: link:../../packages/save
       phaser:
         specifier: ^4.2.1
         version: 4.2.1

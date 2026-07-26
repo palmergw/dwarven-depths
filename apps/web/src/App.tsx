@@ -9,6 +9,12 @@ import { Battlefield } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { CombatHud } from "./CombatHud.js";
 import {
+  type CheckpointProfileResult,
+  type CheckpointProfileStore,
+  createCheckpointProfileStore,
+  loadCheckpointProfile
+} from "./checkpoint-profile.js";
+import {
   parseWorkerMessage,
   type TargetPolicy,
   WEB_PROTOCOL_VERSION,
@@ -114,9 +120,11 @@ function createSimulationWorker(): Worker {
 }
 
 export function App({
-  createWorker = createSimulationWorker
+  createWorker = createSimulationWorker,
+  createProfileStore = createCheckpointProfileStore
 }: {
   readonly createWorker?: () => Worker;
+  readonly createProfileStore?: () => CheckpointProfileStore;
 }) {
   const [view, setView] = useState<ViewState>({ phase: "checkpoint" });
   const [renderSnapshot, setRenderSnapshot] = useState<RenderSnapshot>();
@@ -127,6 +135,9 @@ export function App({
     ReadonlySet<string>
   >(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [checkpointProfile, setCheckpointProfile] = useState<
+    CheckpointProfileResult | { readonly status: "loading" }
+  >({ status: "loading" });
   const [motionPreference, setMotionPreference] =
     useState<MotionPreference>(readMotionPreference);
   const [textScale, setTextScale] = useState<TextScale>(readTextScale);
@@ -154,6 +165,27 @@ export function App({
     },
     []
   );
+
+  useEffect(() => {
+    let active = true;
+    let store: CheckpointProfileStore;
+    try {
+      store = createProfileStore();
+    } catch {
+      setCheckpointProfile({
+        status: "unavailable",
+        message:
+          "Local progression storage is unavailable. You can still run the conformance level."
+      });
+      return;
+    }
+    void loadCheckpointProfile(store).then((result) => {
+      if (active) setCheckpointProfile(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [createProfileStore]);
 
   function startPreparation(): void {
     if (initializedRef.current || view.phase !== "checkpoint") return;
@@ -360,16 +392,50 @@ export function App({
       <section className="panel" aria-labelledby="run-heading">
         <h2 id="run-heading">Empty Level Conformance Run</h2>
         {view.phase === "checkpoint" && !settingsOpen && (
-          <dl className="checkpoint-context" aria-label="Current checkpoint">
-            <div>
-              <dt>Current level</dt>
-              <dd>Empty Level</dd>
-            </div>
-            <div>
-              <dt>Next step</dt>
-              <dd>Prepare the company</dd>
-            </div>
-          </dl>
+          <>
+            <dl className="checkpoint-context" aria-label="Current checkpoint">
+              <div>
+                <dt>Current level</dt>
+                <dd>Empty Level</dd>
+              </div>
+              <div>
+                <dt>Next step</dt>
+                <dd>Prepare the company</dd>
+              </div>
+            </dl>
+            <section
+              className="profile-summary"
+              aria-labelledby="profile-summary-heading"
+            >
+              <h3 id="profile-summary-heading">Company progression</h3>
+              {checkpointProfile.status === "loading" && (
+                <p>Loading local progression…</p>
+              )}
+              {checkpointProfile.status === "unavailable" && (
+                <p>{checkpointProfile.message}</p>
+              )}
+              {checkpointProfile.status === "ready" && (
+                <dl>
+                  <div className="profile-summary-row">
+                    <dt>Profile status</dt>
+                    <dd className="profile-summary-value">Ready</dd>
+                  </div>
+                  <div className="profile-summary-row">
+                    <dt>Forge Ore</dt>
+                    <dd className="profile-summary-value">
+                      {checkpointProfile.profile.forgeOre}
+                    </dd>
+                  </div>
+                  <div className="profile-summary-row">
+                    <dt>Unlocked dwarves</dt>
+                    <dd className="profile-summary-value">
+                      {checkpointProfile.profile.unlockedCharacterIds.length}
+                    </dd>
+                  </div>
+                </dl>
+              )}
+            </section>
+          </>
         )}
         {renderSnapshot !== undefined && (
           <Battlefield snapshot={renderSnapshot} />

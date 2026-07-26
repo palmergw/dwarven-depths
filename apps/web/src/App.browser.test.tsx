@@ -193,6 +193,34 @@ function appliedContrastPreference(): string | null {
   );
 }
 
+describe("checkpoint progression", () => {
+  it("keeps the keyboard run flow available when local storage is unavailable", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createProfileStore={() => {
+          throw new DOMException("blocked", "SecurityError");
+        }}
+        createWorker={() => new ControlledResultWorker() as unknown as Worker}
+      />
+    );
+
+    await vi.waitFor(() =>
+      expect(document.querySelector(".profile-summary")?.textContent).toContain(
+        "Local progression storage is unavailable"
+      )
+    );
+    const beginButton = await buttonWithText("Begin preparation");
+    beginButton.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(await buttonWithText("Confirm preparation")).toBeInstanceOf(
+      HTMLButtonElement
+    );
+  });
+});
+
 describe("presentation settings", () => {
   it("opens and closes by keyboard with deterministic focus restoration", async () => {
     renderApp();
