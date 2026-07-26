@@ -5,6 +5,7 @@ import { userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import { buildBattlefieldPrimitives } from "./Battlefield.js";
 import {
+  EMPTY_CONTENT_MANIFEST_HASH,
   parseWorkerMessage,
   WEB_PROTOCOL_VERSION,
   type WorkerMessage
@@ -82,7 +83,7 @@ async function runWithPresentationFrames(
       (message) =>
         message.type === "snapshot" &&
         message.phase === "running" &&
-        message.protocolVersion === 2 &&
+        message.protocolVersion !== 1 &&
         message.manualPaused
     );
     worker.postMessage({
@@ -131,18 +132,28 @@ describe("authoritative web worker", () => {
           message.type === "render_snapshot" &&
           message.snapshot.phase === "preparation"
       );
+      const combatControls = waitForMessage(
+        worker,
+        (message) => message.type === "combat_controls"
+      );
       worker.postMessage({
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "initialize"
       });
-      const [preparationMessage] = await Promise.all([
+      const [preparationMessage, , combatControlsMessage] = await Promise.all([
         preparation,
-        renderPreparation
+        renderPreparation,
+        combatControls
       ]);
       expect(preparationMessage).toMatchObject({
         levelId: "level.empty",
         deployableEntityCount: 0,
         placementPointCount: 0
+      });
+      expect(combatControlsMessage).toMatchObject({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        contentManifestHash: EMPTY_CONTENT_MANIFEST_HASH,
+        dwarves: []
       });
 
       const resultPromise = waitForMessage(
@@ -167,7 +178,7 @@ describe("authoritative web worker", () => {
         (message) =>
           message.type === "snapshot" &&
           message.phase === "running" &&
-          message.protocolVersion === 2 &&
+          message.protocolVersion !== 1 &&
           message.manualPaused
       );
       expect(paused).toMatchObject({ manualPaused: true });
@@ -200,7 +211,7 @@ describe("authoritative web worker", () => {
         (message) =>
           message.type === "snapshot" &&
           message.phase === "running" &&
-          message.protocolVersion === 2 &&
+          message.protocolVersion !== 1 &&
           !message.manualPaused
       );
       worker.postMessage({
@@ -215,7 +226,7 @@ describe("authoritative web worker", () => {
         (message) =>
           message.type === "snapshot" &&
           message.phase === "running" &&
-          message.protocolVersion === 2 &&
+          message.protocolVersion !== 1 &&
           message.manualPaused
       );
       worker.postMessage({
@@ -242,7 +253,7 @@ describe("authoritative web worker", () => {
         (message) =>
           message.type === "snapshot" &&
           message.phase === "running" &&
-          message.protocolVersion === 2 &&
+          message.protocolVersion !== 1 &&
           !message.manualPaused
       );
       worker.postMessage({
@@ -261,7 +272,7 @@ describe("authoritative web worker", () => {
         (message) =>
           message.type === "snapshot" &&
           message.phase === "running" &&
-          message.protocolVersion === 2 &&
+          message.protocolVersion !== 1 &&
           message.manualPaused
       );
       worker.postMessage({
@@ -436,6 +447,13 @@ describe("authoritative web worker", () => {
     );
     expect(document.querySelector("button")?.getAttribute("aria-pressed")).toBe(
       "true"
+    );
+    const combatControls = document.querySelector(
+      '[aria-labelledby="combat-controls-heading"]'
+    );
+    expect(combatControls?.textContent).toContain("Combat controls");
+    expect(combatControls?.textContent).toContain(
+      "Target policies and abilities are unavailable because no dwarves are deployed."
     );
     await userEvent.keyboard("{Escape}");
     await vi.waitFor(

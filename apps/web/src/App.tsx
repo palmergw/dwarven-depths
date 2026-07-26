@@ -6,6 +6,7 @@ import {
   useState
 } from "react";
 import { Battlefield } from "./Battlefield.js";
+import { CombatControls } from "./CombatControls.js";
 import { CombatHud } from "./CombatHud.js";
 import {
   parseWorkerMessage,
@@ -32,6 +33,9 @@ type ViewState =
 export function App() {
   const [view, setView] = useState<ViewState>({ phase: "checkpoint" });
   const [renderSnapshot, setRenderSnapshot] = useState<RenderSnapshot>();
+  const [combatControls, setCombatControls] = useState<
+    Extract<WorkerMessage, { type: "combat_controls" }> | undefined
+  >();
   const workerRef = useRef<Worker | undefined>(undefined);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
@@ -62,8 +66,10 @@ export function App() {
         });
       } else if (message.type === "render_snapshot") {
         setRenderSnapshot(message.snapshot);
+      } else if (message.type === "combat_controls") {
+        setCombatControls(message);
       } else if (message.type === "snapshot") {
-        if (message.phase === "running" && message.protocolVersion === 2) {
+        if (message.phase === "running" && message.protocolVersion !== 1) {
           if (manualPauseRequestedRef.current === undefined)
             manualPauseRequestedRef.current = message.manualPaused;
           if (
@@ -93,7 +99,7 @@ export function App() {
             : {
                 phase: "running",
                 manualPaused:
-                  message.protocolVersion === 2 && message.manualPaused
+                  message.protocolVersion !== 1 && message.manualPaused
               }
         );
       } else if (message.type === "result") {
@@ -188,6 +194,9 @@ export function App() {
             renderSnapshot.phase === "terminal") && (
             <CombatHud snapshot={renderSnapshot} />
           )}
+        {view.phase === "running" && combatControls !== undefined && (
+          <CombatControls />
+        )}
         {view.phase === "preparation" && (
           <dl className="preparation-summary" aria-label="Preparation summary">
             <div>

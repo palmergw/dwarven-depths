@@ -98,14 +98,16 @@ button:focus-visible {
   padding: 0.65rem 0;
   border-top: 1px solid #4e4232;
 }
-.combat-hud {
+.combat-hud,
+.combat-controls {
   margin: 1.5rem 0 0;
   padding: 1rem;
   border: 1px solid #80683f;
   border-radius: 0.5rem;
   background: #211b14;
 }
-.combat-hud h3 {
+.combat-hud h3,
+.combat-controls h3 {
   margin: 0;
   font-size: 1rem;
 }

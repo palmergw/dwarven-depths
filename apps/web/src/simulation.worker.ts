@@ -12,6 +12,7 @@ import { runScenario } from "@dwarven-depths/runtime";
 import contentFixture from "../../../content/fixtures/empty-content.json";
 import scenarioFixture from "../../../scenarios/conformance/empty-level.json";
 import {
+  EMPTY_CONTENT_MANIFEST_HASH,
   failure,
   parseClientMessage,
   WEB_PROTOCOL_VERSION,
@@ -34,7 +35,7 @@ let terminal = false;
 let resumeRequestId: string | null = null;
 let pendingExecutionRequestId: string | null = null;
 const acceptedRequestIds = new Set<string>();
-let protocolVersion: 1 | 2 = WEB_PROTOCOL_VERSION;
+let protocolVersion: 1 | 2 | 3 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
 
@@ -101,7 +102,7 @@ function postRunningSnapshot(): void {
     protocolVersion === 1
       ? { protocolVersion: 1, type: "snapshot", phase: "running" }
       : {
-          protocolVersion: 2,
+          protocolVersion,
           type: "snapshot",
           phase: "running",
           manualPaused,
@@ -211,6 +212,18 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
           ? undefined
           : preparedContent.maps.get(preparedLevel.mapId);
       postRenderSnapshot(preparationSnapshot);
+      if (protocolVersion === 3) {
+        if (preparedContent.manifestHash !== EMPTY_CONTENT_MANIFEST_HASH)
+          throw new Error(
+            "The combat-control snapshot does not match the empty content manifest."
+          );
+        post({
+          protocolVersion: 3,
+          type: "combat_controls",
+          contentManifestHash: preparedContent.manifestHash,
+          dwarves: []
+        });
+      }
       post({
         protocolVersion,
         type: "snapshot",
@@ -322,7 +335,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     return;
   }
   commandAccepted = true;
-  manualPaused = protocolVersion === 2;
+  manualPaused = protocolVersion !== 1;
   resumeRequestId = null;
   pendingExecutionRequestId = null;
   postRunningSnapshot();

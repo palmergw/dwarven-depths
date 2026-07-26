@@ -1,11 +1,14 @@
 import { parseRenderSnapshot, type RenderSnapshot } from "./render-snapshot.js";
 
-export const WEB_PROTOCOL_VERSION = 2 as const;
-type WebProtocolVersion = 1 | 2;
+export const WEB_PROTOCOL_VERSION = 3 as const;
+type WebProtocolVersion = 1 | 2 | 3;
+export const EMPTY_CONTENT_MANIFEST_HASH =
+  "3166e781fc4cce29240c01099919f4475ebe03294a76987706214eb24e398abe";
 
 export type ClientMessage =
   | { readonly protocolVersion: 1; readonly type: "initialize" }
   | { readonly protocolVersion: 2; readonly type: "initialize" }
+  | { readonly protocolVersion: 3; readonly type: "initialize" }
   | {
       readonly protocolVersion: 1;
       readonly type: "command";
@@ -13,7 +16,7 @@ export type ClientMessage =
       readonly command: { readonly type: "confirmPreparation" };
     }
   | {
-      readonly protocolVersion: 2;
+      readonly protocolVersion: 2 | 3;
       readonly type: "command";
       readonly requestId: string;
       readonly command:
@@ -40,11 +43,17 @@ export type WorkerMessage =
       readonly phase: "running";
     }
   | {
-      readonly protocolVersion: 2;
+      readonly protocolVersion: 2 | 3;
       readonly type: "snapshot";
       readonly phase: "running";
       readonly manualPaused: boolean;
       readonly resumeRequestId: string | null;
+    }
+  | {
+      readonly protocolVersion: 3;
+      readonly type: "combat_controls";
+      readonly contentManifestHash: typeof EMPTY_CONTENT_MANIFEST_HASH;
+      readonly dwarves: readonly [];
     }
   | {
       readonly protocolVersion: WebProtocolVersion;
@@ -98,6 +107,8 @@ type RecordValue = {
   sequence?: unknown;
   atTick?: unknown;
   snapshot?: unknown;
+  dwarves?: unknown;
+  contentManifestHash?: unknown;
 };
 
 function isRecord(value: unknown): value is RecordValue {
@@ -137,6 +148,7 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
   if (
     !isRecord(value) ||
     (value.protocolVersion !== 1 &&
+      value.protocolVersion !== 2 &&
       value.protocolVersion !== WEB_PROTOCOL_VERSION) ||
     typeof value.type !== "string"
   )
@@ -157,26 +169,26 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
   )
     return undefined;
   if (
-    value.protocolVersion === WEB_PROTOCOL_VERSION &&
+    (value.protocolVersion === 2 || value.protocolVersion === 3) &&
     value.command.type === "setManualPause" &&
     hasExactKeys(value.command, ["paused", "type"]) &&
     typeof value.command.paused === "boolean"
   ) {
     return {
-      protocolVersion: WEB_PROTOCOL_VERSION,
+      protocolVersion: value.protocolVersion,
       type: "command",
       requestId: value.requestId,
       command: { type: "setManualPause", paused: value.command.paused }
     };
   }
   if (
-    value.protocolVersion === WEB_PROTOCOL_VERSION &&
+    (value.protocolVersion === 2 || value.protocolVersion === 3) &&
     value.command.type === "commitManualResume" &&
     hasExactKeys(value.command, ["resumeRequestId", "type"]) &&
     isRequestId(value.command.resumeRequestId)
   ) {
     return {
-      protocolVersion: WEB_PROTOCOL_VERSION,
+      protocolVersion: value.protocolVersion,
       type: "command",
       requestId: value.requestId,
       command: {
@@ -202,10 +214,27 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
   if (
     !isRecord(value) ||
     (value.protocolVersion !== 1 &&
+      value.protocolVersion !== 2 &&
       value.protocolVersion !== WEB_PROTOCOL_VERSION) ||
     typeof value.type !== "string"
   )
     return undefined;
+  if (value.type === "combat_controls") {
+    if (
+      value.protocolVersion !== 3 ||
+      !hasExactKeys(value, [
+        "contentManifestHash",
+        "dwarves",
+        "protocolVersion",
+        "type"
+      ]) ||
+      value.contentManifestHash !== EMPTY_CONTENT_MANIFEST_HASH ||
+      !Array.isArray(value.dwarves) ||
+      value.dwarves.length !== 0
+    )
+      return undefined;
+    return value as WorkerMessage;
+  }
   if (value.type === "render_snapshot") {
     if (!hasExactKeys(value, ["protocolVersion", "snapshot", "type"]))
       return undefined;
@@ -235,7 +264,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         ((value.manualPaused === true && value.resumeRequestId === null) ||
           (value.manualPaused === false && isRequestId(value.resumeRequestId)))
         ? {
-            protocolVersion: WEB_PROTOCOL_VERSION,
+            protocolVersion: value.protocolVersion,
             type: "snapshot",
             phase: "running",
             manualPaused: value.manualPaused,

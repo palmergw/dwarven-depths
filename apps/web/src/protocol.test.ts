@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseClientMessage, parseWorkerMessage } from "./protocol.js";
+import {
+  EMPTY_CONTENT_MANIFEST_HASH,
+  parseClientMessage,
+  parseWorkerMessage
+} from "./protocol.js";
 
 describe("web worker protocol", () => {
   it("accepts only the versioned preparation command shape", () => {
@@ -55,7 +59,7 @@ describe("web worker protocol", () => {
       })
     ).toBeUndefined();
     expect(
-      parseClientMessage({ protocolVersion: 3, type: "initialize" })
+      parseClientMessage({ protocolVersion: 4, type: "initialize" })
     ).toBeUndefined();
     expect(
       parseClientMessage({
@@ -187,6 +191,41 @@ describe("web worker protocol", () => {
     ).toBeUndefined();
   });
 
+  it("accepts only the empty manifest-bound combat-control availability", () => {
+    const controls = {
+      protocolVersion: 3,
+      type: "combat_controls",
+      contentManifestHash: EMPTY_CONTENT_MANIFEST_HASH,
+      dwarves: []
+    };
+    expect(parseWorkerMessage(controls)).toEqual(controls);
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        contentManifestHash: "a".repeat(64)
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        dwarves: [
+          {
+            entityId: "foreign.entity",
+            characterId: "foreign.character",
+            supportedTargetPolicies: ["nearest"],
+            abilityIds: ["foreign.ability"]
+          }
+        ]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...controls, protocolVersion: 2 })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...controls, unexpected: true })
+    ).toBeUndefined();
+  });
+
   it("accepts only canonical, internally consistent render snapshots", () => {
     const snapshot = {
       schemaVersion: 1,
@@ -210,7 +249,7 @@ describe("web worker protocol", () => {
     const message = { protocolVersion: 1, type: "render_snapshot", snapshot };
     expect(parseWorkerMessage(message)).toEqual(message);
     expect(
-      parseWorkerMessage({ ...message, protocolVersion: 3 })
+      parseWorkerMessage({ ...message, protocolVersion: 4 })
     ).toBeUndefined();
     expect(
       parseWorkerMessage({ ...message, snapshot: { ...snapshot, extra: true } })
