@@ -1,6 +1,7 @@
 import {
   type CompiledContent,
-  compileReplay
+  compileReplay,
+  compileScenario
 } from "@dwarven-depths/content-runtime";
 import {
   type CommandEnvelope,
@@ -120,6 +121,12 @@ export interface RuntimeResult {
   readonly commands: readonly CommandEnvelope[];
   readonly events: readonly SimulationEvent[];
   readonly eventStreamChecksum: string;
+}
+
+export interface LiveScenarioStep {
+  readonly state: SimulationState;
+  readonly commands: readonly CommandEnvelope[];
+  readonly events: readonly SimulationEvent[];
 }
 
 export interface RunComparisonEvidence {
@@ -475,6 +482,144 @@ export class ReplayDivergenceError extends Error {
   }
 }
 
+/** Incremental authority for hosts that admit input between fixed steps. */
+export class LiveScenarioHost {
+  readonly #scenario: ScenarioDefinition;
+  readonly #content: CompiledContent;
+  #state: SimulationState;
+  #nextCommandSequence = 0;
+  #pendingCommands: CommandEnvelope[] = [];
+  #commands: CommandEnvelope[] = [];
+  #events: SimulationEvent[] = [];
+
+  constructor(scenario: ScenarioDefinition, content: CompiledContent) {
+    this.#scenario = scenario;
+    this.#content = content;
+    this.#state = createInitialState(content, scenario.levelId, scenario.seed);
+  }
+
+  get state(): SimulationState {
+    return this.#state;
+  }
+
+  scheduleCommand(command: CommandEnvelope["command"]): CommandEnvelope {
+    if (this.#state.phase === "TERMINAL")
+      throw new RangeError("cannot schedule a command after terminal state");
+    if (
+      !Number.isSafeInteger(command.atTick) ||
+      command.atTick !== this.#state.tick
+    )
+      throw new RangeError(
+        `live command tick must equal authoritative tick ${this.#state.tick}`
+      );
+    const validatedCommand = compileScenario(
+      { ...this.#scenario, commands: [command] },
+      this.#content
+    ).commands[0];
+    if (validatedCommand === undefined)
+      throw new TypeError("live command validation produced no command");
+    const envelope = Object.freeze({
+      tick: this.#state.tick,
+      sequence: this.#nextCommandSequence++,
+      command: Object.freeze({ ...validatedCommand })
+    }) as CommandEnvelope;
+    this.#pendingCommands.push(envelope);
+    return envelope;
+  }
+
+  step(): LiveScenarioStep {
+    if (this.#state.phase === "TERMINAL")
+      throw new RangeError("cannot advance a terminal live scenario");
+    if (this.#state.tick >= this.#scenario.maximumTicks)
+      throw new RuntimeSafetyStopError(
+        "tick_budget_exhausted",
+        `Scenario ${this.#scenario.id} did not terminate within ${this.#scenario.maximumTicks} ticks`,
+        this.#state.tick
+      );
+    const commands = this.#pendingCommands;
+    this.#pendingCommands = [];
+    const previousState = this.#state;
+    const result = stepSimulation(previousState, commands, this.#content);
+    if (result.state === previousState)
+      throw new RuntimeSafetyStopError(
+        "simulation_stalled",
+        `Scenario ${this.#scenario.id} made no progress at tick ${previousState.tick}`,
+        previousState.tick
+      );
+    this.#state = result.state;
+    this.#commands.push(...commands);
+    this.#events.push(...result.events);
+    return Object.freeze({
+      state: this.#state,
+      commands: Object.freeze([...commands]),
+      events: Object.freeze([...result.events])
+    });
+  }
+
+  async result(): Promise<RuntimeResult> {
+    if (this.#state.phase !== "TERMINAL" || !this.#state.terminalResult)
+      throw new RangeError("live scenario has not reached terminal state");
+    if (
+      this.#scenario.expectedTerminalResult !== undefined &&
+      this.#state.terminalResult !== this.#scenario.expectedTerminalResult
+    )
+      throw new RuntimeAssertionError(
+        `Scenario ${this.#scenario.id} expected ${this.#scenario.expectedTerminalResult} but produced ${this.#state.terminalResult}`,
+        this.#state.tick
+      );
+    return createRuntimeResult(
+      this.#scenario,
+      this.#state,
+      this.#commands,
+      this.#events
+    );
+  }
+}
+
+export function createLiveScenarioHost(
+  scenario: ScenarioDefinition,
+  content: CompiledContent
+): LiveScenarioHost {
+  return new LiveScenarioHost(scenario, content);
+}
+
+async function createRuntimeResult(
+  scenario: ScenarioDefinition,
+  state: SimulationState,
+  commands: readonly CommandEnvelope[],
+  events: readonly SimulationEvent[]
+): Promise<RuntimeResult> {
+  const finalState = Object.freeze({ ...state });
+  const immutableCommands = Object.freeze(
+    commands.map((envelope) =>
+      Object.freeze({
+        ...envelope,
+        command: Object.freeze({ ...envelope.command })
+      })
+    )
+  );
+  const immutableEvents = Object.freeze(
+    events.map((simulationEvent) => Object.freeze({ ...simulationEvent }))
+  );
+  const [scenarioHash, finalStateChecksum, eventStreamChecksum] =
+    await Promise.all([
+      canonicalHash(scenario),
+      stateChecksum(finalState),
+      canonicalHash(immutableEvents)
+    ]);
+  return Object.freeze({
+    scenarioId: scenario.id,
+    scenarioHash,
+    terminalResult: finalState.terminalResult as "victory" | "defeat",
+    terminalTick: finalState.tick,
+    finalState,
+    finalStateChecksum,
+    commands: immutableCommands,
+    events: immutableEvents,
+    eventStreamChecksum
+  });
+}
+
 async function executeScenario(
   scenario: ScenarioDefinition,
   content: CompiledContent,
@@ -531,36 +676,7 @@ async function executeScenario(
     );
   }
 
-  const terminalResult = state.terminalResult;
-  const finalState = Object.freeze({ ...state });
-  const immutableCommands = Object.freeze(
-    executedCommands.map((envelope) =>
-      Object.freeze({
-        ...envelope,
-        command: Object.freeze({ ...envelope.command })
-      })
-    )
-  );
-  const immutableEvents = Object.freeze(
-    events.map((simulationEvent) => Object.freeze({ ...simulationEvent }))
-  );
-  const [scenarioHash, finalStateChecksum, eventStreamChecksum] =
-    await Promise.all([
-      canonicalHash(scenario),
-      stateChecksum(finalState),
-      canonicalHash(immutableEvents)
-    ]);
-  return Object.freeze({
-    scenarioId: scenario.id,
-    scenarioHash,
-    terminalResult,
-    terminalTick: finalState.tick,
-    finalState,
-    finalStateChecksum,
-    commands: immutableCommands,
-    events: immutableEvents,
-    eventStreamChecksum
-  });
+  return createRuntimeResult(scenario, state, executedCommands, events);
 }
 
 export async function runScenario(

@@ -23,6 +23,7 @@ import nonterminatingScenarioInput from "../../../scenarios/conformance/nontermi
 import {
   compareRunEvidence,
   createLifecycleDiagnostics,
+  createLiveScenarioHost,
   createReplayDefinition,
   createTimelineRecords,
   type ReplayDivergenceError,
@@ -226,6 +227,40 @@ describe("shared runtime", () => {
     expect(Object.isFrozen(left.events[0])).toBe(true);
     expect(Object.isFrozen(left.commands)).toBe(true);
     expect(Object.isFrozen(left.commands[0])).toBe(true);
+  });
+
+  it("live-hosts current-tick input with canonical replay parity", async () => {
+    const content = await compileContent(contentInput);
+    const scenario = compileScenario(scenarioInput, content);
+    const host = createLiveScenarioHost(scenario, content);
+
+    await expect(host.result()).rejects.toThrow(/not reached terminal/);
+    expect(() =>
+      host.scheduleCommand({ atTick: 1, type: "confirmPreparation" })
+    ).toThrow(/authoritative tick 0/);
+    expect(
+      host.scheduleCommand({ atTick: 0, type: "confirmPreparation" })
+    ).toEqual({
+      tick: 0,
+      sequence: 0,
+      command: { atTick: 0, type: "confirmPreparation" }
+    });
+
+    expect(host.step().state.phase).toBe("TERMINAL");
+    const liveResult = await host.result();
+    const batchResult = await runScenario(scenario, content);
+    expect(liveResult).toEqual(batchResult);
+    await expect(
+      verifyReplay(
+        createReplayDefinition(liveResult, scenario, content),
+        scenario,
+        content
+      )
+    ).resolves.toEqual(liveResult);
+    expect(() =>
+      host.scheduleCommand({ atTick: 0, type: "confirmPreparation" })
+    ).toThrow(/after terminal/);
+    expect(() => host.step()).toThrow(/terminal live scenario/);
   });
 
   it("creates and verifies replay evidence with stable divergence codes", async () => {
