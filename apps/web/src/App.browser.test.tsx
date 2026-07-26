@@ -1273,13 +1273,13 @@ describe("authoritative web worker", () => {
       </StrictMode>
     );
 
-    await vi.waitFor(() =>
-      expect(document.body.textContent).toContain("Checkpoint ready")
-    );
+    await vi.waitFor(() => {
+      expect(document.body.textContent).toContain("Checkpoint ready");
+      expect(document.querySelector(".profile-summary")?.textContent).toContain(
+        "Local progression storage is unavailable"
+      );
+    });
     expect(document.body.textContent).toContain("Current levelEmpty Level");
-    expect(document.querySelector(".profile-summary")?.textContent).toContain(
-      "Local progression storage is unavailable"
-    );
     expect(document.querySelector("figcaption")).toBeNull();
     const beginButton = document.querySelector("button");
     if (beginButton === null) throw new Error("expected checkpoint button");

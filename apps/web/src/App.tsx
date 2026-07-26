@@ -1,3 +1,9 @@
+import type { StableId } from "@dwarven-depths/contracts";
+import {
+  type ProfileState,
+  type PurchasedUpgradeDefinition,
+  purchasedUpgradeCatalog
+} from "@dwarven-depths/progression";
 import {
   useCallback,
   useEffect,
@@ -12,7 +18,9 @@ import {
   type CheckpointProfileResult,
   type CheckpointProfileStore,
   createCheckpointProfileStore,
-  loadCheckpointProfile
+  isCheckpointProfileSaveConflict,
+  loadCheckpointProfile,
+  purchaseCheckpointUpgrade
 } from "./checkpoint-profile.js";
 import {
   parseWorkerMessage,
@@ -49,6 +57,48 @@ const contrastPreferenceStorageKey =
   "dwarven-depths.presentation.contrast-preference.v1";
 const contrastPreferences = ["standard", "high"] as const;
 type ContrastPreference = (typeof contrastPreferences)[number];
+
+type UpgradePurchaseStatus =
+  | { readonly kind: "idle" }
+  | { readonly kind: "pending"; readonly upgradeId: StableId }
+  | { readonly kind: "success"; readonly message: string }
+  | { readonly kind: "failure"; readonly message: string };
+
+function upgradePurchaseState(
+  profile: ProfileState,
+  definition: PurchasedUpgradeDefinition
+): {
+  readonly currentRank: number;
+  readonly nextCost: number | undefined;
+  readonly unavailableReason: string | undefined;
+} {
+  const purchase = profile.purchasedUpgrades.find(
+    (candidate) => candidate.upgradeId === definition.upgradeId
+  );
+  const currentRank = purchase?.rank ?? 0;
+  const nextCost = definition.rankCosts[currentRank];
+  const ownerIds =
+    definition.kind === "ability_rank"
+      ? profile.unlockedCharacterIds
+      : profile.unlockedItemIds;
+  let unavailableReason: string | undefined;
+  if (!ownerIds.includes(definition.ownerId))
+    unavailableReason = `Requires unlocked owner ${definition.ownerId}.`;
+  else if (nextCost === undefined) unavailableReason = "Maximum rank owned.";
+  else {
+    const missingPrerequisite = definition.prerequisiteUpgradeIds.find(
+      (upgradeId) =>
+        !profile.purchasedUpgrades.some(
+          (candidate) => candidate.upgradeId === upgradeId
+        )
+    );
+    if (missingPrerequisite !== undefined)
+      unavailableReason = `Requires ${missingPrerequisite}.`;
+    else if (profile.forgeOre < nextCost)
+      unavailableReason = `Requires ${nextCost} Forge Ore.`;
+  }
+  return { currentRank, nextCost, unavailableReason };
+}
 
 function isMotionPreference(value: unknown): value is MotionPreference {
   return motionPreferences.some((preference) => preference === value);
@@ -136,6 +186,8 @@ export function App({
   >(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [upgradeInventoryOpen, setUpgradeInventoryOpen] = useState(false);
+  const [upgradePurchaseStatus, setUpgradePurchaseStatus] =
+    useState<UpgradePurchaseStatus>({ kind: "idle" });
   const [checkpointProfile, setCheckpointProfile] = useState<
     CheckpointProfileResult | { readonly status: "loading" }
   >({ status: "loading" });
@@ -145,6 +197,8 @@ export function App({
   const [contrastPreference, setContrastPreference] =
     useState<ContrastPreference>(readContrastPreference);
   const workerRef = useRef<Worker | undefined>(undefined);
+  const profileStoreRef = useRef<CheckpointProfileStore | undefined>(undefined);
+  const upgradePurchasePendingRef = useRef(false);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
@@ -175,6 +229,7 @@ export function App({
     let store: CheckpointProfileStore;
     try {
       store = createProfileStore();
+      profileStoreRef.current = store;
     } catch {
       setCheckpointProfile({
         status: "unavailable",
@@ -183,13 +238,63 @@ export function App({
       });
       return;
     }
-    void loadCheckpointProfile(store).then((result) => {
+    void loadCheckpointProfile(store, Date.now, false).then((result) => {
       if (active) setCheckpointProfile(result);
     });
     return () => {
       active = false;
+      if (profileStoreRef.current === store)
+        profileStoreRef.current = undefined;
+      void store.close().catch(() => undefined);
     };
   }, [createProfileStore]);
+
+  async function purchaseUpgrade(upgradeId: StableId): Promise<void> {
+    if (
+      upgradePurchasePendingRef.current ||
+      checkpointProfile.status !== "ready" ||
+      profileStoreRef.current === undefined
+    )
+      return;
+    upgradePurchasePendingRef.current = true;
+    setUpgradePurchaseStatus({ kind: "pending", upgradeId });
+    try {
+      const profile = await purchaseCheckpointUpgrade(
+        profileStoreRef.current,
+        checkpointProfile.profile,
+        upgradeId
+      );
+      setCheckpointProfile({ status: "ready", profile });
+      setUpgradePurchaseStatus({
+        kind: "success",
+        message: `${upgradeId} rank purchased. ${profile.forgeOre} Forge Ore remains.`
+      });
+    } catch (error) {
+      if (isCheckpointProfileSaveConflict(error)) {
+        const refreshed = await loadCheckpointProfile(
+          profileStoreRef.current,
+          Date.now,
+          false
+        );
+        if (refreshed.status === "ready") {
+          setCheckpointProfile(refreshed);
+          setUpgradePurchaseStatus({
+            kind: "failure",
+            message:
+              "Progression changed in another tab. The latest saved progression is loaded; review it and retry."
+          });
+          return;
+        }
+      }
+      setUpgradePurchaseStatus({
+        kind: "failure",
+        message:
+          "The upgrade was not saved. Your last confirmed progression is unchanged; retry after checking local storage."
+      });
+    } finally {
+      upgradePurchasePendingRef.current = false;
+    }
+  }
 
   function startPreparation(): void {
     if (initializedRef.current || view.phase !== "checkpoint") return;
@@ -620,9 +725,67 @@ export function App({
                   )}
                 </dl>
               )}
+              <h4>Available upgrades</h4>
+              <div className="upgrade-catalog">
+                {purchasedUpgradeCatalog.upgrades.map((definition) => {
+                  const state = upgradePurchaseState(
+                    checkpointProfile.profile,
+                    definition
+                  );
+                  const descriptionId = `${definition.upgradeId.replaceAll(".", "-")}-purchase-status`;
+                  const pending =
+                    upgradePurchaseStatus.kind === "pending" &&
+                    upgradePurchaseStatus.upgradeId === definition.upgradeId;
+                  return (
+                    <section key={definition.upgradeId}>
+                      <h5>
+                        <code>{definition.upgradeId}</code>
+                      </h5>
+                      <p>
+                        Rank {state.currentRank} of{" "}
+                        {definition.rankCosts.length}
+                      </p>
+                      <p id={descriptionId}>
+                        {state.unavailableReason ??
+                          `Next rank costs ${state.nextCost} Forge Ore.`}
+                      </p>
+                      <button
+                        type="button"
+                        aria-describedby={descriptionId}
+                        disabled={
+                          state.unavailableReason !== undefined ||
+                          upgradePurchaseStatus.kind === "pending"
+                        }
+                        onClick={() =>
+                          void purchaseUpgrade(definition.upgradeId)
+                        }
+                      >
+                        {pending
+                          ? "Saving purchase…"
+                          : state.nextCost === undefined
+                            ? "Maximum rank owned"
+                            : `Purchase rank ${state.currentRank + 1} for ${state.nextCost} Forge Ore`}
+                      </button>
+                    </section>
+                  );
+                })}
+              </div>
+              {upgradePurchaseStatus.kind !== "idle" &&
+                upgradePurchaseStatus.kind !== "pending" && (
+                  <p
+                    className={`purchase-${upgradePurchaseStatus.kind}`}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {upgradePurchaseStatus.message}
+                  </p>
+                )}
               <button
                 type="button"
-                onClick={() => setUpgradeInventoryOpen(false)}
+                onClick={() => {
+                  setUpgradePurchaseStatus({ kind: "idle" });
+                  setUpgradeInventoryOpen(false);
+                }}
               >
                 Close upgrade inventory
               </button>
@@ -646,7 +809,10 @@ export function App({
                 <button
                   type="button"
                   ref={upgradeInventoryButtonRef}
-                  onClick={() => setUpgradeInventoryOpen(true)}
+                  onClick={() => {
+                    setUpgradePurchaseStatus({ kind: "idle" });
+                    setUpgradeInventoryOpen(true);
+                  }}
                 >
                   Upgrade inventory
                 </button>
