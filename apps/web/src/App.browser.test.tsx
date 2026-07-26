@@ -193,34 +193,6 @@ function appliedContrastPreference(): string | null {
   );
 }
 
-describe("checkpoint progression", () => {
-  it("keeps the keyboard run flow available when local storage is unavailable", async () => {
-    const container = document.createElement("div");
-    document.body.append(container);
-    root = createRoot(container);
-    root.render(
-      <App
-        createProfileStore={() => {
-          throw new DOMException("blocked", "SecurityError");
-        }}
-        createWorker={() => new ControlledResultWorker() as unknown as Worker}
-      />
-    );
-
-    await vi.waitFor(() =>
-      expect(document.querySelector(".profile-summary")?.textContent).toContain(
-        "Local progression storage is unavailable"
-      )
-    );
-    const beginButton = await buttonWithText("Begin preparation");
-    beginButton.focus();
-    await userEvent.keyboard("{Enter}");
-    expect(await buttonWithText("Confirm preparation")).toBeInstanceOf(
-      HTMLButtonElement
-    );
-  });
-});
-
 describe("presentation settings", () => {
   it("opens and closes by keyboard with deterministic focus restoration", async () => {
     renderApp();
@@ -1293,7 +1265,11 @@ describe("authoritative web worker", () => {
     root = createRoot(container);
     root.render(
       <StrictMode>
-        <App />
+        <App
+          createProfileStore={() => {
+            throw new DOMException("blocked", "SecurityError");
+          }}
+        />
       </StrictMode>
     );
 
@@ -1301,6 +1277,9 @@ describe("authoritative web worker", () => {
       expect(document.body.textContent).toContain("Checkpoint ready")
     );
     expect(document.body.textContent).toContain("Current levelEmpty Level");
+    expect(document.querySelector(".profile-summary")?.textContent).toContain(
+      "Local progression storage is unavailable"
+    );
     expect(document.querySelector("figcaption")).toBeNull();
     const beginButton = document.querySelector("button");
     if (beginButton === null) throw new Error("expected checkpoint button");
