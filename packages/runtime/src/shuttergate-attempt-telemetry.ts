@@ -394,6 +394,12 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
     (normalized.combat.wardenHealth === 0)
   )
     throw new RangeError("telemetry Warden state is contradictory");
+  if (
+    normalized.outcome.terminalResult !== "defeat" ||
+    normalized.outcome.terminalReason !== "all_dwarves_downed" ||
+    normalized.combat.wardenLifecycle !== "downed"
+  )
+    throw new RangeError("telemetry terminal result is contradictory");
   return normalized;
 }
 

@@ -89,6 +89,10 @@ describe("local Shuttergate attempt telemetry", () => {
       { ...telemetry.payload, targetPolicy: "not_a_policy" },
       {
         ...telemetry.payload,
+        outcome: { ...telemetry.payload.outcome, terminalResult: "victory" }
+      },
+      {
+        ...telemetry.payload,
         combat: {
           ...telemetry.payload.combat,
           defeatedEnemies: 999,
