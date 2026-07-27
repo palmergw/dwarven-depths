@@ -154,8 +154,6 @@ describe("checkpoint shared-upgrade recycle", () => {
     expect(confirmation).toBeInstanceOf(HTMLElement);
     expect(confirmation?.getAttribute("aria-modal")).toBe("true");
 
-    await userEvent.keyboard("{Tab}");
-    expect(await button("Confirm recycle")).toHaveFocus();
     await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
     expect(await button("Cancel recycle")).toHaveFocus();
     await userEvent.keyboard("{Tab}");

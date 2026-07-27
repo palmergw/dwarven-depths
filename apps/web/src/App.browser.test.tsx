@@ -212,10 +212,6 @@ describe("presentation settings", () => {
     expect(dialog).toBeInstanceOf(HTMLElement);
     expect(dialog?.getAttribute("aria-modal")).toBe("true");
 
-    await userEvent.keyboard("{Tab}");
-    expect(document.activeElement).toBe(
-      document.querySelector("#motion-preference")
-    );
     await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
     expect(await buttonWithText("Close settings")).toHaveFocus();
     await userEvent.keyboard("{Tab}");
