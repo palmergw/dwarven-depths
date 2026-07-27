@@ -136,6 +136,7 @@ describe("checkpoint shared-upgrade recycle", () => {
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "No upgrades purchased"
     );
+    expect(document.getElementById("upgrade-inventory-heading")).toHaveFocus();
     expect(writes).toHaveLength(1);
   });
 

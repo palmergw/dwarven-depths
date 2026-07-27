@@ -36,6 +36,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - deterministic Escape-key unwinding for checkpoint settings, upgrade inventory, and nested recycle confirmations, with trigger-focus restoration and no dismissal while a progression save is pending.
 - modal semantics and deterministic forward/reverse keyboard-focus containment for checkpoint settings, upgrade inventory, and nested recycle confirmations, without changing progression authority or pointer controls.
 - active recycle confirmations isolate every background upgrade-inventory control from pointer, keyboard, and assistive-technology interaction, restoring the unchanged inventory when dismissed.
+- successful shared-upgrade and Iron Warden skill recycling restores focus to a persistent inventory heading when the completed action removes its confirmation trigger.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
