@@ -6,6 +6,8 @@ import {
 import type { ShuttergateCampaignAttemptEvidence } from "./shuttergate-campaign.js";
 
 const telemetryId = "telemetry.shuttergate.attempt.v1" as const;
+const shuttergateManifestHash =
+  "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d";
 const wardenCharacterId = "character.iron_warden" as StableId;
 const wardenEntityId = "entity.dwarf.warden" as StableId;
 const shieldSlamUpgradeId = "upgrade.ability.shield_slam" as StableId;
@@ -48,7 +50,6 @@ export interface ShuttergateAttemptTelemetryPayload {
     readonly wardenLifecycle: "active" | "downed";
   };
   readonly rewards: {
-    readonly experienceAwarded: 0;
     readonly forgeOreAwarded: number;
     readonly bossRewardClaimed: boolean;
     readonly unlockedCharacterIds: readonly StableId[];
@@ -255,16 +256,10 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
     throw new TypeError("telemetry Warden lifecycle is invalid");
   const rewards = requireRecord(payload.rewards, "telemetry rewards", [
     "bossRewardClaimed",
-    "experienceAwarded",
     "forgeOreAwarded",
     "unlockedCharacterIds"
   ]);
-  if (rewards.experienceAwarded !== 0)
-    throw new RangeError(
-      "Shuttergate telemetry experience awarded must be zero"
-    );
-
-  return Object.freeze({
+  const normalized = Object.freeze({
     schemaVersion: 1,
     attemptId: requireId(payload.attemptId, "telemetry attempt ID"),
     contentManifestHash: manifest,
@@ -319,7 +314,6 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
       wardenLifecycle: combat.wardenLifecycle
     }),
     rewards: Object.freeze({
-      experienceAwarded: 0,
       forgeOreAwarded: requireInteger(
         rewards.forgeOreAwarded,
         "telemetry forge ore awarded"
@@ -334,6 +328,73 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
       )
     })
   });
+  if (normalized.contentManifestHash !== shuttergateManifestHash)
+    throw new RangeError(
+      "telemetry content manifest is not the pinned reference"
+    );
+  if (normalized.levelId !== "level.shuttergate_hall")
+    throw new RangeError("telemetry level ID is unsupported");
+  if (normalized.placementPointId !== "placement.shuttergate_north_guard")
+    throw new RangeError("telemetry placement point ID is unsupported");
+  if (normalized.targetPolicy !== "nearest")
+    throw new RangeError("telemetry target policy is unsupported");
+  const upgraded =
+    normalized.build.buildId === "build.warden.shield_slam_rank_1.v1";
+  if (!upgraded && normalized.build.buildId !== "build.profile.new_campaign.v1")
+    throw new RangeError("telemetry build ID is unsupported");
+  const rosterEntry = normalized.build.roster[0];
+  const expectedUpgradeIds = upgraded ? [shieldSlamUpgradeId] : [];
+  if (
+    normalized.build.roster.length !== 1 ||
+    rosterEntry?.characterId !== wardenCharacterId ||
+    rosterEntry.entityId !== wardenEntityId ||
+    rosterEntry.purchasedUpgradeIds.length !== expectedUpgradeIds.length ||
+    rosterEntry.purchasedUpgradeIds.some(
+      (upgradeId, index) => upgradeId !== expectedUpgradeIds[index]
+    )
+  )
+    throw new RangeError("telemetry roster does not match the selected build");
+  for (let index = 0; index < normalized.waveTransitions.length; index += 1) {
+    const transition = normalized.waveTransitions[index];
+    const previous = normalized.waveTransitions[index - 1];
+    if (transition === undefined)
+      throw new Error("telemetry transition is missing");
+    if (
+      previous !== undefined &&
+      (transition.tick <= previous.tick ||
+        transition.firedSpawns < previous.firedSpawns ||
+        transition.startedWaveIds.length < previous.startedWaveIds.length ||
+        previous.startedWaveIds.some(
+          (waveId, waveIndex) => transition.startedWaveIds[waveIndex] !== waveId
+        ))
+    )
+      throw new RangeError("telemetry wave transitions are not monotonic");
+  }
+  const terminalTransition = normalized.waveTransitions.at(-1);
+  if (
+    terminalTransition === undefined ||
+    terminalTransition.tick !== normalized.outcome.durationTicks ||
+    terminalTransition.startedWaveIds.at(-1) !==
+      normalized.outcome.deepestStartedWaveId ||
+    terminalTransition.firedSpawns !== normalized.combat.firedSpawns ||
+    terminalTransition.livingEnemies !== normalized.combat.survivingEnemies ||
+    terminalTransition.wardenHealth !== normalized.combat.wardenHealth
+  )
+    throw new RangeError(
+      "telemetry terminal transition contradicts the outcome"
+    );
+  if (
+    normalized.combat.firedSpawns > normalized.combat.scheduledSpawns ||
+    normalized.combat.defeatedEnemies + normalized.combat.survivingEnemies !==
+      normalized.combat.firedSpawns
+  )
+    throw new RangeError("telemetry combat totals are contradictory");
+  if (
+    (normalized.combat.wardenLifecycle === "downed") !==
+    (normalized.combat.wardenHealth === 0)
+  )
+    throw new RangeError("telemetry Warden state is contradictory");
+  return normalized;
 }
 
 export async function createShuttergateAttemptTelemetry(
@@ -383,7 +444,6 @@ export async function createShuttergateAttemptTelemetry(
       wardenLifecycle: calibration.wardenLifecycle
     },
     rewards: {
-      experienceAwarded: 0,
       forgeOreAwarded: attempt.rewardDecision.forgeOre,
       bossRewardClaimed: calibration.bossRewardClaimed,
       unlockedCharacterIds: calibration.deepRangerUnlocked

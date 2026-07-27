@@ -30,7 +30,7 @@ describe("local Shuttergate telemetry browser parity", () => {
       await requireShuttergateAttemptTelemetry(JSON.parse(serialized))
     ).toEqual(telemetry);
     expect(telemetry.payloadChecksum).toBe(
-      "9fa6c4b07b5fdd77e2bc93aa5d99219dda26665ac28b98a3c3a618d52d2c86fc"
+      "665e6c83534e7078f1a3a0ea0e5392bd3da95c2a4dbae94f330f978ca3f8555c"
     );
   }, 45_000);
 });

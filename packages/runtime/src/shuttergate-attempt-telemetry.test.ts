@@ -1,4 +1,5 @@
 import { compileContent } from "@dwarven-depths/content-runtime";
+import { canonicalHash } from "@dwarven-depths/contracts";
 import { describe, expect, it } from "vitest";
 import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
   type: "json"
@@ -52,11 +53,10 @@ describe("local Shuttergate attempt telemetry", () => {
         outcome: {
           terminalResult: "defeat",
           terminalReason: "all_dwarves_downed"
-        },
-        rewards: { experienceAwarded: 0 }
+        }
       },
       payloadChecksum:
-        "9fa6c4b07b5fdd77e2bc93aa5d99219dda26665ac28b98a3c3a618d52d2c86fc"
+        "665e6c83534e7078f1a3a0ea0e5392bd3da95c2a4dbae94f330f978ca3f8555c"
     });
     expect(first.payload.waveTransitions.length).toBeGreaterThan(1);
     expect(first.payload.rewards.forgeOreAwarded).toBeGreaterThan(0);
@@ -77,9 +77,33 @@ describe("local Shuttergate attempt telemetry", () => {
         ...telemetry,
         payload: {
           ...telemetry.payload,
-          combat: { ...telemetry.payload.combat, defeatedEnemies: 999 }
+          rewards: { ...telemetry.payload.rewards, forgeOreAwarded: 999 }
         }
       })
     ).rejects.toThrow("checksum mismatch");
+  }, 45_000);
+
+  it("rejects rechecksummed semantic contradictions", async () => {
+    const telemetry = await createTelemetry();
+    for (const payload of [
+      { ...telemetry.payload, targetPolicy: "not_a_policy" },
+      {
+        ...telemetry.payload,
+        combat: {
+          ...telemetry.payload.combat,
+          defeatedEnemies: 999,
+          wardenLifecycle: "downed",
+          wardenHealth: 7
+        }
+      }
+    ]) {
+      await expect(
+        requireShuttergateAttemptTelemetry({
+          ...telemetry,
+          payload,
+          payloadChecksum: await canonicalHash(payload)
+        })
+      ).rejects.toThrow(/unsupported|contradict/);
+    }
   }, 45_000);
 });
