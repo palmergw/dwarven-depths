@@ -2,7 +2,7 @@
 
 ## Project status
 
-Dwarven Depths is in Phase 5 playable-client development. Phases 0–4 are complete. The first React/Vite shell hosts the authoritative empty-level simulation in a Web Worker; `docs/phase-5.md` defines its exact implemented boundary. The executable simulation CLI currently provides `validate`, `run`, `replay --verify`, `inspect`, `explain`, `compare`, `render`, `sweep`, `campaign`, and `minimize`. Broader proposals remain contracts until explicitly listed as implemented in a phase document. Minimization schemas 1–8 are implemented and compatibility-frozen; new divergence classes or schema 9 require explicit product-owner approval.
+Dwarven Depths is in Phase 6 vertical-slice calibration and release-candidate development. Phases 0–4 are complete. Phase 5 delivered the React/Vite playable shell, authoritative Web Worker host, Phaser renderer, client controls, progression, accessibility settings, offline packaging, and CLI evidence verification; terminal client/CLI parity remains explicitly blocked until an approved terminating web encounter contract exists. `docs/phase-5.md` and `docs/phase-6.md` define the exact implemented boundaries. The executable simulation CLI currently provides `validate`, `run`, `replay --verify`, `inspect`, `explain`, `compare`, `render`, `sweep`, `campaign`, and `minimize`. Broader proposals remain contracts until explicitly listed as implemented in a phase document. Minimization schemas 1–8 are implemented and compatibility-frozen; new divergence classes or schema 9 require explicit product-owner approval.
 
 ## Source-of-truth order
 
@@ -27,17 +27,26 @@ If documents conflict, do not silently choose. Identify the conflict and preserv
 - Balance claims require manifests, metrics, and event evidence rather than screenshots or intuition alone.
 - Keep generated large reports out of Git unless approved as compact regression or calibration fixtures.
 
+## Coherent delivery policy
+
+- One issue/PR delivers one coherent customer-visible workflow or release-candidate outcome, not one tracker checkbox.
+- Combine adjacent criteria that share a component, state transition, risk model, and verification surface. Presentation settings, modal/focus behavior, telemetry validity, and report publication are not split into one PR per variant.
+- Tiny isolated PRs are reserved for urgent regressions or genuinely independent blockers.
+- During Phase 6, prioritize visible polish, onboarding and feedback, performance/accessibility budgets, and finite release-candidate completion over new telemetry fields, replay metadata, evidence schemas, or assurance-only variants.
+- Implementation sessions are capped at 100 model turns. If a coherent outcome cannot safely finish within that bound, preserve a meaningful local commit or dirty checkpoint and exit cleanly so the changed deterministic fingerprint resumes it without broad rediscovery.
+
 ## Non-performative verification policy
 
 1. During iteration, run changed-scope tests and lint/typecheck as appropriate; CLI-only changes should prefer focused CLI tests.
-2. Once a pre-review head is stable, run one complete `pnpm run verify`.
-3. Independent exact-head review inspects code and runs only adversarial focused probes; it does not automatically duplicate the complete suite.
-4. Review fixes receive focused regression coverage, followed by one final complete verification only when the head stabilizes.
-5. Publication requires exact-head PR CI; merge requires post-merge `main` CI.
-6. Do not run another post-merge local complete suite when the merged tree is identical to the reviewed tree and CI is green.
-7. Wait for CI mechanically in one bounded command rather than spending repeated model turns polling.
+2. Before independent review, perform one bounded adversarial self-check using only relevant lenses: strict shape rejection, canonical ordering, stable-ID domains, version/sequence binding, terminal evidence consistency, tampering/replay, and asynchronous UI/storage races.
+3. Draft publication and review-fix heads receive focused changed-scope tests plus lint/typecheck/build as appropriate, then use the draft-only exact-head push helper. Draft open/synchronize workflows skip runner jobs; the complete repository gate is not repeated for every review fix.
+4. Create and keep the PR draft while independent exact-head review and correction cycles run.
+5. Independent exact-head review inspects code and runs adversarial focused probes; it does not duplicate the complete suite. Review all reported blockers together and fix the coherent defect class in one batch before re-review.
+6. After the final exact draft head receives a blockers-only `No blockers` result, that same clean HEAD must pass one complete local `pnpm run verify` and remote-head read-back. Mark it ready only then; the ready transition starts authoritative PR CI, and merge requires post-merge `main` CI.
+7. Do not run another post-merge local complete suite when the merged tree is identical to the reviewed tree and CI is green.
+8. Wait for CI mechanically in one bounded command rather than spending repeated model turns polling or rerunning a known runner-only failure.
 
-Detailed evidence belongs on the PR. Tracker #103 holds a finite checklist and one compact rolling status, not duplicate CI transcripts.
+Detailed evidence belongs on the PR. Trackers #166 and #238 hold finite checklists and compact rolling status rather than duplicate CI transcripts.
 
 ## Required agent workflow once the harness exists
 
