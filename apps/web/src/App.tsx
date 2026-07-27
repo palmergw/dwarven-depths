@@ -1,5 +1,7 @@
 import type { StableId } from "@dwarven-depths/contracts";
 import {
+  deriveCharacterSkillEligibility,
+  ironWardenSkillTree,
   type ProfileState,
   type PurchasedUpgradeDefinition,
   purchasedUpgradeCatalog
@@ -22,7 +24,8 @@ import {
   loadCheckpointProfile,
   purchaseCheckpointUpgrade,
   recycleCheckpointIronWardenSkills,
-  recycleCheckpointUpgrades
+  recycleCheckpointUpgrades,
+  selectCheckpointIronWardenSkill
 } from "./checkpoint-profile.js";
 import {
   parseWorkerMessage,
@@ -221,6 +224,8 @@ export function App({
   const skillRecycleButtonRef = useRef<HTMLButtonElement>(null);
   const skillRecycleHeadingRef = useRef<HTMLHeadingElement>(null);
   const skillRecycleConfirmationWasOpenRef = useRef(false);
+  const skillTreeHeadingRef = useRef<HTMLHeadingElement>(null);
+  const focusSkillTreeAfterSelectionRef = useRef(false);
 
   function clearPendingAbilities(): void {
     pendingAbilityKeysRef.current.clear();
@@ -404,6 +409,55 @@ export function App({
         kind: "failure",
         message:
           "The skill recycle was not saved. Your last confirmed progression is unchanged; retry after checking local storage."
+      });
+    } finally {
+      upgradePurchasePendingRef.current = false;
+    }
+  }
+
+  async function selectIronWardenSkill(nodeId: StableId): Promise<void> {
+    if (
+      upgradePurchasePendingRef.current ||
+      checkpointProfile.status !== "ready" ||
+      profileStoreRef.current === undefined
+    )
+      return;
+    upgradePurchasePendingRef.current = true;
+    setUpgradePurchaseStatus({ kind: "pending", upgradeId: nodeId });
+    try {
+      const profile = await selectCheckpointIronWardenSkill(
+        profileStoreRef.current,
+        checkpointProfile.profile,
+        nodeId
+      );
+      focusSkillTreeAfterSelectionRef.current = true;
+      setCheckpointProfile({ status: "ready", profile });
+      setUpgradePurchaseStatus({
+        kind: "success",
+        message: `${nodeId} selected for Iron Warden.`
+      });
+    } catch (error) {
+      if (isCheckpointProfileSaveConflict(error)) {
+        const refreshed = await loadCheckpointProfile(
+          profileStoreRef.current,
+          Date.now,
+          false
+        );
+        if (refreshed.status === "ready") {
+          focusSkillTreeAfterSelectionRef.current = true;
+          setCheckpointProfile(refreshed);
+          setUpgradePurchaseStatus({
+            kind: "failure",
+            message:
+              "Progression changed in another tab. The latest saved progression is loaded; review the eligible skills and retry."
+          });
+          return;
+        }
+      }
+      setUpgradePurchaseStatus({
+        kind: "failure",
+        message:
+          "The skill selection was not saved. Your last confirmed progression is unchanged; retry after checking local storage."
       });
     } finally {
       upgradePurchasePendingRef.current = false;
@@ -624,6 +678,21 @@ export function App({
       skillRecycleButtonRef.current?.focus();
     skillRecycleConfirmationWasOpenRef.current = skillRecycleConfirmationOpen;
   }, [skillRecycleConfirmationOpen]);
+
+  useLayoutEffect(() => {
+    if (!focusSkillTreeAfterSelectionRef.current) return;
+    focusSkillTreeAfterSelectionRef.current = false;
+    skillTreeHeadingRef.current?.focus();
+  });
+
+  const ironWardenSkillEligibility =
+    checkpointProfile.status === "ready"
+      ? deriveCharacterSkillEligibility({
+          schemaVersion: 1,
+          profile: checkpointProfile.profile,
+          tree: ironWardenSkillTree
+        })
+      : undefined;
 
   return (
     <main
@@ -898,6 +967,62 @@ export function App({
                   );
                 })}
               </div>
+              <section aria-labelledby="iron-warden-skills-heading">
+                <h4
+                  id="iron-warden-skills-heading"
+                  ref={skillTreeHeadingRef}
+                  tabIndex={-1}
+                >
+                  Iron Warden skills
+                </h4>
+                {checkpointProfile.profile.selectedSkillNodes.some(
+                  (selection) =>
+                    selection.characterId === "character.iron_warden"
+                ) ? (
+                  <ul>
+                    {checkpointProfile.profile.selectedSkillNodes
+                      .filter(
+                        (selection) =>
+                          selection.characterId === "character.iron_warden"
+                      )
+                      .map((selection) => (
+                        <li key={selection.nodeId}>
+                          <code>{selection.nodeId}</code> selected at level{" "}
+                          {selection.spentSkillPointLevel}
+                        </li>
+                      ))}
+                  </ul>
+                ) : (
+                  <p>No Iron Warden skills selected.</p>
+                )}
+                {ironWardenSkillEligibility?.pendingSkillPointLevel === null ? (
+                  <p>No pending Iron Warden skill points.</p>
+                ) : (
+                  <>
+                    <p>
+                      Pending skill point from level{" "}
+                      {ironWardenSkillEligibility?.pendingSkillPointLevel}.
+                    </p>
+                    <div className="upgrade-catalog">
+                      {ironWardenSkillEligibility?.eligibleNodeIds.map(
+                        (nodeId) => (
+                          <button
+                            type="button"
+                            key={nodeId}
+                            disabled={upgradePurchaseStatus.kind === "pending"}
+                            onClick={() => void selectIronWardenSkill(nodeId)}
+                          >
+                            {upgradePurchaseStatus.kind === "pending" &&
+                            upgradePurchaseStatus.upgradeId === nodeId
+                              ? "Saving skill selection…"
+                              : `Select ${nodeId}`}
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </>
+                )}
+              </section>
               {checkpointProfile.profile.purchasedUpgrades.length > 0 &&
                 !recycleConfirmationOpen && (
                   <button

@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
+    fileParallelism: false,
     include: [
       "packages/*/src/**/*.browser.test.ts",
       "apps/*/src/**/*.browser.test.ts",
