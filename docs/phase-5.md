@@ -32,6 +32,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - a destructive checkpoint confirmation that recycles all shared purchased upgrades through progression authority, refunds authored Forge Ore spend exactly, preserves retained profile state, and updates only from a revision-checked canonical save.
 - a destructive checkpoint confirmation that recycles the authored Iron Warden skill tree through progression authority, restores spent skill-point levels exactly, preserves unrelated progression, and updates only from a revision-checked canonical save.
 - a durable checkpoint Iron Warden skill-selection flow that exposes only shared-authority eligible nodes, spends the next pending level through progression authority, and updates only from a revision-checked canonical save.
+- accessible checkpoint effect summaries for owned and next upgrade ranks plus selected and eligible Iron Warden skill nodes, derived from the shared authored catalogs without changing progression authority.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 

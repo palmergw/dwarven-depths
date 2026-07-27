@@ -1,5 +1,6 @@
 import type { StableId } from "@dwarven-depths/contracts";
 import {
+  type CharacterSkillEffect,
   deriveCharacterSkillEligibility,
   ironWardenSkillTree,
   type ProfileState,
@@ -68,6 +69,33 @@ type UpgradePurchaseStatus =
   | { readonly kind: "pending"; readonly upgradeId: StableId }
   | { readonly kind: "success"; readonly message: string }
   | { readonly kind: "failure"; readonly message: string };
+
+function describeEffect(effect: CharacterSkillEffect): string {
+  switch (effect.kind) {
+    case "maximum_health_add":
+      return `+${effect.value} maximum health`;
+    case "attack_damage_add":
+      return `+${effect.value} attack damage`;
+    case "attack_range_add":
+      return `+${effect.value} attack range`;
+    case "future_cooldown_reduction_ticks":
+      return `-${effect.value} future cooldown ticks`;
+  }
+}
+
+function describeEffects(effects: readonly CharacterSkillEffect[]): string {
+  return effects.length === 0
+    ? "No passive battlefield modifiers."
+    : `${effects.map(describeEffect).join("; ")}.`;
+}
+
+function describePrerequisites(
+  prerequisiteNodeIds: readonly StableId[]
+): string {
+  return prerequisiteNodeIds.length === 0
+    ? "none."
+    : `${prerequisiteNodeIds.join(", ")}.`;
+}
 
 function upgradePurchaseState(
   profile: ProfileState,
@@ -930,6 +958,7 @@ export function App({
                     definition
                   );
                   const descriptionId = `${definition.upgradeId.replaceAll(".", "-")}-purchase-status`;
+                  const effectsId = `${definition.upgradeId.replaceAll(".", "-")}-effects`;
                   const pending =
                     upgradePurchaseStatus.kind === "pending" &&
                     upgradePurchaseStatus.upgradeId === definition.upgradeId;
@@ -946,9 +975,42 @@ export function App({
                         {state.unavailableReason ??
                           `Next rank costs ${state.nextCost} Forge Ore.`}
                       </p>
+                      <div id={effectsId}>
+                        {state.currentRank === 0 ? (
+                          <p>Owned effects: none.</p>
+                        ) : (
+                          <>
+                            <p>Owned effects:</p>
+                            <ul>
+                              {definition.passiveEffectsByRank
+                                .slice(0, state.currentRank)
+                                .map((effects, rankIndex) => (
+                                  <li
+                                    key={`${definition.upgradeId}-rank-${definition.passiveEffectsByRank.indexOf(effects) + 1}`}
+                                  >
+                                    Rank {rankIndex + 1}:{" "}
+                                    {describeEffects(effects)}
+                                  </li>
+                                ))}
+                            </ul>
+                          </>
+                        )}
+                        {state.nextCost === undefined ? (
+                          <p>No further rank effects.</p>
+                        ) : (
+                          <p>
+                            Rank {state.currentRank + 1} effects:{" "}
+                            {describeEffects(
+                              definition.passiveEffectsByRank[
+                                state.currentRank
+                              ] ?? []
+                            )}
+                          </p>
+                        )}
+                      </div>
                       <button
                         type="button"
-                        aria-describedby={descriptionId}
+                        aria-describedby={`${descriptionId} ${effectsId}`}
                         disabled={
                           state.unavailableReason !== undefined ||
                           upgradePurchaseStatus.kind === "pending"
@@ -988,7 +1050,18 @@ export function App({
                       .map((selection) => (
                         <li key={selection.nodeId}>
                           <code>{selection.nodeId}</code> selected at level{" "}
-                          {selection.spentSkillPointLevel}
+                          {selection.spentSkillPointLevel}. Effects:{" "}
+                          {describeEffects(
+                            ironWardenSkillTree.nodes.find(
+                              (node) => node.nodeId === selection.nodeId
+                            )?.effects ?? []
+                          )}{" "}
+                          Prerequisites:{" "}
+                          {describePrerequisites(
+                            ironWardenSkillTree.nodes.find(
+                              (node) => node.nodeId === selection.nodeId
+                            )?.prerequisiteNodeIds ?? []
+                          )}
                         </li>
                       ))}
                   </ul>
@@ -1005,19 +1078,38 @@ export function App({
                     </p>
                     <div className="upgrade-catalog">
                       {ironWardenSkillEligibility?.eligibleNodeIds.map(
-                        (nodeId) => (
-                          <button
-                            type="button"
-                            key={nodeId}
-                            disabled={upgradePurchaseStatus.kind === "pending"}
-                            onClick={() => void selectIronWardenSkill(nodeId)}
-                          >
-                            {upgradePurchaseStatus.kind === "pending" &&
-                            upgradePurchaseStatus.upgradeId === nodeId
-                              ? "Saving skill selection…"
-                              : `Select ${nodeId}`}
-                          </button>
-                        )
+                        (nodeId) => {
+                          const node = ironWardenSkillTree.nodes.find(
+                            (candidate) => candidate.nodeId === nodeId
+                          );
+                          const effectsId = `${nodeId.replaceAll(".", "-")}-effects`;
+                          return (
+                            <section key={nodeId}>
+                              <p id={effectsId}>
+                                Effects: {describeEffects(node?.effects ?? [])}{" "}
+                                Prerequisites:{" "}
+                                {describePrerequisites(
+                                  node?.prerequisiteNodeIds ?? []
+                                )}
+                              </p>
+                              <button
+                                type="button"
+                                aria-describedby={effectsId}
+                                disabled={
+                                  upgradePurchaseStatus.kind === "pending"
+                                }
+                                onClick={() =>
+                                  void selectIronWardenSkill(nodeId)
+                                }
+                              >
+                                {upgradePurchaseStatus.kind === "pending" &&
+                                upgradePurchaseStatus.upgradeId === nodeId
+                                  ? "Saving skill selection…"
+                                  : `Select ${nodeId}`}
+                              </button>
+                            </section>
+                          );
+                        }
                       )}
                     </div>
                   </>

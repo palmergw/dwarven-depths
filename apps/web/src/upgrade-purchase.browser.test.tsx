@@ -91,6 +91,11 @@ describe("checkpoint upgrade purchasing", () => {
 
     await userEvent.click(await button("Upgrade inventory"));
     const purchase = await button("Purchase rank 1 for 10 Forge Ore");
+    expect(purchase).toHaveAccessibleDescription(
+      expect.stringContaining(
+        "Rank 1 effects: +20 maximum health; +2 attack damage."
+      )
+    );
     purchase.focus();
     await vi.waitFor(() => expect(purchase).toHaveFocus());
     await userEvent.keyboard("{Enter}");
@@ -116,6 +121,14 @@ describe("checkpoint upgrade purchasing", () => {
         forgeOreSpent: 10
       }
     ]);
+    expect(document.querySelector(".upgrades")?.textContent).toContain(
+      "Rank 1: +20 maximum health; +2 attack damage."
+    );
+    expect(
+      await button("Purchase rank 2 for 25 Forge Ore")
+    ).toHaveAccessibleDescription(
+      expect.stringContaining("Rank 2 effects: +30 maximum health.")
+    );
     expect(document.querySelector(".purchase-success")?.textContent).toContain(
       "rank purchased"
     );
@@ -136,7 +149,7 @@ describe("checkpoint upgrade purchasing", () => {
     expect(await button("Purchase rank 1 for 10 Forge Ore")).toBeEnabled();
     const lockedItem = await vi.waitFor(() => {
       const candidate = document.querySelector(
-        '[aria-describedby="upgrade-item-powder_cask-purchase-status"]'
+        '[aria-describedby^="upgrade-item-powder_cask-purchase-status"]'
       );
       expect(candidate).toBeInstanceOf(HTMLButtonElement);
       return candidate as HTMLButtonElement;
