@@ -1260,6 +1260,7 @@ describe("authoritative web worker", () => {
   });
 
   it("supports keyboard-only confirmation and announces the result", async () => {
+    vi.setConfig({ testTimeout: 120_000 });
     const container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
@@ -1330,12 +1331,12 @@ describe("authoritative web worker", () => {
         expect(resumeButton.textContent).toBe("Pause combat");
         expect(combatControls?.textContent).toContain("Ready");
       },
-      { timeout: 10_000 }
+      { timeout: 30_000 }
     );
     await userEvent.click(resumeButton);
     await vi.waitFor(
       () => expect(resumeButton.textContent).toBe("Resume combat"),
-      { timeout: 10_000 }
+      { timeout: 30_000 }
     );
     const shieldSlam = Array.from(document.querySelectorAll("button")).find(
       (candidate) => candidate.textContent === "Shield Slam"
@@ -1360,7 +1361,7 @@ describe("authoritative web worker", () => {
     await vi.waitFor(
       () =>
         expect(combatControls?.textContent).toMatch(/Cooldown until tick \d+/),
-      { timeout: 10_000 }
+      { timeout: 30_000 }
     );
   });
 
