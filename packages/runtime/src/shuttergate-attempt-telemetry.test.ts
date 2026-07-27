@@ -107,6 +107,13 @@ describe("local Shuttergate attempt telemetry", () => {
       },
       {
         ...telemetry.payload,
+        waveTransitions: telemetry.payload.waveTransitions.map(
+          (transition, index) =>
+            index === 1 ? { ...transition, wardenHealth: 241 } : transition
+        )
+      },
+      {
+        ...telemetry.payload,
         combat: {
           ...telemetry.payload.combat,
           defeatedEnemies: 999,

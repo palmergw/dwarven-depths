@@ -338,10 +338,24 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
     throw new RangeError("telemetry placement point ID is unsupported");
   if (normalized.targetPolicy !== "nearest")
     throw new RangeError("telemetry target policy is unsupported");
+  const attemptMatch = /^attempt\.shuttergate\.campaign_(\d{6})$/.exec(
+    normalized.attemptId
+  );
+  const attemptNumber = Number(attemptMatch?.[1]);
+  if (
+    attemptMatch === null ||
+    !Number.isSafeInteger(attemptNumber) ||
+    attemptNumber < 1 ||
+    attemptNumber > 64 ||
+    normalized.seed !== String(attemptNumber)
+  )
+    throw new RangeError("telemetry attempt ID and seed are contradictory");
   const upgraded =
     normalized.build.buildId === "build.warden.shield_slam_rank_1.v1";
   if (!upgraded && normalized.build.buildId !== "build.profile.new_campaign.v1")
     throw new RangeError("telemetry build ID is unsupported");
+  if (upgraded !== attemptNumber >= 3)
+    throw new RangeError("telemetry build contradicts the campaign attempt");
   const rosterEntry = normalized.build.roster[0];
   const expectedUpgradeIds = upgraded ? [shieldSlamUpgradeId] : [];
   if (
@@ -367,6 +381,7 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
       (previous !== undefined &&
         (transition.tick <= previous.tick ||
           transition.firedSpawns < previous.firedSpawns ||
+          transition.wardenHealth > previous.wardenHealth ||
           transition.startedWaveIds.length < previous.startedWaveIds.length ||
           previous.startedWaveIds.some(
             (waveId, waveIndex) =>
@@ -389,6 +404,7 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
       "telemetry terminal transition contradicts the outcome"
     );
   if (
+    normalized.combat.scheduledSpawns !== 18 ||
     normalized.combat.firedSpawns > normalized.combat.scheduledSpawns ||
     normalized.combat.defeatedEnemies + normalized.combat.survivingEnemies !==
       normalized.combat.firedSpawns
