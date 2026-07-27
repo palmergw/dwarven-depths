@@ -196,6 +196,8 @@ function requireInRange(
   range: IntegerRange,
   label: string
 ): void {
+  if (!Number.isSafeInteger(value))
+    throw new TypeError(`${label} must be a safe integer`);
   if (value < range.minimum || value > range.maximum)
     throw new RangeError(
       `${label} ${value} is outside ${range.minimum}..${range.maximum}`

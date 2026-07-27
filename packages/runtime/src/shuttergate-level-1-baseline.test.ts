@@ -64,6 +64,12 @@ describe("Shuttergate Level 1 reference baseline", () => {
         baseline
       )
     ).toThrow("terminalTick");
+    expect(() =>
+      assertShuttergateCalibrationMatchesBaseline(
+        { ...evidence, terminalTick: Number.NaN },
+        baseline
+      )
+    ).toThrow("terminalTick must be a safe integer");
   }, 15_000);
 
   it("rejects reversed and nonpositive ranges", () => {
