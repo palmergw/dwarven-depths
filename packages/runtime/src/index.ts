@@ -90,6 +90,11 @@ export {
   type ShuttergateCampaignCalibrationReport
 } from "./shuttergate-campaign-calibration.js";
 export {
+  assertShuttergateCalibrationMatchesBaseline,
+  requireShuttergateLevel1Baseline,
+  type ShuttergateLevel1Baseline
+} from "./shuttergate-level-1-baseline.js";
+export {
   runShuttergateAttempt,
   runShuttergatePlacementCalibration,
   runShuttergateReferenceCalibration,

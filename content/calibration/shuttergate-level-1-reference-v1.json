@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "baselineId": "baseline.shuttergate.level_1.reference.v1",
+  "contentManifestHash": "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d",
+  "calibrationId": "calibration.shuttergate.unupgraded_warden.v1",
+  "seed": "1",
+  "levelId": "level.shuttergate_hall",
+  "placementPointId": "placement.shuttergate_north_guard",
+  "targetPolicy": "nearest",
+  "buildId": "build.profile.new_campaign.v1",
+  "safetyTickLimit": 4500,
+  "terminalResult": "defeat",
+  "terminalReason": "all_dwarves_downed",
+  "deepestStartedWaveId": "wave.shuttergate_3",
+  "ranges": {
+    "terminalTick": { "minimum": 1800, "maximum": 2699 },
+    "firedSpawns": { "minimum": 7, "maximum": 9 },
+    "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+    "survivingEnemies": { "minimum": 1, "maximum": 4 }
+  }
+}
