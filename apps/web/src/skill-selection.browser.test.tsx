@@ -184,12 +184,17 @@ describe("checkpoint Iron Warden skill selection", () => {
     });
 
     await userEvent.click(await button("Upgrade inventory"));
-    await userEvent.click(await button("Select skill.iron_warden.stone_guard"));
+    const selectedElsewhere = await button(
+      "Select skill.iron_warden.stone_guard"
+    );
+    selectedElsewhere.focus();
+    await userEvent.keyboard("{Enter}");
     await vi.waitFor(() =>
       expect(
         document.querySelector(".purchase-failure")?.textContent
       ).toContain("latest saved progression is loaded")
     );
+    expect(document.getElementById("iron-warden-skills-heading")).toHaveFocus();
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "stone_guard selected at level 2"
     );

@@ -444,6 +444,7 @@ export function App({
           false
         );
         if (refreshed.status === "ready") {
+          focusSkillTreeAfterSelectionRef.current = true;
           setCheckpointProfile(refreshed);
           setUpgradePurchaseStatus({
             kind: "failure",
