@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm --filter @dwarven-depths/web^... build && vite build",
+    "build": "pnpm --filter @dwarven-depths/web^... build && vite build && node ../../scripts/build-web-pwa.mjs",
     "dev": "vite",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Dwarven Depths",
+  "short_name": "Dwarven Depths",
+  "description": "A deterministic dwarven defense game.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#17130f",
+  "theme_color": "#17130f",
+  "icons": [
+    {
+      "src": "/icons/dwarven-depths.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

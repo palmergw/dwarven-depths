@@ -15,6 +15,10 @@ if (( $# > 0 )); then
   TEST_COMMAND+="$TEST_ARGUMENTS"
 fi
 
+if (( $# == 0 )); then
+  TEST_COMMAND+=' && node scripts/test-web-offline.mjs'
+fi
+
 docker run --rm \
   --user "$(id -u):$(id -g)" \
   --env HOME=/tmp \
