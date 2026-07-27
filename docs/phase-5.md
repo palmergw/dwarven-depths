@@ -39,6 +39,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - successful shared-upgrade and Iron Warden skill recycling restores focus to a persistent inventory heading when the completed action removes its confirmation trigger.
 - confirmed checkpoint upgrade purchases restore focus to the changed upgrade heading, including when its purchase control becomes disabled at maximum rank.
 - confirmed Iron Warden skill selections restore focus to the selected node heading, including when the final pending skill point removes every selection control.
+- an installable production web shell whose versioned service worker precaches the complete generated application and simulation-worker assets, preserves the prior active cache across failed updates, and reopens the checkpoint offline after an initial successful load.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
@@ -66,5 +67,6 @@ Broader Phase 5 work remains unimplemented until explicitly approved and added t
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/upgrade-recycle.browser.test.tsx`
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/skill-recycle.browser.test.tsx`
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/skill-selection.browser.test.tsx`
+- `node scripts/test-web-offline.mjs`
 - `pnpm test:browser:docker`
 - `pnpm run verify`

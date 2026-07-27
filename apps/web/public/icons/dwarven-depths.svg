@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Dwarven Depths crossed hammers</title>
+  <rect width="512" height="512" rx="96" fill="#17130f"/>
+  <path d="M118 102h88v62h-24l77 77-42 42-77-77v24h-62v-88z" fill="#d9a441"/>
+  <path d="M394 102h-88v62h24l-77 77 42 42 77-77v24h62v-88z" fill="#f2e3bd"/>
+  <path d="M218 276h76l44 132H174z" fill="#8f6237"/>
+  <path d="M174 408h164" stroke="#d9a441" stroke-width="28" stroke-linecap="round"/>
+</svg>
