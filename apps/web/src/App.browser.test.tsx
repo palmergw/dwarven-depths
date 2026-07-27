@@ -173,6 +173,43 @@ function renderApp(): void {
   root.render(<App />);
 }
 
+function captureRunEvidenceDownloads(): Blob[] {
+  const blobs: Blob[] = [];
+  vi.spyOn(URL, "createObjectURL").mockImplementation((blob) => {
+    if (!(blob instanceof Blob)) throw new Error("expected run-evidence blob");
+    blobs.push(blob);
+    return `blob:completion-evidence-${blobs.length}`;
+  });
+  vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
+    () => undefined
+  );
+  return blobs;
+}
+
+async function expectCanonicalRunEvidence(
+  blob: Blob | undefined
+): Promise<void> {
+  expect(blob).toBeInstanceOf(Blob);
+  const evidence = JSON.parse((await blob?.text()) ?? "") as unknown;
+  expect(evidence).toMatchObject({
+    schemaVersion: 2,
+    replay: {
+      schemaVersion: 1,
+      scenarioId: "scenario.conformance.shield_slam",
+      expectedTerminalResult: expected.terminalResult,
+      expectedTerminalTick: 1,
+      checkpoints: [
+        {
+          tick: 1,
+          stateChecksum: expected.finalStateChecksum,
+          eventStreamChecksum: expected.eventStreamChecksum
+        }
+      ]
+    }
+  });
+}
+
 function appliedMotionPreference(): string | null {
   return (
     document.querySelector("main")?.getAttribute("data-motion-preference") ??
@@ -1186,6 +1223,76 @@ describe("authoritative web worker", () => {
     expect(workers[1]?.terminated).toBe(true);
   });
 
+  it("completes the canonical client journey with keyboard input only", async () => {
+    const worker = new ControlledResultWorker();
+    const blobs = captureRunEvidenceDownloads();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    await userEvent.tab();
+    expect(await buttonWithText("Begin preparation")).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+
+    await userEvent.tab();
+    expect(await buttonWithText("Confirm preparation")).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+
+    const heading = await resultHeading("Victory results");
+    expect(heading).toHaveFocus();
+    expect(document.querySelector(".evidence")?.textContent).toContain(
+      expected.finalStateChecksum
+    );
+    expect(document.querySelector(".evidence")?.textContent).toContain(
+      expected.eventStreamChecksum
+    );
+    await userEvent.tab();
+    expect(await buttonWithText("Download run evidence")).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await vi.waitFor(() => expect(blobs).toHaveLength(1));
+    await expectCanonicalRunEvidence(blobs[0]);
+
+    await userEvent.tab();
+    expect(await buttonWithText("Return to checkpoint")).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    expect(worker.terminated).toBe(true);
+  });
+
+  it("completes the canonical client journey with mouse input only", async () => {
+    const worker = new ControlledResultWorker();
+    const blobs = captureRunEvidenceDownloads();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await resultHeading("Victory results");
+    expect(document.querySelector(".evidence")?.textContent).toContain(
+      expected.finalStateChecksum
+    );
+    expect(document.querySelector(".evidence")?.textContent).toContain(
+      expected.eventStreamChecksum
+    );
+    await userEvent.click(await buttonWithText("Download run evidence"));
+    await vi.waitFor(() => expect(blobs).toHaveLength(1));
+    await expectCanonicalRunEvidence(blobs[0]);
+
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    expect(worker.terminated).toBe(true);
+  });
+
   it("downloads byte-identical versioned run evidence with keyboard input", async () => {
     const workers: ControlledResultWorker[] = [];
     const createWorker = (): Worker => {
@@ -1279,7 +1386,7 @@ describe("authoritative web worker", () => {
     expect(revokeObjectUrl).toHaveBeenLastCalledWith("blob:run-evidence-2");
   });
 
-  it("supports keyboard-only confirmation and announces the result", async () => {
+  it("supports authoritative combat controls and announces their state", async () => {
     const container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
