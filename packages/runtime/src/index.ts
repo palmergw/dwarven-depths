@@ -1024,6 +1024,13 @@ export async function verifyReplay(
     throw new TypeError("Replay must contain a terminal checkpoint");
   }
   requireMatch(
+    result.terminalTick === finalCheckpoint.tick,
+    "terminal_tick_mismatch",
+    finalCheckpoint.tick,
+    result.terminalTick,
+    finalCheckpoint.tick
+  );
+  requireMatch(
     result.finalStateChecksum === finalCheckpoint.stateChecksum,
     "state_checksum_mismatch",
     finalCheckpoint.stateChecksum,
