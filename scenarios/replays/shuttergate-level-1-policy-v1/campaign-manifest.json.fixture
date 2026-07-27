@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 2,
+  "complete": true,
+  "scenarioId": "campaign_scenario.shuttergate.v1",
+  "scenarioHash": "3e54e1b5cc143dc5ad5cbe151768d2f3400845b532a42370ad8d0f781664d48f",
+  "contentManifestHash": "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d",
+  "attemptCount": 3,
+  "campaignPayloadChecksum": "4cf8c16833b32c8eb5ab4ead4ce249f17f53d678c6b791869d00cb288f6b9280",
+  "calibrationReportChecksum": "f797acbc3a071e569a9ddbc3ee8e88808ef5889db13afa807e94e199deb27ced"
+}
