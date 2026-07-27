@@ -113,6 +113,10 @@ describe("checkpoint shared-upgrade recycle", () => {
     await vi.waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0]?.expectedRevision).toBe(initial.profile.revision);
     expect(await button("Saving recycle…")).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
+    expect(
+      document.getElementById("recycle-confirmation-heading")
+    ).not.toBeNull();
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Available Forge Ore: 30"
     );
@@ -130,6 +134,30 @@ describe("checkpoint shared-upgrade recycle", () => {
       "No upgrades purchased"
     );
     expect(writes).toHaveLength(1);
+  });
+
+  it("unwinds confirmation and inventory by Escape without changing progression", async () => {
+    const initial = await envelope(purchasedProfile());
+    const writes: IndexedDbProfileWriteRequest[] = [];
+    renderWithStore(
+      storeWith(initial, async (request): Promise<ProfileSaveEnvelope> => {
+        writes.push(request);
+        return request.envelope as ProfileSaveEnvelope;
+      })
+    );
+
+    await userEvent.click(await button("Upgrade inventory"));
+    await userEvent.click(await button("Recycle all shared upgrades"));
+    await userEvent.keyboard("{Escape}");
+    expect(await button("Recycle all shared upgrades")).toHaveFocus();
+    expect(document.querySelector(".upgrades")?.textContent).toContain(
+      "Available Forge Ore: 30"
+    );
+
+    await userEvent.keyboard("{Escape}");
+    expect(await button("Upgrade inventory")).toHaveFocus();
+    expect(document.querySelector(".upgrades")).toBeNull();
+    expect(writes).toHaveLength(0);
   });
 
   it("restores cancel focus and preserves confirmed progression on write failure", async () => {

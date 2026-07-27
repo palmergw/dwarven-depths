@@ -33,6 +33,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - a destructive checkpoint confirmation that recycles the authored Iron Warden skill tree through progression authority, restores spent skill-point levels exactly, preserves unrelated progression, and updates only from a revision-checked canonical save.
 - a durable checkpoint Iron Warden skill-selection flow that exposes only shared-authority eligible nodes, spends the next pending level through progression authority, and updates only from a revision-checked canonical save.
 - accessible checkpoint effect summaries for owned and next upgrade ranks plus selected and eligible Iron Warden skill nodes, derived from the shared authored catalogs without changing progression authority.
+- deterministic Escape-key unwinding for checkpoint settings, upgrade inventory, and nested recycle confirmations, with trigger-focus restoration and no dismissal while a progression save is pending.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 

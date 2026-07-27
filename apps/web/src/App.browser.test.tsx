@@ -209,9 +209,7 @@ describe("presentation settings", () => {
     });
     expect(document.activeElement).toBe(heading);
 
-    const closeButton = await buttonWithText("Close settings");
-    closeButton.focus();
-    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("{Escape}");
     await vi.waitFor(() =>
       expect(document.activeElement).toBe(
         Array.from(document.querySelectorAll("button")).find(
