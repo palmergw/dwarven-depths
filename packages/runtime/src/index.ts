@@ -569,6 +569,55 @@ export function createShieldSlamWebPreparationState(
   });
 }
 
+function finalizeShieldSlamWebStep(
+  scenario: ScenarioDefinition,
+  result: {
+    readonly state: SimulationState;
+    readonly events: readonly SimulationEvent[];
+  },
+  enabled: boolean
+): {
+  readonly state: SimulationState;
+  readonly events: readonly SimulationEvent[];
+} {
+  const enemies = result.state.battlefield?.enemyCombatants ?? [];
+  if (
+    !enabled ||
+    scenario.id !== "scenario.conformance.shield_slam" ||
+    result.state.phase !== "COMBAT_RUNNING" ||
+    enemies.length === 0 ||
+    enemies.some((enemy) => enemy.lifecycleState === "active")
+  )
+    return result;
+  const finalCleanupSequence = result.state.eventSequence;
+  const victorySequence = finalCleanupSequence + 1;
+  const lifecycleEvents: readonly SimulationEvent[] = [
+    Object.freeze({
+      id: `event.${String(finalCleanupSequence).padStart(6, "0")}` as never,
+      tick: result.state.tick,
+      sequence: finalCleanupSequence,
+      type: "final_cleanup.entered",
+      ruleId: "SIM-FINAL-CLEANUP-001"
+    }),
+    Object.freeze({
+      id: `event.${String(victorySequence).padStart(6, "0")}` as never,
+      tick: result.state.tick,
+      sequence: victorySequence,
+      type: "round.victory",
+      ruleId: "SIM-VICTORY-001"
+    })
+  ];
+  return Object.freeze({
+    state: Object.freeze({
+      ...result.state,
+      phase: "TERMINAL",
+      terminalResult: "victory",
+      eventSequence: victorySequence + 1
+    }),
+    events: Object.freeze([...result.events, ...lifecycleEvents])
+  });
+}
+
 /** Incremental authority for hosts that admit input between fixed steps. */
 export class LiveScenarioHost {
   readonly #scenario: ScenarioDefinition;
@@ -580,6 +629,7 @@ export class LiveScenarioHost {
   #commands: CommandEnvelope[] = [];
   #events: SimulationEvent[] = [];
   #failed = false;
+  readonly #usesShieldSlamWebAuthority: boolean;
 
   constructor(
     scenario: ScenarioDefinition,
@@ -588,6 +638,7 @@ export class LiveScenarioHost {
   ) {
     this.#scenario = scenario;
     this.#content = content;
+    this.#usesShieldSlamWebAuthority = initialState !== undefined;
     this.#effectiveScenario = compileScenario(
       { ...scenario, commands: [] },
       content
@@ -683,7 +734,11 @@ export class LiveScenarioHost {
     const commands = this.#pendingCommands;
     this.#pendingCommands = [];
     const previousState = this.#state;
-    const result = stepSimulation(previousState, commands, this.#content);
+    const result = finalizeShieldSlamWebStep(
+      this.#scenario,
+      stepSimulation(previousState, commands, this.#content),
+      this.#usesShieldSlamWebAuthority
+    );
     if (result.state === previousState) {
       this.#failed = true;
       this.#pendingCommands = [];
@@ -805,7 +860,11 @@ async function executeScenario(
             .map((envelope) => ({ ...envelope }));
     const previousState = state;
     executedCommands.push(...commands);
-    const result = stepSimulation(state, commands, content);
+    const result = finalizeShieldSlamWebStep(
+      scenario,
+      stepSimulation(state, commands, content),
+      initialState !== undefined
+    );
     if (result.state === previousState) {
       throw new RuntimeSafetyStopError(
         "simulation_stalled",

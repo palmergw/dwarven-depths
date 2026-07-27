@@ -111,25 +111,10 @@ function runCliFrom(cwd: string, ...args: string[]) {
 }
 
 async function createShieldSlamClientEvidence() {
-  const contentInput = JSON.parse(
-    readFileSync("content/fixtures/phase-3-shuttergate.json", "utf8")
-  ) as {
-    definitions: Array<{ kind: string; id: string; waveIds?: string[] }>;
-  };
-  const level = contentInput.definitions.find(
-    (definition) => definition.id === "level.shuttergate_hall"
-  );
-  if (level === undefined) throw new Error("missing Shield Slam level fixture");
-  level.waveIds = [];
-  const scenarioInput = {
-    ...JSON.parse(
-      readFileSync("scenarios/conformance/shield-slam.json", "utf8")
-    ),
-    maximumTicks: 1,
-    commands: [{ atTick: 0, type: "confirmPreparation" }]
-  };
-  const contentPath = temporaryFile("content.json", contentInput);
-  const scenarioPath = temporaryFile("scenario.json", scenarioInput);
+  const contentPath = resolve("content/fixtures/phase-3-shuttergate.json");
+  const scenarioPath = resolve("scenarios/conformance/shield-slam.json");
+  const contentInput = JSON.parse(readFileSync(contentPath, "utf8"));
+  const scenarioInput = JSON.parse(readFileSync(scenarioPath, "utf8"));
   const content = await compileContent(contentInput);
   const authoredScenario = compileScenario(scenarioInput, content);
   const host = createLiveScenarioHost(
@@ -142,6 +127,22 @@ async function createShieldSlamClientEvidence() {
       host.scheduleCommand({
         atTick: host.state.tick,
         type: "confirmPreparation"
+      });
+    } else if (
+      !host.state.activeCooldowns?.some(
+        (cooldown) =>
+          cooldown.ownerEntityId === "entity.dwarf.warden" &&
+          cooldown.cooldownId.startsWith(
+            "ability.iron_warden.shield_slam.cooldown."
+          ) &&
+          cooldown.completeAtTick > host.state.tick
+      )
+    ) {
+      host.scheduleCommand({
+        atTick: host.state.tick,
+        type: "activateAbility",
+        dwarfEntityId: "entity.dwarf.warden" as never,
+        abilityId: "ability.iron_warden.shield_slam" as never
       });
     }
     host.step();
