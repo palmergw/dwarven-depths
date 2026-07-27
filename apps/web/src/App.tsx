@@ -770,14 +770,14 @@ export function App({
   useLayoutEffect(() => {
     if (recycleConfirmationOpen) recycleHeadingRef.current?.focus();
     else if (recycleConfirmationWasOpenRef.current)
-      recycleButtonRef.current?.focus();
+      (recycleButtonRef.current ?? upgradeInventoryHeadingRef.current)?.focus();
     recycleConfirmationWasOpenRef.current = recycleConfirmationOpen;
   }, [recycleConfirmationOpen]);
 
   useLayoutEffect(() => {
     if (skillRecycleConfirmationOpen) skillRecycleHeadingRef.current?.focus();
     else if (skillRecycleConfirmationWasOpenRef.current)
-      skillRecycleButtonRef.current?.focus();
+      (skillRecycleButtonRef.current ?? skillTreeHeadingRef.current)?.focus();
     skillRecycleConfirmationWasOpenRef.current = skillRecycleConfirmationOpen;
   }, [skillRecycleConfirmationOpen]);
 

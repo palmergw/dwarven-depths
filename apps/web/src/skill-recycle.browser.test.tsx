@@ -171,6 +171,7 @@ describe("checkpoint Iron Warden skill recycle", () => {
     expect(document.querySelector(".upgrades")?.textContent).not.toContain(
       "Recycle Iron Warden skill tree"
     );
+    expect(document.getElementById("iron-warden-skills-heading")).toHaveFocus();
   });
 
   it("restores cancel focus and preserves confirmed progression on failure", async () => {
