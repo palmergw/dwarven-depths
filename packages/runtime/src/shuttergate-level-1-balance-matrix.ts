@@ -7,6 +7,15 @@ import {
 
 const referenceManifestHash =
   "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d";
+const referenceSeed = "1";
+const referenceSafetyTickLimit = 4_500;
+const shuttergateLevel1WaveIds = Object.freeze([
+  "wave.shuttergate_1",
+  "wave.shuttergate_2",
+  "wave.shuttergate_3",
+  "wave.shuttergate_4",
+  "wave.shuttergate_5"
+] as const);
 
 export const shuttergateLevel1PlacementPointIds = Object.freeze([
   "placement.shuttergate_north_guard",
@@ -33,7 +42,7 @@ export interface ShuttergateLevel1BalanceCase {
   readonly buildId: ShuttergateCalibrationBuildId;
   readonly terminalResult: "defeat";
   readonly terminalReason: "all_dwarves_downed";
-  readonly deepestStartedWaveId: string;
+  readonly deepestStartedWaveId: (typeof shuttergateLevel1WaveIds)[number];
   readonly ranges: {
     readonly terminalTick: IntegerRange;
     readonly firedSpawns: IntegerRange;
@@ -154,11 +163,11 @@ function requireCase(
     throw new RangeError(`${label} terminal result must be defeat`);
   if (record.terminalReason !== "all_dwarves_downed")
     throw new RangeError(`${label} terminal reason must be all_dwarves_downed`);
-  if (
-    typeof record.deepestStartedWaveId !== "string" ||
-    !/^wave\.[a-z0-9_]+$/.test(record.deepestStartedWaveId)
-  )
-    throw new TypeError(`${label} deepest wave ID is invalid`);
+  const deepestStartedWaveId = requireMember(
+    record.deepestStartedWaveId,
+    shuttergateLevel1WaveIds,
+    `${label} deepest wave ID`
+  );
   const rangesRecord = requirePlainRecord(record.ranges, `${label} ranges`, [
     "defeatedEnemies",
     "firedSpawns",
@@ -205,7 +214,7 @@ function requireCase(
     ),
     terminalResult: record.terminalResult,
     terminalReason: record.terminalReason,
-    deepestStartedWaveId: record.deepestStartedWaveId,
+    deepestStartedWaveId,
     ranges
   });
 }
@@ -253,16 +262,16 @@ export function requireShuttergateLevel1BalanceMatrix(
     );
   if (record.levelId !== "level.shuttergate_hall")
     throw new RangeError("Shuttergate Level 1 balance level ID is unsupported");
-  if (
-    typeof record.seed !== "string" ||
-    !/^[1-9]\d{0,9}$/.test(record.seed) ||
-    BigInt(record.seed) > 0xffff_ffffn
-  )
-    throw new TypeError("Shuttergate Level 1 balance seed must be canonical");
+  if (record.seed !== referenceSeed)
+    throw new RangeError("Shuttergate Level 1 balance seed is not pinned");
   const safetyTickLimit = requirePositiveInteger(
     record.safetyTickLimit,
     "Shuttergate Level 1 balance safety tick limit"
   );
+  if (safetyTickLimit !== referenceSafetyTickLimit)
+    throw new RangeError(
+      "Shuttergate Level 1 balance safety tick limit is not pinned"
+    );
   const caseInputs = requirePlainArray(
     record.cases,
     "Shuttergate Level 1 balance cases"

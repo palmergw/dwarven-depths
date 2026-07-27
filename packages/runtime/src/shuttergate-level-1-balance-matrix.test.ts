@@ -87,6 +87,27 @@ describe("Shuttergate Level 1 balance matrix", () => {
       })
     ).toThrow("content manifest is not pinned");
     expect(() =>
+      requireShuttergateLevel1BalanceMatrix({ ...matrixInput, seed: "2" })
+    ).toThrow("seed is not pinned");
+    expect(() =>
+      requireShuttergateLevel1BalanceMatrix({
+        ...matrixInput,
+        safetyTickLimit: 4499
+      })
+    ).toThrow("safety tick limit is not pinned");
+    expect(() =>
+      requireShuttergateLevel1BalanceMatrix({
+        ...matrixInput,
+        cases: [
+          {
+            ...matrixInput.cases[0],
+            deepestStartedWaveId: "wave.not_authored"
+          },
+          ...matrixInput.cases.slice(1)
+        ]
+      })
+    ).toThrow("deepest wave ID is unsupported");
+    expect(() =>
       requireShuttergateLevel1BalanceMatrix({
         ...matrixInput,
         cases: [
