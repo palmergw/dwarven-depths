@@ -38,6 +38,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - active recycle confirmations isolate every background upgrade-inventory control from pointer, keyboard, and assistive-technology interaction, restoring the unchanged inventory when dismissed.
 - successful shared-upgrade and Iron Warden skill recycling restores focus to a persistent inventory heading when the completed action removes its confirmation trigger.
 - confirmed checkpoint upgrade purchases restore focus to the changed upgrade heading, including when its purchase control becomes disabled at maximum rank.
+- confirmed Iron Warden skill selections restore focus to the selected node heading, including when the final pending skill point removes every selection control.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
