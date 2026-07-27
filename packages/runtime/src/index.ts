@@ -92,9 +92,11 @@ export {
 } from "./shuttergate-campaign-artifact.js";
 export {
   createShuttergateCampaignCalibrationReport,
+  renderShuttergateCampaignReleaseCandidateMarkdown,
   type ShuttergateCampaignCalibrationAttempt,
   type ShuttergateCampaignCalibrationComparison,
-  type ShuttergateCampaignCalibrationReport
+  type ShuttergateCampaignCalibrationReport,
+  type ShuttergateCampaignReleaseCandidateIdentity
 } from "./shuttergate-campaign-calibration.js";
 export {
   assertShuttergateCalibrationMatchesBalanceCase,

@@ -28,6 +28,12 @@ jobs:
       - run: pnpm test
       - run: pnpm validate
       - run: pnpm verify:scenario
+      - run: pnpm report:release-candidate
+      - uses: actions/upload-artifact@v7
+        with:
+          name: phase-6-release-candidate-reports
+          path: .ddh/release-candidate-reports
+          if-no-files-found: error
 
   browser-parity:
     runs-on: ubuntu-latest
