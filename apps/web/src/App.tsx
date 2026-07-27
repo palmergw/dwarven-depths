@@ -281,6 +281,7 @@ export function App({
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
   const pendingAbilityKeysRef = useRef(new Set<string>());
   const resultHeadingRef = useRef<HTMLHeadingElement>(null);
+  const failureHeadingRef = useRef<HTMLHeadingElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsHeadingRef = useRef<HTMLHeadingElement>(null);
   const settingsWasOpenRef = useRef(false);
@@ -620,7 +621,7 @@ export function App({
   }
 
   function returnToCheckpoint(): void {
-    if (view.phase !== "result") return;
+    if (view.phase !== "result" && view.phase !== "failure") return;
     workerRef.current?.terminate();
     workerRef.current = undefined;
     initializedRef.current = false;
@@ -755,6 +756,7 @@ export function App({
 
   useLayoutEffect(() => {
     if (view.phase === "result") resultHeadingRef.current?.focus();
+    else if (view.phase === "failure") failureHeadingRef.current?.focus();
   }, [view]);
 
   useLayoutEffect(() => {
@@ -1492,6 +1494,19 @@ export function App({
               >
                 Download run evidence
               </button>
+              <button type="button" onClick={returnToCheckpoint}>
+                Return to checkpoint
+              </button>
+            </div>
+          </section>
+        )}
+        {view.phase === "failure" && (
+          <section className="results" aria-labelledby="failure-heading">
+            <h3 id="failure-heading" ref={failureHeadingRef} tabIndex={-1}>
+              Run failed
+            </h3>
+            <p>{view.message}</p>
+            <div className="result-actions">
               <button type="button" onClick={returnToCheckpoint}>
                 Return to checkpoint
               </button>

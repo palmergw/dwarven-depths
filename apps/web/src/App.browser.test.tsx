@@ -134,6 +134,52 @@ class ControlledResultWorker {
   }
 }
 
+class ControlledFailureWorker {
+  readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
+  terminated = false;
+
+  addEventListener(
+    type: string,
+    listener: (event: MessageEvent<unknown>) => void
+  ): void {
+    if (type === "message") this.listeners.add(listener);
+  }
+
+  postMessage(message: unknown): void {
+    if (typeof message !== "object" || message === null) return;
+    const candidate = message as {
+      readonly type?: string;
+      readonly command?: { readonly type?: string };
+    };
+    if (candidate.type === "initialize") {
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "preparation",
+        levelId: "level.shuttergate_hall",
+        deployableEntityCount: 0,
+        placementPointCount: 2
+      });
+    } else if (candidate.command?.type === "confirmPreparation") {
+      this.emit({
+        protocolVersion: 4,
+        type: "failure",
+        code: "runtime_failure",
+        message: "The authoritative run reached its fixed tick budget."
+      });
+    }
+  }
+
+  emit(message: unknown): void {
+    const event = new MessageEvent("message", { data: message });
+    for (const listener of this.listeners) listener(event);
+  }
+
+  terminate(): void {
+    this.terminated = true;
+  }
+}
+
 async function buttonWithText(text: string): Promise<HTMLButtonElement> {
   return vi.waitFor(() => {
     const candidate = Array.from(document.querySelectorAll("button")).find(
@@ -1179,6 +1225,58 @@ describe("authoritative web worker", () => {
         (button) => button.textContent === "Return to checkpoint"
       ) as HTMLButtonElement
     );
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    expect(workers).toHaveLength(2);
+    expect(workers[1]?.terminated).toBe(true);
+  });
+
+  it("recovers from authoritative failures by keyboard and mouse", async () => {
+    const workers: ControlledFailureWorker[] = [];
+    const createWorker = (): Worker => {
+      const worker = new ControlledFailureWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={createWorker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    const firstFailureHeading = await vi.waitFor(() => {
+      const heading = document.querySelector("#failure-heading");
+      expect(heading).toBeInstanceOf(HTMLHeadingElement);
+      return heading as HTMLHeadingElement;
+    });
+    expect(document.activeElement).toBe(firstFailureHeading);
+    expect(document.body.textContent).toContain(
+      "The authoritative run reached its fixed tick budget."
+    );
+    const keyboardReturn = await buttonWithText("Return to checkpoint");
+    keyboardReturn.focus();
+    await userEvent.keyboard("{Enter}");
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    expect(workers[0]?.terminated).toBe(true);
+    expect(document.querySelector("#failure-heading")).toBeNull();
+    expect(document.querySelector("figcaption")).toBeNull();
+
+    workers[0]?.emit({
+      protocolVersion: 4,
+      type: "failure",
+      code: "runtime_failure",
+      message: "stale worker failure"
+    });
+    expect(document.body.textContent).not.toContain("stale worker failure");
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Return to checkpoint");
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Checkpoint ready")
     );
