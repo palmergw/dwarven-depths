@@ -37,6 +37,18 @@ function pendingProfile(): ProfileState {
   };
 }
 
+function finalPendingProfile(): ProfileState {
+  const profile = pendingProfile();
+  const experience = profile.characterExperienceStates[0];
+  if (experience === undefined) throw new Error("missing Iron Warden state");
+  return {
+    ...profile,
+    characterExperienceStates: [
+      { ...experience, level: 2, experience: 100, pendingSkillPointLevels: [2] }
+    ]
+  };
+}
+
 async function envelope(profile: ProfileState): Promise<ProfileSaveEnvelope> {
   return createProfileSaveEnvelope({
     contentVersion: "content.empty-level.v1",
@@ -80,7 +92,7 @@ afterEach(() => {
 });
 
 describe("checkpoint Iron Warden skill selection", () => {
-  it("persists authoritative keyboard choices and focuses the changed tree", async () => {
+  it("persists authoritative keyboard choices and focuses the selected node", async () => {
     const initial = await envelope(pendingProfile());
     const writes: IndexedDbProfileWriteRequest[] = [];
     let releaseWrite: ((value: ProfileSaveEnvelope) => void) | undefined;
@@ -123,8 +135,13 @@ describe("checkpoint Iron Warden skill selection", () => {
     ).toEqual([3]);
     releaseWrite?.(written);
 
-    const heading = document.getElementById("iron-warden-skills-heading");
-    await vi.waitFor(() => expect(heading).toHaveFocus());
+    await vi.waitFor(() =>
+      expect(
+        document.getElementById(
+          "skill-iron_warden-stone_guard-selected-heading"
+        )
+      ).toHaveFocus()
+    );
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Pending skill point from level 3"
     );
@@ -145,6 +162,39 @@ describe("checkpoint Iron Warden skill selection", () => {
         "long_reach selected at level 3. Effects: +1 attack range. Prerequisites: skill.iron_warden.stone_guard."
       )
     );
+  });
+
+  it("focuses the selected node after spending the final skill point", async () => {
+    const initial = await envelope(finalPendingProfile());
+    renderWithStore({
+      load: async () => loaded(initial),
+      write: async (request) => request.envelope as ProfileSaveEnvelope,
+      close: async () => undefined
+    });
+
+    await userEvent.click(await button("Upgrade inventory"));
+    const select = await button("Select skill.iron_warden.stone_guard");
+    select.focus();
+    await userEvent.keyboard("{Enter}");
+
+    const heading = await vi.waitFor(() => {
+      const selectedHeading = document.getElementById(
+        "skill-iron_warden-stone_guard-selected-heading"
+      );
+      expect(selectedHeading).toHaveFocus();
+      return selectedHeading;
+    });
+    expect(heading?.parentElement?.textContent).toContain(
+      "selected at level 2. Effects: +25 maximum health; +3 attack damage. Prerequisites: none."
+    );
+    expect(document.querySelector(".upgrades")?.textContent).toContain(
+      "No pending Iron Warden skill points."
+    );
+    expect(
+      Array.from(document.querySelectorAll("button")).some((candidate) =>
+        candidate.textContent?.startsWith("Select skill.iron_warden")
+      )
+    ).toBe(false);
   });
 
   it("preserves confirmed progression when mouse selection cannot be saved", async () => {

@@ -295,6 +295,7 @@ export function App({
   const skillRecycleConfirmationWasOpenRef = useRef(false);
   const skillTreeHeadingRef = useRef<HTMLHeadingElement>(null);
   const focusSkillTreeAfterSelectionRef = useRef(false);
+  const focusSkillAfterSelectionRef = useRef<StableId | undefined>(undefined);
   const focusUpgradeAfterPurchaseRef = useRef<StableId | undefined>(undefined);
 
   function clearPendingAbilities(): void {
@@ -501,7 +502,7 @@ export function App({
         checkpointProfile.profile,
         nodeId
       );
-      focusSkillTreeAfterSelectionRef.current = true;
+      focusSkillAfterSelectionRef.current = nodeId;
       setCheckpointProfile({ status: "ready", profile });
       setUpgradePurchaseStatus({
         kind: "success",
@@ -811,6 +812,15 @@ export function App({
     focusUpgradeAfterPurchaseRef.current = undefined;
     document
       .getElementById(`${upgradeId.replaceAll(".", "-")}-heading`)
+      ?.focus();
+  });
+
+  useLayoutEffect(() => {
+    const nodeId = focusSkillAfterSelectionRef.current;
+    if (nodeId === undefined) return;
+    focusSkillAfterSelectionRef.current = undefined;
+    document
+      .getElementById(`${nodeId.replaceAll(".", "-")}-selected-heading`)
       ?.focus();
   });
 
@@ -1169,19 +1179,31 @@ export function App({
                       )
                       .map((selection) => (
                         <li key={selection.nodeId}>
-                          <code>{selection.nodeId}</code> selected at level{" "}
-                          {selection.spentSkillPointLevel}. Effects:{" "}
-                          {describeEffects(
-                            ironWardenSkillTree.nodes.find(
-                              (node) => node.nodeId === selection.nodeId
-                            )?.effects ?? []
-                          )}{" "}
-                          Prerequisites:{" "}
-                          {describePrerequisites(
-                            ironWardenSkillTree.nodes.find(
-                              (node) => node.nodeId === selection.nodeId
-                            )?.prerequisiteNodeIds ?? []
-                          )}
+                          <section
+                            aria-labelledby={`${selection.nodeId.replaceAll(".", "-")}-selected-heading`}
+                          >
+                            <h5
+                              id={`${selection.nodeId.replaceAll(".", "-")}-selected-heading`}
+                              tabIndex={-1}
+                            >
+                              <code>{selection.nodeId}</code> selected at level{" "}
+                              {selection.spentSkillPointLevel}.
+                            </h5>{" "}
+                            <p>
+                              Effects:{" "}
+                              {describeEffects(
+                                ironWardenSkillTree.nodes.find(
+                                  (node) => node.nodeId === selection.nodeId
+                                )?.effects ?? []
+                              )}{" "}
+                              Prerequisites:{" "}
+                              {describePrerequisites(
+                                ironWardenSkillTree.nodes.find(
+                                  (node) => node.nodeId === selection.nodeId
+                                )?.prerequisiteNodeIds ?? []
+                              )}
+                            </p>
+                          </section>
                         </li>
                       ))}
                   </ul>
