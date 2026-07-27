@@ -122,6 +122,13 @@ describe("local Shuttergate attempt telemetry", () => {
       },
       {
         ...telemetry.payload,
+        waveTransitions: [
+          telemetry.payload.waveTransitions[0],
+          telemetry.payload.waveTransitions.at(-1)
+        ]
+      },
+      {
+        ...telemetry.payload,
         combat: {
           ...telemetry.payload.combat,
           defeatedEnemies: 999,

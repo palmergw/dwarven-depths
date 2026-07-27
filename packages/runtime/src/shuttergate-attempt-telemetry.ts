@@ -396,6 +396,8 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
   const terminalTransition = normalized.waveTransitions.at(-1);
   if (
     terminalTransition === undefined ||
+    normalized.waveTransitions.length !==
+      terminalTransition.startedWaveIds.length + 1 ||
     terminalTransition.tick !== normalized.outcome.durationTicks ||
     terminalTransition.startedWaveIds.at(-1) !==
       normalized.outcome.deepestStartedWaveId ||
