@@ -165,6 +165,20 @@ describe("Shuttergate release-candidate Markdown", () => {
         calibrationReportChecksum: await canonicalHash(inconsistent)
       })
     ).rejects.toThrow("inconsistent Shuttergate release-candidate comparison");
+
+    const falseObservation = structuredClone(report);
+    if (falseObservation.comparison === null)
+      throw new Error("missing test comparison");
+    const falseComparison = falseObservation.comparison as {
+      observation: string;
+    };
+    falseComparison.observation = "terminal_result_changed";
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(falseObservation, {
+        ...identity,
+        calibrationReportChecksum: await canonicalHash(falseObservation)
+      })
+    ).rejects.toThrow("inconsistent Shuttergate release-candidate comparison");
     await expect(
       renderShuttergateCampaignReleaseCandidateMarkdown(report, {
         ...identity,

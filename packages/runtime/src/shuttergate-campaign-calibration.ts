@@ -211,7 +211,8 @@ function requireReleaseCandidateReport(
     upgraded.terminalTick - baseline.terminalTick !==
       report.comparison.terminalTickDelta ||
     upgraded.defeatedEnemies - baseline.defeatedEnemies !==
-      report.comparison.defeatedEnemyDelta
+      report.comparison.defeatedEnemyDelta ||
+    comparisonObservation(baseline, upgraded) !== report.comparison.observation
   ) {
     throw new TypeError(
       "inconsistent Shuttergate release-candidate comparison"
