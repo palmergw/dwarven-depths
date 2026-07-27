@@ -30,6 +30,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - a semantic checkpoint upgrade-inventory view that presents validated persistent purchases and Forge Ore with an explicit empty state and deterministic focus restoration, without mutating progression.
 - a durable checkpoint purchase flow over the finite authored vertical-slice upgrade catalog that resolves through shared progression authority, uses optimistic save revisions, updates only from confirmed canonical envelopes, and exposes reasoned unavailable states plus accessible failure recovery.
 - a destructive checkpoint confirmation that recycles all shared purchased upgrades through progression authority, refunds authored Forge Ore spend exactly, preserves retained profile state, and updates only from a revision-checked canonical save.
+- a destructive checkpoint confirmation that recycles the authored Iron Warden skill tree through progression authority, restores spent skill-point levels exactly, preserves unrelated progression, and updates only from a revision-checked canonical save.
 
 The web build participates in the root workspace build and the browser tests participate in the repository browser verification gate.
 
@@ -42,7 +43,7 @@ Protocol versions 1–4 and the canonical empty-fixture checksums are compatibil
 ## Explicitly not implemented
 
 - the Shuttergate encounter UI;
-- sprite assets, animation polish, camera controls, placement editing, a nonempty playable encounter/roster, generalized abilities, health presentation beyond Shield Slam cooldown/rejection feedback, applying purchased upgrade effects in the web encounter, respec, audio, or final visual design;
+- sprite assets, animation polish, camera controls, placement editing, a nonempty playable encounter/roster, generalized abilities, health presentation beyond Shield Slam cooldown/rejection feedback, applying purchased upgrade effects in the web encounter, skill-node selection or other-character respec, audio, or final visual design;
 - new gameplay mechanics;
 - new minimization schemas or divergence classes.
 
@@ -55,5 +56,6 @@ Broader Phase 5 work remains unimplemented until explicitly approved and added t
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/App.browser.test.tsx`
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/upgrade-purchase.browser.test.tsx`
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/upgrade-recycle.browser.test.tsx`
+- `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/skill-recycle.browser.test.tsx`
 - `pnpm test:browser:docker`
 - `pnpm run verify`

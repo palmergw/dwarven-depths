@@ -21,6 +21,7 @@ import {
   isCheckpointProfileSaveConflict,
   loadCheckpointProfile,
   purchaseCheckpointUpgrade,
+  recycleCheckpointIronWardenSkills,
   recycleCheckpointUpgrades
 } from "./checkpoint-profile.js";
 import {
@@ -188,6 +189,8 @@ export function App({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [upgradeInventoryOpen, setUpgradeInventoryOpen] = useState(false);
   const [recycleConfirmationOpen, setRecycleConfirmationOpen] = useState(false);
+  const [skillRecycleConfirmationOpen, setSkillRecycleConfirmationOpen] =
+    useState(false);
   const [upgradePurchaseStatus, setUpgradePurchaseStatus] =
     useState<UpgradePurchaseStatus>({ kind: "idle" });
   const [checkpointProfile, setCheckpointProfile] = useState<
@@ -215,6 +218,9 @@ export function App({
   const recycleButtonRef = useRef<HTMLButtonElement>(null);
   const recycleHeadingRef = useRef<HTMLHeadingElement>(null);
   const recycleConfirmationWasOpenRef = useRef(false);
+  const skillRecycleButtonRef = useRef<HTMLButtonElement>(null);
+  const skillRecycleHeadingRef = useRef<HTMLHeadingElement>(null);
+  const skillRecycleConfirmationWasOpenRef = useRef(false);
 
   function clearPendingAbilities(): void {
     pendingAbilityKeysRef.current.clear();
@@ -346,6 +352,58 @@ export function App({
         kind: "failure",
         message:
           "The recycle was not saved. Your last confirmed progression is unchanged; retry after checking local storage."
+      });
+    } finally {
+      upgradePurchasePendingRef.current = false;
+    }
+  }
+
+  async function recycleIronWardenSkills(): Promise<void> {
+    if (
+      upgradePurchasePendingRef.current ||
+      checkpointProfile.status !== "ready" ||
+      profileStoreRef.current === undefined
+    )
+      return;
+    upgradePurchasePendingRef.current = true;
+    setUpgradePurchaseStatus({
+      kind: "pending",
+      upgradeId: "skill.recycle.iron_warden" as StableId
+    });
+    try {
+      const profile = await recycleCheckpointIronWardenSkills(
+        profileStoreRef.current,
+        checkpointProfile.profile
+      );
+      setCheckpointProfile({ status: "ready", profile });
+      setSkillRecycleConfirmationOpen(false);
+      setUpgradePurchaseStatus({
+        kind: "success",
+        message:
+          "Iron Warden skill tree recycled. Spent skill points are available again."
+      });
+    } catch (error) {
+      if (isCheckpointProfileSaveConflict(error)) {
+        const refreshed = await loadCheckpointProfile(
+          profileStoreRef.current,
+          Date.now,
+          false
+        );
+        if (refreshed.status === "ready") {
+          setCheckpointProfile(refreshed);
+          setSkillRecycleConfirmationOpen(false);
+          setUpgradePurchaseStatus({
+            kind: "failure",
+            message:
+              "Progression changed in another tab. The latest saved progression is loaded; review it before recycling."
+          });
+          return;
+        }
+      }
+      setUpgradePurchaseStatus({
+        kind: "failure",
+        message:
+          "The skill recycle was not saved. Your last confirmed progression is unchanged; retry after checking local storage."
       });
     } finally {
       upgradePurchasePendingRef.current = false;
@@ -559,6 +617,13 @@ export function App({
       recycleButtonRef.current?.focus();
     recycleConfirmationWasOpenRef.current = recycleConfirmationOpen;
   }, [recycleConfirmationOpen]);
+
+  useLayoutEffect(() => {
+    if (skillRecycleConfirmationOpen) skillRecycleHeadingRef.current?.focus();
+    else if (skillRecycleConfirmationWasOpenRef.current)
+      skillRecycleButtonRef.current?.focus();
+    skillRecycleConfirmationWasOpenRef.current = skillRecycleConfirmationOpen;
+  }, [skillRecycleConfirmationOpen]);
 
   return (
     <main
@@ -839,7 +904,11 @@ export function App({
                     type="button"
                     ref={recycleButtonRef}
                     disabled={upgradePurchaseStatus.kind === "pending"}
-                    onClick={() => setRecycleConfirmationOpen(true)}
+                    onClick={() => {
+                      skillRecycleConfirmationWasOpenRef.current = false;
+                      setSkillRecycleConfirmationOpen(false);
+                      setRecycleConfirmationOpen(true);
+                    }}
                   >
                     Recycle all shared upgrades
                   </button>
@@ -887,6 +956,70 @@ export function App({
                   </div>
                 </section>
               )}
+              {checkpointProfile.profile.selectedSkillNodes.some(
+                (selection) => selection.characterId === "character.iron_warden"
+              ) &&
+                !skillRecycleConfirmationOpen && (
+                  <button
+                    type="button"
+                    ref={skillRecycleButtonRef}
+                    disabled={upgradePurchaseStatus.kind === "pending"}
+                    onClick={() => {
+                      setRecycleConfirmationOpen(false);
+                      setSkillRecycleConfirmationOpen(true);
+                    }}
+                  >
+                    Recycle Iron Warden skill tree
+                  </button>
+                )}
+              {skillRecycleConfirmationOpen && (
+                <section
+                  className="recycle-confirmation"
+                  aria-labelledby="skill-recycle-confirmation-heading"
+                >
+                  <h4
+                    id="skill-recycle-confirmation-heading"
+                    ref={skillRecycleHeadingRef}
+                    tabIndex={-1}
+                  >
+                    Confirm Iron Warden skill recycle
+                  </h4>
+                  <p>
+                    This removes only the Iron Warden selected skill nodes and
+                    restores spent skill-point levels{" "}
+                    {checkpointProfile.profile.selectedSkillNodes
+                      .filter(
+                        (selection) =>
+                          selection.characterId === "character.iron_warden"
+                      )
+                      .map((selection) => selection.spentSkillPointLevel)
+                      .sort((left, right) => left - right)
+                      .join(", ")}
+                    . Campaign access returns to the first level. Shared
+                    upgrades, Forge Ore, other characters, unlocks, rewards,
+                    experience, presentation settings, and already pending skill
+                    points remain.
+                  </p>
+                  <div className="recycle-actions">
+                    <button
+                      type="button"
+                      disabled={upgradePurchaseStatus.kind === "pending"}
+                      onClick={() => void recycleIronWardenSkills()}
+                    >
+                      {upgradePurchaseStatus.kind === "pending"
+                        ? "Saving skill recycle…"
+                        : "Confirm skill recycle"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={upgradePurchaseStatus.kind === "pending"}
+                      onClick={() => setSkillRecycleConfirmationOpen(false)}
+                    >
+                      Cancel skill recycle
+                    </button>
+                  </div>
+                </section>
+              )}
               {upgradePurchaseStatus.kind !== "idle" &&
                 upgradePurchaseStatus.kind !== "pending" && (
                   <p
@@ -902,6 +1035,7 @@ export function App({
                 onClick={() => {
                   setUpgradePurchaseStatus({ kind: "idle" });
                   setRecycleConfirmationOpen(false);
+                  setSkillRecycleConfirmationOpen(false);
                   setUpgradeInventoryOpen(false);
                 }}
               >
@@ -930,6 +1064,7 @@ export function App({
                   onClick={() => {
                     setUpgradePurchaseStatus({ kind: "idle" });
                     setRecycleConfirmationOpen(false);
+                    setSkillRecycleConfirmationOpen(false);
                     setUpgradeInventoryOpen(true);
                   }}
                 >
