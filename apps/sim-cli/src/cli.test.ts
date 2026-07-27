@@ -20,6 +20,7 @@ import {
   compileScenario
 } from "@dwarven-depths/content-runtime";
 import { canonicalHash } from "@dwarven-depths/contracts";
+import { createReplayDefinition, runScenario } from "@dwarven-depths/runtime";
 import { afterEach, describe, expect, it } from "vitest";
 
 const temporaryDirectories: string[] = [];
@@ -3124,6 +3125,92 @@ queued-spawns
         type: "assertion",
         code: "unexpected_terminal_result"
       }
+    });
+  });
+
+  it("verifies strict exported client evidence and rejects tampering", async () => {
+    const contentPath = temporaryFile("content.json", {
+      schemaVersion: 1,
+      contentVersion: "client-evidence-test",
+      definitions: [{ kind: "level", id: "level.empty", waveIds: [] }]
+    });
+    const scenarioPath = temporaryFile("scenario.json", {
+      schemaVersion: 1,
+      id: "scenario.test.client_evidence",
+      levelId: "level.empty",
+      seed: "1",
+      maximumTicks: 1,
+      commands: [{ atTick: 0, type: "confirmPreparation" }],
+      expectedTerminalResult: "victory"
+    });
+    const content = await compileContent(
+      JSON.parse(readFileSync(contentPath, "utf8"))
+    );
+    const authoredScenario = compileScenario(
+      JSON.parse(readFileSync(scenarioPath, "utf8")),
+      content
+    );
+    const result = await runScenario(authoredScenario, content);
+    const evidence = {
+      schemaVersion: 2,
+      replay: createReplayDefinition(result, authoredScenario, content)
+    };
+    const evidencePath = temporaryFile("client-evidence.json", evidence);
+    const invocation = () =>
+      runCli(
+        "replay",
+        "--client-evidence",
+        evidencePath,
+        "--content",
+        contentPath,
+        "--scenario",
+        scenarioPath,
+        "--verify"
+      );
+
+    const verified = invocation();
+    expect(verified.status).toBe(0);
+    expect(JSON.parse(verified.stdout)).toMatchObject({
+      ok: true,
+      verified: true,
+      source: "client-evidence",
+      scenarioId: authoredScenario.id,
+      terminalResult: result.terminalResult,
+      terminalTick: result.terminalTick,
+      finalStateChecksum: result.finalStateChecksum,
+      eventStreamChecksum: result.eventStreamChecksum
+    });
+
+    const checkpoint = evidence.replay.checkpoints[0];
+    if (checkpoint === undefined) throw new Error("expected replay checkpoint");
+    const tampered = {
+      ...evidence,
+      replay: {
+        ...evidence.replay,
+        checkpoints: [
+          {
+            ...checkpoint,
+            stateChecksum: "0".repeat(64)
+          }
+        ]
+      }
+    };
+    writeFileSync(evidencePath, JSON.stringify(tampered), "utf8");
+    const rejected = invocation();
+    expect(rejected.status).toBe(4);
+    expect(JSON.parse(rejected.stderr)).toMatchObject({
+      error: { code: "state_checksum_mismatch" }
+    });
+
+    writeFileSync(
+      evidencePath,
+      JSON.stringify({ ...evidence, unexpected: true }),
+      "utf8"
+    );
+    const unknownField = invocation();
+    expect(unknownField.status).toBe(2);
+    expect(JSON.parse(unknownField.stderr)).toMatchObject({
+      error: { type: "input" }
     });
   });
 

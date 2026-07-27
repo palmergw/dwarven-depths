@@ -1221,36 +1221,43 @@ describe("authoritative web worker", () => {
     downloadButton.focus();
     await userEvent.keyboard("{Enter}");
 
-    expect(createObjectUrl).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(createObjectUrl).toHaveBeenCalledOnce());
     expect(anchorClick).toHaveBeenCalledOnce();
     expect(downloads).toEqual([
       {
-        download: `dwarven-depths-run-evidence-v1-${expected.finalStateChecksum}.json`,
+        download: `dwarven-depths-run-evidence-v2-${expected.finalStateChecksum}.json`,
         href: "blob:run-evidence-1"
       }
     ]);
     expect(revokeObjectUrl).toHaveBeenCalledWith("blob:run-evidence-1");
     const firstBytes = await blobs[0]?.text();
-    expect(firstBytes).toBe(
-      `${JSON.stringify(
-        {
-          schemaVersion: 1,
-          terminalResult: expected.terminalResult,
-          terminalTick: 1,
-          finalStateChecksum: expected.finalStateChecksum,
-          eventStreamChecksum: expected.eventStreamChecksum,
-          commands: [
-            {
-              tick: 0,
-              sequence: 0,
-              command: { atTick: 0, type: "confirmPreparation" }
-            }
-          ]
-        },
-        null,
-        2
-      )}\n`
-    );
+    expect(firstBytes?.endsWith("\n")).toBe(true);
+    expect(JSON.parse(firstBytes ?? "")).toMatchObject({
+      schemaVersion: 2,
+      replay: {
+        schemaVersion: 1,
+        simulationSchemaVersion: 1,
+        scenarioId: "scenario.conformance.shield_slam",
+        levelId: "level.shuttergate_hall",
+        seed: "1",
+        commands: [
+          {
+            tick: 0,
+            sequence: 0,
+            command: { atTick: 0, type: "confirmPreparation" }
+          }
+        ],
+        checkpoints: [
+          {
+            tick: 1,
+            stateChecksum: expected.finalStateChecksum,
+            eventStreamChecksum: expected.eventStreamChecksum
+          }
+        ],
+        expectedTerminalResult: expected.terminalResult,
+        expectedTerminalTick: 1
+      }
+    });
 
     await userEvent.click(await buttonWithText("Return to checkpoint"));
     await vi.waitFor(() =>
@@ -1259,6 +1266,7 @@ describe("authoritative web worker", () => {
     expect(document.body.textContent).not.toContain("Download run evidence");
     await completeAppAttempt();
     await userEvent.click(await buttonWithText("Download run evidence"));
+    await vi.waitFor(() => expect(blobs).toHaveLength(2));
     expect(await blobs[1]?.text()).toBe(firstBytes);
     expect(downloads[1]).toEqual({
       download: downloads[0]?.download,

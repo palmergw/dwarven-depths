@@ -482,6 +482,93 @@ export class ReplayDivergenceError extends Error {
   }
 }
 
+/** Canonical preparation state for the currently supported Shield Slam web slice. */
+export function createShieldSlamWebPreparationState(
+  content: CompiledContent,
+  scenario: ScenarioDefinition
+): SimulationState {
+  const character = content.characters.get("character.iron_warden" as never);
+  const enemy = content.enemies.get("enemy.goblin_cutter" as never);
+  const level = content.levels.get(scenario.levelId);
+  if (
+    character === undefined ||
+    enemy === undefined ||
+    level?.mapId === undefined
+  )
+    throw new Error(
+      "The Shield Slam web scenario is missing authored content."
+    );
+  return Object.freeze({
+    schemaVersion: 1,
+    contentVersion: content.bundle.contentVersion,
+    tick: 0,
+    seed: scenario.seed,
+    rngState: 1,
+    levelId: scenario.levelId,
+    phase: "PREPARATION",
+    eventSequence: 0,
+    battlefield: Object.freeze({
+      schemaVersion: 1,
+      mapId: level.mapId,
+      startedWaveIds: Object.freeze([]),
+      firedSpawnIds: Object.freeze([]),
+      pendingSpawns: Object.freeze([]),
+      enemyAdmissions: Object.freeze([]),
+      occupancy: Object.freeze([
+        Object.freeze({
+          entityId: "entity.dwarf.warden" as never,
+          nodeId: "node.shuttergate_north_guard" as never
+        }),
+        Object.freeze({
+          entityId: "entity.enemy.shield_slam_target" as never,
+          nodeId: "node.shuttergate_gate" as never
+        })
+      ]),
+      pendingCommittedAttacks: Object.freeze([]),
+      dwarfCombatants: Object.freeze([
+        Object.freeze({
+          schemaVersion: 1,
+          entityId: "entity.dwarf.warden" as never,
+          characterDefinitionId: character.id,
+          placementPointId: "placement.shuttergate_north_guard" as never,
+          currentHealth: character.maximumHealth,
+          maximumHealth: character.maximumHealth,
+          lifecycleState: "active" as const,
+          basicAttack: character.basicAttack,
+          actionState: Object.freeze({
+            schemaVersion: 1,
+            currentTargetEntityId: "entity.enemy.shield_slam_target" as never,
+            activeBasicAttack: null,
+            cooldownCompleteAtTick: null
+          })
+        })
+      ]),
+      enemyCombatants: Object.freeze([
+        Object.freeze({
+          schemaVersion: 1,
+          entityId: "entity.enemy.shield_slam_target" as never,
+          enemyDefinitionId: enemy.id,
+          classification: enemy.classification,
+          currentHealth: enemy.maximumHealth,
+          maximumHealth: enemy.maximumHealth,
+          armor: enemy.armor,
+          movementIntervalTicks: enemy.movementIntervalTicks,
+          admittedAtTick: 0,
+          lifecycleState: "active" as const,
+          basicAttack: enemy.basicAttack,
+          actionState: Object.freeze({
+            schemaVersion: 1,
+            nextMovementAtTick: 0,
+            currentTargetEntityId: "entity.dwarf.warden" as never,
+            activeBasicAttack: null,
+            cooldownCompleteAtTick: null
+          })
+        })
+      ])
+    })
+  });
+}
+
 /** Incremental authority for hosts that admit input between fixed steps. */
 export class LiveScenarioHost {
   readonly #scenario: ScenarioDefinition;
@@ -693,9 +780,12 @@ async function executeScenario(
   scenario: ScenarioDefinition,
   content: CompiledContent,
   replayCommands: readonly CommandEnvelope[] | undefined,
-  enforceScenarioExpectation: boolean
+  enforceScenarioExpectation: boolean,
+  initialState?: SimulationState
 ): Promise<RuntimeResult> {
-  let state = createInitialState(content, scenario.levelId, scenario.seed);
+  let state =
+    initialState ??
+    createInitialState(content, scenario.levelId, scenario.seed);
   const events: SimulationEvent[] = [];
   const executedCommands: CommandEnvelope[] = [];
   let commandSequence = 0;
@@ -803,7 +893,8 @@ function requireMatch(
 export async function verifyReplay(
   replayInput: ReplayDefinition,
   scenario: ScenarioDefinition,
-  content: CompiledContent
+  content: CompiledContent,
+  initialState?: SimulationState
 ): Promise<RuntimeResult> {
   const replay = compileReplay(replayInput);
   requireMatch(
@@ -881,7 +972,13 @@ export async function verifyReplay(
 
   let result: RuntimeResult;
   try {
-    result = await executeScenario(scenario, content, replay.commands, false);
+    result = await executeScenario(
+      scenario,
+      content,
+      replay.commands,
+      false,
+      initialState
+    );
   } catch (error) {
     if (
       error instanceof RuntimeAssertionError ||

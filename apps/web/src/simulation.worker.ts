@@ -6,11 +6,11 @@ import {
 import type {
   BattlefieldState,
   ContentBundle,
-  ScenarioDefinition,
-  SimulationState
+  ScenarioDefinition
 } from "@dwarven-depths/contracts";
 import {
   createLiveScenarioHost,
+  createShieldSlamWebPreparationState,
   type LiveScenarioHost
 } from "@dwarven-depths/runtime";
 import emptyContentFixture from "../../../content/fixtures/empty-content.json";
@@ -50,92 +50,6 @@ let protocolVersion: 1 | 2 | 3 | 4 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
 let liveHost: LiveScenarioHost | undefined;
-
-function createShieldSlamPreparationState(
-  content: CompiledContent,
-  scenario: ScenarioDefinition
-): SimulationState {
-  const character = content.characters.get("character.iron_warden" as never);
-  const enemy = content.enemies.get("enemy.goblin_cutter" as never);
-  const level = content.levels.get(scenario.levelId);
-  if (
-    character === undefined ||
-    enemy === undefined ||
-    level?.mapId === undefined
-  )
-    throw new Error(
-      "The Shield Slam web scenario is missing authored content."
-    );
-  return Object.freeze({
-    schemaVersion: 1,
-    contentVersion: content.bundle.contentVersion,
-    tick: 0,
-    seed: scenario.seed,
-    rngState: 1,
-    levelId: scenario.levelId,
-    phase: "PREPARATION",
-    eventSequence: 0,
-    battlefield: Object.freeze({
-      schemaVersion: 1,
-      mapId: level.mapId,
-      startedWaveIds: Object.freeze([]),
-      firedSpawnIds: Object.freeze([]),
-      pendingSpawns: Object.freeze([]),
-      enemyAdmissions: Object.freeze([]),
-      occupancy: Object.freeze([
-        Object.freeze({
-          entityId: "entity.dwarf.warden" as never,
-          nodeId: "node.shuttergate_north_guard" as never
-        }),
-        Object.freeze({
-          entityId: "entity.enemy.shield_slam_target" as never,
-          nodeId: "node.shuttergate_gate" as never
-        })
-      ]),
-      pendingCommittedAttacks: Object.freeze([]),
-      dwarfCombatants: Object.freeze([
-        Object.freeze({
-          schemaVersion: 1,
-          entityId: "entity.dwarf.warden" as never,
-          characterDefinitionId: character.id,
-          placementPointId: "placement.shuttergate_north_guard" as never,
-          currentHealth: character.maximumHealth,
-          maximumHealth: character.maximumHealth,
-          lifecycleState: "active" as const,
-          basicAttack: character.basicAttack,
-          actionState: Object.freeze({
-            schemaVersion: 1,
-            currentTargetEntityId: "entity.enemy.shield_slam_target" as never,
-            activeBasicAttack: null,
-            cooldownCompleteAtTick: null
-          })
-        })
-      ]),
-      enemyCombatants: Object.freeze([
-        Object.freeze({
-          schemaVersion: 1,
-          entityId: "entity.enemy.shield_slam_target" as never,
-          enemyDefinitionId: enemy.id,
-          classification: enemy.classification,
-          currentHealth: enemy.maximumHealth,
-          maximumHealth: enemy.maximumHealth,
-          armor: enemy.armor,
-          movementIntervalTicks: enemy.movementIntervalTicks,
-          admittedAtTick: 0,
-          lifecycleState: "active" as const,
-          basicAttack: enemy.basicAttack,
-          actionState: Object.freeze({
-            schemaVersion: 1,
-            nextMovementAtTick: 0,
-            currentTargetEntityId: "entity.dwarf.warden" as never,
-            activeBasicAttack: null,
-            cooldownCompleteAtTick: null
-          })
-        })
-      ])
-    })
-  });
-}
 
 function post(message: WorkerMessage): void {
   self.postMessage(message);
@@ -416,7 +330,10 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         preparedScenario,
         preparedContent,
         protocolVersion === 4
-          ? createShieldSlamPreparationState(preparedContent, preparedScenario)
+          ? createShieldSlamWebPreparationState(
+              preparedContent,
+              preparedScenario
+            )
           : undefined
       );
       const preparationSnapshot = createRenderSnapshot(

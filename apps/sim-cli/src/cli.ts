@@ -42,6 +42,7 @@ import {
   createLifecycleDiagnostics,
   createReplayDefinition,
   createRunExplanation,
+  createShieldSlamWebPreparationState,
   createShuttergateCampaignArtifact,
   createShuttergateCampaignAuthority,
   createShuttergateCampaignCalibrationReport,
@@ -3573,10 +3574,73 @@ async function verifyRunDirectory(
 }
 
 async function replay(args: ParsedArgs): Promise<void> {
-  rejectUnknownFlags(args, new Set(["run", "verify"]));
+  rejectUnknownFlags(
+    args,
+    new Set(["client-evidence", "content", "run", "scenario", "verify"])
+  );
   if (!booleanFlag(args, "verify")) {
     throw new CliInputError("replay currently requires --verify");
   }
+  const clientEvidencePath = args.flags.get("client-evidence");
+  if (clientEvidencePath !== undefined) {
+    if (args.flags.has("run"))
+      throw new CliInputError(
+        "--client-evidence cannot be combined with --run"
+      );
+    const input = await readJson(clientEvidencePath);
+    if (
+      typeof input !== "object" ||
+      input === null ||
+      Array.isArray(input) ||
+      Object.keys(input).sort().join(",") !== "replay,schemaVersion" ||
+      !("schemaVersion" in input) ||
+      input.schemaVersion !== 2 ||
+      !("replay" in input)
+    )
+      throw new CliInputError(
+        "client run evidence must have exactly schemaVersion 2 and replay"
+      );
+    const replayDefinition = compileReplay(input.replay);
+    const content = await compileContent(
+      await readJson(requiredFlag(args, "content"))
+    );
+    const authoredScenario = compileScenario(
+      await readJson(requiredFlag(args, "scenario")),
+      content
+    );
+    const scenario = compileScenario(
+      {
+        ...authoredScenario,
+        commands: replayDefinition.commands.map(({ command }) => command)
+      },
+      content
+    );
+    const result = await verifyReplay(
+      replayDefinition,
+      scenario,
+      content,
+      scenario.id === "scenario.conformance.shield_slam"
+        ? createShieldSlamWebPreparationState(content, scenario)
+        : undefined
+    );
+    process.stdout.write(
+      `${JSON.stringify({
+        ok: true,
+        verified: true,
+        source: "client-evidence",
+        scenarioId: result.scenarioId,
+        terminalResult: result.terminalResult,
+        terminalTick: result.terminalTick,
+        finalStateChecksum: result.finalStateChecksum,
+        eventStreamChecksum: result.eventStreamChecksum
+      })}\n`
+    );
+    return;
+  }
+  if (args.flags.has("content") || args.flags.has("scenario"))
+    throw new CliInputError(
+      "--content and --scenario require --client-evidence"
+    );
   await verifyRunDirectory(resolve(requiredFlag(args, "run")), true);
 }
 
@@ -4195,7 +4259,7 @@ async function main(): Promise<void> {
       break;
     default:
       throw new CliInputError(
-        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare|sweep|campaign|minimize> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>] [--matrix <file> --out <directory>] [--scenario <campaign-file> --out <directory>]"
+        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare|sweep|campaign|minimize> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--client-evidence <file> --content <file> --scenario <file> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>] [--matrix <file> --out <directory>] [--scenario <campaign-file> --out <directory>]"
       );
   }
 }

@@ -1488,7 +1488,7 @@ export function App({
             <div className="result-actions">
               <button
                 type="button"
-                onClick={() => downloadRunEvidence(view.result)}
+                onClick={() => void downloadRunEvidence(view.result)}
               >
                 Download run evidence
               </button>
