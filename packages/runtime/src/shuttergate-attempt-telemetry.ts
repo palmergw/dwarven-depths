@@ -377,6 +377,8 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
       transition.livingEnemies > transition.firedSpawns ||
       transition.startedWaveIds.length !==
         Math.min(index + 1, normalized.waveTransitions.length - 1) ||
+      (index < normalized.waveTransitions.length - 1 &&
+        transition.tick !== index * 900) ||
       transition.startedWaveIds.some(
         (waveId, waveIndex) => waveId !== `wave.shuttergate_${waveIndex + 1}`
       ) ||
@@ -410,6 +412,8 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
     throw new RangeError(
       "telemetry terminal transition contradicts the outcome"
     );
+  if (normalized.outcome.durationTicks > 4_500)
+    throw new RangeError("telemetry duration exceeds the safety limit");
   if (
     normalized.combat.scheduledSpawns !== 18 ||
     normalized.combat.firedSpawns > normalized.combat.scheduledSpawns ||
