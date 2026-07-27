@@ -295,6 +295,7 @@ export function App({
   const skillRecycleConfirmationWasOpenRef = useRef(false);
   const skillTreeHeadingRef = useRef<HTMLHeadingElement>(null);
   const focusSkillTreeAfterSelectionRef = useRef(false);
+  const focusUpgradeAfterPurchaseRef = useRef<StableId | undefined>(undefined);
 
   function clearPendingAbilities(): void {
     pendingAbilityKeysRef.current.clear();
@@ -349,6 +350,7 @@ export function App({
         checkpointProfile.profile,
         upgradeId
       );
+      focusUpgradeAfterPurchaseRef.current = upgradeId;
       setCheckpointProfile({ status: "ready", profile });
       setUpgradePurchaseStatus({
         kind: "success",
@@ -804,6 +806,15 @@ export function App({
   }, [recycleConfirmationOpen, skillRecycleConfirmationOpen]);
 
   useLayoutEffect(() => {
+    const upgradeId = focusUpgradeAfterPurchaseRef.current;
+    if (upgradeId === undefined) return;
+    focusUpgradeAfterPurchaseRef.current = undefined;
+    document
+      .getElementById(`${upgradeId.replaceAll(".", "-")}-heading`)
+      ?.focus();
+  });
+
+  useLayoutEffect(() => {
     if (!focusSkillTreeAfterSelectionRef.current) return;
     focusSkillTreeAfterSelectionRef.current = false;
     skillTreeHeadingRef.current?.focus();
@@ -1065,6 +1076,7 @@ export function App({
                     checkpointProfile.profile,
                     definition
                   );
+                  const headingId = `${definition.upgradeId.replaceAll(".", "-")}-heading`;
                   const descriptionId = `${definition.upgradeId.replaceAll(".", "-")}-purchase-status`;
                   const effectsId = `${definition.upgradeId.replaceAll(".", "-")}-effects`;
                   const pending =
@@ -1072,7 +1084,7 @@ export function App({
                     upgradePurchaseStatus.upgradeId === definition.upgradeId;
                   return (
                     <section key={definition.upgradeId}>
-                      <h5>
+                      <h5 id={headingId} tabIndex={-1}>
                         <code>{definition.upgradeId}</code>
                       </h5>
                       <p>

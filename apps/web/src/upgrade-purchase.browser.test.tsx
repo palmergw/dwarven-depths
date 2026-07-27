@@ -74,6 +74,37 @@ function loadedStore(
 }
 
 describe("checkpoint upgrade purchasing", () => {
+  it("focuses the changed upgrade after a keyboard purchase reaches maximum rank", async () => {
+    const rankOne = purchaseUpgradeRank({
+      schemaVersion: 1,
+      profile: {
+        ...createInitialProfile("character.iron_warden" as StableId),
+        forgeOre: 35
+      },
+      catalog: purchasedUpgradeCatalog,
+      upgradeId: "upgrade.ability.shield_slam" as StableId
+    }).profile;
+    const initial = await envelope(rankOne);
+    const store = loadedStore(initial, async (request) =>
+      Promise.resolve(request.envelope as ProfileSaveEnvelope)
+    );
+    renderWithStore(store);
+
+    await userEvent.click(await button("Upgrade inventory"));
+    const purchase = await button("Purchase rank 2 for 25 Forge Ore");
+    purchase.focus();
+    await userEvent.keyboard("{Enter}");
+
+    const heading = document.getElementById(
+      "upgrade-ability-shield_slam-heading"
+    );
+    await vi.waitFor(() => expect(heading).toHaveFocus());
+    expect(await button("Maximum rank owned")).toBeDisabled();
+    expect(document.querySelector(".upgrades")?.textContent).toContain(
+      "Rank 2 of 2"
+    );
+  });
+
   it("persists one keyboard purchase before updating confirmed progression", async () => {
     const initial = await envelope({
       ...createInitialProfile("character.iron_warden" as StableId),
