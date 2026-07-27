@@ -33,15 +33,16 @@ If documents conflict, do not silently choose. Identify the conflict and preserv
 - Combine adjacent criteria that share a component, state transition, risk model, and verification surface. Presentation settings, modal/focus behavior, telemetry validity, and report publication are not split into one PR per variant.
 - Tiny isolated PRs are reserved for urgent regressions or genuinely independent blockers.
 - During Phase 6, prioritize visible polish, onboarding and feedback, performance/accessibility budgets, and finite release-candidate completion over new telemetry fields, replay metadata, evidence schemas, or assurance-only variants.
+- Implementation sessions are capped at 100 model turns. If a coherent outcome cannot safely finish within that bound, preserve a meaningful local commit or dirty checkpoint and exit cleanly so the changed deterministic fingerprint resumes it without broad rediscovery.
 
 ## Non-performative verification policy
 
 1. During iteration, run changed-scope tests and lint/typecheck as appropriate; CLI-only changes should prefer focused CLI tests.
 2. Before independent review, perform one bounded adversarial self-check using only relevant lenses: strict shape rejection, canonical ordering, stable-ID domains, version/sequence binding, terminal evidence consistency, tampering/replay, and asynchronous UI/storage races.
-3. Before every push, a clean exact HEAD must pass the complete local `pnpm run verify` gate.
-4. Create and keep the PR draft while independent exact-head review and correction cycles run. Draft open/synchronize workflows skip runner jobs.
+3. Draft publication and review-fix heads receive focused changed-scope tests plus lint/typecheck/build as appropriate, then use the draft-only exact-head push helper. Draft open/synchronize workflows skip runner jobs; the complete repository gate is not repeated for every review fix.
+4. Create and keep the PR draft while independent exact-head review and correction cycles run.
 5. Independent exact-head review inspects code and runs adversarial focused probes; it does not duplicate the complete suite. Review all reported blockers together and fix the coherent defect class in one batch before re-review.
-6. Mark the final exact head ready only after local verification and a final blockers-only `No blockers` result. The ready transition starts authoritative PR CI; merge requires post-merge `main` CI.
+6. After the final exact draft head receives a blockers-only `No blockers` result, that same clean HEAD must pass one complete local `pnpm run verify` and remote-head read-back. Mark it ready only then; the ready transition starts authoritative PR CI, and merge requires post-merge `main` CI.
 7. Do not run another post-merge local complete suite when the merged tree is identical to the reviewed tree and CI is green.
 8. Wait for CI mechanically in one bounded command rather than spending repeated model turns polling or rerunning a known runner-only failure.
 
