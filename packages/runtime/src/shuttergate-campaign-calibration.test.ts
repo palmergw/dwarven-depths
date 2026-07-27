@@ -8,7 +8,11 @@ import {
   createShuttergateCampaignAuthority,
   runShuttergateCampaignTransition
 } from "./shuttergate-campaign.js";
-import { createShuttergateCampaignCalibrationReport } from "./shuttergate-campaign-calibration.js";
+import {
+  createShuttergateCampaignCalibrationReport,
+  renderShuttergateCampaignReleaseCandidateMarkdown,
+  type ShuttergateCampaignCalibrationReport
+} from "./shuttergate-campaign-calibration.js";
 
 async function threeAttemptReport() {
   const content = await compileContent(shuttergateInput);
@@ -75,4 +79,111 @@ describe("Shuttergate campaign calibration report", () => {
     expect(report.attemptCount).toBe(1);
     expect(report.comparison).toBeNull();
   }, 15_000);
+});
+
+describe("Shuttergate release-candidate Markdown", () => {
+  it("renders byte-identical identified attempt and comparison evidence", async () => {
+    const report = await threeAttemptReport();
+    const identity = {
+      scenarioId: "campaign_scenario.shuttergate.v1",
+      scenarioHash: "a".repeat(64),
+      contentManifestHash: "b".repeat(64),
+      campaignPayloadChecksum: "c".repeat(64),
+      calibrationReportChecksum: await canonicalHash(report)
+    };
+
+    const first = await renderShuttergateCampaignReleaseCandidateMarkdown(
+      report,
+      identity
+    );
+    const second = await renderShuttergateCampaignReleaseCandidateMarkdown(
+      report,
+      identity
+    );
+
+    expect(second).toBe(first);
+    expect(first).toContain("| 3 | 3 | `build.warden.shield_slam_rank_1.v1`");
+    expect(first).toContain("Recorded observation: `survived_longer`");
+    expect(first.endsWith("\n")).toBe(true);
+  }, 45_000);
+
+  it("rejects malformed or inconsistent source evidence", async () => {
+    const report = await threeAttemptReport();
+    const identity = {
+      scenarioId: "campaign_scenario.shuttergate.v1",
+      scenarioHash: "a".repeat(64),
+      contentManifestHash: "b".repeat(64),
+      campaignPayloadChecksum: "c".repeat(64),
+      calibrationReportChecksum: await canonicalHash(report)
+    };
+    const incomplete = {
+      ...report,
+      attemptCount: report.attemptCount + 1
+    } as ShuttergateCampaignCalibrationReport;
+
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(incomplete, identity)
+    ).rejects.toThrow("incomplete Shuttergate release-candidate report");
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(
+        { ...report, unexpected: true } as ShuttergateCampaignCalibrationReport,
+        identity
+      )
+    ).rejects.toThrow("incomplete Shuttergate release-candidate report");
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(report, {
+        ...identity,
+        unexpected: true
+      } as typeof identity)
+    ).rejects.toThrow("incomplete Shuttergate release-candidate report");
+
+    const missingSeed: unknown = structuredClone(report);
+    const firstAttempt = (missingSeed as { attempts: Array<{ seed?: string }> })
+      .attempts[0];
+    if (firstAttempt === undefined) throw new Error("missing test attempt");
+    delete firstAttempt.seed;
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(
+        missingSeed as ShuttergateCampaignCalibrationReport,
+        {
+          ...identity,
+          calibrationReportChecksum: await canonicalHash(missingSeed)
+        }
+      )
+    ).rejects.toThrow("incomplete Shuttergate release-candidate report");
+
+    const inconsistent = structuredClone(report);
+    if (inconsistent.comparison === null)
+      throw new Error("missing test comparison");
+    const inconsistentComparison = inconsistent.comparison as {
+      terminalTickDelta: number;
+    };
+    inconsistentComparison.terminalTickDelta += 1;
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(inconsistent, {
+        ...identity,
+        calibrationReportChecksum: await canonicalHash(inconsistent)
+      })
+    ).rejects.toThrow("inconsistent Shuttergate release-candidate comparison");
+
+    const falseObservation = structuredClone(report);
+    if (falseObservation.comparison === null)
+      throw new Error("missing test comparison");
+    const falseComparison = falseObservation.comparison as {
+      observation: string;
+    };
+    falseComparison.observation = "terminal_result_changed";
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(falseObservation, {
+        ...identity,
+        calibrationReportChecksum: await canonicalHash(falseObservation)
+      })
+    ).rejects.toThrow("inconsistent Shuttergate release-candidate comparison");
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(report, {
+        ...identity,
+        calibrationReportChecksum: "wrong"
+      })
+    ).rejects.toThrow("Shuttergate release-candidate identity mismatch");
+  }, 45_000);
 });

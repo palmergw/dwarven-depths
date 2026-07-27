@@ -10,12 +10,14 @@ The simulation CLI now explicitly exports one local, schema-versioned Shuttergat
 
 The canonical Level 1 policy replay is pinned as the existing schema-1 durable three-attempt campaign artifact plus its schema-2 manifest. A focused check regenerates byte-identical fixtures from the documented campaign scenario, independently replays every attempt checksum during restore, and verifies the resulting purchased upgrade, committed rewards, and Forge Ore. This adds no replay format or gameplay producer.
 
+CI regenerates that authoritative three-attempt campaign as the `phase-6-release-candidate-reports` artifact. It contains the machine-readable campaign, calibration, and binding manifest plus deterministic Markdown that identifies their checksums and renders every attempt and the existing baseline-versus-upgraded comparison. The Markdown derives no additional gameplay evidence.
+
 Observed calibration evidence and balance recommendations remain separate. Satisfying the matrix proves that the approved combinations remain inside broad evidence ranges and that the first persistent upgrade extends survival for each placement/policy pair. It does not claim equal strategy strength, victory balance, or recommend future tuning.
 
 ## Explicitly not implemented
 
 - Level 1 mechanics or content-statistic tuning beyond the approved evidence ranges;
-- a reference human replay, release-candidate report publication, presentation polish, or performance/accessibility budgets;
+- a reference human replay, presentation polish, or performance/accessibility budgets;
 - telemetry categories that the current authoritative attempt does not produce, including aggregate basic-attack damage, healing, blocking time, and player-entered command timing; these are not inferred;
 - a terminating Phase 5 web encounter or terminal client/CLI parity;
 - new mechanics, report/replay formats, minimization schemas, or divergence classes.
@@ -28,3 +30,4 @@ Observed calibration evidence and balance recommendations remain separate. Satis
 - `pnpm test:built packages/runtime/src/shuttergate-level-1-policy-replay.test.ts`
 - `./scripts/test-browser-docker.sh packages/runtime/src/shuttergate-attempt-telemetry.browser.test.ts`
 - `pnpm test:built apps/sim-cli/src/cli.test.ts -t 'exports deterministic local telemetry'`
+- `pnpm report:release-candidate`
