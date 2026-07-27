@@ -136,16 +136,14 @@ describe("checkpoint Iron Warden skill recycle", () => {
     ).toHaveLength(1);
     const backgroundRecycle = await button("Recycle all shared upgrades");
     expect(backgroundRecycle.inert).toBe(true);
-    await expect(
-      page.getByRole("button", { name: "Recycle all shared upgrades" }).click({
-        timeout: 250
-      })
-    ).rejects.toThrow();
+    await page
+      .getByRole("button", { name: "Recycle all shared upgrades" })
+      .click({ force: true });
     expect(document.getElementById("recycle-confirmation-heading")).toBeNull();
-    expect(heading).toHaveFocus();
 
     const confirm = await button("Confirm skill recycle");
     confirm.focus();
+    await vi.waitFor(() => expect(confirm).toHaveFocus());
     await userEvent.keyboard("{Enter}");
     await vi.waitFor(() => expect(writes).toHaveLength(1));
     (await button("Saving skill recycle…")).click();

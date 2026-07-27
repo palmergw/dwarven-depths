@@ -22,7 +22,7 @@ Phase 5 currently includes these dependency-ordered slices:
 - a backward-compatible protocol-v4 target-policy input path with worker-derived, manifest-bound dwarf capabilities, strict canonical command/result validation, and semantic keyboard/mouse controls; the empty fixture continues to expose the authoritative unavailable state.
 - the approved deterministic Shield Slam content, strict replay command, integer cone/cooldown/impact/interruption/stagger resolver, reason-coded evidence, and accessible protocol-v4 activation control with authoritative phase/cooldown feedback and duplicate-safe queued presentation; Shuttergate content deliberately migrates to `phase-5-shuttergate-shield-slam-v2` while historical no-ability fixtures retain their prior bytes and checksums.
 - a semantic terminal-results action that disposes the completed worker, clears attempt-local presentation and input state, and returns to a fresh checkpoint for a deterministic repeat attempt.
-- a semantic results action that downloads deterministic, versioned authoritative run evidence with a stable checksum-derived filename, without presenting that evidence document as a CLI replay format.
+- a semantic results action that downloads deterministic schema-v2 authoritative replay evidence with a stable checksum-derived filename; the staged `sim replay --client-evidence <file> --content <file> --scenario <file> --verify` path is restricted to the shared Shield Slam web scenario and remains closeout-blocked until that scenario can produce terminal evidence without inventing combat semantics.
 - an outcome-specific authoritative results region that receives keyboard focus after each strictly validated terminal result and is removed when returning to checkpoint.
 - a checkpoint presentation-settings view with deterministic focus restoration and a strictly validated, durable reduced-motion preference that cannot affect simulation authority.
 - a strictly validated, durable default/large/extra-large text-scale preference with responsive narrow-viewport reflow that cannot affect simulation authority.
@@ -62,6 +62,7 @@ Broader Phase 5 work remains unimplemented until explicitly approved and added t
 
 - `pnpm --filter @dwarven-depths/web build`
 - `pnpm test:built -- apps/web/src/protocol.test.ts`
+- `pnpm test:built -- apps/sim-cli/src/cli.test.ts`
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/App.browser.test.tsx`
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/upgrade-purchase.browser.test.tsx`
 - `DD_SKIP_BUILD=1 ./scripts/test-browser-docker.sh apps/web/src/upgrade-recycle.browser.test.tsx`

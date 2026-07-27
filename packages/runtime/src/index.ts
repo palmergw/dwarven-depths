@@ -482,6 +482,142 @@ export class ReplayDivergenceError extends Error {
   }
 }
 
+/** Canonical preparation state for the currently supported Shield Slam web slice. */
+export function createShieldSlamWebPreparationState(
+  content: CompiledContent,
+  scenario: ScenarioDefinition
+): SimulationState {
+  const character = content.characters.get("character.iron_warden" as never);
+  const enemy = content.enemies.get("enemy.goblin_cutter" as never);
+  const level = content.levels.get(scenario.levelId);
+  if (
+    character === undefined ||
+    enemy === undefined ||
+    level?.mapId === undefined
+  )
+    throw new Error(
+      "The Shield Slam web scenario is missing authored content."
+    );
+  return Object.freeze({
+    schemaVersion: 1,
+    contentVersion: content.bundle.contentVersion,
+    tick: 0,
+    seed: scenario.seed,
+    rngState: 1,
+    levelId: scenario.levelId,
+    phase: "PREPARATION",
+    eventSequence: 0,
+    battlefield: Object.freeze({
+      schemaVersion: 1,
+      mapId: level.mapId,
+      startedWaveIds: Object.freeze([]),
+      firedSpawnIds: Object.freeze([]),
+      pendingSpawns: Object.freeze([]),
+      enemyAdmissions: Object.freeze([]),
+      occupancy: Object.freeze([
+        Object.freeze({
+          entityId: "entity.dwarf.warden" as never,
+          nodeId: "node.shuttergate_north_guard" as never
+        }),
+        Object.freeze({
+          entityId: "entity.enemy.shield_slam_target" as never,
+          nodeId: "node.shuttergate_gate" as never
+        })
+      ]),
+      pendingCommittedAttacks: Object.freeze([]),
+      dwarfCombatants: Object.freeze([
+        Object.freeze({
+          schemaVersion: 1,
+          entityId: "entity.dwarf.warden" as never,
+          characterDefinitionId: character.id,
+          placementPointId: "placement.shuttergate_north_guard" as never,
+          currentHealth: character.maximumHealth,
+          maximumHealth: character.maximumHealth,
+          lifecycleState: "active" as const,
+          basicAttack: character.basicAttack,
+          actionState: Object.freeze({
+            schemaVersion: 1,
+            currentTargetEntityId: "entity.enemy.shield_slam_target" as never,
+            activeBasicAttack: null,
+            cooldownCompleteAtTick: null
+          })
+        })
+      ]),
+      enemyCombatants: Object.freeze([
+        Object.freeze({
+          schemaVersion: 1,
+          entityId: "entity.enemy.shield_slam_target" as never,
+          enemyDefinitionId: enemy.id,
+          classification: enemy.classification,
+          currentHealth: enemy.maximumHealth,
+          maximumHealth: enemy.maximumHealth,
+          armor: enemy.armor,
+          movementIntervalTicks: enemy.movementIntervalTicks,
+          admittedAtTick: 0,
+          lifecycleState: "active" as const,
+          basicAttack: enemy.basicAttack,
+          actionState: Object.freeze({
+            schemaVersion: 1,
+            nextMovementAtTick: 0,
+            currentTargetEntityId: "entity.dwarf.warden" as never,
+            activeBasicAttack: null,
+            cooldownCompleteAtTick: null
+          })
+        })
+      ])
+    })
+  });
+}
+
+function finalizeShieldSlamWebStep(
+  scenario: ScenarioDefinition,
+  result: {
+    readonly state: SimulationState;
+    readonly events: readonly SimulationEvent[];
+  },
+  enabled: boolean
+): {
+  readonly state: SimulationState;
+  readonly events: readonly SimulationEvent[];
+} {
+  const enemies = result.state.battlefield?.enemyCombatants ?? [];
+  if (
+    !enabled ||
+    scenario.id !== "scenario.conformance.shield_slam" ||
+    result.state.phase !== "COMBAT_RUNNING" ||
+    enemies.length === 0 ||
+    enemies.some((enemy) => enemy.lifecycleState === "active")
+  )
+    return result;
+  const finalCleanupSequence = result.state.eventSequence;
+  const victorySequence = finalCleanupSequence + 1;
+  const lifecycleEvents: readonly SimulationEvent[] = [
+    Object.freeze({
+      id: `event.${String(finalCleanupSequence).padStart(6, "0")}` as never,
+      tick: result.state.tick,
+      sequence: finalCleanupSequence,
+      type: "final_cleanup.entered",
+      ruleId: "SIM-FINAL-CLEANUP-001"
+    }),
+    Object.freeze({
+      id: `event.${String(victorySequence).padStart(6, "0")}` as never,
+      tick: result.state.tick,
+      sequence: victorySequence,
+      type: "round.victory",
+      ruleId: "SIM-VICTORY-001"
+    })
+  ];
+  return Object.freeze({
+    state: Object.freeze({
+      ...result.state,
+      phase: "TERMINAL",
+      terminalResult: "victory",
+      eventSequence: victorySequence + 1
+    }),
+    events: Object.freeze([...result.events, ...lifecycleEvents])
+  });
+}
+
 /** Incremental authority for hosts that admit input between fixed steps. */
 export class LiveScenarioHost {
   readonly #scenario: ScenarioDefinition;
@@ -493,6 +629,7 @@ export class LiveScenarioHost {
   #commands: CommandEnvelope[] = [];
   #events: SimulationEvent[] = [];
   #failed = false;
+  readonly #usesShieldSlamWebAuthority: boolean;
 
   constructor(
     scenario: ScenarioDefinition,
@@ -501,6 +638,7 @@ export class LiveScenarioHost {
   ) {
     this.#scenario = scenario;
     this.#content = content;
+    this.#usesShieldSlamWebAuthority = initialState !== undefined;
     this.#effectiveScenario = compileScenario(
       { ...scenario, commands: [] },
       content
@@ -596,7 +734,11 @@ export class LiveScenarioHost {
     const commands = this.#pendingCommands;
     this.#pendingCommands = [];
     const previousState = this.#state;
-    const result = stepSimulation(previousState, commands, this.#content);
+    const result = finalizeShieldSlamWebStep(
+      this.#scenario,
+      stepSimulation(previousState, commands, this.#content),
+      this.#usesShieldSlamWebAuthority
+    );
     if (result.state === previousState) {
       this.#failed = true;
       this.#pendingCommands = [];
@@ -693,9 +835,12 @@ async function executeScenario(
   scenario: ScenarioDefinition,
   content: CompiledContent,
   replayCommands: readonly CommandEnvelope[] | undefined,
-  enforceScenarioExpectation: boolean
+  enforceScenarioExpectation: boolean,
+  initialState?: SimulationState
 ): Promise<RuntimeResult> {
-  let state = createInitialState(content, scenario.levelId, scenario.seed);
+  let state =
+    initialState ??
+    createInitialState(content, scenario.levelId, scenario.seed);
   const events: SimulationEvent[] = [];
   const executedCommands: CommandEnvelope[] = [];
   let commandSequence = 0;
@@ -715,7 +860,11 @@ async function executeScenario(
             .map((envelope) => ({ ...envelope }));
     const previousState = state;
     executedCommands.push(...commands);
-    const result = stepSimulation(state, commands, content);
+    const result = finalizeShieldSlamWebStep(
+      scenario,
+      stepSimulation(state, commands, content),
+      initialState !== undefined
+    );
     if (result.state === previousState) {
       throw new RuntimeSafetyStopError(
         "simulation_stalled",
@@ -803,7 +952,8 @@ function requireMatch(
 export async function verifyReplay(
   replayInput: ReplayDefinition,
   scenario: ScenarioDefinition,
-  content: CompiledContent
+  content: CompiledContent,
+  initialState?: SimulationState
 ): Promise<RuntimeResult> {
   const replay = compileReplay(replayInput);
   requireMatch(
@@ -881,7 +1031,13 @@ export async function verifyReplay(
 
   let result: RuntimeResult;
   try {
-    result = await executeScenario(scenario, content, replay.commands, false);
+    result = await executeScenario(
+      scenario,
+      content,
+      replay.commands,
+      false,
+      initialState
+    );
   } catch (error) {
     if (
       error instanceof RuntimeAssertionError ||
@@ -926,6 +1082,13 @@ export async function verifyReplay(
   if (finalCheckpoint === undefined) {
     throw new TypeError("Replay must contain a terminal checkpoint");
   }
+  requireMatch(
+    result.terminalTick === finalCheckpoint.tick,
+    "terminal_tick_mismatch",
+    finalCheckpoint.tick,
+    result.terminalTick,
+    finalCheckpoint.tick
+  );
   requireMatch(
     result.finalStateChecksum === finalCheckpoint.stateChecksum,
     "state_checksum_mismatch",

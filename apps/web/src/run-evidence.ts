@@ -1,18 +1,73 @@
+import {
+  compileContent,
+  compileScenario
+} from "@dwarven-depths/content-runtime";
+import {
+  type ContentBundle,
+  canonicalHash,
+  type ReplayDefinition,
+  type ScenarioDefinition
+} from "@dwarven-depths/contracts";
+import shieldSlamContentFixture from "../../../content/fixtures/phase-3-shuttergate.json";
+import shieldSlamScenarioFixture from "../../../scenarios/conformance/shield-slam.json";
 import type { WorkerMessage } from "./protocol.js";
 
-export const RUN_EVIDENCE_SCHEMA_VERSION = 1 as const;
+export const RUN_EVIDENCE_SCHEMA_VERSION = 2 as const;
 
 export type RunResult = Extract<WorkerMessage, { readonly type: "result" }>;
 
-export function serializeRunEvidence(result: RunResult): string {
+export async function createRunEvidenceReplay(
+  result: RunResult
+): Promise<ReplayDefinition> {
+  const content = await compileContent(
+    shieldSlamContentFixture as unknown as ContentBundle
+  );
+  const authoredScenario = compileScenario(
+    shieldSlamScenarioFixture as unknown as ScenarioDefinition,
+    content
+  );
+  const scenario = compileScenario(
+    {
+      ...authoredScenario,
+      commands: result.commands.map(({ command }) => command)
+    },
+    content
+  );
+  const commands: ReplayDefinition["commands"] = result.commands.map(
+    (envelope, index) => ({
+      tick: envelope.tick,
+      sequence: envelope.sequence,
+      command: scenario.commands[index] as (typeof scenario.commands)[number]
+    })
+  );
+  return {
+    schemaVersion: 1,
+    simulationSchemaVersion: 1,
+    contentVersion: content.bundle.contentVersion,
+    contentManifestHash: content.manifestHash,
+    scenarioId: scenario.id,
+    scenarioHash: await canonicalHash(scenario),
+    levelId: scenario.levelId,
+    seed: scenario.seed,
+    rngAlgorithm: "xorshift32-v1",
+    commands,
+    checkpoints: [
+      {
+        tick: result.terminalTick,
+        stateChecksum: result.finalStateChecksum,
+        eventStreamChecksum: result.eventStreamChecksum
+      }
+    ],
+    expectedTerminalResult: result.terminalResult,
+    expectedTerminalTick: result.terminalTick
+  };
+}
+
+export async function serializeRunEvidence(result: RunResult): Promise<string> {
   return `${JSON.stringify(
     {
       schemaVersion: RUN_EVIDENCE_SCHEMA_VERSION,
-      terminalResult: result.terminalResult,
-      terminalTick: result.terminalTick,
-      finalStateChecksum: result.finalStateChecksum,
-      eventStreamChecksum: result.eventStreamChecksum,
-      commands: result.commands
+      replay: await createRunEvidenceReplay(result)
     },
     null,
     2
@@ -20,12 +75,12 @@ export function serializeRunEvidence(result: RunResult): string {
 }
 
 export function runEvidenceFilename(result: RunResult): string {
-  return `dwarven-depths-run-evidence-v1-${result.finalStateChecksum}.json`;
+  return `dwarven-depths-run-evidence-v2-${result.finalStateChecksum}.json`;
 }
 
-export function downloadRunEvidence(result: RunResult): void {
+export async function downloadRunEvidence(result: RunResult): Promise<void> {
   const url = URL.createObjectURL(
-    new Blob([serializeRunEvidence(result)], {
+    new Blob([await serializeRunEvidence(result)], {
       type: "application/json;charset=utf-8"
     })
   );
