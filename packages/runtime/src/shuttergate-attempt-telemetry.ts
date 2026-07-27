@@ -360,13 +360,18 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
     if (transition === undefined)
       throw new Error("telemetry transition is missing");
     if (
-      previous !== undefined &&
-      (transition.tick <= previous.tick ||
-        transition.firedSpawns < previous.firedSpawns ||
-        transition.startedWaveIds.length < previous.startedWaveIds.length ||
-        previous.startedWaveIds.some(
-          (waveId, waveIndex) => transition.startedWaveIds[waveIndex] !== waveId
-        ))
+      transition.livingEnemies > transition.firedSpawns ||
+      transition.startedWaveIds.some(
+        (waveId, waveIndex) => waveId !== `wave.shuttergate_${waveIndex + 1}`
+      ) ||
+      (previous !== undefined &&
+        (transition.tick <= previous.tick ||
+          transition.firedSpawns < previous.firedSpawns ||
+          transition.startedWaveIds.length < previous.startedWaveIds.length ||
+          previous.startedWaveIds.some(
+            (waveId, waveIndex) =>
+              transition.startedWaveIds[waveIndex] !== waveId
+          )))
     )
       throw new RangeError("telemetry wave transitions are not monotonic");
   }
@@ -400,6 +405,16 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
     normalized.combat.wardenLifecycle !== "downed"
   )
     throw new RangeError("telemetry terminal result is contradictory");
+  if (
+    normalized.rewards.forgeOreAwarded !==
+      normalized.combat.defeatedEnemies +
+        terminalTransition.startedWaveIds.length ||
+    normalized.rewards.bossRewardClaimed ||
+    normalized.rewards.unlockedCharacterIds.length !== 0
+  )
+    throw new RangeError(
+      "telemetry rewards contradict the authoritative policy"
+    );
   return normalized;
 }
 

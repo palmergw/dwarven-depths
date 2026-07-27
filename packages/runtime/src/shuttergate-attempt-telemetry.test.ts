@@ -75,10 +75,7 @@ describe("local Shuttergate attempt telemetry", () => {
     await expect(
       requireShuttergateAttemptTelemetry({
         ...telemetry,
-        payload: {
-          ...telemetry.payload,
-          rewards: { ...telemetry.payload.rewards, forgeOreAwarded: 999 }
-        }
+        payloadChecksum: "0".repeat(64)
       })
     ).rejects.toThrow("checksum mismatch");
   }, 45_000);
@@ -90,6 +87,23 @@ describe("local Shuttergate attempt telemetry", () => {
       {
         ...telemetry.payload,
         outcome: { ...telemetry.payload.outcome, terminalResult: "victory" }
+      },
+      {
+        ...telemetry.payload,
+        rewards: {
+          forgeOreAwarded: 999,
+          bossRewardClaimed: true,
+          unlockedCharacterIds: ["character.deep_ranger"]
+        }
+      },
+      {
+        ...telemetry.payload,
+        waveTransitions: telemetry.payload.waveTransitions.map(
+          (transition, index) =>
+            index === 0
+              ? { ...transition, firedSpawns: 1, livingEnemies: 101 }
+              : transition
+        )
       },
       {
         ...telemetry.payload,
@@ -107,7 +121,7 @@ describe("local Shuttergate attempt telemetry", () => {
           payload,
           payloadChecksum: await canonicalHash(payload)
         })
-      ).rejects.toThrow(/unsupported|contradict/);
+      ).rejects.toThrow(/unsupported|contradict|monotonic/);
     }
   }, 45_000);
 });
