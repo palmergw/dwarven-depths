@@ -89,6 +89,14 @@ function describeEffects(effects: readonly CharacterSkillEffect[]): string {
     : `${effects.map(describeEffect).join("; ")}.`;
 }
 
+function describePrerequisites(
+  prerequisiteNodeIds: readonly StableId[]
+): string {
+  return prerequisiteNodeIds.length === 0
+    ? "none."
+    : `${prerequisiteNodeIds.join(", ")}.`;
+}
+
 function upgradePurchaseState(
   profile: ProfileState,
   definition: PurchasedUpgradeDefinition
@@ -1047,6 +1055,12 @@ export function App({
                             ironWardenSkillTree.nodes.find(
                               (node) => node.nodeId === selection.nodeId
                             )?.effects ?? []
+                          )}{" "}
+                          Prerequisites:{" "}
+                          {describePrerequisites(
+                            ironWardenSkillTree.nodes.find(
+                              (node) => node.nodeId === selection.nodeId
+                            )?.prerequisiteNodeIds ?? []
                           )}
                         </li>
                       ))}
@@ -1074,9 +1088,9 @@ export function App({
                               <p id={effectsId}>
                                 Effects: {describeEffects(node?.effects ?? [])}{" "}
                                 Prerequisites:{" "}
-                                {node?.prerequisiteNodeIds.length === 0
-                                  ? "none."
-                                  : `${node?.prerequisiteNodeIds.join(", ")}.`}
+                                {describePrerequisites(
+                                  node?.prerequisiteNodeIds ?? []
+                                )}
                               </p>
                               <button
                                 type="button"

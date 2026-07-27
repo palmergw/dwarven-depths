@@ -80,7 +80,7 @@ afterEach(() => {
 });
 
 describe("checkpoint Iron Warden skill selection", () => {
-  it("persists one authoritative keyboard choice and focuses the changed tree", async () => {
+  it("persists authoritative keyboard choices and focuses the changed tree", async () => {
     const initial = await envelope(pendingProfile());
     const writes: IndexedDbProfileWriteRequest[] = [];
     let releaseWrite: ((value: ProfileSaveEnvelope) => void) | undefined;
@@ -130,12 +130,20 @@ describe("checkpoint Iron Warden skill selection", () => {
     );
     expect(await button("Select skill.iron_warden.long_reach")).toBeEnabled();
     expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "stone_guard selected at level 2. Effects: +25 maximum health; +3 attack damage."
+      "stone_guard selected at level 2. Effects: +25 maximum health; +3 attack damage. Prerequisites: none."
     );
-    expect(
-      await button("Select skill.iron_warden.long_reach")
-    ).toHaveAccessibleDescription(
+    const second = await button("Select skill.iron_warden.long_reach");
+    expect(second).toHaveAccessibleDescription(
       "Effects: +1 attack range. Prerequisites: skill.iron_warden.stone_guard."
+    );
+    await userEvent.click(second);
+    await vi.waitFor(() => expect(writes).toHaveLength(2));
+    const secondWritten = writes[1]?.envelope as ProfileSaveEnvelope;
+    releaseWrite?.(secondWritten);
+    await vi.waitFor(() =>
+      expect(document.querySelector(".upgrades")?.textContent).toContain(
+        "long_reach selected at level 3. Effects: +1 attack range. Prerequisites: skill.iron_warden.stone_guard."
+      )
     );
   });
 
