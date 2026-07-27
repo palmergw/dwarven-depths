@@ -100,6 +100,9 @@ describe("checkpoint Iron Warden skill selection", () => {
       "Pending skill point from level 2"
     );
     const select = await button("Select skill.iron_warden.stone_guard");
+    expect(select).toHaveAccessibleDescription(
+      "Effects: +25 maximum health; +3 attack damage. Prerequisites: none."
+    );
     select.focus();
     await userEvent.keyboard("{Enter}");
     await vi.waitFor(() => expect(writes).toHaveLength(1));
@@ -126,6 +129,14 @@ describe("checkpoint Iron Warden skill selection", () => {
       "Pending skill point from level 3"
     );
     expect(await button("Select skill.iron_warden.long_reach")).toBeEnabled();
+    expect(document.querySelector(".upgrades")?.textContent).toContain(
+      "stone_guard selected at level 2. Effects: +25 maximum health; +3 attack damage."
+    );
+    expect(
+      await button("Select skill.iron_warden.long_reach")
+    ).toHaveAccessibleDescription(
+      "Effects: +1 attack range. Prerequisites: skill.iron_warden.stone_guard."
+    );
   });
 
   it("preserves confirmed progression when mouse selection cannot be saved", async () => {
