@@ -43,6 +43,7 @@ import {
   createReplayDefinition,
   createRunExplanation,
   createShieldSlamWebPreparationState,
+  createShuttergateAttemptTelemetry,
   createShuttergateCampaignArtifact,
   createShuttergateCampaignAuthority,
   createShuttergateCampaignCalibrationReport,
@@ -64,6 +65,7 @@ import {
   type ShuttergateCampaignArtifact,
   type ShuttergateCampaignCalibrationReport,
   type ShuttergateReferenceCalibrationEvidence,
+  serializeShuttergateAttemptTelemetry,
   shuttergateCalibrationBuildIds,
   verifyReplay
 } from "@dwarven-depths/runtime";
@@ -3533,6 +3535,34 @@ async function campaign(args: ParsedArgs): Promise<void> {
   );
 }
 
+async function telemetry(args: ParsedArgs): Promise<void> {
+  rejectUnknownFlags(args, new Set(["content", "out"]));
+  const contentPath = resolve(requiredFlag(args, "content"));
+  const outputPath = resolve(requiredFlag(args, "out"));
+  const content = await compileContent(await readJson(contentPath));
+  const transition = await runShuttergateCampaignTransition(
+    content,
+    createShuttergateCampaignAuthority()
+  );
+  const artifact = await createShuttergateAttemptTelemetry(
+    transition.transition
+  );
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeNewFile(
+    outputPath,
+    serializeShuttergateAttemptTelemetry(artifact)
+  );
+  process.stdout.write(
+    `${JSON.stringify({
+      ok: true,
+      telemetryExported: true,
+      outputPath,
+      attemptId: artifact.payload.attemptId,
+      payloadChecksum: artifact.payloadChecksum
+    })}\n`
+  );
+}
+
 async function verifyRunDirectory(
   runDirectory: string,
   emitVerification: boolean
@@ -4256,12 +4286,15 @@ async function main(): Promise<void> {
     case "campaign":
       await campaign(args);
       break;
+    case "telemetry":
+      await telemetry(args);
+      break;
     case "minimize":
       await minimize(args);
       break;
     default:
       throw new CliInputError(
-        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare|sweep|campaign|minimize> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--client-evidence <file> --content <file> --scenario <file> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>] [--matrix <file> --out <directory>] [--scenario <campaign-file> --out <directory>]"
+        "Usage: dwarven-depths-sim <validate|run|replay|inspect|explain|render|compare|sweep|campaign|telemetry|minimize> [--content <file>] [--scenario <file>] [--out <dir>] [--replace true|false] [--run <bundle> --verify] [--client-evidence <file> --content <file> --scenario <file> --verify] [--run <bundle> --tick <n> --before <n> --after <n>] [--run <bundle> --format <markdown|json>] [--run <bundle> --format <text|svg> --layers <map,occupancy,path> --from-node <id> --to-node <id>] [--baseline <bundle> --candidate <bundle>] [--matrix <file> --out <directory>] [--scenario <campaign-file> --out <directory>] [--content <file> --out <telemetry-file>]"
       );
   }
 }
