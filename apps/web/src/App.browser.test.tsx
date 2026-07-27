@@ -1527,5 +1527,4 @@ describe("authoritative web worker", () => {
     expect(pausedButton).toBeInstanceOf(HTMLButtonElement);
     expect(pausedButton?.getAttribute("aria-pressed")).toBe("true");
   });
-
 });
