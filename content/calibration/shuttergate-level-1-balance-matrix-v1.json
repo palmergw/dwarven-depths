@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "balance.shuttergate.level_1.matrix.v1",
+  "contentManifestHash": "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d",
+  "calibrationId": "calibration.shuttergate.warden_build.v1",
+  "seed": "1",
+  "levelId": "level.shuttergate_hall",
+  "safetyTickLimit": 4500,
+  "cases": [
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "nearest",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1800, "maximum": 1860 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "nearest",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1860, "maximum": 1930 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "lowest_health",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1800, "maximum": 1860 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "lowest_health",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1860, "maximum": 1930 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "highest_health",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1800, "maximum": 1860 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "highest_health",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1860, "maximum": 1930 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "highest_armor",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1800, "maximum": 1860 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "highest_armor",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1860, "maximum": 1930 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "fastest",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1800, "maximum": 1860 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "fastest",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1860, "maximum": 1930 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "boss_or_elite_first",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1800, "maximum": 1860 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_north_guard",
+      "targetPolicy": "boss_or_elite_first",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1860, "maximum": 1930 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "nearest",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1830, "maximum": 1900 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "nearest",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1930, "maximum": 2050 },
+        "firedSpawns": { "minimum": 8, "maximum": 9 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "lowest_health",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1830, "maximum": 1900 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "lowest_health",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1930, "maximum": 2050 },
+        "firedSpawns": { "minimum": 8, "maximum": 9 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "highest_health",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1830, "maximum": 1900 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "highest_health",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1930, "maximum": 2050 },
+        "firedSpawns": { "minimum": 8, "maximum": 9 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "highest_armor",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1830, "maximum": 1900 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "highest_armor",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1930, "maximum": 2050 },
+        "firedSpawns": { "minimum": 8, "maximum": 9 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "fastest",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1830, "maximum": 1900 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "fastest",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1930, "maximum": 2050 },
+        "firedSpawns": { "minimum": 8, "maximum": 9 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "boss_or_elite_first",
+      "buildId": "build.profile.new_campaign.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1830, "maximum": 1900 },
+        "firedSpawns": { "minimum": 7, "maximum": 8 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    },
+    {
+      "placementPointId": "placement.shuttergate_keep_guard",
+      "targetPolicy": "boss_or_elite_first",
+      "buildId": "build.warden.shield_slam_rank_1.v1",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
+      "deepestStartedWaveId": "wave.shuttergate_3",
+      "ranges": {
+        "terminalTick": { "minimum": 1930, "maximum": 2050 },
+        "firedSpawns": { "minimum": 8, "maximum": 9 },
+        "defeatedEnemies": { "minimum": 4, "maximum": 6 },
+        "survivingEnemies": { "minimum": 1, "maximum": 4 }
+      }
+    }
+  ]
+}
