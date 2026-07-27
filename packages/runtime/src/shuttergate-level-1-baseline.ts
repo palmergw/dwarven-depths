@@ -125,7 +125,11 @@ export function requireShuttergateLevel1Baseline(
     throw new RangeError(
       "Shuttergate Level 1 terminal reason must be all_dwarves_downed"
     );
-  if (typeof record.seed !== "string" || !/^[1-9]\d{0,9}$/.test(record.seed))
+  if (
+    typeof record.seed !== "string" ||
+    !/^[1-9]\d{0,9}$/.test(record.seed) ||
+    BigInt(record.seed) > 0xffff_ffffn
+  )
     throw new TypeError("Shuttergate Level 1 seed must be canonical");
   if (
     typeof record.contentManifestHash !== "string" ||
@@ -137,6 +141,32 @@ export function requireShuttergateLevel1Baseline(
     "Shuttergate Level 1 ranges",
     ["defeatedEnemies", "firedSpawns", "survivingEnemies", "terminalTick"]
   );
+  const safetyTickLimit = requirePositiveInteger(
+    record.safetyTickLimit,
+    "Shuttergate Level 1 safety tick limit"
+  );
+  const ranges = Object.freeze({
+    terminalTick: requireRange(
+      rangesRecord.terminalTick,
+      "Shuttergate Level 1 terminal tick range"
+    ),
+    firedSpawns: requireRange(
+      rangesRecord.firedSpawns,
+      "Shuttergate Level 1 fired spawns range"
+    ),
+    defeatedEnemies: requireRange(
+      rangesRecord.defeatedEnemies,
+      "Shuttergate Level 1 defeated enemies range"
+    ),
+    survivingEnemies: requireRange(
+      rangesRecord.survivingEnemies,
+      "Shuttergate Level 1 surviving enemies range"
+    )
+  });
+  if (ranges.terminalTick.maximum > safetyTickLimit)
+    throw new RangeError(
+      "Shuttergate Level 1 terminal tick range exceeds the safety tick limit"
+    );
   return Object.freeze({
     schemaVersion: 1,
     baselineId: record.baselineId,
@@ -150,34 +180,14 @@ export function requireShuttergateLevel1Baseline(
     ),
     targetPolicy: record.targetPolicy,
     buildId: record.buildId,
-    safetyTickLimit: requirePositiveInteger(
-      record.safetyTickLimit,
-      "Shuttergate Level 1 safety tick limit"
-    ),
+    safetyTickLimit,
     terminalResult: record.terminalResult,
     terminalReason: record.terminalReason,
     deepestStartedWaveId: requireIdentifier(
       record.deepestStartedWaveId,
       "Shuttergate Level 1 deepest wave ID"
     ),
-    ranges: Object.freeze({
-      terminalTick: requireRange(
-        rangesRecord.terminalTick,
-        "Shuttergate Level 1 terminal tick range"
-      ),
-      firedSpawns: requireRange(
-        rangesRecord.firedSpawns,
-        "Shuttergate Level 1 fired spawns range"
-      ),
-      defeatedEnemies: requireRange(
-        rangesRecord.defeatedEnemies,
-        "Shuttergate Level 1 defeated enemies range"
-      ),
-      survivingEnemies: requireRange(
-        rangesRecord.survivingEnemies,
-        "Shuttergate Level 1 surviving enemies range"
-      )
-    })
+    ranges
   });
 }
 

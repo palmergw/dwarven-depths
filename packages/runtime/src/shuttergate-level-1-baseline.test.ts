@@ -85,5 +85,20 @@ describe("Shuttergate Level 1 reference baseline", () => {
         }
       })
     ).toThrow("positive safe integer");
+    expect(() =>
+      requireShuttergateLevel1Baseline({
+        ...baselineInput,
+        seed: "4294967296"
+      })
+    ).toThrow("seed must be canonical");
+    expect(() =>
+      requireShuttergateLevel1Baseline({
+        ...baselineInput,
+        ranges: {
+          ...baselineInput.ranges,
+          terminalTick: { minimum: 4501, maximum: 4502 }
+        }
+      })
+    ).toThrow("exceeds the safety tick limit");
   });
 });

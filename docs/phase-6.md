@@ -17,4 +17,4 @@ Observed calibration evidence and balance recommendations are separate: satisfyi
 
 ## Executable check
 
-- `pnpm test:built -- packages/runtime/src/shuttergate-level-1-baseline.test.ts`
+- `pnpm test:built packages/runtime/src/shuttergate-level-1-baseline.test.ts`
