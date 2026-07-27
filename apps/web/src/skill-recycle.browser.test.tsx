@@ -182,8 +182,11 @@ describe("checkpoint Iron Warden skill recycle", () => {
 
     await userEvent.click(await button("Upgrade inventory"));
     await userEvent.click(await button("Recycle Iron Warden skill tree"));
-    await userEvent.click(await button("Cancel skill recycle"));
+    await userEvent.keyboard("{Escape}");
     expect(await button("Recycle Iron Warden skill tree")).toHaveFocus();
+    expect(document.querySelector(".upgrades")?.textContent).toContain(
+      "stone_guard selected at level 2"
+    );
 
     await userEvent.click(await button("Recycle Iron Warden skill tree"));
     await userEvent.click(await button("Confirm skill recycle"));

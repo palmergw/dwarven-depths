@@ -677,6 +677,39 @@ export function App({
   }, [view, setManualPause]);
 
   useLayoutEffect(() => {
+    const onCheckpointEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.repeat || view.phase !== "checkpoint")
+        return;
+      if (recycleConfirmationOpen) {
+        if (upgradePurchaseStatus.kind === "pending") return;
+        event.preventDefault();
+        setRecycleConfirmationOpen(false);
+      } else if (skillRecycleConfirmationOpen) {
+        if (upgradePurchaseStatus.kind === "pending") return;
+        event.preventDefault();
+        setSkillRecycleConfirmationOpen(false);
+      } else if (upgradeInventoryOpen) {
+        if (upgradePurchaseStatus.kind === "pending") return;
+        event.preventDefault();
+        setUpgradePurchaseStatus({ kind: "idle" });
+        setUpgradeInventoryOpen(false);
+      } else if (settingsOpen) {
+        event.preventDefault();
+        setSettingsOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onCheckpointEscape);
+    return () => window.removeEventListener("keydown", onCheckpointEscape);
+  }, [
+    recycleConfirmationOpen,
+    settingsOpen,
+    skillRecycleConfirmationOpen,
+    upgradeInventoryOpen,
+    upgradePurchaseStatus.kind,
+    view.phase
+  ]);
+
+  useLayoutEffect(() => {
     if (view.phase === "result") resultHeadingRef.current?.focus();
   }, [view]);
 
