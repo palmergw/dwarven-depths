@@ -131,15 +131,18 @@ describe("checkpoint Iron Warden skill recycle", () => {
     expect(heading?.parentElement?.textContent).toContain(
       "Shared upgrades, Forge Ore"
     );
-
-    await userEvent.click(await button("Recycle all shared upgrades"));
     expect(
-      document.getElementById("recycle-confirmation-heading")
-    ).toHaveFocus();
-    await userEvent.click(await button("Recycle Iron Warden skill tree"));
-    expect(
-      document.getElementById("skill-recycle-confirmation-heading")
-    ).toHaveFocus();
+      document.querySelectorAll('[role="dialog"][aria-modal="true"]')
+    ).toHaveLength(1);
+    const backgroundRecycle = await button("Recycle all shared upgrades");
+    expect(backgroundRecycle.inert).toBe(true);
+    await expect(
+      page.getByRole("button", { name: "Recycle all shared upgrades" }).click({
+        timeout: 250
+      })
+    ).rejects.toThrow();
+    expect(document.getElementById("recycle-confirmation-heading")).toBeNull();
+    expect(heading).toHaveFocus();
 
     const confirm = await button("Confirm skill recycle");
     confirm.focus();
@@ -184,6 +187,7 @@ describe("checkpoint Iron Warden skill recycle", () => {
     await userEvent.click(await button("Recycle Iron Warden skill tree"));
     await userEvent.keyboard("{Escape}");
     expect(await button("Recycle Iron Warden skill tree")).toHaveFocus();
+    expect((await button("Recycle all shared upgrades")).inert).toBe(false);
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "stone_guard selected at level 2"
     );

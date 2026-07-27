@@ -92,6 +92,19 @@ function containPanelFocus(event: ReactKeyboardEvent<HTMLElement>): void {
   }
 }
 
+function isolateDialogFromSiblings(dialog: HTMLElement): () => void {
+  const siblings = Array.from(dialog.parentElement?.children ?? []).filter(
+    (element): element is HTMLElement =>
+      element instanceof HTMLElement && element !== dialog
+  );
+  const priorInertValues = siblings.map((element) => element.inert);
+  for (const element of siblings) element.inert = true;
+  return () => {
+    for (const [index, element] of siblings.entries())
+      element.inert = priorInertValues[index] ?? false;
+  };
+}
+
 type UpgradePurchaseStatus =
   | { readonly kind: "idle" }
   | { readonly kind: "pending"; readonly upgradeId: StableId }
@@ -780,6 +793,17 @@ export function App({
   ]);
 
   useLayoutEffect(() => {
+    const heading = recycleConfirmationOpen
+      ? recycleHeadingRef.current
+      : skillRecycleConfirmationOpen
+        ? skillRecycleHeadingRef.current
+        : null;
+    const dialog = heading?.parentElement;
+    if (dialog === undefined || dialog === null) return;
+    return isolateDialogFromSiblings(dialog);
+  }, [recycleConfirmationOpen, skillRecycleConfirmationOpen]);
+
+  useLayoutEffect(() => {
     if (!focusSkillTreeAfterSelectionRef.current) return;
     focusSkillTreeAfterSelectionRef.current = false;
     skillTreeHeadingRef.current?.focus();
@@ -997,7 +1021,9 @@ export function App({
             <section
               className="upgrades"
               role="dialog"
-              aria-modal="true"
+              aria-modal={
+                !recycleConfirmationOpen && !skillRecycleConfirmationOpen
+              }
               aria-labelledby="upgrade-inventory-heading"
               onKeyDown={
                 recycleConfirmationOpen || skillRecycleConfirmationOpen

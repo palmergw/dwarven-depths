@@ -156,6 +156,20 @@ describe("checkpoint shared-upgrade recycle", () => {
       ?.closest('[role="dialog"]');
     expect(confirmation).toBeInstanceOf(HTMLElement);
     expect(confirmation?.getAttribute("aria-modal")).toBe("true");
+    expect(
+      document.querySelectorAll('[role="dialog"][aria-modal="true"]')
+    ).toHaveLength(1);
+    const backgroundClose = await button("Close upgrade inventory");
+    expect(backgroundClose.inert).toBe(true);
+    await expect(
+      page.getByRole("button", { name: "Close upgrade inventory" }).click({
+        timeout: 250
+      })
+    ).rejects.toThrow();
+    expect(document.querySelector(".upgrades")).not.toBeNull();
+    expect(
+      document.getElementById("recycle-confirmation-heading")
+    ).not.toBeNull();
 
     await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
     expect(await button("Cancel recycle")).toHaveFocus();
@@ -165,6 +179,7 @@ describe("checkpoint shared-upgrade recycle", () => {
 
     await userEvent.keyboard("{Escape}");
     expect(await button("Recycle all shared upgrades")).toHaveFocus();
+    expect((await button("Close upgrade inventory")).inert).toBe(false);
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Available Forge Ore: 30"
     );
