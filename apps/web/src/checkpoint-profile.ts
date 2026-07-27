@@ -5,7 +5,8 @@ import {
   type ProfileState,
   purchasedUpgradeCatalog,
   purchaseUpgradeRank,
-  recycleProgression
+  recycleProgression,
+  selectCharacterSkillNode
 } from "@dwarven-depths/progression";
 import {
   createProfileSaveEnvelope,
@@ -186,6 +187,32 @@ export async function recycleCheckpointIronWardenSkills(
       characterId: initialCharacterId,
       tree: ironWardenSkillTree
     }
+  });
+  const envelope = await createProfileSaveEnvelope({
+    contentVersion: "content.empty-level.v1",
+    applicationBuild: "phase-5-web",
+    writtenAtEpochMs: now(),
+    profileId,
+    profile: resolution.profile
+  });
+  const written = await store.write({
+    expectedRevision: profile.revision,
+    envelope
+  });
+  return written.profile;
+}
+
+export async function selectCheckpointIronWardenSkill(
+  store: CheckpointProfileStore,
+  profile: ProfileState,
+  nodeId: StableId,
+  now: () => number = Date.now
+): Promise<ProfileState> {
+  const resolution = selectCharacterSkillNode({
+    schemaVersion: 1,
+    profile,
+    tree: ironWardenSkillTree,
+    nodeId
   });
   const envelope = await createProfileSaveEnvelope({
     contentVersion: "content.empty-level.v1",
