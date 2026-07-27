@@ -132,6 +132,15 @@ describe("checkpoint Iron Warden skill recycle", () => {
       "Shared upgrades, Forge Ore"
     );
 
+    await userEvent.click(await button("Recycle all shared upgrades"));
+    expect(
+      document.getElementById("recycle-confirmation-heading")
+    ).toHaveFocus();
+    await userEvent.click(await button("Recycle Iron Warden skill tree"));
+    expect(
+      document.getElementById("skill-recycle-confirmation-heading")
+    ).toHaveFocus();
+
     const confirm = await button("Confirm skill recycle");
     confirm.focus();
     await userEvent.keyboard("{Enter}");
@@ -139,7 +148,6 @@ describe("checkpoint Iron Warden skill recycle", () => {
     (await button("Saving skill recycle…")).click();
     expect(writes).toHaveLength(1);
     expect(writes[0]?.expectedRevision).toBe(initial.profile.revision);
-    expect(heading).toBeInTheDocument();
 
     const written = writes[0]?.envelope as ProfileSaveEnvelope;
     expect(written.profile.selectedSkillNodes).toEqual([]);

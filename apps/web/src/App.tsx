@@ -905,6 +905,7 @@ export function App({
                     ref={recycleButtonRef}
                     disabled={upgradePurchaseStatus.kind === "pending"}
                     onClick={() => {
+                      skillRecycleConfirmationWasOpenRef.current = false;
                       setSkillRecycleConfirmationOpen(false);
                       setRecycleConfirmationOpen(true);
                     }}
