@@ -1,4 +1,4 @@
-import type { ShuttergateReferenceCalibrationEvidence } from "./shuttergate-reference-calibration.js";
+import type { ShuttergateBuildCalibrationEvidence } from "./shuttergate-reference-calibration.js";
 
 const shuttergateReferenceManifestHash =
   "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d";
@@ -12,7 +12,7 @@ export interface ShuttergateLevel1Baseline {
   readonly schemaVersion: 1;
   readonly baselineId: "baseline.shuttergate.level_1.reference.v1";
   readonly contentManifestHash: string;
-  readonly calibrationId: "calibration.shuttergate.unupgraded_warden.v1";
+  readonly calibrationId: "calibration.shuttergate.warden_build.v1";
   readonly seed: string;
   readonly levelId: string;
   readonly placementPointId: string;
@@ -59,7 +59,9 @@ function requirePlainRecord<const Key extends string>(
     })
   )
     throw new TypeError(`${label} must use enumerable plain data properties`);
-  return value as Record<Key, unknown>;
+  return Object.fromEntries(
+    expectedKeys.map((key) => [key, descriptors[key]?.value])
+  ) as Record<Key, unknown>;
 }
 
 function requireIdentifier(value: unknown, label: string): string {
@@ -116,7 +118,7 @@ export function requireShuttergateLevel1Baseline(
     );
   if (record.baselineId !== "baseline.shuttergate.level_1.reference.v1")
     throw new RangeError("Shuttergate Level 1 baseline ID is unsupported");
-  if (record.calibrationId !== "calibration.shuttergate.unupgraded_warden.v1")
+  if (record.calibrationId !== "calibration.shuttergate.warden_build.v1")
     throw new RangeError("Shuttergate Level 1 calibration ID is unsupported");
   if (record.buildId !== "build.profile.new_campaign.v1")
     throw new RangeError("Shuttergate Level 1 build ID is unsupported");
@@ -212,7 +214,7 @@ function requireInRange(
 }
 
 export function assertShuttergateCalibrationMatchesBaseline(
-  evidence: ShuttergateReferenceCalibrationEvidence,
+  evidence: ShuttergateBuildCalibrationEvidence,
   baseline: ShuttergateLevel1Baseline
 ): void {
   for (const [label, actual, expected] of [
@@ -226,6 +228,7 @@ export function assertShuttergateCalibrationMatchesBaseline(
     ["level", evidence.levelId, baseline.levelId],
     ["placement point", evidence.placementPointId, baseline.placementPointId],
     ["target policy", evidence.targetPolicy, baseline.targetPolicy],
+    ["build", evidence.buildId, baseline.buildId],
     ["safety tick limit", evidence.safetyTickLimit, baseline.safetyTickLimit],
     ["terminal result", evidence.terminalResult, baseline.terminalResult],
     ["terminal reason", evidence.terminalReason, baseline.terminalReason],

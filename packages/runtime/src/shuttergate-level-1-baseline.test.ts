@@ -10,13 +10,20 @@ import {
   assertShuttergateCalibrationMatchesBaseline,
   requireShuttergateLevel1Baseline
 } from "./shuttergate-level-1-baseline.js";
-import { runShuttergateReferenceCalibration } from "./shuttergate-reference-calibration.js";
+import { runShuttergateSeedPlacementControllerBuildCalibration } from "./shuttergate-reference-calibration.js";
 
 describe("Shuttergate Level 1 reference baseline", () => {
   it("accepts the authoritative reference calibration", async () => {
     const baseline = requireShuttergateLevel1Baseline(baselineInput);
     const content = await compileContent(shuttergateInput);
-    const evidence = await runShuttergateReferenceCalibration(content);
+    const evidence =
+      await runShuttergateSeedPlacementControllerBuildCalibration(
+        content,
+        baseline.seed,
+        baseline.placementPointId as never,
+        baseline.targetPolicy,
+        baseline.buildId
+      );
 
     expect(() =>
       assertShuttergateCalibrationMatchesBaseline(evidence, baseline)
@@ -51,12 +58,32 @@ describe("Shuttergate Level 1 reference baseline", () => {
     expect(() => requireShuttergateLevel1Baseline(accessorBaseline)).toThrow(
       "plain data properties"
     );
+
+    const proxyTarget = structuredClone(baselineInput) as Record<
+      string,
+      unknown
+    >;
+    proxyTarget["seed"] = "not-a-seed";
+    const substitutingProxy = new Proxy(proxyTarget, {
+      get: (target, property, receiver) =>
+        property === "seed" ? "1" : Reflect.get(target, property, receiver)
+    });
+    expect(() => requireShuttergateLevel1Baseline(substitutingProxy)).toThrow(
+      "seed must be canonical"
+    );
   });
 
   it("rejects mismatched identity and out-of-range evidence", async () => {
     const baseline = requireShuttergateLevel1Baseline(baselineInput);
     const content = await compileContent(shuttergateInput);
-    const evidence = await runShuttergateReferenceCalibration(content);
+    const evidence =
+      await runShuttergateSeedPlacementControllerBuildCalibration(
+        content,
+        baseline.seed,
+        baseline.placementPointId as never,
+        baseline.targetPolicy,
+        baseline.buildId
+      );
 
     expect(() =>
       assertShuttergateCalibrationMatchesBaseline(

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "baselineId": "baseline.shuttergate.level_1.reference.v1",
   "contentManifestHash": "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d",
-  "calibrationId": "calibration.shuttergate.unupgraded_warden.v1",
+  "calibrationId": "calibration.shuttergate.warden_build.v1",
   "seed": "1",
   "levelId": "level.shuttergate_hall",
   "placementPointId": "placement.shuttergate_north_guard",
