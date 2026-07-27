@@ -208,6 +208,16 @@ describe("presentation settings", () => {
       return candidate as HTMLHeadingElement;
     });
     expect(document.activeElement).toBe(heading);
+    const dialog = heading.closest('[role="dialog"]');
+    expect(dialog).toBeInstanceOf(HTMLElement);
+    expect(dialog?.getAttribute("aria-modal")).toBe("true");
+
+    await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(await buttonWithText("Close settings")).toHaveFocus();
+    await userEvent.keyboard("{Tab}");
+    expect(document.activeElement).toBe(
+      document.querySelector("#motion-preference")
+    );
 
     await userEvent.keyboard("{Escape}");
     await vi.waitFor(() =>

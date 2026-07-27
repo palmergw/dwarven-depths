@@ -8,6 +8,7 @@ import {
   purchasedUpgradeCatalog
 } from "@dwarven-depths/progression";
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -63,6 +64,33 @@ const contrastPreferenceStorageKey =
   "dwarven-depths.presentation.contrast-preference.v1";
 const contrastPreferences = ["standard", "high"] as const;
 type ContrastPreference = (typeof contrastPreferences)[number];
+
+const panelFocusableSelector =
+  'button:not([disabled]), select:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+
+function containPanelFocus(event: ReactKeyboardEvent<HTMLElement>): void {
+  if (event.key !== "Tab") return;
+  const focusable = Array.from(
+    event.currentTarget.querySelectorAll<HTMLElement>(panelFocusableSelector)
+  );
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (!first || !last) {
+    event.preventDefault();
+    return;
+  }
+  if (
+    event.shiftKey &&
+    (document.activeElement === first ||
+      !focusable.some((element) => element === document.activeElement))
+  ) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
 
 type UpgradePurchaseStatus =
   | { readonly kind: "idle" }
@@ -741,6 +769,17 @@ export function App({
   }, [skillRecycleConfirmationOpen]);
 
   useLayoutEffect(() => {
+    if (upgradePurchaseStatus.kind !== "pending") return;
+    if (recycleConfirmationOpen) recycleHeadingRef.current?.focus();
+    else if (skillRecycleConfirmationOpen)
+      skillRecycleHeadingRef.current?.focus();
+  }, [
+    recycleConfirmationOpen,
+    skillRecycleConfirmationOpen,
+    upgradePurchaseStatus.kind
+  ]);
+
+  useLayoutEffect(() => {
     if (!focusSkillTreeAfterSelectionRef.current) return;
     focusSkillTreeAfterSelectionRef.current = false;
     skillTreeHeadingRef.current?.focus();
@@ -887,7 +926,10 @@ export function App({
         {view.phase === "checkpoint" && settingsOpen && (
           <section
             className="settings"
+            role="dialog"
+            aria-modal="true"
             aria-labelledby="presentation-settings-heading"
+            onKeyDown={containPanelFocus}
           >
             <h3
               id="presentation-settings-heading"
@@ -954,7 +996,14 @@ export function App({
           checkpointProfile.status === "ready" && (
             <section
               className="upgrades"
+              role="dialog"
+              aria-modal="true"
               aria-labelledby="upgrade-inventory-heading"
+              onKeyDown={
+                recycleConfirmationOpen || skillRecycleConfirmationOpen
+                  ? undefined
+                  : containPanelFocus
+              }
             >
               <h3
                 id="upgrade-inventory-heading"
@@ -1166,7 +1215,10 @@ export function App({
               {recycleConfirmationOpen && (
                 <section
                   className="recycle-confirmation"
+                  role="dialog"
+                  aria-modal="true"
                   aria-labelledby="recycle-confirmation-heading"
+                  onKeyDown={containPanelFocus}
                 >
                   <h4
                     id="recycle-confirmation-heading"
@@ -1225,7 +1277,10 @@ export function App({
               {skillRecycleConfirmationOpen && (
                 <section
                   className="recycle-confirmation"
+                  role="dialog"
+                  aria-modal="true"
                   aria-labelledby="skill-recycle-confirmation-heading"
+                  onKeyDown={containPanelFocus}
                 >
                   <h4
                     id="skill-recycle-confirmation-heading"
