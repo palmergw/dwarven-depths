@@ -20,7 +20,12 @@ import {
   compileScenario
 } from "@dwarven-depths/content-runtime";
 import { canonicalHash } from "@dwarven-depths/contracts";
-import { createReplayDefinition, runScenario } from "@dwarven-depths/runtime";
+import {
+  createLiveScenarioHost,
+  createReplayDefinition,
+  createShieldSlamWebPreparationState,
+  runScenario
+} from "@dwarven-depths/runtime";
 import { afterEach, describe, expect, it } from "vitest";
 
 const temporaryDirectories: string[] = [];
@@ -103,6 +108,53 @@ function runCliFrom(cwd: string, ...args: string[]) {
     [resolve("apps/sim-cli/dist/cli.js"), ...args],
     { cwd, encoding: "utf8" }
   );
+}
+
+async function createShieldSlamClientEvidence() {
+  const contentInput = JSON.parse(
+    readFileSync("content/fixtures/phase-3-shuttergate.json", "utf8")
+  ) as {
+    definitions: Array<{ kind: string; id: string; waveIds?: string[] }>;
+  };
+  const level = contentInput.definitions.find(
+    (definition) => definition.id === "level.shuttergate_hall"
+  );
+  if (level === undefined) throw new Error("missing Shield Slam level fixture");
+  level.waveIds = [];
+  const scenarioInput = {
+    ...JSON.parse(
+      readFileSync("scenarios/conformance/shield-slam.json", "utf8")
+    ),
+    maximumTicks: 1,
+    commands: [{ atTick: 0, type: "confirmPreparation" }]
+  };
+  const contentPath = temporaryFile("content.json", contentInput);
+  const scenarioPath = temporaryFile("scenario.json", scenarioInput);
+  const content = await compileContent(contentInput);
+  const authoredScenario = compileScenario(scenarioInput, content);
+  const host = createLiveScenarioHost(
+    authoredScenario,
+    content,
+    createShieldSlamWebPreparationState(content, authoredScenario)
+  );
+  while (host.state.phase !== "TERMINAL") {
+    if (host.state.phase === "PREPARATION") {
+      host.scheduleCommand({
+        atTick: host.state.tick,
+        type: "confirmPreparation"
+      });
+    }
+    host.step();
+  }
+  const result = await host.result();
+  return {
+    contentPath,
+    scenarioPath,
+    evidence: {
+      schemaVersion: 2,
+      replay: createReplayDefinition(result, host.scenario, content)
+    }
+  };
 }
 
 afterEach(() => {
@@ -3174,6 +3226,153 @@ queued-spawns
           "client evidence verification currently supports only scenario.conformance.shield_slam"
       }
     });
+  });
+
+  it("verifies authoritative Shield Slam client evidence", async () => {
+    const { contentPath, scenarioPath, evidence } =
+      await createShieldSlamClientEvidence();
+    const evidencePath = temporaryFile("client-evidence.json", evidence);
+
+    const verified = runCli(
+      "replay",
+      "--client-evidence",
+      evidencePath,
+      "--content",
+      contentPath,
+      "--scenario",
+      scenarioPath,
+      "--verify"
+    );
+
+    expect(verified.status).toBe(0);
+    expect(JSON.parse(verified.stdout)).toMatchObject({
+      ok: true,
+      verified: true,
+      source: "client-evidence",
+      scenarioId: "scenario.conformance.shield_slam",
+      terminalResult: evidence.replay.expectedTerminalResult,
+      terminalTick: evidence.replay.expectedTerminalTick,
+      finalStateChecksum: evidence.replay.checkpoints[0]?.stateChecksum,
+      eventStreamChecksum: evidence.replay.checkpoints[0]?.eventStreamChecksum
+    });
+  });
+
+  it("fails closed for malformed or tampered client evidence", async () => {
+    const { contentPath, scenarioPath, evidence } =
+      await createShieldSlamClientEvidence();
+    const cases: ReadonlyArray<{
+      readonly name: string;
+      readonly mutate: (value: typeof evidence) => unknown;
+      readonly expected: string;
+    }> = [
+      {
+        name: "unknown outer field",
+        mutate: (value) => ({ ...value, unexpected: true }),
+        expected:
+          "client run evidence must have exactly schemaVersion 2 and replay"
+      },
+      {
+        name: "malformed command envelope",
+        mutate: (value) => ({
+          ...value,
+          replay: {
+            ...value.replay,
+            commands: value.replay.commands.map((command, index) =>
+              index === 0 ? { ...command, unexpected: true } : command
+            )
+          }
+        }),
+        expected: "unrecognized_keys"
+      },
+      {
+        name: "content identity",
+        mutate: (value) => ({
+          ...value,
+          replay: { ...value.replay, contentManifestHash: "0".repeat(64) }
+        }),
+        expected: "content_manifest_mismatch"
+      },
+      {
+        name: "scenario identity",
+        mutate: (value) => ({
+          ...value,
+          replay: { ...value.replay, scenarioId: "scenario.tampered" }
+        }),
+        expected: "scenario_id_mismatch"
+      },
+      {
+        name: "terminal result",
+        mutate: (value) => ({
+          ...value,
+          replay: {
+            ...value.replay,
+            expectedTerminalResult:
+              value.replay.expectedTerminalResult === "victory"
+                ? "defeat"
+                : "victory"
+          }
+        }),
+        expected: "terminal_result_mismatch"
+      },
+      {
+        name: "terminal tick",
+        mutate: (value) => ({
+          ...value,
+          replay: {
+            ...value.replay,
+            expectedTerminalTick: value.replay.expectedTerminalTick + 1
+          }
+        }),
+        expected: "terminal_checkpoint_mismatch"
+      },
+      {
+        name: "final-state checksum",
+        mutate: (value) => ({
+          ...value,
+          replay: {
+            ...value.replay,
+            checkpoints: value.replay.checkpoints.map((checkpoint) => ({
+              ...checkpoint,
+              stateChecksum: "0".repeat(64)
+            }))
+          }
+        }),
+        expected: "state_checksum_mismatch"
+      },
+      {
+        name: "event-stream checksum",
+        mutate: (value) => ({
+          ...value,
+          replay: {
+            ...value.replay,
+            checkpoints: value.replay.checkpoints.map((checkpoint) => ({
+              ...checkpoint,
+              eventStreamChecksum: "0".repeat(64)
+            }))
+          }
+        }),
+        expected: "event_stream_checksum_mismatch"
+      }
+    ];
+
+    for (const testCase of cases) {
+      const evidencePath = temporaryFile(
+        `${testCase.name.replaceAll(" ", "-")}.json`,
+        testCase.mutate(evidence)
+      );
+      const rejected = runCli(
+        "replay",
+        "--client-evidence",
+        evidencePath,
+        "--content",
+        contentPath,
+        "--scenario",
+        scenarioPath,
+        "--verify"
+      );
+      expect(rejected.status, testCase.name).not.toBe(0);
+      expect(rejected.stderr, testCase.name).toContain(testCase.expected);
+    }
   });
 
   it("verifies a self-contained replay and rejects tampered artifacts", () => {

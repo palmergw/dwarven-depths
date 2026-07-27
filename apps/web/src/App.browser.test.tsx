@@ -1237,9 +1237,13 @@ describe("authoritative web worker", () => {
       replay: {
         schemaVersion: 1,
         simulationSchemaVersion: 1,
+        contentVersion: expect.any(String),
+        contentManifestHash: expect.stringMatching(/^[a-f0-9]{64}$/),
         scenarioId: "scenario.conformance.shield_slam",
+        scenarioHash: expect.stringMatching(/^[a-f0-9]{64}$/),
         levelId: "level.shuttergate_hall",
         seed: "1",
+        rngAlgorithm: "xorshift32-v1",
         commands: [
           {
             tick: 0,
