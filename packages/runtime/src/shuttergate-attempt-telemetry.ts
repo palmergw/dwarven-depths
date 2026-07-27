@@ -383,6 +383,9 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
           transition.firedSpawns < previous.firedSpawns ||
           transition.wardenHealth > previous.wardenHealth ||
           transition.startedWaveIds.length < previous.startedWaveIds.length ||
+          (index < normalized.waveTransitions.length - 1 &&
+            transition.startedWaveIds.length ===
+              previous.startedWaveIds.length) ||
           previous.startedWaveIds.some(
             (waveId, waveIndex) =>
               transition.startedWaveIds[waveIndex] !== waveId
