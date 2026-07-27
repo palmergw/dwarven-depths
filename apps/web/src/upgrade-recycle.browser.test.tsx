@@ -113,6 +113,9 @@ describe("checkpoint shared-upgrade recycle", () => {
     await vi.waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0]?.expectedRevision).toBe(initial.profile.revision);
     expect(await button("Saving recycle…")).toBeDisabled();
+    await vi.waitFor(() => expect(heading).toHaveFocus());
+    await userEvent.keyboard("{Tab}");
+    expect(heading).toHaveFocus();
     await userEvent.keyboard("{Escape}");
     expect(
       document.getElementById("recycle-confirmation-heading")

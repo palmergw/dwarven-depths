@@ -769,6 +769,17 @@ export function App({
   }, [skillRecycleConfirmationOpen]);
 
   useLayoutEffect(() => {
+    if (upgradePurchaseStatus.kind !== "pending") return;
+    if (recycleConfirmationOpen) recycleHeadingRef.current?.focus();
+    else if (skillRecycleConfirmationOpen)
+      skillRecycleHeadingRef.current?.focus();
+  }, [
+    recycleConfirmationOpen,
+    skillRecycleConfirmationOpen,
+    upgradePurchaseStatus.kind
+  ]);
+
+  useLayoutEffect(() => {
     if (!focusSkillTreeAfterSelectionRef.current) return;
     focusSkillTreeAfterSelectionRef.current = false;
     skillTreeHeadingRef.current?.focus();
