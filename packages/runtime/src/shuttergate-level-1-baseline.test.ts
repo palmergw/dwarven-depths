@@ -33,6 +33,12 @@ describe("Shuttergate Level 1 reference baseline", () => {
     expect(() =>
       requireShuttergateLevel1Baseline({ ...baselineInput, unexpected: true })
     ).toThrow("invalid fields");
+    expect(() =>
+      requireShuttergateLevel1Baseline({
+        ...baselineInput,
+        contentManifestHash: "0".repeat(64)
+      })
+    ).toThrow("not the pinned reference");
 
     const accessorBaseline = structuredClone(baselineInput) as Record<
       string,

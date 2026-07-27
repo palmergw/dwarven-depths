@@ -1,5 +1,8 @@
 import type { ShuttergateReferenceCalibrationEvidence } from "./shuttergate-reference-calibration.js";
 
+const shuttergateReferenceManifestHash =
+  "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d";
+
 interface IntegerRange {
   readonly minimum: number;
   readonly maximum: number;
@@ -136,6 +139,10 @@ export function requireShuttergateLevel1Baseline(
     !/^[0-9a-f]{64}$/.test(record.contentManifestHash)
   )
     throw new TypeError("Shuttergate Level 1 content manifest hash is invalid");
+  if (record.contentManifestHash !== shuttergateReferenceManifestHash)
+    throw new RangeError(
+      "Shuttergate Level 1 content manifest hash is not the pinned reference"
+    );
   const rangesRecord = requirePlainRecord(
     record.ranges,
     "Shuttergate Level 1 ranges",
