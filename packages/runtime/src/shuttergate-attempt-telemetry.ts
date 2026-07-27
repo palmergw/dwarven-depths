@@ -375,6 +375,8 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
       throw new Error("telemetry transition is missing");
     if (
       transition.livingEnemies > transition.firedSpawns ||
+      transition.startedWaveIds.length !==
+        Math.min(index + 1, normalized.waveTransitions.length - 1) ||
       transition.startedWaveIds.some(
         (waveId, waveIndex) => waveId !== `wave.shuttergate_${waveIndex + 1}`
       ) ||
