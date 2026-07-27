@@ -3608,6 +3608,10 @@ async function replay(args: ParsedArgs): Promise<void> {
       await readJson(requiredFlag(args, "scenario")),
       content
     );
+    if (authoredScenario.id !== "scenario.conformance.shield_slam")
+      throw new CliInputError(
+        "client evidence verification currently supports only scenario.conformance.shield_slam"
+      );
     const scenario = compileScenario(
       {
         ...authoredScenario,
@@ -3619,9 +3623,7 @@ async function replay(args: ParsedArgs): Promise<void> {
       replayDefinition,
       scenario,
       content,
-      scenario.id === "scenario.conformance.shield_slam"
-        ? createShieldSlamWebPreparationState(content, scenario)
-        : undefined
+      createShieldSlamWebPreparationState(content, scenario)
     );
     process.stdout.write(
       `${JSON.stringify({

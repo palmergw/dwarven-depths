@@ -3128,7 +3128,7 @@ queued-spawns
     });
   });
 
-  it("verifies strict exported client evidence and rejects tampering", async () => {
+  it("rejects client evidence from outside the authoritative web scenario", async () => {
     const contentPath = temporaryFile("content.json", {
       schemaVersion: 1,
       contentVersion: "client-evidence-test",
@@ -3156,61 +3156,23 @@ queued-spawns
       replay: createReplayDefinition(result, authoredScenario, content)
     };
     const evidencePath = temporaryFile("client-evidence.json", evidence);
-    const invocation = () =>
-      runCli(
-        "replay",
-        "--client-evidence",
-        evidencePath,
-        "--content",
-        contentPath,
-        "--scenario",
-        scenarioPath,
-        "--verify"
-      );
-
-    const verified = invocation();
-    expect(verified.status).toBe(0);
-    expect(JSON.parse(verified.stdout)).toMatchObject({
-      ok: true,
-      verified: true,
-      source: "client-evidence",
-      scenarioId: authoredScenario.id,
-      terminalResult: result.terminalResult,
-      terminalTick: result.terminalTick,
-      finalStateChecksum: result.finalStateChecksum,
-      eventStreamChecksum: result.eventStreamChecksum
-    });
-
-    const checkpoint = evidence.replay.checkpoints[0];
-    if (checkpoint === undefined) throw new Error("expected replay checkpoint");
-    const tampered = {
-      ...evidence,
-      replay: {
-        ...evidence.replay,
-        checkpoints: [
-          {
-            ...checkpoint,
-            stateChecksum: "0".repeat(64)
-          }
-        ]
-      }
-    };
-    writeFileSync(evidencePath, JSON.stringify(tampered), "utf8");
-    const rejected = invocation();
-    expect(rejected.status).toBe(4);
-    expect(JSON.parse(rejected.stderr)).toMatchObject({
-      error: { code: "state_checksum_mismatch" }
-    });
-
-    writeFileSync(
+    const rejected = runCli(
+      "replay",
+      "--client-evidence",
       evidencePath,
-      JSON.stringify({ ...evidence, unexpected: true }),
-      "utf8"
+      "--content",
+      contentPath,
+      "--scenario",
+      scenarioPath,
+      "--verify"
     );
-    const unknownField = invocation();
-    expect(unknownField.status).toBe(2);
-    expect(JSON.parse(unknownField.stderr)).toMatchObject({
-      error: { type: "input" }
+    expect(rejected.status).toBe(2);
+    expect(JSON.parse(rejected.stderr)).toMatchObject({
+      error: {
+        type: "input",
+        message:
+          "client evidence verification currently supports only scenario.conformance.shield_slam"
+      }
     });
   });
 
