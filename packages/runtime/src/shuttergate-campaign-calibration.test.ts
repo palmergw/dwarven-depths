@@ -86,9 +86,9 @@ describe("Shuttergate release-candidate Markdown", () => {
     const report = await threeAttemptReport();
     const identity = {
       scenarioId: "campaign_scenario.shuttergate.v1",
-      scenarioHash: "scenario-checksum",
-      contentManifestHash: "content-checksum",
-      campaignPayloadChecksum: "campaign-checksum",
+      scenarioHash: "a".repeat(64),
+      contentManifestHash: "b".repeat(64),
+      campaignPayloadChecksum: "c".repeat(64),
       calibrationReportChecksum: await canonicalHash(report)
     };
 
@@ -107,13 +107,13 @@ describe("Shuttergate release-candidate Markdown", () => {
     expect(first.endsWith("\n")).toBe(true);
   }, 45_000);
 
-  it("rejects incomplete or checksum-mismatched source evidence", async () => {
+  it("rejects malformed or inconsistent source evidence", async () => {
     const report = await threeAttemptReport();
     const identity = {
       scenarioId: "campaign_scenario.shuttergate.v1",
-      scenarioHash: "scenario-checksum",
-      contentManifestHash: "content-checksum",
-      campaignPayloadChecksum: "campaign-checksum",
+      scenarioHash: "a".repeat(64),
+      contentManifestHash: "b".repeat(64),
+      campaignPayloadChecksum: "c".repeat(64),
       calibrationReportChecksum: await canonicalHash(report)
     };
     const incomplete = {
@@ -124,6 +124,47 @@ describe("Shuttergate release-candidate Markdown", () => {
     await expect(
       renderShuttergateCampaignReleaseCandidateMarkdown(incomplete, identity)
     ).rejects.toThrow("incomplete Shuttergate release-candidate report");
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(
+        { ...report, unexpected: true } as ShuttergateCampaignCalibrationReport,
+        identity
+      )
+    ).rejects.toThrow("incomplete Shuttergate release-candidate report");
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(report, {
+        ...identity,
+        unexpected: true
+      } as typeof identity)
+    ).rejects.toThrow("incomplete Shuttergate release-candidate report");
+
+    const missingSeed: unknown = structuredClone(report);
+    const firstAttempt = (missingSeed as { attempts: Array<{ seed?: string }> })
+      .attempts[0];
+    if (firstAttempt === undefined) throw new Error("missing test attempt");
+    delete firstAttempt.seed;
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(
+        missingSeed as ShuttergateCampaignCalibrationReport,
+        {
+          ...identity,
+          calibrationReportChecksum: await canonicalHash(missingSeed)
+        }
+      )
+    ).rejects.toThrow("incomplete Shuttergate release-candidate report");
+
+    const inconsistent = structuredClone(report);
+    if (inconsistent.comparison === null)
+      throw new Error("missing test comparison");
+    const inconsistentComparison = inconsistent.comparison as {
+      terminalTickDelta: number;
+    };
+    inconsistentComparison.terminalTickDelta += 1;
+    await expect(
+      renderShuttergateCampaignReleaseCandidateMarkdown(inconsistent, {
+        ...identity,
+        calibrationReportChecksum: await canonicalHash(inconsistent)
+      })
+    ).rejects.toThrow("inconsistent Shuttergate release-candidate comparison");
     await expect(
       renderShuttergateCampaignReleaseCandidateMarkdown(report, {
         ...identity,

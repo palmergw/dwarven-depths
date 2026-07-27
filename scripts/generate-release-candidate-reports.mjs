@@ -37,7 +37,7 @@ mkdirSync(parent, { recursive: true });
 const stagingDirectory = mkdtempSync(
   join(parent, `.${basename(outputDirectory)}.staging-`)
 );
-const backupDirectory = `${outputDirectory}.previous`;
+const backupDirectory = `${stagingDirectory}.previous`;
 
 try {
   const campaignDirectory = join(stagingDirectory, "campaign");
@@ -77,7 +77,6 @@ try {
     { encoding: "utf8", flag: "wx" }
   );
 
-  rmSync(backupDirectory, { recursive: true, force: true });
   let backedUp = false;
   try {
     renameSync(outputDirectory, backupDirectory);
