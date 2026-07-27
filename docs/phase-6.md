@@ -6,12 +6,15 @@ Phase 6 pins a machine-readable Level 1 Shuttergate reference baseline and an ap
 
 The baseline is validated as strict plain data before comparison. The existing authoritative Shuttergate calibration remains the only producer of gameplay evidence; the baseline neither runs a second gameplay loop nor changes content or mechanics. Node and browser calibration evidence remain bound to the same canonical checksum.
 
+The simulation CLI now explicitly exports one local, schema-versioned Shuttergate attempt telemetry document with `telemetry --content <file> --out <file>`. The document records identity and manifest context, the fixed campaign roster/build, outcome and duration, wave transitions, spawn/defeat/survivor totals, terminal Warden state, and committed rewards from the existing authoritative campaign attempt. Canonical bytes and a payload checksum make repeated exports comparable and tampering detectable; publication uses create-only file semantics. No telemetry is collected or uploaded implicitly.
+
 Observed calibration evidence and balance recommendations remain separate. Satisfying the matrix proves that the approved combinations remain inside broad evidence ranges and that the first persistent upgrade extends survival for each placement/policy pair. It does not claim equal strategy strength, victory balance, or recommend future tuning.
 
 ## Explicitly not implemented
 
 - Level 1 mechanics or content-statistic tuning beyond the approved evidence ranges;
-- local telemetry export, reference human/policy replays, release-candidate report publication, presentation polish, or performance/accessibility budgets;
+- reference human/policy replays, release-candidate report publication, presentation polish, or performance/accessibility budgets;
+- telemetry categories that the current authoritative attempt does not produce, including aggregate basic-attack damage, healing, blocking time, and player-entered command timing; these are not inferred;
 - a terminating Phase 5 web encounter or terminal client/CLI parity;
 - new mechanics, report/replay formats, minimization schemas, or divergence classes.
 
@@ -19,3 +22,6 @@ Observed calibration evidence and balance recommendations remain separate. Satis
 
 - `pnpm test:built packages/runtime/src/shuttergate-level-1-baseline.test.ts`
 - `pnpm test:built packages/runtime/src/shuttergate-level-1-balance-matrix.test.ts`
+- `pnpm test:built packages/runtime/src/shuttergate-attempt-telemetry.test.ts`
+- `./scripts/test-browser-docker.sh packages/runtime/src/shuttergate-attempt-telemetry.browser.test.ts`
+- `pnpm test:built apps/sim-cli/src/cli.test.ts -t 'exports deterministic local telemetry'`

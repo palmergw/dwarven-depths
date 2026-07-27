@@ -1693,6 +1693,49 @@ describe("simulation CLI", () => {
     expect(readFileSync(ticksArtifactPath, "utf8")).toBe(ticksArtifactText);
   }, 15_000);
 
+  it("exports deterministic local telemetry without overwriting", () => {
+    const directory = temporaryDirectory();
+    const content = resolve(directory, "content.json");
+    const firstOutput = resolve(directory, "telemetry", "first.json");
+    const secondOutput = resolve(directory, "telemetry", "second.json");
+    writeFileSync(
+      content,
+      readFileSync(resolve("content/fixtures/phase-3-shuttergate.json"))
+    );
+
+    const first = runCli(
+      "telemetry",
+      "--content",
+      content,
+      "--out",
+      firstOutput
+    );
+    expect(first.status).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({
+      ok: true,
+      telemetryExported: true,
+      outputPath: firstOutput,
+      attemptId: "attempt.shuttergate.campaign_000001",
+      payloadChecksum: expect.stringMatching(/^[0-9a-f]{64}$/)
+    });
+    const firstBytes = readFileSync(firstOutput, "utf8");
+    expect(firstBytes.endsWith("\n")).toBe(true);
+
+    expect(
+      runCli("telemetry", "--content", content, "--out", secondOutput).status
+    ).toBe(0);
+    expect(readFileSync(secondOutput, "utf8")).toBe(firstBytes);
+    const existing = runCli(
+      "telemetry",
+      "--content",
+      content,
+      "--out",
+      firstOutput
+    );
+    expect(existing.status).not.toBe(0);
+    expect(readFileSync(firstOutput, "utf8")).toBe(firstBytes);
+  }, 45_000);
+
   it("publishes and replay-validates a durable authoritative campaign", async () => {
     const directory = temporaryDirectory();
     const content = resolve(directory, "content.json");

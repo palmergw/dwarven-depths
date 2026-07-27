@@ -70,6 +70,13 @@ export {
   renderRunExplanationMarkdown
 } from "./run-explanation.js";
 export {
+  createShuttergateAttemptTelemetry,
+  requireShuttergateAttemptTelemetry,
+  type ShuttergateAttemptTelemetry,
+  type ShuttergateAttemptTelemetryPayload,
+  serializeShuttergateAttemptTelemetry
+} from "./shuttergate-attempt-telemetry.js";
+export {
   createShuttergateCampaignAuthority,
   runShuttergateCampaignTransition,
   type ShuttergateCampaignAttemptEvidence,
