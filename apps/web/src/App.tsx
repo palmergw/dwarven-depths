@@ -982,11 +982,14 @@ export function App({
       data-sound-preference={soundPreference}
       data-text-scale={textScale}
     >
-      <p className="eyebrow">Authoritative checkpoint</p>
+      <p className="eyebrow">The deep roads are under siege</p>
       <h1 id="app-heading">Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
-        <h2 id="run-heading">Empty Level Conformance Run</h2>
-        <RunJourneyGuide phase={view.phase} />
+        <h2 id="run-heading">Defend Shuttergate Hall</h2>
+        <details className="developer-overlay">
+          <summary>Developer overlay</summary>
+          <RunJourneyGuide phase={view.phase} />
+        </details>
         {view.phase === "checkpoint" &&
           !settingsOpen &&
           !upgradeInventoryOpen && (
@@ -996,14 +999,30 @@ export function App({
                 aria-label="Current checkpoint"
               >
                 <div>
-                  <dt>Current level</dt>
-                  <dd>Empty Level</dd>
+                  <dt>Stronghold</dt>
+                  <dd>Shuttergate Hall</dd>
                 </div>
                 <div>
                   <dt>Next step</dt>
                   <dd>Prepare the company</dd>
                 </div>
               </dl>
+              <section
+                className="checkpoint-vista"
+                aria-label="Shuttergate Hall"
+              >
+                <div className="checkpoint-vista-torch" />
+                <div className="checkpoint-vista-gate" />
+                <img
+                  src="/assets/visual-prototype/iron-warden.svg"
+                  alt=""
+                  className="checkpoint-vista-warden"
+                />
+                <div className="checkpoint-vista-copy">
+                  <span>IRON WARDEN</span>
+                  <strong>Ready to hold the gate</strong>
+                </div>
+              </section>
               <section
                 className="profile-summary"
                 aria-labelledby="profile-summary-heading"
@@ -1064,8 +1083,8 @@ export function App({
         {view.phase === "preparation" && (
           <dl className="preparation-summary" aria-label="Preparation summary">
             <div>
-              <dt>Authoritative level</dt>
-              <dd>{view.levelId}</dd>
+              <dt>Stronghold</dt>
+              <dd>Shuttergate Hall</dd>
             </div>
             <div>
               <dt>Company roster</dt>
@@ -1105,7 +1124,7 @@ export function App({
             <p>
               {view.manualPaused
                 ? "Combat is manually paused."
-                : "The authoritative worker is resolving the run…"}
+                : "The battle for Shuttergate is underway…"}
             </p>
           )}
           {view.phase === "failure" && <p>Run failed: {view.message}</p>}

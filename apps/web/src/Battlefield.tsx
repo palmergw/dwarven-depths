@@ -107,46 +107,72 @@ export function buildDepartureFeedbackPrimitives(
   );
 }
 
-function drawEntity(
-  graphics: Phaser.GameObjects.Graphics,
-  entity: RenderPrimitive & { readonly faction: RenderEntity["faction"] }
-): void {
-  const colors = { dwarf: 0xe6b85c, enemy: 0xd85b50, deployable: 0x67b6d4 };
-  graphics.fillStyle(colors[entity.faction], 1);
-  if (entity.faction === "dwarf") {
-    graphics.fillPoints(
-      [
-        new Phaser.Math.Vector2(entity.x - 14, entity.y - 12),
-        new Phaser.Math.Vector2(entity.x + 14, entity.y - 12),
-        new Phaser.Math.Vector2(entity.x + 11, entity.y + 7),
-        new Phaser.Math.Vector2(entity.x, entity.y + 17),
-        new Phaser.Math.Vector2(entity.x - 11, entity.y + 7)
-      ],
-      true
-    );
-    graphics.fillStyle(0x17130f, 1);
-    graphics.fillRect(entity.x - 2, entity.y - 8, 4, 17);
-    graphics.fillRect(entity.x - 7, entity.y - 3, 14, 4);
-  } else if (entity.faction === "enemy") {
-    graphics.fillPoints(
-      [
-        new Phaser.Math.Vector2(entity.x, entity.y - 17),
-        new Phaser.Math.Vector2(entity.x + 16, entity.y),
-        new Phaser.Math.Vector2(entity.x, entity.y + 17),
-        new Phaser.Math.Vector2(entity.x - 16, entity.y)
-      ],
-      true
-    );
-    graphics.fillStyle(0x17130f, 1);
-    graphics.fillRect(entity.x - 8, entity.y - 3, 5, 5);
-    graphics.fillRect(entity.x + 3, entity.y - 3, 5, 5);
-  } else {
-    graphics.fillRect(entity.x - 14, entity.y - 14, 28, 28);
-    graphics.fillStyle(0x17130f, 1);
-    graphics.fillRect(entity.x - 8, entity.y - 8, 16, 16);
-    graphics.fillStyle(colors.deployable, 1);
-    graphics.fillRect(entity.x - 3, entity.y - 3, 6, 6);
+const assetRoot = "/assets/visual-prototype";
+
+function drawStonework(graphics: Phaser.GameObjects.Graphics): void {
+  graphics.fillStyle(0x101519, 1);
+  graphics.fillRect(0, 0, WIDTH, HEIGHT);
+  graphics.fillStyle(0x293037, 1);
+  graphics.fillRect(0, 35, WIDTH, 245);
+  for (let row = 0; row < 7; row += 1) {
+    const y = 38 + row * 34;
+    const offset = row % 2 === 0 ? -24 : 0;
+    for (let x = offset; x < WIDTH; x += 64) {
+      const shade = (row + x / 64) % 3 === 0 ? 0x354047 : 0x30383e;
+      graphics.fillStyle(shade, 1);
+      graphics.fillRect(x + 2, y + 2, 59, 29);
+      graphics.fillStyle(0x20272c, 1);
+      graphics.fillRect(x + 2, y + 28, 59, 3);
+    }
   }
+
+  graphics.fillStyle(0x151a1e, 1);
+  graphics.fillRect(220, 54, 244, 186);
+  graphics.fillCircle(342, 61, 122);
+  graphics.fillStyle(0x0a0d10, 1);
+  graphics.fillRect(244, 80, 196, 160);
+  graphics.fillCircle(342, 82, 98);
+
+  graphics.fillStyle(0x3a2d23, 1);
+  graphics.fillRect(0, 235, WIDTH, 62);
+  graphics.fillStyle(0x574431, 1);
+  for (let x = 0; x < WIDTH; x += 52) graphics.fillRect(x, 239, 47, 12);
+  graphics.fillStyle(0x1b2023, 1);
+  graphics.fillRect(0, 271, WIDTH, 26);
+  graphics.fillStyle(0x667079, 1);
+  graphics.fillRect(0, 271, WIDTH, 4);
+
+  graphics.fillStyle(0x211b17, 1);
+  graphics.fillRect(0, 297, WIDTH, 63);
+  graphics.fillStyle(0x382b22, 1);
+  graphics.fillPoints(
+    [
+      new Phaser.Math.Vector2(0, 330),
+      new Phaser.Math.Vector2(95, 303),
+      new Phaser.Math.Vector2(182, 339),
+      new Phaser.Math.Vector2(276, 309),
+      new Phaser.Math.Vector2(382, 340),
+      new Phaser.Math.Vector2(494, 305),
+      new Phaser.Math.Vector2(640, 334),
+      new Phaser.Math.Vector2(640, 360),
+      new Phaser.Math.Vector2(0, 360)
+    ],
+    true
+  );
+}
+
+function drawDeployable(
+  graphics: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number
+): void {
+  graphics.fillStyle(0x27343a, 1);
+  graphics.fillRect(x - 15, y - 22, 30, 31);
+  graphics.fillStyle(0x82a9b5, 1);
+  graphics.fillRect(x - 11, y - 18, 22, 7);
+  graphics.fillRect(x - 4, y - 28, 8, 42);
+  graphics.fillStyle(0xd8b35e, 1);
+  graphics.fillRect(x - 4, y - 17, 8, 8);
 }
 
 function drawBattlefield(
@@ -158,34 +184,32 @@ function drawBattlefield(
 ): void {
   scene.children.removeAll();
   const graphics = scene.add.graphics();
-  graphics.fillStyle(0x17130f, 1);
-  graphics.fillRect(0, 0, WIDTH, HEIGHT);
-  graphics.lineStyle(3, 0x80683f, 1);
-  graphics.strokeRoundedRect(16, 16, WIDTH - 32, HEIGHT - 32, 12);
+  drawStonework(graphics);
+
+  scene.add.image(184, 184, "timber-gate").setScale(1.25, 2.05);
+  scene.add.image(500, 184, "timber-gate").setScale(1.25, 2.05);
+  scene.add.image(88, 154, "torch");
+  scene.add.image(566, 154, "torch");
+
+  const glow = scene.add.graphics();
+  glow.fillStyle(0xf09a38, 0.09);
+  glow.fillCircle(88, 135, 82);
+  glow.fillCircle(566, 135, 82);
 
   const primitives = buildBattlefieldPrimitives(snapshot);
-  const nodes = new Map(primitives.nodes.map((node) => [node.id, node]));
-  graphics.lineStyle(7, 0x3e3327, 1);
-  for (const connection of primitives.connections) {
-    const from = nodes.get(connection.fromId);
-    const to = nodes.get(connection.toId);
-    if (from !== undefined && to !== undefined)
-      graphics.lineBetween(from.x, from.y, to.x, to.y);
-  }
-  graphics.lineStyle(3, 0xb18a4f, 1);
-  for (const connection of primitives.connections) {
-    const from = nodes.get(connection.fromId);
-    const to = nodes.get(connection.toId);
-    if (from !== undefined && to !== undefined)
-      graphics.lineBetween(from.x, from.y, to.x, to.y);
-  }
-  graphics.fillStyle(0xd6c8a8, 1);
-  for (const node of primitives.nodes)
-    graphics.fillRect(node.x - 6, node.y - 6, 12, 12);
-
-  for (const entity of primitives.entities) {
+  for (const [index, entity] of primitives.entities.entries()) {
     if (entity.faction === undefined) continue;
-    drawEntity(graphics, { ...entity, faction: entity.faction });
+    const laneX = Phaser.Math.Clamp(entity.x, 118, 548);
+    const laneY = 255 - (index % 2) * 9;
+    if (entity.faction === "deployable") drawDeployable(graphics, laneX, laneY);
+    else
+      scene.add
+        .image(
+          laneX,
+          laneY - (entity.faction === "dwarf" ? 24 : 18),
+          entity.faction === "dwarf" ? "iron-warden" : "cave-raider"
+        )
+        .setOrigin(0.5, 1);
   }
 
   if (feedback !== undefined) {
@@ -197,13 +221,23 @@ function drawBattlefield(
     ]);
     for (const entity of primitives.entities)
       if (changedIds.has(entity.id))
-        transient.strokeRect(entity.x - 21, entity.y - 21, 42, 42);
+        transient.strokeRect(
+          Phaser.Math.Clamp(entity.x, 118, 548) - 23,
+          199,
+          46,
+          58
+        );
     if (previousSnapshot !== undefined)
       for (const entity of buildDepartureFeedbackPrimitives(
         previousSnapshot,
         feedback
       ))
-        transient.strokeRect(entity.x - 19, entity.y - 19, 38, 38);
+        transient.strokeRect(
+          Phaser.Math.Clamp(entity.x, 118, 548) - 21,
+          201,
+          42,
+          54
+        );
     if (feedback.terminal)
       transient.strokeRect(22, 22, WIDTH - 44, HEIGHT - 44);
     if (!reduceMotion)
@@ -226,14 +260,37 @@ function drawBattlefield(
       })
       .setOrigin(0.5);
   }
+  graphics.fillStyle(0x120f0d, 0.96);
+  graphics.fillRect(18, 16, 210, 42);
+  graphics.lineStyle(2, 0x9b7240, 1);
+  graphics.strokeRect(18, 16, 210, 42);
+  scene.add.text(30, 23, "SHUTTERGATE HALL", {
+    color: "#f2d28a",
+    fontFamily: "Georgia, serif",
+    fontSize: "15px",
+    fontStyle: "bold"
+  });
   scene.add.text(
-    32,
-    28,
-    `${snapshot.levelId} · ${snapshot.phase} · tick ${snapshot.tick}`,
+    30,
+    42,
+    snapshot.phase === "running" ? "THE GATE IS BESIEGED" : "HOLD THE GATE",
+    {
+      color: "#c7b99d",
+      fontFamily: "monospace",
+      fontSize: "9px"
+    }
+  );
+  graphics.fillStyle(0x120f0d, 0.96);
+  graphics.fillRect(482, 17, 140, 40);
+  graphics.strokeRect(482, 17, 140, 40);
+  scene.add.text(
+    494,
+    25,
+    `WAVE  •  ${String(snapshot.tick).padStart(2, "0")}`,
     {
       color: "#f4ead5",
       fontFamily: "monospace",
-      fontSize: "14px"
+      fontSize: "13px"
     }
   );
 }
@@ -270,6 +327,12 @@ function createBattlefieldRenderer(
     render: { antialias: false, pixelArt: true },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: {
+      preload(this: Phaser.Scene) {
+        this.load.svg("iron-warden", `${assetRoot}/iron-warden.svg`);
+        this.load.svg("cave-raider", `${assetRoot}/cave-raider.svg`);
+        this.load.svg("timber-gate", `${assetRoot}/timber-gate.svg`);
+        this.load.svg("torch", `${assetRoot}/torch.svg`);
+      },
       create(this: Phaser.Scene) {
         scene = this;
         drawBattlefield(
@@ -382,8 +445,9 @@ export function Battlefield({
     <figure className="battlefield">
       <div ref={parentRef} className="battlefield-canvas" aria-hidden="true" />
       <figcaption aria-live="off">
-        Battlefield {snapshot.levelId}: {snapshot.phase} at tick {snapshot.tick}
-        ; {snapshot.entities.length}{" "}
+        Shuttergate Hall:{" "}
+        {snapshot.phase === "running" ? "battle in progress" : snapshot.phase};{" "}
+        {snapshot.entities.length}{" "}
         {snapshot.entities.length === 1 ? "entity" : "entities"}.
         {feedback !== undefined && (
           <span

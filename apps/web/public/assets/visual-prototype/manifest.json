@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "reference": "assets/concept-art/dwarven-depths-gameplay-mockup.png",
+  "assets": [
+    {
+      "id": "visual.iron_warden",
+      "file": "iron-warden.svg",
+      "role": "authoritative-snapshot dwarf presentation"
+    },
+    {
+      "id": "visual.cave_raider",
+      "file": "cave-raider.svg",
+      "role": "authoritative-snapshot enemy presentation"
+    },
+    {
+      "id": "visual.timber_gate",
+      "file": "timber-gate.svg",
+      "role": "Shuttergate environmental frame"
+    },
+    {
+      "id": "visual.torch",
+      "file": "torch.svg",
+      "role": "nonauthoritative presentation lighting"
+    }
+  ],
+  "license": "Original project prototype art; not cropped from the concept reference."
+}

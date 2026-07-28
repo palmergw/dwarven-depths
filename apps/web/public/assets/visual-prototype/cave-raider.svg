@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" shape-rendering="crispEdges">
+<title>Cave raider prototype sprite</title>
+<path fill="#171618" d="M6 17h36v24H6z"/><path fill="#422d25" d="M10 11h28v26H10z"/><path fill="#72503a" d="M6 17h36v16H6z"/><path fill="#a77a4a" d="M12 13h24v17H12z"/><path fill="#d49b45" d="M14 17h7v6h-7zm14 0h7v6h-7z"/><path fill="#1c1717" d="M16 19h4v4h-4zm13 0h4v4h-4z"/><path fill="#ddd0a5" d="M13 7h5v8h-5zm17 0h5v8h-5z"/><path fill="#3b302d" d="M9 37h11v11H9zm20 0h11v11H29z"/><path fill="#9f3c30" d="M20 28h9v6h-9z"/>
+</svg>

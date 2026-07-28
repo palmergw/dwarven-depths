@@ -446,6 +446,13 @@ describe("run journey guidance", () => {
     window.localStorage.setItem(motionPreferenceStorageKey, "reduce");
     renderApp();
 
+    const developerOverlay = await vi.waitFor(() => {
+      const candidate = document.querySelector(".developer-overlay");
+      expect(candidate).toBeInstanceOf(HTMLDetailsElement);
+      return candidate as HTMLDetailsElement;
+    });
+    developerOverlay.open = true;
+
     const steps = await vi.waitFor(() => {
       const candidates = Array.from(
         document.querySelectorAll<HTMLElement>(".run-journey-step")
@@ -1798,7 +1805,7 @@ describe("authoritative web worker", () => {
         "Local progression storage is unavailable"
       );
     });
-    expect(document.body.textContent).toContain("Current levelEmpty Level");
+    expect(document.body.textContent).toContain("StrongholdShuttergate Hall");
     expect(document.querySelector("figcaption")).toBeNull();
     const beginButton = document.querySelector("button");
     if (beginButton === null) throw new Error("expected checkpoint button");
@@ -1816,7 +1823,7 @@ describe("authoritative web worker", () => {
       '[aria-label="Preparation summary"]'
     );
     expect(preparationSummary?.textContent).toContain(
-      "Authoritative levellevel.shuttergate_hall"
+      "StrongholdShuttergate Hall"
     );
     expect(preparationSummary?.textContent).toContain(
       "Company rosterEmpty — no dwarves require placement"
@@ -1839,9 +1846,15 @@ describe("authoritative web worker", () => {
     );
     expect(combatControls?.textContent).toContain("Combat controls");
     expect(combatControls?.textContent).toContain("Shield Slam");
-    expect(combatControls?.textContent).toContain("phase_unavailable");
+    expect(combatControls?.textContent).toContain("Unavailable right now");
+    expect(combatControls?.textContent).not.toContain("entity.");
+    expect(combatControls?.textContent).not.toContain("character.");
+    expect(combatControls?.textContent).not.toContain("phase_unavailable");
     expect(document.querySelector("figcaption")?.textContent).toContain(
-      "Battlefield level.shuttergate_hall"
+      "Shuttergate Hall"
+    );
+    expect(document.querySelector("figcaption")?.textContent).not.toContain(
+      "level.shuttergate_hall"
     );
     await userEvent.click(resumeButton);
     await vi.waitFor(
@@ -1878,7 +1891,7 @@ describe("authoritative web worker", () => {
     await userEvent.click(resumeButton);
     await vi.waitFor(
       () =>
-        expect(combatControls?.textContent).toMatch(/Cooldown until tick \d+/),
+        expect(combatControls?.textContent).toContain("Recharging"),
       { timeout: 10_000 }
     );
   });

@@ -15,10 +15,10 @@ export function CombatHud({ snapshot }: CombatHudProps) {
   return (
     <section className="combat-hud" aria-labelledby="combat-hud-heading">
       <h3 id="combat-hud-heading">Combat status</h3>
-      <dl aria-label="Authoritative combat status">
+      <dl aria-label="Combat status">
         <div>
-          <dt>Level</dt>
-          <dd>{snapshot.levelId}</dd>
+          <dt>Stronghold</dt>
+          <dd>Shuttergate Hall</dd>
         </div>
         <div>
           <dt>Phase</dt>
@@ -28,10 +28,7 @@ export function CombatHud({ snapshot }: CombatHudProps) {
               : "Combat complete"}
           </dd>
         </div>
-        <div>
-          <dt>Simulation tick</dt>
-          <dd>{snapshot.tick}</dd>
-        </div>
+
         <div>
           <dt>Allied dwarves</dt>
           <dd>{alliedDwarves}</dd>
