@@ -1,10 +1,75 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const APP_ID = "com.dwarvendepths.game";
 const APP_PERMISSION = `${APP_ID}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`;
+const SIGNER_SHA256 =
+  "3fe8701446bc27a303d3a8caa19737cc231860698dbc83eb87ad9da26f6b2031";
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function productionAssetHashes(root, relative = "", result = new Map()) {
+  for (const entry of readdirSync(resolve(root, relative), {
+    withFileTypes: true
+  })) {
+    const child =
+      relative.length === 0 ? entry.name : `${relative}/${entry.name}`;
+    if (entry.isDirectory()) productionAssetHashes(root, child, result);
+    else if (entry.isFile())
+      result.set(child, sha256(readFileSync(resolve(root, child))));
+    else throw new Error(`production web asset must be a file: ${child}`);
+  }
+  return result;
+}
+
+function expectedPackagedAssetHashes(root) {
+  const result = productionAssetHashes(root);
+  const emptyHash = sha256(Buffer.alloc(0));
+  result.set("cordova.js", emptyHash);
+  result.set("cordova_plugins.js", emptyHash);
+  return result;
+}
+
+function packagedAssetHashes(apk) {
+  const prefix = "assets/public/";
+  const entries = execFileSync("unzip", ["-Z1", apk], {
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024
+  })
+    .trim()
+    .split("\n")
+    .filter((entry) => entry.startsWith(prefix) && !entry.endsWith("/"));
+  return new Map(
+    entries.map((entry) => [
+      entry.slice(prefix.length),
+      sha256(
+        execFileSync("unzip", ["-p", apk, entry], {
+          maxBuffer: 32 * 1024 * 1024
+        })
+      )
+    ])
+  );
+}
+
+export function validatePackagedWebAssets(packaged, production) {
+  const packagedEntries = [...packaged.entries()].sort(([left], [right]) =>
+    left.localeCompare(right)
+  );
+  const productionEntries = [...production.entries()].sort(([left], [right]) =>
+    left.localeCompare(right)
+  );
+  if (JSON.stringify(packagedEntries) !== JSON.stringify(productionEntries)) {
+    throw new Error(
+      "mobile APK web assets must exactly match the production web output"
+    );
+  }
+}
 
 function manifestComponents(manifestTree) {
   const lines = manifestTree.split("\n");
@@ -35,7 +100,8 @@ function manifestComponents(manifestTree) {
 export function validateMobileArtifactMetadata(
   badging,
   permissions,
-  manifestTree
+  manifestTree,
+  signerCertificates = `Signer #1 certificate SHA-256 digest: ${SIGNER_SHA256}`
 ) {
   const packageLine = badging.split("\n")[0] ?? "";
   if (!packageLine.includes(`name='${APP_ID}'`)) {
@@ -85,6 +151,13 @@ export function validateMobileArtifactMetadata(
       `mobile APK components must match the authority-free shell; received ${components.join(", ")}`
     );
   }
+  if (
+    !signerCertificates.includes(
+      `Signer #1 certificate SHA-256 digest: ${SIGNER_SHA256}`
+    )
+  ) {
+    throw new Error("mobile APK evaluation signing identity mismatch");
+  }
 }
 
 export function validateMobileArtifactAt(
@@ -106,7 +179,22 @@ export function validateMobileArtifactAt(
     ["dump", "xmltree", "--file", "AndroidManifest.xml", apk],
     { encoding: "utf8" }
   );
-  validateMobileArtifactMetadata(badging, permissions, manifestTree);
+  const apksigner = resolve(androidHome, "build-tools/35.0.1/apksigner");
+  const signerCertificates = execFileSync(
+    apksigner,
+    ["verify", "--print-certs", apk],
+    { encoding: "utf8" }
+  );
+  validateMobileArtifactMetadata(
+    badging,
+    permissions,
+    manifestTree,
+    signerCertificates
+  );
+  validatePackagedWebAssets(
+    packagedAssetHashes(apk),
+    expectedPackagedAssetHashes(resolve(ROOT, "apps/web/dist"))
+  );
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

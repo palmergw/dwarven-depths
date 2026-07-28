@@ -16,7 +16,7 @@ docker run --rm \
   --tmpfs /work/node_modules:rw,exec,mode=1777 \
   --workdir /work \
   "$IMAGE" \
-  bash -c 'mkdir -p "$HOME" "$GRADLE_USER_HOME" .ddh/mobile-package && pnpm install --frozen-lockfile && pnpm check:mobile-package && pnpm --filter @dwarven-depths/mobile mobile:build && rm -rf .ddh/mobile-package/* && cp apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk .ddh/mobile-package/dwarven-depths-debug.apk && node scripts/check-mobile-apk.mjs .ddh/mobile-package/dwarven-depths-debug.apk && chown -R "$HOST_UID:$HOST_GID" apps/web/dist apps/mobile/android/app/build apps/mobile/android/app/src/main/assets apps/mobile/android/capacitor-cordova-android-plugins .ddh/mobile-package'
+  bash -c 'mkdir -p "$HOME" "$GRADLE_USER_HOME" .ddh/mobile-package && pnpm install --frozen-lockfile && pnpm check:mobile-package && pnpm --filter @dwarven-depths/mobile mobile:build && rm -rf .ddh/mobile-package/* && cp apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk .ddh/mobile-package/first-build.apk && (cd apps/mobile/android && ./gradlew clean assembleDebug --no-daemon) && cp apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk .ddh/mobile-package/dwarven-depths-debug.apk && cmp .ddh/mobile-package/first-build.apk .ddh/mobile-package/dwarven-depths-debug.apk && rm .ddh/mobile-package/first-build.apk && node scripts/check-mobile-apk.mjs .ddh/mobile-package/dwarven-depths-debug.apk && mkdir -p .ddh/mobile-package/extracted && unzip -q .ddh/mobile-package/dwarven-depths-debug.apk "assets/public/*" -d .ddh/mobile-package/extracted && chown -R "$HOST_UID:$HOST_GID" apps/web/dist apps/mobile/android/app/build apps/mobile/android/app/src/main/assets apps/mobile/android/capacitor-cordova-android-plugins .ddh/mobile-package'
 
 docker run --rm \
   --user "$(id -u):$(id -g)" \
@@ -24,4 +24,4 @@ docker run --rm \
   --volume "$ROOT:/work" \
   --workdir /work \
   mcr.microsoft.com/playwright:v1.61.1-noble \
-  node scripts/smoke-mobile-runtime.mjs apps/mobile/android/app/src/main/assets/public
+  node scripts/smoke-mobile-runtime.mjs .ddh/mobile-package/extracted/assets/public

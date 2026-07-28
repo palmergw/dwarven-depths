@@ -104,6 +104,17 @@ describe("Capacitor mobile package contract", () => {
     }).toThrow(/mobile runtime dependencies/);
   });
 
+  it("requires the deterministic evaluation-only debug signing identity", () => {
+    expect(() =>
+      validate({
+        gradle: gradle.replace(
+          "storeFile file('evaluation-debug.keystore')",
+          "storeFile file(System.getenv('PRIVATE_KEYSTORE'))"
+        )
+      })
+    ).toThrow(/deterministic evaluation signing identity/);
+  });
+
   it("requires safe-area metadata and accessible touch targets", () => {
     expect(() =>
       validate({ webIndex: webIndex.replace(", viewport-fit=cover", "") })

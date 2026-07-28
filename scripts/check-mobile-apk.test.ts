@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { validateMobileArtifactMetadata } from "./check-mobile-apk.mjs";
+import {
+  validateMobileArtifactMetadata,
+  validatePackagedWebAssets
+} from "./check-mobile-apk.mjs";
 
 const appPermission =
   "com.dwarvendepths.game.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION";
@@ -77,5 +80,40 @@ describe("built mobile artifact contract", () => {
         )
       )
     ).toThrow(/content URI permissions/);
+  });
+
+  it("rejects signing and packaged production-asset drift", () => {
+    expect(() =>
+      validateMobileArtifactMetadata(
+        badging,
+        permissions,
+        manifestTree,
+        "different signer"
+      )
+    ).toThrow(/signing identity/);
+    expect(() =>
+      validatePackagedWebAssets(
+        new Map([
+          ["index.html", "hash-a"],
+          ["assets/worker.js", "tampered"]
+        ]),
+        new Map([
+          ["assets/worker.js", "hash-b"],
+          ["index.html", "hash-a"]
+        ])
+      )
+    ).toThrow(/production web output/);
+    expect(() =>
+      validatePackagedWebAssets(
+        new Map([
+          ["assets/worker.js", "hash-b"],
+          ["index.html", "hash-a"]
+        ]),
+        new Map([
+          ["index.html", "hash-a"],
+          ["assets/worker.js", "hash-b"]
+        ])
+      )
+    ).not.toThrow();
   });
 });

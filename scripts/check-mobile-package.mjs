@@ -127,6 +127,16 @@ export function validateMobilePackage(
   );
   includes(gradle, "versionCode 1", "Android version code");
   includes(gradle, 'versionName "1.0"', "Android version name");
+  includes(
+    gradle,
+    "storeFile file('evaluation-debug.keystore')",
+    "deterministic evaluation signing identity"
+  );
+  includes(
+    gradle,
+    "signingConfig signingConfigs.debug",
+    "debug signing configuration"
+  );
 
   exactKeys(
     packageManifest,
