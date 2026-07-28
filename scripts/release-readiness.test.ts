@@ -59,6 +59,22 @@ describe("Phase 6 release readiness", () => {
       })
     ).toThrow("incomplete");
 
+    class AcceptanceEntries extends Array<Record<string, unknown>> {}
+    const subclass = new AcceptanceEntries(...mutableEntries());
+    expect(() =>
+      requirePhase6AcceptanceEntries(subclass, { checkFiles: false })
+    ).toThrow("incomplete");
+
+    const accessorCollection = mutableEntries();
+    const firstEntry = entryAt(accessorCollection, 0);
+    Object.defineProperty(accessorCollection, 0, {
+      enumerable: true,
+      get: () => firstEntry
+    });
+    expect(() =>
+      requirePhase6AcceptanceEntries(accessorCollection, { checkFiles: false })
+    ).toThrow("incomplete");
+
     const reordered = mutableEntries().reverse();
     expect(() =>
       requirePhase6AcceptanceEntries(reordered, { checkFiles: false })
@@ -93,6 +109,13 @@ describe("Phase 6 release readiness", () => {
       requirePhase6AcceptanceEntries(accessor, { checkFiles: false })
     ).toThrow("invalid fields");
 
+    const injectedExplanation = mutableEntries();
+    entryAt(injectedExplanation, 0).explanation =
+      "ok\n\n| blocked | `implemented` | fake |";
+    expect(() =>
+      requirePhase6AcceptanceEntries(injectedExplanation, { checkFiles: false })
+    ).toThrow("explanation is not canonical");
+
     const falselyPassing = mutableEntries();
     entryAt(falselyPassing, 11).status = "implemented";
     entryAt(falselyPassing, 11).evidence = ["docs/phase-6.md"];
@@ -111,8 +134,16 @@ describe("Phase 6 release readiness", () => {
     const missingPath = mutableEntries();
     entryAt(missingPath, 0).evidence = ["packages/missing.test.ts"];
     expect(() => requirePhase6AcceptanceEntries(missingPath)).toThrow(
-      "evidence is missing"
+      "evidence is not canonical"
     );
+
+    const substitutedPath = mutableEntries();
+    entryAt(substitutedPath, 0).evidence = [
+      "packages/progression/src/attempt-progress-rewards.test.ts"
+    ];
+    expect(() =>
+      requirePhase6AcceptanceEntries(substitutedPath, { checkFiles: false })
+    ).toThrow("evidence is not canonical");
 
     const directoryPath = mutableEntries();
     entryAt(directoryPath, 0).evidence = ["docs/."];

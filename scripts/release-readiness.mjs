@@ -159,6 +159,12 @@ export const phase6AcceptanceEntries = Object.freeze([
 
 const expectedIds = Object.freeze(phase6AcceptanceEntries.map(({ id }) => id));
 const expectedCriteria = Object.freeze(readAcceptanceCriteria());
+const expectedExplanations = Object.freeze(
+  phase6AcceptanceEntries.map(({ explanation }) => explanation)
+);
+const expectedEvidence = Object.freeze(
+  phase6AcceptanceEntries.map(({ evidence }) => evidence)
+);
 const blockedIds = new Set(["boss-progression", "reduced-repeat-reward"]);
 const evidencePins = Object.freeze([
   pin(
@@ -264,7 +270,7 @@ export function requirePhase6AcceptanceEntries(
   value,
   { checkFiles = true } = {}
 ) {
-  if (!Array.isArray(value) || value.length !== expectedIds.length)
+  if (!plainDataArray(value) || value.length !== expectedIds.length)
     throw new TypeError("Phase 6 acceptance entries are incomplete");
   const seen = new Set();
   const normalized = value.map((candidate, index) => {
@@ -291,10 +297,11 @@ export function requirePhase6AcceptanceEntries(
     if (
       typeof candidate.criterion !== "string" ||
       typeof candidate.explanation !== "string" ||
-      candidate.explanation.length === 0
+      candidate.explanation !== expectedExplanations[index] ||
+      /[|<>`\r\n]/.test(candidate.explanation)
     )
       throw new TypeError(
-        `Phase 6 acceptance explanation is incomplete (${candidate.id})`
+        `Phase 6 acceptance explanation is not canonical (${candidate.id})`
       );
     const evidence = candidate.evidence;
     if (
@@ -317,6 +324,17 @@ export function requirePhase6AcceptanceEntries(
     )
       throw new TypeError(
         `Phase 6 acceptance evidence is invalid (${candidate.id})`
+      );
+    const canonicalEvidence = expectedEvidence[index];
+    if (
+      canonicalEvidence === undefined ||
+      evidence.length !== canonicalEvidence.length ||
+      evidence.some(
+        (path, evidenceIndex) => path !== canonicalEvidence[evidenceIndex]
+      )
+    )
+      throw new TypeError(
+        `Phase 6 acceptance evidence is not canonical (${candidate.id})`
       );
     if (expectedStatus === implemented && evidence.length === 0)
       throw new TypeError(
