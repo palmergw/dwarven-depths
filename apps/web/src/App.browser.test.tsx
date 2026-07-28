@@ -195,7 +195,7 @@ class ControlledJourneyWorker {
     if (typeof message !== "object" || message === null) return;
     const candidate = message as {
       readonly type?: string;
-      readonly command?: { readonly type?: string };
+      readonly command?: { readonly type?: string; readonly paused?: boolean };
     };
     if (candidate.type === "initialize") {
       this.emit({
@@ -213,6 +213,15 @@ class ControlledJourneyWorker {
         phase: "running",
         manualPaused: false,
         resumeRequestId: "guided-run"
+      });
+    } else if (candidate.command?.type === "setManualPause") {
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: candidate.command.paused === true,
+        resumeRequestId:
+          candidate.command.paused === true ? null : "guided-resume"
       });
     }
   }
@@ -364,11 +373,13 @@ describe("run journey guidance", () => {
       "upcoming"
     ]);
     expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
-      "Press P"
+      "Press Escape"
     );
     expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
       "changing windows pauses automatically"
     );
+    await userEvent.keyboard("{Escape}");
+    await buttonWithText("Resume combat");
 
     workers.at(-1)?.finish();
     await resultHeading("Victory results");

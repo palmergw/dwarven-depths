@@ -70,7 +70,7 @@ const runJourneySteps = [
     phase: "running",
     label: "Follow the combat",
     description:
-      "Use the combat controls as available. Press P or use the pause button to pause; changing windows pauses automatically."
+      "Use the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically."
   },
   {
     phase: "review",
