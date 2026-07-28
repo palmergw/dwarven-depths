@@ -67,6 +67,46 @@ page.on("request", (request) => {
   if (!request.url().startsWith(origin)) externalRequests.push(request.url());
 });
 
+async function readPersistedProfile() {
+  return page.evaluate(
+    () =>
+      new Promise((resolveProfile, rejectProfile) => {
+        if (globalThis.indexedDB === undefined) {
+          rejectProfile(new Error("IndexedDB is unavailable"));
+          return;
+        }
+        const open = globalThis.indexedDB.open("dwarven-depths-profile-v1", 1);
+        open.onerror = () =>
+          rejectProfile(
+            open.error ?? new Error("could not open profile database")
+          );
+        open.onsuccess = () => {
+          const database = open.result;
+          try {
+            const transaction = database.transaction("profiles", "readonly");
+            const request = transaction
+              .objectStore("profiles")
+              .get("profile.local");
+            request.onerror = () =>
+              rejectProfile(
+                request.error ?? new Error("could not read persisted profile")
+              );
+            request.onsuccess = () => resolveProfile(request.result ?? null);
+            transaction.onabort = () =>
+              rejectProfile(
+                transaction.error ??
+                  new Error("profile read transaction aborted")
+              );
+            transaction.oncomplete = () => database.close();
+          } catch (error) {
+            database.close();
+            rejectProfile(error);
+          }
+        };
+      })
+  );
+}
+
 try {
   const startedAt = performance.now();
   await page.goto(origin, { waitUntil: "networkidle" });
@@ -110,11 +150,33 @@ try {
   const profileBeforeReload = await page
     .locator(".profile-summary")
     .innerText();
+  const persistedProfileBeforeReload = await readPersistedProfile();
+  if (
+    persistedProfileBeforeReload === null ||
+    typeof persistedProfileBeforeReload !== "object" ||
+    persistedProfileBeforeReload.profileId !== "profile.local" ||
+    persistedProfileBeforeReload.schemaVersion !== 1 ||
+    persistedProfileBeforeReload.profileRevision !== 0 ||
+    typeof persistedProfileBeforeReload.payloadChecksum !== "string"
+  ) {
+    throw new Error(
+      `packaged shell did not persist the initial checkpoint profile: ${JSON.stringify(persistedProfileBeforeReload)}`
+    );
+  }
   await page.reload({ waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Begin preparation" }).waitFor();
   const profileAfterReload = await page.locator(".profile-summary").innerText();
+  const persistedProfileAfterReload = await readPersistedProfile();
   if (profileAfterReload !== profileBeforeReload) {
     throw new Error("checkpoint profile changed across packaged-shell reload");
+  }
+  if (
+    JSON.stringify(persistedProfileAfterReload) !==
+    JSON.stringify(persistedProfileBeforeReload)
+  ) {
+    throw new Error(
+      "persisted checkpoint changed across packaged-shell reload"
+    );
   }
 
   await page.getByRole("button", { name: "Begin preparation" }).tap();
