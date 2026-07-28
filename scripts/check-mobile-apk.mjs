@@ -90,8 +90,9 @@ function manifestComponents(manifestTree) {
     const block = attributes.join("\n");
     const name = /:name(?:\([^)]*\))?="([^"]+)"/.exec(block)?.[1];
     const exported = /:exported(?:\([^)]*\))?=(true|false)/.exec(block)?.[1];
+    const authorities = /:authorities(?:\([^)]*\))?="([^"]+)"/.exec(block)?.[1];
     components.push(
-      `${element[2]}:${name ?? "missing-name"}:${exported ?? "implicit"}`
+      `${element[2]}:${name ?? "missing-name"}:${exported ?? "implicit"}:${authorities ?? "none"}`
     );
   }
   return components.sort();
@@ -143,19 +144,20 @@ export function validateMobileArtifactMetadata(
   }
   const components = manifestComponents(manifestTree);
   const expectedComponents = [
-    "activity:com.dwarvendepths.game.MainActivity:true",
-    "provider:androidx.startup.InitializationProvider:false"
+    "activity:com.dwarvendepths.game.MainActivity:true:none",
+    "provider:androidx.startup.InitializationProvider:false:com.dwarvendepths.game.androidx-startup"
   ];
   if (JSON.stringify(components) !== JSON.stringify(expectedComponents)) {
     throw new Error(
       `mobile APK components must match the authority-free shell; received ${components.join(", ")}`
     );
   }
-  if (
-    !signerCertificates.includes(
-      `Signer #1 certificate SHA-256 digest: ${SIGNER_SHA256}`
+  const signerDigests = [
+    ...signerCertificates.matchAll(
+      /Signer #[0-9]+ certificate SHA-256 digest: ([a-f0-9]{64})/g
     )
-  ) {
+  ].map((match) => match[1]);
+  if (JSON.stringify(signerDigests) !== JSON.stringify([SIGNER_SHA256])) {
     throw new Error("mobile APK evaluation signing identity mismatch");
   }
 }

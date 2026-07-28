@@ -23,6 +23,7 @@ const manifestTree = `  E: manifest (line=2)
           E: provider (line=42)
             A: http://schemas.android.com/apk/res/android:name(0x01010003)="androidx.startup.InitializationProvider" (Raw: "androidx.startup.InitializationProvider")
             A: http://schemas.android.com/apk/res/android:exported(0x01010010)=false
+            A: http://schemas.android.com/apk/res/android:authorities(0x01010018)="com.dwarvendepths.game.androidx-startup" (Raw: "com.dwarvendepths.game.androidx-startup")
 `;
 
 describe("built mobile artifact contract", () => {
@@ -80,6 +81,16 @@ describe("built mobile artifact contract", () => {
         )
       )
     ).toThrow(/content URI permissions/);
+    expect(() =>
+      validateMobileArtifactMetadata(
+        badging,
+        permissions,
+        manifestTree.replace(
+          "com.dwarvendepths.game.androidx-startup",
+          "attacker.authority"
+        )
+      )
+    ).toThrow(/authority-free shell/);
   });
 
   it("rejects signing and packaged production-asset drift", () => {
@@ -89,6 +100,14 @@ describe("built mobile artifact contract", () => {
         permissions,
         manifestTree,
         "different signer"
+      )
+    ).toThrow(/signing identity/);
+    expect(() =>
+      validateMobileArtifactMetadata(
+        badging,
+        permissions,
+        manifestTree,
+        "Signer #1 certificate SHA-256 digest: 3fe8701446bc27a303d3a8caa19737cc231860698dbc83eb87ad9da26f6b2031\nSigner #2 certificate SHA-256 digest: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       )
     ).toThrow(/signing identity/);
     expect(() =>
