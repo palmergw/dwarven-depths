@@ -1462,6 +1462,16 @@ describe("authoritative web worker", () => {
         "static"
       )
     );
+    expect(document.querySelector("figcaption")?.textContent).toContain(
+      "The battle line has shifted."
+    );
+    expect(document.querySelector("figcaption")?.textContent).not.toContain(
+      "tick"
+    );
+    const diagnostic = document.querySelector(".battlefield-diagnostic");
+    expect(diagnostic).toBeInstanceOf(HTMLDetailsElement);
+    expect(diagnostic).not.toHaveAttribute("open");
+    expect(diagnostic?.textContent).toContain("Combat update at tick 2");
     render(initial);
     await vi.waitFor(() =>
       expect(document.querySelector(".combat-feedback")).toBeNull()
@@ -1867,6 +1877,15 @@ describe("authoritative web worker", () => {
     expect(combatControls?.textContent).not.toContain("phase_unavailable");
     expect(document.querySelector("figcaption")?.textContent).toContain(
       "Shuttergate Hall"
+    );
+    expect(document.querySelector("figcaption")?.textContent).toContain(
+      "1 allied dwarf and 1 hostile enemy"
+    );
+    expect(document.querySelector(".combat-hud")?.textContent).toContain(
+      "Allied dwarves1"
+    );
+    expect(document.querySelector(".combat-hud")?.textContent).toContain(
+      "Hostile enemies1"
     );
     expect(document.querySelector("figcaption")?.textContent).not.toContain(
       "level.shuttergate_hall"

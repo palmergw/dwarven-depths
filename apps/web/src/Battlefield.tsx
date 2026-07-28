@@ -135,9 +135,37 @@ function drawStonework(graphics: Phaser.GameObjects.Graphics): void {
   graphics.fillStyle(0x151a1e, 1);
   graphics.fillRect(220, 54, 244, 186);
   graphics.fillCircle(342, 61, 122);
+  graphics.fillStyle(0x414b51, 1);
+  for (let index = 0; index < 9; index += 1) {
+    const angle = Math.PI + (index * Math.PI) / 8;
+    const x = 342 + Math.cos(angle) * 111;
+    const y = 81 + Math.sin(angle) * 111;
+    graphics.fillRect(Math.round(x) - 13, Math.round(y) - 8, 26, 16);
+  }
   graphics.fillStyle(0x0a0d10, 1);
   graphics.fillRect(244, 80, 196, 160);
   graphics.fillCircle(342, 82, 98);
+
+  graphics.fillStyle(0x1b2226, 1);
+  graphics.fillRect(22, 65, 30, 170);
+  graphics.fillRect(588, 65, 30, 170);
+  graphics.fillStyle(0x59636a, 1);
+  graphics.fillRect(26, 69, 5, 166);
+  graphics.fillRect(592, 69, 5, 166);
+  graphics.fillStyle(0x15191c, 1);
+  for (let y = 76; y < 225; y += 22) {
+    graphics.fillRect(31, y, 17, 4);
+    graphics.fillRect(597, y, 17, 4);
+  }
+
+  graphics.lineStyle(3, 0x171b1d, 1);
+  for (const x of [138, 530]) {
+    graphics.beginPath();
+    graphics.moveTo(x, 36);
+    for (let y = 36; y < 185; y += 12)
+      graphics.lineTo(x + (y % 24 === 0 ? 5 : -5), y);
+    graphics.strokePath();
+  }
 
   graphics.fillStyle(0x3a2d23, 1);
   graphics.fillRect(0, 235, WIDTH, 62);
@@ -148,23 +176,44 @@ function drawStonework(graphics: Phaser.GameObjects.Graphics): void {
   graphics.fillStyle(0x667079, 1);
   graphics.fillRect(0, 271, WIDTH, 4);
 
+  graphics.lineStyle(4, 0x758087, 1);
+  graphics.lineBetween(0, 286, WIDTH, 286);
+  graphics.lineBetween(0, 296, WIDTH, 296);
+  graphics.lineStyle(2, 0x30383d, 1);
+  for (let x = 8; x < WIDTH; x += 34) graphics.lineBetween(x, 282, x + 16, 301);
+}
+
+function drawForeground(graphics: Phaser.GameObjects.Graphics): void {
   graphics.fillStyle(0x211b17, 1);
-  graphics.fillRect(0, 297, WIDTH, 63);
+  graphics.fillRect(0, 304, WIDTH, 56);
   graphics.fillStyle(0x382b22, 1);
   graphics.fillPoints(
     [
-      new Phaser.Math.Vector2(0, 330),
-      new Phaser.Math.Vector2(95, 303),
-      new Phaser.Math.Vector2(182, 339),
-      new Phaser.Math.Vector2(276, 309),
-      new Phaser.Math.Vector2(382, 340),
-      new Phaser.Math.Vector2(494, 305),
-      new Phaser.Math.Vector2(640, 334),
+      new Phaser.Math.Vector2(0, 338),
+      new Phaser.Math.Vector2(64, 313),
+      new Phaser.Math.Vector2(112, 331),
+      new Phaser.Math.Vector2(181, 309),
+      new Phaser.Math.Vector2(248, 344),
+      new Phaser.Math.Vector2(382, 320),
+      new Phaser.Math.Vector2(474, 345),
+      new Phaser.Math.Vector2(548, 311),
+      new Phaser.Math.Vector2(640, 335),
       new Phaser.Math.Vector2(640, 360),
       new Phaser.Math.Vector2(0, 360)
     ],
     true
   );
+  graphics.fillStyle(0x566168, 1);
+  for (const [x, y, width, height] of [
+    [34, 323, 19, 9],
+    [85, 311, 13, 7],
+    [202, 329, 24, 8],
+    [430, 327, 17, 9],
+    [573, 316, 25, 8]
+  ] as const)
+    graphics.fillRect(x, y, width, height);
+  graphics.fillStyle(0x171514, 1);
+  graphics.fillRect(0, 352, WIDTH, 8);
 }
 
 function drawDeployable(
@@ -198,9 +247,17 @@ function drawBattlefield(
   scene.add.image(566, 154, "torch");
 
   const glow = scene.add.graphics();
-  glow.fillStyle(0xf09a38, 0.09);
-  glow.fillCircle(88, 135, 82);
-  glow.fillCircle(566, 135, 82);
+  for (const [x, y] of [
+    [88, 135],
+    [566, 135]
+  ] as const) {
+    glow.fillStyle(0xf09a38, 0.035);
+    glow.fillCircle(x, y, 112);
+    glow.fillStyle(0xf09a38, 0.075);
+    glow.fillCircle(x, y, 76);
+    glow.fillStyle(0xffbd57, 0.12);
+    glow.fillCircle(x, y, 38);
+  }
 
   const primitives = buildBattlefieldPrimitives(snapshot);
   for (const [index, entity] of primitives.entities.entries()) {
@@ -255,6 +312,8 @@ function drawBattlefield(
         repeat: 1
       });
   }
+
+  drawForeground(scene.add.graphics());
 
   if (primitives.nodes.length === 0) {
     scene.add
@@ -442,25 +501,39 @@ export function Battlefield({
     if (nextFeedback !== undefined) soundPlayerRef.current?.play(nextFeedback);
   }, [reduceMotion, snapshot]);
 
+  const alliedDwarves = snapshot.entities.filter(
+    (entity) => entity.faction === "dwarf"
+  ).length;
+  const hostileEnemies = snapshot.entities.filter(
+    (entity) => entity.faction === "enemy"
+  ).length;
+
   return (
     <figure className="battlefield">
       <div ref={parentRef} className="battlefield-canvas" aria-hidden="true" />
       <figcaption aria-live="off">
         Shuttergate Hall:{" "}
         {snapshot.phase === "running" ? "battle in progress" : snapshot.phase};{" "}
-        {snapshot.entities.length}{" "}
-        {snapshot.entities.length === 1 ? "entity" : "entities"}.
+        {alliedDwarves} allied {alliedDwarves === 1 ? "dwarf" : "dwarves"} and{" "}
+        {hostileEnemies} hostile {hostileEnemies === 1 ? "enemy" : "enemies"}.
         {feedback !== undefined && (
           <span
             className="combat-feedback"
             data-motion={reduceMotion ? "static" : "animated"}
-            data-tick={feedback.tick}
           >
             {" "}
-            {feedback.summary}
+            {feedback.terminal
+              ? "The clash has ended."
+              : "The battle line has shifted."}
           </span>
         )}
       </figcaption>
+      {feedback !== undefined && (
+        <details className="developer-overlay battlefield-diagnostic">
+          <summary>Battlefield diagnostic (developer)</summary>
+          <p>{feedback.summary}</p>
+        </details>
+      )}
     </figure>
   );
 }

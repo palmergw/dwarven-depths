@@ -541,7 +541,13 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
   pendingExecutionRequestId = null;
   postRunningSnapshot();
   postRenderSnapshot(
-    createRenderSnapshot(preparedContent, preparedScenario, "running", 0)
+    createRenderSnapshot(
+      preparedContent,
+      preparedScenario,
+      "running",
+      liveHost.state.tick,
+      liveHost.state.battlefield
+    )
   );
 
   if (protocolVersion === 1) await executePreparedScenario();
