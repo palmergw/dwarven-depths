@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { validateDesktopPackage } from "./check-desktop-package.mjs";
+import {
+  validateCapabilityFiles,
+  validateDesktopPackage
+} from "./check-desktop-package.mjs";
 
 const config = JSON.parse(
   readFileSync(resolve("apps/desktop/src-tauri/tauri.conf.json"), "utf8")
@@ -83,5 +86,11 @@ describe("desktop package contract", () => {
         `${rustSource}\n.invoke_handler(tauri::generate_handler![run_simulation])`
       )
     ).toThrow("may not add plugins or command handlers");
+  });
+
+  it("rejects additional capability documents", () => {
+    expect(() =>
+      validateCapabilityFiles(["main.json", "expanded.json"])
+    ).toThrow("must contain only main.json");
   });
 });

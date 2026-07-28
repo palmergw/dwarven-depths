@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -29,6 +29,15 @@ function exactKeys(value, expected, label) {
 function equal(actual, expected, label) {
   if (actual !== expected) {
     throw new Error(`${label} must be ${JSON.stringify(expected)}`);
+  }
+}
+
+export function validateCapabilityFiles(files) {
+  const actual = [...files].sort();
+  if (JSON.stringify(actual) !== JSON.stringify(["main.json"])) {
+    throw new Error(
+      `desktop capabilities must contain only main.json; received ${actual.join(", ")}`
+    );
   }
 }
 
@@ -118,6 +127,11 @@ export function validateDesktopPackage(config, capability, rustSource) {
 }
 
 export function validateDesktopPackageAt(root = ROOT) {
+  const capabilitiesDirectory = resolve(
+    root,
+    "apps/desktop/src-tauri/capabilities"
+  );
+  validateCapabilityFiles(readdirSync(capabilitiesDirectory));
   const config = JSON.parse(
     readFileSync(
       resolve(root, "apps/desktop/src-tauri/tauri.conf.json"),
@@ -125,10 +139,7 @@ export function validateDesktopPackageAt(root = ROOT) {
     )
   );
   const capability = JSON.parse(
-    readFileSync(
-      resolve(root, "apps/desktop/src-tauri/capabilities/main.json"),
-      "utf8"
-    )
+    readFileSync(resolve(capabilitiesDirectory, "main.json"), "utf8")
   );
   const rustSource = readFileSync(
     resolve(root, "apps/desktop/src-tauri/src/main.rs"),
