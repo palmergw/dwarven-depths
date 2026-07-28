@@ -46,6 +46,8 @@ describe("Phase 6 release readiness", () => {
     ).toHaveLength(18);
     expect(first.match(/`contract-blocked`/g)).toHaveLength(2);
     expect(first).toContain("duplicate-claim prevention only");
+    expect(first).toContain("reference human replay remains blocked");
+    expect(first).toContain("Terminal client/CLI parity remains blocked");
     expect(first).toContain(identity.campaignPayloadChecksum);
     expect(first.endsWith("\n")).toBe(true);
   });
@@ -111,6 +113,23 @@ describe("Phase 6 release readiness", () => {
     expect(() => requirePhase6AcceptanceEntries(missingPath)).toThrow(
       "evidence is missing"
     );
+
+    const directoryPath = mutableEntries();
+    entryAt(directoryPath, 0).evidence = ["docs/."];
+    expect(() =>
+      requirePhase6AcceptanceEntries(directoryPath, { checkFiles: false })
+    ).toThrow("evidence is invalid");
+
+    const accessorEvidence = mutableEntries();
+    const evidence = ["packages/progression/src/index.test.ts"];
+    Object.defineProperty(evidence, 0, {
+      enumerable: true,
+      get: () => "packages/progression/src/index.test.ts"
+    });
+    entryAt(accessorEvidence, 0).evidence = evidence;
+    expect(() =>
+      requirePhase6AcceptanceEntries(accessorEvidence, { checkFiles: false })
+    ).toThrow("evidence is invalid");
 
     expect(() =>
       renderPhase6ReleaseReadinessMarkdown(phase6AcceptanceEntries, {

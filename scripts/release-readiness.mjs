@@ -227,6 +227,22 @@ function plainDataRecord(value) {
   );
 }
 
+function plainDataArray(value) {
+  if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype)
+    return false;
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const keys = Reflect.ownKeys(value);
+  if (
+    keys.length !== value.length + 1 ||
+    keys.at(-1) !== "length" ||
+    !Object.hasOwn(descriptors.length ?? {}, "value")
+  )
+    return false;
+  return Array.from({ length: value.length }, (_, index) =>
+    Object.hasOwn(descriptors[String(index)] ?? {}, "value")
+  ).every(Boolean);
+}
+
 function readAcceptanceCriteria() {
   const source = readFileSync("docs/first-pass-systems.md", "utf8");
   const section = source
@@ -280,29 +296,34 @@ export function requirePhase6AcceptanceEntries(
       throw new TypeError(
         `Phase 6 acceptance explanation is incomplete (${candidate.id})`
       );
+    const evidence = candidate.evidence;
     if (
-      !Array.isArray(candidate.evidence) ||
-      new Set(candidate.evidence).size !== candidate.evidence.length ||
-      candidate.evidence.some(
+      !plainDataArray(evidence) ||
+      new Set(evidence).size !== evidence.length ||
+      evidence.some(
         (path) =>
           typeof path !== "string" ||
-          !/^(apps|docs|packages)\/[A-Za-z0-9._/-]+$/.test(path) ||
-          path.split("/").includes("..")
+          !(
+            /^(apps|packages)\/[A-Za-z0-9._/-]+\.test\.tsx?$/.test(path) ||
+            path === "docs/phase-6.md"
+          ) ||
+          path.split("/").includes("..") ||
+          /[|<>`\r\n]/.test(path)
       )
     )
       throw new TypeError(
         `Phase 6 acceptance evidence is invalid (${candidate.id})`
       );
-    if (expectedStatus === implemented && candidate.evidence.length === 0)
+    if (expectedStatus === implemented && evidence.length === 0)
       throw new TypeError(
         `Implemented Phase 6 acceptance lacks evidence (${candidate.id})`
       );
-    if (expectedStatus === blocked && candidate.evidence.length !== 0)
+    if (expectedStatus === blocked && evidence.length !== 0)
       throw new TypeError(
         `Blocked Phase 6 acceptance must not claim passing evidence (${candidate.id})`
       );
     if (checkFiles) {
-      for (const path of candidate.evidence) {
+      for (const path of evidence) {
         if (!existsSync(path))
           throw new TypeError(
             `Phase 6 acceptance evidence is missing (${path})`
@@ -313,7 +334,7 @@ export function requirePhase6AcceptanceEntries(
       candidate.id,
       candidate.criterion,
       candidate.status,
-      [...candidate.evidence],
+      [...evidence],
       candidate.explanation
     );
   });
@@ -384,6 +405,13 @@ export function renderPhase6ReleaseReadinessMarkdown(entries, identity) {
       evidencePin.changeExplanation,
       ""
     );
+  lines.push(
+    "## Contract-blocked release boundaries",
+    "",
+    "A reference human replay remains blocked until an approved terminating web encounter contract exists.",
+    "Terminal client/CLI parity remains blocked by the same nonterminating Phase 5 web boundary.",
+    ""
+  );
   lines.push(
     "The replay-claim checksum proves duplicate-claim prevention only. It is included to expose the boundary, not to substitute for the blocked reduced-repeat reward contract.",
     ""
