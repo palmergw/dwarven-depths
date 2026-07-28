@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-capability",
+  "description": "No native API authority; gameplay and persistence remain in the existing web client.",
+  "windows": ["main"],
+  "permissions": []
+}

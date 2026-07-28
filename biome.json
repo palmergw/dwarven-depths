@@ -1,7 +1,14 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
   "files": {
-    "includes": ["**", "!**/dist", "!**/node_modules", "!reports", "!.ddh"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!apps/desktop/src-tauri/gen",
+      "!reports",
+      "!.ddh"
+    ]
   },
   "formatter": {
     "enabled": true,

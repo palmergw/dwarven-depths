@@ -18,6 +18,8 @@
     "format:check": "biome format .",
     "check:artifacts": "node scripts/check-generated-artifacts.mjs",
     "check:web-budgets": "node scripts/check-web-release-budgets.mjs",
+    "check:desktop-package": "node scripts/check-desktop-package.mjs",
+    "build:desktop:docker": "./scripts/build-desktop-docker.sh",
     "test:web-offline": "node scripts/test-web-offline.mjs",
     "sim": "pnpm build && node apps/sim-cli/dist/cli.js",
     "sim:built": "node apps/sim-cli/dist/cli.js",
@@ -26,7 +28,7 @@
     "verify:scenario": "pnpm sim run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0",
     "verify:scenario:built": "pnpm sim:built run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0",
     "report:release-candidate": "pnpm --filter @dwarven-depths/sim-cli^... build && pnpm --filter @dwarven-depths/sim-cli build && node scripts/generate-release-candidate-reports.mjs --out .ddh/release-candidate-reports",
-    "verify": "pnpm lint && pnpm check:artifacts && pnpm typecheck && pnpm build && pnpm check:web-budgets && pnpm test:web-offline && pnpm test:built && DD_SKIP_BUILD=1 pnpm test:browser:docker && pnpm validate:built && pnpm verify:scenario:built"
+    "verify": "pnpm lint && pnpm check:artifacts && pnpm check:desktop-package && pnpm typecheck && pnpm build && pnpm check:web-budgets && pnpm test:web-offline && pnpm test:built && DD_SKIP_BUILD=1 pnpm test:browser:docker && pnpm validate:built && pnpm verify:scenario:built"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.5",

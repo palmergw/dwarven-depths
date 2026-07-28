@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Dwarven Depths",
+  "version": "0.0.0",
+  "identifier": "com.dwarvendepths.game",
+  "build": {
+    "beforeBuildCommand": "pnpm --filter @dwarven-depths/web build",
+    "beforeDevCommand": "pnpm --filter @dwarven-depths/web dev",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../../web/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Dwarven Depths",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 320,
+        "minHeight": 568,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png"
+    ]
+  }
+}
