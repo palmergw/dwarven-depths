@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   validateCapabilityFiles,
+  validateDesktopBuildInputs,
   validateDesktopPackage
 } from "./check-desktop-package.mjs";
 
@@ -14,6 +15,14 @@ const capability = JSON.parse(
 );
 const rustSource = readFileSync(
   resolve("apps/desktop/src-tauri/src/main.rs"),
+  "utf8"
+);
+const cargoSource = readFileSync(
+  resolve("apps/desktop/src-tauri/Cargo.toml"),
+  "utf8"
+);
+const buildSource = readFileSync(
+  resolve("apps/desktop/src-tauri/build.rs"),
   "utf8"
 );
 
@@ -78,14 +87,33 @@ describe("desktop package contract", () => {
     }
   );
 
-  it("rejects platform-owned commands and plugins", () => {
+  it.each([
+    ".plugin (native_plugin)",
+    "tauri::Manager::plugin(&app, native_plugin)",
+    'std::process::Command::new("sh")'
+  ])("rejects platform-owned Rust authority: %s", (authority) => {
     expect(() =>
       validateDesktopPackage(
         clone(config),
         clone(capability),
-        `${rustSource}\n.invoke_handler(tauri::generate_handler![run_simulation])`
+        `${rustSource}\n${authority}`
       )
-    ).toThrow("may not add plugins or command handlers");
+    ).toThrow("desktop Rust shell");
+  });
+
+  it("rejects Cargo dependency and build-script drift", () => {
+    expect(() =>
+      validateDesktopBuildInputs(
+        `${cargoSource}\ntauri-plugin-shell = "2"\n`,
+        buildSource
+      )
+    ).toThrow("desktop Cargo manifest");
+    expect(() =>
+      validateDesktopBuildInputs(
+        cargoSource,
+        `${buildSource}\nfn expanded() {}`
+      )
+    ).toThrow("desktop Rust build script");
   });
 
   it("rejects additional capability documents", () => {

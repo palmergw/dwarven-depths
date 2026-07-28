@@ -3,6 +3,39 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const EXPECTED_RUST_SOURCE = `#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+fn main() {
+    tauri::Builder::default()
+        .run(tauri::generate_context!())
+        .expect("failed to run Dwarven Depths desktop shell");
+}
+`;
+const EXPECTED_CARGO_SOURCE = `[package]
+name = "dwarven-depths-desktop"
+version = "0.0.0"
+description = "Dwarven Depths desktop packaging evaluation"
+authors = ["Dwarven Depths contributors"]
+edition = "2021"
+rust-version = "1.77.2"
+license = "UNLICENSED"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
+`;
+const EXPECTED_BUILD_SOURCE = `fn main() {
+    tauri_build::build();
+}
+`;
 
 function plainObject(value, label) {
   if (
@@ -39,6 +72,11 @@ export function validateCapabilityFiles(files) {
       `desktop capabilities must contain only main.json; received ${actual.join(", ")}`
     );
   }
+}
+
+export function validateDesktopBuildInputs(cargoSource, buildSource) {
+  equal(cargoSource, EXPECTED_CARGO_SOURCE, "desktop Cargo manifest");
+  equal(buildSource, EXPECTED_BUILD_SOURCE, "desktop Rust build script");
 }
 
 export function validateDesktopPackage(config, capability, rustSource) {
@@ -119,11 +157,7 @@ export function validateDesktopPackage(config, capability, rustSource) {
   ) {
     throw new Error("desktop capability may grant only core:default");
   }
-  if (/\.plugin\(|invoke_handler|generate_handler!/.test(rustSource)) {
-    throw new Error(
-      "desktop Rust shell may not add plugins or command handlers"
-    );
-  }
+  equal(rustSource, EXPECTED_RUST_SOURCE, "desktop Rust shell");
 }
 
 export function validateDesktopPackageAt(root = ROOT) {
@@ -145,7 +179,16 @@ export function validateDesktopPackageAt(root = ROOT) {
     resolve(root, "apps/desktop/src-tauri/src/main.rs"),
     "utf8"
   );
+  const cargoSource = readFileSync(
+    resolve(root, "apps/desktop/src-tauri/Cargo.toml"),
+    "utf8"
+  );
+  const buildSource = readFileSync(
+    resolve(root, "apps/desktop/src-tauri/build.rs"),
+    "utf8"
+  );
   validateDesktopPackage(config, capability, rustSource);
+  validateDesktopBuildInputs(cargoSource, buildSource);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
