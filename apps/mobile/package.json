@@ -1,0 +1,17 @@
+{
+  "name": "@dwarven-depths/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "mobile:sync": "pnpm --filter @dwarven-depths/web build && cap sync android",
+    "mobile:build": "pnpm mobile:sync && cd android && ./gradlew assembleDebug --no-daemon"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.4.2",
+    "@capacitor/core": "8.4.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.4.2"
+  }
+}

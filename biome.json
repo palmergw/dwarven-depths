@@ -6,6 +6,7 @@
       "!**/dist",
       "!**/node_modules",
       "!apps/desktop/src-tauri/gen",
+      "!apps/mobile/android",
       "!reports",
       "!.ddh"
     ]

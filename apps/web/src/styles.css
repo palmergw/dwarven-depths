@@ -13,10 +13,17 @@ body {
   min-height: 100vh;
   background: radial-gradient(circle at top, #3c3022, #17130f 55%);
 }
+@supports (min-height: 100dvh) {
+  body {
+    min-height: 100dvh;
+  }
+}
 main {
   width: min(50rem, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 10vh 0 4rem;
+  padding: max(10vh, env(safe-area-inset-top))
+    max(0px, env(safe-area-inset-right)) max(4rem, env(safe-area-inset-bottom))
+    max(0px, env(safe-area-inset-left));
 }
 main[data-text-scale="large"] {
   font-size: 1.125rem;
@@ -123,6 +130,8 @@ h2 {
   color: #d8cdb9;
 }
 button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   border: 2px solid #f0c66f;
   border-radius: 0.35rem;
   padding: 0.8rem 1.1rem;
