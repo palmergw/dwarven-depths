@@ -3,8 +3,13 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
-import { Battlefield, buildBattlefieldPrimitives } from "./Battlefield.js";
+import {
+  Battlefield,
+  buildBattlefieldPrimitives,
+  buildDepartureFeedbackPrimitives
+} from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
+import { deriveCombatFeedback } from "./combat-feedback.js";
 import "./styles.css";
 import {
   EMPTY_CONTENT_MANIFEST_HASH,
@@ -1326,6 +1331,24 @@ describe("authoritative web worker", () => {
       "dwarf",
       "enemy"
     ]);
+    const survivorSnapshot = {
+      ...occupiedSnapshot,
+      tick: occupiedSnapshot.tick + 1,
+      entities: [occupiedSnapshot.entities[0]]
+    } as const satisfies RenderSnapshot;
+    const departureFeedback = deriveCombatFeedback(
+      occupiedSnapshot,
+      survivorSnapshot
+    );
+    expect(departureFeedback).toBeDefined();
+    if (departureFeedback === undefined)
+      throw new Error("expected departure feedback");
+    expect(
+      buildDepartureFeedbackPrimitives(occupiedSnapshot, departureFeedback)[0]
+    ).toEqual(occupied[1]);
+    expect(occupied[1]?.x).not.toBe(
+      buildBattlefieldPrimitives(survivorSnapshot).entities[0]?.x
+    );
   });
 
   it("keeps reduced-motion feedback static and rejects stale replay effects in StrictMode", async () => {

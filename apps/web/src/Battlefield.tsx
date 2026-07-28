@@ -97,6 +97,16 @@ export function buildBattlefieldPrimitives(
   };
 }
 
+export function buildDepartureFeedbackPrimitives(
+  previousSnapshot: RenderSnapshot,
+  feedback: CombatFeedback
+): readonly RenderPrimitive[] {
+  const departureIds = new Set(feedback.departures.map((entity) => entity.id));
+  return buildBattlefieldPrimitives(previousSnapshot).entities.filter(
+    (entity) => departureIds.has(entity.id)
+  );
+}
+
 function drawEntity(
   graphics: Phaser.GameObjects.Graphics,
   entity: RenderPrimitive & { readonly faction: RenderEntity["faction"] }
@@ -143,7 +153,8 @@ function drawBattlefield(
   scene: Phaser.Scene,
   snapshot: RenderSnapshot,
   feedback: CombatFeedback | undefined,
-  reduceMotion: boolean
+  reduceMotion: boolean,
+  previousSnapshot: RenderSnapshot | undefined
 ): void {
   scene.children.removeAll();
   const graphics = scene.add.graphics();
@@ -187,11 +198,12 @@ function drawBattlefield(
     for (const entity of primitives.entities)
       if (changedIds.has(entity.id))
         transient.strokeRect(entity.x - 21, entity.y - 21, 42, 42);
-    for (const entity of feedback.departures) {
-      const position = nodes.get(entity.nodeId);
-      if (position !== undefined)
-        transient.strokeRect(position.x - 19, position.y - 19, 38, 38);
-    }
+    if (previousSnapshot !== undefined)
+      for (const entity of buildDepartureFeedbackPrimitives(
+        previousSnapshot,
+        feedback
+      ))
+        transient.strokeRect(entity.x - 19, entity.y - 19, 38, 38);
     if (feedback.terminal)
       transient.strokeRect(22, 22, WIDTH - 44, HEIGHT - 44);
     if (!reduceMotion)
@@ -230,7 +242,8 @@ interface BattlefieldRenderer {
   update(
     snapshot: RenderSnapshot,
     feedback: CombatFeedback | undefined,
-    reduceMotion: boolean
+    reduceMotion: boolean,
+    previousSnapshot: RenderSnapshot | undefined
   ): void;
   destroy(): void;
 }
@@ -244,6 +257,7 @@ function createBattlefieldRenderer(
   let snapshot = initialSnapshot;
   let feedback = initialFeedback;
   let reduceMotion = initialReduceMotion;
+  let previousSnapshot: RenderSnapshot | undefined;
   let scene: Phaser.Scene | undefined;
   const game = new Phaser.Game({
     type: Phaser.CANVAS,
@@ -258,17 +272,30 @@ function createBattlefieldRenderer(
     scene: {
       create(this: Phaser.Scene) {
         scene = this;
-        drawBattlefield(this, snapshot, feedback, reduceMotion);
+        drawBattlefield(
+          this,
+          snapshot,
+          feedback,
+          reduceMotion,
+          previousSnapshot
+        );
       }
     }
   });
   return {
-    update(nextSnapshot, nextFeedback, nextReduceMotion) {
+    update(nextSnapshot, nextFeedback, nextReduceMotion, nextPreviousSnapshot) {
       snapshot = nextSnapshot;
       feedback = nextFeedback;
       reduceMotion = nextReduceMotion;
+      previousSnapshot = nextPreviousSnapshot;
       if (scene !== undefined)
-        drawBattlefield(scene, snapshot, feedback, reduceMotion);
+        drawBattlefield(
+          scene,
+          snapshot,
+          feedback,
+          reduceMotion,
+          previousSnapshot
+        );
     },
     destroy() {
       scene = undefined;
@@ -342,7 +369,12 @@ export function Battlefield({
       previousSnapshotRef.current = snapshot;
     latestFeedbackRef.current = nextFeedback;
     setFeedback(nextFeedback);
-    rendererRef.current?.update(snapshot, nextFeedback, reduceMotion);
+    rendererRef.current?.update(
+      snapshot,
+      nextFeedback,
+      reduceMotion,
+      previousSnapshot
+    );
     if (nextFeedback !== undefined) soundPlayerRef.current?.play(nextFeedback);
   }, [reduceMotion, snapshot]);
 
