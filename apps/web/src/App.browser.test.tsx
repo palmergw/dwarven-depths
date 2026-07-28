@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
-import { buildBattlefieldPrimitives } from "./Battlefield.js";
+import { Battlefield, buildBattlefieldPrimitives } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import "./styles.css";
 import {
@@ -1313,6 +1313,81 @@ describe("authoritative web worker", () => {
     expect(
       buildBattlefieldPrimitives(snapshot).entities.map((entity) => entity.id)
     ).toEqual(["unit.1", "unit:2"]);
+    const occupiedSnapshot = {
+      ...snapshot,
+      entities: [
+        { id: "unit.1", nodeId: "node.1", faction: "dwarf" },
+        { id: "unit:2", nodeId: "node.1", faction: "enemy" }
+      ]
+    } as const satisfies RenderSnapshot;
+    const occupied = buildBattlefieldPrimitives(occupiedSnapshot).entities;
+    expect(occupied[0]?.x).not.toBe(occupied[1]?.x);
+    expect(occupied.map((entity) => entity.faction)).toEqual([
+      "dwarf",
+      "enemy"
+    ]);
+  });
+
+  it("keeps reduced-motion feedback static and rejects stale replay effects in StrictMode", async () => {
+    const initial = {
+      schemaVersion: 1,
+      levelId: "level.test",
+      mapId: "map.test",
+      tick: 1,
+      phase: "running",
+      nodes: [{ id: "node.1", x: 0, y: 0 }],
+      connections: [],
+      entities: [{ id: "unit.1", nodeId: "node.1", faction: "dwarf" }]
+    } as const satisfies RenderSnapshot;
+    const changed = {
+      ...initial,
+      tick: 2,
+      entities: [
+        ...initial.entities,
+        { id: "unit.2", nodeId: "node.1", faction: "enemy" }
+      ]
+    } as const satisfies RenderSnapshot;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    const render = (renderSnapshot: RenderSnapshot): void =>
+      root?.render(
+        <StrictMode>
+          <Battlefield
+            snapshot={renderSnapshot}
+            reduceMotion={true}
+            soundEnabled={false}
+          />
+        </StrictMode>
+      );
+
+    render(initial);
+    await vi.waitFor(() =>
+      expect(document.querySelector(".battlefield")).toBeInstanceOf(HTMLElement)
+    );
+    expect(document.querySelector(".combat-feedback")).toBeNull();
+    render(changed);
+    await vi.waitFor(() =>
+      expect(document.querySelector(".combat-feedback")).toHaveAttribute(
+        "data-motion",
+        "static"
+      )
+    );
+    render(initial);
+    await vi.waitFor(() =>
+      expect(document.querySelector(".combat-feedback")).toBeNull()
+    );
+    render(changed);
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+    expect(document.querySelector(".combat-feedback")).toBeNull();
+
+    root.unmount();
+    root = createRoot(container);
+    render(changed);
+    await vi.waitFor(() =>
+      expect(document.querySelector(".battlefield")).toBeInstanceOf(HTMLElement)
+    );
+    expect(document.querySelector(".combat-feedback")).toBeNull();
   });
 
   it("preserves the protocol-v3 combat-control message sequence", async () => {

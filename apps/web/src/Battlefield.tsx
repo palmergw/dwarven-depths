@@ -4,7 +4,8 @@ import {
   type CombatFeedback,
   type CombatSoundPlayer,
   createCombatSoundPlayer,
-  deriveCombatFeedback
+  deriveCombatFeedback,
+  isCombatFeedbackProgression
 } from "./combat-feedback.js";
 import {
   compareRenderIds,
@@ -54,6 +55,16 @@ export function buildBattlefieldPrimitives(
     ...project(node.x, node.y)
   }));
   const positions = new Map(nodes.map((node) => [node.id, node]));
+  const orderedEntities = [...snapshot.entities].sort((left, right) =>
+    compareRenderIds(left.id, right.id)
+  );
+  const nodeOccupancy = new Map<string, number>();
+  for (const entity of orderedEntities)
+    nodeOccupancy.set(
+      entity.nodeId,
+      (nodeOccupancy.get(entity.nodeId) ?? 0) + 1
+    );
+  const nodeSlots = new Map<string, number>();
   return {
     nodes,
     connections: [...snapshot.connections]
@@ -63,16 +74,26 @@ export function buildBattlefieldPrimitives(
         fromId: connection.fromNodeId,
         toId: connection.toNodeId
       })),
-    entities: [...snapshot.entities]
-      .sort((left, right) => compareRenderIds(left.id, right.id))
-      .map((entity) => {
-        const position = positions.get(entity.nodeId);
-        if (position === undefined)
-          throw new Error(
-            `render entity ${entity.id} references an unknown node`
-          );
-        return { ...position, id: entity.id, faction: entity.faction };
-      })
+    entities: orderedEntities.map((entity) => {
+      const position = positions.get(entity.nodeId);
+      if (position === undefined)
+        throw new Error(
+          `render entity ${entity.id} references an unknown node`
+        );
+      const occupancy = nodeOccupancy.get(entity.nodeId) ?? 1;
+      const slot = nodeSlots.get(entity.nodeId) ?? 0;
+      nodeSlots.set(entity.nodeId, slot + 1);
+      const columns = Math.min(3, occupancy);
+      const rows = Math.ceil(occupancy / columns);
+      const column = slot % columns;
+      const row = Math.floor(slot / columns);
+      return {
+        id: entity.id,
+        faction: entity.faction,
+        x: position.x + (column - (columns - 1) / 2) * 38,
+        y: position.y + (row - (rows - 1) / 2) * 38
+      };
+    })
   };
 }
 
@@ -312,11 +333,13 @@ export function Battlefield({
   }, []);
 
   useEffect(() => {
-    const nextFeedback = deriveCombatFeedback(
-      previousSnapshotRef.current,
-      snapshot
-    );
-    previousSnapshotRef.current = snapshot;
+    const previousSnapshot = previousSnapshotRef.current;
+    const nextFeedback = deriveCombatFeedback(previousSnapshot, snapshot);
+    if (
+      previousSnapshot === undefined ||
+      isCombatFeedbackProgression(previousSnapshot, snapshot)
+    )
+      previousSnapshotRef.current = snapshot;
     latestFeedbackRef.current = nextFeedback;
     setFeedback(nextFeedback);
     rendererRef.current?.update(snapshot, nextFeedback, reduceMotion);

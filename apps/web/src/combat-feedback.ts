@@ -14,17 +14,23 @@ function byId(left: RenderEntity, right: RenderEntity): number {
   return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
 }
 
+export function isCombatFeedbackProgression(
+  previous: RenderSnapshot,
+  current: RenderSnapshot
+): boolean {
+  return (
+    previous.levelId === current.levelId &&
+    (current.tick > previous.tick ||
+      (current.tick === previous.tick &&
+        phaseOrder[current.phase] > phaseOrder[previous.phase]))
+  );
+}
+
 export function deriveCombatFeedback(
   previous: RenderSnapshot | undefined,
   current: RenderSnapshot
 ): CombatFeedback | undefined {
-  if (
-    previous === undefined ||
-    previous.levelId !== current.levelId ||
-    current.tick < previous.tick ||
-    (current.tick === previous.tick &&
-      phaseOrder[current.phase] <= phaseOrder[previous.phase])
-  )
+  if (previous === undefined || !isCombatFeedbackProgression(previous, current))
     return undefined;
 
   const previousById = new Map(
