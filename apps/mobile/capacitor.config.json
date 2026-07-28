@@ -1,0 +1,12 @@
+{
+  "appId": "com.dwarvendepths.game",
+  "appName": "Dwarven Depths",
+  "webDir": "../web/dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "webContentsDebuggingEnabled": false
+  }
+}
