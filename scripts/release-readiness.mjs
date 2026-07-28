@@ -165,6 +165,20 @@ const expectedExplanations = Object.freeze(
 const expectedEvidence = Object.freeze(
   phase6AcceptanceEntries.map(({ evidence }) => evidence)
 );
+const acceptanceEntryFields = Object.freeze([
+  "id",
+  "criterion",
+  "status",
+  "evidence",
+  "explanation"
+]);
+const identityFields = Object.freeze([
+  "scenarioId",
+  "scenarioHash",
+  "contentManifestHash",
+  "campaignPayloadChecksum",
+  "calibrationReportChecksum"
+]);
 const blockedIds = new Set(["boss-progression", "reduced-repeat-reward"]);
 const evidencePins = Object.freeze([
   pin(
@@ -224,29 +238,54 @@ function plainRecord(value) {
   return prototype === Object.prototype || prototype === null;
 }
 
-function plainDataRecord(value) {
-  if (!plainRecord(value)) return false;
+function plainDataRecord(value, expectedFields) {
+  if (!plainRecord(value)) return null;
   const descriptors = Object.getOwnPropertyDescriptors(value);
-  return Reflect.ownKeys(value).every(
-    (key) =>
-      typeof key === "string" && Object.hasOwn(descriptors[key] ?? {}, "value")
-  );
+  const keys = Reflect.ownKeys(value);
+  if (
+    keys.length !== expectedFields.length ||
+    keys.some((key) => typeof key !== "string") ||
+    [...keys].sort().join(",") !== [...expectedFields].sort().join(",")
+  )
+    return null;
+  const result = {};
+  for (const key of expectedFields) {
+    const descriptor = descriptors[key];
+    if (
+      descriptor === undefined ||
+      descriptor.enumerable !== true ||
+      !Object.hasOwn(descriptor, "value")
+    )
+      return null;
+    result[key] = descriptor.value;
+  }
+  return Object.freeze(result);
 }
 
 function plainDataArray(value) {
   if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype)
-    return false;
+    return null;
   const descriptors = Object.getOwnPropertyDescriptors(value);
   const keys = Reflect.ownKeys(value);
+  const lengthDescriptor = descriptors.length;
   if (
-    keys.length !== value.length + 1 ||
+    lengthDescriptor === undefined ||
+    !Object.hasOwn(lengthDescriptor, "value") ||
+    !Number.isSafeInteger(lengthDescriptor.value) ||
+    lengthDescriptor.value < 0 ||
+    keys.length !== lengthDescriptor.value + 1 ||
     keys.at(-1) !== "length" ||
-    !Object.hasOwn(descriptors.length ?? {}, "value")
+    keys.slice(0, -1).some((key, index) => key !== String(index))
   )
-    return false;
-  return Array.from({ length: value.length }, (_, index) =>
-    Object.hasOwn(descriptors[String(index)] ?? {}, "value")
-  ).every(Boolean);
+    return null;
+  const result = [];
+  for (let index = 0; index < lengthDescriptor.value; index += 1) {
+    const descriptor = descriptors[String(index)];
+    if (descriptor === undefined || !Object.hasOwn(descriptor, "value"))
+      return null;
+    result.push(descriptor.value);
+  }
+  return Object.freeze(result);
 }
 
 function readAcceptanceCriteria() {
@@ -270,15 +309,13 @@ export function requirePhase6AcceptanceEntries(
   value,
   { checkFiles = true } = {}
 ) {
-  if (!plainDataArray(value) || value.length !== expectedIds.length)
+  const candidateInputs = plainDataArray(value);
+  if (candidateInputs === null || candidateInputs.length !== expectedIds.length)
     throw new TypeError("Phase 6 acceptance entries are incomplete");
   const seen = new Set();
-  const normalized = value.map((candidate, index) => {
-    if (
-      !plainDataRecord(candidate) ||
-      Object.keys(candidate).sort().join(",") !==
-        "criterion,evidence,explanation,id,status"
-    )
+  const normalized = candidateInputs.map((candidateInput, index) => {
+    const candidate = plainDataRecord(candidateInput, acceptanceEntryFields);
+    if (candidate === null)
       throw new TypeError("Phase 6 acceptance entry has invalid fields");
     if (candidate.id !== expectedIds[index] || seen.has(candidate.id))
       throw new TypeError(
@@ -303,9 +340,9 @@ export function requirePhase6AcceptanceEntries(
       throw new TypeError(
         `Phase 6 acceptance explanation is not canonical (${candidate.id})`
       );
-    const evidence = candidate.evidence;
+    const evidence = plainDataArray(candidate.evidence);
     if (
-      !plainDataArray(evidence) ||
+      evidence === null ||
       new Set(evidence).size !== evidence.length ||
       evidence.some(
         (path) =>
@@ -370,15 +407,12 @@ function code(value) {
 export function renderPhase6ReleaseReadinessMarkdown(entries, identity) {
   const accepted = requirePhase6AcceptanceEntries(entries);
   requireEvidencePins();
-  if (
-    !plainDataRecord(identity) ||
-    Object.keys(identity).sort().join(",") !==
-      "calibrationReportChecksum,campaignPayloadChecksum,contentManifestHash,scenarioHash,scenarioId"
-  )
+  const releaseIdentity = plainDataRecord(identity, identityFields);
+  if (releaseIdentity === null)
     throw new TypeError("Phase 6 release-readiness identity is invalid");
-  if (identity.scenarioId !== "campaign_scenario.shuttergate.v1")
+  if (releaseIdentity.scenarioId !== "campaign_scenario.shuttergate.v1")
     throw new TypeError("Phase 6 release-readiness scenario is not canonical");
-  for (const [key, value] of Object.entries(identity)) {
+  for (const [key, value] of Object.entries(releaseIdentity)) {
     if (
       typeof value !== "string" ||
       (key !== "scenarioId" && !/^[0-9a-f]{64}$/.test(value))
@@ -392,11 +426,11 @@ export function renderPhase6ReleaseReadinessMarkdown(entries, identity) {
     "",
     "This report separates implemented evidence from criteria that remain contract-blocked. A blocked row is not release acceptance.",
     "",
-    `Campaign scenario: ${code(identity.scenarioId)}`,
-    `Scenario hash: ${code(identity.scenarioHash)}`,
-    `Content manifest: ${code(identity.contentManifestHash)}`,
-    `Campaign payload: ${code(identity.campaignPayloadChecksum)}`,
-    `Calibration report: ${code(identity.calibrationReportChecksum)}`,
+    `Campaign scenario: ${code(releaseIdentity.scenarioId)}`,
+    `Scenario hash: ${code(releaseIdentity.scenarioHash)}`,
+    `Content manifest: ${code(releaseIdentity.contentManifestHash)}`,
+    `Campaign payload: ${code(releaseIdentity.campaignPayloadChecksum)}`,
+    `Calibration report: ${code(releaseIdentity.calibrationReportChecksum)}`,
     "",
     "## Acceptance coverage",
     "",

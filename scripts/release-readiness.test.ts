@@ -75,6 +75,18 @@ describe("Phase 6 release readiness", () => {
       requirePhase6AcceptanceEntries(accessorCollection, { checkFiles: false })
     ).toThrow("incomplete");
 
+    let collectionReads = 0;
+    const proxyCollection = new Proxy(mutableEntries(), {
+      get: (target, property, receiver) => {
+        if (property === "0") collectionReads += 1;
+        return Reflect.get(target, property, receiver);
+      }
+    });
+    expect(
+      requirePhase6AcceptanceEntries(proxyCollection, { checkFiles: false })
+    ).toHaveLength(18);
+    expect(collectionReads).toBe(0);
+
     const reordered = mutableEntries().reverse();
     expect(() =>
       requirePhase6AcceptanceEntries(reordered, { checkFiles: false })
@@ -90,6 +102,14 @@ describe("Phase 6 release readiness", () => {
     entryAt(unknown, 0).unexpected = true;
     expect(() =>
       requirePhase6AcceptanceEntries(unknown, { checkFiles: false })
+    ).toThrow("invalid fields");
+
+    const hiddenUnknown = mutableEntries();
+    Object.defineProperty(entryAt(hiddenUnknown, 0), "hiddenUnexpected", {
+      value: true
+    });
+    expect(() =>
+      requirePhase6AcceptanceEntries(hiddenUnknown, { checkFiles: false })
     ).toThrow("invalid fields");
 
     const substitutedCriterion = mutableEntries();
@@ -115,6 +135,27 @@ describe("Phase 6 release readiness", () => {
     expect(() =>
       requirePhase6AcceptanceEntries(injectedExplanation, { checkFiles: false })
     ).toThrow("explanation is not canonical");
+
+    let criterionReads = 0;
+    const proxyEntry = new Proxy(entryAt(mutableEntries(), 0), {
+      get: (target, property, receiver) => {
+        if (property !== "criterion")
+          return Reflect.get(target, property, receiver);
+        criterionReads += 1;
+        return criterionReads < 3
+          ? target.criterion
+          : "injected | `implemented` | fake";
+      }
+    });
+    const proxied = mutableEntries();
+    proxied[0] = proxyEntry;
+    const acceptedProxy = requirePhase6AcceptanceEntries(proxied, {
+      checkFiles: false
+    });
+    expect(acceptedProxy[0]?.criterion).toBe(
+      "A new profile starts with only the Iron Warden."
+    );
+    expect(criterionReads).toBe(0);
 
     const falselyPassing = mutableEntries();
     entryAt(falselyPassing, 11).status = "implemented";
@@ -173,6 +214,24 @@ describe("Phase 6 release readiness", () => {
       requirePhase6AcceptanceEntries(accessorEvidence, { checkFiles: false })
     ).toThrow("evidence is invalid");
 
+    let evidenceReads = 0;
+    const proxyEvidence = new Proxy(
+      ["packages/progression/src/index.test.ts"],
+      {
+        get: (target, property, receiver) => {
+          if (property === "0") evidenceReads += 1;
+          return Reflect.get(target, property, receiver);
+        }
+      }
+    );
+    const proxiedEvidence = mutableEntries();
+    entryAt(proxiedEvidence, 0).evidence = proxyEvidence;
+    expect(
+      requirePhase6AcceptanceEntries(proxiedEvidence, { checkFiles: false })[0]
+        ?.evidence
+    ).toEqual(["packages/progression/src/index.test.ts"]);
+    expect(evidenceReads).toBe(0);
+
     expect(() =>
       renderPhase6ReleaseReadinessMarkdown(phase6AcceptanceEntries, {
         ...identity,
@@ -191,5 +250,20 @@ describe("Phase 6 release readiness", () => {
         scenarioId: "campaign_scenario.substituted.v1"
       })
     ).toThrow("scenario is not canonical");
+
+    let identityReads = 0;
+    const proxyIdentity = new Proxy(identity, {
+      get: (target, property, receiver) => {
+        if (property === "scenarioHash") identityReads += 1;
+        return Reflect.get(target, property, receiver);
+      }
+    });
+    expect(
+      renderPhase6ReleaseReadinessMarkdown(
+        phase6AcceptanceEntries,
+        proxyIdentity
+      )
+    ).toContain(identity.scenarioHash);
+    expect(identityReads).toBe(0);
   });
 });
