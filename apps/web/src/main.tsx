@@ -11,7 +11,11 @@ createRoot(root).render(
   </StrictMode>
 );
 
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
+if (
+  import.meta.env.PROD &&
+  (location.protocol === "http:" || location.protocol === "https:") &&
+  "serviceWorker" in navigator
+) {
   window.addEventListener("load", () => {
     void navigator.serviceWorker.register("/service-worker.js");
   });
