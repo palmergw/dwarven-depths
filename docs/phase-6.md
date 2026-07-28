@@ -10,7 +10,7 @@ The simulation CLI now explicitly exports one local, schema-versioned Shuttergat
 
 The canonical Level 1 policy replay is pinned as the existing schema-1 durable three-attempt campaign artifact plus its schema-2 manifest. A focused check regenerates byte-identical fixtures from the documented campaign scenario, independently replays every attempt checksum during restore, and verifies the resulting purchased upgrade, committed rewards, and Forge Ore. This adds no replay format or gameplay producer.
 
-CI regenerates that authoritative three-attempt campaign as the `phase-6-release-candidate-reports` artifact. It contains the machine-readable campaign, calibration, and binding manifest plus deterministic Markdown that identifies their checksums and renders every attempt and the existing baseline-versus-upgraded comparison. The Markdown derives no additional gameplay evidence.
+CI regenerates that authoritative three-attempt campaign as the `phase-6-release-candidate-reports` artifact. It contains the machine-readable campaign, calibration, and binding manifest plus deterministic Markdown that identifies their checksums and renders every attempt and the existing baseline-versus-upgraded comparison. A second deterministic readiness report maps the vertical-slice criteria, in source order, to their existing automated or bounded visual-review evidence and marks contract-blocked criteria without presenting them as accepted. The Markdown derives no additional gameplay evidence.
 
 The web client presents one phase-aware run journey from checkpoint review through preparation, combat, and terminal evidence. It explains the existing pause controls and focus-loss pause, marks current and completed steps without duplicating live announcements, and adapts the final guidance to authoritative failure. This onboarding is presentation-only and derives its state from the existing client phase.
 
@@ -40,3 +40,4 @@ Observed calibration evidence and balance recommendations remain separate. Satis
 - `pnpm check:web-budgets`
 - `pnpm test:built scripts/check-web-release-budgets.test.ts`
 - `pnpm report:release-candidate`
+- `pnpm test:built scripts/release-readiness.test.ts`
