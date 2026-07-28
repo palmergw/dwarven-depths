@@ -485,6 +485,32 @@ describe("run journey guidance", () => {
           : control.textContent);
       expect(label?.trim(), control.outerHTML).not.toBe("");
     }
+
+    const settingsButton = await buttonWithText("Settings");
+    settingsButton.focus();
+    await userEvent.keyboard("{Enter}");
+    const settingsHeading = document.querySelector(
+      "#presentation-settings-heading"
+    );
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(settingsHeading)
+    );
+    expect(main).toHaveAttribute("data-text-scale", "extra-large");
+    expect(main).toHaveAttribute("data-contrast-preference", "high");
+    expect(main).toHaveAttribute("data-motion-preference", "reduce");
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+      window.innerWidth
+    );
+    await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(await buttonWithText("Close settings")).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(
+        Array.from(document.querySelectorAll("button")).find(
+          (button) => button.textContent === "Settings"
+        )
+      )
+    );
   });
 });
 
