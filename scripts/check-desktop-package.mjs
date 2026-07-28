@@ -152,10 +152,8 @@ export function validateDesktopPackage(config, capability, rustSource) {
   if (JSON.stringify(capability.windows) !== JSON.stringify(["main"])) {
     throw new Error("desktop capability must bind only the main window");
   }
-  if (
-    JSON.stringify(capability.permissions) !== JSON.stringify(["core:default"])
-  ) {
-    throw new Error("desktop capability may grant only core:default");
+  if (JSON.stringify(capability.permissions) !== JSON.stringify([])) {
+    throw new Error("desktop capability may not grant native API permissions");
   }
   equal(rustSource, EXPECTED_RUST_SOURCE, "desktop Rust shell");
 }

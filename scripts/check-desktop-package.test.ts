@@ -83,7 +83,7 @@ describe("desktop package contract", () => {
       candidate.permissions.push(permission);
       expect(() =>
         validateDesktopPackage(clone(config), candidate, rustSource)
-      ).toThrow("only core:default");
+      ).toThrow("may not grant native API permissions");
     }
   );
 
