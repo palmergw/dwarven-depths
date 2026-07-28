@@ -28,7 +28,7 @@ The Iron Warden must have a broad armored silhouette, gold beard/face region, sh
 
 ### Layer order
 
-Back to front: cavern void; masonry courses; central arch and gate; timber braces and local torch glow; embedded stone/wood lane; snapshot-derived combatants and deployables; transient combat feedback; compact location/gate-status HUD; dark foreground rubble. Foreground may overlap floor edges but not combatant heads or controls. Gate status is a presentation label for the existing running/terminal phase only; it must not infer wave progression.
+Back to front: cavern void; masonry courses; central arch and gate; timber braces and local torch glow; embedded stone/wood lane; snapshot-derived combatants and deployables; transient combat feedback; compact location/battle-status HUD; dark foreground rubble. Foreground may overlap floor edges but not combatant heads or controls. Battle status is a presentation label for preparation, running, or ended phase only; it must not infer wave progression or a victory/defeat outcome.
 
 ### UI hierarchy
 

@@ -5,6 +5,7 @@ import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import {
   Battlefield,
+  battlefieldStatus,
   buildBattlefieldPrimitives,
   buildDepartureFeedbackPrimitives
 } from "./Battlefield.js";
@@ -1349,6 +1350,10 @@ describe("authoritative web worker", () => {
   });
 
   it("projects entities deterministically by stable ID", () => {
+    expect(battlefieldStatus("preparation")).toBe("GATE  •  READY");
+    expect(battlefieldStatus("running")).toBe("GATE  •  HOLDING");
+    expect(battlefieldStatus("terminal")).toBe("BATTLE  •  ENDED");
+    expect(battlefieldStatus("terminal")).not.toContain("SECURE");
     const snapshot = {
       schemaVersion: 1,
       levelId: "level.test",

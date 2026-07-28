@@ -109,6 +109,12 @@ export function buildDepartureFeedbackPrimitives(
 
 const assetRoot = "/assets/visual-prototype";
 
+export function battlefieldStatus(phase: RenderSnapshot["phase"]): string {
+  if (phase === "running") return "GATE  •  HOLDING";
+  if (phase === "terminal") return "BATTLE  •  ENDED";
+  return "GATE  •  READY";
+}
+
 function drawStonework(graphics: Phaser.GameObjects.Graphics): void {
   graphics.fillStyle(0x101519, 1);
   graphics.fillRect(0, 0, WIDTH, HEIGHT);
@@ -283,16 +289,11 @@ function drawBattlefield(
   graphics.fillStyle(0x120f0d, 0.96);
   graphics.fillRect(482, 17, 140, 40);
   graphics.strokeRect(482, 17, 140, 40);
-  scene.add.text(
-    494,
-    25,
-    snapshot.phase === "running" ? "GATE  •  HOLDING" : "GATE  •  SECURE",
-    {
-      color: "#f4ead5",
-      fontFamily: "monospace",
-      fontSize: "13px"
-    }
-  );
+  scene.add.text(494, 25, battlefieldStatus(snapshot.phase), {
+    color: "#f4ead5",
+    fontFamily: "monospace",
+    fontSize: "13px"
+  });
 }
 
 interface BattlefieldRenderer {
