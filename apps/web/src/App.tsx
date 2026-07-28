@@ -53,6 +53,82 @@ type ViewState =
     }
   | { readonly phase: "failure"; readonly message: string };
 
+const runJourneySteps = [
+  {
+    phase: "checkpoint",
+    label: "Review the checkpoint",
+    description:
+      "Review company progression and upgrades, then begin preparation."
+  },
+  {
+    phase: "preparation",
+    label: "Prepare the company",
+    description:
+      "Review the roster and placement summary, then confirm preparation."
+  },
+  {
+    phase: "running",
+    label: "Follow the combat",
+    description:
+      "Use the combat controls as available. Press P or use the pause button to pause; changing windows pauses automatically."
+  },
+  {
+    phase: "review",
+    label: "Review the evidence",
+    description:
+      "Review the terminal outcome and download its authoritative run evidence."
+  }
+] as const;
+
+function RunJourneyGuide({ phase }: { readonly phase: ViewState["phase"] }) {
+  const currentIndex =
+    phase === "checkpoint"
+      ? 0
+      : phase === "preparation"
+        ? 1
+        : phase === "running"
+          ? 2
+          : 3;
+
+  return (
+    <section className="run-journey" aria-labelledby="run-journey-heading">
+      <h3 id="run-journey-heading">Your run journey</h3>
+      <ol>
+        {runJourneySteps.map((step, index) => {
+          const state =
+            index < currentIndex
+              ? "complete"
+              : index === currentIndex
+                ? "current"
+                : "upcoming";
+          const description =
+            phase === "failure" && index === currentIndex
+              ? "Review the failure details, then return to the checkpoint to try again."
+              : step.description;
+          return (
+            <li
+              key={step.phase}
+              className={`run-journey-step run-journey-step-${state}`}
+              aria-current={state === "current" ? "step" : undefined}
+              data-state={state}
+            >
+              <span className="run-journey-step-label">{step.label}</span>
+              <span className="run-journey-step-state">
+                {state === "complete"
+                  ? "Complete"
+                  : state === "current"
+                    ? "Current step"
+                    : "Upcoming"}
+              </span>
+              <p>{description}</p>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
 const motionPreferenceStorageKey =
   "dwarven-depths.presentation.motion-preference.v1";
 const motionPreferences = ["device", "reduce", "allow"] as const;
@@ -851,6 +927,7 @@ export function App({
       <h1>Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
         <h2 id="run-heading">Empty Level Conformance Run</h2>
+        <RunJourneyGuide phase={view.phase} />
         {view.phase === "checkpoint" &&
           !settingsOpen &&
           !upgradeInventoryOpen && (

@@ -48,6 +48,52 @@ h2 {
   margin-top: 0;
   font-size: 1.25em;
 }
+.run-journey {
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid #80683f;
+  border-radius: 0.5rem;
+  background: #211b14;
+}
+.run-journey h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1em;
+}
+.run-journey ol {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding-left: 1.5rem;
+}
+.run-journey-step {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid #4e4232;
+  border-radius: 0.35rem;
+}
+.run-journey-step-current {
+  border-color: #f0c66f;
+  background: #332718;
+}
+.run-journey-step-complete {
+  border-color: #759c61;
+}
+.run-journey-step-label,
+.run-journey-step-state {
+  display: block;
+}
+.run-journey-step-label {
+  font-weight: 800;
+}
+.run-journey-step-state {
+  margin-top: 0.25rem;
+  color: #c5b695;
+  font-size: 0.85em;
+}
+.run-journey-step p {
+  margin: 0.75rem 0 0;
+}
 .battlefield {
   margin: 1.25rem 0;
 }
@@ -294,6 +340,7 @@ main[data-contrast-preference="high"] .eyebrow,
 main[data-contrast-preference="high"] .battlefield figcaption,
 main[data-contrast-preference="high"] .status,
 main[data-contrast-preference="high"] .settings-help,
+main[data-contrast-preference="high"] .run-journey-step-state,
 main[data-contrast-preference="high"] .control-entity-id,
 main[data-contrast-preference="high"] dt,
 main[data-contrast-preference="high"] code {
@@ -301,6 +348,8 @@ main[data-contrast-preference="high"] code {
 }
 main[data-contrast-preference="high"] .panel,
 main[data-contrast-preference="high"] .battlefield-canvas,
+main[data-contrast-preference="high"] .run-journey,
+main[data-contrast-preference="high"] .run-journey-step,
 main[data-contrast-preference="high"] .settings,
 main[data-contrast-preference="high"] .upgrades,
 main[data-contrast-preference="high"] .combat-hud,
@@ -331,6 +380,9 @@ main[data-contrast-preference="high"] .upgrade-inventory-list div {
   border-color: #fff;
 }
 @media (max-width: 32rem) {
+  .run-journey ol {
+    grid-template-columns: 1fr;
+  }
   .checkpoint-context div,
   .preparation-summary div,
   .combat-hud dl div,
