@@ -307,7 +307,11 @@ export function requirePhase6AcceptanceEntries(
             /^(apps|packages)\/[A-Za-z0-9._/-]+\.test\.tsx?$/.test(path) ||
             path === "docs/phase-6.md"
           ) ||
-          path.split("/").includes("..") ||
+          path
+            .split("/")
+            .some(
+              (segment) => segment === "" || segment === "." || segment === ".."
+            ) ||
           /[|<>`\r\n]/.test(path)
       )
     )

@@ -120,6 +120,17 @@ describe("Phase 6 release readiness", () => {
       requirePhase6AcceptanceEntries(directoryPath, { checkFiles: false })
     ).toThrow("evidence is invalid");
 
+    for (const path of [
+      "packages/./progression/src/index.test.ts",
+      "packages//progression/src/index.test.ts"
+    ]) {
+      const aliasedPath = mutableEntries();
+      entryAt(aliasedPath, 0).evidence = [path];
+      expect(() =>
+        requirePhase6AcceptanceEntries(aliasedPath, { checkFiles: false })
+      ).toThrow("evidence is invalid");
+    }
+
     const accessorEvidence = mutableEntries();
     const evidence = ["packages/progression/src/index.test.ts"];
     Object.defineProperty(evidence, 0, {
