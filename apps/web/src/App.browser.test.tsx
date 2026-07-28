@@ -1664,7 +1664,13 @@ describe("authoritative web worker", () => {
       return heading as HTMLHeadingElement;
     });
     expect(document.activeElement).toBe(firstFailureHeading);
-    expect(document.body.textContent).toContain(
+    expect(document.querySelector('[role="status"]')?.textContent).toContain(
+      "The defense could not continue"
+    );
+    const failureDiagnostic = document.querySelector(".failure-diagnostic");
+    expect(failureDiagnostic).toBeInstanceOf(HTMLDetailsElement);
+    expect(failureDiagnostic).not.toHaveAttribute("open");
+    expect(failureDiagnostic?.textContent).toContain(
       "The authoritative run reached its fixed tick budget."
     );
     const keyboardReturn = await buttonWithText("Return to checkpoint");

@@ -1135,7 +1135,9 @@ export function App({
                 : "The battle for Shuttergate is underway…"}
             </p>
           )}
-          {view.phase === "failure" && <p>Run failed: {view.message}</p>}
+          {view.phase === "failure" && (
+            <p>The defense could not continue. Return to the checkpoint.</p>
+          )}
           {view.phase === "result" && (
             <p>Run complete: {view.result.terminalResult}.</p>
           )}
@@ -1690,7 +1692,11 @@ export function App({
             <h3 id="failure-heading" ref={failureHeadingRef} tabIndex={-1}>
               Run failed
             </h3>
-            <p>{view.message}</p>
+            <p>Shuttergate needs another defense.</p>
+            <details className="developer-overlay failure-diagnostic">
+              <summary>Failure diagnostic (developer)</summary>
+              <p>{view.message}</p>
+            </details>
             <div className="result-actions">
               <button type="button" onClick={returnToCheckpoint}>
                 Return to checkpoint
