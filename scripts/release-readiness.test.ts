@@ -1,0 +1,333 @@
+import { describe, expect, it } from "vitest";
+import {
+  phase6AcceptanceEntries,
+  renderPhase6ReleaseReadinessMarkdown,
+  requirePhase6AcceptanceEntries,
+  requirePinnedEvidenceChecksum
+} from "./release-readiness.mjs";
+
+const identity = Object.freeze({
+  scenarioId: "campaign_scenario.shuttergate.v1",
+  scenarioHash: "a".repeat(64),
+  contentManifestHash: "b".repeat(64),
+  campaignPayloadChecksum: "c".repeat(64),
+  calibrationReportChecksum: "d".repeat(64)
+});
+
+function mutableEntries(): Array<Record<string, unknown>> {
+  return Array.from(phase6AcceptanceEntries, (entry) => ({
+    ...entry,
+    evidence: Array.from(entry.evidence)
+  })) as Array<Record<string, unknown>>;
+}
+
+function entryAt(
+  entries: Array<Record<string, unknown>>,
+  index: number
+): Record<string, unknown> {
+  const candidate = entries[index];
+  if (candidate === undefined) throw new Error(`missing test entry ${index}`);
+  return candidate;
+}
+
+describe("Phase 6 release readiness", () => {
+  it("renders canonical implemented and blocked evidence without overstating replay rewards", () => {
+    const first = renderPhase6ReleaseReadinessMarkdown(
+      phase6AcceptanceEntries,
+      identity
+    );
+    const second = renderPhase6ReleaseReadinessMarkdown(
+      phase6AcceptanceEntries,
+      identity
+    );
+
+    expect(second).toBe(first);
+    expect(
+      first.match(/^\| .* \| `(?:implemented|contract-blocked)` \|/gm)
+    ).toHaveLength(18);
+    expect(first.match(/`contract-blocked`/g)).toHaveLength(3);
+    expect(first).toContain("duplicate-claim prevention only");
+    expect(first).toContain(
+      "partial persistence is not presented as acceptance"
+    );
+    expect(first).toContain("reference human replay remains blocked");
+    expect(first).toContain("Terminal client/CLI parity remains blocked");
+    expect(first).toContain(identity.campaignPayloadChecksum);
+    expect(first.endsWith("\n")).toBe(true);
+  });
+
+  it("rejects missing, duplicate, reordered, unknown, and falsely passing entries", () => {
+    expect(() =>
+      requirePhase6AcceptanceEntries(phase6AcceptanceEntries.slice(1), {
+        checkFiles: false
+      })
+    ).toThrow("incomplete");
+
+    class AcceptanceEntries extends Array<Record<string, unknown>> {}
+    const subclass = new AcceptanceEntries(...mutableEntries());
+    expect(() =>
+      requirePhase6AcceptanceEntries(subclass, { checkFiles: false })
+    ).toThrow("incomplete");
+
+    const accessorCollection = mutableEntries();
+    const firstEntry = entryAt(accessorCollection, 0);
+    Object.defineProperty(accessorCollection, 0, {
+      enumerable: true,
+      get: () => firstEntry
+    });
+    expect(() =>
+      requirePhase6AcceptanceEntries(accessorCollection, { checkFiles: false })
+    ).toThrow("incomplete");
+
+    let collectionReads = 0;
+    let collectionOwnKeysReads = 0;
+    const proxyCollection = new Proxy(mutableEntries(), {
+      ownKeys: (target) => {
+        collectionOwnKeysReads += 1;
+        return Reflect.ownKeys(target);
+      },
+      get: (target, property, receiver) => {
+        if (property === "0") collectionReads += 1;
+        return Reflect.get(target, property, receiver);
+      }
+    });
+    expect(
+      requirePhase6AcceptanceEntries(proxyCollection, { checkFiles: false })
+    ).toHaveLength(18);
+    expect(collectionReads).toBe(0);
+    expect(collectionOwnKeysReads).toBe(1);
+
+    const nonEnumerableCollection = mutableEntries();
+    Object.defineProperty(nonEnumerableCollection, 0, {
+      value: entryAt(nonEnumerableCollection, 0),
+      enumerable: false
+    });
+    expect(() =>
+      requirePhase6AcceptanceEntries(nonEnumerableCollection, {
+        checkFiles: false
+      })
+    ).toThrow("incomplete");
+
+    const reordered = mutableEntries().reverse();
+    expect(() =>
+      requirePhase6AcceptanceEntries(reordered, { checkFiles: false })
+    ).toThrow("canonical unique order");
+
+    const duplicate = mutableEntries();
+    duplicate.splice(1, 1, entryAt(duplicate, 0));
+    expect(() =>
+      requirePhase6AcceptanceEntries(duplicate, { checkFiles: false })
+    ).toThrow("canonical unique order");
+
+    const unknown = mutableEntries();
+    entryAt(unknown, 0).unexpected = true;
+    expect(() =>
+      requirePhase6AcceptanceEntries(unknown, { checkFiles: false })
+    ).toThrow("invalid fields");
+
+    const hiddenUnknown = mutableEntries();
+    Object.defineProperty(entryAt(hiddenUnknown, 0), "hiddenUnexpected", {
+      value: true
+    });
+    expect(() =>
+      requirePhase6AcceptanceEntries(hiddenUnknown, { checkFiles: false })
+    ).toThrow("invalid fields");
+
+    const substitutedCriterion = mutableEntries();
+    entryAt(substitutedCriterion, 0).criterion = "A different criterion.";
+    expect(() =>
+      requirePhase6AcceptanceEntries(substitutedCriterion, {
+        checkFiles: false
+      })
+    ).toThrow("does not match source");
+
+    const accessor = mutableEntries();
+    Object.defineProperty(entryAt(accessor, 0), "criterion", {
+      enumerable: true,
+      get: () => "A new profile starts with only the Iron Warden."
+    });
+    expect(() =>
+      requirePhase6AcceptanceEntries(accessor, { checkFiles: false })
+    ).toThrow("invalid fields");
+
+    const injectedExplanation = mutableEntries();
+    entryAt(injectedExplanation, 0).explanation =
+      "ok\n\n| blocked | `implemented` | fake |";
+    expect(() =>
+      requirePhase6AcceptanceEntries(injectedExplanation, { checkFiles: false })
+    ).toThrow("explanation is not canonical");
+
+    let criterionReads = 0;
+    const proxyEntry = new Proxy(entryAt(mutableEntries(), 0), {
+      get: (target, property, receiver) => {
+        if (property !== "criterion")
+          return Reflect.get(target, property, receiver);
+        criterionReads += 1;
+        return criterionReads < 3
+          ? target.criterion
+          : "injected | `implemented` | fake";
+      }
+    });
+    const proxied = mutableEntries();
+    proxied[0] = proxyEntry;
+    const acceptedProxy = requirePhase6AcceptanceEntries(proxied, {
+      checkFiles: false
+    });
+    expect(acceptedProxy[0]?.criterion).toBe(
+      "A new profile starts with only the Iron Warden."
+    );
+    expect(criterionReads).toBe(0);
+
+    const falselyPassing = mutableEntries();
+    entryAt(falselyPassing, 11).status = "implemented";
+    entryAt(falselyPassing, 11).evidence = ["docs/phase-6.md"];
+    expect(() =>
+      requirePhase6AcceptanceEntries(falselyPassing, { checkFiles: false })
+    ).toThrow("status is not approved");
+
+    const partialSavePassing = mutableEntries();
+    entryAt(partialSavePassing, 14).status = "implemented";
+    entryAt(partialSavePassing, 14).evidence = [
+      "packages/save/src/profile-save.test.ts"
+    ];
+    expect(() =>
+      requirePhase6AcceptanceEntries(partialSavePassing, { checkFiles: false })
+    ).toThrow("status is not approved");
+  });
+
+  it("rejects invalid evidence paths, missing files, and identity substitution", () => {
+    const foreignPath = mutableEntries();
+    entryAt(foreignPath, 0).evidence = ["https://example.invalid/claim"];
+    expect(() =>
+      requirePhase6AcceptanceEntries(foreignPath, { checkFiles: false })
+    ).toThrow("evidence is invalid");
+
+    const missingPath = mutableEntries();
+    entryAt(missingPath, 0).evidence = ["packages/missing.test.ts"];
+    expect(() => requirePhase6AcceptanceEntries(missingPath)).toThrow(
+      "evidence is not canonical"
+    );
+
+    const substitutedPath = mutableEntries();
+    entryAt(substitutedPath, 0).evidence = [
+      "packages/progression/src/attempt-progress-rewards.test.ts"
+    ];
+    expect(() =>
+      requirePhase6AcceptanceEntries(substitutedPath, { checkFiles: false })
+    ).toThrow("evidence is not canonical");
+
+    const directoryPath = mutableEntries();
+    entryAt(directoryPath, 0).evidence = ["docs/."];
+    expect(() =>
+      requirePhase6AcceptanceEntries(directoryPath, { checkFiles: false })
+    ).toThrow("evidence is invalid");
+
+    for (const path of [
+      "packages/./progression/src/index.test.ts",
+      "packages//progression/src/index.test.ts"
+    ]) {
+      const aliasedPath = mutableEntries();
+      entryAt(aliasedPath, 0).evidence = [path];
+      expect(() =>
+        requirePhase6AcceptanceEntries(aliasedPath, { checkFiles: false })
+      ).toThrow("evidence is invalid");
+    }
+
+    const accessorEvidence = mutableEntries();
+    const evidence = ["packages/progression/src/index.test.ts"];
+    Object.defineProperty(evidence, 0, {
+      enumerable: true,
+      get: () => "packages/progression/src/index.test.ts"
+    });
+    entryAt(accessorEvidence, 0).evidence = evidence;
+    expect(() =>
+      requirePhase6AcceptanceEntries(accessorEvidence, { checkFiles: false })
+    ).toThrow("evidence is invalid");
+
+    const nonEnumerableEvidence = mutableEntries();
+    const hiddenEvidence = ["packages/progression/src/index.test.ts"];
+    Object.defineProperty(hiddenEvidence, 0, {
+      value: "packages/progression/src/index.test.ts",
+      enumerable: false
+    });
+    entryAt(nonEnumerableEvidence, 0).evidence = hiddenEvidence;
+    expect(() =>
+      requirePhase6AcceptanceEntries(nonEnumerableEvidence, {
+        checkFiles: false
+      })
+    ).toThrow("evidence is invalid");
+
+    let evidenceReads = 0;
+    const proxyEvidence = new Proxy(
+      ["packages/progression/src/index.test.ts"],
+      {
+        get: (target, property, receiver) => {
+          if (property === "0") evidenceReads += 1;
+          return Reflect.get(target, property, receiver);
+        }
+      }
+    );
+    const proxiedEvidence = mutableEntries();
+    entryAt(proxiedEvidence, 0).evidence = proxyEvidence;
+    expect(
+      requirePhase6AcceptanceEntries(proxiedEvidence, { checkFiles: false })[0]
+        ?.evidence
+    ).toEqual(["packages/progression/src/index.test.ts"]);
+    expect(evidenceReads).toBe(0);
+
+    expect(() =>
+      renderPhase6ReleaseReadinessMarkdown(phase6AcceptanceEntries, {
+        ...identity,
+        unexpected: true
+      })
+    ).toThrow("identity is invalid");
+    expect(() =>
+      renderPhase6ReleaseReadinessMarkdown(phase6AcceptanceEntries, {
+        ...identity,
+        scenarioHash: "not-a-hash"
+      })
+    ).toThrow("identity is invalid");
+    expect(() =>
+      renderPhase6ReleaseReadinessMarkdown(phase6AcceptanceEntries, {
+        ...identity,
+        scenarioId: "campaign_scenario.substituted.v1"
+      })
+    ).toThrow("scenario is not canonical");
+
+    let identityReads = 0;
+    const proxyIdentity = new Proxy(identity, {
+      get: (target, property, receiver) => {
+        if (property === "scenarioHash") identityReads += 1;
+        return Reflect.get(target, property, receiver);
+      }
+    });
+    expect(
+      renderPhase6ReleaseReadinessMarkdown(
+        phase6AcceptanceEntries,
+        proxyIdentity
+      )
+    ).toContain(identity.scenarioHash);
+    expect(identityReads).toBe(0);
+  });
+
+  it("binds evidence pins to the authoritative checksum declaration", () => {
+    const expected = "a".repeat(64);
+    const changed = "b".repeat(64);
+    const staleComment = `// stale ${expected}`;
+
+    expect(() =>
+      requirePinnedEvidenceChecksum(
+        `const checksum =\n  "${changed}";\n${staleComment}\n`,
+        expected,
+        "test"
+      )
+    ).toThrow("checksum drift is unexplained");
+    expect(() =>
+      requirePinnedEvidenceChecksum(
+        `const checksum =\n  "${expected}";\n${staleComment}\n`,
+        expected,
+        "test"
+      )
+    ).not.toThrow();
+  });
+});

@@ -10,6 +10,10 @@ import {
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { renderShuttergateCampaignReleaseCandidateMarkdown } from "../packages/runtime/dist/index.js";
+import {
+  phase6AcceptanceEntries,
+  renderPhase6ReleaseReadinessMarkdown
+} from "./release-readiness.mjs";
 
 function requiredOutput(argv) {
   const index = argv.indexOf("--out");
@@ -74,6 +78,11 @@ try {
   writeFileSync(
     join(stagingDirectory, "release-candidate.md"),
     await renderShuttergateCampaignReleaseCandidateMarkdown(report, identity),
+    { encoding: "utf8", flag: "wx" }
+  );
+  writeFileSync(
+    join(stagingDirectory, "release-readiness.md"),
+    renderPhase6ReleaseReadinessMarkdown(phase6AcceptanceEntries, identity),
     { encoding: "utf8", flag: "wx" }
   );
 
