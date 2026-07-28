@@ -240,8 +240,13 @@ function plainRecord(value) {
 
 function plainDataRecord(value, expectedFields) {
   if (!plainRecord(value)) return null;
-  const descriptors = Object.getOwnPropertyDescriptors(value);
   const keys = Reflect.ownKeys(value);
+  const descriptors = new Map();
+  for (const key of keys) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (descriptor === undefined) return null;
+    descriptors.set(key, descriptor);
+  }
   if (
     keys.length !== expectedFields.length ||
     keys.some((key) => typeof key !== "string") ||
@@ -250,7 +255,7 @@ function plainDataRecord(value, expectedFields) {
     return null;
   const result = {};
   for (const key of expectedFields) {
-    const descriptor = descriptors[key];
+    const descriptor = descriptors.get(key);
     if (
       descriptor === undefined ||
       descriptor.enumerable !== true ||
@@ -265,9 +270,14 @@ function plainDataRecord(value, expectedFields) {
 function plainDataArray(value) {
   if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype)
     return null;
-  const descriptors = Object.getOwnPropertyDescriptors(value);
   const keys = Reflect.ownKeys(value);
-  const lengthDescriptor = descriptors.length;
+  const descriptors = new Map();
+  for (const key of keys) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (descriptor === undefined) return null;
+    descriptors.set(key, descriptor);
+  }
+  const lengthDescriptor = descriptors.get("length");
   if (
     lengthDescriptor === undefined ||
     !Object.hasOwn(lengthDescriptor, "value") ||
@@ -280,8 +290,12 @@ function plainDataArray(value) {
     return null;
   const result = [];
   for (let index = 0; index < lengthDescriptor.value; index += 1) {
-    const descriptor = descriptors[String(index)];
-    if (descriptor === undefined || !Object.hasOwn(descriptor, "value"))
+    const descriptor = descriptors.get(String(index));
+    if (
+      descriptor === undefined ||
+      descriptor.enumerable !== true ||
+      !Object.hasOwn(descriptor, "value")
+    )
       return null;
     result.push(descriptor.value);
   }
@@ -300,7 +314,10 @@ function readAcceptanceCriteria() {
     ?.split("\n")
     .filter((line) => line.startsWith("- "))
     .map((line) => line.slice(2));
-  if (criteria?.length !== expectedIds.length)
+  if (
+    criteria?.length !== expectedIds.length ||
+    criteria.some((criterion) => /[|<>`\r\n]/.test(criterion))
+  )
     throw new TypeError("Phase 6 source acceptance criteria are incomplete");
   return criteria;
 }

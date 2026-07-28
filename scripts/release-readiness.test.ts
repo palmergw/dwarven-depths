@@ -76,7 +76,12 @@ describe("Phase 6 release readiness", () => {
     ).toThrow("incomplete");
 
     let collectionReads = 0;
+    let collectionOwnKeysReads = 0;
     const proxyCollection = new Proxy(mutableEntries(), {
+      ownKeys: (target) => {
+        collectionOwnKeysReads += 1;
+        return Reflect.ownKeys(target);
+      },
       get: (target, property, receiver) => {
         if (property === "0") collectionReads += 1;
         return Reflect.get(target, property, receiver);
@@ -86,6 +91,18 @@ describe("Phase 6 release readiness", () => {
       requirePhase6AcceptanceEntries(proxyCollection, { checkFiles: false })
     ).toHaveLength(18);
     expect(collectionReads).toBe(0);
+    expect(collectionOwnKeysReads).toBe(1);
+
+    const nonEnumerableCollection = mutableEntries();
+    Object.defineProperty(nonEnumerableCollection, 0, {
+      value: entryAt(nonEnumerableCollection, 0),
+      enumerable: false
+    });
+    expect(() =>
+      requirePhase6AcceptanceEntries(nonEnumerableCollection, {
+        checkFiles: false
+      })
+    ).toThrow("incomplete");
 
     const reordered = mutableEntries().reverse();
     expect(() =>
@@ -212,6 +229,19 @@ describe("Phase 6 release readiness", () => {
     entryAt(accessorEvidence, 0).evidence = evidence;
     expect(() =>
       requirePhase6AcceptanceEntries(accessorEvidence, { checkFiles: false })
+    ).toThrow("evidence is invalid");
+
+    const nonEnumerableEvidence = mutableEntries();
+    const hiddenEvidence = ["packages/progression/src/index.test.ts"];
+    Object.defineProperty(hiddenEvidence, 0, {
+      value: "packages/progression/src/index.test.ts",
+      enumerable: false
+    });
+    entryAt(nonEnumerableEvidence, 0).evidence = hiddenEvidence;
+    expect(() =>
+      requirePhase6AcceptanceEntries(nonEnumerableEvidence, {
+        checkFiles: false
+      })
     ).toThrow("evidence is invalid");
 
     let evidenceReads = 0;
