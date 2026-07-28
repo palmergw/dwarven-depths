@@ -95,13 +95,17 @@ try {
   await page.evaluate(() => navigator.serviceWorker.ready);
 
   await context.setOffline(true);
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.goto(`http://127.0.0.1:${address.port}/checkpoint`, {
+    waitUntil: "domcontentloaded"
+  });
   await page.getByRole("heading", { name: "Dwarven Depths" }).waitFor();
   assert.equal(
     await page.evaluate(() => navigator.serviceWorker.controller !== null),
     true,
-    "offline reload is controlled by the installed service worker"
+    "offline routed navigation is controlled by the installed service worker"
   );
+  await page.getByRole("button", { name: "Begin preparation" }).click();
+  await page.getByRole("button", { name: "Confirm preparation" }).waitFor();
 } finally {
   await context.setOffline(false);
   await context.close();
@@ -112,5 +116,5 @@ try {
 }
 
 console.log(
-  `Verified ${precacheUrls.length} precached assets and a Chromium offline reload.`
+  `Verified ${precacheUrls.length} precached assets and a playable Chromium offline navigation.`
 );
