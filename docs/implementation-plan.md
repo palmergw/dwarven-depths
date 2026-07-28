@@ -142,6 +142,8 @@ After the web slice is accepted:
 - Validate storage, background suspension, touch interactions, safe areas, performance, and report export
 - Do not fork simulation or progression logic by platform
 
+The implemented evaluation boundary, target matrix, and finite support decision are recorded in `phase-7.md`.
+
 ## Quality gates
 
 ### Every pull request
