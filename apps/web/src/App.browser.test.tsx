@@ -1883,7 +1883,7 @@ describe("authoritative web worker", () => {
     );
   });
 
-  it("pauses on focus loss and never resumes on focus restoration", async () => {
+  it("pauses on focus loss or background suspension and never auto-resumes", async () => {
     const container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
@@ -1927,5 +1927,16 @@ describe("authoritative web worker", () => {
     );
     expect(pausedButton).toBeInstanceOf(HTMLButtonElement);
     expect(pausedButton?.getAttribute("aria-pressed")).toBe("true");
+
+    pausedButton?.click();
+    const documentHidden = vi
+      .spyOn(document, "hidden", "get")
+      .mockReturnValue(true);
+    document.dispatchEvent(new Event("visibilitychange"));
+    documentHidden.mockReturnValue(false);
+    document.dispatchEvent(new Event("visibilitychange"));
+    await vi.waitFor(() =>
+      expect(pausedButton?.getAttribute("aria-pressed")).toBe("true")
+    );
   });
 });

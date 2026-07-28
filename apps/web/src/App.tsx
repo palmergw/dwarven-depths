@@ -835,15 +835,22 @@ export function App({
       event.preventDefault();
       setManualPause(!(manualPauseRequestedRef.current ?? view.manualPaused));
     };
-    const onBlur = () => {
+    const onBackground = () => {
       if (view.phase === "running" && manualPauseRequestedRef.current === false)
         setManualPause(true);
     };
+    const onVisibilityChange = () => {
+      if (document.hidden) onBackground();
+    };
     window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("blur", onBlur);
+    window.addEventListener("blur", onBackground);
+    window.addEventListener("pagehide", onBackground);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("blur", onBackground);
+      window.removeEventListener("pagehide", onBackground);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [view, setManualPause]);
 

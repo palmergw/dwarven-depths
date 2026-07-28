@@ -171,7 +171,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     validateMobilePackageAt();
     process.stdout.write(
-      `${JSON.stringify({ ok: true, target: "android-debug-apk", authority: "web-worker", nativePermissions: [] })}\n`
+      `${JSON.stringify({ ok: true, target: "android-debug-apk", authority: "web-worker", sourceManifestPermissions: [] })}\n`
     );
   } catch (error) {
     process.stderr.write(
