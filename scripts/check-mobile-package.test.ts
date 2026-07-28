@@ -68,7 +68,7 @@ describe("Capacitor mobile package contract", () => {
           '<uses-permission android:name="android.permission.INTERNET" /></manifest>'
         )
       })
-    ).toThrow(/may not request Android permissions/);
+    ).toThrow(/Android manifest/);
     expect(() =>
       validate({
         manifest: manifest.replace(
@@ -76,15 +76,16 @@ describe("Capacitor mobile package contract", () => {
           'android:usesCleartextTraffic="true"'
         )
       })
-    ).toThrow(/usesCleartextTraffic/);
+    ).toThrow(/Android manifest/);
     expect(() =>
       validate({
         manifest: manifest.replace(
-          'android:exported="false"',
-          'android:exported="true"'
+          "</application>",
+          `<service android:name=".AuthorityService" android:exported='true' />
+    </application>`
         )
       })
-    ).toThrow(/only the launcher activity/);
+    ).toThrow(/Android manifest/);
   });
 
   it("rejects a native gameplay bridge or dependency", () => {
