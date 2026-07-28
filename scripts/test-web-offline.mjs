@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, extname, relative, resolve, sep } from "node:path";
@@ -41,6 +42,19 @@ assert.deepEqual(
   precacheUrls,
   expectedUrls,
   "every generated shell asset is precached"
+);
+const versionHash = createHash("sha256");
+for (const url of expectedUrls) {
+  versionHash.update(url);
+  versionHash.update("\0");
+  versionHash.update(await readFile(resolve(distDirectory, `.${url}`)));
+  versionHash.update("\0");
+}
+const expectedCacheName = `dwarven-depths-shell-${versionHash.digest("hex").slice(0, 16)}`;
+assert.match(
+  serviceWorker,
+  new RegExp(`const CACHE_NAME = ${JSON.stringify(expectedCacheName)}`),
+  "the cache version is bound to the ordered shell URLs and bytes"
 );
 assert.ok(
   precacheUrls.some((url) =>
@@ -95,13 +109,17 @@ try {
   await page.evaluate(() => navigator.serviceWorker.ready);
 
   await context.setOffline(true);
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.goto(`http://127.0.0.1:${address.port}/checkpoint`, {
+    waitUntil: "domcontentloaded"
+  });
   await page.getByRole("heading", { name: "Dwarven Depths" }).waitFor();
   assert.equal(
     await page.evaluate(() => navigator.serviceWorker.controller !== null),
     true,
-    "offline reload is controlled by the installed service worker"
+    "offline routed navigation is controlled by the installed service worker"
   );
+  await page.getByRole("button", { name: "Begin preparation" }).click();
+  await page.getByRole("button", { name: "Confirm preparation" }).waitFor();
 } finally {
   await context.setOffline(false);
   await context.close();
@@ -112,5 +130,5 @@ try {
 }
 
 console.log(
-  `Verified ${precacheUrls.length} precached assets and a Chromium offline reload.`
+  `Verified ${precacheUrls.length} precached assets and a playable Chromium offline navigation.`
 );
