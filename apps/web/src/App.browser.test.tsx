@@ -461,6 +461,30 @@ describe("run journey guidance", () => {
     );
     const journey = document.querySelector<HTMLElement>(".run-journey");
     expect(journey?.scrollWidth).toBeLessThanOrEqual(journey?.clientWidth ?? 0);
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+      window.innerWidth
+    );
+    const main = document.querySelector("main");
+    expect(main).toHaveAttribute("aria-labelledby", "app-heading");
+    expect(document.querySelectorAll("h1")).toHaveLength(1);
+    expect(document.querySelector("#app-heading")).toHaveTextContent(
+      "Dwarven Depths"
+    );
+    for (const control of document.querySelectorAll<HTMLElement>(
+      "button:not(:disabled), input:not(:disabled), select:not(:disabled)"
+    )) {
+      const labelledBy = control.getAttribute("aria-labelledby");
+      const label =
+        control.getAttribute("aria-label") ??
+        (labelledBy === null
+          ? undefined
+          : document.getElementById(labelledBy)?.textContent) ??
+        (control instanceof HTMLInputElement ||
+        control instanceof HTMLSelectElement
+          ? control.labels?.[0]?.textContent
+          : control.textContent);
+      expect(label?.trim(), control.outerHTML).not.toBe("");
+    }
   });
 });
 
