@@ -10,7 +10,7 @@ await access(binary);
 const driver = spawn(
   "tauri-driver",
   ["--native-driver", "/usr/bin/WebKitWebDriver"],
-  { stdio: ["ignore", "pipe", "pipe"] }
+  { detached: true, stdio: ["ignore", "pipe", "pipe"] }
 );
 let driverOutput = "";
 driver.stdout.on("data", (chunk) => {
@@ -23,9 +23,14 @@ driver.stderr.on("data", (chunk) => {
 const endpoint = "http://127.0.0.1:4444";
 let sessionId;
 
+function progress(step) {
+  process.stderr.write(`[desktop-smoke] ${step}\n`);
+}
+
 async function request(path, init = {}) {
   const response = await fetch(`${endpoint}${path}`, {
     ...init,
+    signal: AbortSignal.timeout(2_000),
     headers: { "content-type": "application/json", ...init.headers }
   });
   const body = await response.json();
@@ -36,7 +41,7 @@ async function request(path, init = {}) {
 }
 
 async function waitForDriver() {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
     try {
       await request("/status");
       return;
@@ -55,8 +60,30 @@ async function find(selector) {
   return value["element-6066-11e4-a52e-4f735466cecf"];
 }
 
+async function waitForElement(selector) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    try {
+      return await find(selector);
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+  throw new Error(`element did not reach ${selector}`);
+}
+
+async function findButtonByText(text) {
+  const value = await request(`/session/${sessionId}/element`, {
+    method: "POST",
+    body: JSON.stringify({
+      using: "xpath",
+      value: `//main//button[contains(normalize-space(.), ${JSON.stringify(text)})]`
+    })
+  });
+  return value["element-6066-11e4-a52e-4f735466cecf"];
+}
+
 async function waitForText(selector, expected) {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
     try {
       const element = await find(selector);
       const text = await request(
@@ -71,8 +98,38 @@ async function waitForText(selector, expected) {
   throw new Error(`${selector} did not reach ${expected}`);
 }
 
+async function waitForButton(text) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    try {
+      return await findButtonByText(text);
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+  throw new Error(`button did not reach ${text}`);
+}
+
+async function waitForCombatControl() {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    try {
+      const element = await findButtonByText("combat");
+      const text = await request(
+        `/session/${sessionId}/element/${element}/text`
+      );
+      if (text === "Pause combat" || text === "Resume combat") {
+        return { element, text };
+      }
+    } catch {
+      // The worker can replace preparation with the running view between calls.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error("combat controls did not become ready");
+}
+
 try {
   await waitForDriver();
+  progress("driver ready");
   const session = await request("/session", {
     method: "POST",
     body: JSON.stringify({
@@ -82,10 +139,11 @@ try {
     })
   });
   sessionId = session.sessionId;
+  progress("session ready");
 
-  const main = await find("main");
-  const heading = await find("main h1");
-  const checkpointAction = await find("main button");
+  const main = await waitForElement("main");
+  const heading = await waitForElement("main h1");
+  const checkpointAction = await waitForButton("Begin preparation");
   const [headingText, checkpointText] = await Promise.all([
     request(`/session/${sessionId}/element/${heading}/text`),
     request(`/session/${sessionId}/element/${checkpointAction}/text`)
@@ -96,18 +154,41 @@ try {
   if (!checkpointText.includes("Begin preparation")) {
     throw new Error(`checkpoint action not ready: ${checkpointText}`);
   }
+  progress("checkpoint ready");
   await request(`/session/${sessionId}/element/${checkpointAction}/click`, {
     method: "POST",
     body: "{}"
   });
   const preparation = await waitForText("main button", "Confirm preparation");
+  progress("worker preparation ready");
+  await request(`/session/${sessionId}/element/${preparation.element}/click`, {
+    method: "POST",
+    body: "{}"
+  });
+  const combatControl = await waitForCombatControl();
+  progress("combat running");
+  const backgroundPauseTrigger =
+    combatControl.text === "Resume combat" ? "webdriver-focus" : "minimize";
+  const resumeAction =
+    combatControl.text === "Resume combat"
+      ? combatControl.element
+      : await (async () => {
+          await request(`/session/${sessionId}/window/minimize`, {
+            method: "POST",
+            body: "{}"
+          });
+          return waitForButton("Resume combat");
+        })();
+  progress("background pause observed");
   process.stdout.write(
     `${JSON.stringify({
       ok: true,
       mainLandmark: main !== undefined,
       heading: headingText,
       checkpointAction: checkpointText,
-      workerBackedPreparation: preparation.text
+      workerBackedPreparation: preparation.text,
+      backgroundPause: resumeAction !== undefined,
+      backgroundPauseTrigger
     })}\n`
   );
 } finally {
@@ -116,5 +197,14 @@ try {
       () => {}
     );
   }
-  driver.kill("SIGTERM");
+  if (driver.pid !== undefined) {
+    try {
+      process.kill(-driver.pid, "SIGTERM");
+    } catch (error) {
+      if (error?.code !== "ESRCH") {
+        process.stderr.write(`failed to stop tauri-driver: ${String(error)}\n`);
+        process.exitCode = 1;
+      }
+    }
+  }
 }
