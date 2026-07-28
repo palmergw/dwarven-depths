@@ -140,6 +140,10 @@ const contrastPreferenceStorageKey =
   "dwarven-depths.presentation.contrast-preference.v1";
 const contrastPreferences = ["standard", "high"] as const;
 type ContrastPreference = (typeof contrastPreferences)[number];
+const soundPreferenceStorageKey =
+  "dwarven-depths.presentation.sound-preference.v1";
+const soundPreferences = ["off", "on"] as const;
+type SoundPreference = (typeof soundPreferences)[number];
 
 const panelFocusableSelector =
   'button:not([disabled]), select:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
@@ -313,6 +317,35 @@ function storeContrastPreference(preference: ContrastPreference): void {
   }
 }
 
+function isSoundPreference(value: unknown): value is SoundPreference {
+  return soundPreferences.some((preference) => preference === value);
+}
+
+function readSoundPreference(): SoundPreference {
+  try {
+    const stored = window.localStorage.getItem(soundPreferenceStorageKey);
+    return isSoundPreference(stored) ? stored : "off";
+  } catch {
+    return "off";
+  }
+}
+
+function storeSoundPreference(preference: SoundPreference): void {
+  try {
+    window.localStorage.setItem(soundPreferenceStorageKey, preference);
+  } catch {
+    // The in-memory presentation preference remains usable without storage.
+  }
+}
+
+function readsReducedMotion(): boolean {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
+}
+
 function createSimulationWorker(): Worker {
   return new Worker(new URL("./simulation.worker.ts", import.meta.url), {
     type: "module"
@@ -349,6 +382,10 @@ export function App({
   const [textScale, setTextScale] = useState<TextScale>(readTextScale);
   const [contrastPreference, setContrastPreference] =
     useState<ContrastPreference>(readContrastPreference);
+  const [soundPreference, setSoundPreference] =
+    useState<SoundPreference>(readSoundPreference);
+  const [deviceReducedMotion, setDeviceReducedMotion] =
+    useState(readsReducedMotion);
   const workerRef = useRef<Worker | undefined>(undefined);
   const profileStoreRef = useRef<CheckpointProfileStore | undefined>(undefined);
   const upgradePurchasePendingRef = useRef(false);
@@ -387,6 +424,19 @@ export function App({
     },
     []
   );
+
+  useEffect(() => {
+    let query: MediaQueryList;
+    try {
+      query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    } catch {
+      return;
+    }
+    const update = (event: MediaQueryListEvent): void =>
+      setDeviceReducedMotion(event.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -921,6 +971,7 @@ export function App({
     <main
       data-contrast-preference={contrastPreference}
       data-motion-preference={motionPreference}
+      data-sound-preference={soundPreference}
       data-text-scale={textScale}
     >
       <p className="eyebrow">Authoritative checkpoint</p>
@@ -980,7 +1031,14 @@ export function App({
             </>
           )}
         {renderSnapshot !== undefined && (
-          <Battlefield snapshot={renderSnapshot} />
+          <Battlefield
+            snapshot={renderSnapshot}
+            reduceMotion={
+              motionPreference === "reduce" ||
+              (motionPreference === "device" && deviceReducedMotion)
+            }
+            soundEnabled={soundPreference === "on"}
+          />
         )}
         {renderSnapshot !== undefined &&
           (renderSnapshot.phase === "running" ||
@@ -1106,9 +1164,23 @@ export function App({
               <option value="standard">Standard</option>
               <option value="high">High contrast</option>
             </select>
+            <label htmlFor="sound-preference">Sound effects</label>
+            <select
+              id="sound-preference"
+              value={soundPreference}
+              onChange={(event) => {
+                const preference = event.currentTarget.value;
+                if (!isSoundPreference(preference)) return;
+                setSoundPreference(preference);
+                storeSoundPreference(preference);
+              }}
+            >
+              <option value="off">Off</option>
+              <option value="on">On</option>
+            </select>
             <p className="settings-help">
-              This preference affects presentation only and never changes the
-              authoritative simulation.
+              These preferences affect presentation only and never change the
+              authoritative simulation. Sound is off until you opt in.
             </p>
             <button type="button" onClick={() => setSettingsOpen(false)}>
               Close settings

@@ -107,11 +107,16 @@ h2 {
 }
 .battlefield-canvas canvas {
   display: block;
+  image-rendering: pixelated;
 }
 .battlefield figcaption {
   margin-top: 0.5rem;
   color: #c5b695;
   font-size: 0.9em;
+}
+.combat-feedback {
+  color: #f0c66f;
+  font-weight: 700;
 }
 .status {
   min-height: 3rem;
@@ -341,6 +346,7 @@ main[data-contrast-preference="high"] .battlefield figcaption,
 main[data-contrast-preference="high"] .status,
 main[data-contrast-preference="high"] .settings-help,
 main[data-contrast-preference="high"] .run-journey-step-state,
+main[data-contrast-preference="high"] .combat-feedback,
 main[data-contrast-preference="high"] .control-entity-id,
 main[data-contrast-preference="high"] dt,
 main[data-contrast-preference="high"] code {
