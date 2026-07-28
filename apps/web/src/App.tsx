@@ -969,13 +969,14 @@ export function App({
 
   return (
     <main
+      aria-labelledby="app-heading"
       data-contrast-preference={contrastPreference}
       data-motion-preference={motionPreference}
       data-sound-preference={soundPreference}
       data-text-scale={textScale}
     >
       <p className="eyebrow">Authoritative checkpoint</p>
-      <h1>Dwarven Depths</h1>
+      <h1 id="app-heading">Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
         <h2 id="run-heading">Empty Level Conformance Run</h2>
         <RunJourneyGuide phase={view.phase} />

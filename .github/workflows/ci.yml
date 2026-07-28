@@ -28,6 +28,7 @@ jobs:
       - run: pnpm check:artifacts
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm check:web-budgets
       - run: pnpm validate
       - run: pnpm verify:scenario
       - run: pnpm report:release-candidate
