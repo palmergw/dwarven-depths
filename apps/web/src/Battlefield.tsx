@@ -1,5 +1,11 @@
 import Phaser from "phaser";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  type CombatFeedback,
+  type CombatSoundPlayer,
+  createCombatSoundPlayer,
+  deriveCombatFeedback
+} from "./combat-feedback.js";
 import {
   compareRenderIds,
   type RenderEntity,
@@ -70,7 +76,54 @@ export function buildBattlefieldPrimitives(
   };
 }
 
-function drawBattlefield(scene: Phaser.Scene, snapshot: RenderSnapshot): void {
+function drawEntity(
+  graphics: Phaser.GameObjects.Graphics,
+  entity: RenderPrimitive & { readonly faction: RenderEntity["faction"] }
+): void {
+  const colors = { dwarf: 0xe6b85c, enemy: 0xd85b50, deployable: 0x67b6d4 };
+  graphics.fillStyle(colors[entity.faction], 1);
+  if (entity.faction === "dwarf") {
+    graphics.fillPoints(
+      [
+        new Phaser.Math.Vector2(entity.x - 14, entity.y - 12),
+        new Phaser.Math.Vector2(entity.x + 14, entity.y - 12),
+        new Phaser.Math.Vector2(entity.x + 11, entity.y + 7),
+        new Phaser.Math.Vector2(entity.x, entity.y + 17),
+        new Phaser.Math.Vector2(entity.x - 11, entity.y + 7)
+      ],
+      true
+    );
+    graphics.fillStyle(0x17130f, 1);
+    graphics.fillRect(entity.x - 2, entity.y - 8, 4, 17);
+    graphics.fillRect(entity.x - 7, entity.y - 3, 14, 4);
+  } else if (entity.faction === "enemy") {
+    graphics.fillPoints(
+      [
+        new Phaser.Math.Vector2(entity.x, entity.y - 17),
+        new Phaser.Math.Vector2(entity.x + 16, entity.y),
+        new Phaser.Math.Vector2(entity.x, entity.y + 17),
+        new Phaser.Math.Vector2(entity.x - 16, entity.y)
+      ],
+      true
+    );
+    graphics.fillStyle(0x17130f, 1);
+    graphics.fillRect(entity.x - 8, entity.y - 3, 5, 5);
+    graphics.fillRect(entity.x + 3, entity.y - 3, 5, 5);
+  } else {
+    graphics.fillRect(entity.x - 14, entity.y - 14, 28, 28);
+    graphics.fillStyle(0x17130f, 1);
+    graphics.fillRect(entity.x - 8, entity.y - 8, 16, 16);
+    graphics.fillStyle(colors.deployable, 1);
+    graphics.fillRect(entity.x - 3, entity.y - 3, 6, 6);
+  }
+}
+
+function drawBattlefield(
+  scene: Phaser.Scene,
+  snapshot: RenderSnapshot,
+  feedback: CombatFeedback | undefined,
+  reduceMotion: boolean
+): void {
   scene.children.removeAll();
   const graphics = scene.add.graphics();
   graphics.fillStyle(0x17130f, 1);
@@ -80,30 +133,54 @@ function drawBattlefield(scene: Phaser.Scene, snapshot: RenderSnapshot): void {
 
   const primitives = buildBattlefieldPrimitives(snapshot);
   const nodes = new Map(primitives.nodes.map((node) => [node.id, node]));
-  graphics.lineStyle(4, 0x80683f, 1);
+  graphics.lineStyle(7, 0x3e3327, 1);
   for (const connection of primitives.connections) {
     const from = nodes.get(connection.fromId);
     const to = nodes.get(connection.toId);
     if (from !== undefined && to !== undefined)
       graphics.lineBetween(from.x, from.y, to.x, to.y);
   }
-  graphics.fillStyle(0xc5b695, 1);
-  for (const node of primitives.nodes) graphics.fillCircle(node.x, node.y, 7);
+  graphics.lineStyle(3, 0xb18a4f, 1);
+  for (const connection of primitives.connections) {
+    const from = nodes.get(connection.fromId);
+    const to = nodes.get(connection.toId);
+    if (from !== undefined && to !== undefined)
+      graphics.lineBetween(from.x, from.y, to.x, to.y);
+  }
+  graphics.fillStyle(0xd6c8a8, 1);
+  for (const node of primitives.nodes)
+    graphics.fillRect(node.x - 6, node.y - 6, 12, 12);
 
-  const colors = { dwarf: 0xe6b85c, enemy: 0xb94b42, deployable: 0x67a1b8 };
-  const labels = { dwarf: "D", enemy: "E", deployable: "P" };
   for (const entity of primitives.entities) {
     if (entity.faction === undefined) continue;
-    graphics.fillStyle(colors[entity.faction], 1);
-    graphics.fillCircle(entity.x, entity.y, 15);
-    scene.add
-      .text(entity.x, entity.y, labels[entity.faction], {
-        color: "#17130f",
-        fontFamily: "sans-serif",
-        fontSize: "16px",
-        fontStyle: "bold"
-      })
-      .setOrigin(0.5);
+    drawEntity(graphics, { ...entity, faction: entity.faction });
+  }
+
+  if (feedback !== undefined) {
+    const transient = scene.add.graphics();
+    transient.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 1);
+    const changedIds = new Set([
+      ...feedback.arrivals.map((entity) => entity.id),
+      ...feedback.departures.map((entity) => entity.id)
+    ]);
+    for (const entity of primitives.entities)
+      if (changedIds.has(entity.id))
+        transient.strokeRect(entity.x - 21, entity.y - 21, 42, 42);
+    for (const entity of feedback.departures) {
+      const position = nodes.get(entity.nodeId);
+      if (position !== undefined)
+        transient.strokeRect(position.x - 19, position.y - 19, 38, 38);
+    }
+    if (feedback.terminal)
+      transient.strokeRect(22, 22, WIDTH - 44, HEIGHT - 44);
+    if (!reduceMotion)
+      scene.tweens.add({
+        targets: transient,
+        alpha: 0.2,
+        duration: 450,
+        yoyo: true,
+        repeat: 1
+      });
   }
 
   if (primitives.nodes.length === 0) {
@@ -129,15 +206,23 @@ function drawBattlefield(scene: Phaser.Scene, snapshot: RenderSnapshot): void {
 }
 
 interface BattlefieldRenderer {
-  update(snapshot: RenderSnapshot): void;
+  update(
+    snapshot: RenderSnapshot,
+    feedback: CombatFeedback | undefined,
+    reduceMotion: boolean
+  ): void;
   destroy(): void;
 }
 
 function createBattlefieldRenderer(
   parent: HTMLElement,
-  initialSnapshot: RenderSnapshot
+  initialSnapshot: RenderSnapshot,
+  initialFeedback: CombatFeedback | undefined,
+  initialReduceMotion: boolean
 ): BattlefieldRenderer {
   let snapshot = initialSnapshot;
+  let feedback = initialFeedback;
+  let reduceMotion = initialReduceMotion;
   let scene: Phaser.Scene | undefined;
   const game = new Phaser.Game({
     type: Phaser.CANVAS,
@@ -152,14 +237,17 @@ function createBattlefieldRenderer(
     scene: {
       create(this: Phaser.Scene) {
         scene = this;
-        drawBattlefield(this, snapshot);
+        drawBattlefield(this, snapshot, feedback, reduceMotion);
       }
     }
   });
   return {
-    update(nextSnapshot) {
+    update(nextSnapshot, nextFeedback, nextReduceMotion) {
       snapshot = nextSnapshot;
-      if (scene !== undefined) drawBattlefield(scene, snapshot);
+      feedback = nextFeedback;
+      reduceMotion = nextReduceMotion;
+      if (scene !== undefined)
+        drawBattlefield(scene, snapshot, feedback, reduceMotion);
     },
     destroy() {
       scene = undefined;
@@ -170,21 +258,50 @@ function createBattlefieldRenderer(
 }
 
 export function Battlefield({
-  snapshot
+  snapshot,
+  reduceMotion,
+  soundEnabled
 }: {
   readonly snapshot: RenderSnapshot;
+  readonly reduceMotion: boolean;
+  readonly soundEnabled: boolean;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<BattlefieldRenderer | undefined>(undefined);
   const latestSnapshotRef = useRef(snapshot);
+  const latestFeedbackRef = useRef<CombatFeedback | undefined>(undefined);
+  const latestReduceMotionRef = useRef(reduceMotion);
+  const previousSnapshotRef = useRef<RenderSnapshot | undefined>(undefined);
+  const soundPlayerRef = useRef<CombatSoundPlayer | undefined>(undefined);
+  const [feedback, setFeedback] = useState<CombatFeedback | undefined>();
   latestSnapshotRef.current = snapshot;
+  latestReduceMotionRef.current = reduceMotion;
+
+  useEffect(() => {
+    if (!soundEnabled) {
+      soundPlayerRef.current?.close();
+      soundPlayerRef.current = undefined;
+      return;
+    }
+    const player = createCombatSoundPlayer();
+    soundPlayerRef.current = player;
+    return () => {
+      player.close();
+      if (soundPlayerRef.current === player) soundPlayerRef.current = undefined;
+    };
+  }, [soundEnabled]);
 
   useEffect(() => {
     const parent = parentRef.current;
     if (parent === null) return;
     let renderer: BattlefieldRenderer | undefined;
     const frame = requestAnimationFrame(() => {
-      renderer = createBattlefieldRenderer(parent, latestSnapshotRef.current);
+      renderer = createBattlefieldRenderer(
+        parent,
+        latestSnapshotRef.current,
+        latestFeedbackRef.current,
+        latestReduceMotionRef.current
+      );
       rendererRef.current = renderer;
     });
     return () => {
@@ -194,15 +311,35 @@ export function Battlefield({
     };
   }, []);
 
-  useEffect(() => rendererRef.current?.update(snapshot), [snapshot]);
+  useEffect(() => {
+    const nextFeedback = deriveCombatFeedback(
+      previousSnapshotRef.current,
+      snapshot
+    );
+    previousSnapshotRef.current = snapshot;
+    latestFeedbackRef.current = nextFeedback;
+    setFeedback(nextFeedback);
+    rendererRef.current?.update(snapshot, nextFeedback, reduceMotion);
+    if (nextFeedback !== undefined) soundPlayerRef.current?.play(nextFeedback);
+  }, [reduceMotion, snapshot]);
 
   return (
     <figure className="battlefield">
       <div ref={parentRef} className="battlefield-canvas" aria-hidden="true" />
-      <figcaption>
+      <figcaption aria-live="off">
         Battlefield {snapshot.levelId}: {snapshot.phase} at tick {snapshot.tick}
         ; {snapshot.entities.length}{" "}
         {snapshot.entities.length === 1 ? "entity" : "entities"}.
+        {feedback !== undefined && (
+          <span
+            className="combat-feedback"
+            data-motion={reduceMotion ? "static" : "animated"}
+            data-tick={feedback.tick}
+          >
+            {" "}
+            {feedback.summary}
+          </span>
+        )}
       </figcaption>
     </figure>
   );

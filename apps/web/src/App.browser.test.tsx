@@ -26,6 +26,8 @@ const motionPreferenceStorageKey =
 const textScaleStorageKey = "dwarven-depths.presentation.text-scale.v1";
 const contrastPreferenceStorageKey =
   "dwarven-depths.presentation.contrast-preference.v1";
+const soundPreferenceStorageKey =
+  "dwarven-depths.presentation.sound-preference.v1";
 
 let root: Root | undefined;
 afterEach(async () => {
@@ -35,6 +37,7 @@ afterEach(async () => {
   window.localStorage.removeItem(motionPreferenceStorageKey);
   window.localStorage.removeItem(textScaleStorageKey);
   window.localStorage.removeItem(contrastPreferenceStorageKey);
+  window.localStorage.removeItem(soundPreferenceStorageKey);
   vi.restoreAllMocks();
   await page.viewport(1280, 720);
 });
@@ -313,6 +316,13 @@ function appliedContrastPreference(): string | null {
   );
 }
 
+function appliedSoundPreference(): string | null {
+  return (
+    document.querySelector("main")?.getAttribute("data-sound-preference") ??
+    null
+  );
+}
+
 function journeyStepStates(): string[] {
   return Array.from(
     document.querySelectorAll<HTMLElement>(".run-journey-step")
@@ -519,6 +529,39 @@ describe("presentation settings", () => {
     });
     renderApp();
     await vi.waitFor(() => expect(appliedMotionPreference()).toBe("device"));
+  });
+
+  it("keeps sound opt-in, keyboard selectable, and persistent", async () => {
+    renderApp();
+    await vi.waitFor(() => expect(appliedSoundPreference()).toBe("off"));
+    await userEvent.click(await buttonWithText("Settings"));
+    const select = document.querySelector("#sound-preference");
+    expect(select).toBeInstanceOf(HTMLSelectElement);
+    (select as HTMLSelectElement).focus();
+    await userEvent.keyboard("{ArrowDown}");
+    await vi.waitFor(() => expect(appliedSoundPreference()).toBe("on"));
+    expect(window.localStorage.getItem(soundPreferenceStorageKey)).toBe("on");
+
+    root?.unmount();
+    root = undefined;
+    document.body.replaceChildren();
+    renderApp();
+    await vi.waitFor(() => expect(appliedSoundPreference()).toBe("on"));
+  });
+
+  it("falls back to sound off for malformed or unavailable storage", async () => {
+    window.localStorage.setItem(soundPreferenceStorageKey, "unexpected");
+    renderApp();
+    await vi.waitFor(() => expect(appliedSoundPreference()).toBe("off"));
+
+    root?.unmount();
+    root = undefined;
+    document.body.replaceChildren();
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+    renderApp();
+    await vi.waitFor(() => expect(appliedSoundPreference()).toBe("off"));
   });
 
   it("applies a keyboard-selected text scale", async () => {

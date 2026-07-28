@@ -14,12 +14,14 @@ CI regenerates that authoritative three-attempt campaign as the `phase-6-release
 
 The web client presents one phase-aware run journey from checkpoint review through preparation, combat, and terminal evidence. It explains the existing pause controls and focus-loss pause, marks current and completed steps without duplicating live announcements, and adapts the final guidance to authoritative failure. This onboarding is presentation-only and derives its state from the existing client phase.
 
+The battlefield renders routes and factions with a bounded pixel-art shape language, and validated render-snapshot transitions drive stable-ID-ordered visual, textual, and opt-in synthesized sound feedback. Initial mounts, replayed snapshots, and phase regressions produce no feedback. Reduced-motion preferences preserve static transition framing and text while suppressing animation; blocked audio and storage fail soft without changing worker authority. Manual review covers 320 px and desktop layouts in standard and high contrast; faction meaning remains shape-independent from color, feedback text wraps without overflow, and the canvas remains legible with motion reduced.
+
 Observed calibration evidence and balance recommendations remain separate. Satisfying the matrix proves that the approved combinations remain inside broad evidence ranges and that the first persistent upgrade extends survival for each placement/policy pair. It does not claim equal strategy strength, victory balance, or recommend future tuning.
 
 ## Explicitly not implemented
 
 - Level 1 mechanics or content-statistic tuning beyond the approved evidence ranges;
-- a reference human replay, audio or artwork polish, or performance/accessibility budgets;
+- a reference human replay or performance/accessibility budgets;
 - telemetry categories that the current authoritative attempt does not produce, including aggregate basic-attack damage, healing, blocking time, and player-entered command timing; these are not inferred;
 - a terminating Phase 5 web encounter or terminal client/CLI parity;
 - new mechanics, report/replay formats, minimization schemas, or divergence classes.
