@@ -180,6 +180,80 @@ class ControlledFailureWorker {
   }
 }
 
+class ControlledJourneyWorker {
+  readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
+  terminated = false;
+
+  addEventListener(
+    type: string,
+    listener: (event: MessageEvent<unknown>) => void
+  ): void {
+    if (type === "message") this.listeners.add(listener);
+  }
+
+  postMessage(message: unknown): void {
+    if (typeof message !== "object" || message === null) return;
+    const candidate = message as {
+      readonly type?: string;
+      readonly command?: { readonly type?: string; readonly paused?: boolean };
+    };
+    if (candidate.type === "initialize") {
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "preparation",
+        levelId: "level.shuttergate_hall",
+        deployableEntityCount: 0,
+        placementPointCount: 2
+      });
+    } else if (candidate.command?.type === "confirmPreparation") {
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: false,
+        resumeRequestId: "guided-run"
+      });
+    } else if (candidate.command?.type === "setManualPause") {
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: candidate.command.paused === true,
+        resumeRequestId:
+          candidate.command.paused === true ? null : "guided-resume"
+      });
+    }
+  }
+
+  finish(): void {
+    this.emit({
+      protocolVersion: 4,
+      type: "result",
+      terminalResult: expected.terminalResult,
+      terminalTick: 1,
+      finalStateChecksum: expected.finalStateChecksum,
+      eventStreamChecksum: expected.eventStreamChecksum,
+      commands: [
+        {
+          tick: 0,
+          sequence: 0,
+          command: { atTick: 0, type: "confirmPreparation" }
+        }
+      ]
+    });
+  }
+
+  emit(message: unknown): void {
+    const event = new MessageEvent("message", { data: message });
+    for (const listener of this.listeners) listener(event);
+  }
+
+  terminate(): void {
+    this.terminated = true;
+  }
+}
+
 async function buttonWithText(text: string): Promise<HTMLButtonElement> {
   return vi.waitFor(() => {
     const candidate = Array.from(document.querySelectorAll("button")).find(
@@ -238,6 +312,142 @@ function appliedContrastPreference(): string | null {
     null
   );
 }
+
+function journeyStepStates(): string[] {
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(".run-journey-step")
+  ).map((step) => step.dataset["state"] ?? "");
+}
+
+describe("run journey guidance", () => {
+  it("tracks the full authoritative path in StrictMode without live-region duplication", async () => {
+    const workers: ControlledJourneyWorker[] = [];
+    const createWorker = (): Worker => {
+      const worker = new ControlledJourneyWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <StrictMode>
+        <App createWorker={createWorker} />
+      </StrictMode>
+    );
+
+    const journey = await vi.waitFor(() => {
+      const candidate = document
+        .querySelector("#run-journey-heading")
+        ?.closest("section");
+      expect(candidate).toBeInstanceOf(HTMLElement);
+      return candidate as HTMLElement;
+    });
+    expect(journey.querySelector('[role="status"]')).toBeNull();
+    expect(journeyStepStates()).toEqual([
+      "current",
+      "upcoming",
+      "upcoming",
+      "upcoming"
+    ]);
+    expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
+      "Review the checkpoint"
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await vi.waitFor(() =>
+      expect(journeyStepStates()).toEqual([
+        "complete",
+        "current",
+        "upcoming",
+        "upcoming"
+      ])
+    );
+
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    expect(journeyStepStates()).toEqual([
+      "complete",
+      "complete",
+      "current",
+      "upcoming"
+    ]);
+    expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
+      "Press Escape"
+    );
+    expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
+      "changing windows pauses automatically"
+    );
+    await userEvent.keyboard("{Escape}");
+    await buttonWithText("Resume combat");
+
+    workers.at(-1)?.finish();
+    await resultHeading("Victory results");
+    expect(journeyStepStates()).toEqual([
+      "complete",
+      "complete",
+      "complete",
+      "current"
+    ]);
+    expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
+      "download its authoritative run evidence"
+    );
+  });
+
+  it("adapts terminal guidance to failure details", async () => {
+    const createWorker = (): Worker =>
+      new ControlledFailureWorker() as unknown as Worker;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={createWorker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    const failureHeading = await vi.waitFor(() => {
+      const candidate = document.querySelector("#failure-heading");
+      expect(candidate).toBeInstanceOf(HTMLHeadingElement);
+      return candidate as HTMLHeadingElement;
+    });
+    expect(document.activeElement).toBe(failureHeading);
+    expect(journeyStepStates()).toEqual([
+      "complete",
+      "complete",
+      "complete",
+      "current"
+    ]);
+    expect(document.querySelector('[aria-current="step"]')).toHaveTextContent(
+      "Review the failure details"
+    );
+    expect(
+      document.querySelector('[aria-current="step"]')
+    ).not.toHaveTextContent("download");
+  });
+
+  it("reflows enlarged high-contrast guidance at 320 pixels", async () => {
+    await page.viewport(320, 720);
+    window.localStorage.setItem(textScaleStorageKey, "extra-large");
+    window.localStorage.setItem(contrastPreferenceStorageKey, "high");
+    window.localStorage.setItem(motionPreferenceStorageKey, "reduce");
+    renderApp();
+
+    const steps = await vi.waitFor(() => {
+      const candidates = Array.from(
+        document.querySelectorAll<HTMLElement>(".run-journey-step")
+      );
+      expect(candidates).toHaveLength(4);
+      return candidates;
+    });
+    expect(steps[1]?.getBoundingClientRect().left).toBe(
+      steps[0]?.getBoundingClientRect().left
+    );
+    expect(steps[1]?.getBoundingClientRect().top).toBeGreaterThan(
+      steps[0]?.getBoundingClientRect().bottom ?? 0
+    );
+    const journey = document.querySelector<HTMLElement>(".run-journey");
+    expect(journey?.scrollWidth).toBeLessThanOrEqual(journey?.clientWidth ?? 0);
+  });
+});
 
 describe("presentation settings", () => {
   it("opens and closes by keyboard with deterministic focus restoration", async () => {

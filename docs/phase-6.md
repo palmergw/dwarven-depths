@@ -12,12 +12,14 @@ The canonical Level 1 policy replay is pinned as the existing schema-1 durable t
 
 CI regenerates that authoritative three-attempt campaign as the `phase-6-release-candidate-reports` artifact. It contains the machine-readable campaign, calibration, and binding manifest plus deterministic Markdown that identifies their checksums and renders every attempt and the existing baseline-versus-upgraded comparison. The Markdown derives no additional gameplay evidence.
 
+The web client presents one phase-aware run journey from checkpoint review through preparation, combat, and terminal evidence. It explains the existing pause controls and focus-loss pause, marks current and completed steps without duplicating live announcements, and adapts the final guidance to authoritative failure. This onboarding is presentation-only and derives its state from the existing client phase.
+
 Observed calibration evidence and balance recommendations remain separate. Satisfying the matrix proves that the approved combinations remain inside broad evidence ranges and that the first persistent upgrade extends survival for each placement/policy pair. It does not claim equal strategy strength, victory balance, or recommend future tuning.
 
 ## Explicitly not implemented
 
 - Level 1 mechanics or content-statistic tuning beyond the approved evidence ranges;
-- a reference human replay, presentation polish, or performance/accessibility budgets;
+- a reference human replay, audio or artwork polish, or performance/accessibility budgets;
 - telemetry categories that the current authoritative attempt does not produce, including aggregate basic-attack damage, healing, blocking time, and player-entered command timing; these are not inferred;
 - a terminating Phase 5 web encounter or terminal client/CLI parity;
 - new mechanics, report/replay formats, minimization schemas, or divergence classes.
@@ -30,4 +32,5 @@ Observed calibration evidence and balance recommendations remain separate. Satis
 - `pnpm test:built packages/runtime/src/shuttergate-level-1-policy-replay.test.ts`
 - `./scripts/test-browser-docker.sh packages/runtime/src/shuttergate-attempt-telemetry.browser.test.ts`
 - `pnpm test:built apps/sim-cli/src/cli.test.ts -t 'exports deterministic local telemetry'`
+- `./scripts/test-browser-docker.sh apps/web/src/App.browser.test.tsx -t 'run journey guidance'`
 - `pnpm report:release-candidate`
