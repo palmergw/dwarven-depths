@@ -44,8 +44,11 @@ describe("Phase 6 release readiness", () => {
     expect(
       first.match(/^\| .* \| `(?:implemented|contract-blocked)` \|/gm)
     ).toHaveLength(18);
-    expect(first.match(/`contract-blocked`/g)).toHaveLength(2);
+    expect(first.match(/`contract-blocked`/g)).toHaveLength(3);
     expect(first).toContain("duplicate-claim prevention only");
+    expect(first).toContain(
+      "partial persistence is not presented as acceptance"
+    );
     expect(first).toContain("reference human replay remains blocked");
     expect(first).toContain("Terminal client/CLI parity remains blocked");
     expect(first).toContain(identity.campaignPayloadChecksum);
@@ -179,6 +182,15 @@ describe("Phase 6 release readiness", () => {
     entryAt(falselyPassing, 11).evidence = ["docs/phase-6.md"];
     expect(() =>
       requirePhase6AcceptanceEntries(falselyPassing, { checkFiles: false })
+    ).toThrow("status is not approved");
+
+    const partialSavePassing = mutableEntries();
+    entryAt(partialSavePassing, 14).status = "implemented";
+    entryAt(partialSavePassing, 14).evidence = [
+      "packages/save/src/profile-save.test.ts"
+    ];
+    expect(() =>
+      requirePhase6AcceptanceEntries(partialSavePassing, { checkFiles: false })
     ).toThrow("status is not approved");
   });
 

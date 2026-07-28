@@ -123,12 +123,9 @@ export const phase6AcceptanceEntries = Object.freeze([
   entry(
     "save-reload",
     "Save and reload preserve the checkpoint state, boss unlock, build, inventory, and current level.",
-    implemented,
-    [
-      "packages/save/src/profile-save.test.ts",
-      "packages/save/src/indexed-db.browser.test.ts"
-    ],
-    "Versioned profile saves validate stable progression IDs and browser persistence."
+    blocked,
+    [],
+    "The versioned profile save preserves progression fields, but the current contract excludes checkpoint, build, inventory, and current-level state; partial persistence is not presented as acceptance."
   ),
   entry(
     "full-recycle",
@@ -179,7 +176,11 @@ const identityFields = Object.freeze([
   "campaignPayloadChecksum",
   "calibrationReportChecksum"
 ]);
-const blockedIds = new Set(["boss-progression", "reduced-repeat-reward"]);
+const blockedIds = new Set([
+  "boss-progression",
+  "reduced-repeat-reward",
+  "save-reload"
+]);
 const evidencePins = Object.freeze([
   pin(
     "Boss-unlock",
@@ -463,8 +464,10 @@ export function renderPhase6ReleaseReadinessMarkdown(entries, identity) {
   for (const id of [
     "reference-baseline",
     "first-upgrade",
+    "boss-progression",
     "boss-unlock",
     "reduced-repeat-reward",
+    "save-reload",
     "full-recycle"
   ]) {
     const item = accepted.find((candidate) => candidate.id === id);
