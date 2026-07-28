@@ -74,6 +74,23 @@ describe("Phase 6 release readiness", () => {
       requirePhase6AcceptanceEntries(unknown, { checkFiles: false })
     ).toThrow("invalid fields");
 
+    const substitutedCriterion = mutableEntries();
+    entryAt(substitutedCriterion, 0).criterion = "A different criterion.";
+    expect(() =>
+      requirePhase6AcceptanceEntries(substitutedCriterion, {
+        checkFiles: false
+      })
+    ).toThrow("does not match source");
+
+    const accessor = mutableEntries();
+    Object.defineProperty(entryAt(accessor, 0), "criterion", {
+      enumerable: true,
+      get: () => "A new profile starts with only the Iron Warden."
+    });
+    expect(() =>
+      requirePhase6AcceptanceEntries(accessor, { checkFiles: false })
+    ).toThrow("invalid fields");
+
     const falselyPassing = mutableEntries();
     entryAt(falselyPassing, 11).status = "implemented";
     entryAt(falselyPassing, 11).evidence = ["docs/phase-6.md"];
@@ -101,5 +118,17 @@ describe("Phase 6 release readiness", () => {
         unexpected: true
       })
     ).toThrow("identity is invalid");
+    expect(() =>
+      renderPhase6ReleaseReadinessMarkdown(phase6AcceptanceEntries, {
+        ...identity,
+        scenarioHash: "not-a-hash"
+      })
+    ).toThrow("identity is invalid");
+    expect(() =>
+      renderPhase6ReleaseReadinessMarkdown(phase6AcceptanceEntries, {
+        ...identity,
+        scenarioId: "campaign_scenario.substituted.v1"
+      })
+    ).toThrow("scenario is not canonical");
   });
 });

@@ -158,6 +158,7 @@ export const phase6AcceptanceEntries = Object.freeze([
 ]);
 
 const expectedIds = Object.freeze(phase6AcceptanceEntries.map(({ id }) => id));
+const expectedCriteria = Object.freeze(readAcceptanceCriteria());
 const blockedIds = new Set(["boss-progression", "reduced-repeat-reward"]);
 const evidencePins = Object.freeze([
   pin(
@@ -217,6 +218,32 @@ function plainRecord(value) {
   return prototype === Object.prototype || prototype === null;
 }
 
+function plainDataRecord(value) {
+  if (!plainRecord(value)) return false;
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  return Reflect.ownKeys(value).every(
+    (key) =>
+      typeof key === "string" && Object.hasOwn(descriptors[key] ?? {}, "value")
+  );
+}
+
+function readAcceptanceCriteria() {
+  const source = readFileSync("docs/first-pass-systems.md", "utf8");
+  const section = source
+    .split("## Vertical-slice acceptance criteria\n", 2)[1]
+    ?.split(
+      "## Decisions that may remain tunable during technical design",
+      1
+    )[0];
+  const criteria = section
+    ?.split("\n")
+    .filter((line) => line.startsWith("- "))
+    .map((line) => line.slice(2));
+  if (criteria?.length !== expectedIds.length)
+    throw new TypeError("Phase 6 source acceptance criteria are incomplete");
+  return criteria;
+}
+
 export function requirePhase6AcceptanceEntries(
   value,
   { checkFiles = true } = {}
@@ -226,7 +253,7 @@ export function requirePhase6AcceptanceEntries(
   const seen = new Set();
   const normalized = value.map((candidate, index) => {
     if (
-      !plainRecord(candidate) ||
+      !plainDataRecord(candidate) ||
       Object.keys(candidate).sort().join(",") !==
         "criterion,evidence,explanation,id,status"
     )
@@ -236,6 +263,10 @@ export function requirePhase6AcceptanceEntries(
         "Phase 6 acceptance entries must use canonical unique order"
       );
     seen.add(candidate.id);
+    if (candidate.criterion !== expectedCriteria[index])
+      throw new TypeError(
+        `Phase 6 acceptance criterion does not match source (${candidate.id})`
+      );
     const expectedStatus = blockedIds.has(candidate.id) ? blocked : implemented;
     if (candidate.status !== expectedStatus)
       throw new TypeError(
@@ -251,9 +282,12 @@ export function requirePhase6AcceptanceEntries(
       );
     if (
       !Array.isArray(candidate.evidence) ||
+      new Set(candidate.evidence).size !== candidate.evidence.length ||
       candidate.evidence.some(
         (path) =>
-          typeof path !== "string" || !/^(apps|docs|packages)\//.test(path)
+          typeof path !== "string" ||
+          !/^(apps|docs|packages)\/[A-Za-z0-9._/-]+$/.test(path) ||
+          path.split("/").includes("..")
       )
     )
       throw new TypeError(
@@ -294,13 +328,18 @@ export function renderPhase6ReleaseReadinessMarkdown(entries, identity) {
   const accepted = requirePhase6AcceptanceEntries(entries);
   requireEvidencePins();
   if (
-    !plainRecord(identity) ||
+    !plainDataRecord(identity) ||
     Object.keys(identity).sort().join(",") !==
       "calibrationReportChecksum,campaignPayloadChecksum,contentManifestHash,scenarioHash,scenarioId"
   )
     throw new TypeError("Phase 6 release-readiness identity is invalid");
+  if (identity.scenarioId !== "campaign_scenario.shuttergate.v1")
+    throw new TypeError("Phase 6 release-readiness scenario is not canonical");
   for (const [key, value] of Object.entries(identity)) {
-    if (typeof value !== "string" || value.length === 0)
+    if (
+      typeof value !== "string" ||
+      (key !== "scenarioId" && !/^[0-9a-f]{64}$/.test(value))
+    )
       throw new TypeError(
         `Phase 6 release-readiness identity is invalid (${key})`
       );
