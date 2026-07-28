@@ -1890,8 +1890,7 @@ describe("authoritative web worker", () => {
     expect(combatControls?.textContent).toContain("Activation queued");
     await userEvent.click(resumeButton);
     await vi.waitFor(
-      () =>
-        expect(combatControls?.textContent).toContain("Recharging"),
+      () => expect(combatControls?.textContent).toContain("Recharging"),
       { timeout: 10_000 }
     );
   });

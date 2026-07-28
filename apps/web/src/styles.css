@@ -341,6 +341,7 @@ code {
 }
 .upgrade-inventory-list dt {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .upgrade-inventory-list code {
   overflow-wrap: anywhere;

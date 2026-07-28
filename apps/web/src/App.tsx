@@ -210,12 +210,20 @@ function describeEffects(effects: readonly CharacterSkillEffect[]): string {
     : `${effects.map(describeEffect).join("; ")}.`;
 }
 
+function presentationName(id: StableId): string {
+  const segment = id.split(".").at(-1) ?? "unknown";
+  return segment
+    .split("_")
+    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
+
 function describePrerequisites(
   prerequisiteNodeIds: readonly StableId[]
 ): string {
   return prerequisiteNodeIds.length === 0
     ? "none."
-    : `${prerequisiteNodeIds.join(", ")}.`;
+    : `${prerequisiteNodeIds.map(presentationName).join(", ")}.`;
 }
 
 function upgradePurchaseState(
@@ -237,7 +245,7 @@ function upgradePurchaseState(
       : profile.unlockedItemIds;
   let unavailableReason: string | undefined;
   if (!ownerIds.includes(definition.ownerId))
-    unavailableReason = `Requires unlocked owner ${definition.ownerId}.`;
+    unavailableReason = `Requires unlocked ${presentationName(definition.ownerId)}.`;
   else if (nextCost === undefined) unavailableReason = "Maximum rank owned.";
   else {
     const missingPrerequisite = definition.prerequisiteUpgradeIds.find(
@@ -247,7 +255,7 @@ function upgradePurchaseState(
         )
     );
     if (missingPrerequisite !== undefined)
-      unavailableReason = `Requires ${missingPrerequisite}.`;
+      unavailableReason = `Requires ${presentationName(missingPrerequisite)}.`;
     else if (profile.forgeOre < nextCost)
       unavailableReason = `Requires ${nextCost} Forge Ore.`;
   }
@@ -1245,9 +1253,7 @@ export function App({
                   {checkpointProfile.profile.purchasedUpgrades.map(
                     (upgrade) => (
                       <div key={upgrade.upgradeId}>
-                        <dt>
-                          <code>{upgrade.upgradeId}</code>
-                        </dt>
+                        <dt>{presentationName(upgrade.upgradeId)}</dt>
                         <dd>
                           Rank {upgrade.rank}; {upgrade.forgeOreSpent} Forge Ore
                           spent
@@ -1273,7 +1279,7 @@ export function App({
                   return (
                     <section key={definition.upgradeId}>
                       <h5 id={headingId} tabIndex={-1}>
-                        <code>{definition.upgradeId}</code>
+                        {presentationName(definition.upgradeId)}
                       </h5>
                       <p>
                         Rank {state.currentRank} of{" "}
@@ -1364,8 +1370,8 @@ export function App({
                               id={`${selection.nodeId.replaceAll(".", "-")}-selected-heading`}
                               tabIndex={-1}
                             >
-                              <code>{selection.nodeId}</code> selected at level{" "}
-                              {selection.spentSkillPointLevel}.
+                              {presentationName(selection.nodeId)} selected at
+                              level {selection.spentSkillPointLevel}.
                             </h5>{" "}
                             <p>
                               Effects:{" "}
@@ -1425,7 +1431,7 @@ export function App({
                                 {upgradePurchaseStatus.kind === "pending" &&
                                 upgradePurchaseStatus.upgradeId === nodeId
                                   ? "Saving skill selection…"
-                                  : `Select ${nodeId}`}
+                                  : `Select ${presentationName(nodeId)}`}
                               </button>
                             </section>
                           );

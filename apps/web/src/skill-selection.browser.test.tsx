@@ -111,7 +111,7 @@ describe("checkpoint Iron Warden skill selection", () => {
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Pending skill point from level 2"
     );
-    const select = await button("Select skill.iron_warden.stone_guard");
+    const select = await button("Select Stone Guard");
     expect(select).toHaveAccessibleDescription(
       "Effects: +25 maximum health; +3 attack damage. Prerequisites: none."
     );
@@ -145,13 +145,13 @@ describe("checkpoint Iron Warden skill selection", () => {
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Pending skill point from level 3"
     );
-    expect(await button("Select skill.iron_warden.long_reach")).toBeEnabled();
+    expect(await button("Select Long Reach")).toBeEnabled();
     expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "stone_guard selected at level 2. Effects: +25 maximum health; +3 attack damage. Prerequisites: none."
+      "Stone Guard selected at level 2. Effects: +25 maximum health; +3 attack damage. Prerequisites: none."
     );
-    const second = await button("Select skill.iron_warden.long_reach");
+    const second = await button("Select Long Reach");
     expect(second).toHaveAccessibleDescription(
-      "Effects: +1 attack range. Prerequisites: skill.iron_warden.stone_guard."
+      "Effects: +1 attack range. Prerequisites: Stone Guard."
     );
     await userEvent.click(second);
     await vi.waitFor(() => expect(writes).toHaveLength(2));
@@ -159,7 +159,7 @@ describe("checkpoint Iron Warden skill selection", () => {
     releaseWrite?.(secondWritten);
     await vi.waitFor(() =>
       expect(document.querySelector(".upgrades")?.textContent).toContain(
-        "long_reach selected at level 3. Effects: +1 attack range. Prerequisites: skill.iron_warden.stone_guard."
+        "Long Reach selected at level 3. Effects: +1 attack range. Prerequisites: Stone Guard."
       )
     );
   });
@@ -173,7 +173,7 @@ describe("checkpoint Iron Warden skill selection", () => {
     });
 
     await userEvent.click(await button("Upgrade inventory"));
-    const select = await button("Select skill.iron_warden.stone_guard");
+    const select = await button("Select Stone Guard");
     select.focus();
     await userEvent.keyboard("{Enter}");
 
@@ -192,7 +192,7 @@ describe("checkpoint Iron Warden skill selection", () => {
     );
     expect(
       Array.from(document.querySelectorAll("button")).some((candidate) =>
-        candidate.textContent?.startsWith("Select skill.iron_warden")
+        candidate.textContent?.startsWith("Select ")
       )
     ).toBe(false);
   });
@@ -208,7 +208,7 @@ describe("checkpoint Iron Warden skill selection", () => {
     });
 
     await userEvent.click(await button("Upgrade inventory"));
-    await userEvent.click(await button("Select skill.iron_warden.stone_guard"));
+    await userEvent.click(await button("Select Stone Guard"));
     await vi.waitFor(() =>
       expect(
         document.querySelector(".purchase-failure")?.textContent
@@ -217,7 +217,7 @@ describe("checkpoint Iron Warden skill selection", () => {
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "No Iron Warden skills selected"
     );
-    expect(await button("Select skill.iron_warden.stone_guard")).toBeEnabled();
+    expect(await button("Select Stone Guard")).toBeEnabled();
   });
 
   it("loads a conflicting canonical profile before requiring a retry", async () => {
@@ -253,9 +253,7 @@ describe("checkpoint Iron Warden skill selection", () => {
     });
 
     await userEvent.click(await button("Upgrade inventory"));
-    const selectedElsewhere = await button(
-      "Select skill.iron_warden.stone_guard"
-    );
+    const selectedElsewhere = await button("Select Stone Guard");
     selectedElsewhere.focus();
     await userEvent.keyboard("{Enter}");
     await vi.waitFor(() =>
@@ -265,10 +263,8 @@ describe("checkpoint Iron Warden skill selection", () => {
     );
     expect(document.getElementById("iron-warden-skills-heading")).toHaveFocus();
     expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "stone_guard selected at level 2"
+      "Stone Guard selected at level 2"
     );
-    expect(
-      await button("Select skill.iron_warden.disciplined_slam")
-    ).toBeEnabled();
+    expect(await button("Select Disciplined Slam")).toBeEnabled();
   });
 });
