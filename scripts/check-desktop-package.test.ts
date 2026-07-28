@@ -39,6 +39,22 @@ describe("desktop package contract", () => {
       (candidate) =>
         (candidate.app.security.csp += " connect-src https://example.com")
     ],
+    [
+      "wildcard CSP",
+      (candidate) =>
+        (candidate.app.security.csp = candidate.app.security.csp.replace(
+          "connect-src ipc:",
+          "connect-src * ipc:"
+        ))
+    ],
+    [
+      "websocket CSP",
+      (candidate) =>
+        (candidate.app.security.csp = candidate.app.security.csp.replace(
+          "connect-src ipc:",
+          "connect-src ws: wss: ipc:"
+        ))
+    ],
     ["extra config", (candidate) => (candidate.plugins = {})]
   ])("rejects authority expansion: %s", (_label, mutate) => {
     const candidate = clone(config);

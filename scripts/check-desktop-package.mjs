@@ -83,31 +83,11 @@ export function validateDesktopPackage(config, capability, rustSource) {
 
   exactKeys(config.app.security, ["csp"], "security config");
   const csp = config.app.security.csp;
-  for (const directive of [
-    "default-src 'self'",
-    "script-src 'self'",
-    "worker-src 'self' blob:"
-  ]) {
-    if (
-      !csp
-        .split(";")
-        .map((entry) => entry.trim())
-        .includes(directive)
-    ) {
-      throw new Error(`desktop CSP is missing ${directive}`);
-    }
-  }
-  const networkOrigins = [...csp.matchAll(/https?:\/\/[^\s;]+/g)].map(
-    ([origin]) => origin
+  equal(
+    csp,
+    "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:",
+    "desktop CSP"
   );
-  if (
-    networkOrigins.some(
-      (origin) =>
-        origin !== "http://ipc.localhost" && origin !== "http://asset.localhost"
-    )
-  ) {
-    throw new Error("desktop CSP may not grant remote network origins");
-  }
 
   exactKeys(config.bundle, ["active", "targets", "icon"], "bundle config");
   equal(config.bundle.active, true, "bundle activation");
