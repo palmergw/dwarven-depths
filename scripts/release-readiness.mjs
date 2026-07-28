@@ -225,11 +225,29 @@ function requireEvidencePins() {
       throw new TypeError(
         `Phase 6 evidence pin lacks a checksum-bound explanation (${evidencePin.label})`
       );
-    if (!readFileSync(evidencePin.path, "utf8").includes(evidencePin.checksum))
-      throw new TypeError(
-        `Phase 6 evidence checksum drift is unexplained (${evidencePin.label})`
-      );
+    requirePinnedEvidenceChecksum(
+      readFileSync(evidencePin.path, "utf8"),
+      evidencePin.checksum,
+      evidencePin.label
+    );
   }
+}
+
+export function requirePinnedEvidenceChecksum(source, expectedChecksum, label) {
+  if (
+    typeof source !== "string" ||
+    typeof expectedChecksum !== "string" ||
+    typeof label !== "string"
+  )
+    throw new TypeError("Phase 6 evidence checksum input is invalid");
+  const declarations = Array.from(
+    source.matchAll(/^const checksum =\r?\n {2}"([0-9a-f]{64})";\r?$/gm),
+    (match) => match[1]
+  );
+  if (declarations.length !== 1 || declarations[0] !== expectedChecksum)
+    throw new TypeError(
+      `Phase 6 evidence checksum drift is unexplained (${label})`
+    );
 }
 
 function plainRecord(value) {

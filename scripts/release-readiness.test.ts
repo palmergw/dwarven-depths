@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   phase6AcceptanceEntries,
   renderPhase6ReleaseReadinessMarkdown,
-  requirePhase6AcceptanceEntries
+  requirePhase6AcceptanceEntries,
+  requirePinnedEvidenceChecksum
 } from "./release-readiness.mjs";
 
 const identity = Object.freeze({
@@ -307,5 +308,26 @@ describe("Phase 6 release readiness", () => {
       )
     ).toContain(identity.scenarioHash);
     expect(identityReads).toBe(0);
+  });
+
+  it("binds evidence pins to the authoritative checksum declaration", () => {
+    const expected = "a".repeat(64);
+    const changed = "b".repeat(64);
+    const staleComment = `// stale ${expected}`;
+
+    expect(() =>
+      requirePinnedEvidenceChecksum(
+        `const checksum =\n  "${changed}";\n${staleComment}\n`,
+        expected,
+        "test"
+      )
+    ).toThrow("checksum drift is unexplained");
+    expect(() =>
+      requirePinnedEvidenceChecksum(
+        `const checksum =\n  "${expected}";\n${staleComment}\n`,
+        expected,
+        "test"
+      )
+    ).not.toThrow();
   });
 });
