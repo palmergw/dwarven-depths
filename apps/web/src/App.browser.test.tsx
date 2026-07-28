@@ -276,6 +276,10 @@ async function completeAppAttempt(): Promise<string> {
   await userEvent.click(await buttonWithText("Begin preparation"));
   await userEvent.click(await buttonWithText("Confirm preparation"));
   await buttonWithText("Return to checkpoint");
+  const resultEvidence = document.querySelector(".result-evidence");
+  expect(resultEvidence).toBeInstanceOf(HTMLDetailsElement);
+  expect(resultEvidence).not.toHaveAttribute("open");
+  if (resultEvidence instanceof HTMLDetailsElement) resultEvidence.open = true;
   const evidence = document.querySelector(".evidence")?.textContent;
   expect(evidence).toContain("Terminal result");
   expect(evidence).toContain("Final state checksum");

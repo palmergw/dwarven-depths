@@ -456,7 +456,7 @@ export function App({
       setCheckpointProfile({
         status: "unavailable",
         message:
-          "Local progression storage is unavailable. You can still run the conformance level."
+          "Local progression storage is unavailable. You can still defend Shuttergate Hall."
       });
       return;
     }
@@ -490,7 +490,7 @@ export function App({
       setCheckpointProfile({ status: "ready", profile });
       setUpgradePurchaseStatus({
         kind: "success",
-        message: `${upgradeId} rank purchased. ${profile.forgeOre} Forge Ore remains.`
+        message: `${presentationName(upgradeId)} rank purchased. ${profile.forgeOre} Forge Ore remains.`
       });
     } catch (error) {
       if (isCheckpointProfileSaveConflict(error)) {
@@ -1643,39 +1643,42 @@ export function App({
                 ? "Victory results"
                 : "Defeat results"}
             </h3>
-            <dl className="evidence">
-              <div>
-                <dt>Terminal result</dt>
-                <dd>{view.result.terminalResult}</dd>
-              </div>
-              <div>
-                <dt>Terminal tick</dt>
-                <dd>{view.result.terminalTick}</dd>
-              </div>
-              <div>
-                <dt>Final state checksum</dt>
-                <dd>
-                  <code>{view.result.finalStateChecksum}</code>
-                </dd>
-              </div>
-              <div>
-                <dt>Event checksum</dt>
-                <dd>
-                  <code>{view.result.eventStreamChecksum}</code>
-                </dd>
-              </div>
-              <div>
-                <dt>Replay commands</dt>
-                <dd>{view.result.commands.length}</dd>
-              </div>
-            </dl>
-            <div className="result-actions">
+            <details className="developer-overlay result-evidence">
+              <summary>Run evidence (developer)</summary>
+              <dl className="evidence">
+                <div>
+                  <dt>Terminal result</dt>
+                  <dd>{view.result.terminalResult}</dd>
+                </div>
+                <div>
+                  <dt>Terminal tick</dt>
+                  <dd>{view.result.terminalTick}</dd>
+                </div>
+                <div>
+                  <dt>Final state checksum</dt>
+                  <dd>
+                    <code>{view.result.finalStateChecksum}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Event checksum</dt>
+                  <dd>
+                    <code>{view.result.eventStreamChecksum}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Replay commands</dt>
+                  <dd>{view.result.commands.length}</dd>
+                </div>
+              </dl>
               <button
                 type="button"
                 onClick={() => void downloadRunEvidence(view.result)}
               >
                 Download run evidence
               </button>
+            </details>
+            <div className="result-actions">
               <button type="button" onClick={returnToCheckpoint}>
                 Return to checkpoint
               </button>

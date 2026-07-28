@@ -188,7 +188,7 @@ describe("checkpoint upgrade purchasing", () => {
     expect(lockedItem).toBeDisabled();
     expect(
       document.getElementById("upgrade-item-powder_cask-purchase-status")
-    ).toHaveTextContent("Requires unlocked owner item.powder_cask.");
+    ).toHaveTextContent("Requires unlocked Powder Cask.");
 
     await userEvent.click(await button("Purchase rank 1 for 10 Forge Ore"));
     await vi.waitFor(() =>

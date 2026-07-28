@@ -286,7 +286,7 @@ function drawBattlefield(
   scene.add.text(
     494,
     25,
-    `WAVE  •  ${String(snapshot.tick).padStart(2, "0")}`,
+    snapshot.phase === "running" ? "GATE  •  HOLDING" : "GATE  •  SECURE",
     {
       color: "#f4ead5",
       fontFamily: "monospace",
