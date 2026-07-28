@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, extname, relative, resolve, sep } from "node:path";
@@ -41,6 +42,19 @@ assert.deepEqual(
   precacheUrls,
   expectedUrls,
   "every generated shell asset is precached"
+);
+const versionHash = createHash("sha256");
+for (const url of expectedUrls) {
+  versionHash.update(url);
+  versionHash.update("\0");
+  versionHash.update(await readFile(resolve(distDirectory, `.${url}`)));
+  versionHash.update("\0");
+}
+const expectedCacheName = `dwarven-depths-shell-${versionHash.digest("hex").slice(0, 16)}`;
+assert.match(
+  serviceWorker,
+  new RegExp(`const CACHE_NAME = ${JSON.stringify(expectedCacheName)}`),
+  "the cache version is bound to the ordered shell URLs and bytes"
 );
 assert.ok(
   precacheUrls.some((url) =>
