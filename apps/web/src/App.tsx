@@ -641,7 +641,7 @@ export function App({
       setCheckpointProfile({ status: "ready", profile });
       setUpgradePurchaseStatus({
         kind: "success",
-        message: `${nodeId} selected for Iron Warden.`
+        message: `${presentationName(nodeId)} selected for Iron Warden.`
       });
     } catch (error) {
       if (isCheckpointProfileSaveConflict(error)) {
