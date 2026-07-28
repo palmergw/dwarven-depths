@@ -133,4 +133,35 @@ describe("combat presentation feedback", () => {
     player.close();
     expect(close).toHaveBeenCalledOnce();
   });
+
+  it("does not schedule a suspended cue after cleanup", async () => {
+    let resolveResume: (() => void) | undefined;
+    const createOscillator = vi.fn();
+    const context: CombatAudioContext = {
+      currentTime: 4,
+      destination: {},
+      state: "suspended",
+      createOscillator,
+      createGain: vi.fn(),
+      resume: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveResume = resolve;
+          })
+      ),
+      close: vi.fn(() => Promise.resolve())
+    };
+    const player = createCombatSoundPlayer(() => context);
+    const feedback = deriveCombatFeedback(
+      snapshot(1, "running", []),
+      snapshot(2, "terminal", [])
+    );
+    expect(feedback).toBeDefined();
+    if (feedback === undefined) throw new Error("expected terminal feedback");
+    player.play(feedback);
+    player.close();
+    resolveResume?.();
+    await Promise.resolve();
+    expect(createOscillator).not.toHaveBeenCalled();
+  });
 });
