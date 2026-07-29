@@ -9,8 +9,8 @@
   },
   "contractDigests": {
     "provenance.json": "d67384c6f156c979d25bb337cbf258da7684e81c7138dc64a2c48885874abe19",
-    "reconstruction.json": "297ff52ef37143c0f3c2e9df71a0d43239ff3997df3c5fdbb1e12c14cf398797",
-    "scene-contract.json": "82848bca1b23a596f8910639218dc80eea6997e351f0319ba3b51c7be289f190"
+    "reconstruction.json": "2c997837abfdb21d39fdb308e8f9d559514bcdb940a930218e56a2124aadd6cb",
+    "scene-contract.json": "1433e58abea928ce46389eebecb091285923f7aa336a8bccf2f13bb6dfa86104"
   },
   "files": [
     {
@@ -131,7 +131,17 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha",
       "contributesTo": ["screen-space-hud"],
-      "sha256": "bc0f63fc3a38b15010ec7a6861f8ce85401c88cc6c71c9d7f61e5b3c33813f1a"
+      "sha256": "063e1d5910ad575c1fae0ab2712fdfdddb9327d770afdc7b82069f56cb38ef41"
+    },
+    {
+      "id": "fortress-status",
+      "path": "assets/game-art/production-scene/exports/hud/fortress-status.png",
+      "category": "hud",
+      "dimensions": [240, 50],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "8401386ff3b2144590080bbb70192c84738d0536d830b879b6d2aaafe7d745cf"
     },
     {
       "id": "health-status",
@@ -141,7 +151,17 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha",
       "contributesTo": ["screen-space-hud"],
-      "sha256": "31fc194eff44f5867a85c4efd579976d370581300809d1a8cf346edd9f3dd9c1"
+      "sha256": "e41c24744c4d475d51f51587c18059f6e3ae937342d4c55cd03caf1c40490306"
+    },
+    {
+      "id": "ore-status",
+      "path": "assets/game-art/production-scene/exports/hud/ore-status.png",
+      "category": "hud",
+      "dimensions": [240, 50],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "5b923984b0a73e43def92c9dbbc4d03917ffb86e04adc0888ebede73289f8986"
     },
     {
       "id": "pause-control",
@@ -151,7 +171,7 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha",
       "contributesTo": ["screen-space-hud"],
-      "sha256": "089023c30145aa84cd3ca38899c23c19118191975385da151463208acae04a71"
+      "sha256": "ee99690a03164c3d6268a2ff21029170b116bb1168efd8491d7b7a0ba6f72c27"
     },
     {
       "id": "shield-slam-control",
@@ -161,7 +181,7 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha",
       "contributesTo": ["screen-space-hud"],
-      "sha256": "ed5084fa3a0472f8c37f011db50f0931409eabde4a5ec7c9e1be0122e7d5f428"
+      "sha256": "c76033f5588528be9d82337a54704915c5f67fcaadfc71356c2080056e86e6bd"
     },
     {
       "id": "target-policy-control",
@@ -171,7 +191,7 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha",
       "contributesTo": ["screen-space-hud"],
-      "sha256": "3ef9884903d2e47e3bc843fc4bd39d8e22f3825446d3293c5fe36eb20c7e93fc"
+      "sha256": "da4865959c3576171af6a8ec5deecd61a1e2b7a92cd671c6b9b8d3c37cdd0270"
     },
     {
       "id": "top-hud-frame",
@@ -181,7 +201,17 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha",
       "contributesTo": ["screen-space-hud"],
-      "sha256": "78e81e438a34fa876c7c4812dcce3a6f710427eeb8d20b49f3480d566b69d46b"
+      "sha256": "0aa7dd38f451b604dddd7a15b0c1e8ff7a450a5ebf6ce7f73d6409538bd68345"
+    },
+    {
+      "id": "warden-nameplate",
+      "path": "assets/game-art/production-scene/exports/hud/warden-nameplate.png",
+      "category": "hud",
+      "dimensions": [208, 100],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "7ecc3215068ec39c4c441001d933eda0cd9a69b24fb3a6cb7b9b793027b17f04"
     },
     {
       "id": "warden-portrait",
@@ -192,6 +222,16 @@
       "alphaSemantics": "straight-alpha",
       "contributesTo": ["screen-space-hud"],
       "sha256": "ff9a2bd869913bf0bb64b5bc995368af85c8b83182d56212a35892f73cbca7e6"
+    },
+    {
+      "id": "wave-status",
+      "path": "assets/game-art/production-scene/exports/hud/wave-status.png",
+      "category": "hud",
+      "dimensions": [228, 50],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "b7f7c2da3cae73e110546aea840b82f67b7c88bb847bb56ac0107022ca8b0d5f"
     }
   ],
   "evidence": [

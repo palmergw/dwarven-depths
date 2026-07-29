@@ -53,8 +53,48 @@
       "region": "screen-space-hud"
     },
     {
+      "asset": "fortress-status",
+      "position": [18, 10],
+      "region": "screen-space-hud"
+    },
+    {
+      "asset": "wave-status",
+      "position": [526, 10],
+      "region": "screen-space-hud"
+    },
+    {
+      "asset": "ore-status",
+      "position": [1022, 10],
+      "region": "screen-space-hud"
+    },
+    {
       "asset": "bottom-hud-frame",
       "position": [0, 0],
+      "region": "screen-space-hud"
+    },
+    {
+      "asset": "warden-nameplate",
+      "position": [18, 604],
+      "region": "screen-space-hud"
+    },
+    {
+      "asset": "health-status",
+      "position": [238, 604],
+      "region": "screen-space-hud"
+    },
+    {
+      "asset": "target-policy-control",
+      "position": [496, 604],
+      "region": "screen-space-hud"
+    },
+    {
+      "asset": "shield-slam-control",
+      "position": [758, 604],
+      "region": "screen-space-hud"
+    },
+    {
+      "asset": "pause-control",
+      "position": [1048, 604],
       "region": "screen-space-hud"
     },
     {

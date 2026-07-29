@@ -55,6 +55,10 @@
   "hudRegions": {
     "top": [0, 0, 1280, 72],
     "bottom": [0, 590, 1280, 720],
+    "fortressStatus": [18, 10, 258, 60],
+    "waveStatus": [526, 10, 754, 60],
+    "oreStatus": [1022, 10, 1262, 60],
+    "wardenNameplate": [18, 604, 226, 704],
     "portrait": [18, 604, 226, 704],
     "health": [238, 604, 484, 704],
     "targetPolicy": [496, 604, 746, 704],

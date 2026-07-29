@@ -227,42 +227,66 @@ def pixel_text(image: Image.Image, position: tuple[int, int], text: str, scale: 
         x += (len(glyph[0]) + 1) * scale
 
 
-def panel(image: Image.Image, box: tuple[int, int, int, int], label: str) -> None:
+def panel(image: Image.Image, box: tuple[int, int, int, int]) -> None:
     draw = ImageDraw.Draw(image)
     x0, y0, x1, y1 = box
     draw.rectangle(box, fill=PALETTE["void"], outline=PALETTE["copper"], width=3)
     draw.rectangle((x0 + 4, y0 + 4, x1 - 4, y1 - 4), outline=PALETTE["stone_light"], width=2)
+
+
+def hud_label(box: tuple[int, int, int, int], label: str) -> Image.Image:
+    x0, y0, x1, y1 = box
+    layer = Image.new("RGBA", FRAME, (0, 0, 0, 0))
     width = text_width(label, 2)
-    pixel_text(image, (x0 + (x1 - x0 - width) // 2, y0 + 13), label, 2)
+    pixel_text(layer, (x0 + (x1 - x0 - width) // 2, y0 + 13), label, 2)
+    return layer.crop(box)
 
 
 def build_hud() -> tuple[Image.Image, Image.Image, dict[str, Image.Image]]:
+    top_boxes = {
+        "fortress-status": (18, 10, 258, 60),
+        "wave-status": (526, 10, 754, 60),
+        "ore-status": (1022, 10, 1262, 60),
+    }
     top = Image.new("RGBA", FRAME, (0, 0, 0, 0))
-    panel(top, (18, 10, 258, 60), "FORT 18/20")
-    panel(top, (526, 10, 754, 60), "WAVE 7")
-    panel(top, (1022, 10, 1262, 60), "ORE 840")
+    for box in top_boxes.values():
+        panel(top, box)
 
+    bottom_boxes = {
+        "warden-nameplate": (18, 604, 226, 704),
+        "health-status": (238, 604, 484, 704),
+        "target-policy-control": (496, 604, 746, 704),
+        "shield-slam-control": (758, 604, 1036, 704),
+        "pause-control": (1048, 604, 1262, 704),
+    }
     bottom = Image.new("RGBA", FRAME, (0, 0, 0, 0))
-    panel(bottom, (18, 604, 226, 704), "WARDEN")
-    panel(bottom, (238, 604, 484, 704), "HEALTH")
-    panel(bottom, (496, 604, 746, 704), "TARGET NEAREST")
-    panel(bottom, (758, 604, 1036, 704), "SHIELD SLAM")
-    panel(bottom, (1048, 604, 1262, 704), "PAUSE")
-    draw = ImageDraw.Draw(bottom)
-    draw.rectangle((260, 659, 462, 681), fill=PALETTE["iron"], outline=PALETTE["stone_light"], width=2)
-    draw.rectangle((265, 664, 435, 676), fill=PALETTE["red"])
-    draw.rectangle((801, 649, 993, 686), fill=(24, 36, 47, 255), outline=PALETTE["blue"], width=3)
-    draw.rectangle((1118, 648, 1130, 686), fill=PALETTE["gold"])
-    draw.rectangle((1142, 648, 1154, 686), fill=PALETTE["gold"])
+    for box in bottom_boxes.values():
+        panel(bottom, box)
 
     parts = {
         "top-hud-frame": top,
         "bottom-hud-frame": bottom,
-        "health-status": bottom.crop((238, 604, 484, 704)),
-        "target-policy-control": bottom.crop((496, 604, 746, 704)),
-        "shield-slam-control": bottom.crop((758, 604, 1036, 704)),
-        "pause-control": bottom.crop((1048, 604, 1262, 704)),
+        "fortress-status": hud_label(top_boxes["fortress-status"], "FORT 18/20"),
+        "wave-status": hud_label(top_boxes["wave-status"], "WAVE 7"),
+        "ore-status": hud_label(top_boxes["ore-status"], "ORE 840"),
+        "warden-nameplate": hud_label(bottom_boxes["warden-nameplate"], "WARDEN"),
+        "health-status": hud_label(bottom_boxes["health-status"], "HEALTH"),
+        "target-policy-control": hud_label(
+            bottom_boxes["target-policy-control"], "TARGET NEAREST"
+        ),
+        "shield-slam-control": hud_label(
+            bottom_boxes["shield-slam-control"], "SHIELD SLAM"
+        ),
+        "pause-control": hud_label(bottom_boxes["pause-control"], "PAUSE"),
     }
+    health = ImageDraw.Draw(parts["health-status"])
+    health.rectangle((22, 55, 224, 77), fill=PALETTE["iron"], outline=PALETTE["stone_light"], width=2)
+    health.rectangle((27, 60, 197, 72), fill=PALETTE["red"])
+    ability = ImageDraw.Draw(parts["shield-slam-control"])
+    ability.rectangle((43, 45, 235, 82), fill=(24, 36, 47, 255), outline=PALETTE["blue"], width=3)
+    pause = ImageDraw.Draw(parts["pause-control"])
+    pause.rectangle((70, 44, 82, 82), fill=PALETTE["gold"])
+    pause.rectangle((94, 44, 106, 82), fill=PALETTE["gold"])
     return top, bottom, parts
 
 
@@ -419,13 +443,21 @@ def build(output_root: Path = ROOT) -> None:
         **effects,
         "foreground-occluder": occluder,
         "warm-light-overlay": lighting,
-        "top-hud-frame": top_hud,
-        "bottom-hud-frame": bottom_hud,
+        **hud_parts,
         "warden-portrait": portrait,
     }
     recipe = json.loads((metadata / "reconstruction.json").read_text(encoding="utf-8"))
     reconstruction = compose_recipe(recipe, assets)
-    no_entities = composite(clean, [(occluder, (0, 0)), (lighting, (0, 0)), (top_hud, (0, 0)), (bottom_hud, (0, 0))])
+    no_entity_recipe = {
+        **recipe,
+        "layersBackToFront": [
+            layer
+            for layer in recipe["layersBackToFront"]
+            if layer["region"] not in {"world-entities", "world-effects"}
+            and layer["asset"] != "warden-portrait"
+        ],
+    }
+    no_entities = compose_recipe(no_entity_recipe, assets)
     environment_only = composite(clean, [(occluder, (0, 0)), (lighting, (0, 0))])
     png(reconstruction, evidence / "reconstruction-one-warden-one-hostile.png")
     png(no_entities, evidence / "reconstruction-entities-removed.png")
@@ -493,9 +525,9 @@ def build(output_root: Path = ROOT) -> None:
     )
 
     hud_board = Image.new("RGBA", FRAME, (7, 13, 22, 255))
-    hud_board.alpha_composite(top_hud)
-    hud_board.alpha_composite(bottom_hud)
-    hud_board.alpha_composite(portrait, (82, 622))
+    for layer in recipe["layersBackToFront"]:
+        if layer["region"] == "screen-space-hud":
+            hud_board.alpha_composite(assets[layer["asset"]], tuple(layer["position"]))
     png(hud_board, evidence / "hud-control-isolation.png")
     png(occluder, evidence / "foreground-occlusion-isolation.png")
     png(lighting, evidence / "lighting-alpha-isolation.png")
@@ -552,6 +584,41 @@ def strict_keys(value: dict[str, object], expected: set[str], context: str) -> N
     actual = set(value)
     if actual != expected:
         raise ValueError(f"{context} keys differ: expected {sorted(expected)}, got {sorted(actual)}")
+
+
+def validate_point(value: object, context: str) -> tuple[int, int]:
+    if (
+        not isinstance(value, list)
+        or len(value) != 2
+        or not all(isinstance(coordinate, int) for coordinate in value)
+        or not (0 <= value[0] < FRAME[0] and 0 <= value[1] < FRAME[1])
+    ):
+        raise ValueError(f"{context} must be an in-frame integer point")
+    return value[0], value[1]
+
+
+def validate_rectangle(value: object, context: str) -> tuple[int, int, int, int]:
+    if (
+        not isinstance(value, list)
+        or len(value) != 4
+        or not all(isinstance(coordinate, int) for coordinate in value)
+        or not (0 <= value[0] < value[2] <= FRAME[0])
+        or not (0 <= value[1] < value[3] <= FRAME[1])
+    ):
+        raise ValueError(f"{context} must be an in-frame integer rectangle")
+    return value[0], value[1], value[2], value[3]
+
+
+def require_same_pixels(expected: Image.Image, actual_path: Path, context: str) -> None:
+    with Image.open(actual_path) as actual:
+        if (
+            actual.size != expected.size
+            or ImageChops.difference(expected.convert("RGBA"), actual.convert("RGBA"))
+            .convert("RGB")
+            .getbbox()
+            is not None
+        ):
+            raise ValueError(f"{context} pixels do not match their declared layers")
 
 
 def verify(root: Path = ROOT) -> None:
@@ -665,6 +732,12 @@ def verify(root: Path = ROOT) -> None:
             {"position", "depthSortY"},
             f"scene-contract.entityAnchors.{name}",
         )
+        validate_point(anchor["position"], f"scene-contract.entityAnchors.{name}.position")
+        if (
+            not isinstance(anchor["depthSortY"], int)
+            or not 0 <= anchor["depthSortY"] < FRAME[1]
+        ):
+            raise ValueError(f"scene-contract.entityAnchors.{name}.depthSortY is invalid")
     strict_keys(
         scene["occlusion"],
         {"mask", "foreground", "depthOrder"},
@@ -672,7 +745,19 @@ def verify(root: Path = ROOT) -> None:
     )
     strict_keys(
         scene["hudRegions"],
-        {"top", "bottom", "portrait", "health", "targetPolicy", "shieldSlam", "pause"},
+        {
+            "top",
+            "bottom",
+            "fortressStatus",
+            "waveStatus",
+            "oreStatus",
+            "wardenNameplate",
+            "portrait",
+            "health",
+            "targetPolicy",
+            "shieldSlam",
+            "pause",
+        },
         "scene-contract.hudRegions",
     )
     strict_keys(
@@ -686,6 +771,41 @@ def verify(root: Path = ROOT) -> None:
         or scene["safeAreas"]["world"] != [0, 0, 1280, 720]
     ):
         raise ValueError("Scene geometry must bind the declared logical and review frames")
+    route_points = [
+        validate_point(point, f"scene-contract.route.polyline[{index}]")
+        for index, point in enumerate(scene["route"]["polyline"])
+    ]
+    entrance = validate_point(
+        scene["route"]["entranceAnchor"], "scene-contract.route.entranceAnchor"
+    )
+    gate = validate_point(scene["route"]["gateAnchor"], "scene-contract.route.gateAnchor")
+    chokepoints = [
+        validate_point(point, f"scene-contract.route.chokepointAnchors[{index}]")
+        for index, point in enumerate(scene["route"]["chokepointAnchors"])
+    ]
+    validate_point(
+        scene["route"]["railCrossingAnchor"],
+        "scene-contract.route.railCrossingAnchor",
+    )
+    if (
+        entrance != route_points[0]
+        or gate != route_points[-1]
+        or any(point not in route_points for point in chokepoints)
+    ):
+        raise ValueError("Route anchors must bind canonical route points")
+    for name, rectangle in scene["safeAreas"].items():
+        validate_rectangle(rectangle, f"scene-contract.safeAreas.{name}")
+    for name, rectangle in scene["hudRegions"].items():
+        validate_rectangle(rectangle, f"scene-contract.hudRegions.{name}")
+    entity_safe = validate_rectangle(
+        scene["safeAreas"]["entitySafe"], "scene-contract.safeAreas.entitySafe"
+    )
+    for name, anchor in scene["entityAnchors"].items():
+        x, y = validate_point(
+            anchor["position"], f"scene-contract.entityAnchors.{name}.position"
+        )
+        if not (entity_safe[0] <= x < entity_safe[2] and entity_safe[1] <= y < entity_safe[3]):
+            raise ValueError(f"scene-contract.entityAnchors.{name} is outside entitySafe")
 
     reconstruction = json.loads(
         (package / "metadata" / "reconstruction.json").read_text(encoding="utf-8")
@@ -727,31 +847,106 @@ def verify(root: Path = ROOT) -> None:
         "foreground-occluder",
         "warm-light-overlay",
         "top-hud-frame",
+        "fortress-status",
+        "wave-status",
+        "ore-status",
         "bottom-hud-frame",
+        "warden-nameplate",
+        "health-status",
+        "target-policy-control",
+        "shield-slam-control",
+        "pause-control",
         "warden-portrait",
     ]
     if recipe_ids != expected_recipe_ids:
         raise ValueError("Reconstruction recipe layers are not canonical")
-    if reconstruction["layersBackToFront"][0]["position"] != [0, 0]:
-        raise ValueError("Clean plate must cover the reconstruction origin")
+    expected_positions = {
+        "shuttergate-clean-plate-1280x720": [0, 0],
+        "warden-selection-ring": [548, 392],
+        "hostile-faction-ring": [798, 404],
+        "iron-warden-shield-slam": scene["entityAnchors"]["ironWardenTruthScreen"]["position"],
+        "mine-raider-attack": scene["entityAnchors"]["mineRaiderTruthScreen"]["position"],
+        "shield-slam-impact": [650, 282],
+        "foreground-occluder": [0, 0],
+        "warm-light-overlay": [0, 0],
+        "top-hud-frame": [0, 0],
+        "fortress-status": scene["hudRegions"]["fortressStatus"][:2],
+        "wave-status": scene["hudRegions"]["waveStatus"][:2],
+        "ore-status": scene["hudRegions"]["oreStatus"][:2],
+        "bottom-hud-frame": [0, 0],
+        "warden-nameplate": scene["hudRegions"]["wardenNameplate"][:2],
+        "health-status": scene["hudRegions"]["health"][:2],
+        "target-policy-control": scene["hudRegions"]["targetPolicy"][:2],
+        "shield-slam-control": scene["hudRegions"]["shieldSlam"][:2],
+        "pause-control": scene["hudRegions"]["pause"][:2],
+        "warden-portrait": [82, 622],
+    }
+    if any(
+        layer["position"] != expected_positions[layer["asset"]]
+        for layer in reconstruction["layersBackToFront"]
+    ):
+        raise ValueError("Reconstruction positions do not bind canonical scene anchors")
 
     asset_images: dict[str, Image.Image] = {}
     for record in manifest["files"]:
         if record["id"] == "architecture-mask":
             continue
         asset_images[record["id"]] = Image.open(root / record["path"]).convert("RGBA")
+    expected_proof_paths = {
+        "entitiesRemoved": "docs/visual-evidence/production-scene/reconstruction-entities-removed.png",
+        "environmentOnly": "docs/visual-evidence/production-scene/clean-plate.png",
+        "hudControls": "docs/visual-evidence/production-scene/hud-control-isolation.png",
+        "foreground": "docs/visual-evidence/production-scene/foreground-occlusion-isolation.png",
+        "lighting": "docs/visual-evidence/production-scene/lighting-alpha-isolation.png",
+    }
+    if reconstruction["output"] != "docs/visual-evidence/production-scene/reconstruction-one-warden-one-hostile.png":
+        raise ValueError("Reconstruction output path is not canonical")
+    if reconstruction["isolationProofs"] != expected_proof_paths:
+        raise ValueError("Isolation proof paths are not canonical")
     expected_reconstruction = compose_recipe(reconstruction, asset_images)
     output_path = root / reconstruction["output"]
-    with Image.open(output_path) as actual_reconstruction:
-        if (
-            ImageChops.difference(
-                expected_reconstruction, actual_reconstruction.convert("RGBA")
+    require_same_pixels(expected_reconstruction, output_path, "Reconstruction")
+
+    no_entity_recipe = {
+        **reconstruction,
+        "layersBackToFront": [
+            layer
+            for layer in reconstruction["layersBackToFront"]
+            if layer["region"] not in {"world-entities", "world-effects"}
+            and layer["asset"] != "warden-portrait"
+        ],
+    }
+    require_same_pixels(
+        compose_recipe(no_entity_recipe, asset_images),
+        root / expected_proof_paths["entitiesRemoved"],
+        "Entity-removal proof",
+    )
+    require_same_pixels(
+        asset_images["shuttergate-clean-plate-1280x720"],
+        root / expected_proof_paths["environmentOnly"],
+        "Environment-only proof",
+    )
+    require_same_pixels(
+        asset_images["foreground-occluder"],
+        root / expected_proof_paths["foreground"],
+        "Foreground-isolation proof",
+    )
+    require_same_pixels(
+        asset_images["warm-light-overlay"],
+        root / expected_proof_paths["lighting"],
+        "Lighting-isolation proof",
+    )
+    hud_isolation = Image.new("RGBA", FRAME, (7, 13, 22, 255))
+    for layer in reconstruction["layersBackToFront"]:
+        if layer["region"] == "screen-space-hud":
+            hud_isolation.alpha_composite(
+                asset_images[layer["asset"]], tuple(layer["position"])
             )
-            .convert("RGB")
-            .getbbox()
-            is not None
-        ):
-            raise ValueError("Reconstruction pixels do not match the declared layer recipe")
+    require_same_pixels(
+        hud_isolation,
+        root / expected_proof_paths["hudControls"],
+        "HUD-isolation proof",
+    )
 
     provenance = json.loads((package / "metadata" / "provenance.json").read_text(encoding="utf-8"))
     strict_keys(

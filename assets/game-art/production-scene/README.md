@@ -10,7 +10,7 @@ This package is the Issue #286 composability gate. It is presentation-only and i
 - `exports/effects/`: separate selection/faction rings and Shield Slam impact.
 - `exports/occlusion/`: grayscale architecture mask and environment-only foreground pixels.
 - `exports/lighting/`: entity/UI-free alpha lighting overlay.
-- `exports/hud/`: top/bottom frame, portrait, health/status, target-policy, Shield Slam, and pause controls.
+- `exports/hud/`: structural top/bottom frames plus separately replaceable fortress/wave/ore status, Warden nameplate/portrait/health, target-policy, Shield Slam, and pause layers.
 - `metadata/scene-contract.json`: safe areas, camera, route, anchors, depth order, HUD regions, and later crop policy.
 - `metadata/reconstruction.json`: exact representative layer recipe and region-isolation proof paths.
 - `metadata/layer-manifest.json`: generated dimensions, modes, alpha semantics, region contributions, and SHA-256 digests.
@@ -23,7 +23,7 @@ Run:
 
 `uv run --with pillow python3 assets/game-art/production-scene/build_scene.py --reproducible`
 
-The builder clears stale exports/evidence, rebuilds all derived files, validates strict manifest shape, dimensions, alpha semantics, exact entity counts, and hashes, then rebuilds in an isolated temporary root and rejects byte-level manifest drift. To verify committed files without rewriting them:
+The builder clears stale exports/evidence, rebuilds all derived files, validates strict nested contract shape and geometry, canonical layer order/placement, dimensions, alpha semantics, exact entity counts, metadata/image hashes, and recomposed reconstruction/isolation pixels, then rebuilds in an isolated temporary root and rejects byte-level manifest drift. To verify committed files without rewriting them:
 
 `uv run --with pillow python3 assets/game-art/production-scene/build_scene.py --verify`
 
