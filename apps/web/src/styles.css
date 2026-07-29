@@ -104,6 +104,23 @@ h2 {
 .battlefield {
   margin: 1.25rem 0;
 }
+.battlefield-direction {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+  padding: 0;
+  border: 0;
+  color: #d8cdb9;
+  font-size: 0.9em;
+}
+.battlefield-direction legend {
+  float: left;
+  margin-right: auto;
+  color: #f0c66f;
+  font-family: Georgia, serif;
+  font-weight: 700;
+}
 .battlefield-canvas {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -153,6 +170,18 @@ button:disabled {
 button:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 3px;
+}
+.battlefield-direction button {
+  min-height: 2.3rem;
+  padding: 0.45rem 0.7rem;
+  border-width: 1px;
+  background: #252b2d;
+  color: #d8cdb9;
+}
+.battlefield-direction button[aria-pressed="true"] {
+  border-color: #ffc45a;
+  background: #6f461d;
+  color: #fff3d1;
 }
 .results h3:focus,
 .settings h3:focus,
@@ -395,6 +424,13 @@ main[data-contrast-preference="high"] .upgrade-inventory-list div {
   border-color: #fff;
 }
 @media (max-width: 32rem) {
+  .battlefield-direction {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .battlefield-direction legend {
+    grid-column: 1 / -1;
+  }
   .run-journey ol {
     grid-template-columns: 1fr;
   }

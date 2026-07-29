@@ -6,7 +6,8 @@ import { App } from "./App.js";
 import {
   Battlefield,
   buildBattlefieldPrimitives,
-  buildDepartureFeedbackPrimitives
+  buildDepartureFeedbackPrimitives,
+  buildDirectionalBattlefieldPrimitives
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { deriveCombatFeedback } from "./combat-feedback.js";
@@ -1399,6 +1400,16 @@ describe("authoritative web worker", () => {
     expect(occupied[1]?.x).not.toBe(
       buildBattlefieldPrimitives(survivorSnapshot).entities[0]?.x
     );
+    for (const direction of ["stylized-depth", "top-down"] as const) {
+      expect(
+        buildDirectionalBattlefieldPrimitives(snapshot, direction)
+      ).toEqual(buildDirectionalBattlefieldPrimitives(reversed, direction));
+    }
+    expect(
+      buildDirectionalBattlefieldPrimitives(snapshot, "stylized-depth").nodes
+    ).not.toEqual(
+      buildDirectionalBattlefieldPrimitives(snapshot, "top-down").nodes
+    );
   });
 
   it("keeps reduced-motion feedback static and rejects stale replay effects in StrictMode", async () => {
@@ -1439,6 +1450,19 @@ describe("authoritative web worker", () => {
       expect(document.querySelector(".battlefield")).toBeInstanceOf(HTMLElement)
     );
     expect(document.querySelector(".combat-feedback")).toBeNull();
+    await userEvent.click(page.getByRole("button", { name: "Top-down" }));
+    await expect
+      .element(page.getByRole("button", { name: "Top-down" }))
+      .toHaveAttribute("aria-pressed", "true");
+    await vi.waitFor(() =>
+      expect(
+        document.querySelectorAll(".battlefield-canvas canvas")
+      ).toHaveLength(1)
+    );
+    await userEvent.click(page.getByRole("button", { name: "Stylized depth" }));
+    await expect
+      .element(page.getByRole("button", { name: "Stylized depth" }))
+      .toHaveAttribute("aria-pressed", "true");
     render(changed);
     await vi.waitFor(() =>
       expect(document.querySelector(".combat-feedback")).toHaveAttribute(
