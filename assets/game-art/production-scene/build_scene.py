@@ -1978,10 +1978,24 @@ def verify(root: Path = ROOT) -> None:
                 raise ValueError(f"Manifest path has no canonical semantics: {path}")
             if (record["category"], record["alphaSemantics"], record["contributesTo"]) != semantics:
                 raise ValueError(f"Manifest semantics drifted: {path}")
+            canonical_directories = {
+                "environment": "assets/game-art/production-scene/exports/environment",
+                "entity": "assets/game-art/production-scene/exports/entities",
+                "effect": "assets/game-art/production-scene/exports/effects",
+                "lighting": "assets/game-art/production-scene/exports/lighting",
+                "occlusion-mask": "assets/game-art/production-scene/exports/occlusion",
+                "walkable-mask": "assets/game-art/production-scene/exports/occlusion",
+                "foreground": "assets/game-art/production-scene/exports/occlusion",
+                "hud": "assets/game-art/production-scene/exports/hud",
+                "evidence": "docs/visual-evidence/production-scene",
+            }
+            canonical_path = f"{canonical_directories[record['category']]}/{record['id']}.png"
+            if path_text != canonical_path:
+                raise ValueError(f"Manifest ID is not bound to its canonical path: {record['id']}")
+            if record["id"] in ids:
+                raise ValueError(f"Duplicate asset id: {record['id']}")
+            ids.add(record["id"])
             if record["category"] not in {"evidence", "occlusion-mask", "walkable-mask"}:
-                if record["id"] in ids:
-                    raise ValueError(f"Duplicate asset id: {record['id']}")
-                ids.add(record["id"])
                 assets[record["id"]] = image.convert("RGBA")
     actual_exports = {path.relative_to(root).as_posix() for path in (package / "exports").rglob("*.png")}
     declared_exports = {record["path"] for record in manifest["files"]}
