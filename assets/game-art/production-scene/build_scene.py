@@ -335,6 +335,30 @@ def composite(clean: Image.Image, layers: Iterable[tuple[Image.Image, tuple[int,
     return output
 
 
+def isolation_board(images: list[Image.Image], scale: int) -> Image.Image:
+    scaled = [
+        image.resize(
+            (image.width * scale, image.height * scale),
+            Image.Resampling.NEAREST,
+        )
+        for image in images
+    ]
+    total_width = sum(image.width for image in scaled) + 80 * (len(scaled) - 1)
+    board_width = max(1280, total_width + 160)
+    board_height = max(720, max(image.height for image in scaled) + 160)
+    board = Image.new("RGBA", (board_width, board_height), (7, 13, 22, 255))
+    checker = ImageDraw.Draw(board)
+    for y in range(0, board_height, 32):
+        for x in range(0, board_width, 32):
+            if (x // 32 + y // 32) % 2 == 0:
+                checker.rectangle((x, y, x + 31, y + 31), fill=(25, 35, 45, 255))
+    x = (board_width - total_width) // 2
+    for image in scaled:
+        board.alpha_composite(image, (x, (board_height - image.height) // 2))
+        x += image.width + 80
+    return board
+
+
 def compose_recipe(
     recipe: dict[str, object], assets: dict[str, Image.Image]
 ) -> Image.Image:
@@ -471,29 +495,6 @@ def build(output_root: Path = ROOT) -> None:
     comparison.alpha_composite(approved, (0, 0))
     comparison.alpha_composite(reconstruction, (1280, 0))
     png(comparison, evidence / "approved-keyframe-vs-reconstruction.png")
-
-    def isolation_board(images: list[Image.Image], scale: int) -> Image.Image:
-        scaled = [
-            image.resize(
-                (image.width * scale, image.height * scale),
-                Image.Resampling.NEAREST,
-            )
-            for image in images
-        ]
-        total_width = sum(image.width for image in scaled) + 80 * (len(scaled) - 1)
-        board_width = max(1280, total_width + 160)
-        board_height = max(720, max(image.height for image in scaled) + 160)
-        board = Image.new("RGBA", (board_width, board_height), (7, 13, 22, 255))
-        checker = ImageDraw.Draw(board)
-        for y in range(0, board_height, 32):
-            for x in range(0, board_width, 32):
-                if (x // 32 + y // 32) % 2 == 0:
-                    checker.rectangle((x, y, x + 31, y + 31), fill=(25, 35, 45, 255))
-        x = (board_width - total_width) // 2
-        for image in scaled:
-            board.alpha_composite(image, (x, (board_height - image.height) // 2))
-            x += image.width + 80
-        return board
 
     png(
         isolation_board(
@@ -1079,6 +1080,80 @@ def verify(root: Path = ROOT) -> None:
         hud_isolation,
         root / expected_proof_paths["hudControls"],
         "HUD-isolation proof",
+    )
+    evidence_root = root / "docs/visual-evidence/production-scene"
+    require_same_pixels(
+        composite(
+            asset_images["shuttergate-clean-plate-1280x720"],
+            [
+                (asset_images["foreground-occluder"], (0, 0)),
+                (asset_images["warm-light-overlay"], (0, 0)),
+            ],
+        ),
+        evidence_root / "environment-and-presentation-lighting.png",
+        "Environment-and-lighting proof",
+    )
+    require_same_pixels(
+        isolation_board(
+            [
+                asset_images["iron-warden-idle"],
+                asset_images["iron-warden-shield-slam"],
+            ],
+            1,
+        ),
+        evidence_root / "iron-warden-alpha-states-native.png",
+        "Native Warden alpha proof",
+    )
+    require_same_pixels(
+        isolation_board(
+            [
+                asset_images["iron-warden-idle"],
+                asset_images["iron-warden-shield-slam"],
+            ],
+            4,
+        ),
+        evidence_root / "iron-warden-alpha-states-4x.png",
+        "4x Warden alpha proof",
+    )
+    require_same_pixels(
+        isolation_board(
+            [asset_images["mine-raider-idle"], asset_images["mine-raider-attack"]],
+            1,
+        ),
+        evidence_root / "mine-raider-alpha-states-native.png",
+        "Native mine-raider alpha proof",
+    )
+    require_same_pixels(
+        isolation_board(
+            [asset_images["mine-raider-idle"], asset_images["mine-raider-attack"]],
+            4,
+        ),
+        evidence_root / "mine-raider-alpha-states-4x.png",
+        "4x mine-raider alpha proof",
+    )
+    require_same_pixels(
+        isolation_board(
+            [
+                asset_images["warden-selection-ring"],
+                asset_images["hostile-faction-ring"],
+                asset_images["shield-slam-impact"],
+            ],
+            2,
+        ),
+        evidence_root / "selection-and-combat-effect-isolation.png",
+        "Effect-isolation proof",
+    )
+    approved = Image.open(
+        root
+        / "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png"
+    ).convert("RGBA")
+    comparison = Image.new("RGBA", (2560, 720), (0, 0, 0, 255))
+    comparison.alpha_composite(approved, (0, 0))
+    comparison.alpha_composite(expected_reconstruction, (1280, 0))
+    require_same_pixels(
+        comparison,
+        evidence_root / "approved-keyframe-vs-reconstruction.png",
+        "Approved-keyframe comparison",
     )
 
     provenance = json.loads((package / "metadata" / "provenance.json").read_text(encoding="utf-8"))
