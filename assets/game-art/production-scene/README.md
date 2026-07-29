@@ -12,7 +12,7 @@ Verify committed files without rewriting them:
 
 `uv run --python 3.13.5 --with-requirements assets/game-art/production-scene/requirements.lock python3 assets/game-art/production-scene/build_scene.py --verify`
 
-The verifier strictly rejects extra contract properties, stale/unmanifested files, source or output digest drift, route points outside the walkable mask, route/HUD or route/foreground overlap, unaligned state pivots, noncanonical entity depth, static impact art in the neutral count proof, incomplete mutable HUD variants, and lighting/provenance drift. The reproducibility run rebuilds in an isolated root and compares the complete manifest.
+The verifier strictly rejects extra contract properties, stale/unmanifested files, source or output digest drift, route points outside the walkable mask, route/HUD or route/foreground overlap, unaligned state pivots, noncanonical entity depth, static impact art in the neutral count proof, incomplete mutable HUD variants, actual Python/Pillow/zlib version drift, and lighting/provenance drift. The reproducibility run rebuilds in an isolated root and compares the complete manifest.
 
 ## Runtime-ready boundaries for #287
 

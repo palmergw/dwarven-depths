@@ -8,7 +8,9 @@ import hashlib
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
+import zlib
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -2380,6 +2382,19 @@ def verify(root: Path = ROOT) -> None:
         raise ValueError("Provenance package ID is not canonical")
     if PILLOW_VERSION != provenance["toolchain"]["pillow"]:
         raise ValueError(f"Pillow {provenance['toolchain']['pillow']} is required, got {PILLOW_VERSION}")
+    actual_python = ".".join(str(component) for component in sys.version_info[:3])
+    if actual_python != provenance["toolchain"]["python"]:
+        raise ValueError(
+            f"Python {provenance['toolchain']['python']} is required, got {actual_python}"
+        )
+    if (
+        zlib.ZLIB_VERSION != provenance["toolchain"]["zlib"]
+        or zlib.ZLIB_RUNTIME_VERSION != provenance["toolchain"]["zlib"]
+    ):
+        raise ValueError(
+            f"zlib {provenance['toolchain']['zlib']} is required, got "
+            f"compile={zlib.ZLIB_VERSION} runtime={zlib.ZLIB_RUNTIME_VERSION}"
+        )
     _assert_strict_v2(provenance["license"], {"identifier", "path", "copyright"}, "provenance.license")
     _assert_strict_v2(provenance["toolchain"], {"python", "pillow", "zlib", "lockfile"}, "provenance.toolchain")
     _assert_strict_v2(provenance["cleanPlate"], {"path", "sha256", "generator", "reference", "referenceUse"}, "provenance.cleanPlate")
