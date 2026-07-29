@@ -1994,30 +1994,30 @@ def verify(root: Path = ROOT) -> None:
         "selection-and-combat-effect-isolation",
         "shield-slam-effect-proof",
     ]
-    canonical_alpha_profiles = {
-        "iron-warden-idle": ([31, 8, 149, 112], 7697, 2782, 4915),
-        "iron-warden-shield-slam": ([12, 8, 169, 112], 10214, 3991, 6223),
-        "mine-raider-attack": ([37, 8, 91, 100], 2603, 279, 2324),
-        "mine-raider-idle": ([10, 8, 119, 100], 5329, 920, 4409),
-        "hostile-faction-ring": ([6, 2, 72, 36], 556, 0, 556),
-        "shield-slam-impact": ([6, 6, 136, 92], 2712, 0, 2712),
-        "warden-selection-ring": ([6, 4, 88, 38], 620, 0, 620),
-        "warm-light-overlay": ([0, 0, 1280, 720], 652740, 0, 652740),
-        "foreground-occluder": ([0, 92, 1280, 720], 109643, 109643, 0),
-        "bottom-hud-frame": ([272, 604, 1263, 705], 95355, 24060, 71295),
-        "fortress-value": ([67, 14, 173, 28], 508, 508, 0),
-        "health-value": ([18, 14, 173, 76], 3595, 3595, 0),
-        "ore-value": ([81, 14, 159, 28], 408, 408, 0),
-        "pause-state": ([46, 14, 104, 79], 708, 708, 0),
-        "resume-state": ([40, 14, 110, 81], 733, 733, 0),
-        "shield-slam-cooldown-state": ([22, 14, 153, 73], 729, 729, 0),
-        "shield-slam-ready-state": ([22, 14, 177, 73], 997, 997, 0),
-        "target-nearest-state": ([54, 14, 136, 28], 468, 468, 0),
-        "target-strongest-state": ([42, 14, 148, 28], 564, 564, 0),
-        "top-hud-frame": ([18, 10, 1263, 61], 35601, 14220, 21381),
-        "warden-name": ([55, 14, 125, 28], 436, 436, 0),
-        "warden-portrait": ([3, 10, 76, 74], 3038, 757, 2281),
-        "wave-value": ([81, 14, 147, 28], 312, 312, 0),
+    canonical_alpha_digests = {
+        "iron-warden-idle": "d51b160d54efd11fe6942b63ebeb1aee90ba51617eda4e8df6206cf5d157427b",
+        "iron-warden-shield-slam": "db87bd517b201749f2e92293baf39c98b14092b640ad078f487dba956438a55a",
+        "mine-raider-attack": "5c6be079e88381a4bf5d68fb9a5cce5d515baddd37c5afeb01655fdb43b4a5a4",
+        "mine-raider-idle": "b084a456fb693fe3cc534645b6c6ceda655cdfae9fd6eb8f923e71fe6087eb8a",
+        "hostile-faction-ring": "46f77279619c2939f7595424a3ca496c7e78d9bd5e0564e5313215b6bc1a81d6",
+        "shield-slam-impact": "d5e7aa549c609af7425f5c1b6e483ae6ddb1cdec46f79ab455a37b0874387ec8",
+        "warden-selection-ring": "f6fd0e80c9f66e3e4f614cf9867bf9f53c9c9998c16d641b0f036ed12a5d01da",
+        "warm-light-overlay": "438f8d6eb92409b8551e427ee5c19c462a0401e87c8c50860c3dd3e1836b0152",
+        "foreground-occluder": "da5723f77e92cc4c85204bba992928118f0153c0639daa1c46503aa09585ce4d",
+        "bottom-hud-frame": "216ad8a8bbd32ede733c0ab0903bed79d72494e81ec6f2358704ce8af1f82139",
+        "fortress-value": "a0f6d0ef5929dcff92985c4511e8956abedd64ff6de700871b3cfdb101fcd16a",
+        "health-value": "a72653155460191398954e3a9396098022426e731fe953a1b9162f0989249ddf",
+        "ore-value": "8b27fbaca13c3417a9f8881be152fe6c039f0fdbbeb3cfcf0b2c2a46d106c637",
+        "pause-state": "9828cadb9e56803f6f160c04cba47fee7fa2f8b080201a753ece0b1fcc5b85af",
+        "resume-state": "8331238fe10b74dfb04987018f96bc17d02125dba326763fdb44d0aacaef165d",
+        "shield-slam-cooldown-state": "bb0f56b0e6be24b639903d81ac05b5d1781f71c7db0f80538a3f3d96c099c4f4",
+        "shield-slam-ready-state": "f893ea21c05a7f302fe80200e6b16cd0869c05ce10e0b670945455406d67744f",
+        "target-nearest-state": "7f395ee9f99bfd95af76d4128f518960fd4cde7e57cad5ce603dd4639e238a08",
+        "target-strongest-state": "88c1f08957ac55a76c6cbba9e1e4ec1ebd0dd78181bae2ce594736eeb32b9cf5",
+        "top-hud-frame": "07d4fd6d7551d30d163e9c5e189e324b7a9e4557ca4bb824693952bb12ad2c22",
+        "warden-name": "25da2898d62c560c6a1de51fd708474966f2eae0ab9a46eaf5ceeb5efe647355",
+        "warden-portrait": "436898604225efc1c3a860339c15b6653b6ea7547caefb36e6270773a808db4f",
+        "wave-value": "62e1223ea96ab22c6f7795fec653b69eeb6266bdff45642c582092c8463fc2bc",
     }
     if [record.get("id") for record in manifest["files"]] != canonical_file_ids:
         raise ValueError("Manifest runtime asset IDs are incomplete, duplicated, reordered, or noncanonical")
@@ -2067,10 +2067,8 @@ def verify(root: Path = ROOT) -> None:
                 nontransparent = image.width * image.height - alpha_histogram[0]
                 if alpha_histogram[0] == 0 or nontransparent == 0 or nontransparent * 4 > image.width * image.height * 3:
                     raise ValueError(f"Straight-alpha asset lacks usable transparent separation: {path}")
-                bbox = alpha.getbbox()
-                profile = ([*bbox], sum(alpha_histogram[1:]), alpha_histogram[255], sum(alpha_histogram[1:255])) if bbox else None
-                if profile != canonical_alpha_profiles.get(record["id"]):
-                    raise ValueError(f"Straight-alpha profile drifted: {record['id']}")
+                if hashlib.sha256(alpha.tobytes()).hexdigest() != canonical_alpha_digests.get(record["id"]):
+                    raise ValueError(f"Straight-alpha pixels drifted: {record['id']}")
             canonical_directories = {
                 "environment": "assets/game-art/production-scene/exports/environment",
                 "entity": "assets/game-art/production-scene/exports/entities",
@@ -2365,28 +2363,6 @@ def verify(root: Path = ROOT) -> None:
     require_same_pixels(cover_16_9(Image.open(clean_source)), package / "exports" / "environment" / "shuttergate-clean-plate-1280x720.png", "Clean-plate source export")
     if any(provenance["conceptBoundary"][key] for key in ("productionPixelReuse", "tracing", "backgroundUse")):
         raise ValueError("Concept raster may not contribute production pixels")
-
-
-def reproducibility_check() -> None:
-    with tempfile.TemporaryDirectory(prefix="dd-production-scene-") as directory:
-        temp_root = Path(directory)
-        temp_package = temp_root / PACKAGE.relative_to(ROOT)
-        temp_direction = temp_root / DIRECTION.relative_to(ROOT)
-        shutil.copytree(SOURCES, temp_package / "sources")
-        (temp_direction / "sources").mkdir(parents=True)
-        (temp_direction / "exports").mkdir(parents=True)
-        for name in ("iron-warden-master.png", "mine-raider-master.png"):
-            shutil.copy2(DIRECTION / "sources" / name, temp_direction / "sources" / name)
-        shutil.copy2(DIRECTION / "exports" / "shuttergate-keyframe-1280x720.png", temp_direction / "exports" / "shuttergate-keyframe-1280x720.png")
-        (temp_package / "metadata").mkdir(parents=True)
-        for name in ("scene-contract.json", "reconstruction.json", "provenance.json"):
-            shutil.copy2(METADATA / name, temp_package / "metadata" / name)
-        build(temp_root)
-        verify(temp_root)
-        expected = json.loads((METADATA / "layer-manifest.json").read_text(encoding="utf-8"))
-        actual = json.loads((temp_root / METADATA.relative_to(ROOT) / "layer-manifest.json").read_text(encoding="utf-8"))
-        if expected != actual:
-            raise ValueError("Pinned deterministic rebuild drifted from committed layer manifest")
 
 
 def reproducibility_check() -> None:
