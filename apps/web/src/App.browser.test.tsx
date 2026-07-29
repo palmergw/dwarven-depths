@@ -827,6 +827,9 @@ describe("semantic combat controls", () => {
     await vi.waitFor(() =>
       expect(document.querySelectorAll("fieldset button")).toHaveLength(2)
     );
+    expect(container.textContent).toContain("Iron Warden");
+    expect(container.textContent).not.toContain("entity.dwarf.warden");
+    expect(container.textContent).not.toContain("character.iron_warden");
     const highestArmor = Array.from(document.querySelectorAll("button")).find(
       (button) => button.textContent === "Highest armor"
     );
@@ -1365,6 +1368,10 @@ describe("authoritative web worker", () => {
     expect(buildBattlefieldPrimitives(snapshot)).toEqual(
       buildBattlefieldPrimitives(reversed)
     );
+    expect(buildBattlefieldPrimitives(snapshot).nodes).toEqual([
+      { id: "node.1", x: 540, y: 49 },
+      { id: "node:1", x: 146, y: 228 }
+    ]);
     expect(
       buildBattlefieldPrimitives(snapshot).entities.map((entity) => entity.id)
     ).toEqual(["unit.1", "unit:2"]);
@@ -1839,9 +1846,12 @@ describe("authoritative web worker", () => {
     );
     expect(combatControls?.textContent).toContain("Combat controls");
     expect(combatControls?.textContent).toContain("Shield Slam");
-    expect(combatControls?.textContent).toContain("phase_unavailable");
+    expect(combatControls?.textContent).toContain(
+      "Unavailable in the current battle state"
+    );
+    expect(combatControls?.textContent).not.toContain("phase_unavailable");
     expect(document.querySelector("figcaption")?.textContent).toContain(
-      "Battlefield level.shuttergate_hall"
+      "Shuttergate battlefield"
     );
     await userEvent.click(resumeButton);
     await vi.waitFor(
@@ -1877,8 +1887,7 @@ describe("authoritative web worker", () => {
     expect(combatControls?.textContent).toContain("Activation queued");
     await userEvent.click(resumeButton);
     await vi.waitFor(
-      () =>
-        expect(combatControls?.textContent).toMatch(/Cooldown until tick \d+/),
+      () => expect(combatControls?.textContent).toContain("Recharging"),
       { timeout: 10_000 }
     );
   });

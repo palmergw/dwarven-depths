@@ -977,15 +977,24 @@ export function App({
   return (
     <main
       aria-labelledby="app-heading"
+      className={renderSnapshot === undefined ? undefined : "game-shell"}
       data-contrast-preference={contrastPreference}
       data-motion-preference={motionPreference}
       data-sound-preference={soundPreference}
       data-text-scale={textScale}
     >
-      <p className="eyebrow">Authoritative checkpoint</p>
+      <p className="eyebrow">
+        {renderSnapshot === undefined
+          ? "Company checkpoint"
+          : "Shuttergate bastion"}
+      </p>
       <h1 id="app-heading">Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
-        <h2 id="run-heading">Empty Level Conformance Run</h2>
+        <h2 id="run-heading">
+          {renderSnapshot === undefined
+            ? "Company Muster"
+            : "Defend the Deep Road"}
+        </h2>
         <RunJourneyGuide phase={view.phase} />
         {view.phase === "checkpoint" &&
           !settingsOpen &&

@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 import { useEffect, useRef, useState } from "react";
+import ironWardenUrl from "./assets/shuttergate/iron-warden-actions.png";
+import mineRaiderUrl from "./assets/shuttergate/mine-raider-actions.png";
+import shuttergateWorldUrl from "./assets/shuttergate/shuttergate-keyframe-1280x720.png";
 import {
   type CombatFeedback,
   type CombatSoundPlayer,
@@ -15,7 +18,17 @@ import {
 
 const WIDTH = 640;
 const HEIGHT = 360;
-const PADDING = 64;
+const APPROVED_ROUTE = [
+  [540, 49],
+  [508, 63],
+  [472, 85],
+  [443, 112],
+  [429, 143],
+  [397, 169],
+  [365, 203],
+  [282, 266],
+  [146, 228]
+] as const;
 
 export interface RenderPrimitive {
   readonly id: string;
@@ -40,20 +53,20 @@ export function buildBattlefieldPrimitives(
   const orderedNodes = [...snapshot.nodes].sort((left, right) =>
     compareRenderIds(left.id, right.id)
   );
-  const minimumX = Math.min(...orderedNodes.map((node) => node.x), 0);
-  const maximumX = Math.max(...orderedNodes.map((node) => node.x), 0);
-  const minimumY = Math.min(...orderedNodes.map((node) => node.y), 0);
-  const maximumY = Math.max(...orderedNodes.map((node) => node.y), 0);
-  const spanX = Math.max(maximumX - minimumX, 1);
-  const spanY = Math.max(maximumY - minimumY, 1);
-  const project = (x: number, y: number) => ({
-    x: PADDING + ((x - minimumX) / spanX) * (WIDTH - PADDING * 2),
-    y: PADDING + ((y - minimumY) / spanY) * (HEIGHT - PADDING * 2)
+  const nodes = orderedNodes.map((node, index) => {
+    const routeIndex =
+      orderedNodes.length <= 1
+        ? Math.floor(APPROVED_ROUTE.length / 2)
+        : Math.round(
+            (index / (orderedNodes.length - 1)) * (APPROVED_ROUTE.length - 1)
+          );
+    const routePoint = APPROVED_ROUTE[routeIndex] ?? APPROVED_ROUTE[0];
+    return {
+      id: node.id,
+      x: routePoint[0],
+      y: routePoint[1]
+    };
   });
-  const nodes = orderedNodes.map((node) => ({
-    id: node.id,
-    ...project(node.x, node.y)
-  }));
   const positions = new Map(nodes.map((node) => [node.id, node]));
   const orderedEntities = [...snapshot.entities].sort((left, right) =>
     compareRenderIds(left.id, right.id)
@@ -90,8 +103,8 @@ export function buildBattlefieldPrimitives(
       return {
         id: entity.id,
         faction: entity.faction,
-        x: position.x + (column - (columns - 1) / 2) * 38,
-        y: position.y + (row - (rows - 1) / 2) * 38
+        x: position.x + (column - (columns - 1) / 2) * 24,
+        y: position.y + (row - (rows - 1) / 2) * 18
       };
     })
   };
@@ -107,135 +120,98 @@ export function buildDepartureFeedbackPrimitives(
   );
 }
 
-function drawEntity(
-  graphics: Phaser.GameObjects.Graphics,
-  entity: RenderPrimitive & { readonly faction: RenderEntity["faction"] }
-): void {
-  const colors = { dwarf: 0xe6b85c, enemy: 0xd85b50, deployable: 0x67b6d4 };
-  graphics.fillStyle(colors[entity.faction], 1);
-  if (entity.faction === "dwarf") {
-    graphics.fillPoints(
-      [
-        new Phaser.Math.Vector2(entity.x - 14, entity.y - 12),
-        new Phaser.Math.Vector2(entity.x + 14, entity.y - 12),
-        new Phaser.Math.Vector2(entity.x + 11, entity.y + 7),
-        new Phaser.Math.Vector2(entity.x, entity.y + 17),
-        new Phaser.Math.Vector2(entity.x - 11, entity.y + 7)
-      ],
-      true
-    );
-    graphics.fillStyle(0x17130f, 1);
-    graphics.fillRect(entity.x - 2, entity.y - 8, 4, 17);
-    graphics.fillRect(entity.x - 7, entity.y - 3, 14, 4);
-  } else if (entity.faction === "enemy") {
-    graphics.fillPoints(
-      [
-        new Phaser.Math.Vector2(entity.x, entity.y - 17),
-        new Phaser.Math.Vector2(entity.x + 16, entity.y),
-        new Phaser.Math.Vector2(entity.x, entity.y + 17),
-        new Phaser.Math.Vector2(entity.x - 16, entity.y)
-      ],
-      true
-    );
-    graphics.fillStyle(0x17130f, 1);
-    graphics.fillRect(entity.x - 8, entity.y - 3, 5, 5);
-    graphics.fillRect(entity.x + 3, entity.y - 3, 5, 5);
-  } else {
-    graphics.fillRect(entity.x - 14, entity.y - 14, 28, 28);
-    graphics.fillStyle(0x17130f, 1);
-    graphics.fillRect(entity.x - 8, entity.y - 8, 16, 16);
-    graphics.fillStyle(colors.deployable, 1);
-    graphics.fillRect(entity.x - 3, entity.y - 3, 6, 6);
-  }
+function describeCombatFeedback(feedback: CombatFeedback): string {
+  if (feedback.terminal) return "Battle resolved.";
+  const updates: string[] = [];
+  if (feedback.arrivals.length > 0)
+    updates.push(`${feedback.arrivals.length} entered the battle`);
+  if (feedback.departures.length > 0)
+    updates.push(`${feedback.departures.length} left the battle`);
+  return updates.length === 0
+    ? "Battle lines shifted."
+    : `${updates.join("; ")}.`;
 }
 
-function drawBattlefield(
-  scene: Phaser.Scene,
+interface BattlefieldSceneState {
+  readonly scene: Phaser.Scene;
+  readonly entities: Map<string, Phaser.GameObjects.Sprite>;
+  effects?: Phaser.GameObjects.Graphics;
+}
+
+function syncBattlefield(
+  state: BattlefieldSceneState,
   snapshot: RenderSnapshot,
   feedback: CombatFeedback | undefined,
   reduceMotion: boolean,
   previousSnapshot: RenderSnapshot | undefined
 ): void {
-  scene.children.removeAll();
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(0x17130f, 1);
-  graphics.fillRect(0, 0, WIDTH, HEIGHT);
-  graphics.lineStyle(3, 0x80683f, 1);
-  graphics.strokeRoundedRect(16, 16, WIDTH - 32, HEIGHT - 32, 12);
-
+  const { scene } = state;
   const primitives = buildBattlefieldPrimitives(snapshot);
-  const nodes = new Map(primitives.nodes.map((node) => [node.id, node]));
-  graphics.lineStyle(7, 0x3e3327, 1);
-  for (const connection of primitives.connections) {
-    const from = nodes.get(connection.fromId);
-    const to = nodes.get(connection.toId);
-    if (from !== undefined && to !== undefined)
-      graphics.lineBetween(from.x, from.y, to.x, to.y);
-  }
-  graphics.lineStyle(3, 0xb18a4f, 1);
-  for (const connection of primitives.connections) {
-    const from = nodes.get(connection.fromId);
-    const to = nodes.get(connection.toId);
-    if (from !== undefined && to !== undefined)
-      graphics.lineBetween(from.x, from.y, to.x, to.y);
-  }
-  graphics.fillStyle(0xd6c8a8, 1);
-  for (const node of primitives.nodes)
-    graphics.fillRect(node.x - 6, node.y - 6, 12, 12);
-
+  const visibleIds = new Set(primitives.entities.map((entity) => entity.id));
+  for (const [id, sprite] of state.entities)
+    if (!visibleIds.has(id)) {
+      sprite.destroy();
+      state.entities.delete(id);
+    }
   for (const entity of primitives.entities) {
     if (entity.faction === undefined) continue;
-    drawEntity(graphics, { ...entity, faction: entity.faction });
+    const texture = entity.faction === "enemy" ? "mine-raider" : "iron-warden";
+    const frameCount = entity.faction === "enemy" ? 5 : 6;
+    const frame = reduceMotion ? 0 : snapshot.tick % frameCount;
+    let sprite = state.entities.get(entity.id);
+    if (sprite === undefined) {
+      sprite = scene.add.sprite(entity.x, entity.y, texture, frame);
+      sprite
+        .setOrigin(0.5, 0.82)
+        .setScale(entity.faction === "enemy" ? 0.48 : 0.54);
+      state.entities.set(entity.id, sprite);
+    } else {
+      sprite.setTexture(texture, frame);
+      scene.tweens.killTweensOf(sprite);
+      if (reduceMotion) sprite.setPosition(entity.x, entity.y);
+      else
+        scene.tweens.add({
+          targets: sprite,
+          x: entity.x,
+          y: entity.y,
+          duration: 180,
+          ease: "Sine.easeOut"
+        });
+    }
+    sprite.setDepth(100 + entity.y);
   }
 
+  state.effects?.destroy();
+  delete state.effects;
   if (feedback !== undefined) {
     const transient = scene.add.graphics();
-    transient.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 1);
+    transient.setDepth(500);
+    transient.lineStyle(3, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.9);
     const changedIds = new Set([
       ...feedback.arrivals.map((entity) => entity.id),
       ...feedback.departures.map((entity) => entity.id)
     ]);
     for (const entity of primitives.entities)
       if (changedIds.has(entity.id))
-        transient.strokeRect(entity.x - 21, entity.y - 21, 42, 42);
+        transient.strokeCircle(entity.x, entity.y - 15, 24);
     if (previousSnapshot !== undefined)
       for (const entity of buildDepartureFeedbackPrimitives(
         previousSnapshot,
         feedback
       ))
-        transient.strokeRect(entity.x - 19, entity.y - 19, 38, 38);
-    if (feedback.terminal)
-      transient.strokeRect(22, 22, WIDTH - 44, HEIGHT - 44);
+        transient.strokeCircle(entity.x, entity.y - 15, 20);
     if (!reduceMotion)
       scene.tweens.add({
         targets: transient,
-        alpha: 0.2,
-        duration: 450,
+        alpha: 0.15,
+        scale: 1.25,
+        duration: 360,
         yoyo: true,
-        repeat: 1
+        repeat: 1,
+        onComplete: () => transient.destroy()
       });
+    state.effects = transient;
   }
-
-  if (primitives.nodes.length === 0) {
-    scene.add
-      .text(WIDTH / 2, HEIGHT / 2, "Empty level — no combatants deployed", {
-        align: "center",
-        color: "#d8cdb9",
-        fontFamily: "sans-serif",
-        fontSize: "20px"
-      })
-      .setOrigin(0.5);
-  }
-  scene.add.text(
-    32,
-    28,
-    `${snapshot.levelId} · ${snapshot.phase} · tick ${snapshot.tick}`,
-    {
-      color: "#f4ead5",
-      fontFamily: "monospace",
-      fontSize: "14px"
-    }
-  );
 }
 
 interface BattlefieldRenderer {
@@ -258,7 +234,7 @@ function createBattlefieldRenderer(
   let feedback = initialFeedback;
   let reduceMotion = initialReduceMotion;
   let previousSnapshot: RenderSnapshot | undefined;
-  let scene: Phaser.Scene | undefined;
+  let sceneState: BattlefieldSceneState | undefined;
   const game = new Phaser.Game({
     type: Phaser.CANVAS,
     width: WIDTH,
@@ -270,10 +246,36 @@ function createBattlefieldRenderer(
     render: { antialias: false, pixelArt: true },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: {
+      preload(this: Phaser.Scene) {
+        this.load.image("shuttergate-world", shuttergateWorldUrl);
+        this.load.spritesheet("iron-warden", ironWardenUrl, {
+          frameWidth: 64,
+          frameHeight: 128
+        });
+        this.load.spritesheet("mine-raider", mineRaiderUrl, {
+          frameWidth: 64,
+          frameHeight: 128
+        });
+      },
       create(this: Phaser.Scene) {
-        scene = this;
-        drawBattlefield(
-          this,
+        this.add
+          .image(WIDTH / 2, HEIGHT / 2, "shuttergate-world")
+          .setDisplaySize(WIDTH, HEIGHT)
+          .setDepth(0);
+        const warmLight = this.add.circle(213, 175, 92, 0xd17a36, 0.1);
+        warmLight.setBlendMode(Phaser.BlendModes.ADD).setDepth(450);
+        if (!reduceMotion)
+          this.tweens.add({
+            targets: warmLight,
+            alpha: { from: 0.06, to: 0.14 },
+            scale: { from: 0.92, to: 1.08 },
+            duration: 900,
+            yoyo: true,
+            repeat: -1
+          });
+        sceneState = { scene: this, entities: new Map() };
+        syncBattlefield(
+          sceneState,
           snapshot,
           feedback,
           reduceMotion,
@@ -288,9 +290,9 @@ function createBattlefieldRenderer(
       feedback = nextFeedback;
       reduceMotion = nextReduceMotion;
       previousSnapshot = nextPreviousSnapshot;
-      if (scene !== undefined)
-        drawBattlefield(
-          scene,
+      if (sceneState !== undefined)
+        syncBattlefield(
+          sceneState,
           snapshot,
           feedback,
           reduceMotion,
@@ -298,7 +300,7 @@ function createBattlefieldRenderer(
         );
     },
     destroy() {
-      scene = undefined;
+      sceneState = undefined;
       game.destroy(true);
       parent.replaceChildren();
     }
@@ -382,17 +384,17 @@ export function Battlefield({
     <figure className="battlefield">
       <div ref={parentRef} className="battlefield-canvas" aria-hidden="true" />
       <figcaption aria-live="off">
-        Battlefield {snapshot.levelId}: {snapshot.phase} at tick {snapshot.tick}
-        ; {snapshot.entities.length}{" "}
-        {snapshot.entities.length === 1 ? "entity" : "entities"}.
+        Shuttergate battlefield:{" "}
+        {snapshot.phase === "running" ? "combat in progress" : snapshot.phase};{" "}
+        {snapshot.entities.length}{" "}
+        {snapshot.entities.length === 1 ? "combatant" : "combatants"}.
         {feedback !== undefined && (
           <span
             className="combat-feedback"
             data-motion={reduceMotion ? "static" : "animated"}
-            data-tick={feedback.tick}
           >
             {" "}
-            {feedback.summary}
+            {describeCombatFeedback(feedback)}
           </span>
         )}
       </figcaption>

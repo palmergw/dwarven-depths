@@ -9,6 +9,20 @@ const TARGET_POLICY_LABELS: Readonly<Record<TargetPolicy, string>> = {
   boss_or_elite_first: "Boss or elite first"
 };
 
+function characterName(characterId: string): string {
+  const stableName = characterId.split(".").at(-1) ?? "warden";
+  return stableName
+    .split("_")
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
+function rejectionMessage(rejectionReason: string | null): string | null {
+  return rejectionReason === null
+    ? null
+    : "Unavailable in the current battle state";
+}
+
 interface CombatControlsProps {
   readonly dwarves: readonly CombatControlDwarf[];
   readonly pendingAbilityKeys?: ReadonlySet<string>;
@@ -42,8 +56,7 @@ export function CombatControls({
       ) : (
         dwarves.map((dwarf) => (
           <fieldset key={dwarf.entityId}>
-            <legend>{dwarf.characterId}</legend>
-            <p className="control-entity-id">{dwarf.entityId}</p>
+            <legend>{characterName(dwarf.characterId)}</legend>
             {dwarf.supportedTargetPolicies.map((policy) => (
               <button
                 key={policy}
@@ -77,10 +90,10 @@ export function CombatControls({
                   <span id={feedbackId} role="status">
                     {pending
                       ? "Activation queued"
-                      : (ability.rejectionReason ??
+                      : (rejectionMessage(ability.rejectionReason) ??
                         (ability.cooldownCompleteAtTick === null
                           ? "Ready"
-                          : `Cooldown until tick ${ability.cooldownCompleteAtTick}`))}
+                          : "Recharging"))}
                   </span>
                 </span>
               );

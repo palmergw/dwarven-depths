@@ -407,3 +407,119 @@ main[data-contrast-preference="high"] .upgrade-inventory-list div {
     gap: 0.25rem;
   }
 }
+
+/* Approved #282 Shuttergate frame integration. The shell remains presentation-only. */
+.game-shell {
+  width: min(90rem, calc(100% - 1.5rem));
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+.game-shell > .eyebrow {
+  margin: 0 0 0.2rem;
+}
+.game-shell > h1 {
+  margin-bottom: 0.75rem;
+  font-size: clamp(1.75em, 4vw, 3.25em);
+  letter-spacing: 0.04em;
+}
+.game-shell > .panel {
+  padding: clamp(0.5rem, 1.5vw, 1rem);
+  border-color: #9a7142;
+  border-radius: 0.25rem;
+  background:
+    linear-gradient(180deg, #090d12e6, #040608f2),
+    repeating-linear-gradient(90deg, #2f2621 0 2px, #121618 2px 7px);
+  box-shadow:
+    0 1.5rem 5rem #000d,
+    inset 0 0 0 2px #24170e;
+}
+.game-shell > .panel > h2 {
+  margin: 0 0 0.5rem;
+  color: #e3bd78;
+  font-family: Georgia, serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.game-shell .run-journey,
+.game-shell .preparation-summary,
+.game-shell > .panel > .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.game-shell .battlefield {
+  margin: 0;
+}
+.game-shell .battlefield-canvas {
+  border: 2px solid #6e4b2d;
+  border-radius: 0.15rem;
+  background: #030508;
+  box-shadow:
+    inset 0 0 2rem #000,
+    0 0.75rem 2rem #000b;
+}
+.game-shell .battlefield figcaption {
+  margin: 0.4rem 0.25rem 0;
+  color: #d8c6a1;
+}
+.game-shell .combat-hud,
+.game-shell .combat-controls {
+  display: inline-block;
+  width: calc(50% - 0.4rem);
+  min-height: 8rem;
+  margin: 0.6rem 0.2rem 0;
+  vertical-align: top;
+  border: 2px solid #795332;
+  border-radius: 0.15rem;
+  background:
+    linear-gradient(135deg, #271b12f2, #0b101af5),
+    repeating-linear-gradient(0deg, transparent 0 4px, #ffffff08 4px 5px);
+  box-shadow: inset 0 0 0 1px #b1845a55;
+}
+.game-shell .combat-hud dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.game-shell .combat-hud dl div {
+  display: block;
+  padding: 0.5rem;
+  border: 1px solid #60452f;
+  background: #05090ecc;
+}
+.game-shell .combat-controls fieldset {
+  margin-top: 0.5rem;
+  border-color: #60452f;
+}
+
+@media (max-width: 32rem) {
+  .game-shell {
+    width: calc(100% - 0.5rem);
+    padding-top: 0.25rem;
+  }
+  .game-shell > h1 {
+    margin-bottom: 0.4rem;
+    font-size: 1.7em;
+  }
+  .game-shell > .panel {
+    padding: 0.25rem;
+  }
+  .game-shell > .panel > h2 {
+    margin: 0.25rem;
+    font-size: 0.85em;
+  }
+  .game-shell .combat-hud,
+  .game-shell .combat-controls {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    margin: 0.5rem 0 0;
+  }
+  .game-shell .combat-hud dl {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
