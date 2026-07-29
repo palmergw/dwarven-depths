@@ -1903,6 +1903,20 @@ def verify(root: Path = ROOT) -> None:
         raise ValueError("Production-scene contracts must use schema version 2")
     if scene["authority"] != "presentation-only" or recipe["frame"] != list(FRAME):
         raise ValueError("Scene authority or frame drifted")
+    _assert_strict_v2(scene["coordinateSpace"], {"origin", "logicalFrame", "reviewFrame", "logicalTexelScale"}, "scene.coordinateSpace")
+    _assert_strict_v2(scene["safeAreas"], {"world", "unobscuredWorldBand", "entitySafe", "hudOcclusionRects"}, "scene.safeAreas")
+    _assert_strict_v2(scene["camera"], {"projection", "viewDirection", "fixedReviewFrame"}, "scene.camera")
+    _assert_strict_v2(scene["entityAnchors"], {"ironWardenTruthScreen", "mineRaiderTruthScreen"}, "scene.entityAnchors")
+    for name, anchor in scene["entityAnchors"].items():
+        _assert_strict_v2(anchor, {"groundPosition", "depthSortY"}, f"scene.entityAnchors.{name}")
+    occlusion = _assert_strict_v2(scene["occlusion"], {"mask", "foreground", "scope", "routeTraversalOwner", "zones", "depthOrder"}, "scene.occlusion")
+    for index, zone in enumerate(occlusion["zones"]):
+        _assert_strict_v2(zone, {"id", "depthThreshold", "bounds"}, f"scene.occlusion.zones[{index}]")
+    _assert_strict_v2(scene["lighting"], {"asset", "blendMode", "colorSpace", "alpha", "affects", "excludes"}, "scene.lighting")
+    _assert_strict_v2(scene["hudRegions"], {"top", "bottom", "fortressStatus", "waveStatus", "oreStatus", "wardenNameplate", "portrait", "health", "targetPolicy", "shieldSlam", "pause"}, "scene.hudRegions")
+    _assert_strict_v2(scene["cropPolicy"], {"desktop", "laptop", "mobile", "status"}, "scene.cropPolicy")
+    if recipe["entityCounts"] != {"iron-warden": 1, "mine-raider": 1} or manifest["entityLayerCounts"] != recipe["entityCounts"]:
+        raise ValueError("Declared entity counts are not canonical")
     expected_digests = {name: sha256(metadata / name) for name in ("provenance.json", "reconstruction.json", "scene-contract.json")}
     if manifest["contractDigests"] != expected_digests:
         raise ValueError("Scene metadata digest mismatch")
@@ -1968,7 +1982,15 @@ def verify(root: Path = ROOT) -> None:
         _assert_strict_v2(layer, expected, f"reconstruction.layer[{index}]")
         if layer["asset"] not in assets:
             raise ValueError(f"Unknown reconstruction asset: {layer['asset']}")
-    entity_layers = [layer for layer in _ordered_layers_v2(recipe) if layer["region"] == "world-entities"]
+    ordered_layers = _ordered_layers_v2(recipe)
+    if layers != ordered_layers:
+        raise ValueError("Reconstruction layers are not stored in canonical depth order")
+    entity_layers = [layer for layer in layers if layer["region"] == "world-entities"]
+    if {layer["asset"] for layer in entity_layers} != set(expected_entities):
+        raise ValueError("Reconstruction must contain exactly one required Warden and hostile layer")
+    ring_layers = {layer["asset"] for layer in layers if layer["region"] == "world-effects"}
+    if ring_layers != {"warden-selection-ring", "hostile-faction-ring"}:
+        raise ValueError("Neutral reconstruction must contain exactly the two faction rings")
     if [layer["depthSortY"] for layer in entity_layers] != sorted(layer["depthSortY"] for layer in entity_layers):
         raise ValueError("Entities are not canonically depth sorted")
     for layer in entity_layers:
@@ -1978,10 +2000,28 @@ def verify(root: Path = ROOT) -> None:
             raise ValueError("Entity recipe does not bind pivot/depth anchors")
     if "shield-slam-impact" in {layer["asset"] for layer in layers}:
         raise ValueError("Neutral count reconstruction may not obscure the hostile with impact art")
+    expected_proofs = {
+        "entitiesRemoved": "docs/visual-evidence/production-scene/reconstruction-entities-removed.png",
+        "individualRemoval": "docs/visual-evidence/production-scene/entity-removal-grid.png",
+        "environmentOnly": "docs/visual-evidence/production-scene/clean-plate.png",
+        "hudControls": "docs/visual-evidence/production-scene/hud-control-isolation.png",
+        "hudMutation": "docs/visual-evidence/production-scene/hud-state-mutation.png",
+        "foreground": "docs/visual-evidence/production-scene/foreground-occlusion-isolation.png",
+        "occlusionDepth": "docs/visual-evidence/production-scene/occlusion-depth-proof.png",
+        "lighting": "docs/visual-evidence/production-scene/lighting-alpha-isolation.png",
+        "lightingEntities": "docs/visual-evidence/production-scene/lighting-entity-proof.png",
+        "route": "docs/visual-evidence/production-scene/route-anchor-validation.png",
+        "alignment": "docs/visual-evidence/production-scene/entity-state-alignment.png",
+        "impact": "docs/visual-evidence/production-scene/shield-slam-effect-proof.png",
+    }
+    if recipe["isolationProofs"] != expected_proofs or not all((root / path).is_file() for path in expected_proofs.values()):
+        raise ValueError("Isolation proof paths are incomplete or noncanonical")
     require_same_pixels(_compose_v2(recipe, assets), root / recipe["output"], "Neutral reconstruction")
 
     hud = scene["hudDynamicState"]
     _assert_strict_v2(hud, {"font", "textColor", "baselinePolicy", "fixture", "minimumVariants"}, "scene.hudDynamicState")
+    _assert_strict_v2(hud["fixture"], {"fortress", "wave", "ore", "health", "targetPolicy", "shieldSlam", "paused"}, "scene.hudDynamicState.fixture")
+    _assert_strict_v2(hud["minimumVariants"], {"targetPolicy", "shieldSlam", "pause"}, "scene.hudDynamicState.minimumVariants")
     required_hud_assets = {"target-nearest-state", "target-strongest-state", "shield-slam-ready-state", "shield-slam-cooldown-state", "pause-state", "resume-state"}
     if not required_hud_assets.issubset(ids):
         raise ValueError("Minimum mutable HUD state assets are incomplete")
@@ -2017,6 +2057,24 @@ def verify(root: Path = ROOT) -> None:
         raise ValueError("Pinned image toolchain contract drifted")
     if PILLOW_VERSION != provenance["toolchain"]["pillow"]:
         raise ValueError(f"Pillow {provenance['toolchain']['pillow']} is required, got {PILLOW_VERSION}")
+    _assert_strict_v2(provenance["license"], {"identifier", "path", "copyright"}, "provenance.license")
+    _assert_strict_v2(provenance["toolchain"], {"python", "pillow", "zlib", "lockfile"}, "provenance.toolchain")
+    _assert_strict_v2(provenance["cleanPlate"], {"path", "sha256", "generator", "reference", "referenceUse"}, "provenance.cleanPlate")
+    _assert_strict_v2(provenance["cleanPlate"]["generator"], {"provider", "model", "quality", "aspectRatio", "inputImageCount"}, "provenance.cleanPlate.generator")
+    _assert_strict_v2(provenance["derivedLayers"], {"characterSources", "method", "effectsHudMasks", "externalAssets"}, "provenance.derivedLayers")
+    _assert_strict_v2(provenance["conceptBoundary"], {"path", "productionPixelReuse", "tracing", "backgroundUse"}, "provenance.conceptBoundary")
+    required_inputs = {
+        "assets/game-art/visual-direction/sources/keyframe-master.png",
+        "assets/game-art/visual-direction/sources/iron-warden-master.png",
+        "assets/game-art/visual-direction/sources/mine-raider-master.png",
+        "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png",
+        "assets/concept-art/dwarven-depths-gameplay-mockup.png",
+        "assets/game-art/production-scene/generation-log.md",
+        "assets/game-art/production-scene/requirements.lock",
+        "assets/game-art/production-scene/build_scene.py",
+    }
+    if {record.get("path") for record in provenance["inputs"] if isinstance(record, dict)} != required_inputs:
+        raise ValueError("Pinned provenance input set is incomplete or noncanonical")
     for input_record in provenance["inputs"]:
         _assert_strict_v2(input_record, {"path", "sha256", "role"}, "provenance.input")
         if sha256(root / input_record["path"]) != input_record["sha256"]:

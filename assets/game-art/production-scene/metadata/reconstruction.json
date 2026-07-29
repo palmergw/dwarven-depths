@@ -55,6 +55,12 @@
       "zOrder": 70
     },
     {
+      "asset": "bottom-hud-frame",
+      "position": [0, 0],
+      "region": "screen-space-hud",
+      "zOrder": 70
+    },
+    {
       "asset": "fortress-value",
       "position": [18, 10],
       "region": "screen-space-hud",
@@ -71,12 +77,6 @@
       "position": [1022, 10],
       "region": "screen-space-hud",
       "zOrder": 71
-    },
-    {
-      "asset": "bottom-hud-frame",
-      "position": [0, 0],
-      "region": "screen-space-hud",
-      "zOrder": 70
     },
     {
       "asset": "warden-name",
