@@ -1935,6 +1935,9 @@ def verify(root: Path = ROOT) -> None:
         require_exact_json(scene[section], expected, f"scene.{section}")
     if recipe["entityCounts"] != {"iron-warden": 1, "mine-raider": 1} or manifest["entityLayerCounts"] != recipe["entityCounts"]:
         raise ValueError("Declared entity counts are not canonical")
+    canonical_output = "docs/visual-evidence/production-scene/reconstruction-one-warden-one-hostile.png"
+    if recipe["output"] != canonical_output:
+        raise ValueError("Reconstruction output path is not canonical")
     expected_digests = {name: sha256(metadata / name) for name in ("provenance.json", "reconstruction.json", "scene-contract.json")}
     if manifest["contractDigests"] != expected_digests:
         raise ValueError("Scene metadata digest mismatch")
