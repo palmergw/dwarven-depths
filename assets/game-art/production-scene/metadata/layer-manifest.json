@@ -8,9 +8,9 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "a8f6a30e2fe2c28821300ce39d2d3f32e9b719d7ed1a9cb97412bbdd06583166",
+    "provenance.json": "2bfebd08181ab66969988e71acf1762965434283b690e190abd7b869f542baee",
     "reconstruction.json": "cbcbf220541c2246f0dbf751ebfc51a14871d744c2f88250a2d2b09cd959f140",
-    "scene-contract.json": "b9150a6120a4bd8e946e120e5399397a703c0b848a48d69e96b547b99f08f773"
+    "scene-contract.json": "44576d8e6c6a464f7ff60e3c64b8b922575fb0c1a07c71322e6bcab54a2bab83"
   },
   "files": [
     {
@@ -443,7 +443,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "3faf290e223ba8e9c1fee47d2cdeea029716537d6c592f45177e6896fc5ed0fa"
+      "sha256": "9c98c35b4f330352656004db2475afca60eaa7f37305e9a4170b15d241055093"
     },
     {
       "id": "reconstruction-entities-removed",

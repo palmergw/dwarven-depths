@@ -80,12 +80,12 @@
       {
         "id": "upper-left-column",
         "depthThreshold": 260,
-        "bounds": [0, 92, 188, 390]
+        "bounds": [0, 92, 189, 421]
       },
       {
         "id": "lower-right-balustrade",
         "depthThreshold": 520,
-        "bounds": [1030, 458, 1280, 720]
+        "bounds": [1030, 421, 1280, 720]
       }
     ],
     "depthOrder": [

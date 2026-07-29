@@ -1647,6 +1647,19 @@ def _occlusion_v2(clean: Image.Image) -> tuple[Image.Image, Image.Image]:
     return mask, occluder
 
 
+def _occlusion_sample_v2(
+    clean: Image.Image,
+    sprite: Image.Image,
+    ground: tuple[int, int],
+    pivot: tuple[int, int],
+    occluder: Image.Image,
+) -> Image.Image:
+    scene = clean.copy()
+    scene.alpha_composite(sprite, (ground[0] - pivot[0], ground[1] - pivot[1]))
+    scene.alpha_composite(occluder)
+    return scene
+
+
 def _ordered_layers_v2(recipe: dict[str, object]) -> list[dict[str, object]]:
     layers = recipe["layersBackToFront"]
     if not isinstance(layers, list) or not layers:
@@ -1834,7 +1847,13 @@ def build(output_root: Path = ROOT) -> None:
     png(hud_mutation, evidence / "hud-state-mutation.png")
 
     png(occlusion_board(clean, mask, occluder), evidence / "foreground-occlusion-isolation.png")
-    occlusion_samples = _labelled_grid_v2([("UPPER COLUMN BEHIND", clean), ("TRUTH ANCHORS CLEAR", reconstruction), ("LOWER RAIL BEHIND", clean), ("ROUTE TRAVERSAL DEFERRED 273", _route_board_v2(clean, scene["route"]["polyline"], walkable))])
+    upper_occlusion = _occlusion_sample_v2(
+        clean, sprites["iron-warden-idle"], (140, 200), (90, 112), occluder
+    )
+    lower_occlusion = _occlusion_sample_v2(
+        clean, sprites["mine-raider-idle"], (1100, 520), (64, 100), occluder
+    )
+    occlusion_samples = _labelled_grid_v2([("UPPER COLUMN BEHIND", upper_occlusion), ("TRUTH ANCHORS CLEAR", reconstruction), ("LOWER RAIL BEHIND", lower_occlusion), ("ROUTE TRAVERSAL DEFERRED 273", _route_board_v2(clean, scene["route"]["polyline"], walkable))])
     png(occlusion_samples, evidence / "occlusion-depth-proof.png")
     png(lighting, evidence / "lighting-alpha-isolation.png")
     unlit = _compose_v2(_recipe_without_v2(recipe, {"warm-light-overlay"}), assets)
@@ -1926,7 +1945,7 @@ def verify(root: Path = ROOT) -> None:
         "route": {"polyline": [[1110, 112], [1028, 166], [936, 224], [825, 295], [701, 365], [585, 426], [457, 500], [318, 565], [181, 621]], "entranceAnchor": [1110, 112], "gateAnchor": [181, 621], "chokepointAnchors": [[825, 295], [585, 426]], "railCrossingAnchor": [701, 365], "walkableMask": "route-walkable-mask", "minimumWalkableRadius": 26},
         "entityAnchors": {"ironWardenTruthScreen": {"groundPosition": [674, 434], "depthSortY": 434}, "mineRaiderTruthScreen": {"groundPosition": [802, 398], "depthSortY": 398}},
         "entityStates": {"iron-warden-idle": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "iron-warden-shield-slam": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "mine-raider-idle": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}, "mine-raider-attack": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}},
-        "occlusion": {"mask": "architecture-mask", "foreground": "foreground-occluder", "scope": "fixed-issue-287-truth-screen-anchors-only", "routeTraversalOwner": 273, "zones": [{"id": "upper-left-column", "depthThreshold": 260, "bounds": [0, 92, 188, 390]}, {"id": "lower-right-balustrade", "depthThreshold": 520, "bounds": [1030, 458, 1280, 720]}], "depthOrder": ["environment", "rings", "entities-by-depthSortY", "foreground-occluder", "lighting-normal-srgb", "combat-effects", "hud"]},
+        "occlusion": {"mask": "architecture-mask", "foreground": "foreground-occluder", "scope": "fixed-issue-287-truth-screen-anchors-only", "routeTraversalOwner": 273, "zones": [{"id": "upper-left-column", "depthThreshold": 260, "bounds": [0, 92, 189, 421]}, {"id": "lower-right-balustrade", "depthThreshold": 520, "bounds": [1030, 421, 1280, 720]}], "depthOrder": ["environment", "rings", "entities-by-depthSortY", "foreground-occluder", "lighting-normal-srgb", "combat-effects", "hud"]},
         "hudRegions": {"top": [0, 0, 1280, 72], "bottom": [272, 590, 1280, 720], "fortressStatus": [18, 10, 258, 60], "waveStatus": [526, 10, 754, 60], "oreStatus": [1022, 10, 1262, 60], "wardenNameplate": [272, 604, 452, 704], "portrait": [282, 614, 360, 694], "health": [462, 604, 652, 704], "targetPolicy": [662, 604, 852, 704], "shieldSlam": [862, 604, 1102, 704], "pause": [1112, 604, 1262, 704]},
         "hudDynamicState": {"font": "project-authored-5x7-pixel-uppercase", "textColor": [222, 170, 88, 255], "baselinePolicy": "regions-use-top-left-local-integer-pixel-baselines", "fixture": {"fortress": "18/20", "wave": "7", "ore": "840", "health": "84/100", "targetPolicy": "nearest", "shieldSlam": "ready", "paused": False}, "minimumVariants": {"targetPolicy": ["nearest", "strongest"], "shieldSlam": ["ready", "cooldown"], "pause": ["pause", "resume"]}},
         "cropPolicy": {"desktop": "show-full-16:9-frame", "laptop": "fit-full-frame-before-cropping; preserve both HUD bands and entrance/gate anchors", "mobile": "later-work-may-letterbox-or-use-authored-camera-crop; never crop both entrance and gate; HUD must reflow rather than scale below legibility", "status": "metadata-only-for-later-responsive-work"},
@@ -2111,6 +2130,22 @@ def verify(root: Path = ROOT) -> None:
         foreground_alpha = assets["foreground-occluder"].getchannel("A")
         if foreground.size != foreground_alpha.size or foreground.tobytes() != foreground_alpha.tobytes():
             raise ValueError("Architecture mask does not match foreground occluder alpha")
+        zone_bounds = [zone["bounds"] for zone in scene["occlusion"]["zones"]]
+        zone_pixel_counts = [0 for _ in zone_bounds]
+        for y in range(foreground.height):
+            for x in range(foreground.width):
+                if foreground.getpixel((x, y)) == 0:
+                    continue
+                containing_zones = [
+                    index
+                    for index, (x0, y0, x1, y1) in enumerate(zone_bounds)
+                    if x0 <= x < x1 and y0 <= y < y1
+                ]
+                if len(containing_zones) != 1:
+                    raise ValueError("Architecture mask pixels must belong to exactly one declared occlusion zone")
+                zone_pixel_counts[containing_zones[0]] += 1
+        if any(count == 0 for count in zone_pixel_counts):
+            raise ValueError("Every declared occlusion zone must contain architecture mask pixels")
         for point in route_polyline:
             x, y = validate_point(point, "scene.route point")
             if walkable.getpixel((x, y)) != 255 or foreground.getpixel((x, y)) != 0:
@@ -2297,7 +2332,29 @@ def verify(root: Path = ROOT) -> None:
     unlit = _compose_v2(_recipe_without_v2(recipe, {"warm-light-overlay"}), assets)
     lighting_proof = _labelled_grid_v2([("UNLIT ENTITIES", unlit), ("NORMAL SRGB LIGHTING", _compose_v2(recipe, assets)), ("LIT ENTRANCE", _compose_v2(recipe, assets)), ("LIT CENTRAL ROUTE", _compose_v2(recipe, assets))])
     require_same_pixels(lighting_proof, root / expected_proofs["lightingEntities"], "Entity-lighting proof")
-    occlusion_proof = _labelled_grid_v2([("UPPER COLUMN BEHIND", assets["shuttergate-clean-plate-1280x720"]), ("TRUTH ANCHORS CLEAR", _compose_v2(recipe, assets)), ("LOWER RAIL BEHIND", assets["shuttergate-clean-plate-1280x720"]), ("ROUTE TRAVERSAL DEFERRED 273", _route_board_v2(assets["shuttergate-clean-plate-1280x720"], scene["route"]["polyline"], walkable_image))])
+    occlusion_samples = [
+        ("iron-warden-idle", (140, 200), (90, 112)),
+        ("mine-raider-idle", (1100, 520), (64, 100)),
+    ]
+    occlusion_panels = []
+    for asset, ground, pivot in occlusion_samples:
+        alpha = assets[asset].getchannel("A")
+        visible_pixels = 0
+        occluded_pixels = 0
+        offset = (ground[0] - pivot[0], ground[1] - pivot[1])
+        for y in range(alpha.height):
+            for x in range(alpha.width):
+                if alpha.getpixel((x, y)) == 0:
+                    continue
+                visible_pixels += 1
+                if architecture_mask_image.getpixel((offset[0] + x, offset[1] + y)) != 0:
+                    occluded_pixels += 1
+        if occluded_pixels * 4 <= visible_pixels or occluded_pixels * 4 >= visible_pixels * 3:
+            raise ValueError(f"Occlusion proof must visibly mask part, but not all, of {asset}")
+        occlusion_panels.append(
+            _occlusion_sample_v2(clean, assets[asset], ground, pivot, assets["foreground-occluder"])
+        )
+    occlusion_proof = _labelled_grid_v2([("UPPER COLUMN BEHIND", occlusion_panels[0]), ("TRUTH ANCHORS CLEAR", _compose_v2(recipe, assets)), ("LOWER RAIL BEHIND", occlusion_panels[1]), ("ROUTE TRAVERSAL DEFERRED 273", _route_board_v2(clean, scene["route"]["polyline"], walkable_image))])
     require_same_pixels(occlusion_proof, root / expected_proofs["occlusionDepth"], "Occlusion-depth proof")
     if scene["lighting"] != {"asset": "warm-light-overlay", "blendMode": "normal", "colorSpace": "sRGB", "alpha": "straight", "affects": ["environment", "entities", "foreground"], "excludes": ["combat-effects", "hud"]}:
         raise ValueError("Lighting blend/order semantics drifted")
