@@ -8,9 +8,9 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "2bfebd08181ab66969988e71acf1762965434283b690e190abd7b869f542baee",
+    "provenance.json": "969646eceb8550f4e5f5071e67da537b53b04b92e8bcbdd42de64fa3997684e9",
     "reconstruction.json": "cbcbf220541c2246f0dbf751ebfc51a14871d744c2f88250a2d2b09cd959f140",
-    "scene-contract.json": "44576d8e6c6a464f7ff60e3c64b8b922575fb0c1a07c71322e6bcab54a2bab83"
+    "scene-contract.json": "39b98d429a57fc58292bb8e8cbfaba1c9a17cf270bb7dc7c4a336dc685f9caae"
   },
   "files": [
     {
@@ -121,7 +121,7 @@
       "mode": "L",
       "alphaSemantics": "binary-review-contract-mask",
       "contributesTo": ["route-validation"],
-      "sha256": "5f90f297429da770e5dd441eaab267a3011b43f44393826d1f6837df2b04513d"
+      "sha256": "e70e0d82848922c08d0ae9b06fe62df1ccfa9e74999ec794276acb3ea6094fea"
     },
     {
       "id": "foreground-occluder",
@@ -443,7 +443,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "9c98c35b4f330352656004db2475afca60eaa7f37305e9a4170b15d241055093"
+      "sha256": "1024516d6916fb0b3191293b21994a0a679198062ced1dfbbe37f27309eee310"
     },
     {
       "id": "reconstruction-entities-removed",
@@ -473,7 +473,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "48701f9a004124e341aec130ddb5f60b07914c29c921cd2dc5cde22cf8b317ad"
+      "sha256": "bd9cd3cfa72903bb1a76b98516ca64edb9784f9cab07d0545e0490d1a05b5515"
     },
     {
       "id": "selection-and-combat-effect-isolation",

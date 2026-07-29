@@ -1942,7 +1942,7 @@ def verify(root: Path = ROOT) -> None:
         "coordinateSpace": {"origin": "top-left", "logicalFrame": [640, 360], "reviewFrame": [1280, 720], "logicalTexelScale": 2},
         "safeAreas": {"world": [0, 0, 1280, 720], "unobscuredWorldBand": [0, 72, 1280, 590], "entitySafe": [80, 80, 1200, 590], "hudOcclusionRects": [[272, 604, 1262, 704]]},
         "camera": {"projection": "elevated-orthographic-2.5d", "viewDirection": "upper-right-background-to-lower-left-foreground", "fixedReviewFrame": True},
-        "route": {"polyline": [[1110, 112], [1028, 166], [936, 224], [825, 295], [701, 365], [585, 426], [457, 500], [318, 565], [181, 621]], "entranceAnchor": [1110, 112], "gateAnchor": [181, 621], "chokepointAnchors": [[825, 295], [585, 426]], "railCrossingAnchor": [701, 365], "walkableMask": "route-walkable-mask", "minimumWalkableRadius": 26},
+        "route": {"polyline": [[1110, 112], [1028, 166], [936, 224], [825, 295], [701, 365], [585, 426], [457, 500], [290, 565], [181, 621]], "entranceAnchor": [1110, 112], "gateAnchor": [181, 621], "chokepointAnchors": [[825, 295], [585, 426]], "railCrossingAnchor": [701, 365], "walkableMask": "route-walkable-mask", "minimumWalkableRadius": 26},
         "entityAnchors": {"ironWardenTruthScreen": {"groundPosition": [674, 434], "depthSortY": 434}, "mineRaiderTruthScreen": {"groundPosition": [802, 398], "depthSortY": 398}},
         "entityStates": {"iron-warden-idle": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "iron-warden-shield-slam": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "mine-raider-idle": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}, "mine-raider-attack": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}},
         "occlusion": {"mask": "architecture-mask", "foreground": "foreground-occluder", "scope": "fixed-issue-287-truth-screen-anchors-only", "routeTraversalOwner": 273, "zones": [{"id": "upper-left-column", "depthThreshold": 260, "bounds": [0, 92, 189, 421]}, {"id": "lower-right-balustrade", "depthThreshold": 520, "bounds": [1030, 421, 1280, 720]}], "depthOrder": ["environment", "rings", "entities-by-depthSortY", "foreground-occluder", "lighting-normal-srgb", "combat-effects", "hud"]},
@@ -2146,6 +2146,19 @@ def verify(root: Path = ROOT) -> None:
                 zone_pixel_counts[containing_zones[0]] += 1
         if any(count == 0 for count in zone_pixel_counts):
             raise ValueError("Every declared occlusion zone must contain architecture mask pixels")
+        for x0, y0, x1, y1 in hud_rects:
+            if any(
+                walkable.getpixel((x, y)) != 0
+                for y in range(y0, y1)
+                for x in range(x0, x1)
+            ):
+                raise ValueError("Walkable route mask intersects HUD occlusion")
+        if any(
+            walkable.getpixel((x, y)) != 0 and foreground.getpixel((x, y)) != 0
+            for y in range(foreground.height)
+            for x in range(foreground.width)
+        ):
+            raise ValueError("Walkable route mask intersects foreground architecture")
         for point in route_polyline:
             x, y = validate_point(point, "scene.route point")
             if walkable.getpixel((x, y)) != 255 or foreground.getpixel((x, y)) != 0:
