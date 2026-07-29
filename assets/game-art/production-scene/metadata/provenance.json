@@ -50,7 +50,7 @@
     },
     {
       "path": "assets/game-art/production-scene/build_scene.py",
-      "sha256": "d83c9b7006c7c790863ca73f61fbface9d57b5b807dd2a05c7c61fbccd83e24c",
+      "sha256": "ce80a90a195c8f29c0a3fa584af50a019be692f70014cd64e1601a7ad04ceeae",
       "role": "deterministic-export-and-verification-implementation"
     }
   ],

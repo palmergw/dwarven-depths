@@ -2198,13 +2198,19 @@ def verify(root: Path = ROOT) -> None:
     }
     if {record["path"]: record["role"] for record in provenance["inputs"]} != expected_roles:
         raise ValueError("Provenance input roles are not canonical")
+    expected_input_order = list(expected_roles.items())
+    actual_input_order = [(record["path"], record["role"]) for record in provenance["inputs"]]
+    if actual_input_order != expected_input_order:
+        raise ValueError("Provenance inputs are duplicated, reordered, or noncanonical")
     for input_record in provenance["inputs"]:
         _assert_strict_v2(input_record, {"path", "sha256", "role"}, "provenance.input")
         if sha256(root / input_record["path"]) != input_record["sha256"]:
             raise ValueError(f"Upstream provenance digest mismatch: {input_record['path']}")
     clean_source = root / provenance["cleanPlate"]["path"]
-    if sha256(clean_source) != provenance["cleanPlate"]["sha256"]:
-        raise ValueError("Clean-plate source digest does not match provenance")
+    canonical_clean_digest = "724159cedd1ad5a53e8954a8990093da01b093348d247fd8cb04702f8ad88117"
+    if provenance["cleanPlate"]["sha256"] != canonical_clean_digest or sha256(clean_source) != canonical_clean_digest:
+        raise ValueError("Clean-plate source digest does not match canonical provenance")
+    require_same_pixels(cover_16_9(Image.open(clean_source)), package / "exports" / "environment" / "shuttergate-clean-plate-1280x720.png", "Clean-plate source export")
     if any(provenance["conceptBoundary"][key] for key in ("productionPixelReuse", "tracing", "backgroundUse")):
         raise ValueError("Concept raster may not contribute production pixels")
 
