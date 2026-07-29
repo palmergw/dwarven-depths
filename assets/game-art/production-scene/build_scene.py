@@ -586,6 +586,17 @@ def strict_keys(value: dict[str, object], expected: set[str], context: str) -> N
         raise ValueError(f"{context} keys differ: expected {sorted(expected)}, got {sorted(actual)}")
 
 
+def exact_json(actual: object, expected: object) -> bool:
+    return json.dumps(actual, sort_keys=True, separators=(",", ":")) == json.dumps(
+        expected, sort_keys=True, separators=(",", ":")
+    )
+
+
+def require_exact_json(actual: object, expected: object, context: str) -> None:
+    if not exact_json(actual, expected):
+        raise ValueError(f"{context} does not match the canonical contract")
+
+
 def validate_point(value: object, context: str) -> tuple[int, int]:
     if (
         not isinstance(value, list)
@@ -662,10 +673,19 @@ def verify(root: Path = ROOT) -> None:
         },
         "manifest",
     )
-    if manifest["schemaVersion"] != 1 or manifest["reviewFrame"] != [1280, 720]:
-        raise ValueError("Unsupported scene manifest contract")
-    if manifest["entityLayerCounts"] != {"iron-warden": 1, "mine-raider": 1}:
-        raise ValueError("Reconstruction must bind exactly one Warden and one hostile")
+    require_exact_json(manifest["schemaVersion"], 1, "manifest.schemaVersion")
+    require_exact_json(
+        manifest["package"],
+        "dwarven-depths-issue-286-production-scene",
+        "manifest.package",
+    )
+    require_exact_json(manifest["logicalFrame"], [640, 360], "manifest.logicalFrame")
+    require_exact_json(manifest["reviewFrame"], [1280, 720], "manifest.reviewFrame")
+    require_exact_json(
+        manifest["entityLayerCounts"],
+        {"iron-warden": 1, "mine-raider": 1},
+        "manifest.entityLayerCounts",
+    )
     expected_contract_digests = {
         name: sha256(package / "metadata" / name)
         for name in ("provenance.json", "reconstruction.json", "scene-contract.json")
@@ -756,8 +776,13 @@ def verify(root: Path = ROOT) -> None:
         },
         "scene-contract",
     )
-    if scene["schemaVersion"] != 1 or scene["authority"] != "presentation-only":
-        raise ValueError("Scene contract must remain versioned and presentation-only")
+    require_exact_json(scene["schemaVersion"], 1, "scene-contract.schemaVersion")
+    require_exact_json(
+        scene["package"],
+        "dwarven-depths-issue-286-production-scene",
+        "scene-contract.package",
+    )
+    require_exact_json(scene["authority"], "presentation-only", "scene-contract.authority")
     strict_keys(
         scene["route"],
         {"polyline", "entranceAnchor", "gateAnchor", "chokepointAnchors", "railCrossingAnchor"},
@@ -778,6 +803,25 @@ def verify(root: Path = ROOT) -> None:
     strict_keys(
         scene["camera"],
         {"projection", "viewDirection", "fixedReviewFrame"},
+        "scene-contract.camera",
+    )
+    require_exact_json(
+        scene["coordinateSpace"],
+        {
+            "origin": "top-left",
+            "logicalFrame": [640, 360],
+            "reviewFrame": [1280, 720],
+            "logicalTexelScale": 2,
+        },
+        "scene-contract.coordinateSpace",
+    )
+    require_exact_json(
+        scene["camera"],
+        {
+            "projection": "elevated-orthographic-2.5d",
+            "viewDirection": "upper-right-background-to-lower-left-foreground",
+            "fixedReviewFrame": True,
+        },
         "scene-contract.camera",
     )
     strict_keys(
@@ -802,20 +846,23 @@ def verify(root: Path = ROOT) -> None:
         {"mask", "foreground", "depthOrder"},
         "scene-contract.occlusion",
     )
-    if scene["occlusion"] != {
-        "mask": "architecture-mask",
-        "foreground": "foreground-occluder",
-        "depthOrder": [
-            "environment",
-            "rings",
-            "entities",
-            "combat-effects",
-            "foreground-occluder",
-            "lighting",
-            "hud",
-        ],
-    }:
-        raise ValueError("Scene occlusion assets and depth order are not canonical")
+    require_exact_json(
+        scene["occlusion"],
+        {
+            "mask": "architecture-mask",
+            "foreground": "foreground-occluder",
+            "depthOrder": [
+                "environment",
+                "rings",
+                "entities",
+                "combat-effects",
+                "foreground-occluder",
+                "lighting",
+                "hud",
+            ],
+        },
+        "scene-contract.occlusion",
+    )
     strict_keys(
         scene["hudRegions"],
         {
@@ -836,6 +883,16 @@ def verify(root: Path = ROOT) -> None:
     strict_keys(
         scene["cropPolicy"],
         {"desktop", "laptop", "mobile", "status"},
+        "scene-contract.cropPolicy",
+    )
+    require_exact_json(
+        scene["cropPolicy"],
+        {
+            "desktop": "show-full-16:9-frame",
+            "laptop": "fit-full-frame-before-cropping; preserve both HUD bands and entrance/gate anchors",
+            "mobile": "later-work-may-letterbox-or-use-authored-camera-crop; never crop both entrance and gate; HUD must reflow rather than scale below legibility",
+            "status": "metadata-only-for-later-responsive-work",
+        },
         "scene-contract.cropPolicy",
     )
     if (
@@ -888,10 +945,13 @@ def verify(root: Path = ROOT) -> None:
         {"schemaVersion", "frame", "output", "entityCounts", "layersBackToFront", "isolationProofs"},
         "reconstruction",
     )
-    if reconstruction["entityCounts"] != {"iron-warden": 1, "mine-raider": 1}:
-        raise ValueError("Reconstruction recipe must declare exactly one entity per faction")
-    if reconstruction["schemaVersion"] != 1 or reconstruction["frame"] != [1280, 720]:
-        raise ValueError("Unsupported reconstruction contract")
+    require_exact_json(reconstruction["schemaVersion"], 1, "reconstruction.schemaVersion")
+    require_exact_json(reconstruction["frame"], [1280, 720], "reconstruction.frame")
+    require_exact_json(
+        reconstruction["entityCounts"],
+        {"iron-warden": 1, "mine-raider": 1},
+        "reconstruction.entityCounts",
+    )
     strict_keys(
         reconstruction["isolationProofs"],
         {"entitiesRemoved", "environmentOnly", "hudControls", "foreground", "lighting"},
@@ -1051,6 +1111,47 @@ def verify(root: Path = ROOT) -> None:
         provenance["conceptBoundary"],
         {"path", "productionPixelReuse", "tracing", "backgroundUse"},
         "provenance.conceptBoundary",
+    )
+    require_exact_json(provenance["schemaVersion"], 1, "provenance.schemaVersion")
+    require_exact_json(
+        provenance["package"],
+        "dwarven-depths-issue-286-production-scene",
+        "provenance.package",
+    )
+    require_exact_json(
+        provenance["license"],
+        {
+            "identifier": "MIT",
+            "path": "LICENSE",
+            "copyright": "Copyright (c) 2026 Will Palmer",
+        },
+        "provenance.license",
+    )
+    require_exact_json(
+        provenance["cleanPlate"]["generator"],
+        {
+            "provider": "openai-codex",
+            "model": "gpt-image-2-medium",
+            "quality": "medium",
+            "aspectRatio": "landscape",
+            "inputImageCount": 1,
+        },
+        "provenance.cleanPlate.generator",
+    )
+    require_exact_json(
+        provenance["conceptBoundary"],
+        {
+            "path": "assets/concept-art/dwarven-depths-gameplay-mockup.png",
+            "productionPixelReuse": False,
+            "tracing": False,
+            "backgroundUse": False,
+        },
+        "provenance.conceptBoundary",
+    )
+    require_exact_json(
+        provenance["derivedLayers"]["externalAssets"],
+        [],
+        "provenance.derivedLayers.externalAssets",
     )
     clean_source = root / provenance["cleanPlate"]["path"]
     if sha256(clean_source) != provenance["cleanPlate"]["sha256"]:
