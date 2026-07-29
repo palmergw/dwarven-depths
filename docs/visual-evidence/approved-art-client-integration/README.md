@@ -1,11 +1,11 @@
 # Approved-art client integration evidence
 
-Issue: #283  
-Capture runtime commit: `54cacd52b28e1d110aea2a4b173b17e5b74d242a`  
-Approved art-package baseline: `e3d454e9d6bc8673c0deb3fffa2dd59194982870`  
-Captured: 2026-07-29T12:32:23Z  
-Fixture: web protocol v4, `scenario.conformance.shield_slam`, authoritative Web Worker  
-Browser: Playwright Chromium 1.61.1, production Vite preview
+- Issue: #283
+- Capture runtime commit: `54cacd52b28e1d110aea2a4b173b17e5b74d242a`
+- Approved art-package baseline: `e3d454e9d6bc8673c0deb3fffa2dd59194982870`
+- Captured: 2026-07-29T12:32:23Z
+- Fixture: web protocol v4, `scenario.conformance.shield_slam`, authoritative Web Worker
+- Browser: Playwright Chromium 1.61.1, production Vite preview
 
 ## Concept and approved-package comparison
 
