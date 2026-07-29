@@ -789,6 +789,27 @@ def verify(root: Path = ROOT) -> None:
         {"polyline", "entranceAnchor", "gateAnchor", "chokepointAnchors", "railCrossingAnchor"},
         "scene-contract.route",
     )
+    require_exact_json(
+        scene["route"],
+        {
+            "polyline": [
+                [1110, 112],
+                [1028, 166],
+                [936, 224],
+                [825, 295],
+                [701, 365],
+                [585, 426],
+                [457, 500],
+                [318, 565],
+                [181, 621],
+            ],
+            "entranceAnchor": [1110, 112],
+            "gateAnchor": [181, 621],
+            "chokepointAnchors": [[825, 295], [585, 426]],
+            "railCrossingAnchor": [701, 365],
+        },
+        "scene-contract.route",
+    )
     if len(scene["route"]["polyline"]) < 2 or len(scene["route"]["chokepointAnchors"]) != 2:
         raise ValueError("Scene route must bind entrance, gate, and two chokepoints")
     strict_keys(
@@ -878,6 +899,23 @@ def verify(root: Path = ROOT) -> None:
             "targetPolicy",
             "shieldSlam",
             "pause",
+        },
+        "scene-contract.hudRegions",
+    )
+    require_exact_json(
+        scene["hudRegions"],
+        {
+            "top": [0, 0, 1280, 72],
+            "bottom": [0, 590, 1280, 720],
+            "fortressStatus": [18, 10, 258, 60],
+            "waveStatus": [526, 10, 754, 60],
+            "oreStatus": [1022, 10, 1262, 60],
+            "wardenNameplate": [18, 604, 226, 704],
+            "portrait": [18, 604, 226, 704],
+            "health": [238, 604, 484, 704],
+            "targetPolicy": [496, 604, 746, 704],
+            "shieldSlam": [758, 604, 1036, 704],
+            "pause": [1048, 604, 1262, 704],
         },
         "scene-contract.hudRegions",
     )
@@ -1171,6 +1209,21 @@ def verify(root: Path = ROOT) -> None:
         provenance["cleanPlate"],
         {"path", "sha256", "generator", "reference", "referenceUse"},
         "provenance.cleanPlate",
+    )
+    require_exact_json(
+        provenance["cleanPlate"]["path"],
+        "assets/game-art/production-scene/sources/shuttergate-clean-plate-master.png",
+        "provenance.cleanPlate.path",
+    )
+    require_exact_json(
+        provenance["cleanPlate"]["sha256"],
+        "724159cedd1ad5a53e8954a8990093da01b093348d247fd8cb04702f8ad88117",
+        "provenance.cleanPlate.sha256",
+    )
+    require_exact_json(
+        provenance["cleanPlate"]["reference"],
+        "assets/game-art/visual-direction/sources/keyframe-master.png",
+        "provenance.cleanPlate.reference",
     )
     strict_keys(
         provenance["cleanPlate"]["generator"],
