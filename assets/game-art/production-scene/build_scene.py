@@ -2019,28 +2019,34 @@ def verify(root: Path = ROOT) -> None:
         "iron-warden-shield-slam": (anchors["ironWardenTruthScreen"], states["iron-warden-shield-slam"]),
     }
     layers = recipe["layersBackToFront"]
-    expected_layer_assets = [
-        "shuttergate-clean-plate-1280x720",
-        "warden-selection-ring",
-        "hostile-faction-ring",
-        "mine-raider-attack",
-        "iron-warden-shield-slam",
-        "foreground-occluder",
-        "warm-light-overlay",
-        "top-hud-frame",
-        "bottom-hud-frame",
-        "fortress-value",
-        "wave-value",
-        "ore-value",
-        "warden-name",
-        "health-value",
-        "target-nearest-state",
-        "shield-slam-ready-state",
-        "pause-state",
-        "warden-portrait",
+    canonical_layer_specs = [
+        ("shuttergate-clean-plate-1280x720", [0, 0], "world", 0, None),
+        ("warden-selection-ring", [627, 414], "world-effects", 20, None),
+        ("hostile-faction-ring", [763, 380], "world-effects", 20, None),
+        ("mine-raider-attack", [738, 298], "world-entities", 30, 398),
+        ("iron-warden-shield-slam", [584, 322], "world-entities", 30, 434),
+        ("foreground-occluder", [0, 0], "foreground-occlusion", 40, None),
+        ("warm-light-overlay", [0, 0], "world-lighting", 50, None),
+        ("top-hud-frame", [0, 0], "screen-space-hud", 70, None),
+        ("bottom-hud-frame", [0, 0], "screen-space-hud", 70, None),
+        ("fortress-value", [18, 10], "screen-space-hud", 71, None),
+        ("wave-value", [526, 10], "screen-space-hud", 71, None),
+        ("ore-value", [1022, 10], "screen-space-hud", 71, None),
+        ("warden-name", [272, 604], "screen-space-hud", 71, None),
+        ("health-value", [462, 604], "screen-space-hud", 71, None),
+        ("target-nearest-state", [662, 604], "screen-space-hud", 71, None),
+        ("shield-slam-ready-state", [862, 604], "screen-space-hud", 71, None),
+        ("pause-state", [1112, 604], "screen-space-hud", 71, None),
+        ("warden-portrait", [282, 614], "screen-space-hud", 72, None),
     ]
-    if [layer.get("asset") for layer in layers if isinstance(layer, dict)] != expected_layer_assets:
-        raise ValueError("Reconstruction asset sequence is incomplete, duplicated, or noncanonical")
+    canonical_layers = []
+    for asset, position, region, z_order, depth_sort_y in canonical_layer_specs:
+        layer = {"asset": asset, "position": position, "region": region, "zOrder": z_order}
+        if depth_sort_y is not None:
+            layer["depthSortY"] = depth_sort_y
+        canonical_layers.append(layer)
+    if layers != canonical_layers:
+        raise ValueError("Reconstruction layers are incomplete, duplicated, or noncanonical")
     for index, layer in enumerate(layers):
         expected = {"asset", "position", "region", "zOrder"}
         if layer.get("region") == "world-entities":
