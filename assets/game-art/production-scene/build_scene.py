@@ -2034,6 +2034,13 @@ def verify(root: Path = ROOT) -> None:
                 raise ValueError(f"Manifest path has no canonical semantics: {path}")
             if (record["category"], record["alphaSemantics"], record["contributesTo"]) != semantics:
                 raise ValueError(f"Manifest semantics drifted: {path}")
+            if record["alphaSemantics"].startswith("straight-alpha"):
+                if image.mode != "RGBA":
+                    raise ValueError(f"Straight-alpha asset is not RGBA: {path}")
+                alpha_histogram = image.getchannel("A").histogram()
+                nontransparent = image.width * image.height - alpha_histogram[0]
+                if alpha_histogram[0] == 0 or nontransparent == 0 or nontransparent * 4 > image.width * image.height * 3:
+                    raise ValueError(f"Straight-alpha asset lacks usable transparent separation: {path}")
             canonical_directories = {
                 "environment": "assets/game-art/production-scene/exports/environment",
                 "entity": "assets/game-art/production-scene/exports/entities",
@@ -2075,14 +2082,25 @@ def verify(root: Path = ROOT) -> None:
                 raise ValueError("Route point is hidden beneath HUD")
 
     states = _assert_strict_v2(scene["entityStates"], {"iron-warden-idle", "iron-warden-shield-slam", "mine-raider-idle", "mine-raider-attack"}, "scene.entityStates")
+    canonical_entity_alpha = {
+        "iron-warden-idle": ([31, 8, 149, 112], 7697, 2782, 4915),
+        "iron-warden-shield-slam": ([12, 8, 169, 112], 10214, 3991, 6223),
+        "mine-raider-idle": ([10, 8, 119, 100], 5329, 920, 4409),
+        "mine-raider-attack": ([37, 8, 91, 100], 2603, 279, 2324),
+    }
     for asset, contract in states.items():
         _assert_strict_v2(contract, {"canvas", "pivot", "facing", "nominalHeight"}, f"scene.entityStates.{asset}")
         image = assets[asset]
         if list(image.size) != contract["canvas"]:
             raise ValueError(f"Entity canvas drifted: {asset}")
-        bbox = image.getchannel("A").getbbox()
+        alpha = image.getchannel("A")
+        bbox = alpha.getbbox()
         if bbox is None or bbox[3] != contract["pivot"][1]:
             raise ValueError(f"Entity ground pivot is not alpha-aligned: {asset}")
+        histogram = alpha.histogram()
+        profile = ([*bbox], sum(histogram[1:]), histogram[255], sum(histogram[1:255]))
+        if profile != canonical_entity_alpha[asset]:
+            raise ValueError(f"Entity alpha separation drifted: {asset}")
     anchors = scene["entityAnchors"]
     expected_entities = {
         "mine-raider-attack": (anchors["mineRaiderTruthScreen"], states["mine-raider-attack"]),
