@@ -2012,6 +2012,28 @@ def verify(root: Path = ROOT) -> None:
         "iron-warden-shield-slam": (anchors["ironWardenTruthScreen"], states["iron-warden-shield-slam"]),
     }
     layers = recipe["layersBackToFront"]
+    expected_layer_assets = [
+        "shuttergate-clean-plate-1280x720",
+        "warden-selection-ring",
+        "hostile-faction-ring",
+        "mine-raider-attack",
+        "iron-warden-shield-slam",
+        "foreground-occluder",
+        "warm-light-overlay",
+        "top-hud-frame",
+        "bottom-hud-frame",
+        "fortress-value",
+        "wave-value",
+        "ore-value",
+        "warden-name",
+        "health-value",
+        "target-nearest-state",
+        "shield-slam-ready-state",
+        "pause-state",
+        "warden-portrait",
+    ]
+    if [layer.get("asset") for layer in layers if isinstance(layer, dict)] != expected_layer_assets:
+        raise ValueError("Reconstruction asset sequence is incomplete, duplicated, or noncanonical")
     for index, layer in enumerate(layers):
         expected = {"asset", "position", "region", "zOrder"}
         if layer.get("region") == "world-entities":
@@ -2019,6 +2041,9 @@ def verify(root: Path = ROOT) -> None:
         _assert_strict_v2(layer, expected, f"reconstruction.layer[{index}]")
         if layer["asset"] not in assets:
             raise ValueError(f"Unknown reconstruction asset: {layer['asset']}")
+        manifest_record = next(record for record in manifest["files"] if record["id"] == layer["asset"])
+        if layer["region"] not in manifest_record["contributesTo"]:
+            raise ValueError(f"Reconstruction region violates manifest semantics: {layer['asset']}")
     ordered_layers = _ordered_layers_v2(recipe)
     if layers != ordered_layers:
         raise ValueError("Reconstruction layers are not stored in canonical depth order")
