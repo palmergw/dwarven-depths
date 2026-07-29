@@ -799,6 +799,20 @@ def verify(root: Path = ROOT) -> None:
         {"mask", "foreground", "depthOrder"},
         "scene-contract.occlusion",
     )
+    if scene["occlusion"] != {
+        "mask": "architecture-mask",
+        "foreground": "foreground-occluder",
+        "depthOrder": [
+            "environment",
+            "rings",
+            "entities",
+            "combat-effects",
+            "foreground-occluder",
+            "lighting",
+            "hud",
+        ],
+    }:
+        raise ValueError("Scene occlusion assets and depth order are not canonical")
     strict_keys(
         scene["hudRegions"],
         {
