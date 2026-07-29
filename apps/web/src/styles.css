@@ -495,6 +495,18 @@ main[data-contrast-preference="high"] .upgrade-inventory-list div {
   margin-top: 0.5rem;
   border-color: #60452f;
 }
+.game-shell .combat-controls button:has(.ability-icon) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+}
+.ability-icon {
+  width: 2rem;
+  height: 2rem;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
 
 @media (max-width: 32rem) {
   .game-shell {

@@ -1,4 +1,5 @@
 import type { CombatControlDwarf, TargetPolicy } from "./protocol.js";
+import shieldSlamIconUrl from "./assets/shuttergate/ability-shield-slam.png";
 
 const TARGET_POLICY_LABELS: Readonly<Record<TargetPolicy, string>> = {
   nearest: "Nearest",
@@ -85,6 +86,12 @@ export function CombatControls({
                       onActivateAbility?.(dwarf.entityId, ability.abilityId)
                     }
                   >
+                    <img
+                      className="ability-icon"
+                      src={shieldSlamIconUrl}
+                      alt=""
+                      aria-hidden="true"
+                    />
                     Shield Slam
                   </button>
                   <span id={feedbackId} role="status">

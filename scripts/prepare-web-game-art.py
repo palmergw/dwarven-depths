@@ -44,6 +44,8 @@ def record(path: Path) -> dict[str, object]:
 
 def main() -> None:
     DESTINATION.mkdir(parents=True, exist_ok=True)
+    for stale_export in DESTINATION.glob("*.png"):
+        stale_export.unlink()
     shutil.copyfile(
         SOURCE / "shuttergate-keyframe-1280x720.png",
         DESTINATION / "shuttergate-keyframe-1280x720.png",
@@ -58,7 +60,7 @@ def main() -> None:
         DESTINATION / "mine-raider-actions.png",
         (1, 17, 31),
     )
-    for name in ("ability-shield-slam", "pause-control", "settings-control"):
+    for name in ("ability-shield-slam",):
         shutil.copyfile(SOURCE / "hud" / f"{name}.png", DESTINATION / f"{name}.png")
 
     files = sorted(DESTINATION.glob("*.png"))

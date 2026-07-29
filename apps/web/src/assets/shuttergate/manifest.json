@@ -19,16 +19,6 @@
       "sha256": "50b0c11abc2b4444213d7869294d6fea6dd4a2ccb4240d902875a7792a8fd9b4"
     },
     {
-      "path": "apps/web/src/assets/shuttergate/pause-control.png",
-      "dimensions": [169, 167],
-      "sha256": "f19d0d882bd8cdafa2530b25408e20467eb976cab00420377f07a11e8dccbad4"
-    },
-    {
-      "path": "apps/web/src/assets/shuttergate/settings-control.png",
-      "dimensions": [175, 167],
-      "sha256": "afd2909df19f2ca449e2fa0b39570fe3025e05ad286d7aed2042344787215ef1"
-    },
-    {
       "path": "apps/web/src/assets/shuttergate/shuttergate-keyframe-1280x720.png",
       "dimensions": [1280, 720],
       "sha256": "49a659a61548ac12bc546d5af5c74e990eb8a3d6bc55ac46dee153d458a991e5"
