@@ -2103,8 +2103,17 @@ def verify(root: Path = ROOT) -> None:
     hud_rects = scene["safeAreas"]["hudOcclusionRects"]
     walkable_path = package / "exports" / "occlusion" / "route-walkable-mask.png"
     foreground_path = package / "exports" / "occlusion" / "architecture-mask.png"
+    route_polyline = route["polyline"]
+    if not isinstance(route_polyline, list):
+        raise ValueError("Route polyline must be an array")
     with Image.open(walkable_path).convert("L") as walkable, Image.open(foreground_path).convert("L") as foreground:
-        for point in route["polyline"]:
+        expected_walkable = _walkable_mask_v2(route_polyline)
+        if walkable.size != expected_walkable.size or walkable.tobytes() != expected_walkable.tobytes():
+            raise ValueError("Walkable mask does not match canonical route geometry")
+        foreground_alpha = assets["foreground-occluder"].getchannel("A")
+        if foreground.size != foreground_alpha.size or foreground.tobytes() != foreground_alpha.tobytes():
+            raise ValueError("Architecture mask does not match foreground occluder alpha")
+        for point in route_polyline:
             x, y = validate_point(point, "scene.route point")
             if walkable.getpixel((x, y)) != 255 or foreground.getpixel((x, y)) != 0:
                 raise ValueError("Route point is not walkable and unobscured")
