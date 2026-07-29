@@ -358,7 +358,7 @@ def compose_recipe(
             or asset_id not in assets
             or not isinstance(position, list)
             or len(position) != 2
-            or not all(isinstance(value, int) for value in position)
+            or not all(type(value) is int for value in position)
         ):
             raise ValueError(f"Invalid reconstruction layer {index}")
         output.alpha_composite(assets[asset_id], tuple(position))
@@ -590,7 +590,7 @@ def validate_point(value: object, context: str) -> tuple[int, int]:
     if (
         not isinstance(value, list)
         or len(value) != 2
-        or not all(isinstance(coordinate, int) for coordinate in value)
+        or not all(type(coordinate) is int for coordinate in value)
         or not (0 <= value[0] < FRAME[0] and 0 <= value[1] < FRAME[1])
     ):
         raise ValueError(f"{context} must be an in-frame integer point")
@@ -601,7 +601,7 @@ def validate_rectangle(value: object, context: str) -> tuple[int, int, int, int]
     if (
         not isinstance(value, list)
         or len(value) != 4
-        or not all(isinstance(coordinate, int) for coordinate in value)
+        or not all(type(coordinate) is int for coordinate in value)
         or not (0 <= value[0] < value[2] <= FRAME[0])
         or not (0 <= value[1] < value[3] <= FRAME[1])
     ):
@@ -705,10 +705,13 @@ def verify(root: Path = ROOT) -> None:
             if [image.width, image.height] != record["dimensions"] or image.mode != record["mode"]:
                 raise ValueError(f"Image metadata mismatch: {record['path']}")
             if record["category"] in {"entity", "effect", "hud", "lighting", "foreground"}:
-                if image.mode != "RGBA" or not (
-                    image.getchannel("A").getextrema()[0] < 255
-                    and image.getchannel("A").getextrema()[1] > 0
-                ):
+                if image.mode != "RGBA":
+                    raise ValueError(f"Layer lacks usable alpha: {record['path']}")
+                alpha_histogram = image.getchannel("A").histogram()
+                pixel_count = image.width * image.height
+                transparent_fraction = alpha_histogram[0] / pixel_count
+                visible_fraction = sum(alpha_histogram[1:]) / pixel_count
+                if transparent_fraction < 0.1 or visible_fraction < 0.01:
                     raise ValueError(f"Layer lacks usable alpha: {record['path']}")
             if record["category"] == "occlusion-mask" and (
                 image.mode != "L" or image.getextrema()[0] == image.getextrema()[1]
@@ -790,7 +793,7 @@ def verify(root: Path = ROOT) -> None:
         )
         validate_point(anchor["position"], f"scene-contract.entityAnchors.{name}.position")
         if (
-            not isinstance(anchor["depthSortY"], int)
+            type(anchor["depthSortY"]) is not int
             or not 0 <= anchor["depthSortY"] < FRAME[1]
         ):
             raise ValueError(f"scene-contract.entityAnchors.{name}.depthSortY is invalid")
@@ -902,7 +905,7 @@ def verify(root: Path = ROOT) -> None:
         if (
             not isinstance(layer["position"], list)
             or len(layer["position"]) != 2
-            or not all(isinstance(value, int) for value in layer["position"])
+            or not all(type(value) is int for value in layer["position"])
             or layer["region"] not in records_by_id[layer["asset"]]["contributesTo"]
         ):
             raise ValueError(f"Invalid position or region in reconstruction layer {index}")
