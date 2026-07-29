@@ -7,6 +7,11 @@
     "iron-warden": 1,
     "mine-raider": 1
   },
+  "contractDigests": {
+    "provenance.json": "d67384c6f156c979d25bb337cbf258da7684e81c7138dc64a2c48885874abe19",
+    "reconstruction.json": "297ff52ef37143c0f3c2e9df71a0d43239ff3997df3c5fdbb1e12c14cf398797",
+    "scene-contract.json": "82848bca1b23a596f8910639218dc80eea6997e351f0319ba3b51c7be289f190"
+  },
   "files": [
     {
       "id": "shuttergate-clean-plate-1280x720",

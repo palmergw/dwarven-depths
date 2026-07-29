@@ -311,6 +311,36 @@ def composite(clean: Image.Image, layers: Iterable[tuple[Image.Image, tuple[int,
     return output
 
 
+def compose_recipe(
+    recipe: dict[str, object], assets: dict[str, Image.Image]
+) -> Image.Image:
+    layers = recipe["layersBackToFront"]
+    if not isinstance(layers, list) or not layers:
+        raise ValueError("Reconstruction recipe must contain layers")
+    first = layers[0]
+    if (
+        not isinstance(first, dict)
+        or first.get("asset") != "shuttergate-clean-plate-1280x720"
+    ):
+        raise ValueError("Reconstruction must start with the clean plate")
+    output = assets[first["asset"]].copy()
+    for index, layer in enumerate(layers[1:], start=1):
+        if not isinstance(layer, dict):
+            raise ValueError(f"Reconstruction layer {index} must be an object")
+        asset_id = layer["asset"]
+        position = layer["position"]
+        if (
+            not isinstance(asset_id, str)
+            or asset_id not in assets
+            or not isinstance(position, list)
+            or len(position) != 2
+            or not all(isinstance(value, int) for value in position)
+        ):
+            raise ValueError(f"Invalid reconstruction layer {index}")
+        output.alpha_composite(assets[asset_id], tuple(position))
+    return output
+
+
 def file_record(
     path: Path,
     category: str,
@@ -335,17 +365,18 @@ def file_record(
 
 def build(output_root: Path = ROOT) -> None:
     package = output_root / PACKAGE.relative_to(ROOT)
+    direction = output_root / DIRECTION.relative_to(ROOT)
     exports = package / "exports"
     evidence = output_root / EVIDENCE.relative_to(ROOT)
     metadata = package / "metadata"
     shutil.rmtree(exports, ignore_errors=True)
     shutil.rmtree(evidence, ignore_errors=True)
-    clean_master = Image.open(SOURCES / "shuttergate-clean-plate-master.png")
+    clean_master = Image.open(package / "sources" / "shuttergate-clean-plate-master.png")
     clean = cover_16_9(clean_master)
     png(clean, exports / "environment" / "shuttergate-clean-plate-1280x720.png")
 
-    warden_master = Image.open(DIRECTION / "sources" / "iron-warden-master.png")
-    hostile_master = Image.open(DIRECTION / "sources" / "mine-raider-master.png")
+    warden_master = Image.open(direction / "sources" / "iron-warden-master.png")
+    hostile_master = Image.open(direction / "sources" / "mine-raider-master.png")
     hostile_idle = fit_height(sprite_cell(hostile_master, (0, 353)), 128)
     hostile_attack = fit_height(sprite_cell(hostile_master, (707, 961)), 128)
     hostile_idle = ImageEnhance.Brightness(hostile_idle).enhance(1.3)
@@ -382,23 +413,18 @@ def build(output_root: Path = ROOT) -> None:
     portrait = fit_height(sprite_cell(warden_master, (0, 355)), 78)
     png(portrait, exports / "hud" / "warden-portrait.png")
 
-    one_warden = sprites["iron-warden-shield-slam"]
-    one_hostile = sprites["mine-raider-attack"]
-    reconstruction = composite(
-        clean,
-        [
-            (effects["warden-selection-ring"], (548, 392)),
-            (effects["hostile-faction-ring"], (798, 404)),
-            (one_warden, (568, 290)),
-            (one_hostile, (810, 320)),
-            (effects["shield-slam-impact"], (650, 282)),
-            (occluder, (0, 0)),
-            (lighting, (0, 0)),
-            (top_hud, (0, 0)),
-            (bottom_hud, (0, 0)),
-            (portrait, (82, 622)),
-        ],
-    )
+    assets = {
+        "shuttergate-clean-plate-1280x720": clean,
+        **sprites,
+        **effects,
+        "foreground-occluder": occluder,
+        "warm-light-overlay": lighting,
+        "top-hud-frame": top_hud,
+        "bottom-hud-frame": bottom_hud,
+        "warden-portrait": portrait,
+    }
+    recipe = json.loads((metadata / "reconstruction.json").read_text(encoding="utf-8"))
+    reconstruction = compose_recipe(recipe, assets)
     no_entities = composite(clean, [(occluder, (0, 0)), (lighting, (0, 0)), (top_hud, (0, 0)), (bottom_hud, (0, 0))])
     environment_only = composite(clean, [(occluder, (0, 0)), (lighting, (0, 0))])
     png(reconstruction, evidence / "reconstruction-one-warden-one-hostile.png")
@@ -406,7 +432,9 @@ def build(output_root: Path = ROOT) -> None:
     png(environment_only, evidence / "environment-and-presentation-lighting.png")
     shutil.copy2(exports / "environment" / "shuttergate-clean-plate-1280x720.png", evidence / "clean-plate.png")
 
-    approved = Image.open(DIRECTION / "exports" / "shuttergate-keyframe-1280x720.png").convert("RGBA")
+    approved = Image.open(
+        direction / "exports" / "shuttergate-keyframe-1280x720.png"
+    ).convert("RGBA")
     comparison = Image.new("RGBA", (2560, 720), (0, 0, 0, 255))
     comparison.alpha_composite(approved, (0, 0))
     comparison.alpha_composite(reconstruction, (1280, 0))
@@ -497,6 +525,10 @@ def build(output_root: Path = ROOT) -> None:
         "logicalFrame": [640, 360],
         "reviewFrame": list(FRAME),
         "entityLayerCounts": {"iron-warden": 1, "mine-raider": 1},
+        "contractDigests": {
+            name: sha256(metadata / name)
+            for name in ("provenance.json", "reconstruction.json", "scene-contract.json")
+        },
         "files": [
             file_record(path, category, alpha, regions, output_root)
             for path, category, alpha, regions in tracked
@@ -526,14 +558,34 @@ def verify(root: Path = ROOT) -> None:
     package = root / PACKAGE.relative_to(ROOT)
     manifest_path = package / "metadata" / "layer-manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    strict_keys(manifest, {"schemaVersion", "package", "logicalFrame", "reviewFrame", "entityLayerCounts", "files", "evidence"}, "manifest")
+    strict_keys(
+        manifest,
+        {
+            "schemaVersion",
+            "package",
+            "logicalFrame",
+            "reviewFrame",
+            "entityLayerCounts",
+            "contractDigests",
+            "files",
+            "evidence",
+        },
+        "manifest",
+    )
     if manifest["schemaVersion"] != 1 or manifest["reviewFrame"] != [1280, 720]:
         raise ValueError("Unsupported scene manifest contract")
     if manifest["entityLayerCounts"] != {"iron-warden": 1, "mine-raider": 1}:
         raise ValueError("Reconstruction must bind exactly one Warden and one hostile")
+    expected_contract_digests = {
+        name: sha256(package / "metadata" / name)
+        for name in ("provenance.json", "reconstruction.json", "scene-contract.json")
+    }
+    if manifest["contractDigests"] != expected_contract_digests:
+        raise ValueError("Scene metadata digest mismatch")
     records = [*manifest["files"], *manifest["evidence"]]
     paths: set[str] = set()
     asset_ids: set[str] = set()
+    records_by_id: dict[str, dict[str, object]] = {}
     for index, record in enumerate(records):
         strict_keys(record, {"id", "path", "category", "dimensions", "mode", "alphaSemantics", "contributesTo", "sha256"}, f"file[{index}]")
         path = root / record["path"]
@@ -544,6 +596,7 @@ def verify(root: Path = ROOT) -> None:
             if record["id"] in asset_ids:
                 raise ValueError(f"Duplicate stable asset id: {record['id']}")
             asset_ids.add(record["id"])
+            records_by_id[record["id"]] = record
         if sha256(path) != record["sha256"]:
             raise ValueError(f"Digest mismatch: {record['path']}")
         with Image.open(path) as image:
@@ -586,6 +639,53 @@ def verify(root: Path = ROOT) -> None:
     )
     if len(scene["route"]["polyline"]) < 2 or len(scene["route"]["chokepointAnchors"]) != 2:
         raise ValueError("Scene route must bind entrance, gate, and two chokepoints")
+    strict_keys(
+        scene["coordinateSpace"],
+        {"origin", "logicalFrame", "reviewFrame", "logicalTexelScale"},
+        "scene-contract.coordinateSpace",
+    )
+    strict_keys(
+        scene["safeAreas"],
+        {"world", "desktopHudSafe", "entitySafe"},
+        "scene-contract.safeAreas",
+    )
+    strict_keys(
+        scene["camera"],
+        {"projection", "viewDirection", "fixedReviewFrame"},
+        "scene-contract.camera",
+    )
+    strict_keys(
+        scene["entityAnchors"],
+        {"ironWardenTruthScreen", "mineRaiderTruthScreen"},
+        "scene-contract.entityAnchors",
+    )
+    for name, anchor in scene["entityAnchors"].items():
+        strict_keys(
+            anchor,
+            {"position", "depthSortY"},
+            f"scene-contract.entityAnchors.{name}",
+        )
+    strict_keys(
+        scene["occlusion"],
+        {"mask", "foreground", "depthOrder"},
+        "scene-contract.occlusion",
+    )
+    strict_keys(
+        scene["hudRegions"],
+        {"top", "bottom", "portrait", "health", "targetPolicy", "shieldSlam", "pause"},
+        "scene-contract.hudRegions",
+    )
+    strict_keys(
+        scene["cropPolicy"],
+        {"desktop", "laptop", "mobile", "status"},
+        "scene-contract.cropPolicy",
+    )
+    if (
+        scene["coordinateSpace"]["reviewFrame"] != [1280, 720]
+        or scene["coordinateSpace"]["logicalFrame"] != [640, 360]
+        or scene["safeAreas"]["world"] != [0, 0, 1280, 720]
+    ):
+        raise ValueError("Scene geometry must bind the declared logical and review frames")
 
     reconstruction = json.loads(
         (package / "metadata" / "reconstruction.json").read_text(encoding="utf-8")
@@ -597,20 +697,92 @@ def verify(root: Path = ROOT) -> None:
     )
     if reconstruction["entityCounts"] != {"iron-warden": 1, "mine-raider": 1}:
         raise ValueError("Reconstruction recipe must declare exactly one entity per faction")
+    if reconstruction["schemaVersion"] != 1 or reconstruction["frame"] != [1280, 720]:
+        raise ValueError("Unsupported reconstruction contract")
+    strict_keys(
+        reconstruction["isolationProofs"],
+        {"entitiesRemoved", "environmentOnly", "hudControls", "foreground", "lighting"},
+        "reconstruction.isolationProofs",
+    )
     recipe_ids = []
     for index, layer in enumerate(reconstruction["layersBackToFront"]):
         strict_keys(layer, {"asset", "position", "region"}, f"reconstruction.layer[{index}]")
         if layer["asset"] not in asset_ids:
             raise ValueError(f"Reconstruction references unknown asset: {layer['asset']}")
+        if (
+            not isinstance(layer["position"], list)
+            or len(layer["position"]) != 2
+            or not all(isinstance(value, int) for value in layer["position"])
+            or layer["region"] not in records_by_id[layer["asset"]]["contributesTo"]
+        ):
+            raise ValueError(f"Invalid position or region in reconstruction layer {index}")
         recipe_ids.append(layer["asset"])
-    if recipe_ids.count("iron-warden-shield-slam") != 1 or recipe_ids.count("mine-raider-attack") != 1:
-        raise ValueError("Reconstruction recipe must contain exactly one Warden and one hostile layer")
+    expected_recipe_ids = [
+        "shuttergate-clean-plate-1280x720",
+        "warden-selection-ring",
+        "hostile-faction-ring",
+        "iron-warden-shield-slam",
+        "mine-raider-attack",
+        "shield-slam-impact",
+        "foreground-occluder",
+        "warm-light-overlay",
+        "top-hud-frame",
+        "bottom-hud-frame",
+        "warden-portrait",
+    ]
+    if recipe_ids != expected_recipe_ids:
+        raise ValueError("Reconstruction recipe layers are not canonical")
+    if reconstruction["layersBackToFront"][0]["position"] != [0, 0]:
+        raise ValueError("Clean plate must cover the reconstruction origin")
+
+    asset_images: dict[str, Image.Image] = {}
+    for record in manifest["files"]:
+        if record["id"] == "architecture-mask":
+            continue
+        asset_images[record["id"]] = Image.open(root / record["path"]).convert("RGBA")
+    expected_reconstruction = compose_recipe(reconstruction, asset_images)
+    output_path = root / reconstruction["output"]
+    with Image.open(output_path) as actual_reconstruction:
+        if (
+            ImageChops.difference(
+                expected_reconstruction, actual_reconstruction.convert("RGBA")
+            )
+            .convert("RGB")
+            .getbbox()
+            is not None
+        ):
+            raise ValueError("Reconstruction pixels do not match the declared layer recipe")
 
     provenance = json.loads((package / "metadata" / "provenance.json").read_text(encoding="utf-8"))
     strict_keys(
         provenance,
         {"schemaVersion", "package", "license", "cleanPlate", "derivedLayers", "conceptBoundary"},
         "provenance",
+    )
+    strict_keys(
+        provenance["license"],
+        {"identifier", "path", "copyright"},
+        "provenance.license",
+    )
+    strict_keys(
+        provenance["cleanPlate"],
+        {"path", "sha256", "generator", "reference", "referenceUse"},
+        "provenance.cleanPlate",
+    )
+    strict_keys(
+        provenance["cleanPlate"]["generator"],
+        {"provider", "model", "quality", "aspectRatio", "inputImageCount"},
+        "provenance.cleanPlate.generator",
+    )
+    strict_keys(
+        provenance["derivedLayers"],
+        {"characterSource", "method", "effectsHudMasks", "externalAssets"},
+        "provenance.derivedLayers",
+    )
+    strict_keys(
+        provenance["conceptBoundary"],
+        {"path", "productionPixelReuse", "tracing", "backgroundUse"},
+        "provenance.conceptBoundary",
     )
     clean_source = root / provenance["cleanPlate"]["path"]
     if sha256(clean_source) != provenance["cleanPlate"]["sha256"]:
@@ -627,6 +799,17 @@ def reproducibility_check() -> None:
         temp_root = Path(directory)
         temp_package = temp_root / PACKAGE.relative_to(ROOT)
         shutil.copytree(SOURCES, temp_package / "sources")
+        temp_direction = temp_root / DIRECTION.relative_to(ROOT)
+        (temp_direction / "sources").mkdir(parents=True)
+        (temp_direction / "exports").mkdir(parents=True)
+        for name in ("iron-warden-master.png", "mine-raider-master.png"):
+            shutil.copy2(
+                DIRECTION / "sources" / name, temp_direction / "sources" / name
+            )
+        shutil.copy2(
+            DIRECTION / "exports" / "shuttergate-keyframe-1280x720.png",
+            temp_direction / "exports" / "shuttergate-keyframe-1280x720.png",
+        )
         (temp_package / "metadata").mkdir(parents=True)
         for name in ("scene-contract.json", "reconstruction.json", "provenance.json"):
             shutil.copy2(METADATA / name, temp_package / "metadata" / name)
