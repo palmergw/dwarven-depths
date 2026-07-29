@@ -1,5 +1,5 @@
-import type { CombatControlDwarf, TargetPolicy } from "./protocol.js";
 import shieldSlamIconUrl from "./assets/shuttergate/ability-shield-slam.png";
+import type { CombatControlDwarf, TargetPolicy } from "./protocol.js";
 
 const TARGET_POLICY_LABELS: Readonly<Record<TargetPolicy, string>> = {
   nearest: "Nearest",

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "baseUrl": "http://127.0.0.1:4173",
+  "captures": [
+    {
+      "name": "desktop-1440x900",
+      "viewport": [1440, 900],
+      "navigationDurationMs": 157,
+      "resourceCount": 7,
+      "canvasCount": 1,
+      "sampledFramesPerSecond": 60,
+      "presentation": "normal-motion"
+    },
+    {
+      "name": "laptop-1280x800",
+      "viewport": [1280, 800],
+      "navigationDurationMs": 155,
+      "resourceCount": 7,
+      "canvasCount": 1,
+      "sampledFramesPerSecond": 61,
+      "presentation": "normal-motion"
+    },
+    {
+      "name": "mobile-390x844",
+      "viewport": [390, 844],
+      "navigationDurationMs": 150,
+      "resourceCount": 7,
+      "canvasCount": 1,
+      "sampledFramesPerSecond": 60,
+      "presentation": "normal-motion"
+    }
+  ]
+}
