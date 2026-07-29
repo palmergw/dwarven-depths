@@ -1901,6 +1901,10 @@ def verify(root: Path = ROOT) -> None:
     _assert_strict_v2(manifest, {"schemaVersion", "package", "logicalFrame", "reviewFrame", "entityLayerCounts", "contractDigests", "files", "evidence"}, "manifest")
     if scene["schemaVersion"] != 2 or recipe["schemaVersion"] != 2 or manifest["schemaVersion"] != 2:
         raise ValueError("Production-scene contracts must use schema version 2")
+    if scene["package"] != "dwarven-depths-issue-286-production-scene" or manifest["package"] != scene["package"]:
+        raise ValueError("Scene and manifest package IDs are not canonical")
+    if manifest["logicalFrame"] != [640, 360] or manifest["reviewFrame"] != [1280, 720]:
+        raise ValueError("Manifest coordinate frames are not canonical")
     if scene["authority"] != "presentation-only" or recipe["frame"] != list(FRAME):
         raise ValueError("Scene authority or frame drifted")
     _assert_strict_v2(scene["coordinateSpace"], {"origin", "logicalFrame", "reviewFrame", "logicalTexelScale"}, "scene.coordinateSpace")
@@ -2152,6 +2156,8 @@ def verify(root: Path = ROOT) -> None:
     _assert_strict_v2(provenance, {"schemaVersion", "package", "license", "toolchain", "inputs", "cleanPlate", "derivedLayers", "conceptBoundary"}, "provenance")
     if provenance["schemaVersion"] != 2 or provenance["toolchain"] != {"python": "3.13.5", "pillow": "12.3.0", "zlib": "1.3.1", "lockfile": "assets/game-art/production-scene/requirements.lock"}:
         raise ValueError("Pinned image toolchain contract drifted")
+    if provenance["package"] != "dwarven-depths-issue-286-production-scene":
+        raise ValueError("Provenance package ID is not canonical")
     if PILLOW_VERSION != provenance["toolchain"]["pillow"]:
         raise ValueError(f"Pillow {provenance['toolchain']['pillow']} is required, got {PILLOW_VERSION}")
     _assert_strict_v2(provenance["license"], {"identifier", "path", "copyright"}, "provenance.license")
@@ -2160,6 +2166,14 @@ def verify(root: Path = ROOT) -> None:
     _assert_strict_v2(provenance["cleanPlate"]["generator"], {"provider", "model", "quality", "aspectRatio", "inputImageCount"}, "provenance.cleanPlate.generator")
     _assert_strict_v2(provenance["derivedLayers"], {"characterSources", "method", "effectsHudMasks", "externalAssets"}, "provenance.derivedLayers")
     _assert_strict_v2(provenance["conceptBoundary"], {"path", "productionPixelReuse", "tracing", "backgroundUse"}, "provenance.conceptBoundary")
+    require_exact_json(provenance["license"], {"identifier": "MIT", "path": "LICENSE", "copyright": "Copyright (c) 2026 Will Palmer"}, "provenance.license")
+    require_exact_json(provenance["cleanPlate"]["generator"], {"provider": "openai-codex", "model": "gpt-image-2-medium", "quality": "medium", "aspectRatio": "landscape", "inputImageCount": 1}, "provenance.cleanPlate.generator")
+    if provenance["cleanPlate"]["path"] != "assets/game-art/production-scene/sources/shuttergate-clean-plate-master.png" or provenance["cleanPlate"]["reference"] != "assets/game-art/visual-direction/sources/keyframe-master.png":
+        raise ValueError("Clean-plate source or reference path is not canonical")
+    if provenance["cleanPlate"]["referenceUse"] != "Approved style, camera, route, material, lighting, and Shuttergate composition only; no reference pixels were cropped, traced, copied, or edited into the clean plate.":
+        raise ValueError("Clean-plate reference-use boundary is not canonical")
+    require_exact_json(provenance["derivedLayers"], {"characterSources": ["assets/game-art/visual-direction/sources/iron-warden-master.png", "assets/game-art/visual-direction/sources/mine-raider-master.png"], "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, scaling, shared pivot-canvas padding, and PNG export in build_scene.py", "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract", "externalAssets": []}, "provenance.derivedLayers")
+    require_exact_json(provenance["conceptBoundary"], {"path": "assets/concept-art/dwarven-depths-gameplay-mockup.png", "productionPixelReuse": False, "tracing": False, "backgroundUse": False}, "provenance.conceptBoundary")
     required_inputs = {
         "assets/game-art/visual-direction/sources/keyframe-master.png",
         "assets/game-art/visual-direction/sources/iron-warden-master.png",
@@ -2172,6 +2186,18 @@ def verify(root: Path = ROOT) -> None:
     }
     if {record.get("path") for record in provenance["inputs"] if isinstance(record, dict)} != required_inputs:
         raise ValueError("Pinned provenance input set is incomplete or noncanonical")
+    expected_roles = {
+        "assets/game-art/visual-direction/sources/keyframe-master.png": "approved-style-camera-route-reference",
+        "assets/game-art/visual-direction/sources/iron-warden-master.png": "approved-character-master",
+        "assets/game-art/visual-direction/sources/mine-raider-master.png": "approved-character-master",
+        "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png": "approved-keyframe-comparison",
+        "assets/concept-art/dwarven-depths-gameplay-mockup.png": "concept-boundary-reference-only",
+        "assets/game-art/production-scene/generation-log.md": "prompt-settings-generation-record",
+        "assets/game-art/production-scene/requirements.lock": "pinned-image-toolchain",
+        "assets/game-art/production-scene/build_scene.py": "deterministic-export-and-verification-implementation",
+    }
+    if {record["path"]: record["role"] for record in provenance["inputs"]} != expected_roles:
+        raise ValueError("Provenance input roles are not canonical")
     for input_record in provenance["inputs"]:
         _assert_strict_v2(input_record, {"path", "sha256", "role"}, "provenance.input")
         if sha256(root / input_record["path"]) != input_record["sha256"]:
