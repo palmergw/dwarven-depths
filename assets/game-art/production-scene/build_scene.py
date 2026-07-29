@@ -1994,6 +1994,31 @@ def verify(root: Path = ROOT) -> None:
         "selection-and-combat-effect-isolation",
         "shield-slam-effect-proof",
     ]
+    canonical_alpha_profiles = {
+        "iron-warden-idle": ([31, 8, 149, 112], 7697, 2782, 4915),
+        "iron-warden-shield-slam": ([12, 8, 169, 112], 10214, 3991, 6223),
+        "mine-raider-attack": ([37, 8, 91, 100], 2603, 279, 2324),
+        "mine-raider-idle": ([10, 8, 119, 100], 5329, 920, 4409),
+        "hostile-faction-ring": ([6, 2, 72, 36], 556, 0, 556),
+        "shield-slam-impact": ([6, 6, 136, 92], 2712, 0, 2712),
+        "warden-selection-ring": ([6, 4, 88, 38], 620, 0, 620),
+        "warm-light-overlay": ([0, 0, 1280, 720], 652740, 0, 652740),
+        "foreground-occluder": ([0, 92, 1280, 720], 109643, 109643, 0),
+        "bottom-hud-frame": ([272, 604, 1263, 705], 95355, 24060, 71295),
+        "fortress-value": ([67, 14, 173, 28], 508, 508, 0),
+        "health-value": ([18, 14, 173, 76], 3595, 3595, 0),
+        "ore-value": ([81, 14, 159, 28], 408, 408, 0),
+        "pause-state": ([46, 14, 104, 79], 708, 708, 0),
+        "resume-state": ([40, 14, 110, 81], 733, 733, 0),
+        "shield-slam-cooldown-state": ([22, 14, 153, 73], 729, 729, 0),
+        "shield-slam-ready-state": ([22, 14, 177, 73], 997, 997, 0),
+        "target-nearest-state": ([54, 14, 136, 28], 468, 468, 0),
+        "target-strongest-state": ([42, 14, 148, 28], 564, 564, 0),
+        "top-hud-frame": ([18, 10, 1263, 61], 35601, 14220, 21381),
+        "warden-name": ([55, 14, 125, 28], 436, 436, 0),
+        "warden-portrait": ([3, 10, 76, 74], 3038, 757, 2281),
+        "wave-value": ([81, 14, 147, 28], 312, 312, 0),
+    }
     if [record.get("id") for record in manifest["files"]] != canonical_file_ids:
         raise ValueError("Manifest runtime asset IDs are incomplete, duplicated, reordered, or noncanonical")
     if [record.get("id") for record in manifest["evidence"]] != canonical_evidence_ids:
@@ -2037,10 +2062,15 @@ def verify(root: Path = ROOT) -> None:
             if record["alphaSemantics"].startswith("straight-alpha"):
                 if image.mode != "RGBA":
                     raise ValueError(f"Straight-alpha asset is not RGBA: {path}")
-                alpha_histogram = image.getchannel("A").histogram()
+                alpha = image.getchannel("A")
+                alpha_histogram = alpha.histogram()
                 nontransparent = image.width * image.height - alpha_histogram[0]
                 if alpha_histogram[0] == 0 or nontransparent == 0 or nontransparent * 4 > image.width * image.height * 3:
                     raise ValueError(f"Straight-alpha asset lacks usable transparent separation: {path}")
+                bbox = alpha.getbbox()
+                profile = ([*bbox], sum(alpha_histogram[1:]), alpha_histogram[255], sum(alpha_histogram[1:255])) if bbox else None
+                if profile != canonical_alpha_profiles.get(record["id"]):
+                    raise ValueError(f"Straight-alpha profile drifted: {record['id']}")
             canonical_directories = {
                 "environment": "assets/game-art/production-scene/exports/environment",
                 "entity": "assets/game-art/production-scene/exports/entities",
@@ -2195,7 +2225,23 @@ def verify(root: Path = ROOT) -> None:
     entity_images = {asset: assets[asset] for asset in scene["entityStates"]}
     require_same_pixels(_alignment_board_v2(entity_images), root / expected_proofs["alignment"], "Entity-alignment proof")
     require_same_pixels(assets["warm-light-overlay"], root / expected_proofs["lighting"], "Lighting-isolation proof")
-    impact_scene = _compose_v2(recipe, assets)
+    evidence_root = root / EVIDENCE.relative_to(ROOT)
+    clean = assets["shuttergate-clean-plate-1280x720"]
+    require_same_pixels(composite(clean, [(assets["foreground-occluder"], (0, 0)), (assets["warm-light-overlay"], (0, 0))]), evidence_root / "environment-and-presentation-lighting.png", "Environment-lighting proof")
+    require_same_pixels(isolation_board([assets["iron-warden-idle"], assets["iron-warden-shield-slam"]], 1), evidence_root / "iron-warden-alpha-states-native.png", "Native Warden alpha proof")
+    require_same_pixels(isolation_board([assets["iron-warden-idle"], assets["iron-warden-shield-slam"]], 4), evidence_root / "iron-warden-alpha-states-4x.png", "4x Warden alpha proof")
+    require_same_pixels(isolation_board([assets["mine-raider-idle"], assets["mine-raider-attack"]], 1), evidence_root / "mine-raider-alpha-states-native.png", "Native mine-raider alpha proof")
+    require_same_pixels(isolation_board([assets["mine-raider-idle"], assets["mine-raider-attack"]], 4), evidence_root / "mine-raider-alpha-states-4x.png", "4x mine-raider alpha proof")
+    require_same_pixels(isolation_board([assets["warden-selection-ring"], assets["hostile-faction-ring"], assets["shield-slam-impact"]], 2), evidence_root / "selection-and-combat-effect-isolation.png", "Effect-isolation proof")
+    reconstruction = _compose_v2(recipe, assets)
+    require_same_pixels(_scale_board_v2(clean, entity_images), evidence_root / "character-scale-study.png", "Character-scale proof")
+    approved = Image.open(root / DIRECTION.relative_to(ROOT) / "exports" / "shuttergate-keyframe-1280x720.png").convert("RGBA")
+    comparison = Image.new("RGBA", (2560, 720), (0, 0, 0, 255))
+    comparison.alpha_composite(approved, (0, 0))
+    comparison.alpha_composite(reconstruction, (1280, 0))
+    require_same_pixels(comparison, evidence_root / "approved-keyframe-vs-reconstruction.png", "Approved-keyframe comparison")
+    require_same_pixels(_composition_decision_v2(approved, reconstruction), evidence_root / "composition-decision.png", "Composition-decision proof")
+    impact_scene = reconstruction.copy()
     impact_scene.alpha_composite(assets["shield-slam-impact"], (900, 330))
     pixel_text(impact_scene, (900, 300), "SEPARATE IMPACT HOSTILE REMAINS READABLE", 2)
     require_same_pixels(impact_scene, root / expected_proofs["impact"], "Shield-Slam impact proof")
