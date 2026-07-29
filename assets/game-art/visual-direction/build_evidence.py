@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 
 from PIL import Image, ImageDraw
 
@@ -182,8 +183,14 @@ def main() -> None:
         "nearestNeighborReviewScale": 4,
         "files": [file_record(path) for path in tracked_images],
     }
-    (PACKAGE / "metadata" / "asset-manifest.json").write_text(
+    manifest_path = PACKAGE / "metadata" / "asset-manifest.json"
+    manifest_path.write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    subprocess.run(
+        ["pnpm", "exec", "biome", "format", "--write", str(manifest_path)],
+        check=True,
+        cwd=ROOT,
     )
     print(json.dumps({"ok": True, "images": len(tracked_images)}))
 
