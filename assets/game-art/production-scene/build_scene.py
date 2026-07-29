@@ -1915,6 +1915,20 @@ def verify(root: Path = ROOT) -> None:
     _assert_strict_v2(scene["lighting"], {"asset", "blendMode", "colorSpace", "alpha", "affects", "excludes"}, "scene.lighting")
     _assert_strict_v2(scene["hudRegions"], {"top", "bottom", "fortressStatus", "waveStatus", "oreStatus", "wardenNameplate", "portrait", "health", "targetPolicy", "shieldSlam", "pause"}, "scene.hudRegions")
     _assert_strict_v2(scene["cropPolicy"], {"desktop", "laptop", "mobile", "status"}, "scene.cropPolicy")
+    canonical_sections = {
+        "coordinateSpace": {"origin": "top-left", "logicalFrame": [640, 360], "reviewFrame": [1280, 720], "logicalTexelScale": 2},
+        "safeAreas": {"world": [0, 0, 1280, 720], "unobscuredWorldBand": [0, 72, 1280, 590], "entitySafe": [80, 80, 1200, 590], "hudOcclusionRects": [[272, 604, 1262, 704]]},
+        "camera": {"projection": "elevated-orthographic-2.5d", "viewDirection": "upper-right-background-to-lower-left-foreground", "fixedReviewFrame": True},
+        "route": {"polyline": [[1110, 112], [1028, 166], [936, 224], [825, 295], [701, 365], [585, 426], [457, 500], [318, 565], [181, 621]], "entranceAnchor": [1110, 112], "gateAnchor": [181, 621], "chokepointAnchors": [[825, 295], [585, 426]], "railCrossingAnchor": [701, 365], "walkableMask": "route-walkable-mask", "minimumWalkableRadius": 26},
+        "entityAnchors": {"ironWardenTruthScreen": {"groundPosition": [674, 434], "depthSortY": 434}, "mineRaiderTruthScreen": {"groundPosition": [802, 398], "depthSortY": 398}},
+        "entityStates": {"iron-warden-idle": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "iron-warden-shield-slam": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "mine-raider-idle": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}, "mine-raider-attack": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}},
+        "occlusion": {"mask": "architecture-mask", "foreground": "foreground-occluder", "scope": "fixed-issue-287-truth-screen-anchors-only", "routeTraversalOwner": 273, "zones": [{"id": "upper-left-column", "depthThreshold": 260, "bounds": [0, 92, 188, 390]}, {"id": "lower-right-balustrade", "depthThreshold": 520, "bounds": [1030, 458, 1280, 720]}], "depthOrder": ["environment", "rings", "entities-by-depthSortY", "foreground-occluder", "lighting-normal-srgb", "combat-effects", "hud"]},
+        "hudRegions": {"top": [0, 0, 1280, 72], "bottom": [272, 590, 1280, 720], "fortressStatus": [18, 10, 258, 60], "waveStatus": [526, 10, 754, 60], "oreStatus": [1022, 10, 1262, 60], "wardenNameplate": [272, 604, 452, 704], "portrait": [282, 614, 360, 694], "health": [462, 604, 652, 704], "targetPolicy": [662, 604, 852, 704], "shieldSlam": [862, 604, 1102, 704], "pause": [1112, 604, 1262, 704]},
+        "hudDynamicState": {"font": "project-authored-5x7-pixel-uppercase", "textColor": [222, 170, 88, 255], "baselinePolicy": "regions-use-top-left-local-integer-pixel-baselines", "fixture": {"fortress": "18/20", "wave": "7", "ore": "840", "health": "84/100", "targetPolicy": "nearest", "shieldSlam": "ready", "paused": False}, "minimumVariants": {"targetPolicy": ["nearest", "strongest"], "shieldSlam": ["ready", "cooldown"], "pause": ["pause", "resume"]}},
+        "cropPolicy": {"desktop": "show-full-16:9-frame", "laptop": "fit-full-frame-before-cropping; preserve both HUD bands and entrance/gate anchors", "mobile": "later-work-may-letterbox-or-use-authored-camera-crop; never crop both entrance and gate; HUD must reflow rather than scale below legibility", "status": "metadata-only-for-later-responsive-work"},
+    }
+    for section, expected in canonical_sections.items():
+        require_exact_json(scene[section], expected, f"scene.{section}")
     if recipe["entityCounts"] != {"iron-warden": 1, "mine-raider": 1} or manifest["entityLayerCounts"] != recipe["entityCounts"]:
         raise ValueError("Declared entity counts are not canonical")
     expected_digests = {name: sha256(metadata / name) for name in ("provenance.json", "reconstruction.json", "scene-contract.json")}
@@ -1934,6 +1948,29 @@ def verify(root: Path = ROOT) -> None:
         with Image.open(root / path) as image:
             if list(image.size) != record["dimensions"] or image.mode != record["mode"]:
                 raise ValueError(f"Image metadata mismatch: {path}")
+            path_text = path.as_posix()
+            if path_text.startswith("docs/visual-evidence/production-scene/"):
+                semantics = ("evidence", "review-only", ["review"])
+            elif path_text.endswith("environment/shuttergate-clean-plate-1280x720.png"):
+                semantics = ("environment", "opaque-clean-plate", ["world"])
+            elif "/entities/" in path_text:
+                semantics = ("entity", "straight-alpha-padded-pivot", ["world-entities"])
+            elif "/effects/" in path_text:
+                semantics = ("effect", "straight-alpha", ["world-effects"])
+            elif path_text.endswith("lighting/warm-light-overlay.png"):
+                semantics = ("lighting", "straight-alpha-normal-srgb-no-entities", ["world-lighting"])
+            elif path_text.endswith("occlusion/architecture-mask.png"):
+                semantics = ("occlusion-mask", "grayscale-mask", ["foreground-occlusion"])
+            elif path_text.endswith("occlusion/route-walkable-mask.png"):
+                semantics = ("walkable-mask", "binary-review-contract-mask", ["route-validation"])
+            elif path_text.endswith("occlusion/foreground-occluder.png"):
+                semantics = ("foreground", "straight-alpha-environment-only", ["foreground-occlusion"])
+            elif "/hud/" in path_text:
+                semantics = ("hud", "straight-alpha-runtime-state-or-chrome", ["screen-space-hud"])
+            else:
+                raise ValueError(f"Manifest path has no canonical semantics: {path}")
+            if (record["category"], record["alphaSemantics"], record["contributesTo"]) != semantics:
+                raise ValueError(f"Manifest semantics drifted: {path}")
             if record["category"] not in {"evidence", "occlusion-mask", "walkable-mask"}:
                 if record["id"] in ids:
                     raise ValueError(f"Duplicate asset id: {record['id']}")
@@ -1986,10 +2023,10 @@ def verify(root: Path = ROOT) -> None:
     if layers != ordered_layers:
         raise ValueError("Reconstruction layers are not stored in canonical depth order")
     entity_layers = [layer for layer in layers if layer["region"] == "world-entities"]
-    if {layer["asset"] for layer in entity_layers} != set(expected_entities):
+    if [layer["asset"] for layer in entity_layers] != ["mine-raider-attack", "iron-warden-shield-slam"]:
         raise ValueError("Reconstruction must contain exactly one required Warden and hostile layer")
-    ring_layers = {layer["asset"] for layer in layers if layer["region"] == "world-effects"}
-    if ring_layers != {"warden-selection-ring", "hostile-faction-ring"}:
+    ring_layers = [layer["asset"] for layer in layers if layer["region"] == "world-effects"]
+    if ring_layers != ["warden-selection-ring", "hostile-faction-ring"]:
         raise ValueError("Neutral reconstruction must contain exactly the two faction rings")
     if [layer["depthSortY"] for layer in entity_layers] != sorted(layer["depthSortY"] for layer in entity_layers):
         raise ValueError("Entities are not canonically depth sorted")
@@ -2017,6 +2054,25 @@ def verify(root: Path = ROOT) -> None:
     if recipe["isolationProofs"] != expected_proofs or not all((root / path).is_file() for path in expected_proofs.values()):
         raise ValueError("Isolation proof paths are incomplete or noncanonical")
     require_same_pixels(_compose_v2(recipe, assets), root / recipe["output"], "Neutral reconstruction")
+    entity_assets = {"iron-warden-shield-slam", "mine-raider-attack"}
+    ring_assets = {"warden-selection-ring", "hostile-faction-ring"}
+    no_entities = _compose_v2(_recipe_without_v2(recipe, entity_assets | ring_assets), assets)
+    warden_only = _compose_v2(_recipe_without_v2(recipe, {"mine-raider-attack", "hostile-faction-ring"}), assets)
+    hostile_only = _compose_v2(_recipe_without_v2(recipe, {"iron-warden-shield-slam", "warden-selection-ring"}), assets)
+    require_same_pixels(no_entities, root / expected_proofs["entitiesRemoved"], "Entity-removal reconstruction")
+    require_same_pixels(_labelled_grid_v2([("BOTH", _compose_v2(recipe, assets)), ("WARDEN ONLY", warden_only), ("HOSTILE ONLY", hostile_only), ("NEITHER", no_entities)]), root / expected_proofs["individualRemoval"], "Individual-removal grid")
+    require_same_pixels(assets["shuttergate-clean-plate-1280x720"], root / expected_proofs["environmentOnly"], "Clean-plate proof")
+    architecture_mask_image = Image.open(package / "exports" / "occlusion" / "architecture-mask.png").convert("L")
+    walkable_image = Image.open(package / "exports" / "occlusion" / "route-walkable-mask.png").convert("L")
+    require_same_pixels(occlusion_board(assets["shuttergate-clean-plate-1280x720"], architecture_mask_image, assets["foreground-occluder"]), root / expected_proofs["foreground"], "Foreground-isolation proof")
+    require_same_pixels(_route_board_v2(assets["shuttergate-clean-plate-1280x720"], scene["route"]["polyline"], walkable_image), root / expected_proofs["route"], "Route-validation proof")
+    entity_images = {asset: assets[asset] for asset in scene["entityStates"]}
+    require_same_pixels(_alignment_board_v2(entity_images), root / expected_proofs["alignment"], "Entity-alignment proof")
+    require_same_pixels(assets["warm-light-overlay"], root / expected_proofs["lighting"], "Lighting-isolation proof")
+    impact_scene = _compose_v2(recipe, assets)
+    impact_scene.alpha_composite(assets["shield-slam-impact"], (900, 330))
+    pixel_text(impact_scene, (900, 300), "SEPARATE IMPACT HOSTILE REMAINS READABLE", 2)
+    require_same_pixels(impact_scene, root / expected_proofs["impact"], "Shield-Slam impact proof")
 
     hud = scene["hudDynamicState"]
     _assert_strict_v2(hud, {"font", "textColor", "baselinePolicy", "fixture", "minimumVariants"}, "scene.hudDynamicState")
@@ -2048,6 +2104,22 @@ def verify(root: Path = ROOT) -> None:
                 raise ValueError("HUD mutation changed environment or immutable HUD pixels")
     if changed == 0:
         raise ValueError("HUD mutation proof does not change control state pixels")
+    hud_board = Image.new("RGBA", FRAME, (7, 13, 22, 255))
+    for layer in layers:
+        if layer["region"] == "screen-space-hud":
+            hud_board.alpha_composite(assets[layer["asset"]], tuple(layer["position"]))
+    require_same_pixels(hud_board, root / expected_proofs["hudControls"], "HUD-isolation proof")
+    hud_mutation = Image.new("RGBA", (2560, 720), (7, 13, 22, 255))
+    hud_mutation.alpha_composite(base_pixels.convert("RGBA"), (0, 0))
+    hud_mutation.alpha_composite(alternate_pixels.convert("RGBA"), (1280, 0))
+    pixel_text(hud_mutation, (24, 78), "FIXTURE READY NEAREST RUNNING", 2)
+    pixel_text(hud_mutation, (1304, 78), "ALTERNATE COOLDOWN STRONGEST PAUSED", 2)
+    require_same_pixels(hud_mutation, root / expected_proofs["hudMutation"], "HUD-mutation proof")
+    unlit = _compose_v2(_recipe_without_v2(recipe, {"warm-light-overlay"}), assets)
+    lighting_proof = _labelled_grid_v2([("UNLIT ENTITIES", unlit), ("NORMAL SRGB LIGHTING", _compose_v2(recipe, assets)), ("LIT ENTRANCE", _compose_v2(recipe, assets)), ("LIT CENTRAL ROUTE", _compose_v2(recipe, assets))])
+    require_same_pixels(lighting_proof, root / expected_proofs["lightingEntities"], "Entity-lighting proof")
+    occlusion_proof = _labelled_grid_v2([("UPPER COLUMN BEHIND", assets["shuttergate-clean-plate-1280x720"]), ("TRUTH ANCHORS CLEAR", _compose_v2(recipe, assets)), ("LOWER RAIL BEHIND", assets["shuttergate-clean-plate-1280x720"]), ("ROUTE TRAVERSAL DEFERRED 273", _route_board_v2(assets["shuttergate-clean-plate-1280x720"], scene["route"]["polyline"], walkable_image))])
+    require_same_pixels(occlusion_proof, root / expected_proofs["occlusionDepth"], "Occlusion-depth proof")
     if scene["lighting"] != {"asset": "warm-light-overlay", "blendMode": "normal", "colorSpace": "sRGB", "alpha": "straight", "affects": ["environment", "entities", "foreground"], "excludes": ["combat-effects", "hud"]}:
         raise ValueError("Lighting blend/order semantics drifted")
 
