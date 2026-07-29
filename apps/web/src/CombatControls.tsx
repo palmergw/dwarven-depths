@@ -42,8 +42,7 @@ export function CombatControls({
       ) : (
         dwarves.map((dwarf) => (
           <fieldset key={dwarf.entityId}>
-            <legend>{dwarf.characterId}</legend>
-            <p className="control-entity-id">{dwarf.entityId}</p>
+            <legend>Iron Warden</legend>
             {dwarf.supportedTargetPolicies.map((policy) => (
               <button
                 key={policy}
@@ -77,10 +76,11 @@ export function CombatControls({
                   <span id={feedbackId} role="status">
                     {pending
                       ? "Activation queued"
-                      : (ability.rejectionReason ??
-                        (ability.cooldownCompleteAtTick === null
+                      : ability.rejectionReason !== null
+                        ? "Unavailable while combat is paused"
+                        : ability.cooldownCompleteAtTick === null
                           ? "Ready"
-                          : `Cooldown until tick ${ability.cooldownCompleteAtTick}`))}
+                          : "Recharging"}
                   </span>
                 </span>
               );

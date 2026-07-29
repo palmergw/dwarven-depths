@@ -977,16 +977,19 @@ export function App({
   return (
     <main
       aria-labelledby="app-heading"
+      data-view-phase={view.phase}
       data-contrast-preference={contrastPreference}
       data-motion-preference={motionPreference}
       data-sound-preference={soundPreference}
       data-text-scale={textScale}
     >
-      <p className="eyebrow">Authoritative checkpoint</p>
+      <p className="eyebrow">The Shuttergate Company</p>
       <h1 id="app-heading">Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
-        <h2 id="run-heading">Empty Level Conformance Run</h2>
-        <RunJourneyGuide phase={view.phase} />
+        <h2 id="run-heading">Defend Shuttergate Hall</h2>
+        {(view.phase === "checkpoint" ||
+          view.phase === "result" ||
+          view.phase === "failure") && <RunJourneyGuide phase={view.phase} />}
         {view.phase === "checkpoint" &&
           !settingsOpen &&
           !upgradeInventoryOpen && (
@@ -1064,8 +1067,8 @@ export function App({
         {view.phase === "preparation" && (
           <dl className="preparation-summary" aria-label="Preparation summary">
             <div>
-              <dt>Authoritative level</dt>
-              <dd>{view.levelId}</dd>
+              <dt>Battlefield</dt>
+              <dd>Shuttergate Hall</dd>
             </div>
             <div>
               <dt>Company roster</dt>
@@ -1105,7 +1108,7 @@ export function App({
             <p>
               {view.manualPaused
                 ? "Combat is manually paused."
-                : "The authoritative worker is resolving the run…"}
+                : "The company holds the gate…"}
             </p>
           )}
           {view.phase === "failure" && <p>Run failed: {view.message}</p>}

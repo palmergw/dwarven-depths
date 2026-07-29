@@ -1,6 +1,30 @@
 # Issue #279 visual evidence
 
-All current captures are from the actual Vite client running the authoritative protocol-v4 Shuttergate fixture. The only presentation setting changed between candidates is the `Battlefield` viewpoint control; both candidates consume the same Worker-emitted snapshot. The draft PR records and verifies the exact commit containing these bytes because a committed file cannot self-identify its own commit hash.
+All captures are from the actual Vite client running the authoritative protocol-v4 Shuttergate fixture. In the initial comparison, the only presentation setting changed between candidates was the `Battlefield` viewpoint control; both consumed the same Worker-emitted snapshot. The correction removes that prototype control and presents Candidate A only, as directed. The draft PR records and verifies the exact commit containing these bytes because a committed file cannot self-identify its own commit hash.
+
+## Candidate A correction submission
+
+This second product-owner submission addresses the first review against `6bb1885cf5d91904d5075c7afe905c63d22093ff` and focuses only on Candidate A as directed.
+
+| Evidence | Fixture/state | Viewport | Settings |
+|---|---|---:|---|
+| `candidate-a-correction-1440x900-active.png` | Shuttergate active combat, Warden plus hostile, paused after hostile arrival | 1440×900 | standard contrast, default text, normal motion, sound off |
+| `candidate-a-correction-390x844-active-reduced-motion.png` | same active-combat fixture and entity requirement | 390×844 | reduced motion; otherwise defaults |
+| `candidate-a-correction-motion.webm` | preparation through active combat, including idle/action character motion and foreground depth | 1440×900 | normal motion; 9.92 seconds |
+
+Required comparisons:
+
+- **Concept/current:** compare `../../../assets/concept-art/dwarven-depths-gameplay-mockup.png` with both correction screenshots.
+- **Current iteration:** compare `candidate-a-1440x900-active.png` with `candidate-a-correction-1440x900-active.png`; the correction replaces the scrolling dashboard, wireframe platforms, primitive tokens, and circular lights with a game-first fortress view, equipped character silhouettes, surface lighting, and docked HUD.
+- **Responsive:** compare the desktop correction with `candidate-a-correction-390x844-active-reduced-motion.png`; the full battlefield remains visible before the compact stacked HUD and controls.
+
+The capture harness waited for the accessible battlefield summary to report at least two combatants before pausing screenshots. The motion capture continues for eight seconds after the same authoritative arrival state. No standalone mockup or concept-image pixels are loaded into the client.
+
+### Source and license manifest
+
+No external, generated, traced, or concept-derived assets are included. Fortress geometry, material palette, surface lighting, Iron Warden art, hostile art, idle/action poses, and foreground occluders are original project-authored Phaser Canvas drawing code in `apps/web/src/Battlefield.tsx`, covered by the repository license. The source is committed directly rather than emitted from an untracked asset generator.
+
+Known limitations: these are production-direction raster-canvas proofs rather than final sprite/tile atlases; action poses are bound to authoritative arrival/departure feedback; lighting is surface-integrated but static; the compact HUD intentionally does not pre-empt the final #274/#275 shell and interaction scope.
 
 ## Capture matrix
 

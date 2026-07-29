@@ -336,7 +336,7 @@ function journeyStepStates(): string[] {
 }
 
 describe("run journey guidance", () => {
-  it("tracks the full authoritative path in StrictMode without live-region duplication", async () => {
+  it("keeps diagnostic guidance out of the game viewport in StrictMode", async () => {
     const workers: ControlledJourneyWorker[] = [];
     const createWorker = (): Worker => {
       const worker = new ControlledJourneyWorker();
@@ -371,29 +371,13 @@ describe("run journey guidance", () => {
     );
 
     await userEvent.click(await buttonWithText("Begin preparation"));
-    await vi.waitFor(() =>
-      expect(journeyStepStates()).toEqual([
-        "complete",
-        "current",
-        "upcoming",
-        "upcoming"
-      ])
-    );
+    await vi.waitFor(() => expect(journeyStepStates()).toEqual([]));
 
     await userEvent.click(await buttonWithText("Confirm preparation"));
     await buttonWithText("Pause combat");
-    expect(journeyStepStates()).toEqual([
-      "complete",
-      "complete",
-      "current",
-      "upcoming"
-    ]);
-    expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
-      "Press Escape"
-    );
-    expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
-      "changing windows pauses automatically"
-    );
+    expect(journeyStepStates()).toEqual([]);
+    expect(document.body.textContent).not.toContain("Simulation tick");
+    expect(document.body.textContent).not.toContain("level.shuttergate_hall");
     await userEvent.keyboard("{Escape}");
     await buttonWithText("Resume combat");
 
@@ -405,7 +389,7 @@ describe("run journey guidance", () => {
       "complete",
       "current"
     ]);
-    expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
+    expect(document.querySelector('[aria-current="step"]')).toHaveTextContent(
       "download its authoritative run evidence"
     );
   });
@@ -1450,19 +1434,11 @@ describe("authoritative web worker", () => {
       expect(document.querySelector(".battlefield")).toBeInstanceOf(HTMLElement)
     );
     expect(document.querySelector(".combat-feedback")).toBeNull();
-    await userEvent.click(page.getByRole("button", { name: "Top-down" }));
-    await expect
-      .element(page.getByRole("button", { name: "Top-down" }))
-      .toHaveAttribute("aria-pressed", "true");
     await vi.waitFor(() =>
       expect(
         document.querySelectorAll(".battlefield-canvas canvas")
       ).toHaveLength(1)
     );
-    await userEvent.click(page.getByRole("button", { name: "Stylized depth" }));
-    await expect
-      .element(page.getByRole("button", { name: "Stylized depth" }))
-      .toHaveAttribute("aria-pressed", "true");
     render(changed);
     await vi.waitFor(() =>
       expect(document.querySelector(".combat-feedback")).toHaveAttribute(
@@ -1840,7 +1816,7 @@ describe("authoritative web worker", () => {
       '[aria-label="Preparation summary"]'
     );
     expect(preparationSummary?.textContent).toContain(
-      "Authoritative levellevel.shuttergate_hall"
+      "BattlefieldShuttergate Hall"
     );
     expect(preparationSummary?.textContent).toContain(
       "Company rosterEmpty — no dwarves require placement"
@@ -1863,9 +1839,12 @@ describe("authoritative web worker", () => {
     );
     expect(combatControls?.textContent).toContain("Combat controls");
     expect(combatControls?.textContent).toContain("Shield Slam");
-    expect(combatControls?.textContent).toContain("phase_unavailable");
+    expect(combatControls?.textContent).toContain(
+      "Unavailable while combat is paused"
+    );
+    expect(combatControls?.textContent).not.toContain("phase_unavailable");
     expect(document.querySelector("figcaption")?.textContent).toContain(
-      "Battlefield level.shuttergate_hall"
+      "Shuttergate Hall"
     );
     await userEvent.click(resumeButton);
     await vi.waitFor(
@@ -1901,8 +1880,7 @@ describe("authoritative web worker", () => {
     expect(combatControls?.textContent).toContain("Activation queued");
     await userEvent.click(resumeButton);
     await vi.waitFor(
-      () =>
-        expect(combatControls?.textContent).toMatch(/Cooldown until tick \d+/),
+      () => expect(combatControls?.textContent).toContain("Recharging"),
       { timeout: 10_000 }
     );
   });

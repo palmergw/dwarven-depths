@@ -8,6 +8,18 @@ The concept image is comparison-only reference material. It is not loaded by the
 
 ## Candidate A — stylized depth (recommended for product-owner selection)
 
+### Product-owner correction submission
+
+The second submission keeps Candidate A's presentation-only coordinate mapping but replaces the first proof's dashboard and wireframe treatment in the actual client:
+
+- combat and preparation now use a viewport-filling game composition with the battlefield dominant and a compact docked company/ability/status HUD;
+- the environment is a composed fortress interior with a deep arched gate, enclosed side walls, floor and causeway planes, rails, masonry, timber bracing, banners, ironwork, and foreground pillars/rock occlusion rather than visible graph geometry;
+- torch illumination is applied as warm wedges across wall and floor surfaces, with lit masonry edges, rather than circular debug-light placeholders;
+- original project-authored Iron Warden and hostile raster-canvas figures have distinct anatomy, armor/equipment, shields/weapons, idle movement, and action poses at a larger readable scale;
+- player-facing preparation, combat HUD, controls, status, and battlefield text omit stable IDs, protocol/conformance language, simulation ticks, and raw rejection codes.
+
+The correction remains a bounded direction proof, not the production asset library or final #274/#275 shell. It does not change `RenderSnapshot`, Worker messages, commands, timing, pause behavior, results, evidence, or checksums.
+
 - **Renderer:** Phaser Canvas remains sufficient for this bounded proof. Orthographic projection turns map coordinates into diamond floor planes and receding corridor segments. A production implementation could retain Phaser WebGL without changing the snapshot contract.
 - **Assets:** the proof uses original project-authored raster-canvas geometry. Production should use pixel-aligned PNG atlases for stone, timber, iron, props, characters, and effects, with a source/license manifest and nearest-neighbour sampling.
 - **Camera and occlusion:** a fixed 16:9 orthographic camera projects `(x, y)` to diagonal screen axes. Entities are sorted by projected `y`, then stable ID; foreground rock planes cover the lower scene edges. Production walls and tall props would use the same deterministic depth key and explicit foreground layer.
@@ -40,7 +52,8 @@ No external or generated art is included. All proof geometry, palette choices, s
 
 ## Known proof limitations
 
-- Geometry and silhouettes are deliberately bounded proofs, not a production environment or animation library.
-- Torch glow is static canvas geometry; motion evidence therefore demonstrates authoritative entity/feedback updates and viewpoint redraw rather than a final lighting loop.
-- The existing shell, diagnostic journey, HUD, and controls are intentionally out of scope for #279 and remain scheduled in #274–#275.
-- Candidate A's foreground occlusion is representative rather than room-aware; production occluder fading belongs to the selected-direction implementation.
+- Environment and character rendering remains original project-authored raster-canvas code, not the production atlas library.
+- Idle and action poses prove animation feasibility but do not constitute the complete combat animation set.
+- Surface illumination is deliberately bounded and static; production light animation, particles, and material atlases remain downstream work.
+- Foreground occlusion is representative rather than room-aware; production occluder fading belongs to the selected-direction implementation.
+- The compact HUD proves game-first hierarchy and player/debug separation without attempting the final shell or full HUD scope assigned to #274/#275.
