@@ -1942,6 +1942,62 @@ def verify(root: Path = ROOT) -> None:
     if manifest["contractDigests"] != expected_digests:
         raise ValueError("Scene metadata digest mismatch")
 
+    canonical_file_ids = [
+        "shuttergate-clean-plate-1280x720",
+        "iron-warden-idle",
+        "iron-warden-shield-slam",
+        "mine-raider-attack",
+        "mine-raider-idle",
+        "hostile-faction-ring",
+        "shield-slam-impact",
+        "warden-selection-ring",
+        "warm-light-overlay",
+        "architecture-mask",
+        "route-walkable-mask",
+        "foreground-occluder",
+        "bottom-hud-frame",
+        "fortress-value",
+        "health-value",
+        "ore-value",
+        "pause-state",
+        "resume-state",
+        "shield-slam-cooldown-state",
+        "shield-slam-ready-state",
+        "target-nearest-state",
+        "target-strongest-state",
+        "top-hud-frame",
+        "warden-name",
+        "warden-portrait",
+        "wave-value",
+    ]
+    canonical_evidence_ids = [
+        "approved-keyframe-vs-reconstruction",
+        "character-scale-study",
+        "clean-plate",
+        "composition-decision",
+        "entity-removal-grid",
+        "entity-state-alignment",
+        "environment-and-presentation-lighting",
+        "foreground-occlusion-isolation",
+        "hud-control-isolation",
+        "hud-state-mutation",
+        "iron-warden-alpha-states-4x",
+        "iron-warden-alpha-states-native",
+        "lighting-alpha-isolation",
+        "lighting-entity-proof",
+        "mine-raider-alpha-states-4x",
+        "mine-raider-alpha-states-native",
+        "occlusion-depth-proof",
+        "reconstruction-entities-removed",
+        "reconstruction-one-warden-one-hostile",
+        "route-anchor-validation",
+        "selection-and-combat-effect-isolation",
+        "shield-slam-effect-proof",
+    ]
+    if [record.get("id") for record in manifest["files"]] != canonical_file_ids:
+        raise ValueError("Manifest runtime asset IDs are incomplete, duplicated, reordered, or noncanonical")
+    if [record.get("id") for record in manifest["evidence"]] != canonical_evidence_ids:
+        raise ValueError("Manifest evidence IDs are incomplete, duplicated, reordered, or noncanonical")
     records = [*manifest["files"], *manifest["evidence"]]
     ids: set[str] = set()
     assets: dict[str, Image.Image] = {}
