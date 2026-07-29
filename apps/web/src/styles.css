@@ -450,10 +450,10 @@ main[data-contrast-preference="high"] .upgrade-inventory-list div {
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.game-shell .battlefield {
-  margin: 0;
-}
-.game-shell .battlefield-canvas {
+.game-shell .game-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
   border: 2px solid #6e4b2d;
   border-radius: 0.15rem;
   background: #030508;
@@ -461,17 +461,46 @@ main[data-contrast-preference="high"] .upgrade-inventory-list div {
     inset 0 0 2rem #000,
     0 0.75rem 2rem #000b;
 }
-.game-shell .battlefield figcaption {
-  margin: 0.4rem 0.25rem 0;
-  color: #d8c6a1;
+.game-shell .battlefield,
+.game-shell .battlefield-canvas {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border: 0;
 }
-.game-shell .combat-hud,
+.game-shell .battlefield figcaption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.game-shell .combat-hud {
+  position: absolute;
+  inset: 0.45rem 0.6rem auto;
+  min-height: 3.4rem;
+  margin: 0;
+  padding: 0.45rem 0.65rem;
+  border: 2px solid #795332;
+  border-radius: 0.15rem;
+  background:
+    linear-gradient(90deg, #08101be6, #20150ee6, #08101be6),
+    url("./assets/shuttergate/hud-frame.png") center / cover;
+  box-shadow: inset 0 0 0 1px #b1845a66;
+  pointer-events: none;
+}
 .game-shell .combat-controls {
-  display: inline-block;
-  width: calc(50% - 0.4rem);
-  min-height: 8rem;
-  margin: 0.6rem 0.2rem 0;
-  vertical-align: top;
+  position: absolute;
+  inset: auto 0.6rem 0.55rem;
+  display: flex;
+  min-height: 4.2rem;
+  max-height: 34%;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.45rem;
+  overflow-x: auto;
   border: 2px solid #795332;
   border-radius: 0.15rem;
   background:
@@ -479,27 +508,72 @@ main[data-contrast-preference="high"] .upgrade-inventory-list div {
     repeating-linear-gradient(0deg, transparent 0 4px, #ffffff08 4px 5px);
   box-shadow: inset 0 0 0 1px #b1845a55;
 }
+.game-shell .combat-hud > h3,
+.game-shell .combat-controls > h3 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
 .game-shell .combat-hud dl {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin: 0;
 }
 .game-shell .combat-hud dl div {
   display: block;
-  padding: 0.5rem;
+  padding: 0.25rem 0.5rem;
   border: 1px solid #60452f;
   background: #05090ecc;
+  text-align: center;
+  text-shadow: 0 1px #000;
 }
 .game-shell .combat-controls fieldset {
-  margin-top: 0.5rem;
+  display: flex;
+  min-width: max-content;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.25rem 0.4rem;
   border-color: #60452f;
+}
+.game-shell .combat-controls legend {
+  padding: 0 0.3rem;
+  color: #e3bd78;
+}
+.game-shell .combat-controls button {
+  min-height: 2.35rem;
+  margin: 0;
+  padding: 0.3rem 0.5rem;
+  border-color: #8d6339;
+  background: linear-gradient(#44301f, #151b22);
+  color: #f4ead5;
+  white-space: nowrap;
+}
+.game-shell .combat-controls button:focus-visible {
+  outline: 3px solid #f0c66f;
+  outline-offset: 1px;
 }
 .game-shell .combat-controls button:has(.ability-icon) {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
+}
+.game-shell .combat-controls .pause-control {
+  display: inline-flex;
+  min-width: max-content;
+  align-items: center;
+  gap: 0.35rem;
+  order: 2;
+  margin-left: auto;
+}
+.game-shell .combat-controls .pause-control img {
+  width: 1.8rem;
+  height: 1.8rem;
+  object-fit: cover;
+  image-rendering: pixelated;
 }
 .ability-icon {
   width: 2rem;
@@ -524,14 +598,42 @@ main[data-contrast-preference="high"] .upgrade-inventory-list div {
     margin: 0.25rem;
     font-size: 0.85em;
   }
-  .game-shell .combat-hud,
-  .game-shell .combat-controls {
-    display: block;
-    width: 100%;
+  .game-shell .game-frame {
+    min-height: 22rem;
+    aspect-ratio: auto;
+  }
+  .game-shell .battlefield,
+  .game-shell .battlefield-canvas {
+    height: 100%;
+  }
+  .game-shell .combat-hud {
+    inset: 0.25rem 0.25rem auto;
     min-height: 0;
-    margin: 0.5rem 0 0;
+    margin: 0;
+    padding: 0.25rem;
+    font-size: 0.72em;
+  }
+  .game-shell .combat-controls {
+    inset: auto 0.25rem 0.25rem;
+    max-height: 46%;
+    align-items: flex-end;
+    margin: 0;
+    padding: 0.3rem;
+    font-size: 0.72em;
   }
   .game-shell .combat-hud dl {
     grid-template-columns: repeat(3, 1fr);
+    gap: 0.2rem;
+  }
+  .game-shell .combat-hud dl div {
+    padding: 0.2rem;
+  }
+  .game-shell .combat-controls fieldset {
+    flex-wrap: wrap;
+    min-width: 32rem;
+  }
+  .game-shell .combat-controls button {
+    min-height: 2rem;
+    padding: 0.2rem 0.35rem;
   }
 }

@@ -1,12 +1,103 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourcePackage": "dwarven-depths-issue-282-visual-direction",
   "license": "original-project-asset",
+  "environmentPolicy": {
+    "sourceDirectory": "assets/game-art/visual-direction/exports/environment",
+    "excludes": [
+      "characters",
+      "creatures",
+      "combat-effects",
+      "state-text",
+      "controls",
+      "hud"
+    ]
+  },
   "files": [
     {
       "path": "apps/web/src/assets/shuttergate/ability-shield-slam.png",
       "dimensions": [213, 206],
       "sha256": "7c2e0349a871eb630fd86f2f2ea9600e54cf68e46d5980fc7739c6946dd69c85"
+    },
+    {
+      "path": "apps/web/src/assets/shuttergate/environment-architecture.png",
+      "dimensions": [1280, 720],
+      "sha256": "d1f204d3b50cf73a6fcd201490517b771f61956211a29fe874fc024f3d8c81ec",
+      "role": "environment",
+      "sourcePath": "assets/game-art/visual-direction/exports/environment/walls-arch-doorway.png",
+      "excludes": [
+        "characters",
+        "creatures",
+        "combat-effects",
+        "state-text",
+        "controls",
+        "hud"
+      ]
+    },
+    {
+      "path": "apps/web/src/assets/shuttergate/environment-background.png",
+      "dimensions": [1280, 720],
+      "sha256": "4165e5d95954529eb2f0ce5d2830f4f2242275e725965895e8e5dd58399e8027",
+      "role": "environment",
+      "sourcePath": "assets/game-art/visual-direction/exports/environment/background-receding-passage.png",
+      "excludes": [
+        "characters",
+        "creatures",
+        "combat-effects",
+        "state-text",
+        "controls",
+        "hud"
+      ]
+    },
+    {
+      "path": "apps/web/src/assets/shuttergate/environment-floor-path.png",
+      "dimensions": [1280, 720],
+      "sha256": "bfe0e4ba6fb9018c46c4780c9a758471569f97b3078fa36ec18adcba9ae486b5",
+      "role": "environment",
+      "sourcePath": "assets/game-art/visual-direction/exports/environment/floor-winding-path.png",
+      "excludes": [
+        "characters",
+        "creatures",
+        "combat-effects",
+        "state-text",
+        "controls",
+        "hud"
+      ]
+    },
+    {
+      "path": "apps/web/src/assets/shuttergate/environment-foreground.png",
+      "dimensions": [1280, 720],
+      "sha256": "8c209b769cb67e9024cf8de5c70b7e15dbccbb10f5283710815a527c41eddc59",
+      "role": "environment",
+      "sourcePath": "assets/game-art/visual-direction/exports/environment/props-foreground.png",
+      "excludes": [
+        "characters",
+        "creatures",
+        "combat-effects",
+        "state-text",
+        "controls",
+        "hud"
+      ]
+    },
+    {
+      "path": "apps/web/src/assets/shuttergate/environment-lighting.png",
+      "dimensions": [1280, 720],
+      "sha256": "d6db651a6abcf1b4ab3311e760b1c48633c1d707bec1c25747a8216458d1b2ff",
+      "role": "environment",
+      "sourcePath": "assets/game-art/visual-direction/exports/environment/lighting-effects.png",
+      "excludes": [
+        "characters",
+        "creatures",
+        "combat-effects",
+        "state-text",
+        "controls",
+        "hud"
+      ]
+    },
+    {
+      "path": "apps/web/src/assets/shuttergate/hud-frame.png",
+      "dimensions": [1059, 445],
+      "sha256": "7aed63b6ea9c684588f43895985938c2bd98d3c9a5a1a0bcca28078e80602cfa"
     },
     {
       "path": "apps/web/src/assets/shuttergate/iron-warden-actions.png",
@@ -19,9 +110,9 @@
       "sha256": "50b0c11abc2b4444213d7869294d6fea6dd4a2ccb4240d902875a7792a8fd9b4"
     },
     {
-      "path": "apps/web/src/assets/shuttergate/shuttergate-keyframe-1280x720.png",
-      "dimensions": [1280, 720],
-      "sha256": "49a659a61548ac12bc546d5af5c74e990eb8a3d6bc55ac46dee153d458a991e5"
+      "path": "apps/web/src/assets/shuttergate/pause-control.png",
+      "dimensions": [169, 167],
+      "sha256": "f19d0d882bd8cdafa2530b25408e20467eb976cab00420377f07a11e8dccbad4"
     }
   ]
 }

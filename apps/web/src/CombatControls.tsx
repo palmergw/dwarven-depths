@@ -1,4 +1,5 @@
 import shieldSlamIconUrl from "./assets/shuttergate/ability-shield-slam.png";
+import pauseControlUrl from "./assets/shuttergate/pause-control.png";
 import type { CombatControlDwarf, TargetPolicy } from "./protocol.js";
 
 const TARGET_POLICY_LABELS: Readonly<Record<TargetPolicy, string>> = {
@@ -27,6 +28,8 @@ function rejectionMessage(rejectionReason: string | null): string | null {
 interface CombatControlsProps {
   readonly dwarves: readonly CombatControlDwarf[];
   readonly pendingAbilityKeys?: ReadonlySet<string>;
+  readonly manualPaused?: boolean;
+  readonly onTogglePause?: () => void;
   readonly onSetTargetPolicy: (
     dwarfEntityId: string,
     requestedPolicy: TargetPolicy
@@ -40,6 +43,8 @@ interface CombatControlsProps {
 export function CombatControls({
   dwarves,
   pendingAbilityKeys = new Set(),
+  manualPaused,
+  onTogglePause,
   onSetTargetPolicy,
   onActivateAbility
 }: CombatControlsProps) {
@@ -49,6 +54,17 @@ export function CombatControls({
       aria-labelledby="combat-controls-heading"
     >
       <h3 id="combat-controls-heading">Combat controls</h3>
+      {manualPaused !== undefined && onTogglePause !== undefined && (
+        <button
+          className="pause-control"
+          type="button"
+          aria-pressed={manualPaused}
+          onClick={onTogglePause}
+        >
+          <img src={pauseControlUrl} alt="" aria-hidden="true" />
+          {manualPaused ? "Resume combat" : "Pause combat"}
+        </button>
+      )}
       {dwarves.length === 0 ? (
         <p>
           Target policies and abilities are unavailable because no dwarves are

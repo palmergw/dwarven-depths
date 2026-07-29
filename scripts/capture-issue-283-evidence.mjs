@@ -21,6 +21,28 @@ async function reachCombat(page) {
   await page.locator("canvas").waitFor({ state: "visible" });
   await page.getByRole("button", { name: "Confirm preparation" }).click();
   await page.getByRole("button", { name: "Resume combat" }).waitFor();
+  await page
+    .locator('[data-presentation-integrity="verified"]')
+    .waitFor({ state: "attached" });
+}
+
+async function readPresentationIntegrity(page) {
+  const integrity = await page
+    .locator('[data-presentation-integrity="verified"]')
+    .evaluate((element) => ({
+      snapshotDwarves: Number(element.dataset.snapshotDwarfCount),
+      snapshotHostiles: Number(element.dataset.snapshotHostileCount),
+      runtimeDwarfSprites: Number(element.dataset.runtimeDwarfSpriteCount),
+      runtimeHostileSprites: Number(element.dataset.runtimeHostileSpriteCount)
+    }));
+  if (
+    integrity.snapshotDwarves !== integrity.runtimeDwarfSprites ||
+    integrity.snapshotHostiles !== integrity.runtimeHostileSprites
+  )
+    throw new Error(
+      "capture rejected: snapshot and runtime sprite counts diverged"
+    );
+  return integrity;
 }
 
 const metrics = [];
@@ -38,12 +60,29 @@ for (const viewport of viewports) {
   await page.locator("canvas").waitFor({ state: "visible" });
   await page.getByRole("button", { name: "Confirm preparation" }).click();
   await page.getByRole("button", { name: "Resume combat" }).waitFor();
+  await page
+    .locator('[data-presentation-integrity="verified"]')
+    .waitFor({ state: "attached" });
+  const pausedIntegrity = await readPresentationIntegrity(page);
   await page.screenshot({
     path: path.join(output, `${viewport.name}-paused.png`)
   });
   await page.getByRole("button", { name: "Resume combat" }).click();
   await page.getByRole("button", { name: "Pause combat" }).waitFor();
-  await page.waitForTimeout(120);
+  await page
+    .locator(
+      '[data-presentation-integrity="verified"][data-snapshot-dwarf-count="1"][data-snapshot-hostile-count="1"]'
+    )
+    .waitFor({ state: "attached" });
+  const activeIntegrity = await readPresentationIntegrity(page);
+  if (
+    viewport.name === "desktop-1440x900" &&
+    (activeIntegrity.snapshotDwarves !== 1 ||
+      activeIntegrity.snapshotHostiles !== 1)
+  )
+    throw new Error(
+      "1440x900 active evidence must contain exactly one Warden and one hostile"
+    );
   await page.screenshot({
     path: path.join(output, `${viewport.name}-active.png`)
   });
@@ -63,7 +102,14 @@ for (const viewport of viewports) {
   );
   metrics.push(
     await page.evaluate(
-      ({ name, width, height, frameRate }) => ({
+      ({
+        name,
+        width,
+        height,
+        frameRate,
+        pausedIntegrity,
+        activeIntegrity
+      }) => ({
         name,
         viewport: [width, height],
         navigationDurationMs: Math.round(
@@ -72,9 +118,11 @@ for (const viewport of viewports) {
         resourceCount: performance.getEntriesByType("resource").length,
         canvasCount: document.querySelectorAll("canvas").length,
         sampledFramesPerSecond: frameRate,
-        presentation: "normal-motion"
+        presentation: "normal-motion",
+        pausedIntegrity,
+        activeIntegrity
       }),
-      { ...viewport, frameRate }
+      { ...viewport, frameRate, pausedIntegrity, activeIntegrity }
     )
   );
   await context.close();

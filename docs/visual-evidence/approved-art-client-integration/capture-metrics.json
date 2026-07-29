@@ -4,30 +4,75 @@
   "captures": [
     {
       "name": "desktop-1440x900",
-      "viewport": [1440, 900],
-      "navigationDurationMs": 157,
-      "resourceCount": 7,
+      "viewport": [
+        1440,
+        900
+      ],
+      "navigationDurationMs": 162,
+      "resourceCount": 13,
       "canvasCount": 1,
-      "sampledFramesPerSecond": 60,
-      "presentation": "normal-motion"
+      "sampledFramesPerSecond": 61,
+      "presentation": "normal-motion",
+      "pausedIntegrity": {
+        "snapshotDwarves": 0,
+        "snapshotHostiles": 0,
+        "runtimeDwarfSprites": 0,
+        "runtimeHostileSprites": 0
+      },
+      "activeIntegrity": {
+        "snapshotDwarves": 1,
+        "snapshotHostiles": 1,
+        "runtimeDwarfSprites": 1,
+        "runtimeHostileSprites": 1
+      }
     },
     {
       "name": "laptop-1280x800",
-      "viewport": [1280, 800],
-      "navigationDurationMs": 155,
-      "resourceCount": 7,
+      "viewport": [
+        1280,
+        800
+      ],
+      "navigationDurationMs": 152,
+      "resourceCount": 13,
       "canvasCount": 1,
-      "sampledFramesPerSecond": 61,
-      "presentation": "normal-motion"
+      "sampledFramesPerSecond": 60,
+      "presentation": "normal-motion",
+      "pausedIntegrity": {
+        "snapshotDwarves": 0,
+        "snapshotHostiles": 0,
+        "runtimeDwarfSprites": 0,
+        "runtimeHostileSprites": 0
+      },
+      "activeIntegrity": {
+        "snapshotDwarves": 1,
+        "snapshotHostiles": 1,
+        "runtimeDwarfSprites": 1,
+        "runtimeHostileSprites": 1
+      }
     },
     {
       "name": "mobile-390x844",
-      "viewport": [390, 844],
-      "navigationDurationMs": 150,
-      "resourceCount": 7,
+      "viewport": [
+        390,
+        844
+      ],
+      "navigationDurationMs": 152,
+      "resourceCount": 13,
       "canvasCount": 1,
       "sampledFramesPerSecond": 60,
-      "presentation": "normal-motion"
+      "presentation": "normal-motion",
+      "pausedIntegrity": {
+        "snapshotDwarves": 0,
+        "snapshotHostiles": 0,
+        "runtimeDwarfSprites": 0,
+        "runtimeHostileSprites": 0
+      },
+      "activeIntegrity": {
+        "snapshotDwarves": 1,
+        "snapshotHostiles": 1,
+        "runtimeDwarfSprites": 1,
+        "runtimeHostileSprites": 1
+      }
     }
   ]
 }

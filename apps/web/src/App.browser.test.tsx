@@ -3,10 +3,12 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
+import assetManifest from "./assets/shuttergate/manifest.json";
 import {
   Battlefield,
   buildBattlefieldPrimitives,
-  buildDepartureFeedbackPrimitives
+  buildDepartureFeedbackPrimitives,
+  environmentAssetPathsFromManifest
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { deriveCombatFeedback } from "./combat-feedback.js";
@@ -932,6 +934,25 @@ describe("semantic combat controls", () => {
 });
 
 describe("authoritative web worker", () => {
+  it("binds only character-free approved environment layers", () => {
+    const paths = environmentAssetPathsFromManifest(assetManifest);
+    expect(paths).toHaveLength(5);
+    expect(paths.every((path) => path.includes("environment-"))).toBe(true);
+    expect(paths.some((path) => path.includes("keyframe"))).toBe(false);
+
+    const tampered = structuredClone(assetManifest) as typeof assetManifest;
+    const environmentFile = tampered.files.find(
+      (file) => "role" in file && file.role === "environment"
+    );
+    if (environmentFile === undefined)
+      throw new Error("expected environment manifest entry");
+    environmentFile.sourcePath =
+      "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png";
+    expect(() => environmentAssetPathsFromManifest(tampered)).toThrow(
+      "exclusion policy"
+    );
+  });
+
   it.skip("matches the retired empty protocol-v4 result flow", async () => {
     const worker = new Worker(
       new URL("./simulation.worker.ts", import.meta.url),
@@ -1700,16 +1721,21 @@ describe("authoritative web worker", () => {
       return worker as unknown as Worker;
     };
     const blobs: Blob[] = [];
+    const nativeCreateObjectUrl = URL.createObjectURL.bind(URL);
+    const nativeRevokeObjectUrl = URL.revokeObjectURL.bind(URL);
     const createObjectUrl = vi
       .spyOn(URL, "createObjectURL")
       .mockImplementation((blob) => {
-        expect(blob).toBeInstanceOf(Blob);
+        if (!(blob instanceof Blob))
+          throw new Error("expected Blob URL source");
+        if (!blob.type.startsWith("application/json"))
+          return nativeCreateObjectUrl(blob);
         blobs.push(blob as Blob);
         return `blob:run-evidence-${blobs.length}`;
       });
     const revokeObjectUrl = vi
       .spyOn(URL, "revokeObjectURL")
-      .mockImplementation(() => undefined);
+      .mockImplementation((url) => nativeRevokeObjectUrl(url));
     const downloads: { readonly download: string; readonly href: string }[] =
       [];
     const anchorClick = vi
@@ -1724,10 +1750,12 @@ describe("authoritative web worker", () => {
 
     await completeAppAttempt();
     const downloadButton = await buttonWithText("Download run evidence");
+    createObjectUrl.mockClear();
+    revokeObjectUrl.mockClear();
     downloadButton.focus();
     await userEvent.keyboard("{Enter}");
 
-    await vi.waitFor(() => expect(createObjectUrl).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(blobs).toHaveLength(1));
     expect(anchorClick).toHaveBeenCalledOnce();
     expect(downloads).toEqual([
       {
@@ -1841,6 +1869,31 @@ describe("authoritative web worker", () => {
       return candidate as HTMLButtonElement;
     });
     expect(resumeButton.getAttribute("aria-pressed")).toBe("true");
+    const battlefieldCanvas = document.querySelector(".battlefield-canvas");
+    await vi.waitFor(() =>
+      expect(battlefieldCanvas).toHaveAttribute(
+        "data-presentation-integrity",
+        "verified"
+      )
+    );
+    if (!(battlefieldCanvas instanceof HTMLElement))
+      throw new Error("expected initialized battlefield canvas");
+    const snapshotDwarves = battlefieldCanvas.dataset["snapshotDwarfCount"];
+    const snapshotHostiles = battlefieldCanvas.dataset["snapshotHostileCount"];
+    expect(battlefieldCanvas).toHaveAttribute(
+      "data-runtime-dwarf-sprite-count",
+      snapshotDwarves
+    );
+    expect(battlefieldCanvas).toHaveAttribute(
+      "data-runtime-hostile-sprite-count",
+      snapshotHostiles
+    );
+    expect(document.querySelector(".combat-hud")?.textContent).toContain(
+      `Allied dwarves${snapshotDwarves}`
+    );
+    expect(document.querySelector(".combat-hud")?.textContent).toContain(
+      `Hostile enemies${snapshotHostiles}`
+    );
     const combatControls = document.querySelector(
       '[aria-labelledby="combat-controls-heading"]'
     );
@@ -1858,6 +1911,22 @@ describe("authoritative web worker", () => {
       () => {
         expect(resumeButton.textContent).toBe("Pause combat");
         expect(combatControls?.textContent).toContain("Ready");
+        expect(battlefieldCanvas).toHaveAttribute(
+          "data-snapshot-dwarf-count",
+          "1"
+        );
+        expect(battlefieldCanvas).toHaveAttribute(
+          "data-runtime-dwarf-sprite-count",
+          "1"
+        );
+        expect(battlefieldCanvas).toHaveAttribute(
+          "data-snapshot-hostile-count",
+          "1"
+        );
+        expect(battlefieldCanvas).toHaveAttribute(
+          "data-runtime-hostile-sprite-count",
+          "1"
+        );
       },
       { timeout: 10_000 }
     );

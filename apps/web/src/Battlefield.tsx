@@ -1,8 +1,13 @@
 import Phaser from "phaser";
 import { useEffect, useRef, useState } from "react";
+import environmentArchitectureUrl from "./assets/shuttergate/environment-architecture.png";
+import environmentBackgroundUrl from "./assets/shuttergate/environment-background.png";
+import environmentFloorPathUrl from "./assets/shuttergate/environment-floor-path.png";
+import environmentForegroundUrl from "./assets/shuttergate/environment-foreground.png";
+import environmentLightingUrl from "./assets/shuttergate/environment-lighting.png";
 import ironWardenUrl from "./assets/shuttergate/iron-warden-actions.png";
+import assetManifest from "./assets/shuttergate/manifest.json";
 import mineRaiderUrl from "./assets/shuttergate/mine-raider-actions.png";
-import shuttergateWorldUrl from "./assets/shuttergate/shuttergate-keyframe-1280x720.png";
 import {
   type CombatFeedback,
   type CombatSoundPlayer,
@@ -18,6 +23,61 @@ import {
 
 const WIDTH = 640;
 const HEIGHT = 360;
+const REQUIRED_ENVIRONMENT_EXCLUSIONS = [
+  "characters",
+  "creatures",
+  "combat-effects",
+  "state-text",
+  "controls",
+  "hud"
+] as const;
+const ENVIRONMENT_ASSETS = [
+  ["environment-background", environmentBackgroundUrl],
+  ["environment-floor-path", environmentFloorPathUrl],
+  ["environment-architecture", environmentArchitectureUrl],
+  ["environment-foreground", environmentForegroundUrl],
+  ["environment-lighting", environmentLightingUrl]
+] as const;
+
+export function environmentAssetPathsFromManifest(
+  value: unknown
+): readonly string[] {
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    throw new Error("environment asset manifest must be an object");
+  const candidate = value as Record<string, unknown>;
+  const files = candidate["files"];
+  if (candidate["schemaVersion"] !== 2 || !Array.isArray(files))
+    throw new Error("environment asset manifest schema is unsupported");
+  const environmentFiles = files.filter(
+    (file): file is Record<string, unknown> =>
+      typeof file === "object" &&
+      file !== null &&
+      file["role"] === "environment"
+  );
+  if (environmentFiles.length !== ENVIRONMENT_ASSETS.length)
+    throw new Error("environment asset manifest has an unexpected layer count");
+  return environmentFiles.map((file) => {
+    const path = file["path"];
+    const sourcePath = file["sourcePath"];
+    const exclusions = file["excludes"];
+    if (
+      typeof path !== "string" ||
+      !path.includes("/assets/shuttergate/environment-") ||
+      typeof sourcePath !== "string" ||
+      !sourcePath.includes("/exports/environment/") ||
+      !Array.isArray(exclusions) ||
+      REQUIRED_ENVIRONMENT_EXCLUSIONS.some(
+        (exclusion) => !exclusions.includes(exclusion)
+      )
+    )
+      throw new Error(
+        "runtime environment layer violates the exclusion policy"
+      );
+    return path;
+  });
+}
+
+environmentAssetPathsFromManifest(assetManifest);
 const APPROVED_ROUTE = [
   [540, 49],
   [508, 63],
@@ -134,8 +194,39 @@ function describeCombatFeedback(feedback: CombatFeedback): string {
 
 interface BattlefieldSceneState {
   readonly scene: Phaser.Scene;
+  readonly parent: HTMLElement;
   readonly entities: Map<string, Phaser.GameObjects.Sprite>;
   effects?: Phaser.GameObjects.Graphics;
+}
+
+function reportPresentationIntegrity(
+  state: BattlefieldSceneState,
+  snapshot: RenderSnapshot
+): void {
+  const snapshotDwarves = snapshot.entities.filter(
+    (entity) => entity.faction === "dwarf"
+  ).length;
+  const snapshotHostiles = snapshot.entities.filter(
+    (entity) => entity.faction === "enemy"
+  ).length;
+  const runtimeDwarves = [...state.entities.values()].filter(
+    (sprite) => sprite.getData("authoritativeFaction") === "dwarf"
+  ).length;
+  const runtimeHostiles = [...state.entities.values()].filter(
+    (sprite) => sprite.getData("authoritativeFaction") === "enemy"
+  ).length;
+  if (
+    snapshotDwarves !== runtimeDwarves ||
+    snapshotHostiles !== runtimeHostiles
+  )
+    throw new Error(
+      "authoritative combatant and runtime sprite counts diverged"
+    );
+  state.parent.dataset["presentationIntegrity"] = "verified";
+  state.parent.dataset["snapshotDwarfCount"] = String(snapshotDwarves);
+  state.parent.dataset["snapshotHostileCount"] = String(snapshotHostiles);
+  state.parent.dataset["runtimeDwarfSpriteCount"] = String(runtimeDwarves);
+  state.parent.dataset["runtimeHostileSpriteCount"] = String(runtimeHostiles);
 }
 
 function syncBattlefield(
@@ -178,8 +269,10 @@ function syncBattlefield(
           ease: "Sine.easeOut"
         });
     }
+    sprite.setData("authoritativeFaction", entity.faction);
     sprite.setDepth(100 + entity.y);
   }
+  reportPresentationIntegrity(state, snapshot);
 
   state.effects?.destroy();
   delete state.effects;
@@ -247,7 +340,7 @@ function createBattlefieldRenderer(
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: {
       preload(this: Phaser.Scene) {
-        this.load.image("shuttergate-world", shuttergateWorldUrl);
+        for (const [key, url] of ENVIRONMENT_ASSETS) this.load.image(key, url);
         this.load.spritesheet("iron-warden", ironWardenUrl, {
           frameWidth: 64,
           frameHeight: 128
@@ -258,10 +351,14 @@ function createBattlefieldRenderer(
         });
       },
       create(this: Phaser.Scene) {
-        this.add
-          .image(WIDTH / 2, HEIGHT / 2, "shuttergate-world")
-          .setDisplaySize(WIDTH, HEIGHT)
-          .setDepth(0);
+        const environmentDepths = [0, 10, 20, 400, 450] as const;
+        for (const [index, [key]] of ENVIRONMENT_ASSETS.entries()) {
+          const layer = this.add.image(WIDTH / 2, HEIGHT / 2, key);
+          layer.setDisplaySize(WIDTH, HEIGHT);
+          layer.setDepth(environmentDepths[index] ?? 0);
+          if (key === "environment-lighting")
+            layer.setBlendMode(Phaser.BlendModes.ADD);
+        }
         const warmLight = this.add.circle(213, 175, 92, 0xd17a36, 0.1);
         warmLight.setBlendMode(Phaser.BlendModes.ADD).setDepth(450);
         if (!reduceMotion)
@@ -273,7 +370,7 @@ function createBattlefieldRenderer(
             yoyo: true,
             repeat: -1
           });
-        sceneState = { scene: this, entities: new Map() };
+        sceneState = { scene: this, parent, entities: new Map() };
         syncBattlefield(
           sceneState,
           snapshot,

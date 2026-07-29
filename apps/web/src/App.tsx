@@ -1047,28 +1047,34 @@ export function App({
               </section>
             </>
           )}
-        {renderSnapshot !== undefined && (
-          <Battlefield
-            snapshot={renderSnapshot}
-            reduceMotion={
-              motionPreference === "reduce" ||
-              (motionPreference === "device" && deviceReducedMotion)
-            }
-            soundEnabled={soundPreference === "on"}
-          />
-        )}
-        {renderSnapshot !== undefined &&
-          (renderSnapshot.phase === "running" ||
-            renderSnapshot.phase === "terminal") && (
-            <CombatHud snapshot={renderSnapshot} />
-          )}
-        {view.phase === "running" && combatControls !== undefined && (
-          <CombatControls
-            dwarves={combatControls.dwarves}
-            pendingAbilityKeys={pendingAbilityKeys}
-            onSetTargetPolicy={setTargetPolicy}
-            onActivateAbility={activateAbility}
-          />
+        {(renderSnapshot !== undefined || view.phase === "running") && (
+          <section className="game-frame" aria-label="Shuttergate game frame">
+            {renderSnapshot !== undefined && (
+              <Battlefield
+                snapshot={renderSnapshot}
+                reduceMotion={
+                  motionPreference === "reduce" ||
+                  (motionPreference === "device" && deviceReducedMotion)
+                }
+                soundEnabled={soundPreference === "on"}
+              />
+            )}
+            {renderSnapshot !== undefined &&
+              (renderSnapshot.phase === "running" ||
+                renderSnapshot.phase === "terminal") && (
+                <CombatHud snapshot={renderSnapshot} />
+              )}
+            {view.phase === "running" && (
+              <CombatControls
+                dwarves={combatControls?.dwarves ?? []}
+                pendingAbilityKeys={pendingAbilityKeys}
+                manualPaused={view.manualPaused}
+                onTogglePause={() => setManualPause(!view.manualPaused)}
+                onSetTargetPolicy={setTargetPolicy}
+                onActivateAbility={activateAbility}
+              />
+            )}
+          </section>
         )}
         {view.phase === "preparation" && (
           <dl className="preparation-summary" aria-label="Preparation summary">
@@ -1611,15 +1617,7 @@ export function App({
             Confirm preparation
           </button>
         )}
-        {view.phase === "running" && (
-          <button
-            type="button"
-            aria-pressed={view.manualPaused}
-            onClick={() => setManualPause(!view.manualPaused)}
-          >
-            {view.manualPaused ? "Resume combat" : "Pause combat"}
-          </button>
-        )}
+
         {view.phase === "result" && (
           <section className="results" aria-labelledby="results-heading">
             <h3 id="results-heading" ref={resultHeadingRef} tabIndex={-1}>
