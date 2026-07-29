@@ -12,7 +12,7 @@ import tempfile
 from collections.abc import Iterable
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageStat
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageStat
 
 ROOT = Path(__file__).resolve().parents[3]
 PACKAGE = ROOT / "assets" / "game-art" / "production-scene"
@@ -611,14 +611,37 @@ def validate_rectangle(value: object, context: str) -> tuple[int, int, int, int]
 
 def require_same_pixels(expected: Image.Image, actual_path: Path, context: str) -> None:
     with Image.open(actual_path) as actual:
+        expected_rgba = expected.convert("RGBA")
+        actual_rgba = actual.convert("RGBA")
         if (
-            actual.size != expected.size
-            or ImageChops.difference(expected.convert("RGBA"), actual.convert("RGBA"))
-            .convert("RGB")
-            .getbbox()
-            is not None
+            actual_rgba.size != expected_rgba.size
+            or actual_rgba.tobytes() != expected_rgba.tobytes()
         ):
             raise ValueError(f"{context} pixels do not match their declared layers")
+
+
+def expected_record_semantics(path: str) -> tuple[str, str, list[str]]:
+    if path.startswith("docs/visual-evidence/production-scene/"):
+        return "evidence", "review-only", ["review"]
+    prefix = "assets/game-art/production-scene/exports/"
+    if not path.startswith(prefix):
+        raise ValueError(f"Manifest path is outside the production package: {path}")
+    relative = path.removeprefix(prefix)
+    if relative == "environment/shuttergate-clean-plate-1280x720.png":
+        return "environment", "opaque-clean-plate", ["world"]
+    if relative.startswith("entities/"):
+        return "entity", "straight-alpha", ["world-entities"]
+    if relative.startswith("effects/"):
+        return "effect", "straight-alpha", ["world-effects"]
+    if relative == "lighting/warm-light-overlay.png":
+        return "lighting", "straight-alpha-no-entities", ["world-lighting"]
+    if relative == "occlusion/architecture-mask.png":
+        return "occlusion-mask", "grayscale-mask", ["foreground-occlusion"]
+    if relative == "occlusion/foreground-occluder.png":
+        return "foreground", "straight-alpha-environment-only", ["foreground-occlusion"]
+    if relative.startswith("hud/"):
+        return "hud", "straight-alpha", ["screen-space-hud"]
+    raise ValueError(f"Manifest path has no canonical asset domain: {path}")
 
 
 def verify(root: Path = ROOT) -> None:
@@ -655,10 +678,22 @@ def verify(root: Path = ROOT) -> None:
     records_by_id: dict[str, dict[str, object]] = {}
     for index, record in enumerate(records):
         strict_keys(record, {"id", "path", "category", "dimensions", "mode", "alphaSemantics", "contributesTo", "sha256"}, f"file[{index}]")
+        relative_path = Path(record["path"])
+        if relative_path.is_absolute() or ".." in relative_path.parts:
+            raise ValueError(f"Manifest path is not canonical: {record['path']}")
         path = root / record["path"]
         if record["path"] in paths or not path.is_file():
             raise ValueError(f"Missing or duplicate manifest path: {record['path']}")
         paths.add(record["path"])
+        expected_category, expected_alpha, expected_regions = expected_record_semantics(
+            record["path"]
+        )
+        if (
+            record["category"] != expected_category
+            or record["alphaSemantics"] != expected_alpha
+            or record["contributesTo"] != expected_regions
+        ):
+            raise ValueError(f"Manifest semantics are not canonical: {record['path']}")
         if record["category"] != "evidence":
             if record["id"] in asset_ids:
                 raise ValueError(f"Duplicate stable asset id: {record['id']}")
@@ -672,8 +707,20 @@ def verify(root: Path = ROOT) -> None:
             if record["category"] in {"entity", "effect", "hud", "lighting", "foreground"}:
                 if image.mode != "RGBA" or image.getchannel("A").getextrema() == (255, 255):
                     raise ValueError(f"Layer lacks usable alpha: {record['path']}")
-            if record["category"] == "environment" and record["contributesTo"] != ["world"]:
-                raise ValueError("Environment assets may contribute only to the world region")
+    export_prefix = "assets/game-art/production-scene/exports/"
+    evidence_prefix = "docs/visual-evidence/production-scene/"
+    actual_export_paths = {
+        path.relative_to(root).as_posix()
+        for path in (package / "exports").rglob("*.png")
+    }
+    actual_evidence_paths = {
+        path.relative_to(root).as_posix()
+        for path in (root / evidence_prefix).glob("*.png")
+    }
+    if actual_export_paths != {path for path in paths if path.startswith(export_prefix)}:
+        raise ValueError("Export directory contains missing or unmanifested PNG assets")
+    if actual_evidence_paths != {path for path in paths if path.startswith(evidence_prefix)}:
+        raise ValueError("Evidence directory contains missing or unmanifested PNG proofs")
     environment = root / "assets/game-art/production-scene/exports/environment/shuttergate-clean-plate-1280x720.png"
     with Image.open(environment) as image:
         if image.size != FRAME or image.mode != "RGBA" or image.getchannel("A").getextrema() != (255, 255):
