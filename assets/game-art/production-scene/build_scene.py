@@ -705,22 +705,31 @@ def verify(root: Path = ROOT) -> None:
             if [image.width, image.height] != record["dimensions"] or image.mode != record["mode"]:
                 raise ValueError(f"Image metadata mismatch: {record['path']}")
             if record["category"] in {"entity", "effect", "hud", "lighting", "foreground"}:
-                if image.mode != "RGBA" or image.getchannel("A").getextrema() == (255, 255):
+                if image.mode != "RGBA" or not (
+                    image.getchannel("A").getextrema()[0] < 255
+                    and image.getchannel("A").getextrema()[1] > 0
+                ):
                     raise ValueError(f"Layer lacks usable alpha: {record['path']}")
+            if record["category"] == "occlusion-mask" and (
+                image.mode != "L" or image.getextrema()[0] == image.getextrema()[1]
+            ):
+                raise ValueError(f"Occlusion mask is not usable grayscale: {record['path']}")
     export_prefix = "assets/game-art/production-scene/exports/"
     evidence_prefix = "docs/visual-evidence/production-scene/"
     actual_export_paths = {
         path.relative_to(root).as_posix()
-        for path in (package / "exports").rglob("*.png")
+        for path in (package / "exports").rglob("*")
+        if path.is_file()
     }
     actual_evidence_paths = {
         path.relative_to(root).as_posix()
-        for path in (root / evidence_prefix).glob("*.png")
+        for path in (root / evidence_prefix).rglob("*")
+        if path.is_file()
     }
     if actual_export_paths != {path for path in paths if path.startswith(export_prefix)}:
-        raise ValueError("Export directory contains missing or unmanifested PNG assets")
+        raise ValueError("Export directory contains missing or unmanifested assets")
     if actual_evidence_paths != {path for path in paths if path.startswith(evidence_prefix)}:
-        raise ValueError("Evidence directory contains missing or unmanifested PNG proofs")
+        raise ValueError("Evidence directory contains missing or unmanifested proofs")
     environment = root / "assets/game-art/production-scene/exports/environment/shuttergate-clean-plate-1280x720.png"
     with Image.open(environment) as image:
         if image.size != FRAME or image.mode != "RGBA" or image.getchannel("A").getextrema() != (255, 255):
