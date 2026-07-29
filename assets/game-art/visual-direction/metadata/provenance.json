@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "package": "dwarven-depths-issue-282-visual-direction",
+  "authorship": "Original project assets generated for Dwarven Depths under human-directed prompts and review.",
+  "generator": {
+    "provider": "openai-codex",
+    "model": "gpt-image-2-medium",
+    "quality": "medium",
+    "requestedSize": "1536x1024",
+    "promptLog": "assets/game-art/visual-direction/metadata/generation-log.md"
+  },
+  "reference": {
+    "path": "assets/concept-art/dwarven-depths-gameplay-mockup.png",
+    "sha256": "7b35bf139017bf833c8d0c9288fa05f702b5e6c971f48d66dd40931d1c31e9c1",
+    "use": "High-level style, camera, atmosphere, material, density, and composition reference only.",
+    "pixelReuse": false,
+    "tracing": false,
+    "productionBackgroundUse": false
+  },
+  "externalAssets": [],
+  "sourceFormats": [
+    "PNG raster master",
+    "JSON layout and manifest metadata",
+    "Python/Pillow deterministic export script"
+  ],
+  "license": {
+    "identifier": "MIT",
+    "path": "LICENSE",
+    "copyright": "Copyright (c) 2026 Will Palmer"
+  },
+  "declaration": "No third-party stock art, fonts, textures, models, or production pixels are included in this package. The concept reference is not embedded in any production export; it appears only in the clearly identified review comparison image."
+}
