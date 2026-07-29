@@ -10,7 +10,7 @@ This second product-owner submission addresses the first review against `6bb1885
 |---|---|---:|---|
 | `candidate-a-correction-1440x900-active.png` | Shuttergate active combat, Warden plus hostile, paused after hostile arrival | 1440×900 | standard contrast, default text, normal motion, sound off |
 | `candidate-a-correction-390x844-active-reduced-motion.png` | same active-combat fixture and entity requirement | 390×844 | reduced motion; otherwise defaults |
-| `candidate-a-correction-motion.webm` | preparation through active combat, including idle/action character motion and foreground depth | 1440×900 | normal motion; 9.92 seconds |
+| `candidate-a-correction-motion.webm` | preparation through active combat, including idle/action character motion and foreground depth | 1440×900 | normal motion; 9.88 seconds |
 
 Required comparisons:
 
