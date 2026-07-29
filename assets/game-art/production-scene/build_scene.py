@@ -50,6 +50,7 @@ FONT = {
     "8": ["01110", "10001", "10001", "01110", "10001", "10001", "01110"],
     "9": ["01110", "10001", "10001", "01111", "00001", "00001", "11110"],
     "A": ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+    "C": ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
     "D": ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
     "E": ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
     "F": ["11111", "10000", "10000", "11110", "10000", "10000", "10000"],
@@ -67,6 +68,7 @@ FONT = {
     "U": ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
     "V": ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
     "W": ["10001", "10001", "10001", "10101", "10101", "11011", "10001"],
+    "Y": ["10001", "10001", "01010", "00100", "00100", "00100", "00100"],
 }
 
 
@@ -207,7 +209,13 @@ def text_width(text: str, scale: int) -> int:
     return sum((len(FONT[character][0]) + 1) * scale for character in text) - scale
 
 
-def pixel_text(image: Image.Image, position: tuple[int, int], text: str, scale: int = 2) -> None:
+def pixel_text(
+    image: Image.Image,
+    position: tuple[int, int],
+    text: str,
+    scale: int = 2,
+    color: tuple[int, int, int, int] = PALETTE["gold"],
+) -> None:
     draw = ImageDraw.Draw(image)
     x, y = position
     for character in text:
@@ -222,7 +230,7 @@ def pixel_text(image: Image.Image, position: tuple[int, int], text: str, scale: 
                             x + (column + 1) * scale - 1,
                             y + (row + 1) * scale - 1,
                         ),
-                        fill=PALETTE["gold"],
+                        fill=color,
                     )
         x += (len(glyph[0]) + 1) * scale
 
@@ -230,8 +238,37 @@ def pixel_text(image: Image.Image, position: tuple[int, int], text: str, scale: 
 def panel(image: Image.Image, box: tuple[int, int, int, int]) -> None:
     draw = ImageDraw.Draw(image)
     x0, y0, x1, y1 = box
-    draw.rectangle(box, fill=PALETTE["void"], outline=PALETTE["copper"], width=3)
-    draw.rectangle((x0 + 4, y0 + 4, x1 - 4, y1 - 4), outline=PALETTE["stone_light"], width=2)
+    chamfer = 10
+    outer = [
+        (x0 + chamfer, y0),
+        (x1 - chamfer, y0),
+        (x1, y0 + chamfer),
+        (x1, y1 - chamfer),
+        (x1 - chamfer, y1),
+        (x0 + chamfer, y1),
+        (x0, y1 - chamfer),
+        (x0, y0 + chamfer),
+    ]
+    draw.polygon(outer, fill=PALETTE["iron"], outline=PALETTE["copper"], width=3)
+    draw.line(outer + [outer[0]], fill=PALETTE["gold"], width=1)
+    draw.rectangle(
+        (x0 + 7, y0 + 7, x1 - 7, y1 - 7),
+        fill=(19, 28, 38, 242),
+        outline=PALETTE["stone_light"],
+        width=2,
+    )
+    draw.line(
+        (x0 + 14, y0 + 11, x1 - 14, y0 + 11),
+        fill=(111, 122, 126, 180),
+        width=2,
+    )
+    for x, y in (
+        (x0 + 11, y0 + 11),
+        (x1 - 11, y0 + 11),
+        (x0 + 11, y1 - 11),
+        (x1 - 11, y1 - 11),
+    ):
+        draw.rectangle((x - 2, y - 2, x + 2, y + 2), fill=PALETTE["gold"])
 
 
 def hud_label(box: tuple[int, int, int, int], label: str) -> Image.Image:
@@ -280,32 +317,92 @@ def build_hud() -> tuple[Image.Image, Image.Image, dict[str, Image.Image]]:
         "pause-control": hud_label(bottom_boxes["pause-control"], "PAUSE"),
     }
     health = ImageDraw.Draw(parts["health-status"])
-    health.rectangle((22, 55, 224, 77), fill=PALETTE["iron"], outline=PALETTE["stone_light"], width=2)
-    health.rectangle((27, 60, 197, 72), fill=PALETTE["red"])
+    health.polygon(
+        [(20, 54), (224, 54), (232, 66), (224, 80), (20, 80), (12, 66)],
+        fill=PALETTE["iron"],
+        outline=PALETTE["copper"],
+    )
+    health.polygon(
+        [(25, 60), (197, 60), (204, 66), (197, 74), (25, 74), (20, 66)],
+        fill=(137, 36, 31, 255),
+    )
+    for x in range(32, 195, 28):
+        health.line((x, 61, x - 6, 73), fill=(203, 71, 44, 170), width=2)
     ability = ImageDraw.Draw(parts["shield-slam-control"])
-    ability.rectangle((43, 45, 235, 82), fill=(24, 36, 47, 255), outline=PALETTE["blue"], width=3)
+    ability.polygon(
+        [(38, 48), (58, 39), (220, 39), (240, 48), (240, 82), (220, 91), (58, 91), (38, 82)],
+        fill=(22, 38, 49, 245),
+        outline=PALETTE["copper"],
+        width=2,
+    )
+    ability.polygon(
+        [(72, 76), (82, 54), (96, 48), (110, 54), (120, 76), (96, 86)],
+        fill=(42, 91, 108, 255),
+        outline=PALETTE["gold"],
+        width=2,
+    )
+    ability.line((78, 66, 114, 66), fill=(107, 195, 207, 255), width=3)
+    pixel_text(parts["shield-slam-control"], (132, 57), "POWER", 2, (139, 206, 209, 255))
+    target = ImageDraw.Draw(parts["target-policy-control"])
+    target.polygon(
+        [(22, 58), (34, 46), (46, 58), (34, 70)],
+        outline=PALETTE["gold"],
+        width=3,
+    )
+    target.line((34, 48, 34, 68), fill=PALETTE["copper"], width=2)
     pause = ImageDraw.Draw(parts["pause-control"])
-    pause.rectangle((70, 44, 82, 82), fill=PALETTE["gold"])
-    pause.rectangle((94, 44, 106, 82), fill=PALETTE["gold"])
+    pause.polygon(
+        [(62, 42), (114, 42), (126, 54), (126, 84), (114, 94), (62, 94), (50, 84), (50, 54)],
+        fill=(25, 37, 46, 255),
+        outline=PALETTE["copper"],
+        width=2,
+    )
+    pause.rectangle((76, 55, 84, 81), fill=PALETTE["gold"])
+    pause.rectangle((94, 55, 102, 81), fill=PALETTE["gold"])
     return top, bottom, parts
 
 
 def ring(size: tuple[int, int], color: tuple[int, int, int, int]) -> Image.Image:
-    image = Image.new("RGBA", size, (0, 0, 0, 0))
+    low_size = (size[0] // 2, size[1] // 2)
+    image = Image.new("RGBA", low_size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
-    draw.ellipse((3, size[1] // 2, size[0] - 4, size[1] - 4), outline=color, width=4)
-    draw.ellipse((8, size[1] // 2 + 4, size[0] - 9, size[1] - 9), outline=(color[0], color[1], color[2], 90), width=2)
-    return image
+    y = low_size[1] // 2
+    points = [
+        (3, y),
+        (12, y - 5),
+        (low_size[0] // 2, y - 8),
+        (low_size[0] - 13, y - 5),
+        (low_size[0] - 4, y),
+        (low_size[0] - 13, y + 5),
+        (low_size[0] // 2, y + 8),
+        (12, y + 5),
+        (3, y),
+    ]
+    for start, end in zip(points, points[1:]):
+        draw.line((start, end), fill=color, width=2)
+    for x in (10, low_size[0] // 2, low_size[0] - 11):
+        draw.rectangle((x - 1, y - 2, x + 1, y + 2), fill=(222, 170, 88, 210))
+    return image.resize(size, Image.Resampling.NEAREST)
 
 
 def shield_impact() -> Image.Image:
-    image = Image.new("RGBA", (180, 120), (0, 0, 0, 0))
+    image = Image.new("RGBA", (70, 48), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
-    for offset, alpha in ((0, 230), (10, 150), (20, 80)):
-        draw.arc((20 + offset, 8 + offset // 2, 160 - offset, 112 - offset // 2), 275, 85, fill=(98, 193, 218, alpha), width=5)
-    for x, y in ((20, 50), (42, 18), (135, 28), (155, 72)):
-        draw.rectangle((x, y, x + 5, y + 5), fill=(218, 170, 88, 190))
-    return image
+    draw.polygon(
+        [(7, 24), (18, 8), (34, 3), (51, 9), (64, 24), (51, 38), (34, 45), (17, 38)],
+        outline=(85, 175, 195, 235),
+        width=3,
+    )
+    draw.polygon(
+        [(17, 24), (25, 13), (34, 9), (44, 14), (52, 24), (43, 34), (34, 39), (24, 33)],
+        outline=(203, 152, 76, 210),
+        width=2,
+    )
+    draw.line((34, 10, 34, 38), fill=(139, 214, 218, 220), width=2)
+    draw.line((24, 24, 45, 24), fill=(139, 214, 218, 220), width=2)
+    for x, y in ((3, 23), (14, 5), (56, 7), (65, 27), (49, 42)):
+        draw.rectangle((x, y, x + 2, y + 2), fill=(222, 170, 88, 210))
+    return image.resize((140, 96), Image.Resampling.NEAREST)
 
 
 def lighting_overlay() -> Image.Image:
@@ -315,6 +412,14 @@ def lighting_overlay() -> Image.Image:
     draw.ellipse((860, 70, 1300, 390), fill=(194, 85, 23, 65))
     draw.ellipse((30, 330, 520, 760), fill=(195, 99, 32, 48))
     draw.ellipse((445, 220, 910, 650), fill=(172, 104, 43, 32))
+    draw.line(
+        [(1110, 112), (936, 224), (825, 295), (701, 365), (585, 426), (457, 500), (318, 565), (181, 621)],
+        fill=(212, 126, 48, 42),
+        width=38,
+        joint="curve",
+    )
+    for x, y in ((1028, 166), (825, 295), (585, 426), (318, 565)):
+        draw.ellipse((x - 70, y - 42, x + 70, y + 42), fill=(223, 135, 50, 32))
     return light.filter(ImageFilter.GaussianBlur(42))
 
 
@@ -356,6 +461,103 @@ def isolation_board(images: list[Image.Image], scale: int) -> Image.Image:
     for image in scaled:
         board.alpha_composite(image, (x, (board_height - image.height) // 2))
         x += image.width + 80
+    return board
+
+
+def occlusion_board(
+    clean: Image.Image, mask: Image.Image, occluder: Image.Image
+) -> Image.Image:
+    board = Image.new("RGBA", FRAME, (7, 13, 22, 255))
+    panel_size = (384, 216)
+    positions = ((32, 252), (448, 252), (864, 252))
+    checker = Image.new("RGBA", panel_size, (18, 27, 36, 255))
+    checker_draw = ImageDraw.Draw(checker)
+    for y in range(0, panel_size[1], 16):
+        for x in range(0, panel_size[0], 16):
+            if (x // 16 + y // 16) % 2 == 0:
+                checker_draw.rectangle((x, y, x + 15, y + 15), fill=(48, 58, 66, 255))
+
+    alpha_panel = checker.copy()
+    alpha_panel.alpha_composite(occluder.resize(panel_size, Image.Resampling.LANCZOS))
+    mask_panel = checker.copy()
+    colored_mask = Image.new("RGBA", FRAME, (208, 62, 111, 0))
+    colored_mask.putalpha(mask)
+    mask_panel.alpha_composite(colored_mask.resize(panel_size, Image.Resampling.NEAREST))
+    overlap_panel = clean.resize(panel_size, Image.Resampling.LANCZOS)
+    overlap_tint = Image.new("RGBA", panel_size, (216, 59, 112, 0))
+    overlap_tint.putalpha(
+        mask.resize(panel_size, Image.Resampling.NEAREST).point(lambda value: value // 2)
+    )
+    overlap_panel.alpha_composite(overlap_tint)
+
+    for position, label, panel_image in zip(
+        positions, ("ALPHA", "AREA", "OVERLAP"), (alpha_panel, mask_panel, overlap_panel)
+    ):
+        x, y = position
+        ImageDraw.Draw(board).rectangle(
+            (x - 3, y - 3, x + panel_size[0] + 2, y + panel_size[1] + 2),
+            outline=PALETTE["copper"],
+            width=3,
+        )
+        board.alpha_composite(panel_image, position)
+        pixel_text(board, (x + 8, y - 34), label, 3)
+    pixel_text(board, (352, 92), "FOREGROUND OCCLUSION", 3)
+    return board
+
+
+def character_scale_study(
+    clean: Image.Image,
+    lighting: Image.Image,
+    warden: Image.Image,
+    hostile: Image.Image,
+    warden_ring: Image.Image,
+    hostile_ring: Image.Image,
+) -> Image.Image:
+    board = Image.new("RGBA", FRAME, (7, 13, 22, 255))
+    panel_size = (400, 225)
+    for index, (label, scale) in enumerate(
+        zip(("SMALL", "GAME SCALE", "LARGE"), (0.8, 1.0, 1.25))
+    ):
+        scene = clean.copy()
+        scene.alpha_composite(lighting)
+        scaled_warden = warden.resize(
+            (round(warden.width * scale), round(warden.height * scale)),
+            Image.Resampling.LANCZOS,
+        )
+        scaled_hostile = hostile.resize(
+            (round(hostile.width * scale), round(hostile.height * scale)),
+            Image.Resampling.LANCZOS,
+        )
+        scaled_warden_ring = warden_ring.resize(
+            (round(warden_ring.width * scale), round(warden_ring.height * scale)),
+            Image.Resampling.NEAREST,
+        )
+        scaled_hostile_ring = hostile_ring.resize(
+            (round(hostile_ring.width * scale), round(hostile_ring.height * scale)),
+            Image.Resampling.NEAREST,
+        )
+        scene.alpha_composite(
+            scaled_warden_ring, (674 - scaled_warden_ring.width // 2, 414)
+        )
+        scene.alpha_composite(
+            scaled_hostile_ring, (802 - scaled_hostile_ring.width // 2, 380)
+        )
+        scene.alpha_composite(
+            scaled_warden, (674 - scaled_warden.width // 2, 434 - scaled_warden.height)
+        )
+        scene.alpha_composite(
+            scaled_hostile, (802 - scaled_hostile.width // 2, 398 - scaled_hostile.height)
+        )
+        x = 20 + index * 420
+        y = 250
+        ImageDraw.Draw(board).rectangle(
+            (x - 3, y - 3, x + panel_size[0] + 2, y + panel_size[1] + 2),
+            outline=PALETTE["gold"] if scale == 1.0 else PALETTE["stone_light"],
+            width=3,
+        )
+        board.alpha_composite(scene.resize(panel_size, Image.Resampling.LANCZOS), (x, y))
+        pixel_text(board, (x + 12, y - 34), label, 3)
+    pixel_text(board, (397, 92), "CHARACTER SCALE", 3)
     return board
 
 
@@ -425,14 +627,14 @@ def build(output_root: Path = ROOT) -> None:
 
     warden_master = Image.open(direction / "sources" / "iron-warden-master.png")
     hostile_master = Image.open(direction / "sources" / "mine-raider-master.png")
-    hostile_idle = fit_height(sprite_cell(hostile_master, (0, 353)), 128)
-    hostile_attack = fit_height(sprite_cell(hostile_master, (707, 961)), 128)
+    hostile_idle = fit_height(sprite_cell(hostile_master, (0, 353)), 92)
+    hostile_attack = fit_height(sprite_cell(hostile_master, (707, 961)), 92)
     hostile_idle = ImageEnhance.Brightness(hostile_idle).enhance(1.3)
     hostile_attack = ImageEnhance.Brightness(hostile_attack).enhance(1.3)
     sprites = {
-        "iron-warden-idle": fit_height(sprite_cell(warden_master, (0, 355)), 142),
+        "iron-warden-idle": fit_height(sprite_cell(warden_master, (0, 355)), 104),
         "iron-warden-shield-slam": fit_height(
-            sprite_cell(warden_master, (708, 1098)), 142
+            sprite_cell(warden_master, (708, 1098)), 104
         ),
         "mine-raider-idle": hostile_idle,
         "mine-raider-attack": hostile_attack,
@@ -441,8 +643,8 @@ def build(output_root: Path = ROOT) -> None:
         png(image, exports / "entities" / f"{name}.png")
 
     effects = {
-        "warden-selection-ring": ring((128, 58), (62, 177, 215, 210)),
-        "hostile-faction-ring": ring((100, 45), (203, 68, 42, 210)),
+        "warden-selection-ring": ring((94, 42), (84, 178, 196, 210)),
+        "hostile-faction-ring": ring((78, 36), (184, 79, 47, 210)),
         "shield-slam-impact": shield_impact(),
     }
     for name, image in effects.items():
@@ -530,8 +732,22 @@ def build(output_root: Path = ROOT) -> None:
         if layer["region"] == "screen-space-hud":
             hud_board.alpha_composite(assets[layer["asset"]], tuple(layer["position"]))
     png(hud_board, evidence / "hud-control-isolation.png")
-    png(occluder, evidence / "foreground-occlusion-isolation.png")
+    png(
+        occlusion_board(clean, mask, occluder),
+        evidence / "foreground-occlusion-isolation.png",
+    )
     png(lighting, evidence / "lighting-alpha-isolation.png")
+    png(
+        character_scale_study(
+            clean,
+            lighting,
+            sprites["iron-warden-shield-slam"],
+            sprites["mine-raider-attack"],
+            effects["warden-selection-ring"],
+            effects["hostile-faction-ring"],
+        ),
+        evidence / "character-scale-study.png",
+    )
 
     tracked: list[tuple[Path, str, str, list[str]]] = []
     tracked.append(
@@ -1034,11 +1250,11 @@ def verify(root: Path = ROOT) -> None:
         raise ValueError("Reconstruction recipe layers are not canonical")
     expected_positions = {
         "shuttergate-clean-plate-1280x720": [0, 0],
-        "warden-selection-ring": [548, 392],
-        "hostile-faction-ring": [798, 404],
+        "warden-selection-ring": [627, 414],
+        "hostile-faction-ring": [763, 380],
         "iron-warden-shield-slam": scene["entityAnchors"]["ironWardenTruthScreen"]["position"],
         "mine-raider-attack": scene["entityAnchors"]["mineRaiderTruthScreen"]["position"],
-        "shield-slam-impact": [650, 282],
+        "shield-slam-impact": [688, 322],
         "foreground-occluder": [0, 0],
         "warm-light-overlay": [0, 0],
         "top-hud-frame": [0, 0],
@@ -1098,8 +1314,15 @@ def verify(root: Path = ROOT) -> None:
         root / expected_proof_paths["environmentOnly"],
         "Environment-only proof",
     )
+    architecture_mask_image = Image.open(
+        package / "exports" / "occlusion" / "architecture-mask.png"
+    ).convert("L")
     require_same_pixels(
-        asset_images["foreground-occluder"],
+        occlusion_board(
+            asset_images["shuttergate-clean-plate-1280x720"],
+            architecture_mask_image,
+            asset_images["foreground-occluder"],
+        ),
         root / expected_proof_paths["foreground"],
         "Foreground-isolation proof",
     )
@@ -1180,6 +1403,18 @@ def verify(root: Path = ROOT) -> None:
         ),
         evidence_root / "selection-and-combat-effect-isolation.png",
         "Effect-isolation proof",
+    )
+    require_same_pixels(
+        character_scale_study(
+            asset_images["shuttergate-clean-plate-1280x720"],
+            asset_images["warm-light-overlay"],
+            asset_images["iron-warden-shield-slam"],
+            asset_images["mine-raider-attack"],
+            asset_images["warden-selection-ring"],
+            asset_images["hostile-faction-ring"],
+        ),
+        evidence_root / "character-scale-study.png",
+        "Character-scale study",
     )
     approved = Image.open(
         root

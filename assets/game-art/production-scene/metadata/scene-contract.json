@@ -36,8 +36,8 @@
     "railCrossingAnchor": [701, 365]
   },
   "entityAnchors": {
-    "ironWardenTruthScreen": { "position": [568, 290], "depthSortY": 432 },
-    "mineRaiderTruthScreen": { "position": [810, 320], "depthSortY": 448 }
+    "ironWardenTruthScreen": { "position": [596, 330], "depthSortY": 434 },
+    "mineRaiderTruthScreen": { "position": [776, 306], "depthSortY": 398 }
   },
   "occlusion": {
     "mask": "architecture-mask",

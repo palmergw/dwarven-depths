@@ -18,4 +18,4 @@ Visual QA found zero apparent defenders, enemies, creature silhouettes, combat e
 
 ## Derived assets
 
-`build_scene.py` deterministically derives alpha character states from the approved #282 character masters, authors separate effect/HUD/lighting/mask layers, composes the proof, publishes isolation boards, and records every output digest. No third-party asset, font, texture, stock image, or model is used.
+`build_scene.py` deterministically derives the two alpha character states needed by #287 from the approved #282 character masters, authors separate effect/HUD/lighting/mask layers, composes the proof, publishes isolation boards and an in-scene scale study, and records every output digest. These poses are a bounded truth-screen set rather than a production animation set; #273 owns complete movement, combat, hit, and death animation coverage. No third-party asset, font, texture, stock image, or model is used.

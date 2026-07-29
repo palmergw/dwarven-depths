@@ -14,27 +14,27 @@
     },
     {
       "asset": "warden-selection-ring",
-      "position": [548, 392],
+      "position": [627, 414],
       "region": "world-effects"
     },
     {
       "asset": "hostile-faction-ring",
-      "position": [798, 404],
+      "position": [763, 380],
       "region": "world-effects"
     },
     {
       "asset": "iron-warden-shield-slam",
-      "position": [568, 290],
+      "position": [596, 330],
       "region": "world-entities"
     },
     {
       "asset": "mine-raider-attack",
-      "position": [810, 320],
+      "position": [776, 306],
       "region": "world-entities"
     },
     {
       "asset": "shield-slam-impact",
-      "position": [650, 282],
+      "position": [688, 322],
       "region": "world-effects"
     },
     {
