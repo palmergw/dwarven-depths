@@ -1,0 +1,278 @@
+{
+  "schemaVersion": 1,
+  "package": "dwarven-depths-issue-282-visual-direction",
+  "logicalFrame": [
+    640,
+    360
+  ],
+  "reviewFrame": [
+    1280,
+    720
+  ],
+  "logicalTexelScale": 2,
+  "characterNativeHeight": 128,
+  "nearestNeighborReviewScale": 4,
+  "files": [
+    {
+      "path": "assets/game-art/visual-direction/exports/environment/background-receding-passage.png",
+      "sha256": "0ba0d0e321237a857ba3a8e6d6634cd0fe46ddc178112b7135dfa296794e4f5a",
+      "dimensions": [
+        496,
+        441
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/environment/floor-winding-path.png",
+      "sha256": "6e17d04e0520f62b57c0bfd01500e74f2129ab01560377edec5134acc1b46fca",
+      "dimensions": [
+        476,
+        441
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/environment/lighting-effects.png",
+      "sha256": "e313fa797e35c0775811e0062e7766e33f85d50715ec07d45a1d4735afe726e5",
+      "dimensions": [
+        800,
+        386
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/environment/props-foreground.png",
+      "sha256": "3e8a3668f8721749a6a548512ea3d7ab4a015e0e407a5131109d0ac0c24bfe62",
+      "dimensions": [
+        789,
+        386
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/environment/walls-arch-doorway.png",
+      "sha256": "9bd8d5169115844f787006a18a4ad46be07a85946d17054792086e2ae55eab4b",
+      "dimensions": [
+        601,
+        441
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/hud/ability-guard.png",
+      "sha256": "1a1a2db3e89faac93ebd544ff8c2c09e4c92afdf5c672ad90355f86932b5f465",
+      "dimensions": [
+        210,
+        206
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/hud/ability-hammer.png",
+      "sha256": "ad97df1a06fd086cd56e2626498527058360e957bce6be5384cf4476d3ec1dff",
+      "dimensions": [
+        212,
+        206
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/hud/ability-shield-slam.png",
+      "sha256": "7c2e0349a871eb630fd86f2f2ea9600e54cf68e46d5980fc7739c6946dd69c85",
+      "dimensions": [
+        213,
+        206
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/hud/health-bar.png",
+      "sha256": "cd7fa5ff41d257f84afb110ff36cd832304719bf24bd8d75fba372d9bff12550",
+      "dimensions": [
+        482,
+        117
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/hud/hud-frame.png",
+      "sha256": "7aed63b6ea9c684588f43895985938c2bd98d3c9a5a1a0bcca28078e80602cfa",
+      "dimensions": [
+        1059,
+        445
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/hud/pause-control.png",
+      "sha256": "f19d0d882bd8cdafa2530b25408e20467eb976cab00420377f07a11e8dccbad4",
+      "dimensions": [
+        169,
+        167
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/hud/settings-control.png",
+      "sha256": "afd2909df19f2ca449e2fa0b39570fe3025e05ad286d7aed2042344787215ef1",
+      "dimensions": [
+        175,
+        167
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/hud/status-treatments.png",
+      "sha256": "2bbf56ffe1df9da8b32079a87b03b8b61e97a00ed6150203315593273077bad2",
+      "dimensions": [
+        1583,
+        115
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/hud/warden-portrait-frame.png",
+      "sha256": "5102e498d783052a70bfc8efea57675e415ab3653311ee1392196912148cbe17",
+      "dimensions": [
+        320,
+        306
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/iron-warden-actions-native.png",
+      "sha256": "378f3e7c93d0d900314f00220536a18eea55bfcc37e59e4d8aae97495bc8847f",
+      "dimensions": [
+        384,
+        128
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/mine-raider-actions-native.png",
+      "sha256": "f689ec6875828fbae57ac747d2332f70a04c0b329437e388f4e71c734e5a007b",
+      "dimensions": [
+        320,
+        128
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png",
+      "sha256": "49a659a61548ac12bc546d5af5c74e990eb8a3d6bc55ac46dee153d458a991e5",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/sources/environment-board-master.png",
+      "sha256": "9922290b3205984e4b3d2ea90f35129c7b9e2f45d5653afd658756d5e339cf81",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/sources/hud-board-master.png",
+      "sha256": "c25a47f9bd040754bc28d2c1d0fc0fdea60aafb932870900484384b897d0c2d0",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/sources/iron-warden-master.png",
+      "sha256": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
+      "dimensions": [
+        2172,
+        724
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/sources/keyframe-master.png",
+      "sha256": "a5796a58bfee230eb882cf99a2517db8ffc90f0c243c73ee110ae408d896ddae",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/game-art/visual-direction/sources/mine-raider-master.png",
+      "sha256": "4c3c0a9c63a510f5bb76e6136423e87da0e6f74108a35514c08d35493229cb32",
+      "dimensions": [
+        1983,
+        793
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "docs/visual-evidence/concept-faithful-art/camera-path-environment-crop.png",
+      "sha256": "8b27137d3a717187ec5016d43a23b9c05ad84c39e20310b12e40f366a4d736f1",
+      "dimensions": [
+        1528,
+        780
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "docs/visual-evidence/concept-faithful-art/character-battlefield-scale-proof.png",
+      "sha256": "12c41b66fc4fc933f40974110321b18b6d92d0f722496accf0c2a8024452ad2e",
+      "dimensions": [
+        1280,
+        900
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "docs/visual-evidence/concept-faithful-art/concept-keyframe-side-by-side.png",
+      "sha256": "bb250d3f32cb76dc2bdfd894f6b82615bd86c3200efa7b948eb6c1248053a09f",
+      "dimensions": [
+        3344,
+        941
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "docs/visual-evidence/concept-faithful-art/environment-layer-breakdown.png",
+      "sha256": "974409292910f69903100a75c1dff48759846a35c59f609ba2f735484853ecc1",
+      "dimensions": [
+        1280,
+        641
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "docs/visual-evidence/concept-faithful-art/hud-production-sheet.png",
+      "sha256": "a932b283a521d572b33208c3dcd876bdb8507893441647405ac11bc89c430253",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "docs/visual-evidence/concept-faithful-art/iron-warden-actions-4x.png",
+      "sha256": "ffe06c3f2b3c3bedcb7635d0936bbf86671c111beaca79285a56b1872acb5b27",
+      "dimensions": [
+        1536,
+        512
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "docs/visual-evidence/concept-faithful-art/mine-raider-actions-4x.png",
+      "sha256": "437440263435d41127ce6c510ea5d690419ac7207cac9b1cbc0f1d5919c8ba75",
+      "dimensions": [
+        1280,
+        512
+      ],
+      "mode": "RGB"
+    }
+  ]
+}
