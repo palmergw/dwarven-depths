@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "package": "dwarven-depths-issue-286-production-scene",
+  "license": {
+    "identifier": "MIT",
+    "path": "LICENSE",
+    "copyright": "Copyright (c) 2026 Will Palmer"
+  },
+  "cleanPlate": {
+    "path": "assets/game-art/production-scene/sources/shuttergate-clean-plate-master.png",
+    "sha256": "724159cedd1ad5a53e8954a8990093da01b093348d247fd8cb04702f8ad88117",
+    "generator": {
+      "provider": "openai-codex",
+      "model": "gpt-image-2-medium",
+      "quality": "medium",
+      "aspectRatio": "landscape",
+      "inputImageCount": 1
+    },
+    "reference": "assets/game-art/visual-direction/sources/keyframe-master.png",
+    "referenceUse": "Approved style, camera, route, material, lighting, and Shuttergate composition only; no reference pixels were cropped, traced, copied, or edited into the clean plate."
+  },
+  "derivedLayers": {
+    "characterSource": "assets/game-art/visual-direction/sources/iron-warden-master.png and mine-raider-master.png from approved issue #282 package",
+    "method": "Deterministic crop, graded-navy alpha extraction, connected-fragment rejection, scaling, and PNG export in build_scene.py",
+    "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract",
+    "externalAssets": []
+  },
+  "conceptBoundary": {
+    "path": "assets/concept-art/dwarven-depths-gameplay-mockup.png",
+    "productionPixelReuse": false,
+    "tracing": false,
+    "backgroundUse": false
+  }
+}

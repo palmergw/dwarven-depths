@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "package": "dwarven-depths-issue-286-production-scene",
+  "authority": "presentation-only",
+  "coordinateSpace": {
+    "origin": "top-left",
+    "logicalFrame": [640, 360],
+    "reviewFrame": [1280, 720],
+    "logicalTexelScale": 2
+  },
+  "safeAreas": {
+    "world": [0, 0, 1280, 720],
+    "desktopHudSafe": [18, 10, 1262, 704],
+    "entitySafe": [80, 80, 1200, 590]
+  },
+  "camera": {
+    "projection": "elevated-orthographic-2.5d",
+    "viewDirection": "upper-right-background-to-lower-left-foreground",
+    "fixedReviewFrame": true
+  },
+  "route": {
+    "polyline": [
+      [1110, 112],
+      [1028, 166],
+      [936, 224],
+      [825, 295],
+      [701, 365],
+      [585, 426],
+      [457, 500],
+      [318, 565],
+      [181, 621]
+    ],
+    "entranceAnchor": [1110, 112],
+    "gateAnchor": [181, 621],
+    "chokepointAnchors": [[825, 295], [585, 426]],
+    "railCrossingAnchor": [701, 365]
+  },
+  "entityAnchors": {
+    "ironWardenTruthScreen": { "position": [568, 290], "depthSortY": 432 },
+    "mineRaiderTruthScreen": { "position": [810, 320], "depthSortY": 448 }
+  },
+  "occlusion": {
+    "mask": "architecture-mask",
+    "foreground": "foreground-occluder",
+    "depthOrder": [
+      "environment",
+      "rings",
+      "entities",
+      "combat-effects",
+      "foreground-occluder",
+      "lighting",
+      "hud"
+    ]
+  },
+  "hudRegions": {
+    "top": [0, 0, 1280, 72],
+    "bottom": [0, 590, 1280, 720],
+    "portrait": [18, 604, 226, 704],
+    "health": [238, 604, 484, 704],
+    "targetPolicy": [496, 604, 746, 704],
+    "shieldSlam": [758, 604, 1036, 704],
+    "pause": [1048, 604, 1262, 704]
+  },
+  "cropPolicy": {
+    "desktop": "show-full-16:9-frame",
+    "laptop": "fit-full-frame-before-cropping; preserve both HUD bands and entrance/gate anchors",
+    "mobile": "later-work-may-letterbox-or-use-authored-camera-crop; never crop both entrance and gate; HUD must reflow rather than scale below legibility",
+    "status": "metadata-only-for-later-responsive-work"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "frame": [1280, 720],
+  "output": "docs/visual-evidence/production-scene/reconstruction-one-warden-one-hostile.png",
+  "entityCounts": {
+    "iron-warden": 1,
+    "mine-raider": 1
+  },
+  "layersBackToFront": [
+    {
+      "asset": "shuttergate-clean-plate-1280x720",
+      "position": [0, 0],
+      "region": "world"
+    },
+    {
+      "asset": "warden-selection-ring",
+      "position": [548, 392],
+      "region": "world-effects"
+    },
+    {
+      "asset": "hostile-faction-ring",
+      "position": [798, 404],
+      "region": "world-effects"
+    },
+    {
+      "asset": "iron-warden-shield-slam",
+      "position": [568, 290],
+      "region": "world-entities"
+    },
+    {
+      "asset": "mine-raider-attack",
+      "position": [810, 320],
+      "region": "world-entities"
+    },
+    {
+      "asset": "shield-slam-impact",
+      "position": [650, 282],
+      "region": "world-effects"
+    },
+    {
+      "asset": "foreground-occluder",
+      "position": [0, 0],
+      "region": "foreground-occlusion"
+    },
+    {
+      "asset": "warm-light-overlay",
+      "position": [0, 0],
+      "region": "world-lighting"
+    },
+    {
+      "asset": "top-hud-frame",
+      "position": [0, 0],
+      "region": "screen-space-hud"
+    },
+    {
+      "asset": "bottom-hud-frame",
+      "position": [0, 0],
+      "region": "screen-space-hud"
+    },
+    {
+      "asset": "warden-portrait",
+      "position": [82, 622],
+      "region": "screen-space-hud"
+    }
+  ],
+  "isolationProofs": {
+    "entitiesRemoved": "docs/visual-evidence/production-scene/reconstruction-entities-removed.png",
+    "environmentOnly": "docs/visual-evidence/production-scene/clean-plate.png",
+    "hudControls": "docs/visual-evidence/production-scene/hud-control-isolation.png",
+    "foreground": "docs/visual-evidence/production-scene/foreground-occlusion-isolation.png",
+    "lighting": "docs/visual-evidence/production-scene/lighting-alpha-isolation.png"
+  }
+}
