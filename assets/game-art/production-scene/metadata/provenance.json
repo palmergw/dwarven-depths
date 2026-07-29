@@ -1,11 +1,59 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "package": "dwarven-depths-issue-286-production-scene",
   "license": {
     "identifier": "MIT",
     "path": "LICENSE",
     "copyright": "Copyright (c) 2026 Will Palmer"
   },
+  "toolchain": {
+    "python": "3.13.5",
+    "pillow": "12.3.0",
+    "zlib": "1.3.1",
+    "lockfile": "assets/game-art/production-scene/requirements.lock"
+  },
+  "inputs": [
+    {
+      "path": "assets/game-art/visual-direction/sources/keyframe-master.png",
+      "sha256": "a5796a58bfee230eb882cf99a2517db8ffc90f0c243c73ee110ae408d896ddae",
+      "role": "approved-style-camera-route-reference"
+    },
+    {
+      "path": "assets/game-art/visual-direction/sources/iron-warden-master.png",
+      "sha256": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
+      "role": "approved-character-master"
+    },
+    {
+      "path": "assets/game-art/visual-direction/sources/mine-raider-master.png",
+      "sha256": "4c3c0a9c63a510f5bb76e6136423e87da0e6f74108a35514c08d35493229cb32",
+      "role": "approved-character-master"
+    },
+    {
+      "path": "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png",
+      "sha256": "49a659a61548ac12bc546d5af5c74e990eb8a3d6bc55ac46dee153d458a991e5",
+      "role": "approved-keyframe-comparison"
+    },
+    {
+      "path": "assets/concept-art/dwarven-depths-gameplay-mockup.png",
+      "sha256": "7b35bf139017bf833c8d0c9288fa05f702b5e6c971f48d66dd40931d1c31e9c1",
+      "role": "concept-boundary-reference-only"
+    },
+    {
+      "path": "assets/game-art/production-scene/generation-log.md",
+      "sha256": "a1527bdf1e6af3667c81fe0feb7f644875a9317d170bc36af3a7118acca71202",
+      "role": "prompt-settings-generation-record"
+    },
+    {
+      "path": "assets/game-art/production-scene/requirements.lock",
+      "sha256": "18101d853dbd634248566915697e60f350fbf8afc9abb57998c9e1b1cf61ecf4",
+      "role": "pinned-image-toolchain"
+    },
+    {
+      "path": "assets/game-art/production-scene/build_scene.py",
+      "sha256": "32e712e8374d058092c87b3e460fb6d563eee3d2ccdf3e5ba603b0a039aa1ed8",
+      "role": "deterministic-export-and-verification-implementation"
+    }
+  ],
   "cleanPlate": {
     "path": "assets/game-art/production-scene/sources/shuttergate-clean-plate-master.png",
     "sha256": "724159cedd1ad5a53e8954a8990093da01b093348d247fd8cb04702f8ad88117",
@@ -20,8 +68,11 @@
     "referenceUse": "Approved style, camera, route, material, lighting, and Shuttergate composition only; no reference pixels were cropped, traced, copied, or edited into the clean plate."
   },
   "derivedLayers": {
-    "characterSource": "assets/game-art/visual-direction/sources/iron-warden-master.png and mine-raider-master.png from approved issue #282 package",
-    "method": "Deterministic crop, graded-navy alpha extraction, connected-fragment rejection, scaling, and PNG export in build_scene.py",
+    "characterSources": [
+      "assets/game-art/visual-direction/sources/iron-warden-master.png",
+      "assets/game-art/visual-direction/sources/mine-raider-master.png"
+    ],
+    "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, scaling, shared pivot-canvas padding, and PNG export in build_scene.py",
     "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract",
     "externalAssets": []
   },

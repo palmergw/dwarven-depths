@@ -1,32 +1,56 @@
 # Shuttergate production scene package
 
-This package is the Issue #286 composability gate. It is presentation-only and is not integrated into the web client. No coordinate, layer, or label in this package defines simulation truth.
+This package is the Issue #286 presentation-only composability gate. It is not integrated into the web client and cannot define simulation truth.
 
-## Contents
+## Deterministic build
 
-- `sources/shuttergate-clean-plate-master.png`: original full-resolution, character/UI-free environment source.
-- `exports/environment/`: opaque 1280×720 clean plate.
-- `exports/entities/`: independently addressable alpha Warden and mine-raider states required by the bounded truth-screen fixture. These two poses per character are not a production animation set; Issue #273 owns complete movement, combat, hit, and death animation production.
-- `exports/effects/`: separate selection/faction rings and Shield Slam impact.
-- `exports/occlusion/`: grayscale architecture mask and environment-only foreground pixels.
-- `exports/lighting/`: entity/UI-free alpha lighting overlay.
-- `exports/hud/`: structural top/bottom frames plus separately replaceable fortress/wave/ore status, Warden nameplate/portrait/health, target-policy, Shield Slam, and pause layers.
-- `metadata/scene-contract.json`: safe areas, camera, route, anchors, depth order, HUD regions, and later crop policy.
-- `metadata/reconstruction.json`: exact representative layer recipe and region-isolation proof paths.
-- `metadata/layer-manifest.json`: generated dimensions, modes, alpha semantics, region contributions, and SHA-256 digests.
-- `metadata/provenance.json` and `generation-log.md`: source, prompt/settings, license, and reference-use boundary.
-- `docs/visual-evidence/production-scene/`: bounded composability review packet only; no client screenshots.
+Use the checked-in dependency pin:
 
-## Deterministic build and verification
+`uv run --python 3.13.5 --with-requirements assets/game-art/production-scene/requirements.lock python3 assets/game-art/production-scene/build_scene.py --reproducible`
 
-Run:
+Verify committed files without rewriting them:
 
-`uv run --with pillow python3 assets/game-art/production-scene/build_scene.py --reproducible`
+`uv run --python 3.13.5 --with-requirements assets/game-art/production-scene/requirements.lock python3 assets/game-art/production-scene/build_scene.py --verify`
 
-The builder clears stale exports/evidence, rebuilds all derived files, validates strict nested contract shape and geometry, canonical layer order/placement, dimensions, alpha semantics, exact entity counts, metadata/image hashes, and recomposed reconstruction/isolation pixels, then rebuilds in an isolated temporary root and rejects byte-level manifest drift. To verify committed files without rewriting them:
+The verifier strictly rejects extra contract properties, stale/unmanifested files, source or output digest drift, route points outside the walkable mask, route/HUD or route/foreground overlap, unaligned state pivots, noncanonical entity depth, static impact art in the neutral count proof, incomplete mutable HUD variants, and lighting/provenance drift. The reproducibility run rebuilds in an isolated root and compares the complete manifest.
 
-`uv run --with pillow python3 assets/game-art/production-scene/build_scene.py --verify`
+## Runtime-ready boundaries for #287
 
-The clean plate remains opaque. Every character, effect, foreground, lighting, and HUD runtime layer uses straight alpha; `architecture-mask.png` is a grayscale mask. The removed-entity reconstruction starts from the same clean-plate bytes, so removing either entity does not mutate environment pixels.
+- The clean plate is a complete opaque 1280×720 character/UI-free environment.
+- Character states use straight alpha on shared padded canvases with stable ground pivots, facing, nominal height, and deterministic depth anchors.
+- The neutral reconstruction contains one readable Warden and one readable raider; Shield Slam impact is proved separately.
+- HUD chrome is separate from fixture values, health fill, target selection, ability readiness/cooldown, and pause/resume state.
+- The bottom HUD begins at x=272, leaving the lower-left gate and route endpoint visible.
+- The route has a machine-checked walkable mask and diagnostic-only anchor overlay.
+- Occlusion is explicitly bounded to #287's two fixed truth-screen anchors. Full route traversal masks belong to #273.
+- Lighting uses straight-alpha normal compositing in sRGB, after entities/foreground and before combat effects/HUD.
 
-The reconstruction uses the selected middle scale from `docs/visual-evidence/production-scene/character-scale-study.png`: 104 px for the Warden and 92 px for the raider at the 1280×720 review frame. That scale leaves the route and chokepoints readable while reserving room for later multi-combatant staging; final animation coverage and bounded scale tuning remain with #273.
+## Approval boundary
+
+| Surface | Locked through #287 if approved | Polishable without renewed approval | Requires renewed approval | Owner |
+|---|---|---|---|---|
+| Clean plate | Exact pixels and source identity | Minor export optimization with pixel identity | Replacement pixels or composition | #286 / product owner |
+| Camera/framing | Elevated orthographic 2.5D, 1280×720 review frame | None | Projection or framing change | #286 / product owner |
+| Route, entrance, gate | Exact topology, width contract, anchors | Local readability grading | Topology, entrance, gate, or width change | #286 / product owner |
+| Entity scale/anchors | 104 px Warden, 92 px raider, pivots, fixed #287 anchors | Bounded sprite cleanup preserving silhouette/pivot | Proportion, scale family, or anchor change | #286 / product owner |
+| HUD regions | Exact top and right-weighted bottom regions | Ornament and information hierarchy | Region placement or gate-obscuring layout | #275 / product owner |
+| HUD state | Minimum #287 value/control variants | Typography/icon polish | Authoritative meaning or control relocation | #275 |
+| Lighting/effects | Blend/order semantics and broad warm/cool language | Texture, timing, intensity/readability | Medium/palette language change | #273 |
+| Animation | Two aligned states only for #287 | No claim of complete animation | Full movement/combat/hit/death set | #273 |
+| Responsive/accessibility | Metadata-only crop boundary | None in this issue | Responsive composition and modes | #276 |
+
+`status:approved` authorizes implementation only. `status:visual-approval` means visual approval is absent. Only a direct product-owner decision may apply `status:visual-approved`, and that decision binds the exact reviewed head/evidence.
+
+## Composition decision requested
+
+The clean plate retains the wider diagonal, architecture-forward composition shown in the current evidence rather than #284's denser populated central staging. It was previously praised but not approved. `composition-decision.png` explicitly compares the camera, route, entrance/gate, encounter density, HUD regions, and selected character scale. Approval of #286 explicitly accepts or rejects this composition as the floor for #287; it does not imply that sparse encounter density is final.
+
+## Files
+
+- `sources/`: original clean-plate master.
+- `exports/`: environment, padded entity states, effects, route/occlusion masks, lighting, HUD chrome, and mutable HUD states.
+- `metadata/scene-contract.json`: route, masks, pivots, depth, lighting, HUD, and crop contracts.
+- `metadata/reconstruction.json`: exact neutral recipe and proof paths.
+- `metadata/layer-manifest.json`: generated dimensions, semantics, and SHA-256 digests.
+- `metadata/provenance.json`, `generation-log.md`, and `requirements.lock`: pinned toolchain, bound inputs, prompts/settings, license, and provenance.
+- `docs/visual-evidence/production-scene/`: production-layer evidence only; no running-client screenshots.

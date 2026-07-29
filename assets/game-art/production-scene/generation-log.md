@@ -19,3 +19,11 @@ Visual QA found zero apparent defenders, enemies, creature silhouettes, combat e
 ## Derived assets
 
 `build_scene.py` deterministically derives the two alpha character states needed by #287 from the approved #282 character masters, authors separate effect/HUD/lighting/mask layers, composes the proof, publishes isolation boards and an in-scene scale study, and records every output digest. These poses are a bounded truth-screen set rather than a production animation set; #273 owns complete movement, combat, hit, and death animation coverage. No third-party asset, font, texture, stock image, or model is used.
+
+## Reproducible export toolchain
+
+- Python: `3.13.5`
+- Pillow: `12.3.0`, pinned by `requirements.lock`
+- zlib: `1.3.1`
+- PNG export: Pillow RGBA/L output with fixed default encoder arguments; isolated rebuild compares every committed output digest.
+- Every clean-plate, character-master, approved-keyframe, concept-boundary, generation-log, lockfile, and builder input is SHA-256-bound in `metadata/provenance.json`.

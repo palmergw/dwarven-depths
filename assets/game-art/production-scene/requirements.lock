@@ -1,0 +1,2 @@
+# Pinned portable image-build dependency for Issue #286.
+Pillow==12.3.0

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "package": "dwarven-depths-issue-286-production-scene",
   "authority": "presentation-only",
   "coordinateSpace": {
@@ -10,8 +10,9 @@
   },
   "safeAreas": {
     "world": [0, 0, 1280, 720],
-    "desktopHudSafe": [18, 10, 1262, 704],
-    "entitySafe": [80, 80, 1200, 590]
+    "unobscuredWorldBand": [0, 72, 1280, 590],
+    "entitySafe": [80, 80, 1200, 590],
+    "hudOcclusionRects": [[272, 604, 1262, 704]]
   },
   "camera": {
     "projection": "elevated-orthographic-2.5d",
@@ -33,37 +34,109 @@
     "entranceAnchor": [1110, 112],
     "gateAnchor": [181, 621],
     "chokepointAnchors": [[825, 295], [585, 426]],
-    "railCrossingAnchor": [701, 365]
+    "railCrossingAnchor": [701, 365],
+    "walkableMask": "route-walkable-mask",
+    "minimumWalkableRadius": 26
   },
   "entityAnchors": {
-    "ironWardenTruthScreen": { "position": [596, 330], "depthSortY": 434 },
-    "mineRaiderTruthScreen": { "position": [776, 306], "depthSortY": 398 }
+    "ironWardenTruthScreen": {
+      "groundPosition": [674, 434],
+      "depthSortY": 434
+    },
+    "mineRaiderTruthScreen": { "groundPosition": [802, 398], "depthSortY": 398 }
+  },
+  "entityStates": {
+    "iron-warden-idle": {
+      "canvas": [180, 120],
+      "pivot": [90, 112],
+      "facing": "upper-right",
+      "nominalHeight": 104
+    },
+    "iron-warden-shield-slam": {
+      "canvas": [180, 120],
+      "pivot": [90, 112],
+      "facing": "upper-right",
+      "nominalHeight": 104
+    },
+    "mine-raider-idle": {
+      "canvas": [128, 108],
+      "pivot": [64, 100],
+      "facing": "lower-left",
+      "nominalHeight": 92
+    },
+    "mine-raider-attack": {
+      "canvas": [128, 108],
+      "pivot": [64, 100],
+      "facing": "lower-left",
+      "nominalHeight": 92
+    }
   },
   "occlusion": {
     "mask": "architecture-mask",
     "foreground": "foreground-occluder",
+    "scope": "fixed-issue-287-truth-screen-anchors-only",
+    "routeTraversalOwner": 273,
+    "zones": [
+      {
+        "id": "upper-left-column",
+        "depthThreshold": 260,
+        "bounds": [0, 92, 188, 390]
+      },
+      {
+        "id": "lower-right-balustrade",
+        "depthThreshold": 520,
+        "bounds": [1030, 458, 1280, 720]
+      }
+    ],
     "depthOrder": [
       "environment",
       "rings",
-      "entities",
-      "combat-effects",
+      "entities-by-depthSortY",
       "foreground-occluder",
-      "lighting",
+      "lighting-normal-srgb",
+      "combat-effects",
       "hud"
     ]
   },
+  "lighting": {
+    "asset": "warm-light-overlay",
+    "blendMode": "normal",
+    "colorSpace": "sRGB",
+    "alpha": "straight",
+    "affects": ["environment", "entities", "foreground"],
+    "excludes": ["combat-effects", "hud"]
+  },
   "hudRegions": {
     "top": [0, 0, 1280, 72],
-    "bottom": [0, 590, 1280, 720],
+    "bottom": [272, 590, 1280, 720],
     "fortressStatus": [18, 10, 258, 60],
     "waveStatus": [526, 10, 754, 60],
     "oreStatus": [1022, 10, 1262, 60],
-    "wardenNameplate": [18, 604, 226, 704],
-    "portrait": [18, 604, 226, 704],
-    "health": [238, 604, 484, 704],
-    "targetPolicy": [496, 604, 746, 704],
-    "shieldSlam": [758, 604, 1036, 704],
-    "pause": [1048, 604, 1262, 704]
+    "wardenNameplate": [272, 604, 452, 704],
+    "portrait": [282, 614, 360, 694],
+    "health": [462, 604, 652, 704],
+    "targetPolicy": [662, 604, 852, 704],
+    "shieldSlam": [862, 604, 1102, 704],
+    "pause": [1112, 604, 1262, 704]
+  },
+  "hudDynamicState": {
+    "font": "project-authored-5x7-pixel-uppercase",
+    "textColor": [222, 170, 88, 255],
+    "baselinePolicy": "regions-use-top-left-local-integer-pixel-baselines",
+    "fixture": {
+      "fortress": "18/20",
+      "wave": "7",
+      "ore": "840",
+      "health": "84/100",
+      "targetPolicy": "nearest",
+      "shieldSlam": "ready",
+      "paused": false
+    },
+    "minimumVariants": {
+      "targetPolicy": ["nearest", "strongest"],
+      "shieldSlam": ["ready", "cooldown"],
+      "pause": ["pause", "resume"]
+    }
   },
   "cropPolicy": {
     "desktop": "show-full-16:9-frame",

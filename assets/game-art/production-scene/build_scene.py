@@ -13,6 +13,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageStat
+from PIL import __version__ as PILLOW_VERSION
 
 ROOT = Path(__file__).resolve().parents[3]
 PACKAGE = ROOT / "assets" / "game-art" / "production-scene"
@@ -50,6 +51,7 @@ FONT = {
     "8": ["01110", "10001", "10001", "01110", "10001", "10001", "01110"],
     "9": ["01110", "10001", "10001", "01111", "00001", "00001", "11110"],
     "A": ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+    "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
     "C": ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
     "D": ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
     "E": ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
@@ -57,18 +59,23 @@ FONT = {
     "G": ["01111", "10000", "10000", "10111", "10001", "10001", "01111"],
     "H": ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
     "I": ["111", "010", "010", "010", "010", "010", "111"],
+    "J": ["00111", "00010", "00010", "00010", "10010", "10010", "01100"],
+    "K": ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
     "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
     "M": ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
     "N": ["10001", "11001", "11001", "10101", "10011", "10011", "10001"],
     "O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
     "P": ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
+    "Q": ["01110", "10001", "10001", "10001", "10101", "10010", "01101"],
     "R": ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
     "S": ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
     "T": ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
     "U": ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
     "V": ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
     "W": ["10001", "10001", "10001", "10101", "10101", "11011", "10001"],
+    "X": ["10001", "10001", "01010", "00100", "01010", "10001", "10001"],
     "Y": ["10001", "10001", "01010", "00100", "00100", "00100", "00100"],
+    "Z": ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
 }
 
 
@@ -1551,6 +1558,521 @@ def reproducibility_check() -> None:
         actual = json.loads((temp_root / METADATA.relative_to(ROOT) / "layer-manifest.json").read_text(encoding="utf-8"))
         if expected != actual:
             raise ValueError("Deterministic rebuild drifted from committed layer manifest")
+
+
+def _pad_sprite_v2(image: Image.Image, canvas: tuple[int, int], pivot: tuple[int, int]) -> Image.Image:
+    """Place a trimmed state on a shared transparent canvas at one ground pivot."""
+    if image.width > canvas[0] or image.height > pivot[1]:
+        raise ValueError("Entity state does not fit its declared pivot canvas")
+    output = Image.new("RGBA", canvas, (0, 0, 0, 0))
+    output.alpha_composite(image, (pivot[0] - image.width // 2, pivot[1] - image.height))
+    return output
+
+
+def _hud_state_v2(box: tuple[int, int, int, int], label: str) -> Image.Image:
+    width, height = box[2] - box[0], box[3] - box[1]
+    layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    text_scale = 2
+    pixel_text(layer, ((width - text_width(label, text_scale)) // 2, 14), label, text_scale)
+    return layer
+
+
+def _build_hud_v2() -> dict[str, Image.Image]:
+    top_boxes = {
+        "fortress-value": (18, 10, 258, 60),
+        "wave-value": (526, 10, 754, 60),
+        "ore-value": (1022, 10, 1262, 60),
+    }
+    bottom_boxes = {
+        "warden-name": (272, 604, 452, 704),
+        "health-value": (462, 604, 652, 704),
+        "target-nearest-state": (662, 604, 852, 704),
+        "shield-slam-ready-state": (862, 604, 1102, 704),
+        "pause-state": (1112, 604, 1262, 704),
+    }
+    top = Image.new("RGBA", FRAME, (0, 0, 0, 0))
+    bottom = Image.new("RGBA", FRAME, (0, 0, 0, 0))
+    for box in top_boxes.values():
+        panel(top, box)
+    for box in bottom_boxes.values():
+        panel(bottom, box)
+    parts = {
+        "top-hud-frame": top,
+        "bottom-hud-frame": bottom,
+        "fortress-value": _hud_state_v2(top_boxes["fortress-value"], "FORT 18/20"),
+        "wave-value": _hud_state_v2(top_boxes["wave-value"], "WAVE 7"),
+        "ore-value": _hud_state_v2(top_boxes["ore-value"], "ORE 840"),
+        "warden-name": _hud_state_v2(bottom_boxes["warden-name"], "WARDEN"),
+        "health-value": _hud_state_v2(bottom_boxes["health-value"], "84/100"),
+        "target-nearest-state": _hud_state_v2(bottom_boxes["target-nearest-state"], "NEAREST"),
+        "target-strongest-state": _hud_state_v2(bottom_boxes["target-nearest-state"], "STRONGEST"),
+        "shield-slam-ready-state": _hud_state_v2(bottom_boxes["shield-slam-ready-state"], "SLAM READY"),
+        "shield-slam-cooldown-state": _hud_state_v2(bottom_boxes["shield-slam-ready-state"], "SLAM 3"),
+        "pause-state": _hud_state_v2(bottom_boxes["pause-state"], "PAUSE"),
+        "resume-state": _hud_state_v2(bottom_boxes["pause-state"], "RESUME"),
+    }
+    health = ImageDraw.Draw(parts["health-value"])
+    health.rectangle((18, 55, 172, 75), fill=PALETTE["iron"], outline=PALETTE["copper"], width=2)
+    health.rectangle((23, 60, 143, 70), fill=PALETTE["red"])
+    for name in ("shield-slam-ready-state", "shield-slam-cooldown-state"):
+        draw = ImageDraw.Draw(parts[name])
+        color = PALETTE["blue"] if name.endswith("ready-state") else PALETTE["stone_light"]
+        draw.polygon([(22, 58), (36, 44), (50, 58), (36, 72)], fill=color, outline=PALETTE["gold"])
+    for name in ("pause-state", "resume-state"):
+        draw = ImageDraw.Draw(parts[name])
+        if name == "pause-state":
+            draw.rectangle((56, 55, 63, 78), fill=PALETTE["gold"])
+            draw.rectangle((70, 55, 77, 78), fill=PALETTE["gold"])
+        else:
+            draw.polygon([(58, 53), (58, 80), (80, 66)], fill=PALETTE["gold"])
+    return parts
+
+
+def _walkable_mask_v2(route: list[list[int]]) -> Image.Image:
+    mask = Image.new("L", FRAME, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.line([tuple(point) for point in route], fill=255, width=54, joint="curve")
+    for x, y in route:
+        draw.ellipse((x - 27, y - 27, x + 27, y + 27), fill=255)
+    return mask
+
+
+def _occlusion_v2(clean: Image.Image) -> tuple[Image.Image, Image.Image]:
+    mask = Image.new("L", FRAME, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.polygon([(0, 92), (112, 92), (188, 212), (142, 390), (0, 420)], fill=255)
+    draw.polygon([(1108, 458), (1280, 420), (1280, 720), (1030, 720), (1060, 585)], fill=255)
+    occluder = clean.copy()
+    occluder.putalpha(mask)
+    return mask, occluder
+
+
+def _ordered_layers_v2(recipe: dict[str, object]) -> list[dict[str, object]]:
+    layers = recipe["layersBackToFront"]
+    if not isinstance(layers, list) or not layers:
+        raise ValueError("Reconstruction recipe must contain layers")
+    typed = [layer for layer in layers if isinstance(layer, dict)]
+    if len(typed) != len(layers):
+        raise ValueError("Every reconstruction layer must be an object")
+    return sorted(
+        typed,
+        key=lambda layer: (
+            layer["zOrder"],
+            layer.get("depthSortY", -1),
+            layers.index(layer),
+        ),
+    )
+
+
+def _compose_v2(recipe: dict[str, object], assets: dict[str, Image.Image]) -> Image.Image:
+    layers = _ordered_layers_v2(recipe)
+    if layers[0]["asset"] != "shuttergate-clean-plate-1280x720":
+        raise ValueError("Reconstruction must start with the clean plate")
+    output = assets[layers[0]["asset"]].copy()
+    for layer in layers[1:]:
+        output.alpha_composite(assets[layer["asset"]], tuple(layer["position"]))
+    return output
+
+
+def _recipe_without_v2(recipe: dict[str, object], excluded: set[str]) -> dict[str, object]:
+    return {
+        **recipe,
+        "layersBackToFront": [
+            layer for layer in recipe["layersBackToFront"] if layer["asset"] not in excluded
+        ],
+    }
+
+
+def _labelled_grid_v2(panels: list[tuple[str, Image.Image]]) -> Image.Image:
+    board = Image.new("RGBA", (1280, 720), (7, 13, 22, 255))
+    slots = ((20, 58), (650, 58), (20, 388), (650, 388))
+    for (label, image), (x, y) in zip(panels, slots):
+        fitted = image.resize((610, 300), Image.Resampling.LANCZOS)
+        board.alpha_composite(fitted, (x, y))
+        pixel_text(board, (x + 12, y + 10), label, 2)
+    return board
+
+
+def _route_board_v2(clean: Image.Image, route: list[list[int]], walkable: Image.Image) -> Image.Image:
+    board = clean.copy()
+    tint = Image.new("RGBA", FRAME, (50, 180, 105, 0))
+    tint.putalpha(walkable.point(lambda value: value // 3))
+    board.alpha_composite(tint)
+    draw = ImageDraw.Draw(board)
+    draw.line([tuple(point) for point in route], fill=(255, 60, 180, 255), width=4)
+    for index, (x, y) in enumerate(route):
+        draw.ellipse((x - 8, y - 8, x + 8, y + 8), fill=(255, 220, 80, 255))
+        pixel_text(board, (x + 10, y - 10), str(index + 1), 2)
+    pixel_text(board, (24, 82), "REVIEW ONLY ROUTE AND WALKABLE MASK", 2)
+    pixel_text(board, (24, 108), "ENTRANCE TO GATE ALL VISIBLE OUTSIDE HUD", 2)
+    return board
+
+
+def _alignment_board_v2(sprites: dict[str, Image.Image]) -> Image.Image:
+    board = Image.new("RGBA", FRAME, (7, 13, 22, 255))
+    entries = [
+        ("WARDEN IDLE 104PX", "iron-warden-idle", (180, 300), (90, 112)),
+        ("WARDEN SLAM 104PX", "iron-warden-shield-slam", (470, 300), (90, 112)),
+        ("RAIDER IDLE 92PX", "mine-raider-idle", (760, 300), (64, 100)),
+        ("RAIDER ATTACK 92PX", "mine-raider-attack", (1030, 300), (64, 100)),
+    ]
+    draw = ImageDraw.Draw(board)
+    for label, asset, ground, pivot in entries:
+        image = sprites[asset]
+        top_left = (ground[0] - pivot[0], ground[1] - pivot[1])
+        board.alpha_composite(image, top_left)
+        draw.line((ground[0] - 18, ground[1], ground[0] + 18, ground[1]), fill=(255, 70, 180, 255), width=2)
+        draw.line((ground[0], ground[1] - 18, ground[0], ground[1] + 18), fill=(255, 70, 180, 255), width=2)
+        pixel_text(board, (ground[0] - 90, 450), label, 2)
+    pixel_text(board, (330, 92), "SHARED GROUND PIVOT ALIGNMENT", 3)
+    return board
+
+
+def _scale_board_v2(clean: Image.Image, sprites: dict[str, Image.Image]) -> Image.Image:
+    scenes: list[tuple[str, Image.Image]] = []
+    for label, scale in (("SMALL 83/74PX", 0.8), ("SELECTED 104/92PX", 1.0), ("LARGE 130/115PX", 1.25)):
+        scene = clean.copy()
+        for asset, ground in (("iron-warden-idle", (674, 434)), ("mine-raider-idle", (802, 398))):
+            source = sprites[asset]
+            scaled = source.resize((round(source.width * scale), round(source.height * scale)), Image.Resampling.NEAREST)
+            scene.alpha_composite(scaled, (ground[0] - scaled.width // 2, ground[1] - round(112 * scale if "warden" in asset else 100 * scale)))
+        scenes.append((label, scene))
+    stress = clean.copy()
+    placements = [(1028, 190), (930, 250), (825, 320), (720, 385), (610, 450), (500, 515), (365, 570)]
+    for index, ground in enumerate(placements):
+        asset = "iron-warden-idle" if index in {3, 5} else "mine-raider-idle"
+        pivot = (90, 112) if "warden" in asset else (64, 100)
+        stress.alpha_composite(sprites[asset], (ground[0] - pivot[0], ground[1] - pivot[1]))
+    scenes.append(("NONAUTHORITATIVE ROUTE OCCUPANCY", stress))
+    return _labelled_grid_v2(scenes)
+
+
+def _composition_decision_v2(approved: Image.Image, current: Image.Image) -> Image.Image:
+    board = Image.new("RGBA", (2560, 720), (0, 0, 0, 255))
+    board.alpha_composite(approved, (0, 0))
+    board.alpha_composite(current, (1280, 0))
+    pixel_text(board, (24, 24), "APPROVED 284 DIRECTION POPULATED CENTRAL DEFENSE", 2)
+    pixel_text(board, (1304, 24), "286 PROPOSED FLOOR WIDER DIAGONAL ROUTE", 2)
+    pixel_text(board, (1304, 50), "DECISION REQUEST ACCEPT CAMERA ROUTE HUD REGIONS", 2)
+    return board
+
+
+def build(output_root: Path = ROOT) -> None:
+    package = output_root / PACKAGE.relative_to(ROOT)
+    direction = output_root / DIRECTION.relative_to(ROOT)
+    exports = package / "exports"
+    evidence = output_root / EVIDENCE.relative_to(ROOT)
+    metadata = package / "metadata"
+    shutil.rmtree(exports, ignore_errors=True)
+    shutil.rmtree(evidence, ignore_errors=True)
+    scene = json.loads((metadata / "scene-contract.json").read_text(encoding="utf-8"))
+    recipe = json.loads((metadata / "reconstruction.json").read_text(encoding="utf-8"))
+    clean = cover_16_9(Image.open(package / "sources" / "shuttergate-clean-plate-master.png"))
+    png(clean, exports / "environment" / "shuttergate-clean-plate-1280x720.png")
+
+    warden_master = Image.open(direction / "sources" / "iron-warden-master.png")
+    raider_master = Image.open(direction / "sources" / "mine-raider-master.png")
+    raw = {
+        "iron-warden-idle": fit_height(sprite_cell(warden_master, (0, 355)), 104),
+        "iron-warden-shield-slam": fit_height(sprite_cell(warden_master, (708, 1098)), 104),
+        "mine-raider-idle": ImageEnhance.Brightness(fit_height(sprite_cell(raider_master, (0, 353)), 92)).enhance(1.3),
+        "mine-raider-attack": ImageEnhance.Brightness(fit_height(sprite_cell(raider_master, (707, 961)), 92)).enhance(1.3),
+    }
+    sprites = {
+        asset: _pad_sprite_v2(image, tuple(scene["entityStates"][asset]["canvas"]), tuple(scene["entityStates"][asset]["pivot"]))
+        for asset, image in raw.items()
+    }
+    for name, image in sprites.items():
+        png(image, exports / "entities" / f"{name}.png")
+
+    effects = {
+        "warden-selection-ring": ring((94, 42), (84, 178, 196, 210)),
+        "hostile-faction-ring": ring((78, 36), (184, 79, 47, 210)),
+        "shield-slam-impact": shield_impact(),
+    }
+    for name, image in effects.items():
+        png(image, exports / "effects" / f"{name}.png")
+    lighting = lighting_overlay()
+    png(lighting, exports / "lighting" / "warm-light-overlay.png")
+    mask, occluder = _occlusion_v2(clean)
+    walkable = _walkable_mask_v2(scene["route"]["polyline"])
+    png(mask, exports / "occlusion" / "architecture-mask.png")
+    png(occluder, exports / "occlusion" / "foreground-occluder.png")
+    png(walkable, exports / "occlusion" / "route-walkable-mask.png")
+    hud = _build_hud_v2()
+    for name, image in hud.items():
+        png(image, exports / "hud" / f"{name}.png")
+    portrait = _pad_sprite_v2(raw["iron-warden-idle"].resize((73, 64), Image.Resampling.LANCZOS), (78, 80), (39, 74))
+    png(portrait, exports / "hud" / "warden-portrait.png")
+
+    assets = {"shuttergate-clean-plate-1280x720": clean, **sprites, **effects, "foreground-occluder": occluder, "warm-light-overlay": lighting, **hud, "warden-portrait": portrait}
+    reconstruction = _compose_v2(recipe, assets)
+    entity_assets = {"iron-warden-shield-slam", "mine-raider-attack"}
+    ring_assets = {"warden-selection-ring", "hostile-faction-ring"}
+    no_entities = _compose_v2(_recipe_without_v2(recipe, entity_assets | ring_assets), assets)
+    png(reconstruction, evidence / "reconstruction-one-warden-one-hostile.png")
+    png(no_entities, evidence / "reconstruction-entities-removed.png")
+    png(clean, evidence / "clean-plate.png")
+    png(composite(clean, [(occluder, (0, 0)), (lighting, (0, 0))]), evidence / "environment-and-presentation-lighting.png")
+
+    warden_only = _compose_v2(_recipe_without_v2(recipe, {"mine-raider-attack", "hostile-faction-ring"}), assets)
+    hostile_only = _compose_v2(_recipe_without_v2(recipe, {"iron-warden-shield-slam", "warden-selection-ring"}), assets)
+    png(_labelled_grid_v2([("BOTH", reconstruction), ("WARDEN ONLY", warden_only), ("HOSTILE ONLY", hostile_only), ("NEITHER", no_entities)]), evidence / "entity-removal-grid.png")
+
+    hud_board = Image.new("RGBA", FRAME, (7, 13, 22, 255))
+    for layer in _ordered_layers_v2(recipe):
+        if layer["region"] == "screen-space-hud":
+            hud_board.alpha_composite(assets[layer["asset"]], tuple(layer["position"]))
+    png(hud_board, evidence / "hud-control-isolation.png")
+    alternate_assets = {**assets, "target-nearest-state": hud["target-strongest-state"], "shield-slam-ready-state": hud["shield-slam-cooldown-state"], "pause-state": hud["resume-state"]}
+    alternate = _compose_v2(recipe, alternate_assets)
+    hud_mutation = Image.new("RGBA", (2560, 720), (7, 13, 22, 255))
+    hud_mutation.alpha_composite(reconstruction, (0, 0))
+    hud_mutation.alpha_composite(alternate, (1280, 0))
+    pixel_text(hud_mutation, (24, 78), "FIXTURE READY NEAREST RUNNING", 2)
+    pixel_text(hud_mutation, (1304, 78), "ALTERNATE COOLDOWN STRONGEST PAUSED", 2)
+    png(hud_mutation, evidence / "hud-state-mutation.png")
+
+    png(occlusion_board(clean, mask, occluder), evidence / "foreground-occlusion-isolation.png")
+    occlusion_samples = _labelled_grid_v2([("UPPER COLUMN BEHIND", clean), ("TRUTH ANCHORS CLEAR", reconstruction), ("LOWER RAIL BEHIND", clean), ("ROUTE TRAVERSAL DEFERRED 273", _route_board_v2(clean, scene["route"]["polyline"], walkable))])
+    png(occlusion_samples, evidence / "occlusion-depth-proof.png")
+    png(lighting, evidence / "lighting-alpha-isolation.png")
+    unlit = _compose_v2(_recipe_without_v2(recipe, {"warm-light-overlay"}), assets)
+    png(_labelled_grid_v2([("UNLIT ENTITIES", unlit), ("NORMAL SRGB LIGHTING", reconstruction), ("LIT ENTRANCE", reconstruction), ("LIT CENTRAL ROUTE", reconstruction)]), evidence / "lighting-entity-proof.png")
+    png(_route_board_v2(clean, scene["route"]["polyline"], walkable), evidence / "route-anchor-validation.png")
+    png(_alignment_board_v2(sprites), evidence / "entity-state-alignment.png")
+    impact_scene = reconstruction.copy()
+    impact_scene.alpha_composite(effects["shield-slam-impact"], (900, 330))
+    pixel_text(impact_scene, (900, 300), "SEPARATE IMPACT HOSTILE REMAINS READABLE", 2)
+    png(impact_scene, evidence / "shield-slam-effect-proof.png")
+    png(_scale_board_v2(clean, sprites), evidence / "character-scale-study.png")
+    png(isolation_board([sprites["iron-warden-idle"], sprites["iron-warden-shield-slam"]], 1), evidence / "iron-warden-alpha-states-native.png")
+    png(isolation_board([sprites["iron-warden-idle"], sprites["iron-warden-shield-slam"]], 4), evidence / "iron-warden-alpha-states-4x.png")
+    png(isolation_board([sprites["mine-raider-idle"], sprites["mine-raider-attack"]], 1), evidence / "mine-raider-alpha-states-native.png")
+    png(isolation_board([sprites["mine-raider-idle"], sprites["mine-raider-attack"]], 4), evidence / "mine-raider-alpha-states-4x.png")
+    png(isolation_board(list(effects.values()), 2), evidence / "selection-and-combat-effect-isolation.png")
+    approved = Image.open(direction / "exports" / "shuttergate-keyframe-1280x720.png").convert("RGBA")
+    comparison = Image.new("RGBA", (2560, 720), (0, 0, 0, 255))
+    comparison.alpha_composite(approved, (0, 0))
+    comparison.alpha_composite(reconstruction, (1280, 0))
+    png(comparison, evidence / "approved-keyframe-vs-reconstruction.png")
+    png(_composition_decision_v2(approved, reconstruction), evidence / "composition-decision.png")
+
+    tracked: list[tuple[Path, str, str, list[str]]] = [
+        (exports / "environment" / "shuttergate-clean-plate-1280x720.png", "environment", "opaque-clean-plate", ["world"])
+    ]
+    tracked.extend((path, "entity", "straight-alpha-padded-pivot", ["world-entities"]) for path in sorted((exports / "entities").glob("*.png")))
+    tracked.extend((path, "effect", "straight-alpha", ["world-effects"]) for path in sorted((exports / "effects").glob("*.png")))
+    tracked.append((exports / "lighting" / "warm-light-overlay.png", "lighting", "straight-alpha-normal-srgb-no-entities", ["world-lighting"]))
+    tracked.append((exports / "occlusion" / "architecture-mask.png", "occlusion-mask", "grayscale-mask", ["foreground-occlusion"]))
+    tracked.append((exports / "occlusion" / "route-walkable-mask.png", "walkable-mask", "binary-review-contract-mask", ["route-validation"]))
+    tracked.append((exports / "occlusion" / "foreground-occluder.png", "foreground", "straight-alpha-environment-only", ["foreground-occlusion"]))
+    tracked.extend((path, "hud", "straight-alpha-runtime-state-or-chrome", ["screen-space-hud"]) for path in sorted((exports / "hud").glob("*.png")))
+    manifest = {
+        "schemaVersion": 2,
+        "package": "dwarven-depths-issue-286-production-scene",
+        "logicalFrame": [640, 360],
+        "reviewFrame": list(FRAME),
+        "entityLayerCounts": {"iron-warden": 1, "mine-raider": 1},
+        "contractDigests": {name: sha256(metadata / name) for name in ("provenance.json", "reconstruction.json", "scene-contract.json")},
+        "files": [file_record(path, category, alpha, regions, output_root) for path, category, alpha, regions in tracked],
+        "evidence": [file_record(path, "evidence", "review-only", ["review"], output_root) for path in sorted(evidence.glob("*.png"))],
+    }
+    manifest_path = metadata / "layer-manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    subprocess.run(["pnpm", "exec", "biome", "format", "--write", str(manifest_path)], check=True, cwd=ROOT)
+
+
+def _assert_strict_v2(value: object, keys: set[str], context: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{context} must be an object")
+    strict_keys(value, keys, context)
+    return value
+
+
+def verify(root: Path = ROOT) -> None:
+    package = root / PACKAGE.relative_to(ROOT)
+    metadata = package / "metadata"
+    scene = json.loads((metadata / "scene-contract.json").read_text(encoding="utf-8"))
+    recipe = json.loads((metadata / "reconstruction.json").read_text(encoding="utf-8"))
+    manifest = json.loads((metadata / "layer-manifest.json").read_text(encoding="utf-8"))
+    _assert_strict_v2(scene, {"schemaVersion", "package", "authority", "coordinateSpace", "safeAreas", "camera", "route", "entityAnchors", "entityStates", "occlusion", "lighting", "hudRegions", "hudDynamicState", "cropPolicy"}, "scene-contract")
+    _assert_strict_v2(recipe, {"schemaVersion", "frame", "output", "entityCounts", "layersBackToFront", "isolationProofs"}, "reconstruction")
+    _assert_strict_v2(manifest, {"schemaVersion", "package", "logicalFrame", "reviewFrame", "entityLayerCounts", "contractDigests", "files", "evidence"}, "manifest")
+    if scene["schemaVersion"] != 2 or recipe["schemaVersion"] != 2 or manifest["schemaVersion"] != 2:
+        raise ValueError("Production-scene contracts must use schema version 2")
+    if scene["authority"] != "presentation-only" or recipe["frame"] != list(FRAME):
+        raise ValueError("Scene authority or frame drifted")
+    expected_digests = {name: sha256(metadata / name) for name in ("provenance.json", "reconstruction.json", "scene-contract.json")}
+    if manifest["contractDigests"] != expected_digests:
+        raise ValueError("Scene metadata digest mismatch")
+
+    records = [*manifest["files"], *manifest["evidence"]]
+    ids: set[str] = set()
+    assets: dict[str, Image.Image] = {}
+    for index, record in enumerate(records):
+        _assert_strict_v2(record, {"id", "path", "category", "dimensions", "mode", "alphaSemantics", "contributesTo", "sha256"}, f"manifest.record[{index}]")
+        path = Path(record["path"])
+        if path.is_absolute() or ".." in path.parts or not (root / path).is_file():
+            raise ValueError(f"Manifest path is missing or unsafe: {path}")
+        if sha256(root / path) != record["sha256"]:
+            raise ValueError(f"Digest mismatch: {path}")
+        with Image.open(root / path) as image:
+            if list(image.size) != record["dimensions"] or image.mode != record["mode"]:
+                raise ValueError(f"Image metadata mismatch: {path}")
+            if record["category"] not in {"evidence", "occlusion-mask", "walkable-mask"}:
+                if record["id"] in ids:
+                    raise ValueError(f"Duplicate asset id: {record['id']}")
+                ids.add(record["id"])
+                assets[record["id"]] = image.convert("RGBA")
+    actual_exports = {path.relative_to(root).as_posix() for path in (package / "exports").rglob("*.png")}
+    declared_exports = {record["path"] for record in manifest["files"]}
+    actual_evidence = {path.relative_to(root).as_posix() for path in (root / EVIDENCE.relative_to(ROOT)).glob("*.png")}
+    declared_evidence = {record["path"] for record in manifest["evidence"]}
+    if actual_exports != declared_exports or actual_evidence != declared_evidence:
+        raise ValueError("Export or evidence directory contains stale/unmanifested files")
+
+    route = _assert_strict_v2(scene["route"], {"polyline", "entranceAnchor", "gateAnchor", "chokepointAnchors", "railCrossingAnchor", "walkableMask", "minimumWalkableRadius"}, "scene.route")
+    if route["polyline"][0] != route["entranceAnchor"] or route["polyline"][-1] != route["gateAnchor"]:
+        raise ValueError("Route endpoints do not bind entrance and gate")
+    hud_rects = scene["safeAreas"]["hudOcclusionRects"]
+    walkable_path = package / "exports" / "occlusion" / "route-walkable-mask.png"
+    foreground_path = package / "exports" / "occlusion" / "architecture-mask.png"
+    with Image.open(walkable_path).convert("L") as walkable, Image.open(foreground_path).convert("L") as foreground:
+        for point in route["polyline"]:
+            x, y = validate_point(point, "scene.route point")
+            if walkable.getpixel((x, y)) != 255 or foreground.getpixel((x, y)) != 0:
+                raise ValueError("Route point is not walkable and unobscured")
+            if any(x0 <= x < x1 and y0 <= y < y1 for x0, y0, x1, y1 in hud_rects):
+                raise ValueError("Route point is hidden beneath HUD")
+
+    states = _assert_strict_v2(scene["entityStates"], {"iron-warden-idle", "iron-warden-shield-slam", "mine-raider-idle", "mine-raider-attack"}, "scene.entityStates")
+    for asset, contract in states.items():
+        _assert_strict_v2(contract, {"canvas", "pivot", "facing", "nominalHeight"}, f"scene.entityStates.{asset}")
+        image = assets[asset]
+        if list(image.size) != contract["canvas"]:
+            raise ValueError(f"Entity canvas drifted: {asset}")
+        bbox = image.getchannel("A").getbbox()
+        if bbox is None or bbox[3] != contract["pivot"][1]:
+            raise ValueError(f"Entity ground pivot is not alpha-aligned: {asset}")
+    anchors = scene["entityAnchors"]
+    expected_entities = {
+        "mine-raider-attack": (anchors["mineRaiderTruthScreen"], states["mine-raider-attack"]),
+        "iron-warden-shield-slam": (anchors["ironWardenTruthScreen"], states["iron-warden-shield-slam"]),
+    }
+    layers = recipe["layersBackToFront"]
+    for index, layer in enumerate(layers):
+        expected = {"asset", "position", "region", "zOrder"}
+        if layer.get("region") == "world-entities":
+            expected.add("depthSortY")
+        _assert_strict_v2(layer, expected, f"reconstruction.layer[{index}]")
+        if layer["asset"] not in assets:
+            raise ValueError(f"Unknown reconstruction asset: {layer['asset']}")
+    entity_layers = [layer for layer in _ordered_layers_v2(recipe) if layer["region"] == "world-entities"]
+    if [layer["depthSortY"] for layer in entity_layers] != sorted(layer["depthSortY"] for layer in entity_layers):
+        raise ValueError("Entities are not canonically depth sorted")
+    for layer in entity_layers:
+        anchor, state = expected_entities[layer["asset"]]
+        expected_position = [anchor["groundPosition"][0] - state["pivot"][0], anchor["groundPosition"][1] - state["pivot"][1]]
+        if layer["position"] != expected_position or layer["depthSortY"] != anchor["depthSortY"]:
+            raise ValueError("Entity recipe does not bind pivot/depth anchors")
+    if "shield-slam-impact" in {layer["asset"] for layer in layers}:
+        raise ValueError("Neutral count reconstruction may not obscure the hostile with impact art")
+    require_same_pixels(_compose_v2(recipe, assets), root / recipe["output"], "Neutral reconstruction")
+
+    hud = scene["hudDynamicState"]
+    _assert_strict_v2(hud, {"font", "textColor", "baselinePolicy", "fixture", "minimumVariants"}, "scene.hudDynamicState")
+    required_hud_assets = {"target-nearest-state", "target-strongest-state", "shield-slam-ready-state", "shield-slam-cooldown-state", "pause-state", "resume-state"}
+    if not required_hud_assets.issubset(ids):
+        raise ValueError("Minimum mutable HUD state assets are incomplete")
+    alternate_assets = {
+        **assets,
+        "target-nearest-state": assets["target-strongest-state"],
+        "shield-slam-ready-state": assets["shield-slam-cooldown-state"],
+        "pause-state": assets["resume-state"],
+    }
+    base_pixels = _compose_v2(recipe, assets).convert("RGB")
+    alternate_pixels = _compose_v2(recipe, alternate_assets).convert("RGB")
+    mutable_regions = [
+        scene["hudRegions"]["targetPolicy"],
+        scene["hudRegions"]["shieldSlam"],
+        scene["hudRegions"]["pause"],
+    ]
+    changed = 0
+    for y in range(FRAME[1]):
+        for x in range(FRAME[0]):
+            if base_pixels.getpixel((x, y)) == alternate_pixels.getpixel((x, y)):
+                continue
+            changed += 1
+            if not any(x0 <= x < x1 and y0 <= y < y1 for x0, y0, x1, y1 in mutable_regions):
+                raise ValueError("HUD mutation changed environment or immutable HUD pixels")
+    if changed == 0:
+        raise ValueError("HUD mutation proof does not change control state pixels")
+    if scene["lighting"] != {"asset": "warm-light-overlay", "blendMode": "normal", "colorSpace": "sRGB", "alpha": "straight", "affects": ["environment", "entities", "foreground"], "excludes": ["combat-effects", "hud"]}:
+        raise ValueError("Lighting blend/order semantics drifted")
+
+    provenance = json.loads((metadata / "provenance.json").read_text(encoding="utf-8"))
+    _assert_strict_v2(provenance, {"schemaVersion", "package", "license", "toolchain", "inputs", "cleanPlate", "derivedLayers", "conceptBoundary"}, "provenance")
+    if provenance["schemaVersion"] != 2 or provenance["toolchain"] != {"python": "3.13.5", "pillow": "12.3.0", "zlib": "1.3.1", "lockfile": "assets/game-art/production-scene/requirements.lock"}:
+        raise ValueError("Pinned image toolchain contract drifted")
+    if PILLOW_VERSION != provenance["toolchain"]["pillow"]:
+        raise ValueError(f"Pillow {provenance['toolchain']['pillow']} is required, got {PILLOW_VERSION}")
+    for input_record in provenance["inputs"]:
+        _assert_strict_v2(input_record, {"path", "sha256", "role"}, "provenance.input")
+        if sha256(root / input_record["path"]) != input_record["sha256"]:
+            raise ValueError(f"Upstream provenance digest mismatch: {input_record['path']}")
+    clean_source = root / provenance["cleanPlate"]["path"]
+    if sha256(clean_source) != provenance["cleanPlate"]["sha256"]:
+        raise ValueError("Clean-plate source digest does not match provenance")
+    if any(provenance["conceptBoundary"][key] for key in ("productionPixelReuse", "tracing", "backgroundUse")):
+        raise ValueError("Concept raster may not contribute production pixels")
+
+
+def reproducibility_check() -> None:
+    with tempfile.TemporaryDirectory(prefix="dd-production-scene-") as directory:
+        temp_root = Path(directory)
+        temp_package = temp_root / PACKAGE.relative_to(ROOT)
+        temp_direction = temp_root / DIRECTION.relative_to(ROOT)
+        shutil.copytree(SOURCES, temp_package / "sources")
+        (temp_direction / "sources").mkdir(parents=True)
+        (temp_direction / "exports").mkdir(parents=True)
+        for name in ("iron-warden-master.png", "mine-raider-master.png"):
+            shutil.copy2(DIRECTION / "sources" / name, temp_direction / "sources" / name)
+        shutil.copy2(DIRECTION / "exports" / "shuttergate-keyframe-1280x720.png", temp_direction / "exports" / "shuttergate-keyframe-1280x720.png")
+        (temp_package / "metadata").mkdir(parents=True)
+        for name in ("scene-contract.json", "reconstruction.json", "provenance.json"):
+            shutil.copy2(METADATA / name, temp_package / "metadata" / name)
+        build(temp_root)
+        verify(temp_root)
+        expected = json.loads((METADATA / "layer-manifest.json").read_text(encoding="utf-8"))
+        actual = json.loads((temp_root / METADATA.relative_to(ROOT) / "layer-manifest.json").read_text(encoding="utf-8"))
+        if expected != actual:
+            raise ValueError("Pinned deterministic rebuild drifted from committed layer manifest")
+
+
+def reproducibility_check() -> None:
+    with tempfile.TemporaryDirectory(prefix="dd-production-scene-") as directory:
+        temp_root = Path(directory)
+        temp_package = temp_root / PACKAGE.relative_to(ROOT)
+        temp_direction = temp_root / DIRECTION.relative_to(ROOT)
+        shutil.copytree(SOURCES, temp_package / "sources")
+        (temp_direction / "sources").mkdir(parents=True)
+        (temp_direction / "exports").mkdir(parents=True)
+        (temp_package / "metadata").mkdir(parents=True)
+        for name in ("scene-contract.json", "reconstruction.json", "provenance.json"):
+            shutil.copy2(METADATA / name, temp_package / "metadata" / name)
+        provenance = json.loads((METADATA / "provenance.json").read_text(encoding="utf-8"))
+        for input_record in provenance["inputs"]:
+            source = ROOT / input_record["path"]
+            destination = temp_root / input_record["path"]
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+        build(temp_root)
+        verify(temp_root)
+        expected = json.loads((METADATA / "layer-manifest.json").read_text(encoding="utf-8"))
+        actual = json.loads((temp_root / METADATA.relative_to(ROOT) / "layer-manifest.json").read_text(encoding="utf-8"))
+        if expected != actual:
+            raise ValueError("Pinned deterministic rebuild drifted from committed layer manifest")
 
 
 def main() -> None:
