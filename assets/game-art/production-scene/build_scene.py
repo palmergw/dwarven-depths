@@ -1750,6 +1750,12 @@ def _route_board_v3(clean: Image.Image, route: dict[str, Any]) -> Image.Image:
     for index, portal in enumerate(route["portals"], start=1):
         hidden_color = (40, 220, 255, 255)
         visible_color = (100, 255, 170, 255)
+        x0, y0, x1, y1 = portal["bounds"]
+        draw.rectangle((x0, y0, x1, y1), outline=hidden_color, width=2)
+        visible_bounds = portal["visibleMouthBounds"]
+        if visible_bounds is not None:
+            vx0, vy0, vx1, vy1 = visible_bounds
+            draw.rectangle((vx0, vy0, vx1, vy1), outline=visible_color, width=2)
         for segment in portal["segments"]:
             start = tuple(segment["from"])
             end = tuple(segment["to"])
@@ -1759,14 +1765,10 @@ def _route_board_v3(clean: Image.Image, route: dict[str, Any]) -> Image.Image:
                 draw.line((start, end), fill=visible_color, width=4)
                 for x, y in (start, end):
                     draw.ellipse((x - 3, y - 3, x + 3, y + 3), fill=visible_color)
-        x0, y0, x1, y1 = portal["bounds"]
-        draw.rectangle((x0, y0, x1, y1), outline=hidden_color, width=2)
         pixel_text(scene, (x0 + 2, max(8, y0 - 14)), f"GATE {index} HIDDEN", 1)
-        visible_bounds = portal["visibleMouthBounds"]
         if visible_bounds is not None:
-            vx0, vy0, vx1, vy1 = visible_bounds
-            draw.rectangle((vx0, vy0, vx1, vy1), outline=visible_color, width=2)
-            pixel_text(scene, (vx0 + 2, min(700, vy1 + 4)), f"GATE {index} VISIBLE MOUTH", 1)
+            visible_x0, _, _, visible_y1 = visible_bounds
+            pixel_text(scene, (visible_x0 + 2, min(700, visible_y1 + 4)), f"GATE {index} VISIBLE MOUTH", 1)
     entrance_x, entrance_y = route["entrance"]["anchor"]
     objective_x, objective_y = route["objective"]["anchor"]
     draw.ellipse((entrance_x - 7, entrance_y - 7, entrance_x + 7, entrance_y + 7), fill=(80, 220, 120, 255))

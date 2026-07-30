@@ -8,7 +8,7 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "609444c6d19c38472b0300480ad6cc5d565c5758487d4ceb132dbee344506174",
+    "provenance.json": "7ec66c4400c424a42a9b9f9c8eb7a371a050751ebd07b8d8e441da09ba5d46f1",
     "reconstruction.json": "cbcbf220541c2246f0dbf751ebfc51a14871d744c2f88250a2d2b09cd959f140",
     "scene-contract.json": "d18d9f7df1d99e0fa4f8aeb7e6f12ad3db4588f09134e12044199d574651d82b"
   },
@@ -433,7 +433,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "c5de25f4928f63f527e5ac72f145fad4ba5b44de96ceae830bca6be05bd84763"
+      "sha256": "7ee2b82ebb2ade5f18f504640be91c032efa8834c8708a256adef658cd6e7921"
     },
     {
       "id": "reconstruction-entities-removed",
@@ -463,7 +463,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "d1673d3d43780c1aa9e747993f980321fdcb96cdf330732778723199f345a720"
+      "sha256": "8153bf2f50ac55a24756911e5eb9e606c4c76ab9d7dfd441f1b70fbfeca06101"
     },
     {
       "id": "route-registration-closeups",
@@ -473,7 +473,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "abb726858add5b258e1bcf5e283fef4e2d1b168f2844eb0a2473e86bfa99bfa2"
+      "sha256": "1c8a3f50c21dad48df9bc3a5e3027d1d0a70c2ed9c94dc684266d9b2fd362f3b"
     },
     {
       "id": "selection-and-combat-effect-isolation",
