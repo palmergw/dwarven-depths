@@ -28,7 +28,7 @@
     },
     "objective": {
       "id": "objective.foreground-shutter",
-      "anchor": [535, 500],
+      "anchor": [590, 480],
       "kind": "terminal-backstop",
       "traversable": false
     },
@@ -36,45 +36,35 @@
       {
         "id": "route-zone.background-approach",
         "depthOrder": 100,
-        "bounds": [960, 80, 1165, 205],
-        "visiblePolyline": [
-          [1145, 100],
-          [1120, 125],
-          [1090, 150],
-          [1055, 170],
-          [1020, 183],
-          [985, 190],
-          [970, 190]
-        ]
+        "bounds": [1045, 80, 1165, 180],
+        "visiblePolyline": [[1145, 100], [1120, 125], [1090, 150], [1055, 170]]
       },
       {
         "id": "route-zone.upper-causeway",
         "depthOrder": 200,
-        "bounds": [790, 175, 925, 350],
+        "bounds": [790, 175, 925, 295],
         "visiblePolyline": [
           [915, 185],
           [885, 195],
           [855, 210],
           [830, 230],
           [810, 255],
-          [800, 285],
-          [805, 315],
-          [815, 340]
+          [800, 285]
         ]
       },
       {
         "id": "route-zone.lower-causeway",
         "depthOrder": 300,
-        "bounds": [525, 350, 810, 515],
+        "bounds": [580, 350, 830, 495],
         "visiblePolyline": [
+          [820, 358],
           [800, 360],
           [760, 390],
           [720, 415],
           [680, 440],
           [640, 465],
           [605, 485],
-          [570, 500],
-          [535, 500]
+          [590, 480]
         ]
       }
     ],
@@ -83,9 +73,17 @@
         "id": "portal.upper-gate",
         "incomingZoneId": "route-zone.background-approach",
         "outgoingZoneId": "route-zone.upper-causeway",
-        "incomingAnchor": [970, 190],
+        "incomingAnchor": [1055, 170],
         "outgoingAnchor": [915, 185],
-        "bounds": [900, 160, 985, 215],
+        "bounds": [900, 155, 1060, 215],
+        "visibleMouthBounds": null,
+        "segments": [
+          {
+            "kind": "architecture-hidden",
+            "from": [1055, 170],
+            "to": [915, 185]
+          }
+        ],
         "visibility": "architecture-hidden",
         "occlusionMode": "architecture-depth-transition",
         "traversalOwnerIssue": 273
@@ -94,23 +92,39 @@
         "id": "portal.lower-gate",
         "incomingZoneId": "route-zone.upper-causeway",
         "outgoingZoneId": "route-zone.lower-causeway",
-        "incomingAnchor": [815, 340],
-        "outgoingAnchor": [800, 360],
-        "bounds": [785, 325, 835, 370],
-        "visibility": "visible-floor-gate-mouth",
-        "occlusionMode": "visible-depth-transition",
+        "incomingAnchor": [800, 285],
+        "outgoingAnchor": [820, 358],
+        "bounds": [790, 275, 855, 340],
+        "visibleMouthBounds": [815, 310, 870, 365],
+        "segments": [
+          {
+            "kind": "architecture-hidden",
+            "from": [800, 285],
+            "to": [845, 328]
+          },
+          {
+            "kind": "visible-floor-gate-mouth",
+            "from": [845, 328],
+            "to": [820, 358]
+          }
+        ],
+        "visibility": "compound-hidden-visible-mouth",
+        "occlusionMode": "compound-depth-transition",
         "traversalOwnerIssue": 273
       }
     ],
     "chokepointPortalIds": ["portal.upper-gate", "portal.lower-gate"],
-    "validation": "pixel-surveyed-visible-segments-and-registered-gate-mouths"
+    "validation": "pixel-surveyed-visible-segments-and-compound-registered-gate-transitions"
   },
   "entityAnchors": {
     "ironWardenTruthScreen": {
       "groundPosition": [674, 434],
       "depthSortY": 434
     },
-    "mineRaiderTruthScreen": { "groundPosition": [802, 398], "depthSortY": 398 }
+    "mineRaiderTruthScreen": {
+      "groundPosition": [802, 398],
+      "depthSortY": 398
+    }
   },
   "entityStates": {
     "iron-warden-idle": {

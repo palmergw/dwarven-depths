@@ -1748,19 +1748,25 @@ def _route_board_v3(clean: Image.Image, route: dict[str, Any]) -> Image.Image:
         for x, y in polyline:
             draw.ellipse((x - 3, y - 3, x + 3, y + 3), fill=(255, 235, 120, 255))
     for index, portal in enumerate(route["portals"], start=1):
-        incoming = tuple(portal["incomingAnchor"])
-        outgoing = tuple(portal["outgoingAnchor"])
+        hidden_color = (40, 220, 255, 255)
+        visible_color = (100, 255, 170, 255)
+        for segment in portal["segments"]:
+            start = tuple(segment["from"])
+            end = tuple(segment["to"])
+            if segment["kind"] == "architecture-hidden":
+                _draw_dashed_line_v3(draw, start, end, fill=hidden_color, width=4, dash=8, gap=6)
+            else:
+                draw.line((start, end), fill=(255, 205, 40, 235), width=4)
+                for x, y in (start, end):
+                    draw.ellipse((x - 3, y - 3, x + 3, y + 3), fill=visible_color)
         x0, y0, x1, y1 = portal["bounds"]
-        if portal["visibility"] == "architecture-hidden":
-            color = (40, 220, 255, 255)
-            _draw_dashed_line_v3(draw, incoming, outgoing, fill=color, width=4, dash=8, gap=6)
-            label = f"GATE {index} HIDDEN"
-        else:
-            color = (100, 255, 170, 255)
-            draw.line((incoming, outgoing), fill=(255, 205, 40, 235), width=4)
-            label = f"GATE {index} VISIBLE"
-        draw.rectangle((x0, y0, x1, y1), outline=color, width=2)
-        pixel_text(scene, (x0 + 2, max(8, y0 - 14)), label, 1)
+        draw.rectangle((x0, y0, x1, y1), outline=hidden_color, width=2)
+        pixel_text(scene, (x0 + 2, max(8, y0 - 14)), f"GATE {index} HIDDEN", 1)
+        visible_bounds = portal["visibleMouthBounds"]
+        if visible_bounds is not None:
+            vx0, vy0, vx1, vy1 = visible_bounds
+            draw.rectangle((vx0, vy0, vx1, vy1), outline=visible_color, width=2)
+            pixel_text(scene, (vx0 + 2, min(700, vy1 + 4)), f"GATE {index} VISIBLE MOUTH", 1)
     entrance_x, entrance_y = route["entrance"]["anchor"]
     objective_x, objective_y = route["objective"]["anchor"]
     draw.ellipse((entrance_x - 7, entrance_y - 7, entrance_x + 7, entrance_y + 7), fill=(80, 220, 120, 255))
@@ -1776,8 +1782,8 @@ def _route_registration_closeups_v3(route_board: Image.Image) -> Image.Image:
     board = Image.new("RGBA", (1920, 680), (7, 13, 22, 255))
     pixel_text(board, (24, 18), "PIXEL REGISTRATION CLOSEUPS FROM THE SAME ROUTE BOARD", 2)
     panels = [
-        ("UPPER GATE HIDDEN SPAN", (780, 230, 1080, 450)),
-        ("LOWER GATE VISIBLE MOUTH", (650, 380, 950, 600)),
+        ("UPPER GATE HIDDEN SPAN", (780, 230, 1080, 390)),
+        ("LOWER GATE COMPOUND TRANSITION", (650, 380, 950, 600)),
         ("SHUTTER THRESHOLD", (400, 510, 700, 730)),
     ]
     for index, (label, crop_box) in enumerate(panels):
@@ -2082,7 +2088,7 @@ def verify(root: Path = ROOT) -> None:
             "entrance": {"id": "entrance.background-opening", "anchor": [1145, 100]},
             "objective": {
                 "id": "objective.foreground-shutter",
-                "anchor": [535, 500],
+                "anchor": [590, 480],
                 "kind": "terminal-backstop",
                 "traversable": False,
             },
@@ -2090,20 +2096,20 @@ def verify(root: Path = ROOT) -> None:
                 {
                     "id": "route-zone.background-approach",
                     "depthOrder": 100,
-                    "bounds": [960, 80, 1165, 205],
-                    "visiblePolyline": [[1145, 100], [1120, 125], [1090, 150], [1055, 170], [1020, 183], [985, 190], [970, 190]],
+                    "bounds": [1045, 80, 1165, 180],
+                    "visiblePolyline": [[1145, 100], [1120, 125], [1090, 150], [1055, 170]],
                 },
                 {
                     "id": "route-zone.upper-causeway",
                     "depthOrder": 200,
-                    "bounds": [790, 175, 925, 350],
-                    "visiblePolyline": [[915, 185], [885, 195], [855, 210], [830, 230], [810, 255], [800, 285], [805, 315], [815, 340]],
+                    "bounds": [790, 175, 925, 295],
+                    "visiblePolyline": [[915, 185], [885, 195], [855, 210], [830, 230], [810, 255], [800, 285]],
                 },
                 {
                     "id": "route-zone.lower-causeway",
                     "depthOrder": 300,
-                    "bounds": [525, 350, 810, 515],
-                    "visiblePolyline": [[800, 360], [760, 390], [720, 415], [680, 440], [640, 465], [605, 485], [570, 500], [535, 500]],
+                    "bounds": [580, 350, 830, 495],
+                    "visiblePolyline": [[820, 358], [800, 360], [760, 390], [720, 415], [680, 440], [640, 465], [605, 485], [590, 480]],
                 },
             ],
             "portals": [
@@ -2111,9 +2117,11 @@ def verify(root: Path = ROOT) -> None:
                     "id": "portal.upper-gate",
                     "incomingZoneId": "route-zone.background-approach",
                     "outgoingZoneId": "route-zone.upper-causeway",
-                    "incomingAnchor": [970, 190],
+                    "incomingAnchor": [1055, 170],
                     "outgoingAnchor": [915, 185],
-                    "bounds": [900, 160, 985, 215],
+                    "bounds": [900, 155, 1060, 215],
+                    "visibleMouthBounds": None,
+                    "segments": [{"kind": "architecture-hidden", "from": [1055, 170], "to": [915, 185]}],
                     "visibility": "architecture-hidden",
                     "occlusionMode": "architecture-depth-transition",
                     "traversalOwnerIssue": 273,
@@ -2122,16 +2130,21 @@ def verify(root: Path = ROOT) -> None:
                     "id": "portal.lower-gate",
                     "incomingZoneId": "route-zone.upper-causeway",
                     "outgoingZoneId": "route-zone.lower-causeway",
-                    "incomingAnchor": [815, 340],
-                    "outgoingAnchor": [800, 360],
-                    "bounds": [785, 325, 835, 370],
-                    "visibility": "visible-floor-gate-mouth",
-                    "occlusionMode": "visible-depth-transition",
+                    "incomingAnchor": [800, 285],
+                    "outgoingAnchor": [820, 358],
+                    "bounds": [790, 275, 855, 340],
+                    "visibleMouthBounds": [815, 310, 870, 365],
+                    "segments": [
+                        {"kind": "architecture-hidden", "from": [800, 285], "to": [845, 328]},
+                        {"kind": "visible-floor-gate-mouth", "from": [845, 328], "to": [820, 358]},
+                    ],
+                    "visibility": "compound-hidden-visible-mouth",
+                    "occlusionMode": "compound-depth-transition",
                     "traversalOwnerIssue": 273,
                 },
             ],
             "chokepointPortalIds": ["portal.upper-gate", "portal.lower-gate"],
-            "validation": "pixel-surveyed-visible-segments-and-registered-gate-mouths",
+            "validation": "pixel-surveyed-visible-segments-and-compound-registered-gate-transitions",
         },
         "entityAnchors": {"ironWardenTruthScreen": {"groundPosition": [674, 434], "depthSortY": 434}, "mineRaiderTruthScreen": {"groundPosition": [802, 398], "depthSortY": 398}},
         "entityStates": {"iron-warden-idle": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "iron-warden-shield-slam": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "mine-raider-idle": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}, "mine-raider-attack": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}},
@@ -2294,9 +2307,15 @@ def verify(root: Path = ROOT) -> None:
             ids.add(record["id"])
             if record["category"] not in {"evidence", "occlusion-mask"}:
                 assets[record["id"]] = image.convert("RGBA")
-    actual_exports = {path.relative_to(root).as_posix() for path in (package / "exports").rglob("*.png")}
+    actual_exports = {
+        path.relative_to(root).as_posix() for path in (package / "exports").rglob("*") if path.is_file()
+    }
     declared_exports = {record["path"] for record in manifest["files"]}
-    actual_evidence = {path.relative_to(root).as_posix() for path in (root / EVIDENCE.relative_to(ROOT)).glob("*.png")}
+    actual_evidence = {
+        path.relative_to(root).as_posix()
+        for path in (root / EVIDENCE.relative_to(ROOT)).rglob("*")
+        if path.is_file()
+    }
     declared_evidence = {record["path"] for record in manifest["evidence"]}
     if actual_exports != declared_exports or actual_evidence != declared_evidence:
         raise ValueError("Export or evidence directory contains stale/unmanifested files")
@@ -2369,6 +2388,8 @@ def verify(root: Path = ROOT) -> None:
                 "incomingAnchor",
                 "outgoingAnchor",
                 "bounds",
+                "visibleMouthBounds",
+                "segments",
                 "visibility",
                 "occlusionMode",
                 "traversalOwnerIssue",
@@ -2386,10 +2407,36 @@ def verify(root: Path = ROOT) -> None:
         if tuple(zone_by_id[expected_outgoing]["visiblePolyline"][0]) != outgoing_anchor:
             raise ValueError("Portal outgoing anchor must begin its outgoing visible zone")
         x0, y0, x1, y1 = validate_rectangle(portal["bounds"], f"scene.route.portals[{index}].bounds")
-        if not all(x0 <= x <= x1 and y0 <= y <= y1 for x, y in (incoming_anchor, outgoing_anchor)):
-            raise ValueError("Portal transition anchors must lie inside the declared portal mouth")
-        expected_visibility = ["architecture-hidden", "visible-floor-gate-mouth"][index]
-        expected_occlusion_mode = ["architecture-depth-transition", "visible-depth-transition"][index]
+        visible_bounds_value = portal["visibleMouthBounds"]
+        visible_bounds = (
+            None
+            if visible_bounds_value is None
+            else validate_rectangle(visible_bounds_value, f"scene.route.portals[{index}].visibleMouthBounds")
+        )
+        segments = portal["segments"]
+        if not isinstance(segments, list) or not segments:
+            raise ValueError("Portal transition must contain at least one registered segment")
+        expected_segment_kinds = [["architecture-hidden"], ["architecture-hidden", "visible-floor-gate-mouth"]][index]
+        if [segment.get("kind") if isinstance(segment, dict) else None for segment in segments] != expected_segment_kinds:
+            raise ValueError("Portal segment kinds/order drifted")
+        previous_end = incoming_anchor
+        for segment_index, raw_segment in enumerate(segments):
+            segment = _assert_strict_v2(raw_segment, {"kind", "from", "to"}, f"scene.route.portals[{index}].segments[{segment_index}]")
+            segment_start = validate_point(segment["from"], f"scene.route.portals[{index}].segments[{segment_index}].from")
+            segment_end = validate_point(segment["to"], f"scene.route.portals[{index}].segments[{segment_index}].to")
+            if segment_start != previous_end:
+                raise ValueError("Portal segments must form one continuous ordered transition")
+            containing_bounds = (x0, y0, x1, y1) if segment["kind"] == "architecture-hidden" else visible_bounds
+            if containing_bounds is None or not all(
+                containing_bounds[0] <= x <= containing_bounds[2] and containing_bounds[1] <= y <= containing_bounds[3]
+                for x, y in (segment_start, segment_end)
+            ):
+                raise ValueError("Portal segment points must lie inside their declared hidden/visible bounds")
+            previous_end = segment_end
+        if previous_end != outgoing_anchor:
+            raise ValueError("Final portal segment must terminate at outgoing zone anchor")
+        expected_visibility = ["architecture-hidden", "compound-hidden-visible-mouth"][index]
+        expected_occlusion_mode = ["architecture-depth-transition", "compound-depth-transition"][index]
         if (
             portal["visibility"] != expected_visibility
             or portal["occlusionMode"] != expected_occlusion_mode
@@ -2558,10 +2605,16 @@ def verify(root: Path = ROOT) -> None:
         root / expected_proofs["foreground"],
         "Foreground-isolation proof",
     )
+    expected_route_board = _route_board_v3(assets["shuttergate-clean-plate-1280x720"], scene["route"])
     require_same_pixels(
-        _route_board_v3(assets["shuttergate-clean-plate-1280x720"], scene["route"]),
+        expected_route_board,
         root / expected_proofs["route"],
         "Piecewise-route proof",
+    )
+    require_same_pixels(
+        _route_registration_closeups_v3(expected_route_board),
+        root / "docs/visual-evidence/production-scene/route-registration-closeups.png",
+        "Route-registration closeup proof",
     )
     entity_images = {asset: assets[asset] for asset in scene["entityStates"]}
     require_same_pixels(_alignment_board_v2(entity_images), root / expected_proofs["alignment"], "Entity-alignment proof")
@@ -2754,7 +2807,7 @@ def verify(root: Path = ROOT) -> None:
         "assets/game-art/visual-direction/sources/mine-raider-master.png": "4c3c0a9c63a510f5bb76e6136423e87da0e6f74108a35514c08d35493229cb32",
         "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png": "49a659a61548ac12bc546d5af5c74e990eb8a3d6bc55ac46dee153d458a991e5",
         "assets/concept-art/dwarven-depths-gameplay-mockup.png": "7b35bf139017bf833c8d0c9288fa05f702b5e6c971f48d66dd40931d1c31e9c1",
-        "assets/game-art/production-scene/generation-log.md": "6e7b10640a3994e86ba1d516639921af58e07ecfb0a4505852faf098e9a70ef1",
+        "assets/game-art/production-scene/generation-log.md": "0ca74c1c54aee84775cb292844fe98d69c5a58c245cb85e3ae61e246a381fa62",
         "assets/game-art/production-scene/requirements.lock": "18101d853dbd634248566915697e60f350fbf8afc9abb57998c9e1b1cf61ecf4",
     }
     if {record["path"]: record["role"] for record in provenance["inputs"]} != expected_roles:
