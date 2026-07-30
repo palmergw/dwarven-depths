@@ -8,9 +8,9 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "67bad5a5dbf6f8384e0e70752f72b7a767ace19c95a584050f8407d940ab7b7f",
+    "provenance.json": "39bb4ac14a0cf48a07fd3a8ccc139aebf0c64c65d93efc94c563e7a00de5527b",
     "reconstruction.json": "cbcbf220541c2246f0dbf751ebfc51a14871d744c2f88250a2d2b09cd959f140",
-    "scene-contract.json": "de7e183f8a55f2dbc19e2cbe48601926b7c9a9c0da336204161bfe5da8164a7e"
+    "scene-contract.json": "0966a7dd50f94a44e31e4da7519fbd15b7d8974d74f19c2fc4219a37789d67b1"
   },
   "files": [
     {
@@ -433,7 +433,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "1c80057a323392f8db5273d1e23c904b64a74af94f1b9818f7e310fd80dd782c"
+      "sha256": "82ae40c2d18944ec5b5f43a2d0e0912829c5878af27ef6d3440570520a44e156"
     },
     {
       "id": "reconstruction-entities-removed",
@@ -463,7 +463,17 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "28b373f9c512e7eecb9f11e3586628179f4749bda7cd77785598ea1f310e7341"
+      "sha256": "f223b48386e965862e2585931f32e6f7654b8b5ee2843cb6952c4398bcfdea35"
+    },
+    {
+      "id": "route-registration-closeups",
+      "path": "docs/visual-evidence/production-scene/route-registration-closeups.png",
+      "category": "evidence",
+      "dimensions": [1920, 680],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "4827e4eb9ff6a438d180c119a74a99b36c41e3c355060e11fe3505ffe5ad8ee0"
     },
     {
       "id": "selection-and-combat-effect-isolation",

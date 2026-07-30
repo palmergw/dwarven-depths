@@ -20,7 +20,7 @@ Visual QA found zero apparent defenders, enemies, creature silhouettes, combat e
 
 `build_scene.py` deterministically derives the two alpha character states needed by #287 from the approved #282 character masters, authors separate effect/HUD/lighting/mask layers, composes the proof, publishes isolation boards and an in-scene scale study, and records every output digest. These poses are a bounded truth-screen set rather than a production animation set; #273 owns complete movement, combat, hit, and death animation coverage. No third-party asset, font, texture, stock image, or model is used.
 
-The clean plate is interpreted as a straight piecewise elevated route: a visible background entrance, three visible floor/depth zones, two hidden architectural gate-portal transitions, and a terminal foreground-shutter backstop. Rail crossing, winding, branching, and one globally exposed clearance mask are not requirements. The review-only route board distinguishes visible floor segments from hidden portal spans; full traversal masks and movement remain owned by issue #273.
+The clean plate route was surveyed directly against the painted pixels after product-owner review found the first segment proposal visibly misregistered. It now uses three visible floor/depth zones, one cyan architecture-hidden transition at the upper gate, one green visibly floored transition at the lower gate mouth, and a terminal foreground-shutter threshold. Rail crossing, winding, branching, and one globally exposed clearance mask are not requirements. Full traversal masks and movement remain owned by issue #273.
 
 ## Reproducible export toolchain
 
