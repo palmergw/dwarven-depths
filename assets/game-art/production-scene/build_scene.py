@@ -1630,12 +1630,39 @@ def _build_hud_v2() -> dict[str, Image.Image]:
     return parts
 
 
-def _walkable_mask_v2(route: list[list[int]]) -> Image.Image:
+def _walkable_mask_v2() -> Image.Image:
+    """Return the hand-surveyed painted-floor area, independent of route metadata."""
     mask = Image.new("L", FRAME, 0)
     draw = ImageDraw.Draw(mask)
-    draw.line([tuple(point) for point in route], fill=255, width=54, joint="curve")
-    for x, y in route:
-        draw.ellipse((x - 27, y - 27, x + 27, y + 27), fill=255)
+    # Authored against the clean plate's floor edges, not expanded from the route
+    # polyline.  The route is validated against this independently stored survey.
+    draw.polygon(
+        [
+            (1128, 82),
+            (1160, 130),
+            (1060, 204),
+            (968, 264),
+            (858, 332),
+            (746, 397),
+            (628, 462),
+            (510, 530),
+            (382, 578),
+            (270, 624),
+            (188, 650),
+            (148, 620),
+            (274, 540),
+            (432, 474),
+            (548, 404),
+            (668, 338),
+            (790, 270),
+            (912, 198),
+            (1022, 126),
+        ],
+        fill=255,
+    )
+    # Screen-space HUD is not walkable world, even where the surveyed floor
+    # continues behind its transparent/chamfered edge.
+    draw.rectangle((272, 604, 1261, 703), fill=0)
     return mask
 
 
@@ -1699,27 +1726,66 @@ def _recipe_without_v2(recipe: dict[str, object], excluded: set[str]) -> dict[st
 
 
 def _labelled_grid_v2(panels: list[tuple[str, Image.Image]]) -> Image.Image:
-    board = Image.new("RGBA", (1280, 720), (7, 13, 22, 255))
-    slots = ((20, 58), (650, 58), (20, 388), (650, 388))
+    """Lay out four review panels with labels in gutters, never over artwork."""
+    board = Image.new("RGBA", (1280, 820), (7, 13, 22, 255))
+    slots = ((20, 50), (650, 50), (20, 430), (650, 430))
     for (label, image), (x, y) in zip(panels, slots):
         fitted = image.resize((610, 300), Image.Resampling.LANCZOS)
-        board.alpha_composite(fitted, (x, y))
-        pixel_text(board, (x + 12, y + 10), label, 2)
+        pixel_text(board, (x, y), label, 2)
+        board.alpha_composite(fitted, (x, y + 30))
     return board
 
 
 def _route_board_v2(clean: Image.Image, route: list[list[int]], walkable: Image.Image) -> Image.Image:
-    board = clean.copy()
+    board = Image.new("RGBA", (1280, 820), (7, 13, 22, 255))
+    pixel_text(board, (24, 18), "REVIEW ONLY PAINTED FLOOR SURVEY AND ROUTE", 2)
+    pixel_text(board, (24, 44), "MASK AUTHORED FROM CLEAN PLATE NOT FROM ROUTE", 2)
+    scene = clean.copy()
     tint = Image.new("RGBA", FRAME, (50, 180, 105, 0))
     tint.putalpha(walkable.point(lambda value: value // 3))
-    board.alpha_composite(tint)
-    draw = ImageDraw.Draw(board)
+    scene.alpha_composite(tint)
+    draw = ImageDraw.Draw(scene)
     draw.line([tuple(point) for point in route], fill=(255, 60, 180, 255), width=4)
     for index, (x, y) in enumerate(route):
         draw.ellipse((x - 8, y - 8, x + 8, y + 8), fill=(255, 220, 80, 255))
-        pixel_text(board, (x + 10, y - 10), str(index + 1), 2)
-    pixel_text(board, (24, 82), "REVIEW ONLY ROUTE AND WALKABLE MASK", 2)
-    pixel_text(board, (24, 108), "ENTRANCE TO GATE ALL VISIBLE OUTSIDE HUD", 2)
+        pixel_text(scene, (x + 10, y - 10), str(index + 1), 2)
+    landmarks = ((route[0], "ENTRANCE"), (route[3], "CHOKE A"), (route[4], "RAIL"), (route[5], "CHOKE B"), (route[-1], "GATE"))
+    for (x, y), label in landmarks:
+        pixel_text(scene, (max(8, min(x + 12, 1150)), max(8, y - 28)), label, 1)
+    board.alpha_composite(scene, (0, 100))
+    return board
+
+
+def _lighting_board_v2(
+    clean: Image.Image,
+    sprite: Image.Image,
+    pivot: tuple[int, int],
+    lighting: Image.Image,
+) -> Image.Image:
+    panels: list[tuple[str, Image.Image]] = []
+    for anchor_name, ground in (("ENTRANCE", (1028, 190)), ("CENTRAL ROUTE", (674, 434))):
+        unlit = clean.copy()
+        unlit.alpha_composite(sprite, (ground[0] - pivot[0], ground[1] - pivot[1]))
+        lit = unlit.copy()
+        lit.alpha_composite(lighting)
+        crop = (ground[0] - 180, ground[1] - 150, ground[0] + 180, ground[1] + 90)
+        panels.extend(
+            [
+                (f"{anchor_name} UNLIT", unlit.crop(crop)),
+                (f"{anchor_name} LIT NORMAL SRGB", lit.crop(crop)),
+            ]
+        )
+    return _labelled_grid_v2(panels)
+
+
+def _impact_board_v2(reconstruction: Image.Image, impact: Image.Image) -> Image.Image:
+    board = Image.new("RGBA", (2560, 820), (7, 13, 22, 255))
+    pixel_text(board, (24, 18), "NEUTRAL COUNT PROOF ONE WARDEN ONE HOSTILE", 2)
+    pixel_text(board, (1304, 18), "CONTACT FRAME SEPARATE IMPACT BOTH SILHOUETTES VISIBLE", 2)
+    board.alpha_composite(reconstruction, (0, 100))
+    contact = reconstruction.copy()
+    contact.alpha_composite(impact, (720, 360))
+    board.alpha_composite(contact, (1280, 100))
     return board
 
 
@@ -1763,12 +1829,14 @@ def _scale_board_v2(clean: Image.Image, sprites: dict[str, Image.Image]) -> Imag
 
 
 def _composition_decision_v2(approved: Image.Image, current: Image.Image) -> Image.Image:
-    board = Image.new("RGBA", (2560, 720), (0, 0, 0, 255))
-    board.alpha_composite(approved, (0, 0))
-    board.alpha_composite(current, (1280, 0))
-    pixel_text(board, (24, 24), "APPROVED 284 DIRECTION POPULATED CENTRAL DEFENSE", 2)
-    pixel_text(board, (1304, 24), "286 PROPOSED FLOOR WIDER DIAGONAL ROUTE", 2)
-    pixel_text(board, (1304, 50), "DECISION REQUEST ACCEPT CAMERA ROUTE HUD REGIONS", 2)
+    board = Image.new("RGBA", (2560, 900), (7, 13, 22, 255))
+    pixel_text(board, (24, 18), "LEFT APPROVED 284 ART DIRECTION", 2)
+    pixel_text(board, (24, 44), "DENSER CENTRAL ENCOUNTER STAGING", 2)
+    pixel_text(board, (1304, 18), "RIGHT 286 PROPOSED PRODUCTION FLOOR", 2)
+    pixel_text(board, (1304, 44), "WIDER DIAGONAL ROUTE FIXED HUD REGIONS 104 92PX", 2)
+    pixel_text(board, (500, 76), "DECISION REQUEST ACCEPT THIS CAMERA ROUTE ENTRANCE GATE AND HUD FLOOR FOR 287", 2)
+    board.alpha_composite(approved, (0, 180))
+    board.alpha_composite(current, (1280, 180))
     return board
 
 
@@ -1810,7 +1878,7 @@ def build(output_root: Path = ROOT) -> None:
     lighting = lighting_overlay()
     png(lighting, exports / "lighting" / "warm-light-overlay.png")
     mask, occluder = _occlusion_v2(clean)
-    walkable = _walkable_mask_v2(scene["route"]["polyline"])
+    walkable = _walkable_mask_v2()
     png(mask, exports / "occlusion" / "architecture-mask.png")
     png(occluder, exports / "occlusion" / "foreground-occluder.png")
     png(walkable, exports / "occlusion" / "route-walkable-mask.png")
@@ -1832,7 +1900,18 @@ def build(output_root: Path = ROOT) -> None:
 
     warden_only = _compose_v2(_recipe_without_v2(recipe, {"mine-raider-attack", "hostile-faction-ring"}), assets)
     hostile_only = _compose_v2(_recipe_without_v2(recipe, {"iron-warden-shield-slam", "warden-selection-ring"}), assets)
-    png(_labelled_grid_v2([("BOTH", reconstruction), ("WARDEN ONLY", warden_only), ("HOSTILE ONLY", hostile_only), ("NEITHER", no_entities)]), evidence / "entity-removal-grid.png")
+    clean_digest = hashlib.sha256(clean.convert("RGB").tobytes()).hexdigest()[:12].upper()
+    png(
+        _labelled_grid_v2(
+            [
+                (f"BOTH WORLD {clean_digest}", reconstruction),
+                (f"WARDEN ONLY WORLD {clean_digest}", warden_only),
+                (f"HOSTILE ONLY WORLD {clean_digest}", hostile_only),
+                (f"NEITHER WORLD {clean_digest}", no_entities),
+            ]
+        ),
+        evidence / "entity-removal-grid.png",
+    )
 
     hud_board = Image.new("RGBA", FRAME, (7, 13, 22, 255))
     for layer in _ordered_layers_v2(recipe):
@@ -1859,13 +1938,16 @@ def build(output_root: Path = ROOT) -> None:
     png(occlusion_samples, evidence / "occlusion-depth-proof.png")
     png(lighting, evidence / "lighting-alpha-isolation.png")
     unlit = _compose_v2(_recipe_without_v2(recipe, {"warm-light-overlay"}), assets)
-    png(_labelled_grid_v2([("UNLIT ENTITIES", unlit), ("NORMAL SRGB LIGHTING", reconstruction), ("LIT ENTRANCE", reconstruction), ("LIT CENTRAL ROUTE", reconstruction)]), evidence / "lighting-entity-proof.png")
+    png(
+        _lighting_board_v2(clean, sprites["iron-warden-idle"], (90, 112), lighting),
+        evidence / "lighting-entity-proof.png",
+    )
     png(_route_board_v2(clean, scene["route"]["polyline"], walkable), evidence / "route-anchor-validation.png")
     png(_alignment_board_v2(sprites), evidence / "entity-state-alignment.png")
-    impact_scene = reconstruction.copy()
-    impact_scene.alpha_composite(effects["shield-slam-impact"], (900, 330))
-    pixel_text(impact_scene, (900, 300), "SEPARATE IMPACT HOSTILE REMAINS READABLE", 2)
-    png(impact_scene, evidence / "shield-slam-effect-proof.png")
+    png(
+        _impact_board_v2(reconstruction, effects["shield-slam-impact"]),
+        evidence / "shield-slam-effect-proof.png",
+    )
     png(_scale_board_v2(clean, sprites), evidence / "character-scale-study.png")
     png(isolation_board([sprites["iron-warden-idle"], sprites["iron-warden-shield-slam"]], 1), evidence / "iron-warden-alpha-states-native.png")
     png(isolation_board([sprites["iron-warden-idle"], sprites["iron-warden-shield-slam"]], 4), evidence / "iron-warden-alpha-states-4x.png")
@@ -2126,9 +2208,9 @@ def verify(root: Path = ROOT) -> None:
     if not isinstance(route_polyline, list):
         raise ValueError("Route polyline must be an array")
     with Image.open(walkable_path).convert("L") as walkable, Image.open(foreground_path).convert("L") as foreground:
-        expected_walkable = _walkable_mask_v2(route_polyline)
+        expected_walkable = _walkable_mask_v2()
         if walkable.size != expected_walkable.size or walkable.tobytes() != expected_walkable.tobytes():
-            raise ValueError("Walkable mask does not match canonical route geometry")
+            raise ValueError("Walkable mask does not match the authored clean-plate floor survey")
         foreground_alpha = assets["foreground-occluder"].getchannel("A")
         if foreground.size != foreground_alpha.size or foreground.tobytes() != foreground_alpha.tobytes():
             raise ValueError("Architecture mask does not match foreground occluder alpha")
@@ -2167,6 +2249,17 @@ def verify(root: Path = ROOT) -> None:
                 raise ValueError("Route point is not walkable and unobscured")
             if any(x0 <= x < x1 and y0 <= y < y1 for x0, y0, x1, y1 in hud_rects):
                 raise ValueError("Route point is hidden beneath HUD")
+        for start, end in zip(route_polyline, route_polyline[1:]):
+            x0, y0 = validate_point(start, "scene.route segment start")
+            x1, y1 = validate_point(end, "scene.route segment end")
+            steps = max(abs(x1 - x0), abs(y1 - y0))
+            for step in range(steps + 1):
+                x = round(x0 + (x1 - x0) * step / steps)
+                y = round(y0 + (y1 - y0) * step / steps)
+                if walkable.getpixel((x, y)) != 255:
+                    raise ValueError(
+                        "Route segment leaves the independently authored painted-floor survey"
+                    )
 
     states = _assert_strict_v2(scene["entityStates"], {"iron-warden-idle", "iron-warden-shield-slam", "mine-raider-idle", "mine-raider-attack"}, "scene.entityStates")
     canonical_entity_alpha = {
@@ -2273,7 +2366,19 @@ def verify(root: Path = ROOT) -> None:
     warden_only = _compose_v2(_recipe_without_v2(recipe, {"mine-raider-attack", "hostile-faction-ring"}), assets)
     hostile_only = _compose_v2(_recipe_without_v2(recipe, {"iron-warden-shield-slam", "warden-selection-ring"}), assets)
     require_same_pixels(no_entities, root / expected_proofs["entitiesRemoved"], "Entity-removal reconstruction")
-    require_same_pixels(_labelled_grid_v2([("BOTH", _compose_v2(recipe, assets)), ("WARDEN ONLY", warden_only), ("HOSTILE ONLY", hostile_only), ("NEITHER", no_entities)]), root / expected_proofs["individualRemoval"], "Individual-removal grid")
+    clean_digest = hashlib.sha256(assets["shuttergate-clean-plate-1280x720"].convert("RGB").tobytes()).hexdigest()[:12].upper()
+    require_same_pixels(
+        _labelled_grid_v2(
+            [
+                (f"BOTH WORLD {clean_digest}", _compose_v2(recipe, assets)),
+                (f"WARDEN ONLY WORLD {clean_digest}", warden_only),
+                (f"HOSTILE ONLY WORLD {clean_digest}", hostile_only),
+                (f"NEITHER WORLD {clean_digest}", no_entities),
+            ]
+        ),
+        root / expected_proofs["individualRemoval"],
+        "Individual-removal grid",
+    )
     require_same_pixels(assets["shuttergate-clean-plate-1280x720"], root / expected_proofs["environmentOnly"], "Clean-plate proof")
     architecture_mask_image = Image.open(package / "exports" / "occlusion" / "architecture-mask.png").convert("L")
     walkable_image = Image.open(package / "exports" / "occlusion" / "route-walkable-mask.png").convert("L")
@@ -2298,10 +2403,34 @@ def verify(root: Path = ROOT) -> None:
     comparison.alpha_composite(reconstruction, (1280, 0))
     require_same_pixels(comparison, evidence_root / "approved-keyframe-vs-reconstruction.png", "Approved-keyframe comparison")
     require_same_pixels(_composition_decision_v2(approved, reconstruction), evidence_root / "composition-decision.png", "Composition-decision proof")
-    impact_scene = reconstruction.copy()
-    impact_scene.alpha_composite(assets["shield-slam-impact"], (900, 330))
-    pixel_text(impact_scene, (900, 300), "SEPARATE IMPACT HOSTILE REMAINS READABLE", 2)
-    require_same_pixels(impact_scene, root / expected_proofs["impact"], "Shield-Slam impact proof")
+    require_same_pixels(
+        _impact_board_v2(reconstruction, assets["shield-slam-impact"]),
+        root / expected_proofs["impact"],
+        "Shield-Slam impact proof",
+    )
+    impact_alpha = assets["shield-slam-impact"].getchannel("A")
+    impact_position = (720, 360)
+    for layer in entity_layers:
+        entity_alpha = assets[layer["asset"]].getchannel("A")
+        visible = 0
+        overlapped = 0
+        for y in range(entity_alpha.height):
+            for x in range(entity_alpha.width):
+                if entity_alpha.getpixel((x, y)) == 0:
+                    continue
+                visible += 1
+                impact_x = layer["position"][0] + x - impact_position[0]
+                impact_y = layer["position"][1] + y - impact_position[1]
+                if (
+                    0 <= impact_x < impact_alpha.width
+                    and 0 <= impact_y < impact_alpha.height
+                    and impact_alpha.getpixel((impact_x, impact_y)) != 0
+                ):
+                    overlapped += 1
+        if overlapped == 0 or overlapped * 4 >= visible:
+            raise ValueError(
+                f"Shield-Slam contact must touch but preserve the silhouette of {layer['asset']}"
+            )
 
     hud = scene["hudDynamicState"]
     _assert_strict_v2(hud, {"font", "textColor", "baselinePolicy", "fixture", "minimumVariants"}, "scene.hudDynamicState")
@@ -2344,8 +2473,12 @@ def verify(root: Path = ROOT) -> None:
     pixel_text(hud_mutation, (24, 78), "FIXTURE READY NEAREST RUNNING", 2)
     pixel_text(hud_mutation, (1304, 78), "ALTERNATE COOLDOWN STRONGEST PAUSED", 2)
     require_same_pixels(hud_mutation, root / expected_proofs["hudMutation"], "HUD-mutation proof")
-    unlit = _compose_v2(_recipe_without_v2(recipe, {"warm-light-overlay"}), assets)
-    lighting_proof = _labelled_grid_v2([("UNLIT ENTITIES", unlit), ("NORMAL SRGB LIGHTING", _compose_v2(recipe, assets)), ("LIT ENTRANCE", _compose_v2(recipe, assets)), ("LIT CENTRAL ROUTE", _compose_v2(recipe, assets))])
+    lighting_proof = _lighting_board_v2(
+        clean,
+        assets["iron-warden-idle"],
+        (90, 112),
+        assets["warm-light-overlay"],
+    )
     require_same_pixels(lighting_proof, root / expected_proofs["lightingEntities"], "Entity-lighting proof")
     occlusion_samples = [
         ("iron-warden-idle", (140, 200), (90, 112)),

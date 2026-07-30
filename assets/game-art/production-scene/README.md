@@ -21,8 +21,8 @@ The verifier strictly rejects extra contract properties, stale/unmanifested file
 - The neutral reconstruction contains one readable Warden and one readable raider; Shield Slam impact is proved separately.
 - HUD chrome is separate from fixture values, health fill, target selection, ability readiness/cooldown, and pause/resume state.
 - The bottom HUD begins at x=272, leaving the lower-left gate and route endpoint visible.
-- The route has a machine-checked walkable mask and diagnostic-only anchor overlay.
-- Occlusion is explicitly bounded to #287's two fixed truth-screen anchors. Full route traversal masks belong to #273.
+- The route is checked segment-by-segment against a separately hand-surveyed clean-plate floor mask; the diagnostic overlay labels entrance, chokepoints, rail crossing, and gate and is never player UI.
+- Occlusion is explicitly bounded to #287's two fixed truth-screen anchors at Warden `[674, 434]` and raider `[802, 398]`. It does not support or claim route traversal; #287's bounded clip must keep those anchors fixed. Full traversal masks and motion belong to #273.
 - Lighting uses straight-alpha normal compositing in sRGB, after entities/foreground and before combat effects/HUD.
 
 ## Approval boundary
@@ -44,6 +44,16 @@ The verifier strictly rejects extra contract properties, stale/unmanifested file
 ## Composition decision requested
 
 The clean plate retains the wider diagonal, architecture-forward composition shown in the current evidence rather than #284's denser populated central staging. It was previously praised but not approved. `composition-decision.png` explicitly compares the camera, route, entrance/gate, encounter density, HUD regions, and selected character scale. Approval of #286 explicitly accepts or rejects this composition as the floor for #287; it does not imply that sparse encounter density is final.
+
+## Exact decision surface
+
+| Review item | Requested now | Demonstrated fact | Known limitation / later owner |
+|---|---|---|---|
+| Composition | Accept the wider diagonal camera, entrance/gate, route, and HUD regions as #287's floor | Clean plate is complete and independently layered | Encounter density and production battlefield polish: #273 |
+| Entities | Accept 104 px Warden, 92 px raider, shared pivots, and two fixed anchors | Individual removal keeps the same clean-plate pixel digest | Full movement/combat/hit/death animation: #273 |
+| Occlusion | Accept only the two fixed #287 anchors | Two off-route samples demonstrate partial architecture masking | Route traversal is not claimed: #273 |
+| HUD | Accept regions and minimum state separation for #287 | Chrome, values, target, ability, and pause variants are separate | Final ornament/information hierarchy: #275 |
+| Responsive presentation | No visual decision requested | Crop policy is metadata only | Layout, accessibility modes, and viewport evidence: #276 |
 
 ## Files
 

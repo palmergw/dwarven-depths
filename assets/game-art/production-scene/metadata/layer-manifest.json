@@ -8,7 +8,7 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "75166e3843292e1aa2598ff6a083b3584e29b572b3000ba9c16945b34682c79e",
+    "provenance.json": "392ff9aae1f542a0e498576533f2ce8c5272324a154875a8215e83f9ad3573be",
     "reconstruction.json": "cbcbf220541c2246f0dbf751ebfc51a14871d744c2f88250a2d2b09cd959f140",
     "scene-contract.json": "39b98d429a57fc58292bb8e8cbfaba1c9a17cf270bb7dc7c4a336dc685f9caae"
   },
@@ -121,7 +121,7 @@
       "mode": "L",
       "alphaSemantics": "binary-review-contract-mask",
       "contributesTo": ["route-validation"],
-      "sha256": "e70e0d82848922c08d0ae9b06fe62df1ccfa9e74999ec794276acb3ea6094fea"
+      "sha256": "fbb5e0762b57b67c55d037f6e2b89e9a83b63ee59e4ff6fc7ed430707e64c7c1"
     },
     {
       "id": "foreground-occluder",
@@ -289,11 +289,11 @@
       "id": "character-scale-study",
       "path": "docs/visual-evidence/production-scene/character-scale-study.png",
       "category": "evidence",
-      "dimensions": [1280, 720],
+      "dimensions": [1280, 820],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "5222a227694d14a2e4c6fdb8c75b2a98e1d1f79fdb3b2d1b58b90b10cd170d25"
+      "sha256": "d14c94f4f22a31953517aedda27c45cc750b25d194081a271074726169a6c537"
     },
     {
       "id": "clean-plate",
@@ -309,21 +309,21 @@
       "id": "composition-decision",
       "path": "docs/visual-evidence/production-scene/composition-decision.png",
       "category": "evidence",
-      "dimensions": [2560, 720],
+      "dimensions": [2560, 900],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "02282c9e0f81d50c2558e4c49d7c50a982ee69e7efcd70c2ccc735b59d171534"
+      "sha256": "c1895c07ef5a9ff5c6a62f1d59dd86b6f36b7601ed3504517c0a184649370efd"
     },
     {
       "id": "entity-removal-grid",
       "path": "docs/visual-evidence/production-scene/entity-removal-grid.png",
       "category": "evidence",
-      "dimensions": [1280, 720],
+      "dimensions": [1280, 820],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "899d5918720c87894a1f97b8d18978625b2b11946fbeb48317b586ab6745c7d7"
+      "sha256": "1808980ce672e5fe8f220fcda22e2777db323cdd043c64a1025b25aac4c40ec7"
     },
     {
       "id": "entity-state-alignment",
@@ -409,11 +409,11 @@
       "id": "lighting-entity-proof",
       "path": "docs/visual-evidence/production-scene/lighting-entity-proof.png",
       "category": "evidence",
-      "dimensions": [1280, 720],
+      "dimensions": [1280, 820],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "48705361a7b6b7c31af3d5acfc111e8cc19f79333266235a10f99938b125eb91"
+      "sha256": "adde22a3ea677de9c5d1c4a396588addf79705e900b886c7856b4798044f3fb3"
     },
     {
       "id": "mine-raider-alpha-states-4x",
@@ -439,11 +439,11 @@
       "id": "occlusion-depth-proof",
       "path": "docs/visual-evidence/production-scene/occlusion-depth-proof.png",
       "category": "evidence",
-      "dimensions": [1280, 720],
+      "dimensions": [1280, 820],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "1024516d6916fb0b3191293b21994a0a679198062ced1dfbbe37f27309eee310"
+      "sha256": "c2713d6855d15e634652233a783a5670d815fb95b3384f43f813773ad6175629"
     },
     {
       "id": "reconstruction-entities-removed",
@@ -469,11 +469,11 @@
       "id": "route-anchor-validation",
       "path": "docs/visual-evidence/production-scene/route-anchor-validation.png",
       "category": "evidence",
-      "dimensions": [1280, 720],
+      "dimensions": [1280, 820],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "bd9cd3cfa72903bb1a76b98516ca64edb9784f9cab07d0545e0490d1a05b5515"
+      "sha256": "351e08ff0226a2f92fa82e8c430db0a331920f7385af75b803d96886c3601078"
     },
     {
       "id": "selection-and-combat-effect-isolation",
@@ -489,11 +489,11 @@
       "id": "shield-slam-effect-proof",
       "path": "docs/visual-evidence/production-scene/shield-slam-effect-proof.png",
       "category": "evidence",
-      "dimensions": [1280, 720],
+      "dimensions": [2560, 820],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "c74d8579a2a0eda812a720da90ecae7a00127b1386659b539f3fcf857f7627d1"
+      "sha256": "7d12e95f77fd85c5a73d9aa903192e3d1c2b7b60d8b1861c1223a93de1b8806d"
     }
   ]
 }
