@@ -40,7 +40,7 @@
     },
     {
       "path": "assets/game-art/production-scene/generation-log.md",
-      "sha256": "0ca74c1c54aee84775cb292844fe98d69c5a58c245cb85e3ae61e246a381fa62",
+      "sha256": "0312f702c92d43f3d9377e08c6c832c7a5258759458bb02a61a2d863ae80a696",
       "role": "prompt-settings-generation-record"
     },
     {
@@ -50,7 +50,7 @@
     },
     {
       "path": "assets/game-art/production-scene/build_scene.py",
-      "sha256": "b54a9ac46df036022a94e43e76e9006c56ec1835f813f9d288d1e527f8215d89",
+      "sha256": "4256cde2e53e480b0c3d49bd07fae01541da8182ee3f67adb83d7d07bcad7fce",
       "role": "deterministic-export-and-verification-implementation"
     }
   ],
@@ -72,7 +72,7 @@
       "assets/game-art/visual-direction/sources/iron-warden-master.png",
       "assets/game-art/visual-direction/sources/mine-raider-master.png"
     ],
-    "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, scaling, shared pivot-canvas padding, and PNG export in build_scene.py",
+    "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, direct-from-master LANCZOS downsampling, bounded unsharp filtering, shared pivot-canvas padding, and PNG export in build_scene.py",
     "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract",
     "externalAssets": []
   },

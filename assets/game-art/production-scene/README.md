@@ -17,7 +17,7 @@ The verifier strictly rejects extra contract properties, every recursively disco
 ## Runtime-ready boundaries for #287
 
 - The clean plate is a complete opaque 1280×720 character/UI-free environment.
-- Character states use straight alpha on shared padded canvases with stable ground pivots, facing, nominal height, and deterministic depth anchors.
+- Character states are downsampled once from the approved high-resolution masters to the selected miniature 56 px Warden / 44 px raider scale, with bounded sharpening and no permanent sticker outline. They use straight alpha on shared padded canvases with stable ground pivots, facing, nominal height, and deterministic depth anchors.
 - The neutral reconstruction contains one readable Warden and one readable raider; Shield Slam impact is proved separately.
 - HUD chrome is separate from fixture values, health fill, target selection, ability readiness/cooldown, and pause/resume state.
 - The bottom HUD begins at x=272, leaving the foreground shutter approach and objective anchor visible.
@@ -33,7 +33,7 @@ The verifier strictly rejects extra contract properties, every recursively disco
 | Clean plate | Exact pixels and source identity | Minor export optimization with pixel identity | Replacement pixels or composition | #286 / product owner |
 | Camera/framing | Elevated orthographic 2.5D, 1280×720 review frame | None | Projection or framing change | #286 / product owner |
 | Route, entrance, gate | Pixel-surveyed piecewise topology, background entrance, hidden upper transition, compound lower transition, terminal shutter objective | Local readability grading | Topology, entrance, portal, objective, or depth-zone change | #286 / product owner |
-| Entity scale/anchors | 104 px Warden, 92 px raider, pivots, fixed #287 anchors | Bounded sprite cleanup preserving silhouette/pivot | Proportion, scale family, or anchor change | #286 / product owner |
+| Entity scale/anchors | 56 px Warden, 44 px raider, pivots, fixed #287 anchors | Bounded sprite cleanup preserving silhouette/pivot | Proportion, scale family, or anchor change | #286 / product owner |
 | HUD regions | Exact top and right-weighted bottom regions | Ornament and information hierarchy | Region placement or gate-obscuring layout | #275 / product owner |
 | HUD state | Minimum #287 value/control variants | Typography/icon polish | Authoritative meaning or control relocation | #275 |
 | Lighting/effects | Blend/order semantics and broad warm/cool language | Texture, timing, intensity/readability | Medium/palette language change | #273 |
@@ -51,7 +51,7 @@ The clean plate retains the wider diagonal, architecture-forward composition sho
 | Review item | Requested now | Demonstrated fact | Known limitation / later owner |
 |---|---|---|---|
 | Composition | Accept the wider diagonal camera, pixel-registered painted-floor route, entrance, shutter backstop, and HUD regions as #287's floor | Clean plate is complete and independently layered | Encounter density and production battlefield polish: #273 |
-| Entities | Accept 104 px Warden, 92 px raider, shared pivots, and two fixed anchors | Individual removal keeps the same clean-plate pixel digest | Full movement/combat/hit/death animation: #273 |
+| Entities | Accept 56 px Warden, 44 px raider, shared pivots, and two fixed anchors | Direct-from-master exports and individual removal keep the same clean-plate pixel digest; a separate board stress-tests density without claiming simulation truth | Full movement/combat/hit/death animation and forgiving runtime hit/focus targets: #273 / #275 |
 | Occlusion | Accept the two fixed #287 anchors and registered gate/depth transitions | Two off-route samples demonstrate partial architecture masking; route evidence distinguishes hidden spans from the lower visible mouth | Production portal masks, traversal, and movement are not claimed: #273 |
 | HUD | Accept regions and minimum state separation for #287 | Chrome, values, target, ability, and pause variants are separate | Final ornament/information hierarchy: #275 |
 | Responsive presentation | No visual decision requested | Crop policy is metadata only | Layout, accessibility modes, and viewport evidence: #276 |

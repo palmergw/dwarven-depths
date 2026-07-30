@@ -128,28 +128,28 @@
   },
   "entityStates": {
     "iron-warden-idle": {
-      "canvas": [180, 120],
-      "pivot": [90, 112],
+      "canvas": [112, 72],
+      "pivot": [56, 66],
       "facing": "upper-right",
-      "nominalHeight": 104
+      "nominalHeight": 56
     },
     "iron-warden-shield-slam": {
-      "canvas": [180, 120],
-      "pivot": [90, 112],
+      "canvas": [112, 72],
+      "pivot": [56, 66],
       "facing": "upper-right",
-      "nominalHeight": 104
+      "nominalHeight": 56
     },
     "mine-raider-idle": {
-      "canvas": [128, 108],
-      "pivot": [64, 100],
+      "canvas": [80, 60],
+      "pivot": [40, 54],
       "facing": "lower-left",
-      "nominalHeight": 92
+      "nominalHeight": 44
     },
     "mine-raider-attack": {
-      "canvas": [128, 108],
-      "pivot": [64, 100],
+      "canvas": [80, 60],
+      "pivot": [40, 54],
       "facing": "lower-left",
-      "nominalHeight": 92
+      "nominalHeight": 44
     }
   },
   "occlusion": {

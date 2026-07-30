@@ -24,14 +24,14 @@
     },
     {
       "asset": "mine-raider-attack",
-      "position": [738, 298],
+      "position": [762, 344],
       "region": "world-entities",
       "zOrder": 30,
       "depthSortY": 398
     },
     {
       "asset": "iron-warden-shield-slam",
-      "position": [584, 322],
+      "position": [618, 368],
       "region": "world-entities",
       "zOrder": 30,
       "depthSortY": 434

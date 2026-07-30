@@ -215,6 +215,15 @@ def fit_height(image: Image.Image, height: int) -> Image.Image:
     return image.resize((width, height), Image.Resampling.LANCZOS)
 
 
+def fit_miniature_height(image: Image.Image, height: int) -> Image.Image:
+    """Downsample once from an approved master and restore bounded edge clarity."""
+    resized = fit_height(image, height)
+    alpha = resized.getchannel("A")
+    sharpened = resized.filter(ImageFilter.UnsharpMask(radius=0.6, percent=75, threshold=3))
+    sharpened.putalpha(alpha)
+    return sharpened
+
+
 def text_width(text: str, scale: int) -> int:
     return sum((len(FONT[character][0]) + 1) * scale for character in text) - scale
 
@@ -1829,7 +1838,7 @@ def _impact_board_v2(reconstruction: Image.Image, impact: Image.Image) -> Image.
     pixel_text(board, (1304, 18), "CONTACT FRAME SEPARATE IMPACT BOTH SILHOUETTES VISIBLE", 2)
     board.alpha_composite(reconstruction, (0, 100))
     contact = reconstruction.copy()
-    contact.alpha_composite(impact, (720, 360))
+    contact.alpha_composite(impact, (690, 370))
     board.alpha_composite(contact, (1280, 100))
     return board
 
@@ -1846,10 +1855,10 @@ def _hud_mutation_board_v2(base: Image.Image, alternate: Image.Image) -> Image.I
 def _alignment_board_v2(sprites: dict[str, Image.Image]) -> Image.Image:
     board = Image.new("RGBA", FRAME, (7, 13, 22, 255))
     entries = [
-        ("WARDEN IDLE 104PX", "iron-warden-idle", (180, 300), (90, 112)),
-        ("WARDEN SLAM 104PX", "iron-warden-shield-slam", (470, 300), (90, 112)),
-        ("RAIDER IDLE 92PX", "mine-raider-idle", (760, 300), (64, 100)),
-        ("RAIDER ATTACK 92PX", "mine-raider-attack", (1030, 300), (64, 100)),
+        ("WARDEN IDLE 56PX", "iron-warden-idle", (180, 300), (56, 66)),
+        ("WARDEN SLAM 56PX", "iron-warden-shield-slam", (470, 300), (56, 66)),
+        ("RAIDER IDLE 44PX", "mine-raider-idle", (760, 300), (40, 54)),
+        ("RAIDER ATTACK 44PX", "mine-raider-attack", (1030, 300), (40, 54)),
     ]
     draw = ImageDraw.Draw(board)
     for label, asset, ground, pivot in entries:
@@ -1863,23 +1872,31 @@ def _alignment_board_v2(sprites: dict[str, Image.Image]) -> Image.Image:
     return board
 
 
-def _scale_board_v2(clean: Image.Image, sprites: dict[str, Image.Image]) -> Image.Image:
-    scenes: list[tuple[str, Image.Image]] = []
-    for label, scale in (("SMALL 83/74PX", 0.8), ("SELECTED 104/92PX", 1.0), ("LARGE 130/115PX", 1.25)):
-        scene = clean.copy()
-        for asset, ground in (("iron-warden-idle", (674, 434)), ("mine-raider-idle", (802, 398))):
-            source = sprites[asset]
-            scaled = source.resize((round(source.width * scale), round(source.height * scale)), Image.Resampling.NEAREST)
-            scene.alpha_composite(scaled, (ground[0] - scaled.width // 2, ground[1] - round(112 * scale if "warden" in asset else 100 * scale)))
-        scenes.append((label, scene))
+def _scale_board_v2(
+    clean: Image.Image,
+    reconstruction: Image.Image,
+    sprites: dict[str, Image.Image],
+    effects: dict[str, Image.Image],
+) -> Image.Image:
+    """Show the selected miniature fixture beside a clearly nonauthoritative density probe."""
     stress = clean.copy()
     placements = [(1028, 190), (930, 250), (825, 320), (720, 385), (610, 450), (500, 515), (365, 570)]
     for index, ground in enumerate(placements):
         asset = "iron-warden-idle" if index in {3, 5} else "mine-raider-idle"
-        pivot = (90, 112) if "warden" in asset else (64, 100)
+        pivot = (56, 66) if "warden" in asset else (40, 54)
+        if index in {2, 3, 5}:
+            ring_asset = "warden-selection-ring" if "warden" in asset else "hostile-faction-ring"
+            ring = effects[ring_asset]
+            stress.alpha_composite(ring, (ground[0] - ring.width // 2, ground[1] - 20))
         stress.alpha_composite(sprites[asset], (ground[0] - pivot[0], ground[1] - pivot[1]))
-    scenes.append(("NONAUTHORITATIVE ROUTE OCCUPANCY", stress))
-    return _labelled_grid_v2(scenes)
+    board = Image.new("RGBA", (2560, 820), (7, 13, 22, 255))
+    pixel_text(board, (24, 18), "PRIMARY 56PX WARDEN 44PX RAIDER FULL FRAME", 2)
+    pixel_text(board, (24, 44), "DIRECT FROM APPROVED MASTERS FIXED SCREEN SPACE HIGHLIGHTS", 2)
+    pixel_text(board, (1304, 18), "NONAUTHORITATIVE DENSITY READABILITY STRESS", 2)
+    pixel_text(board, (1304, 44), "COUNTS AND SPACING ARE NOT SIMULATION EVIDENCE", 2)
+    board.alpha_composite(reconstruction, (0, 100))
+    board.alpha_composite(stress, (1280, 100))
+    return board
 
 
 def _composition_decision_v2(approved: Image.Image, current: Image.Image) -> Image.Image:
@@ -1887,7 +1904,7 @@ def _composition_decision_v2(approved: Image.Image, current: Image.Image) -> Ima
     pixel_text(board, (24, 18), "LEFT APPROVED 284 ART DIRECTION", 2)
     pixel_text(board, (24, 44), "DENSER CENTRAL ENCOUNTER STAGING", 2)
     pixel_text(board, (1304, 18), "RIGHT 286 PROPOSED PRODUCTION FLOOR", 2)
-    pixel_text(board, (1304, 44), "WIDER DIAGONAL ROUTE FIXED HUD REGIONS 104 92PX", 2)
+    pixel_text(board, (1304, 44), "WIDER DIAGONAL ROUTE FIXED HUD REGIONS 56 44PX", 2)
     pixel_text(board, (500, 76), "DECISION REQUEST ACCEPT THIS CAMERA ROUTE ENTRANCE GATE AND HUD FLOOR FOR 287", 2)
     board.alpha_composite(approved, (0, 180))
     board.alpha_composite(current, (1280, 180))
@@ -1910,10 +1927,10 @@ def build(output_root: Path = ROOT) -> None:
     warden_master = Image.open(direction / "sources" / "iron-warden-master.png")
     raider_master = Image.open(direction / "sources" / "mine-raider-master.png")
     raw = {
-        "iron-warden-idle": fit_height(sprite_cell(warden_master, (0, 355)), 104),
-        "iron-warden-shield-slam": fit_height(sprite_cell(warden_master, (708, 1098)), 104),
-        "mine-raider-idle": ImageEnhance.Brightness(fit_height(sprite_cell(raider_master, (0, 353)), 92)).enhance(1.3),
-        "mine-raider-attack": ImageEnhance.Brightness(fit_height(sprite_cell(raider_master, (707, 961)), 92)).enhance(1.3),
+        "iron-warden-idle": fit_miniature_height(sprite_cell(warden_master, (0, 355)), 56),
+        "iron-warden-shield-slam": fit_miniature_height(sprite_cell(warden_master, (708, 1098)), 56),
+        "mine-raider-idle": ImageEnhance.Brightness(fit_miniature_height(sprite_cell(raider_master, (0, 353)), 44)).enhance(1.3),
+        "mine-raider-attack": ImageEnhance.Brightness(fit_miniature_height(sprite_cell(raider_master, (707, 961)), 44)).enhance(1.3),
     }
     sprites = {
         asset: _pad_sprite_v2(image, tuple(scene["entityStates"][asset]["canvas"]), tuple(scene["entityStates"][asset]["pivot"]))
@@ -1937,7 +1954,8 @@ def build(output_root: Path = ROOT) -> None:
     hud = _build_hud_v2()
     for name, image in hud.items():
         png(image, exports / "hud" / f"{name}.png")
-    portrait = _pad_sprite_v2(raw["iron-warden-idle"].resize((73, 64), Image.Resampling.LANCZOS), (78, 80), (39, 74))
+    portrait_source = fit_miniature_height(sprite_cell(warden_master, (0, 355)), 64)
+    portrait = _pad_sprite_v2(portrait_source, (78, 80), (39, 74))
     png(portrait, exports / "hud" / "warden-portrait.png")
 
     assets = {"shuttergate-clean-plate-1280x720": clean, **sprites, **effects, "foreground-occluder": occluder, "warm-light-overlay": lighting, **hud, "warden-portrait": portrait}
@@ -1979,10 +1997,10 @@ def build(output_root: Path = ROOT) -> None:
 
     png(occlusion_board(clean, mask, occluder), evidence / "foreground-occlusion-isolation.png")
     upper_occlusion = _occlusion_sample_v2(
-        clean, sprites["iron-warden-idle"], (140, 200), (90, 112), occluder
+        clean, sprites["iron-warden-idle"], (140, 170), (56, 66), occluder
     )
     lower_occlusion = _occlusion_sample_v2(
-        clean, sprites["mine-raider-idle"], (1100, 520), (64, 100), occluder
+        clean, sprites["mine-raider-idle"], (1080, 540), (40, 54), occluder
     )
     route_board = _route_board_v3(clean, scene["route"])
     occlusion_samples = _labelled_grid_v2(
@@ -1997,7 +2015,7 @@ def build(output_root: Path = ROOT) -> None:
     png(lighting, evidence / "lighting-alpha-isolation.png")
     unlit = _compose_v2(_recipe_without_v2(recipe, {"warm-light-overlay"}), assets)
     png(
-        _lighting_board_v2(clean, sprites["iron-warden-idle"], (90, 112), lighting),
+        _lighting_board_v2(clean, sprites["iron-warden-idle"], (56, 66), lighting),
         evidence / "lighting-entity-proof.png",
     )
     png(route_board, evidence / "route-anchor-validation.png")
@@ -2007,7 +2025,10 @@ def build(output_root: Path = ROOT) -> None:
         _impact_board_v2(reconstruction, effects["shield-slam-impact"]),
         evidence / "shield-slam-effect-proof.png",
     )
-    png(_scale_board_v2(clean, sprites), evidence / "character-scale-study.png")
+    png(
+        _scale_board_v2(clean, reconstruction, sprites, effects),
+        evidence / "character-scale-study.png",
+    )
     png(isolation_board([sprites["iron-warden-idle"], sprites["iron-warden-shield-slam"]], 1), evidence / "iron-warden-alpha-states-native.png")
     png(isolation_board([sprites["iron-warden-idle"], sprites["iron-warden-shield-slam"]], 4), evidence / "iron-warden-alpha-states-4x.png")
     png(isolation_board([sprites["mine-raider-idle"], sprites["mine-raider-attack"]], 1), evidence / "mine-raider-alpha-states-native.png")
@@ -2149,7 +2170,7 @@ def verify(root: Path = ROOT) -> None:
             "validation": "pixel-surveyed-visible-segments-and-compound-registered-gate-transitions",
         },
         "entityAnchors": {"ironWardenTruthScreen": {"groundPosition": [674, 434], "depthSortY": 434}, "mineRaiderTruthScreen": {"groundPosition": [802, 398], "depthSortY": 398}},
-        "entityStates": {"iron-warden-idle": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "iron-warden-shield-slam": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "mine-raider-idle": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}, "mine-raider-attack": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}},
+        "entityStates": {"iron-warden-idle": {"canvas": [112, 72], "pivot": [56, 66], "facing": "upper-right", "nominalHeight": 56}, "iron-warden-shield-slam": {"canvas": [112, 72], "pivot": [56, 66], "facing": "upper-right", "nominalHeight": 56}, "mine-raider-idle": {"canvas": [80, 60], "pivot": [40, 54], "facing": "lower-left", "nominalHeight": 44}, "mine-raider-attack": {"canvas": [80, 60], "pivot": [40, 54], "facing": "lower-left", "nominalHeight": 44}},
         "occlusion": {"mask": "architecture-mask", "foreground": "foreground-occluder", "scope": "fixed-issue-287-truth-screen-anchors-only", "routeTraversalOwner": 273, "zones": [{"id": "upper-left-column", "depthThreshold": 260, "bounds": [0, 92, 189, 421]}, {"id": "lower-right-balustrade", "depthThreshold": 520, "bounds": [1030, 421, 1280, 720]}], "depthOrder": ["environment", "rings", "entities-by-depthSortY", "foreground-occluder", "lighting-normal-srgb", "combat-effects", "hud"]},
         "hudRegions": {"top": [0, 0, 1280, 72], "bottom": [272, 590, 1280, 720], "fortressStatus": [18, 10, 258, 60], "waveStatus": [526, 10, 754, 60], "oreStatus": [1022, 10, 1262, 60], "wardenNameplate": [272, 604, 452, 704], "portrait": [282, 614, 360, 694], "health": [462, 604, 652, 704], "targetPolicy": [662, 604, 852, 704], "shieldSlam": [862, 604, 1102, 704], "pause": [1112, 604, 1262, 704]},
         "hudDynamicState": {"font": "project-authored-5x7-pixel-uppercase", "textColor": [222, 170, 88, 255], "baselinePolicy": "regions-use-top-left-local-integer-pixel-baselines", "fixture": {"fortress": "18/20", "wave": "7", "ore": "840", "health": "84/100", "targetPolicy": "nearest", "shieldSlam": "ready", "paused": False}, "minimumVariants": {"targetPolicy": ["nearest", "strongest"], "shieldSlam": ["ready", "cooldown"], "pause": ["pause", "resume"]}},
@@ -2219,10 +2240,10 @@ def verify(root: Path = ROOT) -> None:
         "shield-slam-effect-proof",
     ]
     canonical_alpha_digests = {
-        "iron-warden-idle": "d51b160d54efd11fe6942b63ebeb1aee90ba51617eda4e8df6206cf5d157427b",
-        "iron-warden-shield-slam": "db87bd517b201749f2e92293baf39c98b14092b640ad078f487dba956438a55a",
-        "mine-raider-attack": "5c6be079e88381a4bf5d68fb9a5cce5d515baddd37c5afeb01655fdb43b4a5a4",
-        "mine-raider-idle": "b084a456fb693fe3cc534645b6c6ceda655cdfae9fd6eb8f923e71fe6087eb8a",
+        "iron-warden-idle": "48c9e45be4cbe6465fd3676db49b2ff1332a2d3792e0966973976b94295f0be1",
+        "iron-warden-shield-slam": "30c918abd73ef39da0df2e310c6fa376af11f71baea1498ede278ab709260b3a",
+        "mine-raider-attack": "a03c551fa936a4510130ee462755c9dfa7194263c81af5c136de748fdbf543f2",
+        "mine-raider-idle": "0815d9d13b10833fe4e75a91ec27f17a66ebcd61b873262b9f8dc71f0203f2be",
         "hostile-faction-ring": "46f77279619c2939f7595424a3ca496c7e78d9bd5e0564e5313215b6bc1a81d6",
         "shield-slam-impact": "d5e7aa549c609af7425f5c1b6e483ae6ddb1cdec46f79ab455a37b0874387ec8",
         "warden-selection-ring": "f6fd0e80c9f66e3e4f614cf9867bf9f53c9c9998c16d641b0f036ed12a5d01da",
@@ -2240,7 +2261,7 @@ def verify(root: Path = ROOT) -> None:
         "target-strongest-state": "88c1f08957ac55a76c6cbba9e1e4ec1ebd0dd78181bae2ce594736eeb32b9cf5",
         "top-hud-frame": "07d4fd6d7551d30d163e9c5e189e324b7a9e4557ca4bb824693952bb12ad2c22",
         "warden-name": "25da2898d62c560c6a1de51fd708474966f2eae0ab9a46eaf5ceeb5efe647355",
-        "warden-portrait": "436898604225efc1c3a860339c15b6653b6ea7547caefb36e6270773a808db4f",
+        "warden-portrait": "65d47b2e488b9721977592371462a82be4f3b27da0734b9d2e5f262b38bb0247",
         "wave-value": "62e1223ea96ab22c6f7795fec653b69eeb6266bdff45642c582092c8463fc2bc",
     }
     if [record.get("id") for record in manifest["files"]] != canonical_file_ids:
@@ -2480,10 +2501,10 @@ def verify(root: Path = ROOT) -> None:
 
     states = _assert_strict_v2(scene["entityStates"], {"iron-warden-idle", "iron-warden-shield-slam", "mine-raider-idle", "mine-raider-attack"}, "scene.entityStates")
     canonical_entity_alpha = {
-        "iron-warden-idle": ([31, 8, 149, 112], 7697, 2782, 4915),
-        "iron-warden-shield-slam": ([12, 8, 169, 112], 10214, 3991, 6223),
-        "mine-raider-idle": ([10, 8, 119, 100], 5329, 920, 4409),
-        "mine-raider-attack": ([37, 8, 91, 100], 2603, 279, 2324),
+        "iron-warden-idle": ([24, 10, 88, 66], 2354, 573, 1781),
+        "iron-warden-shield-slam": ([14, 10, 98, 66], 3113, 800, 2313),
+        "mine-raider-idle": ([14, 10, 66, 54], 1341, 108, 1233),
+        "mine-raider-attack": ([27, 10, 53, 54], 705, 36, 669),
     }
     for asset, contract in states.items():
         _assert_strict_v2(contract, {"canvas", "pivot", "facing", "nominalHeight"}, f"scene.entityStates.{asset}")
@@ -2508,8 +2529,8 @@ def verify(root: Path = ROOT) -> None:
         ("shuttergate-clean-plate-1280x720", [0, 0], "world", 0, None),
         ("warden-selection-ring", [627, 414], "world-effects", 20, None),
         ("hostile-faction-ring", [763, 380], "world-effects", 20, None),
-        ("mine-raider-attack", [738, 298], "world-entities", 30, 398),
-        ("iron-warden-shield-slam", [584, 322], "world-entities", 30, 434),
+        ("mine-raider-attack", [762, 344], "world-entities", 30, 398),
+        ("iron-warden-shield-slam", [618, 368], "world-entities", 30, 434),
         ("foreground-occluder", [0, 0], "foreground-occlusion", 40, None),
         ("warm-light-overlay", [0, 0], "world-lighting", 50, None),
         ("top-hud-frame", [0, 0], "screen-space-hud", 70, None),
@@ -2630,7 +2651,19 @@ def verify(root: Path = ROOT) -> None:
     require_same_pixels(isolation_board([assets["mine-raider-idle"], assets["mine-raider-attack"]], 4), evidence_root / "mine-raider-alpha-states-4x.png", "4x mine-raider alpha proof")
     require_same_pixels(isolation_board([assets["warden-selection-ring"], assets["hostile-faction-ring"], assets["shield-slam-impact"]], 2), evidence_root / "selection-and-combat-effect-isolation.png", "Effect-isolation proof")
     reconstruction = _compose_v2(recipe, assets)
-    require_same_pixels(_scale_board_v2(clean, entity_images), evidence_root / "character-scale-study.png", "Character-scale proof")
+    require_same_pixels(
+        _scale_board_v2(
+            clean,
+            reconstruction,
+            entity_images,
+            {
+                "warden-selection-ring": assets["warden-selection-ring"],
+                "hostile-faction-ring": assets["hostile-faction-ring"],
+            },
+        ),
+        evidence_root / "character-scale-study.png",
+        "Character-scale proof",
+    )
     approved = Image.open(root / DIRECTION.relative_to(ROOT) / "exports" / "shuttergate-keyframe-1280x720.png").convert("RGBA")
     comparison = Image.new("RGBA", (2560, 720), (0, 0, 0, 255))
     comparison.alpha_composite(approved, (0, 0))
@@ -2643,7 +2676,7 @@ def verify(root: Path = ROOT) -> None:
         "Shield-Slam impact proof",
     )
     impact_alpha = assets["shield-slam-impact"].getchannel("A")
-    impact_position = (720, 360)
+    impact_position = (690, 370)
     for layer in entity_layers:
         entity_alpha = assets[layer["asset"]].getchannel("A")
         visible = 0
@@ -2708,13 +2741,13 @@ def verify(root: Path = ROOT) -> None:
     lighting_proof = _lighting_board_v2(
         clean,
         assets["iron-warden-idle"],
-        (90, 112),
+        (56, 66),
         assets["warm-light-overlay"],
     )
     require_same_pixels(lighting_proof, root / expected_proofs["lightingEntities"], "Entity-lighting proof")
     occlusion_samples = [
-        ("iron-warden-idle", (140, 200), (90, 112)),
-        ("mine-raider-idle", (1100, 520), (64, 100)),
+        ("iron-warden-idle", (140, 170), (56, 66)),
+        ("mine-raider-idle", (1080, 540), (40, 54)),
     ]
     occlusion_panels = []
     for asset, ground, pivot in occlusion_samples:
@@ -2779,7 +2812,7 @@ def verify(root: Path = ROOT) -> None:
         raise ValueError("Clean-plate source or reference path is not canonical")
     if provenance["cleanPlate"]["referenceUse"] != "Approved style, camera, route, material, lighting, and Shuttergate composition only; no reference pixels were cropped, traced, copied, or edited into the clean plate.":
         raise ValueError("Clean-plate reference-use boundary is not canonical")
-    require_exact_json(provenance["derivedLayers"], {"characterSources": ["assets/game-art/visual-direction/sources/iron-warden-master.png", "assets/game-art/visual-direction/sources/mine-raider-master.png"], "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, scaling, shared pivot-canvas padding, and PNG export in build_scene.py", "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract", "externalAssets": []}, "provenance.derivedLayers")
+    require_exact_json(provenance["derivedLayers"], {"characterSources": ["assets/game-art/visual-direction/sources/iron-warden-master.png", "assets/game-art/visual-direction/sources/mine-raider-master.png"], "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, direct-from-master LANCZOS downsampling, bounded unsharp filtering, shared pivot-canvas padding, and PNG export in build_scene.py", "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract", "externalAssets": []}, "provenance.derivedLayers")
     require_exact_json(provenance["conceptBoundary"], {"path": "assets/concept-art/dwarven-depths-gameplay-mockup.png", "productionPixelReuse": False, "tracing": False, "backgroundUse": False}, "provenance.conceptBoundary")
     required_inputs = {
         "assets/game-art/visual-direction/sources/keyframe-master.png",
@@ -2809,7 +2842,7 @@ def verify(root: Path = ROOT) -> None:
         "assets/game-art/visual-direction/sources/mine-raider-master.png": "4c3c0a9c63a510f5bb76e6136423e87da0e6f74108a35514c08d35493229cb32",
         "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png": "49a659a61548ac12bc546d5af5c74e990eb8a3d6bc55ac46dee153d458a991e5",
         "assets/concept-art/dwarven-depths-gameplay-mockup.png": "7b35bf139017bf833c8d0c9288fa05f702b5e6c971f48d66dd40931d1c31e9c1",
-        "assets/game-art/production-scene/generation-log.md": "0ca74c1c54aee84775cb292844fe98d69c5a58c245cb85e3ae61e246a381fa62",
+        "assets/game-art/production-scene/generation-log.md": "0312f702c92d43f3d9377e08c6c832c7a5258759458bb02a61a2d863ae80a696",
         "assets/game-art/production-scene/requirements.lock": "18101d853dbd634248566915697e60f350fbf8afc9abb57998c9e1b1cf61ecf4",
     }
     if {record["path"]: record["role"] for record in provenance["inputs"]} != expected_roles:
