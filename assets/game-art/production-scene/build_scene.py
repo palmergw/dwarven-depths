@@ -1638,8 +1638,8 @@ def _walkable_mask_v2() -> Image.Image:
     # polyline.  The route is validated against this independently stored survey.
     draw.polygon(
         [
-            (1128, 82),
-            (1160, 130),
+            (1145, 58),
+            (1180, 128),
             (1060, 204),
             (968, 264),
             (858, 332),
@@ -1647,10 +1647,10 @@ def _walkable_mask_v2() -> Image.Image:
             (628, 462),
             (510, 530),
             (382, 578),
-            (270, 624),
-            (188, 650),
-            (148, 620),
-            (274, 540),
+            (270, 650),
+            (100, 660),
+            (100, 560),
+            (248, 506),
             (432, 474),
             (548, 404),
             (668, 338),
@@ -1789,6 +1789,15 @@ def _impact_board_v2(reconstruction: Image.Image, impact: Image.Image) -> Image.
     return board
 
 
+def _hud_mutation_board_v2(base: Image.Image, alternate: Image.Image) -> Image.Image:
+    board = Image.new("RGBA", (2560, 820), (7, 13, 22, 255))
+    pixel_text(board, (24, 18), "FIXTURE READY NEAREST RUNNING", 2)
+    pixel_text(board, (1304, 18), "ALTERNATE COOLDOWN STRONGEST PAUSED", 2)
+    board.alpha_composite(base, (0, 100))
+    board.alpha_composite(alternate, (1280, 100))
+    return board
+
+
 def _alignment_board_v2(sprites: dict[str, Image.Image]) -> Image.Image:
     board = Image.new("RGBA", FRAME, (7, 13, 22, 255))
     entries = [
@@ -1920,12 +1929,10 @@ def build(output_root: Path = ROOT) -> None:
     png(hud_board, evidence / "hud-control-isolation.png")
     alternate_assets = {**assets, "target-nearest-state": hud["target-strongest-state"], "shield-slam-ready-state": hud["shield-slam-cooldown-state"], "pause-state": hud["resume-state"]}
     alternate = _compose_v2(recipe, alternate_assets)
-    hud_mutation = Image.new("RGBA", (2560, 720), (7, 13, 22, 255))
-    hud_mutation.alpha_composite(reconstruction, (0, 0))
-    hud_mutation.alpha_composite(alternate, (1280, 0))
-    pixel_text(hud_mutation, (24, 78), "FIXTURE READY NEAREST RUNNING", 2)
-    pixel_text(hud_mutation, (1304, 78), "ALTERNATE COOLDOWN STRONGEST PAUSED", 2)
-    png(hud_mutation, evidence / "hud-state-mutation.png")
+    png(
+        _hud_mutation_board_v2(reconstruction, alternate),
+        evidence / "hud-state-mutation.png",
+    )
 
     png(occlusion_board(clean, mask, occluder), evidence / "foreground-occlusion-isolation.png")
     upper_occlusion = _occlusion_sample_v2(
@@ -2249,6 +2256,9 @@ def verify(root: Path = ROOT) -> None:
                 raise ValueError("Route point is not walkable and unobscured")
             if any(x0 <= x < x1 and y0 <= y < y1 for x0, y0, x1, y1 in hud_rects):
                 raise ValueError("Route point is hidden beneath HUD")
+        minimum_radius = route["minimumWalkableRadius"]
+        if not isinstance(minimum_radius, int) or isinstance(minimum_radius, bool):
+            raise ValueError("Route minimumWalkableRadius must be an integer")
         for start, end in zip(route_polyline, route_polyline[1:]):
             x0, y0 = validate_point(start, "scene.route segment start")
             x1, y1 = validate_point(end, "scene.route segment end")
@@ -2260,6 +2270,14 @@ def verify(root: Path = ROOT) -> None:
                     raise ValueError(
                         "Route segment leaves the independently authored painted-floor survey"
                     )
+                for delta_y in range(-minimum_radius, minimum_radius + 1):
+                    for delta_x in range(-minimum_radius, minimum_radius + 1):
+                        if delta_x * delta_x + delta_y * delta_y > minimum_radius**2:
+                            continue
+                        if walkable.getpixel((x + delta_x, y + delta_y)) != 255:
+                            raise ValueError(
+                                "Route segment violates the declared painted-floor clearance radius"
+                            )
 
     states = _assert_strict_v2(scene["entityStates"], {"iron-warden-idle", "iron-warden-shield-slam", "mine-raider-idle", "mine-raider-attack"}, "scene.entityStates")
     canonical_entity_alpha = {
@@ -2467,11 +2485,9 @@ def verify(root: Path = ROOT) -> None:
         if layer["region"] == "screen-space-hud":
             hud_board.alpha_composite(assets[layer["asset"]], tuple(layer["position"]))
     require_same_pixels(hud_board, root / expected_proofs["hudControls"], "HUD-isolation proof")
-    hud_mutation = Image.new("RGBA", (2560, 720), (7, 13, 22, 255))
-    hud_mutation.alpha_composite(base_pixels.convert("RGBA"), (0, 0))
-    hud_mutation.alpha_composite(alternate_pixels.convert("RGBA"), (1280, 0))
-    pixel_text(hud_mutation, (24, 78), "FIXTURE READY NEAREST RUNNING", 2)
-    pixel_text(hud_mutation, (1304, 78), "ALTERNATE COOLDOWN STRONGEST PAUSED", 2)
+    hud_mutation = _hud_mutation_board_v2(
+        base_pixels.convert("RGBA"), alternate_pixels.convert("RGBA")
+    )
     require_same_pixels(hud_mutation, root / expected_proofs["hudMutation"], "HUD-mutation proof")
     lighting_proof = _lighting_board_v2(
         clean,

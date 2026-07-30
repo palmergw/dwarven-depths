@@ -8,7 +8,7 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "392ff9aae1f542a0e498576533f2ce8c5272324a154875a8215e83f9ad3573be",
+    "provenance.json": "f79b448caecd9259527a78a5e497c516865da779fb1bc07049fa3f0266ec8d5e",
     "reconstruction.json": "cbcbf220541c2246f0dbf751ebfc51a14871d744c2f88250a2d2b09cd959f140",
     "scene-contract.json": "39b98d429a57fc58292bb8e8cbfaba1c9a17cf270bb7dc7c4a336dc685f9caae"
   },
@@ -121,7 +121,7 @@
       "mode": "L",
       "alphaSemantics": "binary-review-contract-mask",
       "contributesTo": ["route-validation"],
-      "sha256": "fbb5e0762b57b67c55d037f6e2b89e9a83b63ee59e4ff6fc7ed430707e64c7c1"
+      "sha256": "f02550ad68eb9c82b6b2cb6e7f8c1ff5af41c3b8a0f25da51b7b9f818f866a66"
     },
     {
       "id": "foreground-occluder",
@@ -369,11 +369,11 @@
       "id": "hud-state-mutation",
       "path": "docs/visual-evidence/production-scene/hud-state-mutation.png",
       "category": "evidence",
-      "dimensions": [2560, 720],
+      "dimensions": [2560, 820],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "909f88d9503aa1c4da7899b3680abd93f60875de8e11cfa32e46c777debf70fb"
+      "sha256": "8102b15bef0cb63c645a726697ccaee3cffa927685d5c6909501057f2be55db3"
     },
     {
       "id": "iron-warden-alpha-states-4x",
@@ -443,7 +443,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "c2713d6855d15e634652233a783a5670d815fb95b3384f43f813773ad6175629"
+      "sha256": "0bf67ede043e07708a75726b82633ba99f956b9c6153b41fffc57380e28be4df"
     },
     {
       "id": "reconstruction-entities-removed",
@@ -473,7 +473,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "351e08ff0226a2f92fa82e8c430db0a331920f7385af75b803d96886c3601078"
+      "sha256": "cd9cb851b28116e1764c242f2d87fbfe28db50e98f0e866ba0333f5b3932f594"
     },
     {
       "id": "selection-and-combat-effect-isolation",

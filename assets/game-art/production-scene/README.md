@@ -21,7 +21,7 @@ The verifier strictly rejects extra contract properties, stale/unmanifested file
 - The neutral reconstruction contains one readable Warden and one readable raider; Shield Slam impact is proved separately.
 - HUD chrome is separate from fixture values, health fill, target selection, ability readiness/cooldown, and pause/resume state.
 - The bottom HUD begins at x=272, leaving the lower-left gate and route endpoint visible.
-- The route is checked segment-by-segment against a separately hand-surveyed clean-plate floor mask; the diagnostic overlay labels entrance, chokepoints, rail crossing, and gate and is never player UI.
+- The route and its declared 26 px clearance radius are checked segment-by-segment against a separately hand-surveyed clean-plate floor mask; the diagnostic overlay labels entrance, chokepoints, rail crossing, and gate and is never player UI.
 - Occlusion is explicitly bounded to #287's two fixed truth-screen anchors at Warden `[674, 434]` and raider `[802, 398]`. It does not support or claim route traversal; #287's bounded clip must keep those anchors fixed. Full traversal masks and motion belong to #273.
 - Lighting uses straight-alpha normal compositing in sRGB, after entities/foreground and before combat effects/HUD.
 
