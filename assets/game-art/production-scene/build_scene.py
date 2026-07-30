@@ -2580,6 +2580,15 @@ def verify(root: Path = ROOT) -> None:
         "assets/game-art/production-scene/requirements.lock": "pinned-image-toolchain",
         "assets/game-art/production-scene/build_scene.py": "deterministic-export-and-verification-implementation",
     }
+    canonical_upstream_digests = {
+        "assets/game-art/visual-direction/sources/keyframe-master.png": "a5796a58bfee230eb882cf99a2517db8ffc90f0c243c73ee110ae408d896ddae",
+        "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
+        "assets/game-art/visual-direction/sources/mine-raider-master.png": "4c3c0a9c63a510f5bb76e6136423e87da0e6f74108a35514c08d35493229cb32",
+        "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png": "49a659a61548ac12bc546d5af5c74e990eb8a3d6bc55ac46dee153d458a991e5",
+        "assets/concept-art/dwarven-depths-gameplay-mockup.png": "7b35bf139017bf833c8d0c9288fa05f702b5e6c971f48d66dd40931d1c31e9c1",
+        "assets/game-art/production-scene/generation-log.md": "66366c03522c03e3f25644007e02a9c6404fa3a46a0f92e9037634f8cc14d147",
+        "assets/game-art/production-scene/requirements.lock": "18101d853dbd634248566915697e60f350fbf8afc9abb57998c9e1b1cf61ecf4",
+    }
     if {record["path"]: record["role"] for record in provenance["inputs"]} != expected_roles:
         raise ValueError("Provenance input roles are not canonical")
     expected_input_order = list(expected_roles.items())
@@ -2590,6 +2599,9 @@ def verify(root: Path = ROOT) -> None:
         _assert_strict_v2(input_record, {"path", "sha256", "role"}, "provenance.input")
         if sha256(root / input_record["path"]) != input_record["sha256"]:
             raise ValueError(f"Upstream provenance digest mismatch: {input_record['path']}")
+        canonical_digest = canonical_upstream_digests.get(input_record["path"])
+        if canonical_digest is not None and input_record["sha256"] != canonical_digest:
+            raise ValueError(f"Approved upstream source drifted: {input_record['path']}")
     clean_source = root / provenance["cleanPlate"]["path"]
     canonical_clean_digest = "724159cedd1ad5a53e8954a8990093da01b093348d247fd8cb04702f8ad88117"
     if provenance["cleanPlate"]["sha256"] != canonical_clean_digest or sha256(clean_source) != canonical_clean_digest:
