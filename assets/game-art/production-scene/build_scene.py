@@ -1756,7 +1756,7 @@ def _route_board_v3(clean: Image.Image, route: dict[str, Any]) -> Image.Image:
             if segment["kind"] == "architecture-hidden":
                 _draw_dashed_line_v3(draw, start, end, fill=hidden_color, width=4, dash=8, gap=6)
             else:
-                draw.line((start, end), fill=(255, 205, 40, 235), width=4)
+                draw.line((start, end), fill=visible_color, width=4)
                 for x, y in (start, end):
                     draw.ellipse((x - 3, y - 3, x + 3, y + 3), fill=visible_color)
         x0, y0, x1, y1 = portal["bounds"]
