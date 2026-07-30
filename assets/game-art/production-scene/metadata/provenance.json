@@ -50,7 +50,7 @@
     },
     {
       "path": "assets/game-art/production-scene/build_scene.py",
-      "sha256": "4256cde2e53e480b0c3d49bd07fae01541da8182ee3f67adb83d7d07bcad7fce",
+      "sha256": "df14e8e36ba978d7821198a6979ddc5caf0bb3592bdc8b53a4b1c4fcdc037e55",
       "role": "deterministic-export-and-verification-implementation"
     }
   ],
@@ -73,7 +73,7 @@
       "assets/game-art/visual-direction/sources/mine-raider-master.png"
     ],
     "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, direct-from-master LANCZOS downsampling, bounded unsharp filtering, shared pivot-canvas padding, and PNG export in build_scene.py",
-    "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract",
+    "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract; portal occluders are clean-plate source-pixel-exact extractions with segment-local masks",
     "externalAssets": []
   },
   "conceptBoundary": {

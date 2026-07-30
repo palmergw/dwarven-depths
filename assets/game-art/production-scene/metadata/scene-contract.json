@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "package": "dwarven-depths-issue-286-production-scene",
   "authority": "presentation-only",
   "coordinateSpace": {
@@ -37,19 +37,20 @@
         "id": "route-zone.background-approach",
         "depthOrder": 100,
         "bounds": [1045, 80, 1165, 180],
-        "visiblePolyline": [[1145, 100], [1120, 125], [1090, 150], [1055, 170]]
+        "visiblePolyline": [[1145, 100], [1120, 125], [1090, 150], [1052, 170]]
       },
       {
         "id": "route-zone.upper-causeway",
         "depthOrder": 200,
         "bounds": [790, 175, 925, 295],
         "visiblePolyline": [
-          [915, 185],
+          [918, 187],
           [885, 195],
           [855, 210],
           [830, 230],
           [810, 255],
-          [800, 285]
+          [818, 271],
+          [822, 281]
         ]
       },
       {
@@ -73,43 +74,66 @@
         "id": "portal.upper-gate",
         "incomingZoneId": "route-zone.background-approach",
         "outgoingZoneId": "route-zone.upper-causeway",
-        "incomingAnchor": [1055, 170],
-        "outgoingAnchor": [915, 185],
-        "bounds": [900, 155, 1060, 215],
+        "incomingAnchor": [1052, 170],
+        "outgoingAnchor": [918, 187],
+        "bounds": [900, 100, 1065, 240],
         "visibleMouthBounds": null,
         "segments": [
           {
             "kind": "architecture-hidden",
-            "from": [1055, 170],
-            "to": [915, 185]
+            "from": [1052, 170],
+            "to": [918, 187]
           }
         ],
         "visibility": "architecture-hidden",
         "occlusionMode": "architecture-depth-transition",
+        "maskAsset": "portal-upper-gate-mask",
+        "occluderAsset": "portal-upper-gate-occluder",
+        "extractionCrop": [900, 100, 1065, 240],
+        "applicability": "architecture-hidden-segment-only",
+        "samples": {
+          "approach": [1052, 170],
+          "lastVisibleLip": [1035, 174],
+          "fullyHidden": [982, 180],
+          "firstVisibleLip": [934, 184],
+          "emerged": [918, 187]
+        },
         "traversalOwnerIssue": 273
       },
       {
         "id": "portal.lower-gate",
         "incomingZoneId": "route-zone.upper-causeway",
         "outgoingZoneId": "route-zone.lower-causeway",
-        "incomingAnchor": [800, 285],
+        "incomingAnchor": [822, 281],
         "outgoingAnchor": [820, 358],
-        "bounds": [790, 275, 855, 340],
-        "visibleMouthBounds": [815, 310, 870, 365],
+        "bounds": [775, 220, 885, 375],
+        "visibleMouthBounds": [815, 328, 870, 365],
         "segments": [
           {
             "kind": "architecture-hidden",
-            "from": [800, 285],
-            "to": [845, 328]
+            "from": [822, 281],
+            "to": [842, 331]
           },
           {
             "kind": "visible-floor-gate-mouth",
-            "from": [845, 328],
+            "from": [842, 331],
             "to": [820, 358]
           }
         ],
         "visibility": "compound-hidden-visible-mouth",
         "occlusionMode": "compound-depth-transition",
+        "maskAsset": "portal-lower-gate-mask",
+        "occluderAsset": "portal-lower-gate-occluder",
+        "extractionCrop": [775, 220, 885, 375],
+        "applicability": "hidden-segment-only-visible-mouth-excluded",
+        "samples": {
+          "approach": [818, 271],
+          "lastVisibleLip": [822, 281],
+          "partiallyOccluded": [829, 309],
+          "firstVisibleMouth": [842, 331],
+          "mouthCenter": [835, 343],
+          "emerged": [820, 358]
+        },
         "traversalOwnerIssue": 273
       }
     ],
@@ -157,6 +181,13 @@
     "foreground": "foreground-occluder",
     "scope": "fixed-issue-287-truth-screen-anchors-only",
     "routeTraversalOwner": 273,
+    "portalPolicy": {
+      "maskScope": "portal-segment-specific-never-global",
+      "worldRingsAndEffects": "obey-active-portal-occlusion",
+      "screenSpaceFocus": "render-after-world-occlusion",
+      "lowerVisibleMouth": [[842, 331], [835, 343], [820, 358]],
+      "fullTraversalOwnerIssue": 273
+    },
     "zones": [
       {
         "id": "upper-left-column",

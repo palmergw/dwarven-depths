@@ -1650,6 +1650,197 @@ def _occlusion_v2(clean: Image.Image) -> tuple[Image.Image, Image.Image]:
     return mask, occluder
 
 
+def _masked_clean_pixels_v4(clean: Image.Image, mask: Image.Image) -> Image.Image:
+    """Extract source-identical architecture with canonical zero RGB under zero alpha."""
+    output = Image.new("RGBA", FRAME, (0, 0, 0, 0))
+    output.paste(clean, (0, 0), mask)
+    output.putalpha(mask)
+    return output
+
+
+def _portal_occlusion_v4(clean: Image.Image) -> dict[str, tuple[Image.Image, Image.Image]]:
+    """Author portal-local architecture masks; these never act as one global depth mask."""
+    upper = Image.new("L", FRAME, 0)
+    ImageDraw.Draw(upper).polygon(
+        [(900, 100), (1065, 100), (1065, 178), (1038, 178), (1032, 190),
+         (1008, 202), (970, 208), (940, 202), (918, 190), (900, 190)],
+        fill=255,
+    )
+    lower = Image.new("L", FRAME, 0)
+    lower_draw = ImageDraw.Draw(lower)
+    lower_draw.polygon(
+        [(775, 220), (885, 220), (885, 286), (866, 291), (858, 304),
+         (840, 294), (822, 284), (804, 294), (775, 302)],
+        fill=255,
+    )
+    lower_draw.polygon([(775, 286), (817, 276), (826, 331), (810, 331), (775, 320)], fill=255)
+    lower_draw.polygon([(858, 284), (885, 278), (885, 331), (858, 331)], fill=255)
+    lower_draw.line([(842, 331), (835, 343), (820, 358)], fill=0, width=13, joint="curve")
+    return {
+        "upper": (upper, _masked_clean_pixels_v4(clean, upper)),
+        "lower": (lower, _masked_clean_pixels_v4(clean, lower)),
+    }
+
+
+def _portal_sample_v4(
+    clean: Image.Image,
+    sprite: Image.Image,
+    pivot: tuple[int, int],
+    ground: tuple[int, int],
+    occluder: Image.Image | None,
+    crop: tuple[int, int, int, int],
+) -> Image.Image:
+    scene = clean.copy()
+    scene.alpha_composite(sprite, (ground[0] - pivot[0], ground[1] - pivot[1]))
+    if occluder is not None:
+        scene.alpha_composite(occluder)
+    return scene.crop(crop)
+
+
+def _portal_transition_board_v4(
+    clean: Image.Image,
+    sprites: dict[str, Image.Image],
+    portal: dict[str, Any],
+    occluder: Image.Image,
+    phases: list[tuple[str, str, bool]],
+) -> Image.Image:
+    crop = tuple(portal["extractionCrop"])
+    cell_width = 350
+    cell_height = 360
+    board = Image.new("RGBA", (40 + len(phases) * cell_width, 90 + 2 * cell_height), (7, 13, 22, 255))
+    portal_label = portal["id"].upper().replace(".", " ")
+    pixel_text(board, (20, 18), f"{portal_label} DETERMINISTIC TRANSITION PROOF", 2)
+    rows = [
+        ("WARDEN 56PX", "iron-warden-idle", (56, 66)),
+        ("RAIDER 44PX", "mine-raider-idle", (40, 54)),
+    ]
+    for row_index, (row_label, asset, pivot) in enumerate(rows):
+        y = 70 + row_index * cell_height
+        pixel_text(board, (20, y), row_label, 1)
+        for column, (label, sample_key, masked) in enumerate(phases):
+            x = 20 + column * cell_width
+            ground = tuple(portal["samples"][sample_key])
+            pixel_text(board, (x, y + 20), f"{label} {ground[0]} {ground[1]}", 1)
+            panel = _portal_sample_v4(
+                clean, sprites[asset], pivot, ground, occluder if masked else None, crop
+            )
+            scale = min(330 / panel.width, 290 / panel.height)
+            panel = panel.resize((round(panel.width * scale), round(panel.height * scale)), Image.Resampling.NEAREST)
+            board.alpha_composite(panel, (x, y + 48))
+    return board
+
+
+def _checker_v4(size: tuple[int, int], step: int = 12) -> Image.Image:
+    checker = Image.new("RGBA", size, (24, 32, 42, 255))
+    draw = ImageDraw.Draw(checker)
+    for y in range(0, size[1], step):
+        for x in range(0, size[0], step):
+            if (x // step + y // step) % 2 == 0:
+                draw.rectangle((x, y, x + step - 1, y + step - 1), fill=(72, 80, 90, 255))
+    return checker
+
+
+def _portal_mask_isolation_board_v4(
+    clean: Image.Image,
+    portals: list[dict[str, Any]],
+    portal_layers: dict[str, tuple[Image.Image, Image.Image]],
+) -> Image.Image:
+    board = Image.new("RGBA", (1680, 760), (7, 13, 22, 255))
+    pixel_text(board, (20, 18), "PORTAL MASK ISOLATION SOURCE PIXELS ONLY ZERO RGB OUTSIDE ALPHA", 2)
+    labels = ["CLEAN CROP", "CHECKER OCCLUDER", "ALPHA MASK", "CLEAN PLATE NO OP DIFF 0"]
+    for row, (portal, key) in enumerate(zip(portals, ("upper", "lower"), strict=True)):
+        crop = tuple(portal["extractionCrop"])
+        mask, occluder = portal_layers[key]
+        source_crop = clean.crop(crop)
+        mask_crop = mask.crop(crop)
+        occluder_crop = occluder.crop(crop)
+        checker = _checker_v4(source_crop.size)
+        checker.alpha_composite(occluder_crop)
+        alpha_view = Image.merge("RGBA", (mask_crop, mask_crop, mask_crop, Image.new("L", mask_crop.size, 255)))
+        no_op = source_crop.copy()
+        no_op.alpha_composite(occluder_crop)
+        panels = [source_crop, checker, alpha_view, no_op]
+        y = 75 + row * 335
+        pixel_text(board, (20, y), portal["id"].upper().replace(".", " "), 1)
+        for column, (label, panel) in enumerate(zip(labels, panels, strict=True)):
+            x = 20 + column * 410
+            pixel_text(board, (x, y + 20), label, 1)
+            fitted = panel.resize((380, 270), Image.Resampling.NEAREST)
+            board.alpha_composite(fitted, (x, y + 48))
+    return board
+
+
+def _portal_depth_board_v4(
+    clean: Image.Image,
+    sprites: dict[str, Image.Image],
+    effects: dict[str, Image.Image],
+    portal: dict[str, Any],
+    occluder: Image.Image,
+) -> Image.Image:
+    ground = tuple(portal["samples"]["partiallyOccluded"])
+    crop = (745, 195, 925, 385)
+    panels: list[tuple[str, Image.Image]] = []
+    for label, effect_name, apply_arch in (
+        ("WORLD RING BEFORE ARCH", "warden-selection-ring", False),
+        ("WORLD RING AFTER ARCH", "warden-selection-ring", True),
+        ("WORLD EFFECT AFTER ARCH", "shield-slam-impact", True),
+    ):
+        scene = clean.copy()
+        effect = effects[effect_name]
+        scene.alpha_composite(effect, (ground[0] - effect.width // 2, ground[1] - effect.height // 2))
+        scene.alpha_composite(sprites["iron-warden-idle"], (ground[0] - 56, ground[1] - 66))
+        if apply_arch:
+            scene.alpha_composite(occluder)
+        panels.append((label, scene.crop(crop)))
+    focus = clean.copy()
+    focus.alpha_composite(sprites["iron-warden-idle"], (ground[0] - 56, ground[1] - 66))
+    focus.alpha_composite(occluder)
+    focus_draw = ImageDraw.Draw(focus)
+    x0, y0, x1, y1 = (ground[0] - 38, ground[1] - 62, ground[0] + 38, ground[1] + 8)
+    for start, end in (
+        ((x0, y0 + 14), (x0, y0)), ((x0, y0), (x0 + 14, y0)),
+        ((x1 - 14, y0), (x1, y0)), ((x1, y0), (x1, y0 + 14)),
+        ((x0, y1 - 14), (x0, y1)), ((x0, y1), (x0 + 14, y1)),
+        ((x1 - 14, y1), (x1, y1)), ((x1, y1 - 14), (x1, y1)),
+    ):
+        focus_draw.line((start, end), fill=(80, 235, 255, 255), width=3)
+    panels.append(("SCREEN FOCUS AFTER OCCLUSION", focus.crop(crop)))
+    board = Image.new("RGBA", (1640, 500), (7, 13, 22, 255))
+    pixel_text(board, (20, 18), "PORTAL DEPTH ORDER WORLD CUES HIDE SCREEN FOCUS REMAINS", 2)
+    for index, (label, panel) in enumerate(panels):
+        x = 20 + index * 405
+        pixel_text(board, (x, 70), label, 1)
+        board.alpha_composite(panel.resize((380, 380), Image.Resampling.NEAREST), (x, 100))
+    return board
+
+
+def _lower_mouth_exclusion_board_v4(
+    clean: Image.Image, mask: Image.Image, portal: dict[str, Any]
+) -> Image.Image:
+    crop = tuple(portal["extractionCrop"])
+    mask_crop = mask.crop(crop)
+    alpha_panel = Image.merge("RGBA", (mask_crop, mask_crop, mask_crop, Image.new("L", mask_crop.size, 255)))
+    clean_panel = clean.crop(crop)
+    colored_mask = Image.new("RGBA", mask_crop.size, (220, 45, 145, 0))
+    colored_mask.putalpha(mask_crop.point(lambda value: 155 if value else 0))
+    clean_panel.alpha_composite(colored_mask)
+    points = [tuple(portal["samples"][key]) for key in ("firstVisibleMouth", "mouthCenter", "emerged")]
+    local = [(x - crop[0], y - crop[1]) for x, y in points]
+    for panel in (clean_panel, alpha_panel):
+        draw = ImageDraw.Draw(panel)
+        draw.line(local, fill=(80, 255, 150, 255), width=3)
+        for x, y in local:
+            draw.ellipse((x - 5, y - 3, x + 5, y + 3), outline=(255, 210, 70, 255), width=2)
+    board = Image.new("RGBA", (1000, 620), (7, 13, 22, 255))
+    pixel_text(board, (20, 18), "LOWER VISIBLE MOUTH EXCLUSION", 2)
+    pixel_text(board, (20, 48), "GREEN FLOOR PATH AND GROUND FOOTPRINTS MASK COVERAGE 0", 1)
+    pixel_text(board, (70, 90), "CLEAN REGISTRATION MAGENTA HIDDEN", 1)
+    pixel_text(board, (550, 90), "ALPHA MASK WHITE HIDDEN", 1)
+    board.alpha_composite(clean_panel.resize((330, 465), Image.Resampling.NEAREST), (70, 125))
+    board.alpha_composite(alpha_panel.resize((330, 465), Image.Resampling.NEAREST), (550, 125))
+    return board
+
+
 def _occlusion_sample_v2(
     clean: Image.Image,
     sprite: Image.Image,
@@ -1951,6 +2142,10 @@ def build(output_root: Path = ROOT) -> None:
     mask, occluder = _occlusion_v2(clean)
     png(mask, exports / "occlusion" / "architecture-mask.png")
     png(occluder, exports / "occlusion" / "foreground-occluder.png")
+    portal_layers = _portal_occlusion_v4(clean)
+    for key, (portal_mask, portal_occluder) in portal_layers.items():
+        png(portal_mask, exports / "occlusion" / f"portal-{key}-gate-mask.png")
+        png(portal_occluder, exports / "occlusion" / f"portal-{key}-gate-occluder.png")
     hud = _build_hud_v2()
     for name, image in hud.items():
         png(image, exports / "hud" / f"{name}.png")
@@ -2020,6 +2215,39 @@ def build(output_root: Path = ROOT) -> None:
     )
     png(route_board, evidence / "route-anchor-validation.png")
     png(_route_registration_closeups_v3(route_board), evidence / "route-registration-closeups.png")
+    upper_portal, lower_portal = scene["route"]["portals"]
+    png(
+        _portal_transition_board_v4(
+            clean,
+            sprites,
+            upper_portal,
+            portal_layers["upper"][1],
+            [("APPROACH", "approach", False), ("FULLY HIDDEN", "fullyHidden", True), ("EMERGED", "emerged", False)],
+        ),
+        evidence / "portal-upper-gate-transition.png",
+    )
+    png(
+        _portal_transition_board_v4(
+            clean,
+            sprites,
+            lower_portal,
+            portal_layers["lower"][1],
+            [("APPROACH", "approach", False), ("UNDER LINTEL", "partiallyOccluded", True), ("VISIBLE MOUTH", "firstVisibleMouth", False), ("EMERGED", "emerged", False)],
+        ),
+        evidence / "portal-lower-gate-transition.png",
+    )
+    png(
+        _portal_mask_isolation_board_v4(clean, [upper_portal, lower_portal], portal_layers),
+        evidence / "portal-mask-isolation.png",
+    )
+    png(
+        _portal_depth_board_v4(clean, sprites, effects, lower_portal, portal_layers["lower"][1]),
+        evidence / "portal-ring-effect-depth.png",
+    )
+    png(
+        _lower_mouth_exclusion_board_v4(clean, portal_layers["lower"][0], lower_portal),
+        evidence / "portal-lower-mouth-exclusion.png",
+    )
     png(_alignment_board_v2(sprites), evidence / "entity-state-alignment.png")
     png(
         _impact_board_v2(reconstruction, effects["shield-slam-impact"]),
@@ -2049,6 +2277,14 @@ def build(output_root: Path = ROOT) -> None:
     tracked.append((exports / "lighting" / "warm-light-overlay.png", "lighting", "straight-alpha-normal-srgb-no-entities", ["world-lighting"]))
     tracked.append((exports / "occlusion" / "architecture-mask.png", "occlusion-mask", "grayscale-mask", ["foreground-occlusion"]))
     tracked.append((exports / "occlusion" / "foreground-occluder.png", "foreground", "straight-alpha-environment-only", ["foreground-occlusion"]))
+    tracked.extend(
+        (path, "portal-occlusion-mask", "grayscale-mask-portal-local", ["portal-occlusion"])
+        for path in sorted((exports / "occlusion").glob("portal-*-mask.png"))
+    )
+    tracked.extend(
+        (path, "portal-foreground", "straight-alpha-source-pixel-exact-zero-rgb", ["portal-occlusion"])
+        for path in sorted((exports / "occlusion").glob("portal-*-occluder.png"))
+    )
     tracked.extend((path, "hud", "straight-alpha-runtime-state-or-chrome", ["screen-space-hud"]) for path in sorted((exports / "hud").glob("*.png")))
     manifest = {
         "schemaVersion": 2,
@@ -2081,8 +2317,8 @@ def verify(root: Path = ROOT) -> None:
     _assert_strict_v2(scene, {"schemaVersion", "package", "authority", "coordinateSpace", "safeAreas", "camera", "route", "entityAnchors", "entityStates", "occlusion", "lighting", "hudRegions", "hudDynamicState", "cropPolicy"}, "scene-contract")
     _assert_strict_v2(recipe, {"schemaVersion", "frame", "output", "entityCounts", "layersBackToFront", "isolationProofs"}, "reconstruction")
     _assert_strict_v2(manifest, {"schemaVersion", "package", "logicalFrame", "reviewFrame", "entityLayerCounts", "contractDigests", "files", "evidence"}, "manifest")
-    if scene["schemaVersion"] != 3 or recipe["schemaVersion"] != 2 or manifest["schemaVersion"] != 2:
-        raise ValueError("Scene contract must use schema 3; recipe and manifest must use schema 2")
+    if scene["schemaVersion"] != 4 or recipe["schemaVersion"] != 2 or manifest["schemaVersion"] != 2:
+        raise ValueError("Scene contract must use schema 4; recipe and manifest must use schema 2")
     if scene["package"] != "dwarven-depths-issue-286-production-scene" or manifest["package"] != scene["package"]:
         raise ValueError("Scene and manifest package IDs are not canonical")
     if manifest["logicalFrame"] != [640, 360] or manifest["reviewFrame"] != [1280, 720]:
@@ -2095,7 +2331,12 @@ def verify(root: Path = ROOT) -> None:
     _assert_strict_v2(scene["entityAnchors"], {"ironWardenTruthScreen", "mineRaiderTruthScreen"}, "scene.entityAnchors")
     for name, anchor in scene["entityAnchors"].items():
         _assert_strict_v2(anchor, {"groundPosition", "depthSortY"}, f"scene.entityAnchors.{name}")
-    occlusion = _assert_strict_v2(scene["occlusion"], {"mask", "foreground", "scope", "routeTraversalOwner", "zones", "depthOrder"}, "scene.occlusion")
+    occlusion = _assert_strict_v2(scene["occlusion"], {"mask", "foreground", "scope", "routeTraversalOwner", "portalPolicy", "zones", "depthOrder"}, "scene.occlusion")
+    _assert_strict_v2(
+        occlusion["portalPolicy"],
+        {"maskScope", "worldRingsAndEffects", "screenSpaceFocus", "lowerVisibleMouth", "fullTraversalOwnerIssue"},
+        "scene.occlusion.portalPolicy",
+    )
     for index, zone in enumerate(occlusion["zones"]):
         _assert_strict_v2(zone, {"id", "depthThreshold", "bounds"}, f"scene.occlusion.zones[{index}]")
     _assert_strict_v2(scene["lighting"], {"asset", "blendMode", "colorSpace", "alpha", "affects", "excludes"}, "scene.lighting")
@@ -2120,13 +2361,13 @@ def verify(root: Path = ROOT) -> None:
                     "id": "route-zone.background-approach",
                     "depthOrder": 100,
                     "bounds": [1045, 80, 1165, 180],
-                    "visiblePolyline": [[1145, 100], [1120, 125], [1090, 150], [1055, 170]],
+                    "visiblePolyline": [[1145, 100], [1120, 125], [1090, 150], [1052, 170]],
                 },
                 {
                     "id": "route-zone.upper-causeway",
                     "depthOrder": 200,
                     "bounds": [790, 175, 925, 295],
-                    "visiblePolyline": [[915, 185], [885, 195], [855, 210], [830, 230], [810, 255], [800, 285]],
+                    "visiblePolyline": [[918, 187], [885, 195], [855, 210], [830, 230], [810, 255], [818, 271], [822, 281]],
                 },
                 {
                     "id": "route-zone.lower-causeway",
@@ -2140,29 +2381,39 @@ def verify(root: Path = ROOT) -> None:
                     "id": "portal.upper-gate",
                     "incomingZoneId": "route-zone.background-approach",
                     "outgoingZoneId": "route-zone.upper-causeway",
-                    "incomingAnchor": [1055, 170],
-                    "outgoingAnchor": [915, 185],
-                    "bounds": [900, 155, 1060, 215],
+                    "incomingAnchor": [1052, 170],
+                    "outgoingAnchor": [918, 187],
+                    "bounds": [900, 100, 1065, 240],
                     "visibleMouthBounds": None,
-                    "segments": [{"kind": "architecture-hidden", "from": [1055, 170], "to": [915, 185]}],
+                    "segments": [{"kind": "architecture-hidden", "from": [1052, 170], "to": [918, 187]}],
                     "visibility": "architecture-hidden",
                     "occlusionMode": "architecture-depth-transition",
+                    "maskAsset": "portal-upper-gate-mask",
+                    "occluderAsset": "portal-upper-gate-occluder",
+                    "extractionCrop": [900, 100, 1065, 240],
+                    "applicability": "architecture-hidden-segment-only",
+                    "samples": {"approach": [1052, 170], "lastVisibleLip": [1035, 174], "fullyHidden": [982, 180], "firstVisibleLip": [934, 184], "emerged": [918, 187]},
                     "traversalOwnerIssue": 273,
                 },
                 {
                     "id": "portal.lower-gate",
                     "incomingZoneId": "route-zone.upper-causeway",
                     "outgoingZoneId": "route-zone.lower-causeway",
-                    "incomingAnchor": [800, 285],
+                    "incomingAnchor": [822, 281],
                     "outgoingAnchor": [820, 358],
-                    "bounds": [790, 275, 855, 340],
-                    "visibleMouthBounds": [815, 310, 870, 365],
+                    "bounds": [775, 220, 885, 375],
+                    "visibleMouthBounds": [815, 328, 870, 365],
                     "segments": [
-                        {"kind": "architecture-hidden", "from": [800, 285], "to": [845, 328]},
-                        {"kind": "visible-floor-gate-mouth", "from": [845, 328], "to": [820, 358]},
+                        {"kind": "architecture-hidden", "from": [822, 281], "to": [842, 331]},
+                        {"kind": "visible-floor-gate-mouth", "from": [842, 331], "to": [820, 358]},
                     ],
                     "visibility": "compound-hidden-visible-mouth",
                     "occlusionMode": "compound-depth-transition",
+                    "maskAsset": "portal-lower-gate-mask",
+                    "occluderAsset": "portal-lower-gate-occluder",
+                    "extractionCrop": [775, 220, 885, 375],
+                    "applicability": "hidden-segment-only-visible-mouth-excluded",
+                    "samples": {"approach": [818, 271], "lastVisibleLip": [822, 281], "partiallyOccluded": [829, 309], "firstVisibleMouth": [842, 331], "mouthCenter": [835, 343], "emerged": [820, 358]},
                     "traversalOwnerIssue": 273,
                 },
             ],
@@ -2171,7 +2422,7 @@ def verify(root: Path = ROOT) -> None:
         },
         "entityAnchors": {"ironWardenTruthScreen": {"groundPosition": [674, 434], "depthSortY": 434}, "mineRaiderTruthScreen": {"groundPosition": [802, 398], "depthSortY": 398}},
         "entityStates": {"iron-warden-idle": {"canvas": [112, 72], "pivot": [56, 66], "facing": "upper-right", "nominalHeight": 56}, "iron-warden-shield-slam": {"canvas": [112, 72], "pivot": [56, 66], "facing": "upper-right", "nominalHeight": 56}, "mine-raider-idle": {"canvas": [80, 60], "pivot": [40, 54], "facing": "lower-left", "nominalHeight": 44}, "mine-raider-attack": {"canvas": [80, 60], "pivot": [40, 54], "facing": "lower-left", "nominalHeight": 44}},
-        "occlusion": {"mask": "architecture-mask", "foreground": "foreground-occluder", "scope": "fixed-issue-287-truth-screen-anchors-only", "routeTraversalOwner": 273, "zones": [{"id": "upper-left-column", "depthThreshold": 260, "bounds": [0, 92, 189, 421]}, {"id": "lower-right-balustrade", "depthThreshold": 520, "bounds": [1030, 421, 1280, 720]}], "depthOrder": ["environment", "rings", "entities-by-depthSortY", "foreground-occluder", "lighting-normal-srgb", "combat-effects", "hud"]},
+        "occlusion": {"mask": "architecture-mask", "foreground": "foreground-occluder", "scope": "fixed-issue-287-truth-screen-anchors-only", "routeTraversalOwner": 273, "portalPolicy": {"maskScope": "portal-segment-specific-never-global", "worldRingsAndEffects": "obey-active-portal-occlusion", "screenSpaceFocus": "render-after-world-occlusion", "lowerVisibleMouth": [[842, 331], [835, 343], [820, 358]], "fullTraversalOwnerIssue": 273}, "zones": [{"id": "upper-left-column", "depthThreshold": 260, "bounds": [0, 92, 189, 421]}, {"id": "lower-right-balustrade", "depthThreshold": 520, "bounds": [1030, 421, 1280, 720]}], "depthOrder": ["environment", "rings", "entities-by-depthSortY", "foreground-occluder", "lighting-normal-srgb", "combat-effects", "hud"]},
         "hudRegions": {"top": [0, 0, 1280, 72], "bottom": [272, 590, 1280, 720], "fortressStatus": [18, 10, 258, 60], "waveStatus": [526, 10, 754, 60], "oreStatus": [1022, 10, 1262, 60], "wardenNameplate": [272, 604, 452, 704], "portrait": [282, 614, 360, 694], "health": [462, 604, 652, 704], "targetPolicy": [662, 604, 852, 704], "shieldSlam": [862, 604, 1102, 704], "pause": [1112, 604, 1262, 704]},
         "hudDynamicState": {"font": "project-authored-5x7-pixel-uppercase", "textColor": [222, 170, 88, 255], "baselinePolicy": "regions-use-top-left-local-integer-pixel-baselines", "fixture": {"fortress": "18/20", "wave": "7", "ore": "840", "health": "84/100", "targetPolicy": "nearest", "shieldSlam": "ready", "paused": False}, "minimumVariants": {"targetPolicy": ["nearest", "strongest"], "shieldSlam": ["ready", "cooldown"], "pause": ["pause", "resume"]}},
         "cropPolicy": {"desktop": "show-full-16:9-frame", "laptop": "fit-full-frame-before-cropping; preserve both HUD bands and entrance/gate anchors", "mobile": "later-work-may-letterbox-or-use-authored-camera-crop; never crop both entrance and gate; HUD must reflow rather than scale below legibility", "status": "metadata-only-for-later-responsive-work"},
@@ -2199,6 +2450,10 @@ def verify(root: Path = ROOT) -> None:
         "warm-light-overlay",
         "architecture-mask",
         "foreground-occluder",
+        "portal-lower-gate-mask",
+        "portal-upper-gate-mask",
+        "portal-lower-gate-occluder",
+        "portal-upper-gate-occluder",
         "bottom-hud-frame",
         "fortress-value",
         "health-value",
@@ -2232,6 +2487,11 @@ def verify(root: Path = ROOT) -> None:
         "mine-raider-alpha-states-4x",
         "mine-raider-alpha-states-native",
         "occlusion-depth-proof",
+        "portal-lower-gate-transition",
+        "portal-lower-mouth-exclusion",
+        "portal-mask-isolation",
+        "portal-ring-effect-depth",
+        "portal-upper-gate-transition",
         "reconstruction-entities-removed",
         "reconstruction-one-warden-one-hostile",
         "route-anchor-validation",
@@ -2296,6 +2556,10 @@ def verify(root: Path = ROOT) -> None:
                 semantics = ("occlusion-mask", "grayscale-mask", ["foreground-occlusion"])
             elif path_text.endswith("occlusion/foreground-occluder.png"):
                 semantics = ("foreground", "straight-alpha-environment-only", ["foreground-occlusion"])
+            elif path_text.endswith("-mask.png") and "/occlusion/portal-" in path_text:
+                semantics = ("portal-occlusion-mask", "grayscale-mask-portal-local", ["portal-occlusion"])
+            elif path_text.endswith("-occluder.png") and "/occlusion/portal-" in path_text:
+                semantics = ("portal-foreground", "straight-alpha-source-pixel-exact-zero-rgb", ["portal-occlusion"])
             elif "/hud/" in path_text:
                 semantics = ("hud", "straight-alpha-runtime-state-or-chrome", ["screen-space-hud"])
             else:
@@ -2310,7 +2574,7 @@ def verify(root: Path = ROOT) -> None:
                 nontransparent = image.width * image.height - alpha_histogram[0]
                 if alpha_histogram[0] == 0 or nontransparent == 0 or nontransparent * 4 > image.width * image.height * 3:
                     raise ValueError(f"Straight-alpha asset lacks usable transparent separation: {path}")
-                if hashlib.sha256(alpha.tobytes()).hexdigest() != canonical_alpha_digests.get(record["id"]):
+                if record["id"] in canonical_alpha_digests and hashlib.sha256(alpha.tobytes()).hexdigest() != canonical_alpha_digests[record["id"]]:
                     raise ValueError(f"Straight-alpha pixels drifted: {record['id']}")
             canonical_directories = {
                 "environment": "assets/game-art/production-scene/exports/environment",
@@ -2319,6 +2583,8 @@ def verify(root: Path = ROOT) -> None:
                 "lighting": "assets/game-art/production-scene/exports/lighting",
                 "occlusion-mask": "assets/game-art/production-scene/exports/occlusion",
                 "foreground": "assets/game-art/production-scene/exports/occlusion",
+                "portal-occlusion-mask": "assets/game-art/production-scene/exports/occlusion",
+                "portal-foreground": "assets/game-art/production-scene/exports/occlusion",
                 "hud": "assets/game-art/production-scene/exports/hud",
                 "evidence": "docs/visual-evidence/production-scene",
             }
@@ -2415,6 +2681,11 @@ def verify(root: Path = ROOT) -> None:
                 "segments",
                 "visibility",
                 "occlusionMode",
+                "maskAsset",
+                "occluderAsset",
+                "extractionCrop",
+                "applicability",
+                "samples",
                 "traversalOwnerIssue",
             },
             f"scene.route.portals[{index}]",
@@ -2436,6 +2707,18 @@ def verify(root: Path = ROOT) -> None:
             if visible_bounds_value is None
             else validate_rectangle(visible_bounds_value, f"scene.route.portals[{index}].visibleMouthBounds")
         )
+        validate_rectangle(portal["extractionCrop"], f"scene.route.portals[{index}].extractionCrop")
+        expected_sample_keys = [
+            {"approach", "lastVisibleLip", "fullyHidden", "firstVisibleLip", "emerged"},
+            {"approach", "lastVisibleLip", "partiallyOccluded", "firstVisibleMouth", "mouthCenter", "emerged"},
+        ][index]
+        samples = _assert_strict_v2(
+            portal["samples"], expected_sample_keys, f"scene.route.portals[{index}].samples"
+        )
+        for sample_name, sample in samples.items():
+            validate_point(sample, f"scene.route.portals[{index}].samples.{sample_name}")
+        if portal["maskAsset"] not in ids or portal["occluderAsset"] not in ids:
+            raise ValueError("Portal mask/occluder assets are missing from the manifest")
         segments = portal["segments"]
         if not isinstance(segments, list) or not segments:
             raise ValueError("Portal transition must contain at least one registered segment")
@@ -2498,6 +2781,73 @@ def verify(root: Path = ROOT) -> None:
                 zone_pixel_counts[containing_zones[0]] += 1
         if any(count == 0 for count in zone_pixel_counts):
             raise ValueError("Every declared occlusion zone must contain architecture mask pixels")
+
+    clean = assets["shuttergate-clean-plate-1280x720"]
+    expected_portal_layers = _portal_occlusion_v4(clean)
+    portal_images: dict[str, tuple[Image.Image, Image.Image]] = {}
+    for portal, key in zip(portals, ("upper", "lower"), strict=True):
+        mask_path = package / "exports" / "occlusion" / f"portal-{key}-gate-mask.png"
+        actual_mask = Image.open(mask_path).convert("L")
+        actual_occluder = assets[f"portal-{key}-gate-occluder"]
+        expected_mask, expected_occluder = expected_portal_layers[key]
+        if actual_mask.tobytes() != expected_mask.tobytes():
+            raise ValueError(f"Portal mask pixels drifted: {key}")
+        if actual_occluder.tobytes() != expected_occluder.tobytes():
+            raise ValueError(f"Portal occluder pixels drifted: {key}")
+        if actual_occluder.getchannel("A").tobytes() != actual_mask.tobytes():
+            raise ValueError(f"Portal occluder alpha does not byte-match its mask: {key}")
+        clean_pixels = clean.load()
+        occluder_pixels = actual_occluder.load()
+        for y in range(FRAME[1]):
+            for x in range(FRAME[0]):
+                pixel = occluder_pixels[x, y]
+                if pixel[3] == 0:
+                    if pixel[:3] != (0, 0, 0):
+                        raise ValueError(f"Portal occluder has RGB under zero alpha: {key}")
+                elif pixel[:3] != clean_pixels[x, y][:3]:
+                    raise ValueError(f"Portal occluder contains non-source architecture pixels: {key}")
+        no_op = clean.copy()
+        no_op.alpha_composite(actual_occluder)
+        if no_op.tobytes() != clean.tobytes():
+            raise ValueError(f"Portal occluder is not a clean-plate pixel no-op: {key}")
+        portal_images[key] = (actual_mask, actual_occluder)
+
+    def portal_coverage(asset: str, pivot: tuple[int, int], ground: tuple[int, int], mask_image: Image.Image) -> tuple[int, int]:
+        alpha = assets[asset].getchannel("A")
+        offset = (ground[0] - pivot[0], ground[1] - pivot[1])
+        visible = 0
+        covered = 0
+        for y in range(alpha.height):
+            for x in range(alpha.width):
+                if alpha.getpixel((x, y)) == 0:
+                    continue
+                visible += 1
+                if mask_image.getpixel((offset[0] + x, offset[1] + y)) != 0:
+                    covered += 1
+        return covered, visible
+
+    upper_hidden = tuple(portals[0]["samples"]["fullyHidden"])
+    lower_partial = tuple(portals[1]["samples"]["partiallyOccluded"])
+    for asset, pivot in (("iron-warden-idle", (56, 66)), ("mine-raider-idle", (40, 54))):
+        covered, visible = portal_coverage(asset, pivot, upper_hidden, portal_images["upper"][0])
+        if covered != visible:
+            raise ValueError(f"Upper portal midpoint must wholly hide {asset}")
+        covered, visible = portal_coverage(asset, pivot, lower_partial, portal_images["lower"][0])
+        if covered == 0 or covered >= visible:
+            raise ValueError(f"Lower lintel must partially, not wholly, hide {asset}")
+    lower_mask = portal_images["lower"][0]
+    mouth_points = [tuple(point) for point in scene["occlusion"]["portalPolicy"]["lowerVisibleMouth"]]
+    for start, end in zip(mouth_points, mouth_points[1:]):
+        distance = max(abs(end[0] - start[0]), abs(end[1] - start[1]))
+        for step in range(distance + 1):
+            x = round(start[0] + (end[0] - start[0]) * step / distance)
+            y = round(start[1] + (end[1] - start[1]) * step / distance)
+            if any(
+                lower_mask.getpixel((px, py)) != 0
+                for py in range(max(0, y - 3), min(FRAME[1], y + 4))
+                for px in range(max(0, x - 5), min(FRAME[0], x + 6))
+            ):
+                raise ValueError("Lower visible mouth or emerged ground footprint intersects hidden-mask alpha")
 
     states = _assert_strict_v2(scene["entityStates"], {"iron-warden-idle", "iron-warden-shield-slam", "mine-raider-idle", "mine-raider-attack"}, "scene.entityStates")
     canonical_entity_alpha = {
@@ -2592,6 +2942,11 @@ def verify(root: Path = ROOT) -> None:
         "lighting": "docs/visual-evidence/production-scene/lighting-alpha-isolation.png",
         "lightingEntities": "docs/visual-evidence/production-scene/lighting-entity-proof.png",
         "route": "docs/visual-evidence/production-scene/route-anchor-validation.png",
+        "portalUpperTransition": "docs/visual-evidence/production-scene/portal-upper-gate-transition.png",
+        "portalLowerTransition": "docs/visual-evidence/production-scene/portal-lower-gate-transition.png",
+        "portalIsolation": "docs/visual-evidence/production-scene/portal-mask-isolation.png",
+        "portalDepth": "docs/visual-evidence/production-scene/portal-ring-effect-depth.png",
+        "portalLowerMouth": "docs/visual-evidence/production-scene/portal-lower-mouth-exclusion.png",
         "alignment": "docs/visual-evidence/production-scene/entity-state-alignment.png",
         "impact": "docs/visual-evidence/production-scene/shield-slam-effect-proof.png",
     }
@@ -2640,6 +2995,50 @@ def verify(root: Path = ROOT) -> None:
         "Route-registration closeup proof",
     )
     entity_images = {asset: assets[asset] for asset in scene["entityStates"]}
+    upper_portal, lower_portal = scene["route"]["portals"]
+    require_same_pixels(
+        _portal_transition_board_v4(
+            clean,
+            entity_images,
+            upper_portal,
+            portal_images["upper"][1],
+            [("APPROACH", "approach", False), ("FULLY HIDDEN", "fullyHidden", True), ("EMERGED", "emerged", False)],
+        ),
+        root / expected_proofs["portalUpperTransition"],
+        "Upper-portal transition proof",
+    )
+    require_same_pixels(
+        _portal_transition_board_v4(
+            clean,
+            entity_images,
+            lower_portal,
+            portal_images["lower"][1],
+            [("APPROACH", "approach", False), ("UNDER LINTEL", "partiallyOccluded", True), ("VISIBLE MOUTH", "firstVisibleMouth", False), ("EMERGED", "emerged", False)],
+        ),
+        root / expected_proofs["portalLowerTransition"],
+        "Lower-portal transition proof",
+    )
+    require_same_pixels(
+        _portal_mask_isolation_board_v4(clean, [upper_portal, lower_portal], portal_images),
+        root / expected_proofs["portalIsolation"],
+        "Portal-mask isolation proof",
+    )
+    require_same_pixels(
+        _portal_depth_board_v4(
+            clean,
+            entity_images,
+            {"warden-selection-ring": assets["warden-selection-ring"], "shield-slam-impact": assets["shield-slam-impact"]},
+            lower_portal,
+            portal_images["lower"][1],
+        ),
+        root / expected_proofs["portalDepth"],
+        "Portal ring/effect depth proof",
+    )
+    require_same_pixels(
+        _lower_mouth_exclusion_board_v4(clean, portal_images["lower"][0], lower_portal),
+        root / expected_proofs["portalLowerMouth"],
+        "Lower visible-mouth exclusion proof",
+    )
     require_same_pixels(_alignment_board_v2(entity_images), root / expected_proofs["alignment"], "Entity-alignment proof")
     require_same_pixels(assets["warm-light-overlay"], root / expected_proofs["lighting"], "Lighting-isolation proof")
     evidence_root = root / EVIDENCE.relative_to(ROOT)
@@ -2812,7 +3211,7 @@ def verify(root: Path = ROOT) -> None:
         raise ValueError("Clean-plate source or reference path is not canonical")
     if provenance["cleanPlate"]["referenceUse"] != "Approved style, camera, route, material, lighting, and Shuttergate composition only; no reference pixels were cropped, traced, copied, or edited into the clean plate.":
         raise ValueError("Clean-plate reference-use boundary is not canonical")
-    require_exact_json(provenance["derivedLayers"], {"characterSources": ["assets/game-art/visual-direction/sources/iron-warden-master.png", "assets/game-art/visual-direction/sources/mine-raider-master.png"], "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, direct-from-master LANCZOS downsampling, bounded unsharp filtering, shared pivot-canvas padding, and PNG export in build_scene.py", "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract", "externalAssets": []}, "provenance.derivedLayers")
+    require_exact_json(provenance["derivedLayers"], {"characterSources": ["assets/game-art/visual-direction/sources/iron-warden-master.png", "assets/game-art/visual-direction/sources/mine-raider-master.png"], "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, direct-from-master LANCZOS downsampling, bounded unsharp filtering, shared pivot-canvas padding, and PNG export in build_scene.py", "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract; portal occluders are clean-plate source-pixel-exact extractions with segment-local masks", "externalAssets": []}, "provenance.derivedLayers")
     require_exact_json(provenance["conceptBoundary"], {"path": "assets/concept-art/dwarven-depths-gameplay-mockup.png", "productionPixelReuse": False, "tracing": False, "backgroundUse": False}, "provenance.conceptBoundary")
     required_inputs = {
         "assets/game-art/visual-direction/sources/keyframe-master.png",

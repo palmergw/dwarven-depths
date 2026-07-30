@@ -21,9 +21,9 @@ The verifier strictly rejects extra contract properties, every recursively disco
 - The neutral reconstruction contains one readable Warden and one readable raider; Shield Slam impact is proved separately.
 - HUD chrome is separate from fixture values, health fill, target selection, ability readiness/cooldown, and pause/resume state.
 - The bottom HUD begins at x=272, leaving the foreground shutter approach and objective anchor visible.
-- The painted route is represented as three pixel-surveyed visible depth zones. The upper gate is architecture-hidden. The lower gate is compound: a hidden approach around the parapet followed by a visibly floored mouth. The route terminates at the foreground-shutter threshold. There is no rail-crossing, winding-path, branching-path, or global exposed-floor-mask requirement.
+- The painted route is represented as three pixel-surveyed visible depth zones. The upper gate is a wholly architecture-hidden transition. The lower gate uses a portal-local lintel/jamb occluder during its hidden segment and excludes the visibly floored mouth. The route terminates at the foreground-shutter threshold. There is no rail-crossing, winding-path, branching-path, or global exposed-floor-mask requirement.
 - The diagnostic route overlay uses gold only on surveyed visible floor, cyan for both architecture-hidden spans, and green around the lower visible mouth. Full-frame and closeup proofs are rebuilt and pixel-compared by read-only verification. They are never player UI. The shutter is a nontraversable objective.
-- Occlusion is explicitly bounded to #287's two fixed truth-screen anchors at Warden `[674, 434]` and raider `[802, 398]`. Portal traversal contracts and production movement remain owned by #273; #286 declares the portal mouths and depth transitions without claiming complete traversal animation.
+- The two portal masks are full-frame `L` assets with matching straight-alpha, clean-plate-source-pixel occluders. They apply only to their named hidden segments. World entities, rings, and effects obey the active portal occluder; a separate screen-space focus indicator may render afterward. #286 proves approach/hidden/emerged samples for both 56/44 entities; #273 still owns interpolation, full-route traversal, and production movement.
 - Lighting uses straight-alpha normal compositing in sRGB, after entities/foreground and before combat effects/HUD.
 
 ## Approval boundary
@@ -52,14 +52,14 @@ The clean plate retains the wider diagonal, architecture-forward composition sho
 |---|---|---|---|
 | Composition | Accept the wider diagonal camera, pixel-registered painted-floor route, entrance, shutter backstop, and HUD regions as #287's floor | Clean plate is complete and independently layered | Encounter density and production battlefield polish: #273 |
 | Entities | Accept 56 px Warden, 44 px raider, shared pivots, and two fixed anchors | Direct-from-master exports and individual removal keep the same clean-plate pixel digest; a separate board stress-tests density without claiming simulation truth | Full movement/combat/hit/death animation and forgiving runtime hit/focus targets: #273 / #275 |
-| Occlusion | Accept the two fixed #287 anchors and registered gate/depth transitions | Two off-route samples demonstrate partial architecture masking; route evidence distinguishes hidden spans from the lower visible mouth | Production portal masks, traversal, and movement are not claimed: #273 |
+| Occlusion | Accept the two fixed #287 anchors, portal-local masks, sample positions, and world/screen cue order | Upper transition wholly hides both entities; lower transition partially covers both under the lintel and excludes the visible mouth | Traversal interpolation, all-archetype coverage, and production movement: #273 |
 | HUD | Accept regions and minimum state separation for #287 | Chrome, values, target, ability, and pause variants are separate | Final ornament/information hierarchy: #275 |
 | Responsive presentation | No visual decision requested | Crop policy is metadata only | Layout, accessibility modes, and viewport evidence: #276 |
 
 ## Files
 
 - `sources/`: original clean-plate master.
-- `exports/`: environment, padded entity states, effects, fixed-anchor occlusion masks, lighting, HUD chrome, and mutable HUD states.
+- `exports/`: environment, padded entity states, effects, fixed-anchor and portal-local occlusion masks/occluders, lighting, HUD chrome, and mutable HUD states.
 - `metadata/scene-contract.json`: piecewise route zones/portals, objective, fixed-anchor masks, pivots, depth, lighting, HUD, and crop contracts.
 - `metadata/reconstruction.json`: exact neutral recipe and proof paths.
 - `metadata/layer-manifest.json`: generated dimensions, semantics, and SHA-256 digests.

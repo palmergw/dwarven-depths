@@ -126,6 +126,11 @@
     "lighting": "docs/visual-evidence/production-scene/lighting-alpha-isolation.png",
     "lightingEntities": "docs/visual-evidence/production-scene/lighting-entity-proof.png",
     "route": "docs/visual-evidence/production-scene/route-anchor-validation.png",
+    "portalUpperTransition": "docs/visual-evidence/production-scene/portal-upper-gate-transition.png",
+    "portalLowerTransition": "docs/visual-evidence/production-scene/portal-lower-gate-transition.png",
+    "portalIsolation": "docs/visual-evidence/production-scene/portal-mask-isolation.png",
+    "portalDepth": "docs/visual-evidence/production-scene/portal-ring-effect-depth.png",
+    "portalLowerMouth": "docs/visual-evidence/production-scene/portal-lower-mouth-exclusion.png",
     "alignment": "docs/visual-evidence/production-scene/entity-state-alignment.png",
     "impact": "docs/visual-evidence/production-scene/shield-slam-effect-proof.png"
   }
