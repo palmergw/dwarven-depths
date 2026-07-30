@@ -8,9 +8,9 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "5b8ffef44b00bc1a736c2fbb43ed5da2019bd99554c3f1c1a3d2772e61dc49d7",
+    "provenance.json": "67bad5a5dbf6f8384e0e70752f72b7a767ace19c95a584050f8407d940ab7b7f",
     "reconstruction.json": "cbcbf220541c2246f0dbf751ebfc51a14871d744c2f88250a2d2b09cd959f140",
-    "scene-contract.json": "39b98d429a57fc58292bb8e8cbfaba1c9a17cf270bb7dc7c4a336dc685f9caae"
+    "scene-contract.json": "de7e183f8a55f2dbc19e2cbe48601926b7c9a9c0da336204161bfe5da8164a7e"
   },
   "files": [
     {
@@ -112,16 +112,6 @@
       "alphaSemantics": "grayscale-mask",
       "contributesTo": ["foreground-occlusion"],
       "sha256": "7badeac99d022bed591978c79e25153a41d342198fc5330b6b7654dbbcb0b1df"
-    },
-    {
-      "id": "route-walkable-mask",
-      "path": "assets/game-art/production-scene/exports/occlusion/route-walkable-mask.png",
-      "category": "walkable-mask",
-      "dimensions": [1280, 720],
-      "mode": "L",
-      "alphaSemantics": "binary-review-contract-mask",
-      "contributesTo": ["route-validation"],
-      "sha256": "f02550ad68eb9c82b6b2cb6e7f8c1ff5af41c3b8a0f25da51b7b9f818f866a66"
     },
     {
       "id": "foreground-occluder",
@@ -443,7 +433,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "0bf67ede043e07708a75726b82633ba99f956b9c6153b41fffc57380e28be4df"
+      "sha256": "1c80057a323392f8db5273d1e23c904b64a74af94f1b9818f7e310fd80dd782c"
     },
     {
       "id": "reconstruction-entities-removed",
@@ -469,11 +459,11 @@
       "id": "route-anchor-validation",
       "path": "docs/visual-evidence/production-scene/route-anchor-validation.png",
       "category": "evidence",
-      "dimensions": [1280, 820],
+      "dimensions": [1280, 860],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "cd9cb851b28116e1764c242f2d87fbfe28db50e98f0e866ba0333f5b3932f594"
+      "sha256": "28b373f9c512e7eecb9f11e3586628179f4749bda7cd77785598ea1f310e7341"
     },
     {
       "id": "selection-and-combat-effect-isolation",

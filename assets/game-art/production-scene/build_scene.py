@@ -13,6 +13,7 @@ import tempfile
 import zlib
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageStat
 from PIL import __version__ as PILLOW_VERSION
@@ -1630,42 +1631,6 @@ def _build_hud_v2() -> dict[str, Image.Image]:
     return parts
 
 
-def _walkable_mask_v2() -> Image.Image:
-    """Return the hand-surveyed painted-floor area, independent of route metadata."""
-    mask = Image.new("L", FRAME, 0)
-    draw = ImageDraw.Draw(mask)
-    # Authored against the clean plate's floor edges, not expanded from the route
-    # polyline.  The route is validated against this independently stored survey.
-    draw.polygon(
-        [
-            (1145, 58),
-            (1180, 128),
-            (1060, 204),
-            (968, 264),
-            (858, 332),
-            (746, 397),
-            (628, 462),
-            (510, 530),
-            (382, 578),
-            (270, 650),
-            (100, 660),
-            (100, 560),
-            (248, 506),
-            (432, 474),
-            (548, 404),
-            (668, 338),
-            (790, 270),
-            (912, 198),
-            (1022, 126),
-        ],
-        fill=255,
-    )
-    # Screen-space HUD is not walkable world, even where the surveyed floor
-    # continues behind its transparent/chamfered edge.
-    draw.rectangle((272, 604, 1261, 703), fill=0)
-    return mask
-
-
 def _occlusion_v2(clean: Image.Image) -> tuple[Image.Image, Image.Image]:
     mask = Image.new("L", FRAME, 0)
     draw = ImageDraw.Draw(mask)
@@ -1736,23 +1701,69 @@ def _labelled_grid_v2(panels: list[tuple[str, Image.Image]]) -> Image.Image:
     return board
 
 
-def _route_board_v2(clean: Image.Image, route: list[list[int]], walkable: Image.Image) -> Image.Image:
-    board = Image.new("RGBA", (1280, 820), (7, 13, 22, 255))
-    pixel_text(board, (24, 18), "REVIEW ONLY PAINTED FLOOR SURVEY AND ROUTE", 2)
-    pixel_text(board, (24, 44), "MASK AUTHORED FROM CLEAN PLATE NOT FROM ROUTE", 2)
+def _draw_dashed_line_v3(
+    draw: ImageDraw.ImageDraw,
+    start: tuple[int, int],
+    end: tuple[int, int],
+    *,
+    fill: tuple[int, int, int, int],
+    width: int = 4,
+    dash: int = 12,
+    gap: int = 8,
+) -> None:
+    """Draw one review-only hidden portal transition as a deterministic dashed line."""
+    x0, y0 = start
+    x1, y1 = end
+    distance = max(abs(x1 - x0), abs(y1 - y0))
+    if distance == 0:
+        return
+    cursor = 0
+    while cursor < distance:
+        segment_end = min(cursor + dash, distance)
+        a = cursor / distance
+        b = segment_end / distance
+        draw.line(
+            (
+                (round(x0 + (x1 - x0) * a), round(y0 + (y1 - y0) * a)),
+                (round(x0 + (x1 - x0) * b), round(y0 + (y1 - y0) * b)),
+            ),
+            fill=fill,
+            width=width,
+        )
+        cursor += dash + gap
+
+
+def _route_board_v3(clean: Image.Image, route: dict[str, Any]) -> Image.Image:
+    """Show visible route zones and explicitly hidden portal/depth transitions."""
+    board = Image.new("RGBA", (1280, 860), (7, 13, 22, 255))
+    pixel_text(board, (24, 18), "REVIEW ONLY PIECEWISE ELEVATED DEFENSE ROUTE", 2)
+    pixel_text(board, (24, 44), "GOLD VISIBLE FLOOR  CYAN DASH HIDDEN PORTAL  RED OBJECTIVE", 2)
+    pixel_text(board, (24, 70), "STRAIGHT LANE  NO RAIL CROSSING REQUIREMENT  NO GLOBAL FLOOR MASK", 2)
     scene = clean.copy()
-    tint = Image.new("RGBA", FRAME, (50, 180, 105, 0))
-    tint.putalpha(walkable.point(lambda value: value // 3))
-    scene.alpha_composite(tint)
     draw = ImageDraw.Draw(scene)
-    draw.line([tuple(point) for point in route], fill=(255, 60, 180, 255), width=4)
-    for index, (x, y) in enumerate(route):
-        draw.ellipse((x - 8, y - 8, x + 8, y + 8), fill=(255, 220, 80, 255))
-        pixel_text(scene, (x + 10, y - 10), str(index + 1), 2)
-    landmarks = ((route[0], "ENTRANCE"), (route[3], "CHOKE A"), (route[4], "RAIL"), (route[5], "CHOKE B"), (route[-1], "GATE"))
-    for (x, y), label in landmarks:
-        pixel_text(scene, (max(8, min(x + 12, 1150)), max(8, y - 28)), label, 1)
-    board.alpha_composite(scene, (0, 100))
+    zones = route["zones"]
+    for index, zone in enumerate(zones, start=1):
+        polyline = [tuple(point) for point in zone["visiblePolyline"]]
+        draw.line(polyline, fill=(255, 198, 72, 255), width=6, joint="curve")
+        for x, y in polyline:
+            draw.ellipse((x - 6, y - 6, x + 6, y + 6), fill=(255, 220, 80, 255))
+        x0, y0, x1, y1 = zone["bounds"]
+        draw.rectangle((x0, y0, x1, y1), outline=(255, 198, 72, 180), width=2)
+        pixel_text(scene, (x0 + 6, y0 + 6), f"ZONE {index}", 1)
+    for index, portal in enumerate(route["portals"], start=1):
+        incoming = tuple(portal["incomingAnchor"])
+        outgoing = tuple(portal["outgoingAnchor"])
+        _draw_dashed_line_v3(draw, incoming, outgoing, fill=(70, 220, 235, 255))
+        x0, y0, x1, y1 = portal["bounds"]
+        draw.rectangle((x0, y0, x1, y1), outline=(70, 220, 235, 255), width=3)
+        pixel_text(scene, (x0 + 6, max(8, y0 - 18)), f"GATE PORTAL {index}", 1)
+    entrance_x, entrance_y = route["entrance"]["anchor"]
+    objective_x, objective_y = route["objective"]["anchor"]
+    draw.ellipse((entrance_x - 11, entrance_y - 11, entrance_x + 11, entrance_y + 11), fill=(80, 220, 120, 255))
+    draw.ellipse((objective_x - 12, objective_y - 12, objective_x + 12, objective_y + 12), fill=(220, 72, 62, 255))
+    pixel_text(scene, (entrance_x - 100, entrance_y - 30), "HOSTILE ENTRANCE", 1)
+    pixel_text(scene, (objective_x - 70, objective_y + 18), "SHUTTER BACKSTOP", 1)
+    board.alpha_composite(scene, (0, 140))
     return board
 
 
@@ -1887,10 +1898,8 @@ def build(output_root: Path = ROOT) -> None:
     lighting = lighting_overlay()
     png(lighting, exports / "lighting" / "warm-light-overlay.png")
     mask, occluder = _occlusion_v2(clean)
-    walkable = _walkable_mask_v2()
     png(mask, exports / "occlusion" / "architecture-mask.png")
     png(occluder, exports / "occlusion" / "foreground-occluder.png")
-    png(walkable, exports / "occlusion" / "route-walkable-mask.png")
     hud = _build_hud_v2()
     for name, image in hud.items():
         png(image, exports / "hud" / f"{name}.png")
@@ -1941,7 +1950,15 @@ def build(output_root: Path = ROOT) -> None:
     lower_occlusion = _occlusion_sample_v2(
         clean, sprites["mine-raider-idle"], (1100, 520), (64, 100), occluder
     )
-    occlusion_samples = _labelled_grid_v2([("UPPER COLUMN BEHIND", upper_occlusion), ("TRUTH ANCHORS CLEAR", reconstruction), ("LOWER RAIL BEHIND", lower_occlusion), ("ROUTE TRAVERSAL DEFERRED 273", _route_board_v2(clean, scene["route"]["polyline"], walkable))])
+    route_board = _route_board_v3(clean, scene["route"])
+    occlusion_samples = _labelled_grid_v2(
+        [
+            ("UPPER COLUMN BEHIND", upper_occlusion),
+            ("TRUTH ANCHORS CLEAR", reconstruction),
+            ("LOWER BALUSTRADE BEHIND", lower_occlusion),
+            ("PORTAL TRAVERSAL OWNED BY 273", route_board),
+        ]
+    )
     png(occlusion_samples, evidence / "occlusion-depth-proof.png")
     png(lighting, evidence / "lighting-alpha-isolation.png")
     unlit = _compose_v2(_recipe_without_v2(recipe, {"warm-light-overlay"}), assets)
@@ -1949,7 +1966,7 @@ def build(output_root: Path = ROOT) -> None:
         _lighting_board_v2(clean, sprites["iron-warden-idle"], (90, 112), lighting),
         evidence / "lighting-entity-proof.png",
     )
-    png(_route_board_v2(clean, scene["route"]["polyline"], walkable), evidence / "route-anchor-validation.png")
+    png(route_board, evidence / "route-anchor-validation.png")
     png(_alignment_board_v2(sprites), evidence / "entity-state-alignment.png")
     png(
         _impact_board_v2(reconstruction, effects["shield-slam-impact"]),
@@ -1975,7 +1992,6 @@ def build(output_root: Path = ROOT) -> None:
     tracked.extend((path, "effect", "straight-alpha", ["world-effects"]) for path in sorted((exports / "effects").glob("*.png")))
     tracked.append((exports / "lighting" / "warm-light-overlay.png", "lighting", "straight-alpha-normal-srgb-no-entities", ["world-lighting"]))
     tracked.append((exports / "occlusion" / "architecture-mask.png", "occlusion-mask", "grayscale-mask", ["foreground-occlusion"]))
-    tracked.append((exports / "occlusion" / "route-walkable-mask.png", "walkable-mask", "binary-review-contract-mask", ["route-validation"]))
     tracked.append((exports / "occlusion" / "foreground-occluder.png", "foreground", "straight-alpha-environment-only", ["foreground-occlusion"]))
     tracked.extend((path, "hud", "straight-alpha-runtime-state-or-chrome", ["screen-space-hud"]) for path in sorted((exports / "hud").glob("*.png")))
     manifest = {
@@ -2009,8 +2025,8 @@ def verify(root: Path = ROOT) -> None:
     _assert_strict_v2(scene, {"schemaVersion", "package", "authority", "coordinateSpace", "safeAreas", "camera", "route", "entityAnchors", "entityStates", "occlusion", "lighting", "hudRegions", "hudDynamicState", "cropPolicy"}, "scene-contract")
     _assert_strict_v2(recipe, {"schemaVersion", "frame", "output", "entityCounts", "layersBackToFront", "isolationProofs"}, "reconstruction")
     _assert_strict_v2(manifest, {"schemaVersion", "package", "logicalFrame", "reviewFrame", "entityLayerCounts", "contractDigests", "files", "evidence"}, "manifest")
-    if scene["schemaVersion"] != 2 or recipe["schemaVersion"] != 2 or manifest["schemaVersion"] != 2:
-        raise ValueError("Production-scene contracts must use schema version 2")
+    if scene["schemaVersion"] != 3 or recipe["schemaVersion"] != 2 or manifest["schemaVersion"] != 2:
+        raise ValueError("Scene contract must use schema 3; recipe and manifest must use schema 2")
     if scene["package"] != "dwarven-depths-issue-286-production-scene" or manifest["package"] != scene["package"]:
         raise ValueError("Scene and manifest package IDs are not canonical")
     if manifest["logicalFrame"] != [640, 360] or manifest["reviewFrame"] != [1280, 720]:
@@ -2033,7 +2049,61 @@ def verify(root: Path = ROOT) -> None:
         "coordinateSpace": {"origin": "top-left", "logicalFrame": [640, 360], "reviewFrame": [1280, 720], "logicalTexelScale": 2},
         "safeAreas": {"world": [0, 0, 1280, 720], "unobscuredWorldBand": [0, 72, 1280, 590], "entitySafe": [80, 80, 1200, 590], "hudOcclusionRects": [[272, 604, 1262, 704]]},
         "camera": {"projection": "elevated-orthographic-2.5d", "viewDirection": "upper-right-background-to-lower-left-foreground", "fixedReviewFrame": True},
-        "route": {"polyline": [[1110, 112], [1028, 166], [936, 224], [825, 295], [701, 365], [585, 426], [457, 500], [290, 565], [181, 621]], "entranceAnchor": [1110, 112], "gateAnchor": [181, 621], "chokepointAnchors": [[825, 295], [585, 426]], "railCrossingAnchor": [701, 365], "walkableMask": "route-walkable-mask", "minimumWalkableRadius": 26},
+        "route": {
+            "topology": "single-straight-piecewise-portal-route",
+            "scope": "presentation-only-fixed-truth-screen",
+            "entrance": {"id": "entrance.background-opening", "anchor": [1110, 112]},
+            "objective": {
+                "id": "objective.foreground-shutter",
+                "anchor": [445, 500],
+                "kind": "terminal-backstop",
+                "traversable": False,
+            },
+            "zones": [
+                {
+                    "id": "route-zone.background-approach",
+                    "depthOrder": 100,
+                    "bounds": [900, 72, 1160, 260],
+                    "visiblePolyline": [[1110, 112], [1028, 166], [936, 224]],
+                },
+                {
+                    "id": "route-zone.upper-causeway",
+                    "depthOrder": 200,
+                    "bounds": [735, 220, 930, 390],
+                    "visiblePolyline": [[875, 270], [825, 310], [770, 350]],
+                },
+                {
+                    "id": "route-zone.lower-causeway",
+                    "depthOrder": 300,
+                    "bounds": [410, 350, 780, 550],
+                    "visiblePolyline": [[735, 385], [650, 430], [560, 470], [470, 500], [445, 500]],
+                },
+            ],
+            "portals": [
+                {
+                    "id": "portal.upper-gate",
+                    "incomingZoneId": "route-zone.background-approach",
+                    "outgoingZoneId": "route-zone.upper-causeway",
+                    "incomingAnchor": [936, 224],
+                    "outgoingAnchor": [875, 270],
+                    "bounds": [850, 175, 975, 300],
+                    "occlusionMode": "architecture-depth-transition",
+                    "traversalOwnerIssue": 273,
+                },
+                {
+                    "id": "portal.lower-gate",
+                    "incomingZoneId": "route-zone.upper-causeway",
+                    "outgoingZoneId": "route-zone.lower-causeway",
+                    "incomingAnchor": [770, 350],
+                    "outgoingAnchor": [735, 385],
+                    "bounds": [700, 300, 830, 430],
+                    "occlusionMode": "architecture-depth-transition",
+                    "traversalOwnerIssue": 273,
+                },
+            ],
+            "chokepointPortalIds": ["portal.upper-gate", "portal.lower-gate"],
+            "validation": "local-visible-segments-and-declared-hidden-portals",
+        },
         "entityAnchors": {"ironWardenTruthScreen": {"groundPosition": [674, 434], "depthSortY": 434}, "mineRaiderTruthScreen": {"groundPosition": [802, 398], "depthSortY": 398}},
         "entityStates": {"iron-warden-idle": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "iron-warden-shield-slam": {"canvas": [180, 120], "pivot": [90, 112], "facing": "upper-right", "nominalHeight": 104}, "mine-raider-idle": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}, "mine-raider-attack": {"canvas": [128, 108], "pivot": [64, 100], "facing": "lower-left", "nominalHeight": 92}},
         "occlusion": {"mask": "architecture-mask", "foreground": "foreground-occluder", "scope": "fixed-issue-287-truth-screen-anchors-only", "routeTraversalOwner": 273, "zones": [{"id": "upper-left-column", "depthThreshold": 260, "bounds": [0, 92, 189, 421]}, {"id": "lower-right-balustrade", "depthThreshold": 520, "bounds": [1030, 421, 1280, 720]}], "depthOrder": ["environment", "rings", "entities-by-depthSortY", "foreground-occluder", "lighting-normal-srgb", "combat-effects", "hud"]},
@@ -2063,7 +2133,6 @@ def verify(root: Path = ROOT) -> None:
         "warden-selection-ring",
         "warm-light-overlay",
         "architecture-mask",
-        "route-walkable-mask",
         "foreground-occluder",
         "bottom-hud-frame",
         "fortress-value",
@@ -2159,8 +2228,6 @@ def verify(root: Path = ROOT) -> None:
                 semantics = ("lighting", "straight-alpha-normal-srgb-no-entities", ["world-lighting"])
             elif path_text.endswith("occlusion/architecture-mask.png"):
                 semantics = ("occlusion-mask", "grayscale-mask", ["foreground-occlusion"])
-            elif path_text.endswith("occlusion/route-walkable-mask.png"):
-                semantics = ("walkable-mask", "binary-review-contract-mask", ["route-validation"])
             elif path_text.endswith("occlusion/foreground-occluder.png"):
                 semantics = ("foreground", "straight-alpha-environment-only", ["foreground-occlusion"])
             elif "/hud/" in path_text:
@@ -2185,7 +2252,6 @@ def verify(root: Path = ROOT) -> None:
                 "effect": "assets/game-art/production-scene/exports/effects",
                 "lighting": "assets/game-art/production-scene/exports/lighting",
                 "occlusion-mask": "assets/game-art/production-scene/exports/occlusion",
-                "walkable-mask": "assets/game-art/production-scene/exports/occlusion",
                 "foreground": "assets/game-art/production-scene/exports/occlusion",
                 "hud": "assets/game-art/production-scene/exports/hud",
                 "evidence": "docs/visual-evidence/production-scene",
@@ -2196,7 +2262,7 @@ def verify(root: Path = ROOT) -> None:
             if record["id"] in ids:
                 raise ValueError(f"Duplicate asset id: {record['id']}")
             ids.add(record["id"])
-            if record["category"] not in {"evidence", "occlusion-mask", "walkable-mask"}:
+            if record["category"] not in {"evidence", "occlusion-mask"}:
                 assets[record["id"]] = image.convert("RGBA")
     actual_exports = {path.relative_to(root).as_posix() for path in (package / "exports").rglob("*.png")}
     declared_exports = {record["path"] for record in manifest["files"]}
@@ -2205,19 +2271,107 @@ def verify(root: Path = ROOT) -> None:
     if actual_exports != declared_exports or actual_evidence != declared_evidence:
         raise ValueError("Export or evidence directory contains stale/unmanifested files")
 
-    route = _assert_strict_v2(scene["route"], {"polyline", "entranceAnchor", "gateAnchor", "chokepointAnchors", "railCrossingAnchor", "walkableMask", "minimumWalkableRadius"}, "scene.route")
-    if route["polyline"][0] != route["entranceAnchor"] or route["polyline"][-1] != route["gateAnchor"]:
-        raise ValueError("Route endpoints do not bind entrance and gate")
+    route = _assert_strict_v2(
+        scene["route"],
+        {
+            "topology",
+            "scope",
+            "entrance",
+            "objective",
+            "zones",
+            "portals",
+            "chokepointPortalIds",
+            "validation",
+        },
+        "scene.route",
+    )
+    entrance = _assert_strict_v2(route["entrance"], {"id", "anchor"}, "scene.route.entrance")
+    objective = _assert_strict_v2(
+        route["objective"], {"id", "anchor", "kind", "traversable"}, "scene.route.objective"
+    )
+    entrance_anchor = validate_point(entrance["anchor"], "scene.route.entrance.anchor")
+    objective_anchor = validate_point(objective["anchor"], "scene.route.objective.anchor")
+    if objective["kind"] != "terminal-backstop" or objective["traversable"] is not False:
+        raise ValueError("Foreground shutter must be a nontraversable terminal backstop")
+    zones = route["zones"]
+    if not isinstance(zones, list) or len(zones) != 3:
+        raise ValueError("Piecewise route must declare exactly three ordered visible zones")
+    zone_ids: list[str] = []
+    zone_by_id: dict[str, dict[str, Any]] = {}
+    previous_depth = -1
+    for index, raw_zone in enumerate(zones):
+        zone = _assert_strict_v2(
+            raw_zone, {"id", "depthOrder", "bounds", "visiblePolyline"}, f"scene.route.zones[{index}]"
+        )
+        zone_id = zone["id"]
+        if not isinstance(zone_id, str) or zone_id in zone_by_id:
+            raise ValueError("Route zone IDs must be unique strings")
+        bounds = validate_rectangle(zone["bounds"], f"scene.route.zones[{index}].bounds")
+        depth_order = zone["depthOrder"]
+        if type(depth_order) is not int or depth_order <= previous_depth:
+            raise ValueError("Route zone depthOrder values must be strictly increasing")
+        previous_depth = depth_order
+        polyline = zone["visiblePolyline"]
+        if not isinstance(polyline, list) or len(polyline) < 2:
+            raise ValueError("Every visible route zone needs at least two points")
+        for point_index, point in enumerate(polyline):
+            x, y = validate_point(point, f"scene.route.zones[{index}].visiblePolyline[{point_index}]")
+            x0, y0, x1, y1 = bounds
+            if not (x0 <= x <= x1 and y0 <= y <= y1):
+                raise ValueError("Visible route point lies outside its declared depth-zone bounds")
+        zone_ids.append(zone_id)
+        zone_by_id[zone_id] = zone
+    if tuple(zones[0]["visiblePolyline"][0]) != entrance_anchor:
+        raise ValueError("First visible route zone must begin at the hostile entrance")
+    if tuple(zones[-1]["visiblePolyline"][-1]) != objective_anchor:
+        raise ValueError("Last visible route zone must terminate at the shutter backstop")
+    portals = route["portals"]
+    if not isinstance(portals, list) or len(portals) != len(zones) - 1:
+        raise ValueError("Each adjacent visible route zone must be joined by one hidden portal transition")
+    portal_ids: list[str] = []
+    for index, raw_portal in enumerate(portals):
+        portal = _assert_strict_v2(
+            raw_portal,
+            {
+                "id",
+                "incomingZoneId",
+                "outgoingZoneId",
+                "incomingAnchor",
+                "outgoingAnchor",
+                "bounds",
+                "occlusionMode",
+                "traversalOwnerIssue",
+            },
+            f"scene.route.portals[{index}]",
+        )
+        expected_incoming = zone_ids[index]
+        expected_outgoing = zone_ids[index + 1]
+        if portal["incomingZoneId"] != expected_incoming or portal["outgoingZoneId"] != expected_outgoing:
+            raise ValueError("Portal transitions must connect adjacent route zones in canonical order")
+        incoming_anchor = validate_point(portal["incomingAnchor"], f"scene.route.portals[{index}].incomingAnchor")
+        outgoing_anchor = validate_point(portal["outgoingAnchor"], f"scene.route.portals[{index}].outgoingAnchor")
+        if tuple(zone_by_id[expected_incoming]["visiblePolyline"][-1]) != incoming_anchor:
+            raise ValueError("Portal incoming anchor must end its incoming visible zone")
+        if tuple(zone_by_id[expected_outgoing]["visiblePolyline"][0]) != outgoing_anchor:
+            raise ValueError("Portal outgoing anchor must begin its outgoing visible zone")
+        x0, y0, x1, y1 = validate_rectangle(portal["bounds"], f"scene.route.portals[{index}].bounds")
+        if not all(x0 <= x <= x1 and y0 <= y <= y1 for x, y in (incoming_anchor, outgoing_anchor)):
+            raise ValueError("Portal transition anchors must lie inside the declared portal mouth")
+        if portal["occlusionMode"] != "architecture-depth-transition" or portal["traversalOwnerIssue"] != 273:
+            raise ValueError("Portal traversal/occlusion ownership drifted")
+        portal_id = portal["id"]
+        if not isinstance(portal_id, str) or portal_id in portal_ids:
+            raise ValueError("Portal IDs must be unique strings")
+        portal_ids.append(portal_id)
+    if route["chokepointPortalIds"] != portal_ids:
+        raise ValueError("The two gate portals must be the declared chokepoints")
     hud_rects = scene["safeAreas"]["hudOcclusionRects"]
-    walkable_path = package / "exports" / "occlusion" / "route-walkable-mask.png"
+    for x, y in (entrance_anchor, objective_anchor):
+        if any(x0 <= x < x1 and y0 <= y < y1 for x0, y0, x1, y1 in hud_rects):
+            raise ValueError("Route entrance or objective is hidden beneath HUD")
+
     foreground_path = package / "exports" / "occlusion" / "architecture-mask.png"
-    route_polyline = route["polyline"]
-    if not isinstance(route_polyline, list):
-        raise ValueError("Route polyline must be an array")
-    with Image.open(walkable_path).convert("L") as walkable, Image.open(foreground_path).convert("L") as foreground:
-        expected_walkable = _walkable_mask_v2()
-        if walkable.size != expected_walkable.size or walkable.tobytes() != expected_walkable.tobytes():
-            raise ValueError("Walkable mask does not match the authored clean-plate floor survey")
+    with Image.open(foreground_path).convert("L") as foreground:
         foreground_alpha = assets["foreground-occluder"].getchannel("A")
         if foreground.size != foreground_alpha.size or foreground.tobytes() != foreground_alpha.tobytes():
             raise ValueError("Architecture mask does not match foreground occluder alpha")
@@ -2237,47 +2391,6 @@ def verify(root: Path = ROOT) -> None:
                 zone_pixel_counts[containing_zones[0]] += 1
         if any(count == 0 for count in zone_pixel_counts):
             raise ValueError("Every declared occlusion zone must contain architecture mask pixels")
-        for x0, y0, x1, y1 in hud_rects:
-            if any(
-                walkable.getpixel((x, y)) != 0
-                for y in range(y0, y1)
-                for x in range(x0, x1)
-            ):
-                raise ValueError("Walkable route mask intersects HUD occlusion")
-        if any(
-            walkable.getpixel((x, y)) != 0 and foreground.getpixel((x, y)) != 0
-            for y in range(foreground.height)
-            for x in range(foreground.width)
-        ):
-            raise ValueError("Walkable route mask intersects foreground architecture")
-        for point in route_polyline:
-            x, y = validate_point(point, "scene.route point")
-            if walkable.getpixel((x, y)) != 255 or foreground.getpixel((x, y)) != 0:
-                raise ValueError("Route point is not walkable and unobscured")
-            if any(x0 <= x < x1 and y0 <= y < y1 for x0, y0, x1, y1 in hud_rects):
-                raise ValueError("Route point is hidden beneath HUD")
-        minimum_radius = route["minimumWalkableRadius"]
-        if not isinstance(minimum_radius, int) or isinstance(minimum_radius, bool):
-            raise ValueError("Route minimumWalkableRadius must be an integer")
-        for start, end in zip(route_polyline, route_polyline[1:]):
-            x0, y0 = validate_point(start, "scene.route segment start")
-            x1, y1 = validate_point(end, "scene.route segment end")
-            steps = max(abs(x1 - x0), abs(y1 - y0))
-            for step in range(steps + 1):
-                x = round(x0 + (x1 - x0) * step / steps)
-                y = round(y0 + (y1 - y0) * step / steps)
-                if walkable.getpixel((x, y)) != 255:
-                    raise ValueError(
-                        "Route segment leaves the independently authored painted-floor survey"
-                    )
-                for delta_y in range(-minimum_radius, minimum_radius + 1):
-                    for delta_x in range(-minimum_radius, minimum_radius + 1):
-                        if delta_x * delta_x + delta_y * delta_y > minimum_radius**2:
-                            continue
-                        if walkable.getpixel((x + delta_x, y + delta_y)) != 255:
-                            raise ValueError(
-                                "Route segment violates the declared painted-floor clearance radius"
-                            )
 
     states = _assert_strict_v2(scene["entityStates"], {"iron-warden-idle", "iron-warden-shield-slam", "mine-raider-idle", "mine-raider-attack"}, "scene.entityStates")
     canonical_entity_alpha = {
@@ -2399,9 +2512,20 @@ def verify(root: Path = ROOT) -> None:
     )
     require_same_pixels(assets["shuttergate-clean-plate-1280x720"], root / expected_proofs["environmentOnly"], "Clean-plate proof")
     architecture_mask_image = Image.open(package / "exports" / "occlusion" / "architecture-mask.png").convert("L")
-    walkable_image = Image.open(package / "exports" / "occlusion" / "route-walkable-mask.png").convert("L")
-    require_same_pixels(occlusion_board(assets["shuttergate-clean-plate-1280x720"], architecture_mask_image, assets["foreground-occluder"]), root / expected_proofs["foreground"], "Foreground-isolation proof")
-    require_same_pixels(_route_board_v2(assets["shuttergate-clean-plate-1280x720"], scene["route"]["polyline"], walkable_image), root / expected_proofs["route"], "Route-validation proof")
+    require_same_pixels(
+        occlusion_board(
+            assets["shuttergate-clean-plate-1280x720"],
+            architecture_mask_image,
+            assets["foreground-occluder"],
+        ),
+        root / expected_proofs["foreground"],
+        "Foreground-isolation proof",
+    )
+    require_same_pixels(
+        _route_board_v3(assets["shuttergate-clean-plate-1280x720"], scene["route"]),
+        root / expected_proofs["route"],
+        "Piecewise-route proof",
+    )
     entity_images = {asset: assets[asset] for asset in scene["entityStates"]}
     require_same_pixels(_alignment_board_v2(entity_images), root / expected_proofs["alignment"], "Entity-alignment proof")
     require_same_pixels(assets["warm-light-overlay"], root / expected_proofs["lighting"], "Lighting-isolation proof")
@@ -2518,7 +2642,14 @@ def verify(root: Path = ROOT) -> None:
         occlusion_panels.append(
             _occlusion_sample_v2(clean, assets[asset], ground, pivot, assets["foreground-occluder"])
         )
-    occlusion_proof = _labelled_grid_v2([("UPPER COLUMN BEHIND", occlusion_panels[0]), ("TRUTH ANCHORS CLEAR", _compose_v2(recipe, assets)), ("LOWER RAIL BEHIND", occlusion_panels[1]), ("ROUTE TRAVERSAL DEFERRED 273", _route_board_v2(clean, scene["route"]["polyline"], walkable_image))])
+    occlusion_proof = _labelled_grid_v2(
+        [
+            ("UPPER COLUMN BEHIND", occlusion_panels[0]),
+            ("TRUTH ANCHORS CLEAR", _compose_v2(recipe, assets)),
+            ("LOWER BALUSTRADE BEHIND", occlusion_panels[1]),
+            ("PORTAL TRAVERSAL OWNED BY 273", _route_board_v3(clean, scene["route"])),
+        ]
+    )
     require_same_pixels(occlusion_proof, root / expected_proofs["occlusionDepth"], "Occlusion-depth proof")
     if scene["lighting"] != {"asset": "warm-light-overlay", "blendMode": "normal", "colorSpace": "sRGB", "alpha": "straight", "affects": ["environment", "entities", "foreground"], "excludes": ["combat-effects", "hud"]}:
         raise ValueError("Lighting blend/order semantics drifted")
@@ -2586,7 +2717,7 @@ def verify(root: Path = ROOT) -> None:
         "assets/game-art/visual-direction/sources/mine-raider-master.png": "4c3c0a9c63a510f5bb76e6136423e87da0e6f74108a35514c08d35493229cb32",
         "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png": "49a659a61548ac12bc546d5af5c74e990eb8a3d6bc55ac46dee153d458a991e5",
         "assets/concept-art/dwarven-depths-gameplay-mockup.png": "7b35bf139017bf833c8d0c9288fa05f702b5e6c971f48d66dd40931d1c31e9c1",
-        "assets/game-art/production-scene/generation-log.md": "66366c03522c03e3f25644007e02a9c6404fa3a46a0f92e9037634f8cc14d147",
+        "assets/game-art/production-scene/generation-log.md": "f49f366e9f1cbe7f0e4b407b033e6eeee03e09cea64187964aeb69a59fda06f5",
         "assets/game-art/production-scene/requirements.lock": "18101d853dbd634248566915697e60f350fbf8afc9abb57998c9e1b1cf61ecf4",
     }
     if {record["path"]: record["role"] for record in provenance["inputs"]} != expected_roles:

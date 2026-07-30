@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "package": "dwarven-depths-issue-286-production-scene",
   "authority": "presentation-only",
   "coordinateSpace": {
@@ -20,23 +20,68 @@
     "fixedReviewFrame": true
   },
   "route": {
-    "polyline": [
-      [1110, 112],
-      [1028, 166],
-      [936, 224],
-      [825, 295],
-      [701, 365],
-      [585, 426],
-      [457, 500],
-      [290, 565],
-      [181, 621]
+    "topology": "single-straight-piecewise-portal-route",
+    "scope": "presentation-only-fixed-truth-screen",
+    "entrance": {
+      "id": "entrance.background-opening",
+      "anchor": [1110, 112]
+    },
+    "objective": {
+      "id": "objective.foreground-shutter",
+      "anchor": [445, 500],
+      "kind": "terminal-backstop",
+      "traversable": false
+    },
+    "zones": [
+      {
+        "id": "route-zone.background-approach",
+        "depthOrder": 100,
+        "bounds": [900, 72, 1160, 260],
+        "visiblePolyline": [[1110, 112], [1028, 166], [936, 224]]
+      },
+      {
+        "id": "route-zone.upper-causeway",
+        "depthOrder": 200,
+        "bounds": [735, 220, 930, 390],
+        "visiblePolyline": [[875, 270], [825, 310], [770, 350]]
+      },
+      {
+        "id": "route-zone.lower-causeway",
+        "depthOrder": 300,
+        "bounds": [410, 350, 780, 550],
+        "visiblePolyline": [
+          [735, 385],
+          [650, 430],
+          [560, 470],
+          [470, 500],
+          [445, 500]
+        ]
+      }
     ],
-    "entranceAnchor": [1110, 112],
-    "gateAnchor": [181, 621],
-    "chokepointAnchors": [[825, 295], [585, 426]],
-    "railCrossingAnchor": [701, 365],
-    "walkableMask": "route-walkable-mask",
-    "minimumWalkableRadius": 26
+    "portals": [
+      {
+        "id": "portal.upper-gate",
+        "incomingZoneId": "route-zone.background-approach",
+        "outgoingZoneId": "route-zone.upper-causeway",
+        "incomingAnchor": [936, 224],
+        "outgoingAnchor": [875, 270],
+        "bounds": [850, 175, 975, 300],
+        "occlusionMode": "architecture-depth-transition",
+        "traversalOwnerIssue": 273
+      },
+      {
+        "id": "portal.lower-gate",
+        "incomingZoneId": "route-zone.upper-causeway",
+        "outgoingZoneId": "route-zone.lower-causeway",
+        "incomingAnchor": [770, 350],
+        "outgoingAnchor": [735, 385],
+        "bounds": [700, 300, 830, 430],
+        "occlusionMode": "architecture-depth-transition",
+        "traversalOwnerIssue": 273
+      }
+    ],
+    "chokepointPortalIds": ["portal.upper-gate", "portal.lower-gate"],
+    "validation": "local-visible-segments-and-declared-hidden-portals"
   },
   "entityAnchors": {
     "ironWardenTruthScreen": {

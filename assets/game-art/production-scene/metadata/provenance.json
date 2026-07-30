@@ -40,7 +40,7 @@
     },
     {
       "path": "assets/game-art/production-scene/generation-log.md",
-      "sha256": "66366c03522c03e3f25644007e02a9c6404fa3a46a0f92e9037634f8cc14d147",
+      "sha256": "f49f366e9f1cbe7f0e4b407b033e6eeee03e09cea64187964aeb69a59fda06f5",
       "role": "prompt-settings-generation-record"
     },
     {
@@ -50,7 +50,7 @@
     },
     {
       "path": "assets/game-art/production-scene/build_scene.py",
-      "sha256": "b8f2380ca4987bb3c90bc9b0e8ad1acf714f96d846862a4b148a5d0498447a54",
+      "sha256": "f11122e82ec82b2befb6fb8dd6390395a77cb1fa1ecc5a1453451158fa4cad0a",
       "role": "deterministic-export-and-verification-implementation"
     }
   ],
