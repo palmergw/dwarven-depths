@@ -2938,8 +2938,24 @@ def verify(root: Path = ROOT) -> None:
         if path.is_file()
     }
     declared_evidence = {record["path"] for record in manifest["evidence"]}
-    if actual_exports != declared_exports or actual_evidence != declared_evidence:
-        raise ValueError("Export or evidence directory contains stale/unmanifested files")
+    foreground_source_root = package / "sources" / "foreground"
+    actual_foreground_sources = {
+        path.relative_to(root).as_posix()
+        for path in foreground_source_root.rglob("*")
+        if path.is_file()
+    }
+    canonical_foreground_sources = {
+        "assets/game-art/production-scene/sources/foreground/portal-upper-gate-mask.png",
+        "assets/game-art/production-scene/sources/foreground/portal-lower-gate-mask.png",
+    }
+    if (
+        actual_exports != declared_exports
+        or actual_evidence != declared_evidence
+        or actual_foreground_sources != canonical_foreground_sources
+    ):
+        raise ValueError(
+            "Export, evidence, or foreground-source directory contains stale/unmanifested files"
+        )
 
     route = _assert_strict_v2(
         scene["route"],
