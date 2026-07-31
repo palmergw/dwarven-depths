@@ -97,9 +97,14 @@ def place(base:Image.Image,subject:Image.Image,ground:tuple[int,int],pivot:tuple
  base.alpha_composite(subject,(ground[0]-pivot[0],ground[1]-pivot[1]))
 
 def contour(mask:Image.Image)->Image.Image:
- dil=mask.filter(ImageFilter.MaxFilter(3))
  ero=mask.filter(ImageFilter.MinFilter(3))
- return ImageChops.difference(dil,ero)
+ return ImageChops.difference(mask,ero)
+
+def assert_contour_one_pixel()->None:
+ probe=Image.new('L',(10,10),0);ImageDraw.Draw(probe).rectangle((5,0,9,9),fill=255)
+ edge=contour(probe)
+ columns=[x for x in range(edge.width) if edge.crop((x,0,x+1,edge.height)).getbbox() is not None]
+ if columns!=[5]:raise AssertionError(f'contour must occupy one inner boundary column, got {columns}')
 
 def checker(size:tuple[int,int])->Image.Image:
  out=Image.new('RGBA',size,(45,50,58,255));d=ImageDraw.Draw(out)
@@ -247,6 +252,7 @@ def write_json(path:Path,data)->None:path.write_text(json.dumps(data,indent=2,so
 
 def build(out_root:Path)->list[Path]:
  validate_environment()
+ assert_contour_one_pixel()
  exp=out_root/'exports';ev=out_root/'evidence';meta=out_root/'metadata'
  for p in [exp/'environment',exp/'foreground',ev,meta]:p.mkdir(parents=True,exist_ok=True)
  plate=prepare_plate();plate_path=exp/'environment/layered-shuttergate-clean-plate-1280x720.png';plate.save(plate_path,optimize=False,compress_level=9)
