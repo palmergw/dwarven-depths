@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import random
+import subprocess
 import sys
 import tempfile
 import traceback
@@ -18,6 +19,8 @@ HERE = Path(__file__).resolve().parent
 OUT = HERE / "outputs"
 BLEND = HERE / "layered-shuttergate.blend"
 MANIFEST = HERE / "render-manifest.json"
+COMPOSITOR = HERE / "compose_reference.py"
+REQUIREMENTS = HERE.parent / "requirements.lock"
 CAMERA_ORTHO_SCALE = 50.0
 RENDER_HEIGHT = 720
 WARDEN_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "iron-warden-idle.png"
@@ -41,7 +44,6 @@ RENDER_RECIPES = {
     "gantry-shell.png": (False, False, True, False, False, True),
     "route-subjects.png": (False, False, False, True, False, True),
     "production-sprite-subjects.png": (False, False, False, False, True, True),
-    "reference-plate.png": (True, True, True, False, False, False),
     "route-traversal.png": (True, True, True, True, False, False),
     "production-sprite-traversal.png": (True, True, True, False, True, False),
 }
@@ -118,7 +120,7 @@ def verify_existing():
     assert manifest["schemaVersion"] == 1
     assert manifest["blenderVersion"] == ".".join(str(part) for part in bpy.app.version)
     assert set(manifest["camera"]) == {"name", "projection", "orthoScale", "location", "rotationEuler"}
-    assert set(manifest["source"]) == {"builderSha256", "blendSha256"}
+    assert set(manifest["source"]) == {"builderSha256", "blendSha256", "compositorSha256"}
     bpy.ops.wm.open_mainfile(filepath=str(BLEND))
     scene = bpy.context.scene
     cameras = [obj for obj in bpy.data.objects if obj.type == "CAMERA"]
@@ -145,6 +147,7 @@ def verify_existing():
     }
     assert manifest["source"]["builderSha256"] == sha256(Path(__file__).resolve())
     assert manifest["source"]["blendSha256"] == sha256(BLEND)
+    assert manifest["source"]["compositorSha256"] == sha256(COMPOSITOR)
     expected_source_assets = {
         "ironWardenIdle": {
             "path": str(WARDEN_SOURCE.relative_to(HERE.parents[3])),
@@ -213,6 +216,28 @@ def sanitize_transparent_rgb(path):
         bpy.data.images.remove(image)
 
 
+def compose_reference(output_root):
+    result = subprocess.run(
+        [
+            "uv",
+            "run",
+            "--with-requirements",
+            str(REQUIREMENTS),
+            "python3",
+            str(COMPOSITOR),
+            "--root",
+            str(output_root),
+        ],
+        cwd=HERE.parents[3],
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=120,
+    )
+    if result.returncode != 0:
+        raise RuntimeError((result.stderr or result.stdout)[-500:])
+
+
 def verify_render_reproducibility(manifest):
     scene = bpy.context.scene
     collections = {
@@ -239,6 +264,10 @@ def verify_render_reproducibility(manifest):
                 sanitize_transparent_rgb(output)
             committed = OUT / name
             assert pixel_digest(output) == pixel_digest(committed), f"stale render pixels: {name}"
+        compose_reference(output_root)
+        assert pixel_digest(output_root / "reference-plate.png") == pixel_digest(
+            OUT / "reference-plate.png"
+        ), "stale composited reference pixels"
 
 
 def mat(name, color, metallic=0.0, roughness=0.75, emission=None, strength=0.0, texture_scale=0.0):
@@ -616,7 +645,7 @@ render("entrance-shell", False, True, False, False, False, True)
 render("gantry-shell", False, False, True, False, False, True)
 render("route-subjects", False, False, False, True, False, True)
 render("production-sprite-subjects", False, False, False, False, True, True)
-render("reference-plate", True, True, True, False, False, False)
+compose_reference(OUT)
 render("route-traversal", True, True, True, True, False, False)
 render("production-sprite-traversal", True, True, True, False, True, False)
 
@@ -636,6 +665,7 @@ manifest = {
     "source": {
         "builderSha256": sha256(Path(__file__).resolve()),
         "blendSha256": sha256(BLEND),
+        "compositorSha256": sha256(COMPOSITOR),
     },
     "sourceAssets": {
         "ironWardenIdle": {

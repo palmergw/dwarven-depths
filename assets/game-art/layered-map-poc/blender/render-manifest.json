@@ -27,56 +27,57 @@
     "entrance-shell.png": {
       "alphaSemantics": "straight-alpha-foreground-only",
       "height": 720,
-      "sha256": "740106dc374af762226c9c500d72fdf9f183fea7e6315e4dae6cf4d327f8ae04",
+      "sha256": "e410ceee2222f865ebd12aa934457c1161e127abb46bbb79cfbfe5c337c75210",
       "width": 1280
     },
     "environment-base.png": {
       "alphaSemantics": "opaque-environment-only",
       "height": 720,
-      "sha256": "b615069498930de3101e60bcfa105b41dc8a8d1122b407a66e2c6bc2351afab9",
+      "sha256": "2d267f9f97730729af7f95abd75add64d76f6ce26614a49e7fa01e74b7239e10",
       "width": 1280
     },
     "gantry-shell.png": {
       "alphaSemantics": "straight-alpha-foreground-only",
       "height": 720,
-      "sha256": "e1d5257f55af0fd418f19f8b570ae845950d1e79007efac47c19f917e09012af",
+      "sha256": "1cca714e0cd8d4cdbe868470c35d3b2ca4346cd2b8581cc90e5726d408633a81",
       "width": 1280
     },
     "production-sprite-subjects.png": {
       "alphaSemantics": "straight-alpha-production-entities-only",
       "height": 720,
-      "sha256": "51b4f573e449926eedf0e7c5e85405c074056b8f248f8051648d103fa5ffc800",
+      "sha256": "25810e0db0ca4e6280163035aa647565920b93d5ad2220c98273794ce1a39d81",
       "width": 1280
     },
     "production-sprite-traversal.png": {
       "alphaSemantics": "opaque-production-entity-diagnostic-only",
       "height": 720,
-      "sha256": "be7b407fbb63c2436b022b6096d5e93f809ff570d58e96eb653a358cc01bd8c3",
+      "sha256": "821649c79f9cdf2882ea72041095aa605b7fcbefbe37c4e1999a6bf464bac69b",
       "width": 1280
     },
     "reference-plate.png": {
       "alphaSemantics": "opaque-environment-plus-foreground",
       "height": 720,
-      "sha256": "4dc3a574c439f1ae3533fee68792d7ff3d4d2688e8edd0a17ed20047fc555187",
+      "sha256": "7d0210f6fc4ec9484c5a1915cd2159472964e0bbf4007a60066a1b274c929144",
       "width": 1280
     },
     "route-subjects.png": {
       "alphaSemantics": "straight-alpha-diagnostic-only",
       "height": 720,
-      "sha256": "327a019b1fbc029e019b7a17e42f0e42914583a4e18a09b1cbc1daa50b5c97be",
+      "sha256": "cc43787d8562ea300797ab06048da57e4eb91a7c4cff6c29ba4d4014ce5d077a",
       "width": 1280
     },
     "route-traversal.png": {
       "alphaSemantics": "opaque-diagnostic-only",
       "height": 720,
-      "sha256": "025244f0d132b52bdeab9d69d90474a6653e8609c6787e2808f705a518a40891",
+      "sha256": "b24c1addc24280afbe8e18db7b3dc2e9c3b30341291d0bb5a5d119616d03c865",
       "width": 1280
     }
   },
   "schemaVersion": 1,
   "source": {
-    "blendSha256": "3b1316b8a4f787be8d91fe9b95aedfd03e6a49ddfdf8539e3394c863567b99b8",
-    "builderSha256": "9821c6b827b416b9048bab96ac75b9cd04b47732b820d4c1f97575c12b584a9d"
+    "blendSha256": "b3a429ba54f7e059b05a4d68fc1fcc8a66918f806a9915d32615bf4960623e04",
+    "builderSha256": "c920515eaddbe45e43bed22145f3a8b39963f8e90e6aa600b15ab3b27e888a29",
+    "compositorSha256": "6b5918f9b516a7fa3e9714500dd82c45e7c1bdbdd5bfd0764996bd318e3031cc"
   },
   "sourceAssets": {
     "ironWardenIdle": {

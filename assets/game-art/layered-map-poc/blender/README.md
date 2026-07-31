@@ -24,7 +24,7 @@ blender -b --factory-startup --python-exit-code 1 \
   --python assets/game-art/layered-map-poc/blender/build_scene.py
 ```
 
-The script recreates the `.blend` file and emits all outputs from the same camera. Transparent passes are normalized to zero RGB where alpha is zero:
+The script recreates the `.blend` file and emits all source passes from the same camera. Transparent passes are normalized to zero RGB where alpha is zero. The pinned `compose_reference.py` then alpha-composites the environment, entrance, and gantry passes into the canonical no-entity reference:
 
 - `outputs/environment-base.png`
 - `outputs/entrance-shell.png`
