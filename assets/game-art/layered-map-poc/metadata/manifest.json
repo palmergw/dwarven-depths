@@ -9,8 +9,8 @@
     "exports/foreground/entrance-shell.png": "3a1f8033dce090fb9430c7c5b1162e4d51ccce46f11ff9add57114b32dbf31d6",
     "exports/foreground/gantry-shell-mask.png": "dee8784dc86548e674154c11f0a510c02b408c5663ff4f5c60345e4d0c854085",
     "exports/foreground/gantry-shell.png": "ba4384ecda714a581dad9d0b8e69f98e6dd27e96279de74527537d9c3ff7edb5",
-    "metadata/layered-map-contract.json": "07252f489ee4bb7c76ffcbe88f7acec6fea6bf7f996286be22f1da5822f68fdf",
-    "metadata/provenance.json": "f39d43a59ae51da29ad512e53ade16e9a9ca8a1a1b9b9aa7c445755d2dd8d9f4"
+    "metadata/layered-map-contract.json": "5dafbe215d7cf5cf555c5b011be4343316d4806927c9e937ad41ba403de53164",
+    "metadata/provenance.json": "17a728dca4ea065610b66eae352f872bede9102e430f0974c55b82aa8bc1d70e"
   },
   "schemaVersion": 1
 }

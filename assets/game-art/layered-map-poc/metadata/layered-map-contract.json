@@ -6,14 +6,24 @@
       "alpha": "straight",
       "aperture": "transparent",
       "id": "entrance-shell",
-      "sourceMask": "sources/entrance-shell-mask.png"
+      "sourceMask": "sources/entrance-shell-mask.png",
+      "transparentRgb": [
+        0,
+        0,
+        0
+      ]
     },
     {
       "activation": "depth-zone",
       "alpha": "straight",
       "aperture": "transparent",
       "id": "gantry-shell",
-      "sourceMask": "sources/gantry-shell-mask.png"
+      "sourceMask": "sources/gantry-shell-mask.png",
+      "transparentRgb": [
+        0,
+        0,
+        0
+      ]
     }
   ],
   "frame": [

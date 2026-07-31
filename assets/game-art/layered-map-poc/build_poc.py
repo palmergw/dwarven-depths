@@ -3,7 +3,7 @@
 from __future__ import annotations
 import argparse, hashlib, json, shutil, tempfile
 from pathlib import Path
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 ROOT=Path(__file__).resolve().parents[3]
 PACKAGE=Path(__file__).resolve().parent
@@ -129,6 +129,10 @@ def build(out_root:Path)->list[Path]:
  for p in [exp/'environment',exp/'foreground',ev,meta]:p.mkdir(parents=True,exist_ok=True)
  plate=prepare_plate();plate_path=exp/'environment/layered-shuttergate-clean-plate-1280x720.png';plate.save(plate_path,optimize=False,compress_level=9)
  masks={k:load_mask(v) for k,v in MASKS.items()};overlays={k:overlay_from(plate,m) for k,m in masks.items()}
+ for key,artifact in overlays.items():
+  alpha=artifact.getchannel('A');transparent=ImageOps.invert(alpha)
+  if any(ImageChops.multiply(channel,transparent).getbbox() is not None for channel in artifact.convert('RGB').split()):
+   raise ValueError(f'{key} contains nonzero RGB beneath zero alpha')
  no_op=plate.copy()
  for key in ('entrance-shell','gantry-shell'):no_op.alpha_composite(overlays[key])
  if ImageChops.difference(plate,no_op).getbbox() is not None:
@@ -148,8 +152,8 @@ def build(out_root:Path)->list[Path]:
   'route':{'entrance':[1015,205],'gantry':[650,500],'backstop':[230,520],'branching':False},
   'layerOrder':['environment-base','world-subjects-behind-structure','entrance-shell','gantry-shell','world-subjects-in-front-of-structure','screen-indicators','hud'],
   'foregroundArtifacts':[
-   {'id':'entrance-shell','alpha':'straight','activation':'depth-zone','aperture':'transparent','sourceMask':'sources/entrance-shell-mask.png'},
-   {'id':'gantry-shell','alpha':'straight','activation':'depth-zone','aperture':'transparent','sourceMask':'sources/gantry-shell-mask.png'}],
+   {'id':'entrance-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':'depth-zone','aperture':'transparent','sourceMask':'sources/entrance-shell-mask.png'},
+   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':'depth-zone','aperture':'transparent','sourceMask':'sources/gantry-shell-mask.png'}],
   'subjects':{'warden':{'nominalHeight':56,'pivot':[56,66]},'raider':{'nominalHeight':44,'pivot':[40,54]}},
   'nonClaims':['runtime integration','simulation authority','HUD approval','final animation']}
  cp=meta/'layered-map-contract.json';write_json(cp,contract);files.append(cp)

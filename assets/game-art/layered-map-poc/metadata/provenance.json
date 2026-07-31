@@ -1,6 +1,6 @@
 {
   "generator": "assets/game-art/layered-map-poc/build_poc.py",
-  "generatorSha256": "f8f9918917ede04a86b0d391ac7aa13098e73301660043d6363580d83e2d5799",
+  "generatorSha256": "b057ecf28a3aa73c043b9b9e6728f2e4ba7b7a3504e653fd8d60b9254c667629",
   "inputs": {
     "assets/game-art/layered-map-poc/sources/entrance-shell-mask.png": "e9afef0ca9748e484b22469269132d1dafb9fd92760c1e86d296ec6b8130d484",
     "assets/game-art/layered-map-poc/sources/gantry-shell-mask.png": "dee8784dc86548e674154c11f0a510c02b408c5663ff4f5c60345e4d0c854085",
