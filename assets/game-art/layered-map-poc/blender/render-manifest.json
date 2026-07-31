@@ -20,49 +20,92 @@
     "ENVIRONMENT_BASE",
     "FOREGROUND_ENTRANCE",
     "FOREGROUND_GANTRY",
+    "PRODUCTION_ROUTE_SUBJECTS",
     "SHARED_LIGHTING"
   ],
   "outputs": {
     "entrance-shell.png": {
       "alphaSemantics": "straight-alpha-foreground-only",
       "height": 720,
-      "sha256": "507c26472d19cc21bae21f50bd29294ca96dea1b455a70b4a55cc75f453e6b57",
+      "sha256": "b36e77ee656c93e34b326ae921369c9fbce0525e8c2ad8e6ec4d6c79365187e1",
       "width": 1280
     },
     "environment-base.png": {
       "alphaSemantics": "opaque-environment-only",
       "height": 720,
-      "sha256": "e5dbb8a62781c80ebe9187edb3fc7d03d0af303ec2477bcd6ae324e823538c8a",
+      "sha256": "4b4c8b3fbbe62bafc51318d9b075adebcba5139feff22dfa2c151222f5ce1fa9",
       "width": 1280
     },
     "gantry-shell.png": {
       "alphaSemantics": "straight-alpha-foreground-only",
       "height": 720,
-      "sha256": "bd227492a116f92b66ba1e81327e375ad9b42c9ca71b38a18c496427e05e7b2f",
+      "sha256": "a165013ce3a0cad145f081595bfb6e69e50e6e6a855949f2f102c3e6c148c085",
+      "width": 1280
+    },
+    "production-sprite-subjects.png": {
+      "alphaSemantics": "straight-alpha-production-entities-only",
+      "height": 720,
+      "sha256": "b94447a442fc2c58b5dcb2cce33dc93de257c98a0038d72211578aaae8bcda7d",
+      "width": 1280
+    },
+    "production-sprite-traversal.png": {
+      "alphaSemantics": "opaque-production-entity-diagnostic-only",
+      "height": 720,
+      "sha256": "f4fa5e99d9bab713d56770ce45522213f8f4161cda52f5d59f67409411dbcb53",
       "width": 1280
     },
     "reference-plate.png": {
       "alphaSemantics": "opaque-environment-plus-foreground",
       "height": 720,
-      "sha256": "431395334895772a05f760468cd00eda754ac2bf7c054dfa136c6616e9c1f541",
+      "sha256": "3d8c5ff6eb1d26e4cd946cf3ad0f5a875c10a41b203746333020ddafa1825182",
       "width": 1280
     },
     "route-subjects.png": {
       "alphaSemantics": "straight-alpha-diagnostic-only",
       "height": 720,
-      "sha256": "aee757c9e37a09a40e4f1f5596764b6e9752af601ce4129919cd7f6858a422f0",
+      "sha256": "a080a8d1c856e20411971cf1be3926863526c174b6a3abd36320b944b1cc2019",
       "width": 1280
     },
     "route-traversal.png": {
       "alphaSemantics": "opaque-diagnostic-only",
       "height": 720,
-      "sha256": "60e5cbcb37e8b61866b1235acb217719d80eaa87f33ba5e7aefe0c104713cd7e",
+      "sha256": "c1ec5d85a2d5802542b55d23b041ff066d0357f69a994efd4472f3197a315268",
       "width": 1280
     }
   },
   "schemaVersion": 1,
   "source": {
-    "blendSha256": "728ab8458fc74d00c9e71584f1c5bc383f90648ee806a20667227a31d053af5b",
-    "builderSha256": "af3e2bbfc702992f13cc70083beb7162ecfd119648836da4dff0bc8fd2121551"
+    "blendSha256": "390410b4cd49368776500918b19f519a9c502a33c37a536367b9ef203a418a80",
+    "builderSha256": "84d05a1c1ad63e1e2d619cff427918f2bdd697fda0b82217d8f1ac555328956d"
+  },
+  "sourceAssets": {
+    "ironWardenIdle": {
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "canvas": [
+        112,
+        72
+      ],
+      "nominalHeight": 56,
+      "path": "assets/game-art/production-scene/exports/entities/iron-warden-idle.png",
+      "pivot": [
+        56,
+        66
+      ],
+      "sha256": "a10be62e061241683ba598ed4d9032880704a5f0c24bf38f9eff0a9bd138af4a"
+    },
+    "mineRaiderIdle": {
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "canvas": [
+        80,
+        60
+      ],
+      "nominalHeight": 44,
+      "path": "assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "sha256": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83"
+    }
   }
 }

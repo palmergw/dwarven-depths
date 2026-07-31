@@ -12,6 +12,7 @@ This directory is the first executable replacement for the rejected independentl
   - `FOREGROUND_ENTRANCE`
   - `FOREGROUND_GANTRY`
   - `DIAGNOSTIC_ROUTE_SUBJECTS`
+  - `PRODUCTION_ROUTE_SUBJECTS`
   - `SHARED_LIGHTING`
 - Cycles CPU, 16 samples, denoising disabled
 - 1280×720 RGBA outputs
@@ -19,7 +20,7 @@ This directory is the first executable replacement for the rejected independentl
 ## Build
 
 ```bash
-blender -b --factory-startup \
+blender -b --factory-startup --python-exit-code 1 \
   --python assets/game-art/layered-map-poc/blender/build_scene.py
 ```
 
@@ -29,14 +30,16 @@ The script recreates the `.blend` file and emits all outputs from the same camer
 - `outputs/entrance-shell.png`
 - `outputs/gantry-shell.png`
 - `outputs/route-subjects.png` (transparent diagnostic proxy isolation)
+- `outputs/production-sprite-subjects.png` (approved 56 px Warden / 44 px raider isolation)
 - `outputs/reference-plate.png`
 - `outputs/route-traversal.png` (review-only proxy evidence)
+- `outputs/production-sprite-traversal.png` (review-only production-sprite scale/density evidence)
 - `render-manifest.json` (camera/source/output hashes and alpha semantics)
 
 Verify the committed editable source and outputs without rebuilding them:
 
 ```bash
-blender -b --factory-startup \
+blender -b --factory-startup --python-exit-code 1 \
   --python assets/game-art/layered-map-poc/blender/build_scene.py -- --verify
 ```
 
@@ -46,12 +49,10 @@ No Blender UI, MCP, display server, chroma key, traced polygon, independent imag
 
 This checkpoint proves the missing production capability and begins the scale/style correction; it is not final art. Perspective, registration, native alpha, and support foundations originate in one scene.
 
-The third blockout expands the authored floor to 40×46 world units and the route to 42 world units, with a 50-unit orthographic frame. The previous freestanding beam and floor posts were removed. The foreground gantry is now a high service bridge keyed directly into two massive side bastions and their wall platforms: it connects fortress architecture, creates a deliberate overhead traversal threshold, and establishes vertical scale without placing supports in the route. Procedural basalt, carved-stone, road, and timber variation, embedded iron rails, irregular shoulder rubble, cool fill, and warm tunnel/gate pools continue moving the sterile blockout toward the original fortress direction without changing the shared-camera contract.
+The fourth blockout keeps the authored 40×46 floor, 42-unit route, and 50-unit orthographic frame while adding two broad, visibly staged off-route defense courts connected to the lane. The previous freestanding beam and floor posts remain removed. The foreground gantry is a high service bridge keyed directly into two massive side bastions and their wall platforms: it connects fortress architecture, creates a deliberate overhead traversal threshold, and establishes vertical scale without placing supports in the route. Approved 56 px Warden and 44 px raider assets now render as source-hash-bound, unlit camera-facing planes from the same scene, preserving their authored pixels while replacing proxy-only scale claims. Procedural basalt, carved-stone, road, and timber variation, embedded iron rails, irregular shoulder rubble, cool fill, and warm tunnel/gate pools continue moving the sterile blockout toward the original fortress direction without changing the shared-camera contract.
 
 Remaining work includes:
 
-- replace the proxy cylinders with the approved 56 px Warden and 44 px raider sprites;
-- broaden the tactical staging floor beyond the central road where gameplay composition benefits;
 - develop carved architecture, chains, machinery, and masonry silhouettes rather than relying on repeated blocks;
 - refine the entrance voussoir silhouette and defended-shutter machinery;
 - integrate Blender-source hashes and render verification into the top-level POC verifier.

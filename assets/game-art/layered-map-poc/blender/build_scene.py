@@ -7,6 +7,7 @@ import json
 import math
 import random
 import sys
+import traceback
 from pathlib import Path
 
 import bpy
@@ -17,6 +18,9 @@ OUT = HERE / "outputs"
 BLEND = HERE / "layered-shuttergate.blend"
 MANIFEST = HERE / "render-manifest.json"
 CAMERA_ORTHO_SCALE = 50.0
+RENDER_HEIGHT = 720
+WARDEN_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "iron-warden-idle.png"
+RAIDER_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "mine-raider-idle.png"
 random.seed(286)
 
 OUTPUT_CONTRACT = {
@@ -24,8 +28,10 @@ OUTPUT_CONTRACT = {
     "entrance-shell.png": "straight-alpha-foreground-only",
     "gantry-shell.png": "straight-alpha-foreground-only",
     "route-subjects.png": "straight-alpha-diagnostic-only",
+    "production-sprite-subjects.png": "straight-alpha-production-entities-only",
     "reference-plate.png": "opaque-environment-plus-foreground",
     "route-traversal.png": "opaque-diagnostic-only",
+    "production-sprite-traversal.png": "opaque-production-entity-diagnostic-only",
 }
 
 
@@ -52,11 +58,25 @@ def verify_image(path, alpha_semantics):
         bpy.data.images.remove(image)
 
 
+def verify_source_sprite(path, canvas):
+    from array import array
+
+    image = bpy.data.images.load(str(path), check_existing=False)
+    try:
+        assert tuple(image.size) == tuple(canvas), f"unexpected source sprite dimensions: {path}"
+        pixels = array("f", [0.0]) * len(image.pixels)
+        image.pixels.foreach_get(pixels)
+        alphas = pixels[3::4]
+        assert min(alphas) == 0.0 and max(alphas) == 1.0, f"invalid source sprite alpha: {path}"
+    finally:
+        bpy.data.images.remove(image)
+
+
 def verify_existing():
     assert BLEND.is_file(), f"missing editable source: {BLEND}"
     assert MANIFEST.is_file(), f"missing render manifest: {MANIFEST}"
     manifest = json.loads(MANIFEST.read_text())
-    assert set(manifest) == {"schemaVersion", "blenderVersion", "camera", "collections", "source", "outputs"}
+    assert set(manifest) == {"schemaVersion", "blenderVersion", "camera", "collections", "source", "sourceAssets", "outputs"}
     assert manifest["schemaVersion"] == 1
     assert manifest["blenderVersion"] == ".".join(str(part) for part in bpy.app.version)
     assert set(manifest["camera"]) == {"name", "projection", "orthoScale", "location", "rotationEuler"}
@@ -73,6 +93,7 @@ def verify_existing():
         "FOREGROUND_ENTRANCE",
         "FOREGROUND_GANTRY",
         "DIAGNOSTIC_ROUTE_SUBJECTS",
+        "PRODUCTION_ROUTE_SUBJECTS",
         "SHARED_LIGHTING",
     }
     assert set(manifest["collections"]) == expected_collections
@@ -86,6 +107,27 @@ def verify_existing():
     }
     assert manifest["source"]["builderSha256"] == sha256(Path(__file__).resolve())
     assert manifest["source"]["blendSha256"] == sha256(BLEND)
+    expected_source_assets = {
+        "ironWardenIdle": {
+            "path": str(WARDEN_SOURCE.relative_to(HERE.parents[3])),
+            "sha256": sha256(WARDEN_SOURCE),
+            "canvas": [112, 72],
+            "pivot": [56, 66],
+            "nominalHeight": 56,
+            "alphaSemantics": "straight-alpha-padded-pivot",
+        },
+        "mineRaiderIdle": {
+            "path": str(RAIDER_SOURCE.relative_to(HERE.parents[3])),
+            "sha256": sha256(RAIDER_SOURCE),
+            "canvas": [80, 60],
+            "pivot": [40, 54],
+            "nominalHeight": 44,
+            "alphaSemantics": "straight-alpha-padded-pivot",
+        },
+    }
+    assert manifest["sourceAssets"] == expected_source_assets
+    verify_source_sprite(WARDEN_SOURCE, expected_source_assets["ironWardenIdle"]["canvas"])
+    verify_source_sprite(RAIDER_SOURCE, expected_source_assets["mineRaiderIdle"]["canvas"])
     assert set(manifest["outputs"]) == set(OUTPUT_CONTRACT)
     for name, alpha_semantics in OUTPUT_CONTRACT.items():
         path = OUT / name
@@ -99,6 +141,14 @@ def verify_existing():
         }
         verify_image(path, alpha_semantics)
     print("SHARED_SCENE_VERIFY_OK", BLEND, MANIFEST)
+
+
+def verify_or_exit():
+    try:
+        verify_existing()
+    except Exception:
+        traceback.print_exc()
+        raise SystemExit(1)
 
 
 def mat(name, color, metallic=0.0, roughness=0.75, emission=None, strength=0.0, texture_scale=0.0):
@@ -159,8 +209,14 @@ def box(name, loc, scale, material, coll, bevel=0.08, rot=(0, 0, 0)):
     return o
 
 
-def cylinder(name, loc, radius, depth, material, coll, vertices=8):
-    bpy.ops.mesh.primitive_cylinder_add(vertices=vertices, radius=radius, depth=depth, location=loc)
+def cylinder(name, loc, radius, depth, material, coll, vertices=8, rot=(0, 0, 0)):
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=vertices,
+        radius=radius,
+        depth=depth,
+        location=loc,
+        rotation=rot,
+    )
     o = bpy.context.object
     o.name = name
     o.data.materials.append(material)
@@ -169,6 +225,56 @@ def cylinder(name, loc, radius, depth, material, coll, vertices=8):
     mod.segments = 2
     move_to(o, coll)
     return o
+
+
+def sprite_material(name, path):
+    image = bpy.data.images.load(str(path), check_existing=True)
+    image.alpha_mode = "STRAIGHT"
+    material = bpy.data.materials.new(name)
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    nodes.clear()
+    output = nodes.new("ShaderNodeOutputMaterial")
+    mix = nodes.new("ShaderNodeMixShader")
+    transparent = nodes.new("ShaderNodeBsdfTransparent")
+    emission = nodes.new("ShaderNodeEmission")
+    texture = nodes.new("ShaderNodeTexImage")
+    texture.image = image
+    texture.interpolation = "Closest"
+    emission.inputs["Strength"].default_value = 1.0
+    links.new(texture.outputs["Color"], emission.inputs["Color"])
+    links.new(texture.outputs["Alpha"], mix.inputs["Fac"])
+    links.new(transparent.outputs["BSDF"], mix.inputs[1])
+    links.new(emission.outputs["Emission"], mix.inputs[2])
+    links.new(mix.outputs["Shader"], output.inputs["Surface"])
+    return material
+
+
+def billboard_sprite(name, ground, canvas, pivot, material, coll, camera_obj):
+    """Place a pixel-exact camera-facing canvas with its declared pivot on the floor."""
+    world_per_pixel = CAMERA_ORTHO_SCALE / RENDER_HEIGHT
+    width, height = canvas
+    pivot_x, pivot_y = pivot
+    left = -pivot_x * world_per_pixel
+    right = (width - pivot_x) * world_per_pixel
+    bottom = (pivot_y - height) * world_per_pixel
+    top = pivot_y * world_per_pixel
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(
+        [(left, bottom, 0), (right, bottom, 0), (right, top, 0), (left, top, 0)],
+        [],
+        [(0, 1, 2, 3)],
+    )
+    mesh.uv_layers.new(name="UVMap")
+    for loop, uv in zip(mesh.uv_layers.active.data, ((0, 0), (1, 0), (1, 1), (0, 1)), strict=True):
+        loop.uv = uv
+    obj = bpy.data.objects.new(name, mesh)
+    obj.location = ground
+    obj.rotation_euler = camera_obj.rotation_euler
+    obj.data.materials.append(material)
+    coll.objects.link(obj)
+    return obj
 
 
 def area_light(name, loc, energy, color, size):
@@ -206,11 +312,12 @@ def camera():
     return o
 
 
-def render(name, env, entrance, gantry, subjects, transparent):
+def render(name, env, entrance, gantry, subjects, production_subjects, transparent):
     ENV.hide_render = not env
     ENTRANCE.hide_render = not entrance
     GANTRY.hide_render = not gantry
     SUBJECTS.hide_render = not subjects
+    PRODUCTION_SUBJECTS.hide_render = not production_subjects
     scene = bpy.context.scene
     scene.render.film_transparent = transparent
     scene.render.filepath = str(OUT / f"{name}.png")
@@ -219,7 +326,7 @@ def render(name, env, entrance, gantry, subjects, transparent):
 
 verify_requested = "--" in sys.argv and "--verify" in sys.argv[sys.argv.index("--") + 1 :]
 if verify_requested:
-    verify_existing()
+    verify_or_exit()
     raise SystemExit(0)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -229,6 +336,7 @@ ENV = collection("ENVIRONMENT_BASE")
 ENTRANCE = collection("FOREGROUND_ENTRANCE")
 GANTRY = collection("FOREGROUND_GANTRY")
 SUBJECTS = collection("DIAGNOSTIC_ROUTE_SUBJECTS")
+PRODUCTION_SUBJECTS = collection("PRODUCTION_ROUTE_SUBJECTS")
 LIGHTS = collection("SHARED_LIGHTING")
 
 stone = mat("Basalt", (0.06, 0.085, 0.11), roughness=0.9, texture_scale=3.5)
@@ -259,11 +367,35 @@ for i, y in enumerate(range(-21, 22, 2)):
     for x in (-3.75, 3.75):
         box(f"RoadRail_{i}_{x}", (x, y, 0.29), (0.09, 0.91, 0.07), iron, ENV, bevel=0.025)
 
+# Two broad off-route defense courts create visible formation space without
+# branching the hostile lane. Their thresholds connect directly to the road.
+for court_x, court_y, suffix in ((-9.0, -10.5, "LowerLeft"), (9.0, 10.5, "UpperRight")):
+    box(f"DefenseCourt_{suffix}", (court_x, court_y, 0.0), (4.35, 5.0, 0.30), roadmat, ENV, bevel=0.14)
+    box(
+        f"CourtThreshold_{suffix}",
+        (math.copysign(5.7, court_x), court_y, 0.12),
+        (1.35, 2.8, 0.26),
+        stone2,
+        ENV,
+        bevel=0.10,
+    )
+    cylinder(f"CourtDais_{suffix}", (court_x, court_y, 0.36), 1.75, 0.08, stone2, ENV, vertices=16)
+    cylinder(f"CourtEmber_{suffix}", (court_x, court_y, 0.43), 0.34, 0.08, ember, ENV, vertices=12)
+    for corner_y in (-4.15, 4.15):
+        box(
+            f"CourtMachinery_{suffix}_{corner_y}",
+            (court_x + math.copysign(3.45, court_x), court_y + corner_y, 0.75),
+            (0.55, 0.55, 0.75),
+            stone2,
+            ENV,
+            bevel=0.14,
+        )
+
 # Irregular shoulder dressing stays well outside the active route.
 for index in range(56):
     side = -1 if index % 2 == 0 else 1
     x = side * random.uniform(6.4, 12.0)
-    y = random.uniform(-18.5, 18.5)
+    y = random.choice((random.uniform(-18.5, -15.0), random.uniform(-5.0, 5.0), random.uniform(15.0, 18.5)))
     size = random.uniform(0.20, 0.65)
     box(
         f"ShoulderRubble_{index}",
@@ -306,7 +438,17 @@ for x in (-9.0, 9.0):
     box(f"BridgeBastion_{x}", (x, 0.5, 4.0), (2.65, 3.2, 4.2), stone2, ENV, bevel=0.22)
     box(f"BridgeBastionPlinth_{x}", (x, 0.5, 0.45), (3.15, 3.65, 0.52), stone, ENV, bevel=0.16)
     box(f"BridgeApproach_{x}", (x + math.copysign(4.0, x), 0.5, 7.1), (2.1, 3.0, 0.48), stone2, ENV, bevel=0.14)
-    cylinder(f"BridgeWinch_{x}", (x, 0.5, 7.65), 0.72, 1.1, iron, ENV, vertices=12)
+    cylinder(
+        f"BridgeWinch_{x}",
+        (x, 0.5, 7.65),
+        0.72,
+        1.1,
+        iron,
+        ENV,
+        vertices=12,
+        rot=(math.pi / 2, 0, 0),
+    )
+    box(f"BridgeWinchAxle_{x}", (x, 0.5, 7.65), (0.12, 0.85, 0.12), iron, ENV, bevel=0.03)
 
 # Native foreground bridge/deck, keyed directly into the side bastions.
 box("GantryDeck", (0, 0.5, 7.2), (9.0, 2.0, 0.50), timber, GANTRY, bevel=0.14)
@@ -326,11 +468,32 @@ for index, y in enumerate((17.5, 13.0, 8.5, 4.0, 1.4, 0.5, -0.4, -4.0, -8.5, -13
 
 
 shared_camera = camera()
+warden_material = sprite_material("ApprovedIronWardenIdle", WARDEN_SOURCE)
+raider_material = sprite_material("ApprovedMineRaiderIdle", RAIDER_SOURCE)
+billboard_sprite(
+    "ApprovedIronWarden_56px",
+    (1.8, -8.5, 0.39),
+    (112, 72),
+    (56, 66),
+    warden_material,
+    PRODUCTION_SUBJECTS,
+    shared_camera,
+)
+for index, (x, y) in enumerate(((0.5, 15.8), (-1.5, 12.3), (1.5, 8.8), (-1.5, 5.1), (-1.3, -3.4))):
+    billboard_sprite(
+        f"ApprovedMineRaider_{index}_44px",
+        (x, y, 0.39),
+        (80, 60),
+        (40, 54),
+        raider_material,
+        PRODUCTION_SUBJECTS,
+        shared_camera,
+    )
 area_light("TunnelWarm", (0, 17.5, 7.0), 1600, (1.0, 0.25, 0.06), 6.0)
 area_light("GateWarm", (0, -18.0, 6.0), 1300, (1.0, 0.20, 0.04), 5.0)
 area_light("BridgeWarm", (7.0, 0.5, 10.5), 900, (1.0, 0.28, 0.08), 4.0)
 area_light("CoolFill", (-7, -1, 20), 2400, (0.18, 0.36, 0.58), 13.0)
-point_light("GateFaceGlow", (0, -25.0, 6.0), 1800, (1.0, 0.16, 0.035), 3.5)
+point_light("GateFaceGlow", (0, -24.0, 5.0), 4200, (1.0, 0.16, 0.035), 4.5)
 point_light("TunnelMouthGlow", (0, 18.2, 3.5), 850, (1.0, 0.22, 0.05), 2.0)
 
 scene = bpy.context.scene
@@ -354,14 +517,16 @@ scene["presentation_only"] = True
 
 # Save the editable source with all collections visible, then emit same-camera passes.
 ENV.hide_render = ENTRANCE.hide_render = GANTRY.hide_render = False
-SUBJECTS.hide_render = True
+SUBJECTS.hide_render = PRODUCTION_SUBJECTS.hide_render = True
 bpy.ops.wm.save_as_mainfile(filepath=str(BLEND))
-render("environment-base", True, False, False, False, False)
-render("entrance-shell", False, True, False, False, True)
-render("gantry-shell", False, False, True, False, True)
-render("route-subjects", False, False, False, True, True)
-render("reference-plate", True, True, True, False, False)
-render("route-traversal", True, True, True, True, False)
+render("environment-base", True, False, False, False, False, False)
+render("entrance-shell", False, True, False, False, False, True)
+render("gantry-shell", False, False, True, False, False, True)
+render("route-subjects", False, False, False, True, False, True)
+render("production-sprite-subjects", False, False, False, False, True, True)
+render("reference-plate", True, True, True, False, False, False)
+render("route-traversal", True, True, True, True, False, False)
+render("production-sprite-traversal", True, True, True, False, True, False)
 
 manifest = {
     "schemaVersion": 1,
@@ -373,10 +538,30 @@ manifest = {
         "location": [round(value, 6) for value in shared_camera.location],
         "rotationEuler": [round(value, 6) for value in shared_camera.rotation_euler],
     },
-    "collections": sorted((ENV.name, ENTRANCE.name, GANTRY.name, SUBJECTS.name, LIGHTS.name)),
+    "collections": sorted(
+        (ENV.name, ENTRANCE.name, GANTRY.name, SUBJECTS.name, PRODUCTION_SUBJECTS.name, LIGHTS.name)
+    ),
     "source": {
         "builderSha256": sha256(Path(__file__).resolve()),
         "blendSha256": sha256(BLEND),
+    },
+    "sourceAssets": {
+        "ironWardenIdle": {
+            "path": str(WARDEN_SOURCE.relative_to(HERE.parents[3])),
+            "sha256": sha256(WARDEN_SOURCE),
+            "canvas": [112, 72],
+            "pivot": [56, 66],
+            "nominalHeight": 56,
+            "alphaSemantics": "straight-alpha-padded-pivot",
+        },
+        "mineRaiderIdle": {
+            "path": str(RAIDER_SOURCE.relative_to(HERE.parents[3])),
+            "sha256": sha256(RAIDER_SOURCE),
+            "canvas": [80, 60],
+            "pivot": [40, 54],
+            "nominalHeight": 44,
+            "alphaSemantics": "straight-alpha-padded-pivot",
+        },
     },
     "outputs": {
         name: {
@@ -389,5 +574,5 @@ manifest = {
     },
 }
 MANIFEST.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
-verify_existing()
+verify_or_exit()
 print("SHARED_SCENE_RENDER_OK", BLEND, OUT)
