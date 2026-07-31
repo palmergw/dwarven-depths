@@ -1,0 +1,70 @@
+{
+  "authority": "presentation-only-proof-of-concept",
+  "foregroundArtifacts": [
+    {
+      "activation": "depth-zone",
+      "alpha": "straight",
+      "aperture": "transparent",
+      "id": "entrance-shell",
+      "sourceMask": "sources/entrance-shell-mask.png"
+    },
+    {
+      "activation": "depth-zone",
+      "alpha": "straight",
+      "aperture": "transparent",
+      "id": "gantry-shell",
+      "sourceMask": "sources/gantry-shell-mask.png"
+    }
+  ],
+  "frame": [
+    1280,
+    720
+  ],
+  "layerOrder": [
+    "environment-base",
+    "world-subjects-behind-structure",
+    "entrance-shell",
+    "gantry-shell",
+    "world-subjects-in-front-of-structure",
+    "screen-indicators",
+    "hud"
+  ],
+  "nonClaims": [
+    "runtime integration",
+    "simulation authority",
+    "HUD approval",
+    "final animation"
+  ],
+  "route": {
+    "backstop": [
+      230,
+      520
+    ],
+    "branching": false,
+    "entrance": [
+      1015,
+      205
+    ],
+    "gantry": [
+      650,
+      500
+    ]
+  },
+  "schemaVersion": 1,
+  "subjects": {
+    "raider": {
+      "nominalHeight": 44,
+      "pivot": [
+        40,
+        54
+      ]
+    },
+    "warden": {
+      "nominalHeight": 56,
+      "pivot": [
+        56,
+        66
+      ]
+    }
+  }
+}

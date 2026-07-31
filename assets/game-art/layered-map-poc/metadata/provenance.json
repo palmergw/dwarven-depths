@@ -1,0 +1,14 @@
+{
+  "generator": "assets/game-art/layered-map-poc/build_poc.py",
+  "generatorSha256": "4bbdb92717bc908939a68c2e34150937c69a3b11ef5617ca2d31e8025bd11d40",
+  "inputs": {
+    "assets/game-art/layered-map-poc/sources/entrance-shell-mask.png": "e9afef0ca9748e484b22469269132d1dafb9fd92760c1e86d296ec6b8130d484",
+    "assets/game-art/layered-map-poc/sources/gantry-shell-mask.png": "dee8784dc86548e674154c11f0a510c02b408c5663ff4f5c60345e4d0c854085",
+    "assets/game-art/production-scene/exports/diagnostics/solid-raider-proxy.png": "8020dcd21259ba28fa32ea37537c50240b75aab20eae74bd864a63d8cdb17bcc",
+    "assets/game-art/production-scene/exports/diagnostics/solid-warden-proxy.png": "e0c3112b89b02d6a3dce24b97ce81d94adf7cfed3f0f39f4657487a951a298f4",
+    "assets/game-art/production-scene/exports/entities/iron-warden-idle.png": "a10be62e061241683ba598ed4d9032880704a5f0c24bf38f9eff0a9bd138af4a",
+    "assets/game-art/production-scene/exports/entities/mine-raider-idle.png": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83"
+  },
+  "master": "assets/game-art/layered-map-poc/sources/layered-shuttergate-master.png",
+  "masterSha256": "745aceb498392d9afdc758ce9a14c943dabdbb79741bf1aec3729fae4f2597e3"
+}

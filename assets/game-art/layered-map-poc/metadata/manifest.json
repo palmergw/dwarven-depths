@@ -1,0 +1,16 @@
+{
+  "files": {
+    "evidence/foreground-artifact-isolation.png": "2258e3b03bd6d707e4da7f7956fbc0ca25fb6cef5a7d519301cd58be1896d12c",
+    "evidence/layered-map-overview.png": "6bb2ec58c8bbff97af09c2f5dd6dfa208a24e619de3629272c807d0dd62ebef4",
+    "evidence/production-sprite-traversal.png": "b7083313dfd6ee28ee610b5fa9d43df036624d0223ea8210e2c676661ad8383f",
+    "evidence/solid-proxy-traversal.png": "f74d9adc102ccf5b9f6fda022e2ff66922e4c4f90ed7c99a279c1ddf5aa6fecc",
+    "exports/environment/layered-shuttergate-clean-plate-1280x720.png": "6e21709f3aed316c5d40e142ac39d6ecdde802d7f22c72edee939645a0fe6579",
+    "exports/foreground/entrance-shell-mask.png": "e9afef0ca9748e484b22469269132d1dafb9fd92760c1e86d296ec6b8130d484",
+    "exports/foreground/entrance-shell.png": "3a1f8033dce090fb9430c7c5b1162e4d51ccce46f11ff9add57114b32dbf31d6",
+    "exports/foreground/gantry-shell-mask.png": "dee8784dc86548e674154c11f0a510c02b408c5663ff4f5c60345e4d0c854085",
+    "exports/foreground/gantry-shell.png": "ba4384ecda714a581dad9d0b8e69f98e6dd27e96279de74527537d9c3ff7edb5",
+    "metadata/layered-map-contract.json": "07252f489ee4bb7c76ffcbe88f7acec6fea6bf7f996286be22f1da5822f68fdf",
+    "metadata/provenance.json": "e4af28de41d5991bc234a2e923691a0a565a8a5fa7f408dd4b09ea8f5e44d02a"
+  },
+  "schemaVersion": 1
+}
