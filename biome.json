@@ -8,7 +8,8 @@
       "!apps/desktop/src-tauri/gen",
       "!apps/mobile/android",
       "!reports",
-      "!.ddh"
+      "!.ddh",
+      "!assets/game-art/layered-map-poc/metadata"
     ]
   },
   "formatter": {
