@@ -32,9 +32,11 @@ The clean plate retains the same pixels as the foreground shells. With no subjec
 2. [`evidence/foreground-artifact-isolation.png`](evidence/foreground-artifact-isolation.png) — checkerboard RGBA artifacts, authored alpha, source contours, and exact no-op result.
 3. [`evidence/solid-proxy-traversal.png`](evidence/solid-proxy-traversal.png) — high-contrast alpha-footprint traversal.
 4. [`evidence/calibration-card-traversal.png`](evidence/calibration-card-traversal.png) — banded exact-height/pivot cards exposing cutoff seams independently of silhouette texture.
-5. [`evidence/production-sprite-traversal.png`](evidence/production-sprite-traversal.png) — the same traversal using production sprites.
-6. [`metadata/layered-map-contract.json`](metadata/layered-map-contract.json) — layer and route contract.
-7. [`metadata/manifest.json`](metadata/manifest.json) and [`metadata/provenance.json`](metadata/provenance.json) — immutable file binding and source provenance.
+5. [`evidence/gantry-boundary-diagnostics.png`](evidence/gantry-boundary-diagnostics.png) — paired before/after native and 4× crops at 2 px onset and reappearance increments with visible-alpha percentages.
+6. [`evidence/no-op-difference-heatmap.png`](evidence/no-op-difference-heatmap.png) — real per-pixel no-entity difference heatmap.
+7. [`evidence/production-sprite-traversal.png`](evidence/production-sprite-traversal.png) — environmentally lit production sprites at the same geometry.
+8. [`metadata/layered-map-contract.json`](metadata/layered-map-contract.json) — per-artifact route states, affected/exempt classes, and layer contract.
+9. [`metadata/manifest.json`](metadata/manifest.json) and [`metadata/provenance.json`](metadata/provenance.json) — immutable file binding and source/tool provenance.
 
 ## Canonical sources
 
@@ -47,11 +49,15 @@ The masks are source-authored review inputs. `build_poc.py` does not regenerate 
 ## Build and verify
 
 ```bash
-uv run --with pillow python3 assets/game-art/layered-map-poc/build_poc.py
-uv run --with pillow python3 assets/game-art/layered-map-poc/build_poc.py --verify
+uv run --with-requirements assets/game-art/layered-map-poc/requirements.lock \
+  python3 assets/game-art/layered-map-poc/build_poc.py
+uv run --with-requirements assets/game-art/layered-map-poc/requirements.lock \
+  python3 assets/game-art/layered-map-poc/build_poc.py --verify
 ```
 
 Verification rebuilds the entire package in a temporary directory and requires byte-identical committed outputs. It also binds the approved production sprites used in the traversal boards.
+
+The entrance shell is intentionally a **fully visible aperture** for route subjects; its evidence proves clearance and alpha isolation rather than claiming an occlusion transition. The gantry is the progressive-occlusion proof case.
 
 ## Production recommendation
 

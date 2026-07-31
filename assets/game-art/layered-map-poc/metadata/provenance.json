@@ -1,8 +1,16 @@
 {
+  "environment": {
+    "fonts": {
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf": "a4c5bc453ca281d90ea079e596da7ae0dfeb5777497c29ec254e76d97ff6f890",
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf": "57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e"
+    },
+    "pillow": "12.3.0"
+  },
   "generator": "assets/game-art/layered-map-poc/build_poc.py",
-  "generatorSha256": "41bd3431713f6ed3f42a9f09984bc350acdaecdcae8cbbe8e3f6c48bfe1168ce",
+  "generatorSha256": "faf90a24807402e1060cb168ecbbaed58bc0ddb4612f7c2efdf275f566bf8879",
   "inputs": {
-    "assets/game-art/layered-map-poc/sources/entrance-shell-mask.png": "e9afef0ca9748e484b22469269132d1dafb9fd92760c1e86d296ec6b8130d484",
+    "assets/game-art/layered-map-poc/requirements.lock": "41b54a6fb2918667ca47a61d73b522629d84490f3d78f0f20b21135faba10d35",
+    "assets/game-art/layered-map-poc/sources/entrance-shell-mask.png": "3657c8f191fb7c234658f4c097ea0139a05550b487bd2f29c073cb82da8f8616",
     "assets/game-art/layered-map-poc/sources/gantry-shell-mask.png": "dee8784dc86548e674154c11f0a510c02b408c5663ff4f5c60345e4d0c854085",
     "assets/game-art/layered-map-poc/sources/generation-notes.md": "88160d4a5d326d10673df40bc1f71e15453160e7fb284116390f030cfbd9ce93",
     "assets/game-art/production-scene/exports/diagnostics/raider-calibration-card.png": "67e58a9c4d2d0d04eee1b97507e09d875c0322b1624cd8e2f5ec51386c2818c9",

@@ -3,7 +3,7 @@
 from __future__ import annotations
 import argparse, hashlib, json, shutil, tempfile
 from pathlib import Path
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 
 ROOT=Path(__file__).resolve().parents[3]
 PACKAGE=Path(__file__).resolve().parent
@@ -22,9 +22,13 @@ SPRITES={
  'warden':(ENTITY_ROOT/'entities/iron-warden-idle.png',(56,66)),
  'raider':(ENTITY_ROOT/'entities/mine-raider-idle.png',(40,54)),
 }
-ENTRANCE_POINTS=[(1050,165),(1035,180),(1020,195),(1005,210),(990,225),(970,240),(950,255)]
+ENTRANCE_POINTS=[(1020,230),(1005,243),(990,250),(975,260),(960,270),(945,280),(930,295)]
 GANTRY_POINTS=[(790,430),(750,450),(710,470),(670,490),(630,510),(590,530),(550,550)]
 FONT_PATH=Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
+FONT_HASHES={
+ FONT_PATH:'57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e',
+ FONT_PATH.with_name('DejaVuSans-Bold.ttf'):'a4c5bc453ca281d90ea079e596da7ae0dfeb5777497c29ec254e76d97ff6f890',
+}
 
 
 def font(size:int,bold:bool=False):
@@ -36,6 +40,12 @@ def sha(path:Path)->str:
  with path.open('rb') as f:
   for block in iter(lambda:f.read(1024*1024),b''):h.update(block)
  return h.hexdigest()
+
+def validate_environment()->None:
+ import PIL
+ if PIL.__version__!='12.3.0':raise ValueError(f'Pillow 12.3.0 required, got {PIL.__version__}')
+ for path,digest in FONT_HASHES.items():
+  if not path.exists() or sha(path)!=digest:raise ValueError(f'font input drift: {path}')
 
 def prepare_plate()->Image.Image:
  src=Image.open(MASTER).convert('RGBA')
@@ -54,6 +64,23 @@ def overlay_from(plate:Image.Image,mask:Image.Image)->Image.Image:
 
 def sprite(name:str)->tuple[Image.Image,tuple[int,int]]:
  p,pivot=SPRITES[name];return Image.open(p).convert('RGBA'),pivot
+
+def presentation_lighting(subject:Image.Image,warm:float,brightness:float)->Image.Image:
+ alpha=subject.getchannel('A')
+ rgb=ImageEnhance.Brightness(subject.convert('RGB')).enhance(brightness)
+ rgb=ImageEnhance.Contrast(rgb).enhance(1.08)
+ if warm>0:
+  warmth=Image.new('RGB',rgb.size,(255,145,58));rgb=Image.blend(rgb,warmth,warm)
+ out=rgb.convert('RGBA');out.putalpha(alpha);return out
+
+def soft_contact_shadow(frame:Image.Image,ground:tuple[int,int])->None:
+ layer=Image.new('RGBA',FRAME,(0,0,0,0));ImageDraw.Draw(layer).ellipse((ground[0]-11,ground[1]-3,ground[0]+11,ground[1]+2),fill=(0,0,0,62))
+ frame.alpha_composite(layer.filter(ImageFilter.GaussianBlur(2.0)))
+
+def world_ring(frame:Image.Image,ground:tuple[int,int],color:tuple[int,int,int])->None:
+ box=(ground[0]-16,ground[1]-7,ground[0]+16,ground[1]+7)
+ glow=Image.new('RGBA',FRAME,(0,0,0,0));ImageDraw.Draw(glow).ellipse(box,outline=(*color,105),width=4);frame.alpha_composite(glow.filter(ImageFilter.GaussianBlur(2.0)))
+ crisp=Image.new('RGBA',FRAME,(0,0,0,0));ImageDraw.Draw(crisp).ellipse(box,outline=(*color,205),width=2);frame.alpha_composite(crisp)
 
 def place(base:Image.Image,subject:Image.Image,ground:tuple[int,int],pivot:tuple[int,int])->None:
  base.alpha_composite(subject,(ground[0]-pivot[0],ground[1]-pivot[1]))
@@ -75,11 +102,19 @@ def panel_header(board:Image.Image,xy:tuple[int,int],title:str,sub:str='')->None
  d.text((x,y),title,font=font(24,True),fill=(244,228,185,255))
  if sub:d.text((x,y+30),sub,font=font(15),fill=(166,187,204,255))
 
-def make_sweep(plate,overlay,points,subject_name,title,subtitle)->Image.Image:
+def make_sweep(plate,overlay,points,subject_name,title,subtitle,lighting:str|None=None)->Image.Image:
  subject,pivot=sprite(subject_name);n=len(points);pw=220;ph=190
  board=Image.new('RGBA',(40+n*pw,280),(12,17,23,255));panel_header(board,(24,14),title,subtitle)
  for i,p in enumerate(points):
-  frame=plate.copy();place(frame,subject,p,pivot);frame.alpha_composite(overlay)
+  frame=plate.copy()
+  rendered=subject
+  if lighting:
+   warm=(0.12*(1-i/(n-1))) if lighting=='entrance' else 0.04
+   brightness=(1.22-0.10*i/(n-1)) if lighting=='entrance' else 1.18
+   rendered=presentation_lighting(subject,warm,brightness)
+   world_ring(frame,p,(255,76,62) if lighting=='entrance' else (82,205,255))
+   soft_contact_shadow(frame,p)
+  place(frame,rendered,p,pivot);frame.alpha_composite(overlay)
   crop=(p[0]-90,p[1]-115,p[0]+90,p[1]+45)
   shot=frame.crop(crop).resize((200,178),Image.Resampling.NEAREST)
   x=25+i*pw;board.alpha_composite(shot,(x,92))
@@ -87,14 +122,69 @@ def make_sweep(plate,overlay,points,subject_name,title,subtitle)->Image.Image:
  return board
 
 def make_combined_sweeps(plate,overlays,actual:bool)->Image.Image:
- a=make_sweep(plate,overlays['entrance-shell'],ENTRANCE_POINTS,'raider' if actual else 'solid-raider','ENTRANCE SHELL — '+('PRODUCTION RAIDER' if actual else 'SOLID RAIDER PROXY'),'inside tunnel → aperture → open road; exact foreground RGBA composites last')
- b=make_sweep(plate,overlays['gantry-shell'],GANTRY_POINTS,'warden' if actual else 'solid-warden','GANTRY SHELL — '+('PRODUCTION WARDEN' if actual else 'SOLID WARDEN PROXY'),'upper terrace → beneath beam → defended plaza; no visibility toggle')
+ a=make_sweep(plate,overlays['entrance-shell'],ENTRANCE_POINTS,'raider' if actual else 'solid-raider','ENTRANCE SHELL — '+('PRODUCTION RAIDER' if actual else 'SOLID RAIDER PROXY'),('lit aperture-clearance sequence; shell alpha does not affect route subjects' if actual else 'fully visible aperture clearance; no route-subject occlusion expected'),lighting='entrance' if actual else None)
+ b=make_sweep(plate,overlays['gantry-shell'],GANTRY_POINTS,'warden' if actual else 'solid-warden','GANTRY SHELL — '+('PRODUCTION WARDEN' if actual else 'SOLID WARDEN PROXY'),'upper terrace → behind full gantry mass → defended plaza; no visibility toggle',lighting='gantry' if actual else None)
  out=Image.new('RGBA',(max(a.width,b.width),a.height+b.height),(8,12,17,255));out.alpha_composite(a);out.alpha_composite(b,(0,a.height));return out
 
 def make_card_sweeps(plate,overlays)->Image.Image:
- a=make_sweep(plate,overlays['entrance-shell'],ENTRANCE_POINTS,'raider-card','ENTRANCE SHELL — 44 PX BANDED CARD','exact raider canvas and pivot; aperture remains transparent')
+ a=make_sweep(plate,overlays['entrance-shell'],ENTRANCE_POINTS,'raider-card','ENTRANCE SHELL — 44 PX BANDED CARD','fully visible aperture clearance; expected hidden alpha is zero')
  b=make_sweep(plate,overlays['gantry-shell'],GANTRY_POINTS,'warden-card','GANTRY SHELL — 56 PX BANDED CARD','exact Warden canvas and pivot; bridge mass produces one coherent cutoff')
  out=Image.new('RGBA',(max(a.width,b.width),a.height+b.height),(8,12,17,255));out.alpha_composite(a);out.alpha_composite(b,(0,a.height));return out
+
+def alpha_visibility(mask:Image.Image,subject:Image.Image,ground:tuple[int,int],pivot:tuple[int,int])->tuple[int,int]:
+ alpha=subject.getchannel('A');hidden=visible=0
+ for sy in range(alpha.height):
+  for sx in range(alpha.width):
+   value=alpha.getpixel((sx,sy))
+   if not isinstance(value,int):raise TypeError('expected scalar alpha')
+   if value:
+    if mask.getpixel((ground[0]-pivot[0]+sx,ground[1]-pivot[1]+sy)):hidden+=value
+    else:visible+=value
+ return hidden,visible
+
+def boundary_pair(plate:Image.Image,overlay:Image.Image,subject:Image.Image,pivot:tuple[int,int],ground:tuple[int,int],crop_size:int,scale:int)->tuple[Image.Image,int,int]:
+ before=plate.copy();place(before,subject,ground,pivot)
+ after=before.copy();after.alpha_composite(overlay)
+ box=(ground[0]-crop_size//2,ground[1]-crop_size+6,ground[0]+crop_size//2,ground[1]+6)
+ pair=Image.new('RGBA',(crop_size*scale*2,crop_size*scale),(8,12,17,255))
+ pair.alpha_composite(before.crop(box).resize((crop_size*scale,crop_size*scale),Image.Resampling.NEAREST))
+ pair.alpha_composite(after.crop(box).resize((crop_size*scale,crop_size*scale),Image.Resampling.NEAREST),(crop_size*scale,0))
+ return pair,*alpha_visibility(overlay.getchannel('A'),subject,ground,pivot)
+
+def make_gantry_boundary_diagnostics(plate:Image.Image,overlay:Image.Image)->Image.Image:
+ subject,pivot=sprite('solid-warden')
+ groups=[
+  ('FIRST CONTACT',[(780-2*i,435+i) for i in range(8)]),
+  ('APPROACH FULL HIDE',[(726-2*i,462+i) for i in range(8)]),
+  ('FIRST REAPPEARANCE',[(700-2*i,475+i) for i in range(8)]),
+  ('APPROACH FULL EMERGENCE',[(656-2*i,497+i) for i in range(8)]),
+ ]
+ board=Image.new('RGBA',(2100,1130),(8,12,17,255));panel_header(board,(24,14),'GANTRY BOUNDARY DIAGNOSTICS — BEFORE | AFTER','adjacent 2 px x / 1 px y route samples; exact solid-Warden alpha and pivot')
+ d=ImageDraw.Draw(board)
+ for row,(label,samples) in enumerate(groups):
+  y=105+row*185;d.text((20,y-30),label,font=font(17,True),fill=(235,196,112,255))
+  for i,p in enumerate(samples):
+   pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,80,1);x=20+i*255;board.alpha_composite(pair,(x,y))
+   pct=100*v/(h+v);d.text((x,y+84),f'{p[0]},{p[1]}  {pct:.1f}% visible',font=font(12),fill=(225,230,234,255));d.text((x,y+101),f'alpha V {v}  H {h}',font=font(10),fill=(176,196,208,255));d.text((x,y+116),'native B | A',font=font(11),fill=(160,180,195,255))
+ critical=[('contact',(776,437)),('hidden',(712,469)),('reappears',(700,475)),('visible',(642,504))]
+ y=855;d.text((20,y-35),'4× NEAREST-NEIGHBOR EDGE CHECKS',font=font(17,True),fill=(235,196,112,255))
+ for i,(label,p) in enumerate(critical):
+  pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,48,4);x=20+i*500;board.alpha_composite(pair,(x,y))
+  pct=100*v/(h+v);d.text((x,y+198),f'{label}: {p[0]},{p[1]}  {pct:.1f}% visible  V {v}  H {h}  4× B | A',font=font(12,True),fill=(110,255,190,255))
+ return board
+
+def make_noop_heatmap(plate:Image.Image,overlays:dict[str,Image.Image])->Image.Image:
+ recon=plate.copy();recon.alpha_composite(overlays['entrance-shell']);recon.alpha_composite(overlays['gantry-shell'])
+ diff=ImageChops.difference(plate,recon);changed=0;mx=0;heat=Image.new('RGBA',FRAME,(0,0,0,255));hp=heat.load()
+ if hp is None:raise RuntimeError('heatmap pixel access unavailable')
+ for y in range(FRAME[1]):
+  for x in range(FRAME[0]):
+   px=diff.getpixel((x,y))
+   if not isinstance(px,tuple):raise TypeError('expected RGBA difference pixel')
+   delta=max(int(channel) for channel in px);mx=max(mx,delta)
+   if delta:changed+=1;hp[x,y]=(delta,0,0,255)
+ board=Image.new('RGBA',(1280,810),(8,12,17,255));panel_header(board,(24,14),'NO-ENTITY RECONSTRUCTION — REAL DIFFERENCE HEATMAP',f'changedPixels={changed}  maxChannelDelta={mx}; black means exact identity')
+ board.alpha_composite(heat,(0,90));return board
 
 def make_isolation(plate,masks,overlays)->Image.Image:
  specs=[('entrance-shell',(900,0,1180,270)),('gantry-shell',(390,270,810,680))]
@@ -124,14 +214,19 @@ def make_isolation(plate,masks,overlays)->Image.Image:
 
 def make_overview(plate,overlays)->Image.Image:
  scene=plate.copy();raider,rp=sprite('raider');warden,wp=sprite('warden')
- place(scene,raider,(1005,210),rp);scene.alpha_composite(overlays['entrance-shell'])
- place(scene,warden,(630,510),wp);scene.alpha_composite(overlays['gantry-shell'])
+ world_ring(scene,(990,250),(255,76,62));soft_contact_shadow(scene,(990,250));place(scene,presentation_lighting(raider,0.08,1.18),(990,250),rp);scene.alpha_composite(overlays['entrance-shell'])
+ world_ring(scene,(630,510),(82,205,255));soft_contact_shadow(scene,(630,510));place(scene,presentation_lighting(warden,0.04,1.18),(630,510),wp);scene.alpha_composite(overlays['gantry-shell'])
  board=Image.new('RGBA',(1280,810),(9,13,18,255));board.alpha_composite(scene,(0,90));panel_header(board,(24,16),'LAYERED SHUTTERGATE — PROOF OF CONCEPT','one clean map, two explicit foreground RGBA artifacts, approved 56/44 px units; no HUD or runtime-state claim')
  return board
+
+def assert_exact_noop(reference:Image.Image,reconstruction:Image.Image)->None:
+ if reference.mode!=reconstruction.mode or reference.size!=reconstruction.size or reference.tobytes()!=reconstruction.tobytes():
+  raise ValueError('foreground artifacts must reconstruct the no-entity plate exactly')
 
 def write_json(path:Path,data)->None:path.write_text(json.dumps(data,indent=2,sort_keys=True)+'\n')
 
 def build(out_root:Path)->list[Path]:
+ validate_environment()
  exp=out_root/'exports';ev=out_root/'evidence';meta=out_root/'metadata'
  for p in [exp/'environment',exp/'foreground',ev,meta]:p.mkdir(parents=True,exist_ok=True)
  plate=prepare_plate();plate_path=exp/'environment/layered-shuttergate-clean-plate-1280x720.png';plate.save(plate_path,optimize=False,compress_level=9)
@@ -142,8 +237,14 @@ def build(out_root:Path)->list[Path]:
    raise ValueError(f'{key} contains nonzero RGB beneath zero alpha')
  no_op=plate.copy()
  for key in ('entrance-shell','gantry-shell'):no_op.alpha_composite(overlays[key])
- if ImageChops.difference(plate,no_op).getbbox() is not None:
-  raise ValueError('foreground artifacts must reconstruct the no-entity plate exactly')
+ assert_exact_noop(plate,no_op)
+ # Regression: unchanged-alpha RGB drift must be rejected.
+ probe=plate.copy();px=probe.getpixel((0,0))
+ if not isinstance(px,tuple) or len(px)!=4:raise TypeError('expected RGBA probe pixel')
+ probe.putpixel((0,0),((int(px[0])+1)%256,int(px[1]),int(px[2]),int(px[3])))
+ try:assert_exact_noop(plate,probe)
+ except ValueError:pass
+ else:raise AssertionError('RGB-only unchanged-alpha no-op drift was not rejected')
  files=[plate_path]
  for k in masks:
   mp=exp/'foreground'/f'{k}-mask.png';op=exp/'foreground'/f'{k}.png';masks[k].save(mp,optimize=False,compress_level=9);overlays[k].save(op,optimize=False,compress_level=9);files += [mp,op]
@@ -152,21 +253,24 @@ def build(out_root:Path)->list[Path]:
   'foreground-artifact-isolation.png':make_isolation(plate,masks,overlays),
   'solid-proxy-traversal.png':make_combined_sweeps(plate,overlays,False),
   'calibration-card-traversal.png':make_card_sweeps(plate,overlays),
+  'gantry-boundary-diagnostics.png':make_gantry_boundary_diagnostics(plate,overlays['gantry-shell']),
+  'no-op-difference-heatmap.png':make_noop_heatmap(plate,overlays),
   'production-sprite-traversal.png':make_combined_sweeps(plate,overlays,True),
  }
  for name,img in artifacts.items():p=ev/name;img.save(p,optimize=False,compress_level=9);files.append(p)
  contract={
-  'schemaVersion':1,'authority':'presentation-only-proof-of-concept','frame':[1280,720],
-  'route':{'entrance':[1015,205],'gantry':[650,500],'backstop':[230,520],'branching':False},
-  'layerOrder':['environment-base','world-subjects-behind-structure','entrance-shell','gantry-shell','world-subjects-in-front-of-structure','screen-indicators','hud'],
+  'schemaVersion':2,'authority':'presentation-only-proof-of-concept','frame':[1280,720],
+  'route':{'id':'route.layered-shuttergate','entrance':[990,250],'gantry':[650,500],'backstop':[230,520],'branching':False,'authoritativeMovement':False},
+  'layerOrder':['environment-base','world-rings-behind-structure','world-effects-behind-structure','world-subjects-behind-structure','structure-foreground-artifact','world-rings-in-front','world-effects-in-front','world-subjects-in-front','screen-focus-indicators','hud'],
   'foregroundArtifacts':[
-   {'id':'entrance-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':'depth-zone','aperture':'transparent','sourceMask':'sources/entrance-shell-mask.png'},
-   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':'depth-zone','aperture':'transparent','sourceMask':'sources/gantry-shell-mask.png'}],
+   {'id':'entrance-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'entrance-aperture','states':['inside','aperture','outside']},'routeBehavior':'fully-visible-aperture','behindZone':'none-for-route-subjects','insideZone':'aperture-subject-remains-visible','frontZone':'open-road','affectedClasses':['off-route-world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/entrance-shell-mask.png','evidence':['solid-proxy-traversal.png','calibration-card-traversal.png','foreground-artifact-isolation.png']},
+   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'gantry-crossing','states':['upper-terrace','behind-gantry','defended-plaza']},'routeBehavior':'progressive-architectural-occlusion','behindZone':{'firstContact':[776,437],'fullyHiddenAt':[712,469]},'insideZone':{'fullyHiddenAt':[712,469],'reappearanceStarts':[700,475]},'frontZone':{'fullyVisibleFrom':[642,504]},'affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/gantry-shell-mask.png','evidence':['gantry-boundary-diagnostics.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
   'subjects':{'warden':{'nominalHeight':56,'pivot':[56,66]},'raider':{'nominalHeight':44,'pivot':[40,54]}},
+  'presentationLighting':{'raider':'warm entrance adaptation plus contact shadow and hostile world ring','warden':'bounded brightness/contrast adaptation plus contact shadow and allied world ring','baseSpriteGeometryChanged':False},
   'nonClaims':['runtime integration','simulation authority','HUD approval','final animation']}
  cp=meta/'layered-map-contract.json';write_json(cp,contract);files.append(cp)
- provenance_inputs=[*MASKS.values(),PACKAGE/'sources/generation-notes.md',*(x[0] for x in SPRITES.values())]
- provenance={'generator':'assets/game-art/layered-map-poc/build_poc.py','generatorSha256':sha(Path(__file__)),'master':str(MASTER.relative_to(ROOT)),'masterSha256':sha(MASTER),'inputs':{str(p.relative_to(ROOT)):sha(p) for p in provenance_inputs}}
+ provenance_inputs=[*MASKS.values(),PACKAGE/'sources/generation-notes.md',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
+ provenance={'generator':'assets/game-art/layered-map-poc/build_poc.py','generatorSha256':sha(Path(__file__)),'master':str(MASTER.relative_to(ROOT)),'masterSha256':sha(MASTER),'environment':{'pillow':'12.3.0','fonts':{str(path):digest for path,digest in FONT_HASHES.items()}},'inputs':{str(p.relative_to(ROOT)):sha(p) for p in provenance_inputs}}
  pp=meta/'provenance.json';write_json(pp,provenance);files.append(pp)
  manifest={'schemaVersion':1,'files':{str(p.relative_to(out_root)):sha(p) for p in sorted(files)}}
  mp=meta/'manifest.json';write_json(mp,manifest);files.append(mp)

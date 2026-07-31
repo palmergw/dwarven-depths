@@ -1,17 +1,19 @@
 {
   "files": {
-    "evidence/calibration-card-traversal.png": "73b93cf4843b8228b7b40494a695aa6c28f4c53da6b3ba55ba26454530164667",
-    "evidence/foreground-artifact-isolation.png": "2258e3b03bd6d707e4da7f7956fbc0ca25fb6cef5a7d519301cd58be1896d12c",
-    "evidence/layered-map-overview.png": "6bb2ec58c8bbff97af09c2f5dd6dfa208a24e619de3629272c807d0dd62ebef4",
-    "evidence/production-sprite-traversal.png": "b7083313dfd6ee28ee610b5fa9d43df036624d0223ea8210e2c676661ad8383f",
-    "evidence/solid-proxy-traversal.png": "f74d9adc102ccf5b9f6fda022e2ff66922e4c4f90ed7c99a279c1ddf5aa6fecc",
+    "evidence/calibration-card-traversal.png": "869e01737765d590fedff35ec6364be5869f77e132af6b5bb2b17978f8d6ebf9",
+    "evidence/foreground-artifact-isolation.png": "90a08e819ef2bf5d7ddf8e07301bf1885fc3c5012d56f37aa4d6a9e0407fe6b6",
+    "evidence/gantry-boundary-diagnostics.png": "793178278685067ad2e1cc734ff7f97244d91dbe10b8211b18fac62022b90929",
+    "evidence/layered-map-overview.png": "0fda44b405cec8bfc12260293e816b16285c4839145ab6cf1d342e559a6accdf",
+    "evidence/no-op-difference-heatmap.png": "b2045b12b59e772519c0025b57840090d2176a6c1297c534280203d151616976",
+    "evidence/production-sprite-traversal.png": "5df05914f4d63b04ea7d1e13f82634595610e9153e3784f9e42bc2ff14f6427f",
+    "evidence/solid-proxy-traversal.png": "de62439dc039e9dedc4a987535076892f62d8592cb2fd188f7f9dfd4d10ebaa6",
     "exports/environment/layered-shuttergate-clean-plate-1280x720.png": "6e21709f3aed316c5d40e142ac39d6ecdde802d7f22c72edee939645a0fe6579",
-    "exports/foreground/entrance-shell-mask.png": "e9afef0ca9748e484b22469269132d1dafb9fd92760c1e86d296ec6b8130d484",
-    "exports/foreground/entrance-shell.png": "3a1f8033dce090fb9430c7c5b1162e4d51ccce46f11ff9add57114b32dbf31d6",
+    "exports/foreground/entrance-shell-mask.png": "3657c8f191fb7c234658f4c097ea0139a05550b487bd2f29c073cb82da8f8616",
+    "exports/foreground/entrance-shell.png": "9b21a9621e989a2c7c8d6fb108749f50d67fe93049c114a6a22a7c3dea5043e9",
     "exports/foreground/gantry-shell-mask.png": "dee8784dc86548e674154c11f0a510c02b408c5663ff4f5c60345e4d0c854085",
     "exports/foreground/gantry-shell.png": "ba4384ecda714a581dad9d0b8e69f98e6dd27e96279de74527537d9c3ff7edb5",
-    "metadata/layered-map-contract.json": "5dafbe215d7cf5cf555c5b011be4343316d4806927c9e937ad41ba403de53164",
-    "metadata/provenance.json": "0d17b2b6cd184207385c19b5afff9ba193d6842f97231d3fc7c0e7d03abcdabc"
+    "metadata/layered-map-contract.json": "ae64504f8650efc0c404463892b61ee29ad9c8dc03031ec8a4cb362e61c05d44",
+    "metadata/provenance.json": "82e9a0280932e480bef689a451e6beea8df31ddcff8ed7a290f3baeb6adc4c6a"
   },
   "schemaVersion": 1
 }

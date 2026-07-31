@@ -2,10 +2,35 @@
   "authority": "presentation-only-proof-of-concept",
   "foregroundArtifacts": [
     {
-      "activation": "depth-zone",
+      "activation": {
+        "routeSegment": "entrance-aperture",
+        "source": "presentation-route-state",
+        "states": [
+          "inside",
+          "aperture",
+          "outside"
+        ]
+      },
+      "affectedClasses": [
+        "off-route-world-subject",
+        "world-ring",
+        "world-effect"
+      ],
       "alpha": "straight",
-      "aperture": "transparent",
+      "behindZone": "none-for-route-subjects",
+      "evidence": [
+        "solid-proxy-traversal.png",
+        "calibration-card-traversal.png",
+        "foreground-artifact-isolation.png"
+      ],
+      "exemptClasses": [
+        "screen-focus-indicator",
+        "hud"
+      ],
+      "frontZone": "open-road",
       "id": "entrance-shell",
+      "insideZone": "aperture-subject-remains-visible",
+      "routeBehavior": "fully-visible-aperture",
       "sourceMask": "sources/entrance-shell-mask.png",
       "transparentRgb": [
         0,
@@ -14,10 +39,59 @@
       ]
     },
     {
-      "activation": "depth-zone",
+      "activation": {
+        "routeSegment": "gantry-crossing",
+        "source": "presentation-route-state",
+        "states": [
+          "upper-terrace",
+          "behind-gantry",
+          "defended-plaza"
+        ]
+      },
+      "affectedClasses": [
+        "world-subject",
+        "world-ring",
+        "world-effect"
+      ],
       "alpha": "straight",
-      "aperture": "transparent",
+      "behindZone": {
+        "firstContact": [
+          776,
+          437
+        ],
+        "fullyHiddenAt": [
+          712,
+          469
+        ]
+      },
+      "evidence": [
+        "gantry-boundary-diagnostics.png",
+        "solid-proxy-traversal.png",
+        "calibration-card-traversal.png",
+        "production-sprite-traversal.png"
+      ],
+      "exemptClasses": [
+        "screen-focus-indicator",
+        "hud"
+      ],
+      "frontZone": {
+        "fullyVisibleFrom": [
+          642,
+          504
+        ]
+      },
       "id": "gantry-shell",
+      "insideZone": {
+        "fullyHiddenAt": [
+          712,
+          469
+        ],
+        "reappearanceStarts": [
+          700,
+          475
+        ]
+      },
+      "routeBehavior": "progressive-architectural-occlusion",
       "sourceMask": "sources/gantry-shell-mask.png",
       "transparentRgb": [
         0,
@@ -32,11 +106,14 @@
   ],
   "layerOrder": [
     "environment-base",
+    "world-rings-behind-structure",
+    "world-effects-behind-structure",
     "world-subjects-behind-structure",
-    "entrance-shell",
-    "gantry-shell",
-    "world-subjects-in-front-of-structure",
-    "screen-indicators",
+    "structure-foreground-artifact",
+    "world-rings-in-front",
+    "world-effects-in-front",
+    "world-subjects-in-front",
+    "screen-focus-indicators",
     "hud"
   ],
   "nonClaims": [
@@ -45,22 +122,29 @@
     "HUD approval",
     "final animation"
   ],
+  "presentationLighting": {
+    "baseSpriteGeometryChanged": false,
+    "raider": "warm entrance adaptation plus contact shadow and hostile world ring",
+    "warden": "bounded brightness/contrast adaptation plus contact shadow and allied world ring"
+  },
   "route": {
+    "authoritativeMovement": false,
     "backstop": [
       230,
       520
     ],
     "branching": false,
     "entrance": [
-      1015,
-      205
+      990,
+      250
     ],
     "gantry": [
       650,
       500
-    ]
+    ],
+    "id": "route.layered-shuttergate"
   },
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "subjects": {
     "raider": {
       "nominalHeight": 44,
