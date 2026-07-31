@@ -11,6 +11,7 @@ This directory is the first executable replacement for the rejected independentl
   - `ENVIRONMENT_BASE`
   - `FOREGROUND_ENTRANCE`
   - `FOREGROUND_GANTRY`
+  - `DIAGNOSTIC_ROUTE_SUBJECTS`
   - `SHARED_LIGHTING`
 - Cycles CPU, 16 samples, denoising disabled
 - 1280×720 RGBA outputs
@@ -27,17 +28,30 @@ The script recreates the `.blend` file and emits all outputs from the same camer
 - `outputs/environment-base.png`
 - `outputs/entrance-shell.png`
 - `outputs/gantry-shell.png`
+- `outputs/route-subjects.png` (transparent diagnostic proxy isolation)
 - `outputs/reference-plate.png`
+- `outputs/route-traversal.png` (review-only proxy evidence)
+- `render-manifest.json` (camera/source/output hashes and alpha semantics)
+
+Verify the committed editable source and outputs without rebuilding them:
+
+```bash
+blender -b --factory-startup \
+  --python assets/game-art/layered-map-poc/blender/build_scene.py -- --verify
+```
 
 No Blender UI, MCP, display server, chroma key, traced polygon, independent image registration, or post-render perspective warp is used.
 
 ## Current WIP critique
 
-This checkpoint proves the missing production capability, not final art quality. Perspective, scale, registration, alpha, and support foundations now originate in one scene. Remaining work includes:
+This checkpoint proves the missing production capability and begins the scale/style correction; it is not final art. Perspective, registration, native alpha, and support foundations originate in one scene.
 
-- improve framing so the lower shutter is more legible;
-- replace the simple blockout with more painterly materials and architectural detail;
+The second blockout expands the authored floor from 23×24 to 32×34 world units, extends the route from 20 to 30 world units, widens the road, moves both gantry supports farther outside the lane, and uses a 36-unit orthographic frame. Procedural basalt, carved-stone, road, and timber variation, iron rails, irregular shoulder rubble, cool fill, and warm tunnel/gate pools move the sterile blockout toward the original fortress direction without changing the camera contract.
+
+Remaining work includes:
+
+- replace the proxy cylinders with the approved 56 px Warden and 44 px raider sprites;
+- develop larger carved architecture, chains, machinery, and masonry silhouettes rather than relying on repeated blocks;
 - refine the entrance voussoir silhouette;
-- remove the small disconnected brace/light fragment in the gantry-only pass;
-- add route subjects and prove traversal using the native renderer alpha;
-- integrate Blender-source hashes and render verification into `build_poc.py`.
+- improve the defended-shutter framing and readability;
+- integrate Blender-source hashes and render verification into the top-level POC verifier.
