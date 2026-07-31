@@ -10,7 +10,7 @@
     "pillow": "12.3.0"
   },
   "generator": "assets/game-art/layered-map-poc/build_poc.py",
-  "generatorSha256": "dd422193474a168be664b5286d1f34639fa55269d51a974cf30483a5f9db2d20",
+  "generatorSha256": "ae0662561d293f34d6c8edbaf39cdeb943e30706f1dbcef5fa54f64e6eba845c",
   "inputs": {
     "assets/game-art/layered-map-poc/blender/build_scene.py": "c920515eaddbe45e43bed22145f3a8b39963f8e90e6aa600b15ab3b27e888a29",
     "assets/game-art/layered-map-poc/blender/compose_reference.py": "6b5918f9b516a7fa3e9714500dd82c45e7c1bdbdd5bfd0764996bd318e3031cc",

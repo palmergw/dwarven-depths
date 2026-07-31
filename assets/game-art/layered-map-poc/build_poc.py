@@ -15,6 +15,7 @@ BLENDER_SOURCE=BLENDER_ROOT/'layered-shuttergate.blend'
 BLENDER_BUILDER=BLENDER_ROOT/'build_scene.py'
 BLENDER_COMPOSITOR=BLENDER_ROOT/'compose_reference.py'
 BASE=BLENDER_OUTPUTS/'environment-base.png'
+REFERENCE=BLENDER_OUTPUTS/'reference-plate.png'
 ARTIFACTS={
  'entrance-shell':BLENDER_OUTPUTS/'entrance-shell.png',
  'gantry-shell':BLENDER_OUTPUTS/'gantry-shell.png',
@@ -57,6 +58,12 @@ def prepare_plate()->Image.Image:
  src=Image.open(BASE).convert('RGBA')
  if src.size!=FRAME:raise ValueError(f'unexpected environment-base size {src.size}')
  return src
+
+def load_reference()->Image.Image:
+ with Image.open(REFERENCE) as source:
+  if source.format!='PNG' or source.mode!='RGBA' or source.size!=FRAME:
+   raise ValueError(f'canonical reference must be a {FRAME[0]}x{FRAME[1]} RGBA PNG: {REFERENCE}')
+  return source.copy()
 
 def load_artifact(path:Path)->Image.Image:
  with Image.open(path) as source:
@@ -299,8 +306,7 @@ def build(out_root:Path)->list[Path]:
  overlays={key:load_artifact(path) for key,path in ARTIFACTS.items()}
  masks={key:artifact.getchannel('A') for key,artifact in overlays.items()}
  with tempfile.TemporaryDirectory() as td:assert_mask_mode_tamper_rejected(masks['entrance-shell'],Path(td))
- reference=base.copy()
- for key in ('entrance-shell','gantry-shell'):reference.alpha_composite(overlays[key])
+ reference=load_reference()
  base_path=exp/'environment/structure-free-environment-base-1280x720.png'
  plate_path=exp/'environment/layered-shuttergate-clean-plate-1280x720.png'
  base.save(base_path,optimize=False,compress_level=9);reference.save(plate_path,optimize=False,compress_level=9)
@@ -341,7 +347,7 @@ def build(out_root:Path)->list[Path]:
   'presentationLighting':{'raider':'warm entrance adaptation plus contact shadow and hostile world ring','warden':'bounded brightness/contrast adaptation plus contact shadow and allied world ring','baseSpriteGeometryChanged':False},
   'nonClaims':['runtime integration','simulation authority','HUD approval','final animation']}
  cp=meta/'layered-map-contract.json';write_json(cp,contract);files.append(cp)
- provenance_inputs=[BASE,*ARTIFACTS.values(),BLENDER_BUILDER,BLENDER_COMPOSITOR,BLENDER_SOURCE,BLENDER_MANIFEST,BLENDER_OUTPUTS/'reference-plate.png',BLENDER_OUTPUTS/'production-sprite-subjects.png',BLENDER_OUTPUTS/'production-sprite-traversal.png',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
+ provenance_inputs=[BASE,REFERENCE,*ARTIFACTS.values(),BLENDER_BUILDER,BLENDER_COMPOSITOR,BLENDER_SOURCE,BLENDER_MANIFEST,BLENDER_OUTPUTS/'production-sprite-subjects.png',BLENDER_OUTPUTS/'production-sprite-traversal.png',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
  provenance={'generator':'assets/game-art/layered-map-poc/build_poc.py','generatorSha256':sha(Path(__file__)),'authoringModel':'single editable Blender scene and orthographic camera; complete plate derives from same-camera environment plus canonical RGBA passes','environment':{'blender':'4.3.2','cycles':'CPU 16 samples, denoising disabled','pillow':'12.3.0','fonts':{str(path):digest for path,digest in FONT_HASHES.items()}},'inputs':{str(p.relative_to(ROOT)):sha(p) for p in provenance_inputs}}
  pp=meta/'provenance.json';write_json(pp,provenance);files.append(pp)
  manifest={'schemaVersion':1,'files':{str(p.relative_to(out_root)):sha(p) for p in sorted(files)}}
