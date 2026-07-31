@@ -1,21 +1,21 @@
 {
   "files": {
-    "evidence/calibration-card-traversal.png": "36e5695ac1dc01281cf5cae4fb3d45490a520a1b1989475410769c22a6ed0db8",
-    "evidence/entrance-mask-alignment.png": "a114e332ff2d32cea714c9270ed4adb74fcbd0b0b170baa88315f3c9d819cb59",
-    "evidence/foreground-artifact-isolation.png": "fb07515a2404ecde1e62a7520ccb9cc197fa1efc31fe42691620c07c9b1f7373",
-    "evidence/gantry-boundary-diagnostics.png": "4ce3c6ebbf5363182ebad7adb290093753a5f560b2c5581aab34a9f46f0329bf",
-    "evidence/layered-map-overview.png": "d879c20a6ed540b5886078e1ef576b3727918dc76553f7482d4081bd6b962940",
+    "evidence/calibration-card-traversal.png": "6cb88314d706b5289fc62a7e751462dd2d7daf37c73d54d6cac6b078b9048312",
+    "evidence/entrance-mask-alignment.png": "1720e72a5663a7db5a3f222c0a2df08af400da140d66a0e49cabb84ae143818b",
+    "evidence/foreground-artifact-isolation.png": "011756891908d5b05106247294d5aa792de14c32fe3bfd5fb06929287f67fc24",
+    "evidence/gantry-boundary-diagnostics.png": "f918fcb6ece8bab24f7d7a47d8fb3dfd2a8f67842447b9472f28de7b211c5c39",
+    "evidence/layered-map-overview.png": "d5c202d201d4119c4b2a26087fec8e5ceda2cdb26affe995523f003616ed03ec",
     "evidence/no-op-difference-heatmap.png": "b2045b12b59e772519c0025b57840090d2176a6c1297c534280203d151616976",
-    "evidence/production-sprite-traversal.png": "b805161e1a873d8a57aa61ad02d023ba4da1b4feef7cac56b2d66eec5fd30a90",
-    "evidence/solid-proxy-traversal.png": "22c81a54a31a4e2fb3f71ceef4f8dabc520063d50a2eec23e1ea0f6b9fbf20e2",
-    "exports/environment/layered-shuttergate-clean-plate-1280x720.png": "b359b97f87922415407c6bcb31165cc54f2c9caa9c862e307e7ad090ae046bef",
-    "exports/environment/structure-free-environment-base-1280x720.png": "2af03190547fc8ccf463a6d2491e49ff73dae8dbdf3600acf03d6c148330ee75",
-    "exports/foreground/entrance-shell-mask.png": "ce8465ec1fd6473e3a1a981bb6419cadc7bef7161456e716c6baa471ad5e5f72",
-    "exports/foreground/entrance-shell.png": "a8fb2035bf1d77e30def0e335f5a6c46ef1d76aad9ecb6bb2351c48974cd8807",
-    "exports/foreground/gantry-shell-mask.png": "bb6f313bba5df0e09ee86e981068938cfe6be8045e951579fb93bb487bdb63b3",
-    "exports/foreground/gantry-shell.png": "dea4354591cf16fa23e058032f792a1d2113b90571cf9236673b230510949ca7",
-    "metadata/layered-map-contract.json": "101eb8d45cf87b7a1fd49a2b378a4961152f660ae598d4c26b9ce0bfdc762c30",
-    "metadata/provenance.json": "0c0c7a8ab537a6d455eb2315824d4b234be768aaa22001e74ae82cd35eab7c30"
+    "evidence/production-sprite-traversal.png": "9ea456f2902e3e519946a56997b91ec389464fde47d35ab062d0e90294478bbf",
+    "evidence/solid-proxy-traversal.png": "0474aaf7a6413e7d9d0602448fdc2e3c2343c929193281250523e4656bf04653",
+    "exports/environment/layered-shuttergate-clean-plate-1280x720.png": "7d0210f6fc4ec9484c5a1915cd2159472964e0bbf4007a60066a1b274c929144",
+    "exports/environment/structure-free-environment-base-1280x720.png": "0d506693f80b6088f4ac7517347ee7c1e33bbd9f66142db90a8956108aff36c0",
+    "exports/foreground/entrance-shell-mask.png": "6b1adb4f95a9bfc9b5487e567d928df8f0c61fc5567172f26b035c7ca8be69e0",
+    "exports/foreground/entrance-shell.png": "5ec204d73c278aeca98784a0b6ad3c099d750e70ac547e29aa5626584c93e222",
+    "exports/foreground/gantry-shell-mask.png": "c7a7f6316fa1dc21ed64d717a210f06c3bfa3178c40e2bfae1ea122277721b96",
+    "exports/foreground/gantry-shell.png": "92e831eb0e9028fdea4282de44ec9062a5952d6917e266aa97c6192bbf9fcdc4",
+    "metadata/layered-map-contract.json": "e7e530bed99ddc0497fc8ecb102528060043173e6f525a54fbc1be6584d54354",
+    "metadata/provenance.json": "711de5760d6042d3b52f95f3a3c83f8578f5a7c47efa0c38320ec32bc1bfe21c"
   },
   "schemaVersion": 1
 }

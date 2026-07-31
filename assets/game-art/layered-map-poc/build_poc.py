@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 """Deterministic layered-map proof-of-concept compositor and verifier."""
 from __future__ import annotations
-import argparse, hashlib, json, runpy, shutil, tempfile
+import argparse, hashlib, json, shutil, subprocess, tempfile
 from pathlib import Path
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 ROOT=Path(__file__).resolve().parents[3]
 PACKAGE=Path(__file__).resolve().parent
 FRAME=(1280,720)
-BASE=PACKAGE/'sources/environment-base.png'
+BLENDER_ROOT=PACKAGE/'blender'
+BLENDER_OUTPUTS=BLENDER_ROOT/'outputs'
+BLENDER_MANIFEST=BLENDER_ROOT/'render-manifest.json'
+BLENDER_SOURCE=BLENDER_ROOT/'layered-shuttergate.blend'
+BLENDER_BUILDER=BLENDER_ROOT/'build_scene.py'
+BASE=BLENDER_OUTPUTS/'environment-base.png'
 ARTIFACTS={
- 'entrance-shell':PACKAGE/'sources/entrance-shell.png',
- 'gantry-shell':PACKAGE/'sources/gantry-shell.png',
+ 'entrance-shell':BLENDER_OUTPUTS/'entrance-shell.png',
+ 'gantry-shell':BLENDER_OUTPUTS/'gantry-shell.png',
 }
-AUTHORING_BUILDER=PACKAGE/'sources/artifact-first/build_candidate.py'
 ENTITY_ROOT=ROOT/'assets/game-art/production-scene/exports'
 SPRITES={
  'solid-warden':(ENTITY_ROOT/'diagnostics/solid-warden-proxy.png',(56,66)),
@@ -23,8 +27,8 @@ SPRITES={
  'warden':(ENTITY_ROOT/'entities/iron-warden-idle.png',(56,66)),
  'raider':(ENTITY_ROOT/'entities/mine-raider-idle.png',(40,54)),
 }
-ENTRANCE_POINTS=[(1140,135),(1125,145),(1110,155),(1095,165),(1080,178),(1065,192)]
-GANTRY_POINTS=[(880,210),(860,225),(840,240),(820,255),(800,270),(780,285),(760,300),(740,315)]
+ENTRANCE_POINTS=[(990,125),(960,150),(930,175),(900,200),(870,225),(840,250)]
+GANTRY_POINTS=[(820,255),(790,278),(760,300),(730,322),(700,345),(670,367),(640,390),(610,412)]
 FONT_PATH=Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
 FONT_HASHES={
  FONT_PATH:'57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e',
@@ -65,12 +69,29 @@ def load_artifact(path:Path)->Image.Image:
  return artifact
 
 def assert_authoring_reproducible()->None:
- namespace=runpy.run_path(str(AUTHORING_BUILDER))
- with tempfile.TemporaryDirectory() as td:
-  out=Path(td);namespace['build'](out)
-  expected={'environment-base.png':BASE,'entrance-shell.png':ARTIFACTS['entrance-shell'],'gantry-shell.png':ARTIFACTS['gantry-shell']}
-  bad=[name for name,path in expected.items() if sha(out/name)!=sha(path)]
-  if bad:raise ValueError('artifact-first canonical source drift: '+', '.join(bad))
+ manifest=json.loads(BLENDER_MANIFEST.read_text())
+ if set(manifest)!={'schemaVersion','blenderVersion','camera','collections','source','sourceAssets','outputs'}:
+  raise ValueError('unexpected Blender manifest shape')
+ if manifest['schemaVersion']!=1 or manifest['camera'].get('name')!='CAMERA_Shuttergate_Ortho' or manifest['camera'].get('projection')!='orthographic':
+  raise ValueError('unexpected shared-camera contract')
+ if manifest['source']!={'builderSha256':sha(BLENDER_BUILDER),'blendSha256':sha(BLENDER_SOURCE)}:
+  raise ValueError('Blender editable-source binding drift')
+ expected_outputs={'environment-base.png','entrance-shell.png','gantry-shell.png','route-subjects.png','production-sprite-subjects.png','reference-plate.png','route-traversal.png','production-sprite-traversal.png'}
+ if set(manifest['outputs'])!=expected_outputs:raise ValueError('unexpected Blender output set')
+ bad=[name for name in expected_outputs if manifest['outputs'][name]['sha256']!=sha(BLENDER_OUTPUTS/name)]
+ if bad:raise ValueError('shared-camera render drift: '+', '.join(sorted(bad)))
+ for record in manifest['sourceAssets'].values():
+  if set(record)!={'path','sha256','canvas','pivot','nominalHeight','alphaSemantics'}:raise ValueError('unexpected Blender source-asset shape')
+  source=ROOT/record['path']
+  if not source.is_file() or sha(source)!=record['sha256']:raise ValueError(f'Blender source-asset drift: {source}')
+
+def assert_blender_render_verified()->None:
+ result=subprocess.run(
+  ['blender','-b','--factory-startup','--python-exit-code','1','--python',str(BLENDER_BUILDER),'--','--verify'],
+  cwd=ROOT,text=True,capture_output=True,timeout=600,check=False,
+ )
+ if result.returncode!=0 or 'SHARED_SCENE_VERIFY_OK' not in result.stdout:
+  raise ValueError('shared-camera Blender rerender verification failed: '+(result.stderr or result.stdout)[-500:])
 
 def load_mask(path:Path)->Image.Image:
  with Image.open(path) as source:
@@ -256,8 +277,8 @@ def make_entrance_alignment(plate:Image.Image,mask:Image.Image,overlay:Image.Ima
 
 def make_overview(base,overlays)->Image.Image:
  scene=base.copy();raider,rp=sprite('raider');warden,wp=sprite('warden')
- world_ring(scene,(1080,178),(255,76,62));soft_contact_shadow(scene,(1080,178));place(scene,presentation_lighting(raider,0.08,1.18),(1080,178),rp);scene.alpha_composite(overlays['entrance-shell'])
- world_ring(scene,(860,295),(82,205,255));soft_contact_shadow(scene,(860,295));place(scene,presentation_lighting(warden,0.04,1.18),(860,295),wp);scene.alpha_composite(overlays['gantry-shell'])
+ world_ring(scene,(930,175),(255,76,62));soft_contact_shadow(scene,(930,175));place(scene,presentation_lighting(raider,0.08,1.18),(930,175),rp);scene.alpha_composite(overlays['entrance-shell'])
+ world_ring(scene,(650,390),(82,205,255));soft_contact_shadow(scene,(650,390));place(scene,presentation_lighting(warden,0.04,1.18),(650,390),wp);scene.alpha_composite(overlays['gantry-shell'])
  board=Image.new('RGBA',(1280,810),(9,13,18,255));board.alpha_composite(scene,(0,90));panel_header(board,(24,16),'LAYERED SHUTTERGATE — PROOF OF CONCEPT','one clean map, two explicit foreground RGBA artifacts, approved 56/44 px units; no HUD or runtime-state claim')
  return board
 
@@ -310,17 +331,17 @@ def build(out_root:Path)->list[Path]:
  for name,img in artifacts.items():p=ev/name;img.save(p,optimize=False,compress_level=9);files.append(p)
  contract={
   'schemaVersion':2,'authority':'presentation-only-proof-of-concept','frame':[1280,720],
-  'route':{'id':'route.layered-shuttergate','entrance':[1080,178],'gantry':[820,255],'backstop':[230,520],'branching':False,'authoritativeMovement':False},
+  'route':{'id':'route.layered-shuttergate','entrance':[930,175],'gantry':[730,322],'backstop':[500,500],'branching':False,'authoritativeMovement':False},
   'layerOrder':['environment-base','world-rings-behind-structure','world-effects-behind-structure','world-subjects-behind-structure','structure-foreground-artifact','world-rings-in-front','world-effects-in-front','world-subjects-in-front','screen-focus-indicators','hud'],
   'foregroundArtifacts':[
-   {'id':'entrance-shell','alpha':'straight','transparentRgb':[0,0,0],'sourceArtifact':'sources/entrance-shell.png','activation':{'source':'presentation-route-state','routeSegment':'entrance-aperture','states':['inside','aperture','outside']},'routeBehavior':'native-authored-arch-occlusion','affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'evidence':['solid-proxy-traversal.png','calibration-card-traversal.png','foreground-artifact-isolation.png']},
-   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'sourceArtifact':'sources/gantry-shell.png','activation':{'source':'presentation-route-state','routeSegment':'gantry-crossing','states':['approach','beneath-overhead-beam','defended-plaza']},'routeBehavior':'progressive-overhead-occlusion','supportPlacement':'both supports anchored on opposite raised shoulders outside route margins','diagnosticPath':'support-free diagonal span','affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'evidence':['gantry-boundary-diagnostics.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
+   {'id':'entrance-shell','alpha':'straight','transparentRgb':[0,0,0],'sourceArtifact':'blender/outputs/entrance-shell.png','activation':{'source':'presentation-route-state','routeSegment':'entrance-aperture','states':['inside','aperture','outside']},'routeBehavior':'shared-camera-authored-arch-occlusion','affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'evidence':['solid-proxy-traversal.png','calibration-card-traversal.png','foreground-artifact-isolation.png']},
+   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'sourceArtifact':'blender/outputs/gantry-shell.png','activation':{'source':'presentation-route-state','routeSegment':'gantry-crossing','states':['approach','beneath-overhead-beam','defended-plaza']},'routeBehavior':'shared-camera-progressive-overhead-occlusion','supportPlacement':'service bridge keyed into opposite raised bastions outside route margins','diagnosticPath':'support-free shared-camera span','affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'evidence':['gantry-boundary-diagnostics.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
   'subjects':{'warden':{'nominalHeight':56,'pivot':[56,66]},'raider':{'nominalHeight':44,'pivot':[40,54]}},
   'presentationLighting':{'raider':'warm entrance adaptation plus contact shadow and hostile world ring','warden':'bounded brightness/contrast adaptation plus contact shadow and allied world ring','baseSpriteGeometryChanged':False},
   'nonClaims':['runtime integration','simulation authority','HUD approval','final animation']}
  cp=meta/'layered-map-contract.json';write_json(cp,contract);files.append(cp)
- provenance_inputs=[BASE,*ARTIFACTS.values(),PACKAGE/'sources/generation-notes.md',PACKAGE/'sources/artifact-first/build_candidate.py',PACKAGE/'sources/artifact-first/environment-base-master.png',PACKAGE/'sources/artifact-first/entrance-shell-chroma-master.png',PACKAGE/'sources/artifact-first/gantry-shell-chroma-master.png',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
- provenance={'generator':'assets/game-art/layered-map-poc/build_poc.py','generatorSha256':sha(Path(__file__)),'authoringModel':'artifact-first; complete plate derives from structure-free base plus canonical RGBA artifacts','environment':{'pillow':'12.3.0','fonts':{str(path):digest for path,digest in FONT_HASHES.items()}},'inputs':{str(p.relative_to(ROOT)):sha(p) for p in provenance_inputs}}
+ provenance_inputs=[BASE,*ARTIFACTS.values(),BLENDER_BUILDER,BLENDER_SOURCE,BLENDER_MANIFEST,BLENDER_OUTPUTS/'production-sprite-subjects.png',BLENDER_OUTPUTS/'production-sprite-traversal.png',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
+ provenance={'generator':'assets/game-art/layered-map-poc/build_poc.py','generatorSha256':sha(Path(__file__)),'authoringModel':'single editable Blender scene and orthographic camera; complete plate derives from same-camera environment plus canonical RGBA passes','environment':{'blender':'4.3.2','cycles':'CPU 16 samples, denoising disabled','pillow':'12.3.0','fonts':{str(path):digest for path,digest in FONT_HASHES.items()}},'inputs':{str(p.relative_to(ROOT)):sha(p) for p in provenance_inputs}}
  pp=meta/'provenance.json';write_json(pp,provenance);files.append(pp)
  manifest={'schemaVersion':1,'files':{str(p.relative_to(out_root)):sha(p) for p in sorted(files)}}
  mp=meta/'manifest.json';write_json(mp,manifest);files.append(mp)
@@ -328,6 +349,7 @@ def build(out_root:Path)->list[Path]:
 
 def main()->None:
  ap=argparse.ArgumentParser();ap.add_argument('--verify',action='store_true');args=ap.parse_args()
+ assert_blender_render_verified()
  if args.verify:
   with tempfile.TemporaryDirectory() as td:
    tmp=Path(td);build(tmp)

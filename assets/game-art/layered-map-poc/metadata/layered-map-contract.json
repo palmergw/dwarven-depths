@@ -27,8 +27,8 @@
         "hud"
       ],
       "id": "entrance-shell",
-      "routeBehavior": "native-authored-arch-occlusion",
-      "sourceArtifact": "sources/entrance-shell.png",
+      "routeBehavior": "shared-camera-authored-arch-occlusion",
+      "sourceArtifact": "blender/outputs/entrance-shell.png",
       "transparentRgb": [
         0,
         0,
@@ -51,7 +51,7 @@
         "world-effect"
       ],
       "alpha": "straight",
-      "diagnosticPath": "support-free diagonal span",
+      "diagnosticPath": "support-free shared-camera span",
       "evidence": [
         "gantry-boundary-diagnostics.png",
         "solid-proxy-traversal.png",
@@ -63,9 +63,9 @@
         "hud"
       ],
       "id": "gantry-shell",
-      "routeBehavior": "progressive-overhead-occlusion",
-      "sourceArtifact": "sources/gantry-shell.png",
-      "supportPlacement": "both supports anchored on opposite raised shoulders outside route margins",
+      "routeBehavior": "shared-camera-progressive-overhead-occlusion",
+      "sourceArtifact": "blender/outputs/gantry-shell.png",
+      "supportPlacement": "service bridge keyed into opposite raised bastions outside route margins",
       "transparentRgb": [
         0,
         0,
@@ -103,17 +103,17 @@
   "route": {
     "authoritativeMovement": false,
     "backstop": [
-      230,
-      520
+      500,
+      500
     ],
     "branching": false,
     "entrance": [
-      1080,
-      178
+      930,
+      175
     ],
     "gantry": [
-      820,
-      255
+      730,
+      322
     ],
     "id": "route.layered-shuttergate"
   },

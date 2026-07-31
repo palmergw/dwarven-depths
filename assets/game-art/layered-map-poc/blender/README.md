@@ -24,7 +24,7 @@ blender -b --factory-startup --python-exit-code 1 \
   --python assets/game-art/layered-map-poc/blender/build_scene.py
 ```
 
-The script recreates the `.blend` file and emits all outputs from the same camera:
+The script recreates the `.blend` file and emits all outputs from the same camera. Transparent passes are normalized to zero RGB where alpha is zero:
 
 - `outputs/environment-base.png`
 - `outputs/entrance-shell.png`
@@ -36,7 +36,7 @@ The script recreates the `.blend` file and emits all outputs from the same camer
 - `outputs/production-sprite-traversal.png` (review-only production-sprite scale/density evidence)
 - `render-manifest.json` (camera/source/output hashes and alpha semantics)
 
-Verify the committed editable source and outputs without rebuilding them:
+Verify the committed editable source by rerendering every pass into an isolated temporary directory and comparing decoded pixels with the committed outputs:
 
 ```bash
 blender -b --factory-startup --python-exit-code 1 \
@@ -55,4 +55,3 @@ Remaining work includes:
 
 - develop carved architecture, chains, machinery, and masonry silhouettes rather than relying on repeated blocks;
 - refine the entrance voussoir silhouette and defended-shutter machinery;
-- integrate Blender-source hashes and render verification into the top-level POC verifier.

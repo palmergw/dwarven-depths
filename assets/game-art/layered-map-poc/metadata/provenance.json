@@ -1,6 +1,8 @@
 {
-  "authoringModel": "artifact-first; complete plate derives from structure-free base plus canonical RGBA artifacts",
+  "authoringModel": "single editable Blender scene and orthographic camera; complete plate derives from same-camera environment plus canonical RGBA passes",
   "environment": {
+    "blender": "4.3.2",
+    "cycles": "CPU 16 samples, denoising disabled",
     "fonts": {
       "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf": "a4c5bc453ca281d90ea079e596da7ae0dfeb5777497c29ec254e76d97ff6f890",
       "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf": "57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e"
@@ -8,17 +10,17 @@
     "pillow": "12.3.0"
   },
   "generator": "assets/game-art/layered-map-poc/build_poc.py",
-  "generatorSha256": "27fb5824af3c6924f631018a7928cc9a70ff366929d6fc086e6232c294f5cb37",
+  "generatorSha256": "19890b5c09c1bb0ba5e7728be730cffdeb6dd39ad463011096daabe198a7e259",
   "inputs": {
+    "assets/game-art/layered-map-poc/blender/build_scene.py": "9821c6b827b416b9048bab96ac75b9cd04b47732b820d4c1f97575c12b584a9d",
+    "assets/game-art/layered-map-poc/blender/layered-shuttergate.blend": "3b1316b8a4f787be8d91fe9b95aedfd03e6a49ddfdf8539e3394c863567b99b8",
+    "assets/game-art/layered-map-poc/blender/outputs/entrance-shell.png": "740106dc374af762226c9c500d72fdf9f183fea7e6315e4dae6cf4d327f8ae04",
+    "assets/game-art/layered-map-poc/blender/outputs/environment-base.png": "b615069498930de3101e60bcfa105b41dc8a8d1122b407a66e2c6bc2351afab9",
+    "assets/game-art/layered-map-poc/blender/outputs/gantry-shell.png": "e1d5257f55af0fd418f19f8b570ae845950d1e79007efac47c19f917e09012af",
+    "assets/game-art/layered-map-poc/blender/outputs/production-sprite-subjects.png": "51b4f573e449926eedf0e7c5e85405c074056b8f248f8051648d103fa5ffc800",
+    "assets/game-art/layered-map-poc/blender/outputs/production-sprite-traversal.png": "be7b407fbb63c2436b022b6096d5e93f809ff570d58e96eb653a358cc01bd8c3",
+    "assets/game-art/layered-map-poc/blender/render-manifest.json": "e799843f747e8e859e3520bf79dbcca487512b29a543e295b67db8829ed26896",
     "assets/game-art/layered-map-poc/requirements.lock": "41b54a6fb2918667ca47a61d73b522629d84490f3d78f0f20b21135faba10d35",
-    "assets/game-art/layered-map-poc/sources/artifact-first/build_candidate.py": "9b9cca1a66ab62c51612d8f94b4b53a9ec3a409b1cc3682d3f181f49e84b92bb",
-    "assets/game-art/layered-map-poc/sources/artifact-first/entrance-shell-chroma-master.png": "1ae595e3ee5441cd0d07f9bf3becf8b5ce081b1a39301bcb90c60de4906607d8",
-    "assets/game-art/layered-map-poc/sources/artifact-first/environment-base-master.png": "4b98bb862369ef0d8463ac32e3a027b55574cd534268760decb2ca8e58e6cb4c",
-    "assets/game-art/layered-map-poc/sources/artifact-first/gantry-shell-chroma-master.png": "135edc5ade4a2f6eab813e2851f84b9c950654587d5ad2fe6f9538dafdebf07c",
-    "assets/game-art/layered-map-poc/sources/entrance-shell.png": "f74c550b2dfb62e902a318a43da4e7129bb9c3273f6ae0b2fee81f8bff0aa91a",
-    "assets/game-art/layered-map-poc/sources/environment-base.png": "4244bcff5323d330f27da1e96c6011f07e05955030ae118dddf90abdd88f562d",
-    "assets/game-art/layered-map-poc/sources/gantry-shell.png": "33af186bab710c07ab7f4e16b9b62b321056f1fadf39bdf482a4884d388eb3e1",
-    "assets/game-art/layered-map-poc/sources/generation-notes.md": "05139a234d5a671c3a76eaea572c17e52aba9c0f5d6890ecd2fa19716e9c275e",
     "assets/game-art/production-scene/exports/diagnostics/raider-calibration-card.png": "67e58a9c4d2d0d04eee1b97507e09d875c0322b1624cd8e2f5ec51386c2818c9",
     "assets/game-art/production-scene/exports/diagnostics/solid-raider-proxy.png": "8020dcd21259ba28fa32ea37537c50240b75aab20eae74bd864a63d8cdb17bcc",
     "assets/game-art/production-scene/exports/diagnostics/solid-warden-proxy.png": "e0c3112b89b02d6a3dce24b97ce81d94adf7cfed3f0f39f4657487a951a298f4",

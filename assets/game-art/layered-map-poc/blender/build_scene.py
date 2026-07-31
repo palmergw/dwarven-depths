@@ -7,6 +7,7 @@ import json
 import math
 import random
 import sys
+import tempfile
 import traceback
 from pathlib import Path
 
@@ -34,6 +35,17 @@ OUTPUT_CONTRACT = {
     "production-sprite-traversal.png": "opaque-production-entity-diagnostic-only",
 }
 
+RENDER_RECIPES = {
+    "environment-base.png": (True, False, False, False, False, False),
+    "entrance-shell.png": (False, True, False, False, False, True),
+    "gantry-shell.png": (False, False, True, False, False, True),
+    "route-subjects.png": (False, False, False, True, False, True),
+    "production-sprite-subjects.png": (False, False, False, False, True, True),
+    "reference-plate.png": (True, True, True, False, False, False),
+    "route-traversal.png": (True, True, True, True, False, False),
+    "production-sprite-traversal.png": (True, True, True, False, True, False),
+}
+
 
 def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -52,6 +64,13 @@ def verify_image(path, alpha_semantics):
         maximum = max(alphas)
         if alpha_semantics.startswith("straight-alpha"):
             assert minimum == 0.0 and maximum == 1.0, f"invalid alpha isolation: {path}"
+            contaminated = sum(
+                1
+                for index in range(0, len(pixels), 4)
+                if pixels[index + 3] == 0.0
+                and (pixels[index] != 0.0 or pixels[index + 1] != 0.0 or pixels[index + 2] != 0.0)
+            )
+            assert contaminated == 0, f"nonzero RGB beneath zero alpha: {path} ({contaminated} pixels)"
         else:
             assert minimum == 1.0 and maximum == 1.0, f"unexpected transparency: {path}"
     finally:
@@ -68,6 +87,25 @@ def verify_source_sprite(path, canvas):
         image.pixels.foreach_get(pixels)
         alphas = pixels[3::4]
         assert min(alphas) == 0.0 and max(alphas) == 1.0, f"invalid source sprite alpha: {path}"
+        contaminated = sum(
+            1
+            for index in range(0, len(pixels), 4)
+            if pixels[index + 3] == 0.0
+            and (pixels[index] != 0.0 or pixels[index + 1] != 0.0 or pixels[index + 2] != 0.0)
+        )
+        assert contaminated == 0, f"source sprite has nonzero transparent RGB: {path}"
+    finally:
+        bpy.data.images.remove(image)
+
+
+def pixel_digest(path):
+    from array import array
+
+    image = bpy.data.images.load(str(path), check_existing=False)
+    try:
+        pixels = array("f", [0.0]) * len(image.pixels)
+        image.pixels.foreach_get(pixels)
+        return hashlib.sha256(pixels.tobytes()).hexdigest()
     finally:
         bpy.data.images.remove(image)
 
@@ -140,6 +178,7 @@ def verify_existing():
             "sha256": sha256(path),
         }
         verify_image(path, alpha_semantics)
+    verify_render_reproducibility(manifest)
     print("SHARED_SCENE_VERIFY_OK", BLEND, MANIFEST)
 
 
@@ -149,6 +188,57 @@ def verify_or_exit():
     except Exception:
         traceback.print_exc()
         raise SystemExit(1)
+
+
+def sanitize_transparent_rgb(path):
+    from array import array
+
+    image = bpy.data.images.load(str(path), check_existing=False)
+    try:
+        pixels = array("f", [0.0]) * len(image.pixels)
+        image.pixels.foreach_get(pixels)
+        changed = False
+        for index in range(0, len(pixels), 4):
+            if pixels[index + 3] == 0.0 and (
+                pixels[index] != 0.0 or pixels[index + 1] != 0.0 or pixels[index + 2] != 0.0
+            ):
+                pixels[index] = pixels[index + 1] = pixels[index + 2] = 0.0
+                changed = True
+        if changed:
+            image.pixels.foreach_set(pixels)
+            image.filepath_raw = str(path)
+            image.file_format = "PNG"
+            image.save()
+    finally:
+        bpy.data.images.remove(image)
+
+
+def verify_render_reproducibility(manifest):
+    scene = bpy.context.scene
+    collections = {
+        "env": bpy.data.collections["ENVIRONMENT_BASE"],
+        "entrance": bpy.data.collections["FOREGROUND_ENTRANCE"],
+        "gantry": bpy.data.collections["FOREGROUND_GANTRY"],
+        "subjects": bpy.data.collections["DIAGNOSTIC_ROUTE_SUBJECTS"],
+        "production": bpy.data.collections["PRODUCTION_ROUTE_SUBJECTS"],
+    }
+    with tempfile.TemporaryDirectory() as directory:
+        output_root = Path(directory)
+        for name, recipe in RENDER_RECIPES.items():
+            env, entrance, gantry, subjects, production, transparent = recipe
+            collections["env"].hide_render = not env
+            collections["entrance"].hide_render = not entrance
+            collections["gantry"].hide_render = not gantry
+            collections["subjects"].hide_render = not subjects
+            collections["production"].hide_render = not production
+            output = output_root / name
+            scene.render.film_transparent = transparent
+            scene.render.filepath = str(output)
+            bpy.ops.render.render(write_still=True)
+            if transparent:
+                sanitize_transparent_rgb(output)
+            committed = OUT / name
+            assert pixel_digest(output) == pixel_digest(committed), f"stale render pixels: {name}"
 
 
 def mat(name, color, metallic=0.0, roughness=0.75, emission=None, strength=0.0, texture_scale=0.0):
@@ -322,6 +412,8 @@ def render(name, env, entrance, gantry, subjects, production_subjects, transpare
     scene.render.film_transparent = transparent
     scene.render.filepath = str(OUT / f"{name}.png")
     bpy.ops.render.render(write_still=True)
+    if transparent:
+        sanitize_transparent_rgb(OUT / f"{name}.png")
 
 
 verify_requested = "--" in sys.argv and "--verify" in sys.argv[sys.argv.index("--") + 1 :]
