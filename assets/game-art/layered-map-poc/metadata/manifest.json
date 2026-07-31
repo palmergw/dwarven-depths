@@ -1,5 +1,6 @@
 {
   "files": {
+    "evidence/calibration-card-traversal.png": "73b93cf4843b8228b7b40494a695aa6c28f4c53da6b3ba55ba26454530164667",
     "evidence/foreground-artifact-isolation.png": "2258e3b03bd6d707e4da7f7956fbc0ca25fb6cef5a7d519301cd58be1896d12c",
     "evidence/layered-map-overview.png": "6bb2ec58c8bbff97af09c2f5dd6dfa208a24e619de3629272c807d0dd62ebef4",
     "evidence/production-sprite-traversal.png": "b7083313dfd6ee28ee610b5fa9d43df036624d0223ea8210e2c676661ad8383f",
@@ -10,7 +11,7 @@
     "exports/foreground/gantry-shell-mask.png": "dee8784dc86548e674154c11f0a510c02b408c5663ff4f5c60345e4d0c854085",
     "exports/foreground/gantry-shell.png": "ba4384ecda714a581dad9d0b8e69f98e6dd27e96279de74527537d9c3ff7edb5",
     "metadata/layered-map-contract.json": "5dafbe215d7cf5cf555c5b011be4343316d4806927c9e937ad41ba403de53164",
-    "metadata/provenance.json": "17a728dca4ea065610b66eae352f872bede9102e430f0974c55b82aa8bc1d70e"
+    "metadata/provenance.json": "0d17b2b6cd184207385c19b5afff9ba193d6842f97231d3fc7c0e7d03abcdabc"
   },
   "schemaVersion": 1
 }

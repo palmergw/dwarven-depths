@@ -17,6 +17,8 @@ ENTITY_ROOT=ROOT/'assets/game-art/production-scene/exports'
 SPRITES={
  'solid-warden':(ENTITY_ROOT/'diagnostics/solid-warden-proxy.png',(56,66)),
  'solid-raider':(ENTITY_ROOT/'diagnostics/solid-raider-proxy.png',(40,54)),
+ 'warden-card':(ENTITY_ROOT/'diagnostics/warden-calibration-card.png',(56,66)),
+ 'raider-card':(ENTITY_ROOT/'diagnostics/raider-calibration-card.png',(40,54)),
  'warden':(ENTITY_ROOT/'entities/iron-warden-idle.png',(56,66)),
  'raider':(ENTITY_ROOT/'entities/mine-raider-idle.png',(40,54)),
 }
@@ -89,6 +91,11 @@ def make_combined_sweeps(plate,overlays,actual:bool)->Image.Image:
  b=make_sweep(plate,overlays['gantry-shell'],GANTRY_POINTS,'warden' if actual else 'solid-warden','GANTRY SHELL — '+('PRODUCTION WARDEN' if actual else 'SOLID WARDEN PROXY'),'upper terrace → beneath beam → defended plaza; no visibility toggle')
  out=Image.new('RGBA',(max(a.width,b.width),a.height+b.height),(8,12,17,255));out.alpha_composite(a);out.alpha_composite(b,(0,a.height));return out
 
+def make_card_sweeps(plate,overlays)->Image.Image:
+ a=make_sweep(plate,overlays['entrance-shell'],ENTRANCE_POINTS,'raider-card','ENTRANCE SHELL — 44 PX BANDED CARD','exact raider canvas and pivot; aperture remains transparent')
+ b=make_sweep(plate,overlays['gantry-shell'],GANTRY_POINTS,'warden-card','GANTRY SHELL — 56 PX BANDED CARD','exact Warden canvas and pivot; bridge mass produces one coherent cutoff')
+ out=Image.new('RGBA',(max(a.width,b.width),a.height+b.height),(8,12,17,255));out.alpha_composite(a);out.alpha_composite(b,(0,a.height));return out
+
 def make_isolation(plate,masks,overlays)->Image.Image:
  specs=[('entrance-shell',(900,0,1180,270)),('gantry-shell',(390,270,810,680))]
  board=Image.new('RGBA',(1500,1060),(10,14,20,255));panel_header(board,(24,14),'CANONICAL FOREGROUND ARTIFACTS','source pixels + authored alpha; checker, alpha, one-pixel contour, and no-op reconstruction')
@@ -144,6 +151,7 @@ def build(out_root:Path)->list[Path]:
   'layered-map-overview.png':make_overview(plate,overlays),
   'foreground-artifact-isolation.png':make_isolation(plate,masks,overlays),
   'solid-proxy-traversal.png':make_combined_sweeps(plate,overlays,False),
+  'calibration-card-traversal.png':make_card_sweeps(plate,overlays),
   'production-sprite-traversal.png':make_combined_sweeps(plate,overlays,True),
  }
  for name,img in artifacts.items():p=ev/name;img.save(p,optimize=False,compress_level=9);files.append(p)

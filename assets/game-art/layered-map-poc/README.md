@@ -31,9 +31,10 @@ The clean plate retains the same pixels as the foreground shells. With no subjec
 1. [`evidence/layered-map-overview.png`](evidence/layered-map-overview.png) — cohesive full-frame map with approved-scale units.
 2. [`evidence/foreground-artifact-isolation.png`](evidence/foreground-artifact-isolation.png) — checkerboard RGBA artifacts, authored alpha, source contours, and exact no-op result.
 3. [`evidence/solid-proxy-traversal.png`](evidence/solid-proxy-traversal.png) — high-contrast alpha-footprint traversal.
-4. [`evidence/production-sprite-traversal.png`](evidence/production-sprite-traversal.png) — the same traversal using production sprites.
-5. [`metadata/layered-map-contract.json`](metadata/layered-map-contract.json) — layer and route contract.
-6. [`metadata/manifest.json`](metadata/manifest.json) and [`metadata/provenance.json`](metadata/provenance.json) — immutable file binding and source provenance.
+4. [`evidence/calibration-card-traversal.png`](evidence/calibration-card-traversal.png) — banded exact-height/pivot cards exposing cutoff seams independently of silhouette texture.
+5. [`evidence/production-sprite-traversal.png`](evidence/production-sprite-traversal.png) — the same traversal using production sprites.
+6. [`metadata/layered-map-contract.json`](metadata/layered-map-contract.json) — layer and route contract.
+7. [`metadata/manifest.json`](metadata/manifest.json) and [`metadata/provenance.json`](metadata/provenance.json) — immutable file binding and source provenance.
 
 ## Canonical sources
 

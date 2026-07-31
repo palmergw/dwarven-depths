@@ -1,12 +1,14 @@
 {
   "generator": "assets/game-art/layered-map-poc/build_poc.py",
-  "generatorSha256": "b057ecf28a3aa73c043b9b9e6728f2e4ba7b7a3504e653fd8d60b9254c667629",
+  "generatorSha256": "41bd3431713f6ed3f42a9f09984bc350acdaecdcae8cbbe8e3f6c48bfe1168ce",
   "inputs": {
     "assets/game-art/layered-map-poc/sources/entrance-shell-mask.png": "e9afef0ca9748e484b22469269132d1dafb9fd92760c1e86d296ec6b8130d484",
     "assets/game-art/layered-map-poc/sources/gantry-shell-mask.png": "dee8784dc86548e674154c11f0a510c02b408c5663ff4f5c60345e4d0c854085",
     "assets/game-art/layered-map-poc/sources/generation-notes.md": "88160d4a5d326d10673df40bc1f71e15453160e7fb284116390f030cfbd9ce93",
+    "assets/game-art/production-scene/exports/diagnostics/raider-calibration-card.png": "67e58a9c4d2d0d04eee1b97507e09d875c0322b1624cd8e2f5ec51386c2818c9",
     "assets/game-art/production-scene/exports/diagnostics/solid-raider-proxy.png": "8020dcd21259ba28fa32ea37537c50240b75aab20eae74bd864a63d8cdb17bcc",
     "assets/game-art/production-scene/exports/diagnostics/solid-warden-proxy.png": "e0c3112b89b02d6a3dce24b97ce81d94adf7cfed3f0f39f4657487a951a298f4",
+    "assets/game-art/production-scene/exports/diagnostics/warden-calibration-card.png": "ab626707a1f61ee1a04f25c9a0611856214808620d6109c35b8bd82188e8e072",
     "assets/game-art/production-scene/exports/entities/iron-warden-idle.png": "a10be62e061241683ba598ed4d9032880704a5f0c24bf38f9eff0a9bd138af4a",
     "assets/game-art/production-scene/exports/entities/mine-raider-idle.png": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83"
   },
