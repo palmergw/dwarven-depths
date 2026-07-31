@@ -13,7 +13,7 @@ import tempfile
 import zlib
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageStat
 from PIL import __version__ as PILLOW_VERSION
@@ -1658,44 +1658,22 @@ def _masked_clean_pixels_v4(clean: Image.Image, mask: Image.Image) -> Image.Imag
     return output
 
 
-def _portal_occlusion_v4(clean: Image.Image) -> dict[str, tuple[Image.Image, Image.Image]]:
-    """Extract only foreground stone at each portal boundary, never sky or floor."""
-    upper = Image.new("L", FRAME, 0)
-    upper_profile = [
-        (860, 177), (875, 173), (890, 174), (905, 174), (918, 181),
-        (930, 186), (942, 187), (954, 182), (966, 176), (978, 172),
-        (992, 171), (1004, 165), (1016, 158), (1024, 151), (1034, 150),
-        (1044, 158), (1056, 164), (1070, 166), (1084, 169), (1098, 170),
-        (1112, 174), (1126, 180), (1140, 184),
-    ]
-    ImageDraw.Draw(upper).polygon(
-        [*upper_profile, (1140, 250), (860, 250)], fill=255
-    )
-    lower = Image.new("L", FRAME, 0)
-    lower_draw = ImageDraw.Draw(lower)
-    # Bounded lintel strip plus separate jambs: the aperture and mouth stay clear.
-    lower_draw.polygon(
-        [
-            (775, 264), (790, 263), (805, 265), (820, 267), (835, 270),
-            (850, 276), (865, 280), (885, 286), (885, 294), (868, 291),
-            (852, 287), (836, 281), (820, 278), (804, 277), (790, 275),
-            (775, 276),
-        ],
-        fill=255,
-    )
-    lower_draw.polygon(
-        [(775, 276), (804, 277), (810, 286), (808, 304), (806, 322),
-         (801, 333), (789, 340), (775, 342)],
-        fill=255,
-    )
-    lower_draw.polygon(
-        [(865, 280), (885, 286), (885, 344), (873, 341), (862, 333),
-         (858, 317), (858, 298)],
-        fill=255,
-    )
+def _portal_occlusion_v4(
+    clean: Image.Image, source_root: Path
+) -> dict[str, tuple[Image.Image, Image.Image]]:
+    """Load canonical authored masks and extract source-identical foreground pixels."""
+    masks: dict[str, Image.Image] = {}
+    for key in ("upper", "lower"):
+        path = source_root / "foreground" / f"portal-{key}-gate-mask.png"
+        mask = Image.open(path)
+        if mask.mode != "L" or mask.size != FRAME:
+            raise ValueError(f"Portal source mask must be a {FRAME[0]}x{FRAME[1]} L PNG: {path}")
+        if set(mask.get_flattened_data()) - {0, 255}:
+            raise ValueError(f"Portal source mask must use binary alpha only: {path}")
+        masks[key] = mask.copy()
     return {
-        "upper": (upper, _masked_clean_pixels_v4(clean, upper)),
-        "lower": (lower, _masked_clean_pixels_v4(clean, lower)),
+        key: (mask, _masked_clean_pixels_v4(clean, mask))
+        for key, mask in masks.items()
     }
 
 
@@ -1836,20 +1814,38 @@ def _line_positions_v6(
     ]
 
 
+def _point_on_segment_v7(
+    start: tuple[int, int], end: tuple[int, int], point: tuple[int, int], tolerance: int = 2
+) -> bool:
+    delta_x = end[0] - start[0]
+    delta_y = end[1] - start[1]
+    point_x = point[0] - start[0]
+    point_y = point[1] - start[1]
+    length_squared = delta_x * delta_x + delta_y * delta_y
+    projection = point_x * delta_x + point_y * delta_y
+    cross = point_x * delta_y - point_y * delta_x
+    return (
+        0 <= projection <= length_squared
+        and cross * cross <= length_squared * tolerance * tolerance
+    )
+
+
 def _portal_sweep_positions_v6(portal: dict[str, Any]) -> list[tuple[int, int]]:
     if portal["id"] == "portal.upper-gate":
         samples = portal["samples"]
         hidden_state = portal["explicitHiddenState"]
-        approach = _line_positions_v6(
-            tuple(samples["approach"]), tuple(samples["lastVisibleLip"]), 3
+        entry = _line_positions_v6((1068, 164), tuple(hidden_state["from"]), 14)
+        exit_edge = _line_positions_v6(
+            (928, 185), tuple(samples["emerged"]), 14
         )
-        hidden = _line_positions_v6(
-            tuple(hidden_state["from"]), tuple(hidden_state["to"]), 7
-        )
-        emerged = _line_positions_v6(
-            tuple(samples["firstVisibleLip"]), tuple(samples["emerged"]), 3
-        )
-        return [*approach, *hidden, *emerged]
+        return [
+            tuple(samples["approach"]),
+            (1070, 163),
+            *entry,
+            tuple(samples["fullyHidden"]),
+            tuple(hidden_state["to"]),
+            *exit_edge,
+        ]
     incoming = _line_positions_v6((818, 271), (842, 331), 9)
     outgoing = _line_positions_v6((842, 331), (820, 358), 5)
     return [*incoming, *outgoing[1:]]
@@ -1857,19 +1853,14 @@ def _portal_sweep_positions_v6(portal: dict[str, Any]) -> list[tuple[int, int]]:
 
 def _upper_explicit_hidden_v6(portal: dict[str, Any], ground: tuple[int, int]) -> bool:
     state = portal["explicitHiddenState"]
-    start_x, start_y = state["from"]
-    end_x, end_y = state["to"]
-    delta_x = end_x - start_x
-    delta_y = end_y - start_y
-    point_x = ground[0] - start_x
-    point_y = ground[1] - start_y
-    length_squared = delta_x * delta_x + delta_y * delta_y
-    projection = point_x * delta_x + point_y * delta_y
-    cross = point_x * delta_y - point_y * delta_x
-    return (
-        0 <= projection <= length_squared
-        and cross * cross <= length_squared * 4
-    )
+    return _point_on_segment_v7(tuple(state["from"]), tuple(state["to"]), ground)
+
+
+def _portal_mask_active_v7(portal: dict[str, Any], ground: tuple[int, int]) -> bool:
+    if portal["id"] == "portal.upper-gate":
+        return True
+    hidden = portal["segments"][0]
+    return _point_on_segment_v7(tuple(hidden["from"]), tuple(hidden["to"]), ground, 3)
 
 
 def _portal_diagnostic_sweep_v6(
@@ -1888,7 +1879,12 @@ def _portal_diagnostic_sweep_v6(
     ]
     cell = (140, 112)
     gap = 6
-    board = Image.new("RGBA", (24 + 13 * (cell[0] + gap), 92 + 4 * 158), (7, 13, 22, 255))
+    column_count = max(len(_portal_sweep_positions_v6(portal)) for _, portal, *_ in rows)
+    board = Image.new(
+        "RGBA",
+        (24 + column_count * (cell[0] + gap), 92 + 4 * 158),
+        (7, 13, 22, 255),
+    )
     heading = "SOLID SILHOUETTE PROXY SWEEPS" if subject_kind == "solid" else "BANDED CALIBRATION CARD SWEEPS"
     pixel_text(board, (20, 16), heading, 2)
     pixel_text(board, (20, 42), "PIECEWISE REGULAR ROUTE INCREMENTS  UPPER MIDPOINTS USE EXPLICIT HIDDEN STATE", 1)
@@ -1904,13 +1900,14 @@ def _portal_diagnostic_sweep_v6(
                 subjects[asset],
                 pivot,
                 ground,
-                portal_layers[key][1],
+                portal_layers[key][1] if _portal_mask_active_v7(portal, ground) else None,
                 crop,
                 subject_visible=not hidden_state,
             ).resize(cell, Image.Resampling.NEAREST)
             x = 20 + column * (cell[0] + gap)
             board.alpha_composite(panel, (x, y + 20))
-            state = f"{'HIDDEN ' if hidden_state else ''}X{ground[0]} Y{ground[1]}"
+            mask_state = " MASK" if _portal_mask_active_v7(portal, ground) else " CLEAR"
+            state = f"{'HIDDEN ' if hidden_state else ''}X{ground[0]} Y{ground[1]}{mask_state}"
             pixel_text(board, (x, y + 134), state, 1)
     return board
 
@@ -2398,7 +2395,7 @@ def build(output_root: Path = ROOT) -> None:
     mask, occluder = _occlusion_v2(clean)
     png(mask, exports / "occlusion" / "architecture-mask.png")
     png(occluder, exports / "occlusion" / "foreground-occluder.png")
-    portal_layers = _portal_occlusion_v4(clean)
+    portal_layers = _portal_occlusion_v4(clean, package / "sources")
     for key, (portal_mask, portal_occluder) in portal_layers.items():
         png(portal_mask, exports / "occlusion" / f"portal-{key}-gate-mask.png")
         png(portal_occluder, exports / "occlusion" / f"portal-{key}-gate-occluder.png")
@@ -2707,12 +2704,12 @@ def verify(root: Path = ROOT) -> None:
                     "extractionCrop": [860, 90, 1140, 250],
                     "applicability": "architecture-hidden-segment-only",
                     "explicitHiddenState": {
-                        "from": [1048, 171],
-                        "to": [934, 184],
+                        "from": [1042, 171],
+                        "to": [930, 185],
                         "renderWorldSubject": False,
                         "reason": "wholly-behind-gatehouse-no-sky-pixel-occluder",
                     },
-                    "samples": {"approach": [1080, 156], "lastVisibleLip": [1052, 170], "fullyHidden": [982, 180], "firstVisibleLip": [918, 187], "emerged": [902, 190]},
+                    "samples": {"approach": [1080, 156], "lastVisibleLip": [1056, 167], "fullyHidden": [982, 180], "firstVisibleLip": [916, 187], "emerged": [902, 190]},
                     "traversalOwnerIssue": 273,
                 },
                 {
@@ -3064,23 +3061,50 @@ def verify(root: Path = ROOT) -> None:
             require_exact_json(
                 hidden_state,
                 {
-                    "from": [1048, 171],
-                    "to": [934, 184],
+                    "from": [1042, 171],
+                    "to": [930, 185],
                     "renderWorldSubject": False,
                     "reason": "wholly-behind-gatehouse-no-sky-pixel-occluder",
                 },
                 "scene.route.portals[0].explicitHiddenState",
             )
             upper_sweep = _portal_sweep_positions_v6(portal)
+            last_visible_index = upper_sweep.index(
+                cast(tuple[int, int], tuple(cast(list[int], samples["lastVisibleLip"])))
+            )
+            hidden_from_index = upper_sweep.index(
+                cast(tuple[int, int], tuple(cast(list[int], hidden_state["from"])))
+            )
+            hidden_midpoint_index = upper_sweep.index(
+                cast(tuple[int, int], tuple(cast(list[int], samples["fullyHidden"])))
+            )
+            hidden_to_index = upper_sweep.index(
+                cast(tuple[int, int], tuple(cast(list[int], hidden_state["to"])))
+            )
+            first_visible_index = upper_sweep.index(
+                cast(tuple[int, int], tuple(cast(list[int], samples["firstVisibleLip"])))
+            )
             if (
-                list(upper_sweep[0]) != samples["approach"]
-                or list(upper_sweep[2]) != samples["lastVisibleLip"]
-                or list(upper_sweep[-3]) != samples["firstVisibleLip"]
+                len(upper_sweep) != 32
+                or list(upper_sweep[0]) != samples["approach"]
                 or list(upper_sweep[-1]) != samples["emerged"]
+                or not (
+                    last_visible_index < hidden_from_index < hidden_midpoint_index
+                    < hidden_to_index < first_visible_index
+                )
                 or _upper_explicit_hidden_v6(portal, (982, 500))
-                or any(_upper_explicit_hidden_v6(portal, point) for point in upper_sweep[:3])
-                or any(_upper_explicit_hidden_v6(portal, point) for point in upper_sweep[-3:])
-                or not all(_upper_explicit_hidden_v6(portal, point) for point in upper_sweep[3:-3])
+                or any(
+                    _upper_explicit_hidden_v6(portal, point)
+                    for point in upper_sweep[:hidden_from_index]
+                )
+                or any(
+                    _upper_explicit_hidden_v6(portal, point)
+                    for point in upper_sweep[hidden_to_index + 1:]
+                )
+                or not all(
+                    _upper_explicit_hidden_v6(portal, point)
+                    for point in upper_sweep[hidden_from_index:hidden_to_index + 1]
+                )
             ):
                 raise ValueError("Upper sweep must follow canonical lips and portal-local hidden state")
         elif portal["explicitHiddenState"] is not None:
@@ -3149,7 +3173,7 @@ def verify(root: Path = ROOT) -> None:
             raise ValueError("Every declared occlusion zone must contain architecture mask pixels")
 
     clean = assets["shuttergate-clean-plate-1280x720"]
-    expected_portal_layers = _portal_occlusion_v4(clean)
+    expected_portal_layers = _portal_occlusion_v4(clean, package / "sources")
     portal_images: dict[str, tuple[Image.Image, Image.Image]] = {}
     for portal, key in zip(portals, ("upper", "lower"), strict=True):
         mask_path = package / "exports" / "occlusion" / f"portal-{key}-gate-mask.png"
@@ -3259,6 +3283,73 @@ def verify(root: Path = ROOT) -> None:
     for asset, expected_image in expected_diagnostic_subjects.items():
         if asset not in assets or assets[asset].tobytes() != expected_image.tobytes():
             raise ValueError(f"Diagnostic subject pixels drifted: {asset}")
+
+    diagnostic_pivots = {
+        "solid-warden-proxy": (56, 66),
+        "solid-raider-proxy": (40, 54),
+        "warden-calibration-card": (56, 66),
+        "raider-calibration-card": (40, 54),
+    }
+    upper_sweep = _portal_sweep_positions_v6(portals[0])
+    hidden_from_index = upper_sweep.index(tuple(portals[0]["explicitHiddenState"]["from"]))
+    hidden_to_index = upper_sweep.index(tuple(portals[0]["explicitHiddenState"]["to"]))
+    for asset, pivot in diagnostic_pivots.items():
+        alpha = assets[asset].getchannel("A")
+        total = sum(value != 0 for value in alpha.get_flattened_data())
+        for boundary in (
+            upper_sweep[hidden_from_index],
+            upper_sweep[hidden_to_index],
+        ):
+            hidden, visible = _portal_coverage_v5(
+                alpha, pivot, boundary, portal_images["upper"][0]
+            )
+            if hidden != total or visible != 0:
+                raise ValueError(
+                    f"Upper explicit-hidden state starts or ends before authored facade covers {asset}"
+                )
+        entry_counts = [
+            _portal_coverage_v5(alpha, pivot, point, portal_images["upper"][0])
+            for point in upper_sweep[:hidden_from_index]
+        ]
+        exit_counts = [
+            _portal_coverage_v5(alpha, pivot, point, portal_images["upper"][0])
+            for point in upper_sweep[hidden_to_index + 1:]
+        ]
+        if not any(hidden and visible for hidden, visible in entry_counts) or not any(
+            hidden and visible for hidden, visible in exit_counts
+        ):
+            raise ValueError(f"Upper authored mask must expose both fine cutoff edges for {asset}")
+
+    lower_source_mask = portal_images["lower"][0]
+    lower_sweep = _portal_sweep_positions_v6(portals[1])
+    lower_column_bottom = {
+        x: max(
+            (y for y in range(220, 366) if lower_source_mask.getpixel((x, y)) != 0),
+            default=-1,
+        )
+        for x in range(740, 920)
+    }
+    for asset, pivot in diagnostic_pivots.items():
+        alpha = assets[asset].getchannel("A")
+        for ground in lower_sweep:
+            if not _portal_mask_active_v7(portals[1], ground):
+                continue
+            offset = (ground[0] - pivot[0], ground[1] - pivot[1])
+            visible_pixels = []
+            for y in range(alpha.height):
+                for x in range(alpha.width):
+                    world = (offset[0] + x, offset[1] + y)
+                    if (
+                        alpha.getpixel((x, y)) != 0
+                        and lower_source_mask.getpixel(world) == 0
+                    ):
+                        visible_pixels.append(world)
+            if not visible_pixels or any(
+                y <= lower_column_bottom.get(x, -1) for x, y in visible_pixels
+            ):
+                raise ValueError(
+                    f"Lower authored deck must leave one physically coherent below-deck portion for {asset}"
+                )
     anchors = scene["entityAnchors"]
     expected_entities = {
         "mine-raider-attack": (anchors["mineRaiderTruthScreen"], states["mine-raider-attack"]),
@@ -3663,7 +3754,7 @@ def verify(root: Path = ROOT) -> None:
         raise ValueError("Clean-plate source or reference path is not canonical")
     if provenance["cleanPlate"]["referenceUse"] != "Approved style, camera, route, material, lighting, and Shuttergate composition only; no reference pixels were cropped, traced, copied, or edited into the clean plate.":
         raise ValueError("Clean-plate reference-use boundary is not canonical")
-    require_exact_json(provenance["derivedLayers"], {"characterSources": ["assets/game-art/visual-direction/sources/iron-warden-master.png", "assets/game-art/visual-direction/sources/mine-raider-master.png"], "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, direct-from-master LANCZOS downsampling, bounded unsharp filtering, shared pivot-canvas padding, and PNG export in build_scene.py", "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract; portal occluders are clean-plate source-pixel-exact extractions with segment-local masks", "externalAssets": []}, "provenance.derivedLayers")
+    require_exact_json(provenance["derivedLayers"], {"characterSources": ["assets/game-art/visual-direction/sources/iron-warden-master.png", "assets/game-art/visual-direction/sources/mine-raider-master.png"], "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, direct-from-master LANCZOS downsampling, bounded unsharp filtering, shared pivot-canvas padding, and PNG export in build_scene.py", "effectsHudMasks": "Original project-authored deterministic Pillow effects and HUD layers; portal occluders copy registered clean-plate pixels through canonical source-authored binary foreground masks", "externalAssets": []}, "provenance.derivedLayers")
     require_exact_json(provenance["conceptBoundary"], {"path": "assets/concept-art/dwarven-depths-gameplay-mockup.png", "productionPixelReuse": False, "tracing": False, "backgroundUse": False}, "provenance.conceptBoundary")
     required_inputs = {
         "assets/game-art/visual-direction/sources/keyframe-master.png",
@@ -3671,6 +3762,8 @@ def verify(root: Path = ROOT) -> None:
         "assets/game-art/visual-direction/sources/mine-raider-master.png",
         "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png",
         "assets/concept-art/dwarven-depths-gameplay-mockup.png",
+        "assets/game-art/production-scene/sources/foreground/portal-upper-gate-mask.png",
+        "assets/game-art/production-scene/sources/foreground/portal-lower-gate-mask.png",
         "assets/game-art/production-scene/generation-log.md",
         "assets/game-art/production-scene/requirements.lock",
         "assets/game-art/production-scene/build_scene.py",
@@ -3683,6 +3776,8 @@ def verify(root: Path = ROOT) -> None:
         "assets/game-art/visual-direction/sources/mine-raider-master.png": "approved-character-master",
         "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png": "approved-keyframe-comparison",
         "assets/concept-art/dwarven-depths-gameplay-mockup.png": "concept-boundary-reference-only",
+        "assets/game-art/production-scene/sources/foreground/portal-upper-gate-mask.png": "source-authored-upper-gatehouse-foreground-mask",
+        "assets/game-art/production-scene/sources/foreground/portal-lower-gate-mask.png": "source-authored-lower-bridge-foreground-mask",
         "assets/game-art/production-scene/generation-log.md": "prompt-settings-generation-record",
         "assets/game-art/production-scene/requirements.lock": "pinned-image-toolchain",
         "assets/game-art/production-scene/build_scene.py": "deterministic-export-and-verification-implementation",
@@ -3693,7 +3788,9 @@ def verify(root: Path = ROOT) -> None:
         "assets/game-art/visual-direction/sources/mine-raider-master.png": "4c3c0a9c63a510f5bb76e6136423e87da0e6f74108a35514c08d35493229cb32",
         "assets/game-art/visual-direction/exports/shuttergate-keyframe-1280x720.png": "49a659a61548ac12bc546d5af5c74e990eb8a3d6bc55ac46dee153d458a991e5",
         "assets/concept-art/dwarven-depths-gameplay-mockup.png": "7b35bf139017bf833c8d0c9288fa05f702b5e6c971f48d66dd40931d1c31e9c1",
-        "assets/game-art/production-scene/generation-log.md": "cc3a6e1f2a9603c01d9e8fdd2da05333ddfb633fb164b7bc01ed95f71e63c5c2",
+        "assets/game-art/production-scene/sources/foreground/portal-upper-gate-mask.png": "ed0e789bf913ba2fc1ddbc918e909b4bbb3bc491d3678e638eab8ee73bbda117",
+        "assets/game-art/production-scene/sources/foreground/portal-lower-gate-mask.png": "f7b364c196ed9e55b4649928e16feee9fa81fb368dc8bf8531bbf1516ab0ea8f",
+        "assets/game-art/production-scene/generation-log.md": "00519122c5f53547e11d29490922a328512ff0133da225c62f7186147bbfcdb8",
         "assets/game-art/production-scene/requirements.lock": "18101d853dbd634248566915697e60f350fbf8afc9abb57998c9e1b1cf61ecf4",
     }
     if {record["path"]: record["role"] for record in provenance["inputs"]} != expected_roles:

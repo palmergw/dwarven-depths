@@ -92,16 +92,16 @@
         "extractionCrop": [860, 90, 1140, 250],
         "applicability": "architecture-hidden-segment-only",
         "explicitHiddenState": {
-          "from": [1048, 171],
-          "to": [934, 184],
+          "from": [1042, 171],
+          "to": [930, 185],
           "renderWorldSubject": false,
           "reason": "wholly-behind-gatehouse-no-sky-pixel-occluder"
         },
         "samples": {
           "approach": [1080, 156],
-          "lastVisibleLip": [1052, 170],
+          "lastVisibleLip": [1056, 167],
           "fullyHidden": [982, 180],
-          "firstVisibleLip": [918, 187],
+          "firstVisibleLip": [916, 187],
           "emerged": [902, 190]
         },
         "traversalOwnerIssue": 273

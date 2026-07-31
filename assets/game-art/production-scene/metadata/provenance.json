@@ -39,8 +39,18 @@
       "role": "concept-boundary-reference-only"
     },
     {
+      "path": "assets/game-art/production-scene/sources/foreground/portal-upper-gate-mask.png",
+      "sha256": "ed0e789bf913ba2fc1ddbc918e909b4bbb3bc491d3678e638eab8ee73bbda117",
+      "role": "source-authored-upper-gatehouse-foreground-mask"
+    },
+    {
+      "path": "assets/game-art/production-scene/sources/foreground/portal-lower-gate-mask.png",
+      "sha256": "f7b364c196ed9e55b4649928e16feee9fa81fb368dc8bf8531bbf1516ab0ea8f",
+      "role": "source-authored-lower-bridge-foreground-mask"
+    },
+    {
       "path": "assets/game-art/production-scene/generation-log.md",
-      "sha256": "cc3a6e1f2a9603c01d9e8fdd2da05333ddfb633fb164b7bc01ed95f71e63c5c2",
+      "sha256": "00519122c5f53547e11d29490922a328512ff0133da225c62f7186147bbfcdb8",
       "role": "prompt-settings-generation-record"
     },
     {
@@ -50,7 +60,7 @@
     },
     {
       "path": "assets/game-art/production-scene/build_scene.py",
-      "sha256": "8b5a32bd6b0d41a6ae309906b5dc48b7075cd6ea87e08fd31c0f6698dae23751",
+      "sha256": "12b073d0fa154dc46751f2b93873764c028a3ffd4f985af8c9f4c776a6bee224",
       "role": "deterministic-export-and-verification-implementation"
     }
   ],
@@ -73,7 +83,7 @@
       "assets/game-art/visual-direction/sources/mine-raider-master.png"
     ],
     "method": "Pinned deterministic crop, graded-navy alpha extraction, connected-fragment rejection, direct-from-master LANCZOS downsampling, bounded unsharp filtering, shared pivot-canvas padding, and PNG export in build_scene.py",
-    "effectsHudMasks": "Original project-authored deterministic Pillow layers using the approved palette and presentation contract; portal occluders are clean-plate source-pixel-exact extractions with segment-local masks",
+    "effectsHudMasks": "Original project-authored deterministic Pillow effects and HUD layers; portal occluders copy registered clean-plate pixels through canonical source-authored binary foreground masks",
     "externalAssets": []
   },
   "conceptBoundary": {
