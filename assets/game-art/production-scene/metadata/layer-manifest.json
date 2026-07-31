@@ -8,9 +8,9 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "0772709b3f4ae6c1a409b7d3f216d6b2269fffb07d626fab117a3841e34650f4",
-    "reconstruction.json": "97c048a7cad5df9dfec5fcfc99cb9816a13940b03a0e8a2e71291b2923489ad0",
-    "scene-contract.json": "9d2f143609d80bc1872b6757d332b738b2f2f85418a1fbe7743063879ce9d40c"
+    "provenance.json": "952b49ec24c7696b1b81797ea79f947a0ea62e3eeb73d94f1e0cca13f9a8713d",
+    "reconstruction.json": "3ab3e0d74cca2e35415f243675c5a411f8b25b11a5239fd069dd82e1f221b36a",
+    "scene-contract.json": "9bd3f0e53e948f87efcc1b16fe164eb38dac59da2f6f622b506466380f1c3e34"
   },
   "files": [
     {
@@ -62,6 +62,46 @@
       "alphaSemantics": "straight-alpha-padded-pivot",
       "contributesTo": ["world-entities"],
       "sha256": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83"
+    },
+    {
+      "id": "raider-calibration-card",
+      "path": "assets/game-art/production-scene/exports/diagnostics/raider-calibration-card.png",
+      "category": "diagnostic-subject",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-review-only",
+      "contributesTo": ["review-diagnostics"],
+      "sha256": "67e58a9c4d2d0d04eee1b97507e09d875c0322b1624cd8e2f5ec51386c2818c9"
+    },
+    {
+      "id": "solid-raider-proxy",
+      "path": "assets/game-art/production-scene/exports/diagnostics/solid-raider-proxy.png",
+      "category": "diagnostic-subject",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-review-only",
+      "contributesTo": ["review-diagnostics"],
+      "sha256": "8020dcd21259ba28fa32ea37537c50240b75aab20eae74bd864a63d8cdb17bcc"
+    },
+    {
+      "id": "solid-warden-proxy",
+      "path": "assets/game-art/production-scene/exports/diagnostics/solid-warden-proxy.png",
+      "category": "diagnostic-subject",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-review-only",
+      "contributesTo": ["review-diagnostics"],
+      "sha256": "e0c3112b89b02d6a3dce24b97ce81d94adf7cfed3f0f39f4657487a951a298f4"
+    },
+    {
+      "id": "warden-calibration-card",
+      "path": "assets/game-art/production-scene/exports/diagnostics/warden-calibration-card.png",
+      "category": "diagnostic-subject",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-review-only",
+      "contributesTo": ["review-diagnostics"],
+      "sha256": "ab626707a1f61ee1a04f25c9a0611856214808620d6109c35b8bd82188e8e072"
     },
     {
       "id": "hostile-faction-ring",
@@ -131,7 +171,7 @@
       "mode": "L",
       "alphaSemantics": "grayscale-mask-portal-local",
       "contributesTo": ["portal-occlusion"],
-      "sha256": "26857f3d79ff31dde3b2b7dd711698823e05b0924892932d29523937a806dab6"
+      "sha256": "5e5754dc3e4120ebcc253b470bbb988d735270c1c34fa987f3da00d2d6604aaa"
     },
     {
       "id": "portal-upper-gate-mask",
@@ -141,7 +181,7 @@
       "mode": "L",
       "alphaSemantics": "grayscale-mask-portal-local",
       "contributesTo": ["portal-occlusion"],
-      "sha256": "97c33fcb1d2dae3080388bb80ed2035b24ae2162df825f391ca596222d71ec23"
+      "sha256": "01cc341d9241cc354ca9461c71a83d460b0cef525899074e019e098bab7625eb"
     },
     {
       "id": "portal-lower-gate-occluder",
@@ -151,7 +191,7 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-source-pixel-exact-zero-rgb",
       "contributesTo": ["portal-occlusion"],
-      "sha256": "c6ef3457bd78a2bd00e3b63e2d85ac69ca93044431f488c5d75a44fc49a88f98"
+      "sha256": "0f89cb34bd8c9629364b9e8b4bdf95de87f91c04b2417a53152ecbffb81f284e"
     },
     {
       "id": "portal-upper-gate-occluder",
@@ -161,7 +201,7 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-source-pixel-exact-zero-rgb",
       "contributesTo": ["portal-occlusion"],
-      "sha256": "7f621fa90163c579323ccde010178d76b090ccc555955200e86e00ab4d95ec9d"
+      "sha256": "cb3253dbdb738c12e4cfa579303ffcf06f7d86d813ada7331600a5bf5a51e7dc"
     },
     {
       "id": "bottom-hud-frame",
@@ -473,7 +513,17 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "db21d45598d365b7f96a64c3bd13e8e1f5c9e62bc9d6cfa2690cde7b50d4dd4c"
+      "sha256": "39cbe79ad027def5209cf48c99a0eaa885a8201224db97244cc08c6b454f495f"
+    },
+    {
+      "id": "portal-calibration-card-sweeps",
+      "path": "docs/visual-evidence/production-scene/portal-calibration-card-sweeps.png",
+      "category": "evidence",
+      "dimensions": [1922, 724],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "4322b86c69aabbb9840adb251a25edbb57c4241ad7f5dc4e3a7b5bf825ee146f"
     },
     {
       "id": "portal-lower-gate-transition",
@@ -483,7 +533,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "193d8996439926b2a9846b5c7fbce4e7c06b855710cc5f0c58e76459888a94db"
+      "sha256": "2014112743e71f1be61610f9ac27b95d5174dba331466b15bdbe277b56e95f92"
     },
     {
       "id": "portal-lower-mouth-exclusion",
@@ -493,17 +543,17 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "43fa9770d03a0b7889418c914580a1888e5a0f6852c740a4fdb9746342c78fcc"
+      "sha256": "ef1f15d44639198242335cf77091b163b381d7d9c634a82f4322a269615cbde4"
     },
     {
       "id": "portal-mask-isolation",
       "path": "docs/visual-evidence/production-scene/portal-mask-isolation.png",
       "category": "evidence",
-      "dimensions": [2760, 2150],
+      "dimensions": [4596, 2235],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "0608d3907e7de773e805b46cb66537f8aab4ef97be79d0d8ed7c821bb78a3519"
+      "sha256": "6c9efd9fa80c0d6c776bc52ca60ad08362f1a893e94058754d3b1c4616b23216"
     },
     {
       "id": "portal-ring-effect-depth",
@@ -513,7 +563,17 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "71ee4c312c0b1ba0e4cf16dbabed6117cee50d2ab85a7436bb6d0b2f4826ddca"
+      "sha256": "0a00fec9d801e98a59ecd1150779b7d99548d275e4f80d435a30791abec33a9e"
+    },
+    {
+      "id": "portal-solid-proxy-sweeps",
+      "path": "docs/visual-evidence/production-scene/portal-solid-proxy-sweeps.png",
+      "category": "evidence",
+      "dimensions": [1922, 724],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "6ec964af39472ef854a11fd5a56f23cb039650b2a965993c97d335eeeb7afb7e"
     },
     {
       "id": "portal-upper-boundary-diagnostics",
@@ -523,17 +583,17 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "93ba7c38c4859e55ec6c0197b61869e8e002af37c65276ade0db645d8da8790c"
+      "sha256": "5d8771adf6fddbedbf58d1b587c5ea20ecd1dd05e45454333d414d7d631b8954"
     },
     {
       "id": "portal-upper-gate-transition",
       "path": "docs/visual-evidence/production-scene/portal-upper-gate-transition.png",
       "category": "evidence",
-      "dimensions": [1149, 366],
+      "dimensions": [1724, 406],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "31413cf72d5faed074445284817ffdfc80e6b158d358d09bf188808439230df2"
+      "sha256": "a12aa6fca11138e8bb5909153e8a61a67784e818599f36b722eb6ac7ad5c504b"
     },
     {
       "id": "reconstruction-entities-removed",
@@ -563,7 +623,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "7188153e2c45891b52f0406678e3b5517b7926470f0f4b13f31d75fe56704b17"
+      "sha256": "0c228d633cb540601539a4eba77d62c70170edc92531f53ebe127bd9e63d3678"
     },
     {
       "id": "route-registration-closeups",
@@ -573,7 +633,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "d6ff8e1cddd80956a7e3ef76fd8767273344f84c05e3f4951e9ea13335533ce2"
+      "sha256": "4088ecf2caa5d2577add6e541519c7dc7b7f321ff510035259126743819f06c9"
     },
     {
       "id": "selection-and-combat-effect-isolation",

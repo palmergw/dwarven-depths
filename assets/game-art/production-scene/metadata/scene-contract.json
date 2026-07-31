@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "package": "dwarven-depths-issue-286-production-scene",
   "authority": "presentation-only",
   "coordinateSpace": {
@@ -76,7 +76,7 @@
         "outgoingZoneId": "route-zone.upper-causeway",
         "incomingAnchor": [1052, 170],
         "outgoingAnchor": [918, 187],
-        "bounds": [900, 100, 1065, 240],
+        "bounds": [860, 90, 1140, 250],
         "visibleMouthBounds": null,
         "segments": [
           {
@@ -89,11 +89,17 @@
         "occlusionMode": "architecture-depth-transition",
         "maskAsset": "portal-upper-gate-mask",
         "occluderAsset": "portal-upper-gate-occluder",
-        "extractionCrop": [900, 100, 1065, 240],
+        "extractionCrop": [860, 90, 1140, 250],
         "applicability": "architecture-hidden-segment-only",
+        "explicitHiddenState": {
+          "from": [1048, 171],
+          "to": [934, 184],
+          "renderWorldSubject": false,
+          "reason": "wholly-behind-gatehouse-no-sky-pixel-occluder"
+        },
         "samples": {
           "approach": [1080, 156],
-          "lastVisibleLip": [1072, 160],
+          "lastVisibleLip": [1052, 170],
           "fullyHidden": [982, 180],
           "firstVisibleLip": [918, 187],
           "emerged": [902, 190]
@@ -126,6 +132,7 @@
         "occluderAsset": "portal-lower-gate-occluder",
         "extractionCrop": [775, 220, 885, 375],
         "applicability": "hidden-segment-only-visible-mouth-excluded",
+        "explicitHiddenState": null,
         "samples": {
           "approach": [818, 271],
           "lastVisibleLip": [832, 307],

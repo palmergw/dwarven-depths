@@ -23,7 +23,8 @@ The verifier strictly rejects extra contract properties, every recursively disco
 - The bottom HUD begins at x=272, leaving the foreground shutter approach and objective anchor visible.
 - The painted route is represented as three pixel-surveyed visible depth zones. The upper gate is a wholly architecture-hidden transition. The lower gate uses a portal-local lintel/jamb occluder during its hidden segment and excludes the visibly floored mouth. The route terminates at the foreground-shutter threshold. There is no rail-crossing, winding-path, branching-path, or global exposed-floor-mask requirement.
 - The diagnostic route overlay uses gold only on surveyed visible floor, cyan for both architecture-hidden spans, and green around the lower visible mouth. Full-frame and closeup proofs are rebuilt and pixel-compared by read-only verification. They are never player UI. The shutter is a nontraversable objective.
-- The two portal masks are full-frame `L` assets with matching straight-alpha, clean-plate-source-pixel occluders. They apply only to their named hidden segments. World entities and production-scale rings render before the active portal occluder; screen-space focus renders afterward. #286 publishes separate unannotated player filmstrips and 4× boundary diagnostics with source/checker/alpha/one-pixel-contour views, per-sample hidden/visible alpha counts, full lower-mouth entity/ring footprints, and zero-difference heatmaps. #273 still owns interpolation, full-route traversal, and production movement.
+- The two portal masks are full-frame `L` assets with matching straight-alpha, clean-plate-source-pixel occluders. They contain only the painted upper parapet profile and lower lintel/jamb silhouettes; sky, aperture, background floor, torch glow, and the lower visible mouth remain transparent. The upper midpoint uses an explicit non-rendered portal visibility state rather than copied sky pixels. World entities and production-scale rings render before the active portal occluder; screen-space focus renders afterward.
+- Diagnostic-only, manifest-bound solid Warden/raider silhouettes and 56/44 px banded pivot cards lead the portal review surface. Deterministic small-increment sweeps expose each cutoff independently from textured sprites, while the 4× source/checker/alpha/one-pixel-contour board binds the cutout to clean-plate architecture. These diagnostic assets never contribute to runtime/player-facing reconstruction. #273 still owns interpolation, full-route traversal, and production movement.
 - Lighting uses straight-alpha normal compositing in sRGB, after entities/foreground and before combat effects/HUD.
 
 ## Approval boundary
@@ -59,7 +60,7 @@ The clean plate retains the wider diagonal, architecture-forward composition sho
 ## Files
 
 - `sources/`: original clean-plate master.
-- `exports/`: environment, padded entity states, effects, fixed-anchor and portal-local occlusion masks/occluders, lighting, HUD chrome, and mutable HUD states.
+- `exports/`: environment, padded entity states, effects, fixed-anchor and portal-local occlusion masks/occluders, review-only diagnostic subjects, lighting, HUD chrome, and mutable HUD states.
 - `metadata/scene-contract.json`: piecewise route zones/portals, objective, fixed-anchor masks, pivots, depth, lighting, HUD, and crop contracts.
 - `metadata/reconstruction.json`: exact neutral recipe and proof paths.
 - `metadata/layer-manifest.json`: generated dimensions, semantics, and SHA-256 digests.

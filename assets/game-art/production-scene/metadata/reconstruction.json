@@ -129,6 +129,8 @@
     "portalUpperTransition": "docs/visual-evidence/production-scene/portal-upper-gate-transition.png",
     "portalLowerTransition": "docs/visual-evidence/production-scene/portal-lower-gate-transition.png",
     "portalIsolation": "docs/visual-evidence/production-scene/portal-mask-isolation.png",
+    "portalSolidProxySweeps": "docs/visual-evidence/production-scene/portal-solid-proxy-sweeps.png",
+    "portalCalibrationCardSweeps": "docs/visual-evidence/production-scene/portal-calibration-card-sweeps.png",
     "portalDepth": "docs/visual-evidence/production-scene/portal-ring-effect-depth.png",
     "portalLowerMouth": "docs/visual-evidence/production-scene/portal-lower-mouth-exclusion.png",
     "alignment": "docs/visual-evidence/production-scene/entity-state-alignment.png",
