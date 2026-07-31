@@ -8,7 +8,7 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "952b49ec24c7696b1b81797ea79f947a0ea62e3eeb73d94f1e0cca13f9a8713d",
+    "provenance.json": "c0e96b60735455493998f71cf5bcd3da55fce0f8437e2fb5471bcecfc7ef660c",
     "reconstruction.json": "3ab3e0d74cca2e35415f243675c5a411f8b25b11a5239fd069dd82e1f221b36a",
     "scene-contract.json": "9bd3f0e53e948f87efcc1b16fe164eb38dac59da2f6f622b506466380f1c3e34"
   },
@@ -523,7 +523,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "4322b86c69aabbb9840adb251a25edbb57c4241ad7f5dc4e3a7b5bf825ee146f"
+      "sha256": "ac03c1e52149b05ec26e7bca5dbbaea81d22e1925f85043ee2385df858dc8256"
     },
     {
       "id": "portal-lower-gate-transition",
@@ -573,7 +573,7 @@
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "6ec964af39472ef854a11fd5a56f23cb039650b2a965993c97d335eeeb7afb7e"
+      "sha256": "41e67ffdac751d14c92f91b894591b899703d1a0e6b7f3c03bdf6d85dc28449c"
     },
     {
       "id": "portal-upper-boundary-diagnostics",

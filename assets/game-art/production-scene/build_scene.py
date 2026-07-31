@@ -1838,7 +1838,18 @@ def _line_positions_v6(
 
 def _portal_sweep_positions_v6(portal: dict[str, Any]) -> list[tuple[int, int]]:
     if portal["id"] == "portal.upper-gate":
-        return _line_positions_v6((1080, 156), (902, 190), 13)
+        samples = portal["samples"]
+        hidden_state = portal["explicitHiddenState"]
+        approach = _line_positions_v6(
+            tuple(samples["approach"]), tuple(samples["lastVisibleLip"]), 3
+        )
+        hidden = _line_positions_v6(
+            tuple(hidden_state["from"]), tuple(hidden_state["to"]), 7
+        )
+        emerged = _line_positions_v6(
+            tuple(samples["firstVisibleLip"]), tuple(samples["emerged"]), 3
+        )
+        return [*approach, *hidden, *emerged]
     incoming = _line_positions_v6((818, 271), (842, 331), 9)
     outgoing = _line_positions_v6((842, 331), (820, 358), 5)
     return [*incoming, *outgoing[1:]]
@@ -1846,9 +1857,19 @@ def _portal_sweep_positions_v6(portal: dict[str, Any]) -> list[tuple[int, int]]:
 
 def _upper_explicit_hidden_v6(portal: dict[str, Any], ground: tuple[int, int]) -> bool:
     state = portal["explicitHiddenState"]
-    minimum_x = min(state["from"][0], state["to"][0])
-    maximum_x = max(state["from"][0], state["to"][0])
-    return minimum_x <= ground[0] <= maximum_x
+    start_x, start_y = state["from"]
+    end_x, end_y = state["to"]
+    delta_x = end_x - start_x
+    delta_y = end_y - start_y
+    point_x = ground[0] - start_x
+    point_y = ground[1] - start_y
+    length_squared = delta_x * delta_x + delta_y * delta_y
+    projection = point_x * delta_x + point_y * delta_y
+    cross = point_x * delta_y - point_y * delta_x
+    return (
+        0 <= projection <= length_squared
+        and cross * cross <= length_squared * 4
+    )
 
 
 def _portal_diagnostic_sweep_v6(
@@ -1870,7 +1891,7 @@ def _portal_diagnostic_sweep_v6(
     board = Image.new("RGBA", (24 + 13 * (cell[0] + gap), 92 + 4 * 158), (7, 13, 22, 255))
     heading = "SOLID SILHOUETTE PROXY SWEEPS" if subject_kind == "solid" else "BANDED CALIBRATION CARD SWEEPS"
     pixel_text(board, (20, 16), heading, 2)
-    pixel_text(board, (20, 42), "REGULAR ROUTE INCREMENTS  UPPER MIDPOINTS USE EXPLICIT HIDDEN STATE", 1)
+    pixel_text(board, (20, 42), "PIECEWISE REGULAR ROUTE INCREMENTS  UPPER MIDPOINTS USE EXPLICIT HIDDEN STATE", 1)
     for row_index, (label, portal, key, asset, pivot) in enumerate(rows):
         positions = _portal_sweep_positions_v6(portal)
         y = 78 + row_index * 158
@@ -1889,7 +1910,7 @@ def _portal_diagnostic_sweep_v6(
             ).resize(cell, Image.Resampling.NEAREST)
             x = 20 + column * (cell[0] + gap)
             board.alpha_composite(panel, (x, y + 20))
-            state = "HIDDEN" if hidden_state else f"X{ground[0]} Y{ground[1]}"
+            state = f"{'HIDDEN ' if hidden_state else ''}X{ground[0]} Y{ground[1]}"
             pixel_text(board, (x, y + 134), state, 1)
     return board
 
@@ -3050,6 +3071,18 @@ def verify(root: Path = ROOT) -> None:
                 },
                 "scene.route.portals[0].explicitHiddenState",
             )
+            upper_sweep = _portal_sweep_positions_v6(portal)
+            if (
+                list(upper_sweep[0]) != samples["approach"]
+                or list(upper_sweep[2]) != samples["lastVisibleLip"]
+                or list(upper_sweep[-3]) != samples["firstVisibleLip"]
+                or list(upper_sweep[-1]) != samples["emerged"]
+                or _upper_explicit_hidden_v6(portal, (982, 500))
+                or any(_upper_explicit_hidden_v6(portal, point) for point in upper_sweep[:3])
+                or any(_upper_explicit_hidden_v6(portal, point) for point in upper_sweep[-3:])
+                or not all(_upper_explicit_hidden_v6(portal, point) for point in upper_sweep[3:-3])
+            ):
+                raise ValueError("Upper sweep must follow canonical lips and portal-local hidden state")
         elif portal["explicitHiddenState"] is not None:
             raise ValueError("Lower portal must use its lintel/jamb mask, not a hidden state")
         segments = portal["segments"]
