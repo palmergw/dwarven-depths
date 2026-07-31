@@ -24,7 +24,7 @@ It proves presentation composability only. It does not claim runtime integration
 6. screen-space indicators
 7. HUD
 
-The clean plate retains the same pixels as the foreground shells. With no subject inserted, compositing both artifacts is an exact pixel no-op. The canonical authored alpha—not inferred geometry in the builder—defines each cutoff.
+The complete clean plate is deterministically reconstructed from the structure-free environment base plus the two independently authored foreground artifacts. With no subject inserted, that reconstruction is byte-identical to the committed complete plate. The canonical artifact alpha—not inferred geometry in the builder—defines each cutoff.
 
 ## Start-here evidence
 
@@ -41,11 +41,14 @@ The clean plate retains the same pixels as the foreground shells. With no subjec
 
 ## Canonical sources
 
-- `sources/layered-shuttergate-master.png`
-- `sources/entrance-shell-mask.png`
-- `sources/gantry-shell-mask.png`
+- `sources/environment-base.png`
+- `sources/entrance-shell.png`
+- `sources/gantry-shell.png`
+- `sources/artifact-first/environment-base-master.png`
+- `sources/artifact-first/entrance-shell-chroma-master.png`
+- `sources/artifact-first/gantry-shell-chroma-master.png`
 
-The masks are source-authored review inputs. `build_poc.py` does not regenerate their geometry.
+The registered straight-alpha PNGs are canonical review inputs. Their masks are exported directly from native source alpha; `build_poc.py` never traces geometry over a flattened plate. `sources/artifact-first/build_candidate.py` records the deterministic chroma extraction, RGB decontamination, sizing, registration, and complete-plate composition used to produce them.
 
 ## Build and verify
 

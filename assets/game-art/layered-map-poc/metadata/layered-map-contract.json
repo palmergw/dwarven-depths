@@ -12,12 +12,11 @@
         ]
       },
       "affectedClasses": [
-        "off-route-world-subject",
+        "world-subject",
         "world-ring",
         "world-effect"
       ],
       "alpha": "straight",
-      "behindZone": "none-for-route-subjects",
       "evidence": [
         "solid-proxy-traversal.png",
         "calibration-card-traversal.png",
@@ -27,11 +26,9 @@
         "screen-focus-indicator",
         "hud"
       ],
-      "frontZone": "open-road",
       "id": "entrance-shell",
-      "insideZone": "aperture-subject-remains-visible",
-      "routeBehavior": "fully-visible-aperture",
-      "sourceMask": "sources/entrance-shell-mask.png",
+      "routeBehavior": "native-authored-arch-occlusion",
+      "sourceArtifact": "sources/entrance-shell.png",
       "transparentRgb": [
         0,
         0,
@@ -54,18 +51,7 @@
         "world-effect"
       ],
       "alpha": "straight",
-      "behindZone": {
-        "firstContact": [
-          849,
-          132
-        ],
-        "maximumCoverageAt": [
-          825,
-          180
-        ],
-        "visibleAlphaAtMaximum": 19385
-      },
-      "diagnosticPath": "support-free span at adjacent delta [-1,+2]",
+      "diagnosticPath": "support-free diagonal span",
       "evidence": [
         "gantry-boundary-diagnostics.png",
         "solid-proxy-traversal.png",
@@ -76,22 +62,10 @@
         "screen-focus-indicator",
         "hud"
       ],
-      "frontZone": {
-        "fullyVisibleFrom": [
-          801,
-          228
-        ]
-      },
       "id": "gantry-shell",
-      "insideZone": {
-        "recoveryStarts": [
-          824,
-          182
-        ]
-      },
       "routeBehavior": "progressive-overhead-occlusion",
-      "sourceMask": "sources/gantry-shell-mask.png",
-      "supportPlacement": "both supports anchored on raised plinths outside route margins",
+      "sourceArtifact": "sources/gantry-shell.png",
+      "supportPlacement": "both supports anchored on opposite raised shoulders outside route margins",
       "transparentRgb": [
         0,
         0,
@@ -134,12 +108,12 @@
     ],
     "branching": false,
     "entrance": [
-      1000,
-      210
+      1080,
+      178
     ],
     "gantry": [
-      825,
-      180
+      820,
+      255
     ],
     "id": "route.layered-shuttergate"
   },

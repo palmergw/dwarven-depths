@@ -1,4 +1,5 @@
 {
+  "authoringModel": "artifact-first; complete plate derives from structure-free base plus canonical RGBA artifacts",
   "environment": {
     "fonts": {
       "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf": "a4c5bc453ca281d90ea079e596da7ae0dfeb5777497c29ec254e76d97ff6f890",
@@ -7,19 +8,22 @@
     "pillow": "12.3.0"
   },
   "generator": "assets/game-art/layered-map-poc/build_poc.py",
-  "generatorSha256": "9110470570b83ff022e0903b36a1d1b0843afde3b5087cb1e877d35cd90f10d4",
+  "generatorSha256": "27fb5824af3c6924f631018a7928cc9a70ff366929d6fc086e6232c294f5cb37",
   "inputs": {
     "assets/game-art/layered-map-poc/requirements.lock": "41b54a6fb2918667ca47a61d73b522629d84490f3d78f0f20b21135faba10d35",
-    "assets/game-art/layered-map-poc/sources/entrance-shell-mask.png": "519dc6b76fd97e1b0b8ca8348c266e55a57e94e11fb02e4a6f5011badb58ec27",
-    "assets/game-art/layered-map-poc/sources/gantry-shell-mask.png": "4b72edce44636b079a67b4e205e3b6f998459405308358b40b3e00d26b82eeb2",
-    "assets/game-art/layered-map-poc/sources/generation-notes.md": "e86bc6c92a86cfa24a9cb66754bf716fc68abe646d543a989ac50d30038e272b",
+    "assets/game-art/layered-map-poc/sources/artifact-first/build_candidate.py": "9b9cca1a66ab62c51612d8f94b4b53a9ec3a409b1cc3682d3f181f49e84b92bb",
+    "assets/game-art/layered-map-poc/sources/artifact-first/entrance-shell-chroma-master.png": "1ae595e3ee5441cd0d07f9bf3becf8b5ce081b1a39301bcb90c60de4906607d8",
+    "assets/game-art/layered-map-poc/sources/artifact-first/environment-base-master.png": "4b98bb862369ef0d8463ac32e3a027b55574cd534268760decb2ca8e58e6cb4c",
+    "assets/game-art/layered-map-poc/sources/artifact-first/gantry-shell-chroma-master.png": "135edc5ade4a2f6eab813e2851f84b9c950654587d5ad2fe6f9538dafdebf07c",
+    "assets/game-art/layered-map-poc/sources/entrance-shell.png": "f74c550b2dfb62e902a318a43da4e7129bb9c3273f6ae0b2fee81f8bff0aa91a",
+    "assets/game-art/layered-map-poc/sources/environment-base.png": "4244bcff5323d330f27da1e96c6011f07e05955030ae118dddf90abdd88f562d",
+    "assets/game-art/layered-map-poc/sources/gantry-shell.png": "33af186bab710c07ab7f4e16b9b62b321056f1fadf39bdf482a4884d388eb3e1",
+    "assets/game-art/layered-map-poc/sources/generation-notes.md": "05139a234d5a671c3a76eaea572c17e52aba9c0f5d6890ecd2fa19716e9c275e",
     "assets/game-art/production-scene/exports/diagnostics/raider-calibration-card.png": "67e58a9c4d2d0d04eee1b97507e09d875c0322b1624cd8e2f5ec51386c2818c9",
     "assets/game-art/production-scene/exports/diagnostics/solid-raider-proxy.png": "8020dcd21259ba28fa32ea37537c50240b75aab20eae74bd864a63d8cdb17bcc",
     "assets/game-art/production-scene/exports/diagnostics/solid-warden-proxy.png": "e0c3112b89b02d6a3dce24b97ce81d94adf7cfed3f0f39f4657487a951a298f4",
     "assets/game-art/production-scene/exports/diagnostics/warden-calibration-card.png": "ab626707a1f61ee1a04f25c9a0611856214808620d6109c35b8bd82188e8e072",
     "assets/game-art/production-scene/exports/entities/iron-warden-idle.png": "a10be62e061241683ba598ed4d9032880704a5f0c24bf38f9eff0a9bd138af4a",
     "assets/game-art/production-scene/exports/entities/mine-raider-idle.png": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83"
-  },
-  "master": "assets/game-art/layered-map-poc/sources/layered-shuttergate-master.png",
-  "masterSha256": "5142cad1f8cbdbfb7f57dadabfdaee1d004b66963043e5306bf9fe3dec944c30"
+  }
 }
