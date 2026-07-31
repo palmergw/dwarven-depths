@@ -46,12 +46,12 @@ No Blender UI, MCP, display server, chroma key, traced polygon, independent imag
 
 This checkpoint proves the missing production capability and begins the scale/style correction; it is not final art. Perspective, registration, native alpha, and support foundations originate in one scene.
 
-The second blockout expands the authored floor from 23×24 to 32×34 world units, extends the route from 20 to 30 world units, widens the road, moves both gantry supports farther outside the lane, and uses a 36-unit orthographic frame. Procedural basalt, carved-stone, road, and timber variation, iron rails, irregular shoulder rubble, cool fill, and warm tunnel/gate pools move the sterile blockout toward the original fortress direction without changing the camera contract.
+The third blockout expands the authored floor to 40×46 world units and the route to 42 world units, with a 50-unit orthographic frame. The previous freestanding beam and floor posts were removed. The foreground gantry is now a high service bridge keyed directly into two massive side bastions and their wall platforms: it connects fortress architecture, creates a deliberate overhead traversal threshold, and establishes vertical scale without placing supports in the route. Procedural basalt, carved-stone, road, and timber variation, embedded iron rails, irregular shoulder rubble, cool fill, and warm tunnel/gate pools continue moving the sterile blockout toward the original fortress direction without changing the shared-camera contract.
 
 Remaining work includes:
 
 - replace the proxy cylinders with the approved 56 px Warden and 44 px raider sprites;
-- develop larger carved architecture, chains, machinery, and masonry silhouettes rather than relying on repeated blocks;
-- refine the entrance voussoir silhouette;
-- improve the defended-shutter framing and readability;
+- broaden the tactical staging floor beyond the central road where gameplay composition benefits;
+- develop carved architecture, chains, machinery, and masonry silhouettes rather than relying on repeated blocks;
+- refine the entrance voussoir silhouette and defended-shutter machinery;
 - integrate Blender-source hashes and render verification into the top-level POC verifier.

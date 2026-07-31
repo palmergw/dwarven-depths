@@ -2,17 +2,17 @@
   "blenderVersion": "4.3.2",
   "camera": {
     "location": [
-      22.0,
-      -28.0,
-      23.0
+      30.0,
+      -41.5,
+      32.0
     ],
     "name": "CAMERA_Shuttergate_Ortho",
-    "orthoScale": 36.0,
+    "orthoScale": 50.0,
     "projection": "orthographic",
     "rotationEuler": [
-      1.033799,
-      -0.0,
-      0.665969
+      1.009426,
+      0.0,
+      0.674741
     ]
   },
   "collections": [
@@ -26,43 +26,43 @@
     "entrance-shell.png": {
       "alphaSemantics": "straight-alpha-foreground-only",
       "height": 720,
-      "sha256": "f73d1eaf163016dc094f53dee6b99bc8ad74bccb8fa9548f3ee2cdfc6e4059ee",
+      "sha256": "507c26472d19cc21bae21f50bd29294ca96dea1b455a70b4a55cc75f453e6b57",
       "width": 1280
     },
     "environment-base.png": {
       "alphaSemantics": "opaque-environment-only",
       "height": 720,
-      "sha256": "aef5c9b75abb071246ebdf1b33b11bbb6dd208551d3a8c033c95dd6b058d5a0e",
+      "sha256": "e5dbb8a62781c80ebe9187edb3fc7d03d0af303ec2477bcd6ae324e823538c8a",
       "width": 1280
     },
     "gantry-shell.png": {
       "alphaSemantics": "straight-alpha-foreground-only",
       "height": 720,
-      "sha256": "5427084a0783bfa555ef7295ed2f4d26a7e3cb600641ef8d41231ef2151f5f01",
+      "sha256": "bd227492a116f92b66ba1e81327e375ad9b42c9ca71b38a18c496427e05e7b2f",
       "width": 1280
     },
     "reference-plate.png": {
       "alphaSemantics": "opaque-environment-plus-foreground",
       "height": 720,
-      "sha256": "ea6613bcc277ecb245a766838971c14e3174efd5c4d87dc8195427218036a593",
+      "sha256": "431395334895772a05f760468cd00eda754ac2bf7c054dfa136c6616e9c1f541",
       "width": 1280
     },
     "route-subjects.png": {
       "alphaSemantics": "straight-alpha-diagnostic-only",
       "height": 720,
-      "sha256": "8e22ccf47a439fec96c735cb649fcfbfa99a6193812f9d1e654230d3de89f376",
+      "sha256": "aee757c9e37a09a40e4f1f5596764b6e9752af601ce4129919cd7f6858a422f0",
       "width": 1280
     },
     "route-traversal.png": {
       "alphaSemantics": "opaque-diagnostic-only",
       "height": 720,
-      "sha256": "37867d110602f01a246ca71b6d6bbe021f65fb93a4d1c0313635aefe6b0bfdd6",
+      "sha256": "60e5cbcb37e8b61866b1235acb217719d80eaa87f33ba5e7aefe0c104713cd7e",
       "width": 1280
     }
   },
   "schemaVersion": 1,
   "source": {
-    "blendSha256": "a04098877ad850705cca00ca63983c4877524ccf66f7b9dc272b34d18023c64f",
-    "builderSha256": "d81c9fc015aa081f28193a27bd76671fcf6d88c6ff73933b6fac9d4c99ee2f19"
+    "blendSha256": "728ab8458fc74d00c9e71584f1c5bc383f90648ee806a20667227a31d053af5b",
+    "builderSha256": "af3e2bbfc702992f13cc70083beb7162ecfd119648836da4dff0bc8fd2121551"
   }
 }
