@@ -153,7 +153,8 @@ def build(out_root:Path)->list[Path]:
   'subjects':{'warden':{'nominalHeight':56,'pivot':[56,66]},'raider':{'nominalHeight':44,'pivot':[40,54]}},
   'nonClaims':['runtime integration','simulation authority','HUD approval','final animation']}
  cp=meta/'layered-map-contract.json';write_json(cp,contract);files.append(cp)
- provenance={'generator':'assets/game-art/layered-map-poc/build_poc.py','generatorSha256':sha(Path(__file__)),'master':str(MASTER.relative_to(ROOT)),'masterSha256':sha(MASTER),'inputs':{str(p.relative_to(ROOT)):sha(p) for p in [*MASKS.values(),*(x[0] for x in SPRITES.values())]}}
+ provenance_inputs=[*MASKS.values(),PACKAGE/'sources/generation-notes.md',*(x[0] for x in SPRITES.values())]
+ provenance={'generator':'assets/game-art/layered-map-poc/build_poc.py','generatorSha256':sha(Path(__file__)),'master':str(MASTER.relative_to(ROOT)),'masterSha256':sha(MASTER),'inputs':{str(p.relative_to(ROOT)):sha(p) for p in provenance_inputs}}
  pp=meta/'provenance.json';write_json(pp,provenance);files.append(pp)
  manifest={'schemaVersion':1,'files':{str(p.relative_to(out_root)):sha(p) for p in sorted(files)}}
  mp=meta/'manifest.json';write_json(mp,manifest);files.append(mp)
