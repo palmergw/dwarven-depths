@@ -2,7 +2,7 @@
   "files": {
     "evidence/calibration-card-traversal.png": "869e01737765d590fedff35ec6364be5869f77e132af6b5bb2b17978f8d6ebf9",
     "evidence/foreground-artifact-isolation.png": "90a08e819ef2bf5d7ddf8e07301bf1885fc3c5012d56f37aa4d6a9e0407fe6b6",
-    "evidence/gantry-boundary-diagnostics.png": "793178278685067ad2e1cc734ff7f97244d91dbe10b8211b18fac62022b90929",
+    "evidence/gantry-boundary-diagnostics.png": "0af4eb712d9282cc414c8333c918cc99fc88f3cd161f3ca064fefb298f8c4f96",
     "evidence/layered-map-overview.png": "0fda44b405cec8bfc12260293e816b16285c4839145ab6cf1d342e559a6accdf",
     "evidence/no-op-difference-heatmap.png": "b2045b12b59e772519c0025b57840090d2176a6c1297c534280203d151616976",
     "evidence/production-sprite-traversal.png": "5df05914f4d63b04ea7d1e13f82634595610e9153e3784f9e42bc2ff14f6427f",
@@ -12,8 +12,8 @@
     "exports/foreground/entrance-shell.png": "9b21a9621e989a2c7c8d6fb108749f50d67fe93049c114a6a22a7c3dea5043e9",
     "exports/foreground/gantry-shell-mask.png": "dee8784dc86548e674154c11f0a510c02b408c5663ff4f5c60345e4d0c854085",
     "exports/foreground/gantry-shell.png": "ba4384ecda714a581dad9d0b8e69f98e6dd27e96279de74527537d9c3ff7edb5",
-    "metadata/layered-map-contract.json": "ae64504f8650efc0c404463892b61ee29ad9c8dc03031ec8a4cb362e61c05d44",
-    "metadata/provenance.json": "82e9a0280932e480bef689a451e6beea8df31ddcff8ed7a290f3baeb6adc4c6a"
+    "metadata/layered-map-contract.json": "b5bd905af3364a084df593758beb0bdae96d8e57825222097bf387ab2222b97f",
+    "metadata/provenance.json": "761453dc5508ffe454ee90c3ca070598a02c4127dec89d40ebd4ca858b13d521"
   },
   "schemaVersion": 1
 }

@@ -7,7 +7,7 @@
     "pillow": "12.3.0"
   },
   "generator": "assets/game-art/layered-map-poc/build_poc.py",
-  "generatorSha256": "faf90a24807402e1060cb168ecbbaed58bc0ddb4612f7c2efdf275f566bf8879",
+  "generatorSha256": "8c88d9a02eb948e2f5435caf364faa2870264a2113c0fc8583f60a7aed79a99f",
   "inputs": {
     "assets/game-art/layered-map-poc/requirements.lock": "41b54a6fb2918667ca47a61d73b522629d84490f3d78f0f20b21135faba10d35",
     "assets/game-art/layered-map-poc/sources/entrance-shell-mask.png": "3657c8f191fb7c234658f4c097ea0139a05550b487bd2f29c073cb82da8f8616",

@@ -156,7 +156,7 @@ def make_gantry_boundary_diagnostics(plate:Image.Image,overlay:Image.Image)->Ima
  groups=[
   ('FIRST CONTACT',[(780-2*i,435+i) for i in range(8)]),
   ('APPROACH FULL HIDE',[(726-2*i,462+i) for i in range(8)]),
-  ('FIRST REAPPEARANCE',[(700-2*i,475+i) for i in range(8)]),
+  ('FIRST REAPPEARANCE',[(704-2*i,473+i) for i in range(8)]),
   ('APPROACH FULL EMERGENCE',[(656-2*i,497+i) for i in range(8)]),
  ]
  board=Image.new('RGBA',(2100,1130),(8,12,17,255));panel_header(board,(24,14),'GANTRY BOUNDARY DIAGNOSTICS — BEFORE | AFTER','adjacent 2 px x / 1 px y route samples; exact solid-Warden alpha and pivot')
@@ -166,7 +166,7 @@ def make_gantry_boundary_diagnostics(plate:Image.Image,overlay:Image.Image)->Ima
   for i,p in enumerate(samples):
    pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,80,1);x=20+i*255;board.alpha_composite(pair,(x,y))
    pct=100*v/(h+v);d.text((x,y+84),f'{p[0]},{p[1]}  {pct:.1f}% visible',font=font(12),fill=(225,230,234,255));d.text((x,y+101),f'alpha V {v}  H {h}',font=font(10),fill=(176,196,208,255));d.text((x,y+116),'native B | A',font=font(11),fill=(160,180,195,255))
- critical=[('contact',(776,437)),('hidden',(712,469)),('reappears',(700,475)),('visible',(642,504))]
+ critical=[('contact',(776,437)),('hidden',(712,469)),('reappears',(702,474)),('visible',(642,504))]
  y=855;d.text((20,y-35),'4× NEAREST-NEIGHBOR EDGE CHECKS',font=font(17,True),fill=(235,196,112,255))
  for i,(label,p) in enumerate(critical):
   pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,48,4);x=20+i*500;board.alpha_composite(pair,(x,y))
@@ -264,7 +264,7 @@ def build(out_root:Path)->list[Path]:
   'layerOrder':['environment-base','world-rings-behind-structure','world-effects-behind-structure','world-subjects-behind-structure','structure-foreground-artifact','world-rings-in-front','world-effects-in-front','world-subjects-in-front','screen-focus-indicators','hud'],
   'foregroundArtifacts':[
    {'id':'entrance-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'entrance-aperture','states':['inside','aperture','outside']},'routeBehavior':'fully-visible-aperture','behindZone':'none-for-route-subjects','insideZone':'aperture-subject-remains-visible','frontZone':'open-road','affectedClasses':['off-route-world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/entrance-shell-mask.png','evidence':['solid-proxy-traversal.png','calibration-card-traversal.png','foreground-artifact-isolation.png']},
-   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'gantry-crossing','states':['upper-terrace','behind-gantry','defended-plaza']},'routeBehavior':'progressive-architectural-occlusion','behindZone':{'firstContact':[776,437],'fullyHiddenAt':[712,469]},'insideZone':{'fullyHiddenAt':[712,469],'reappearanceStarts':[700,475]},'frontZone':{'fullyVisibleFrom':[642,504]},'affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/gantry-shell-mask.png','evidence':['gantry-boundary-diagnostics.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
+   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'gantry-crossing','states':['upper-terrace','behind-gantry','defended-plaza']},'routeBehavior':'progressive-architectural-occlusion','behindZone':{'firstContact':[776,437],'fullyHiddenAt':[712,469]},'insideZone':{'fullyHiddenAt':[712,469],'reappearanceStarts':[702,474]},'frontZone':{'fullyVisibleFrom':[642,504]},'affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/gantry-shell-mask.png','evidence':['gantry-boundary-diagnostics.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
   'subjects':{'warden':{'nominalHeight':56,'pivot':[56,66]},'raider':{'nominalHeight':44,'pivot':[40,54]}},
   'presentationLighting':{'raider':'warm entrance adaptation plus contact shadow and hostile world ring','warden':'bounded brightness/contrast adaptation plus contact shadow and allied world ring','baseSpriteGeometryChanged':False},
   'nonClaims':['runtime integration','simulation authority','HUD approval','final animation']}
