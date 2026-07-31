@@ -22,8 +22,8 @@ SPRITES={
  'warden':(ENTITY_ROOT/'entities/iron-warden-idle.png',(56,66)),
  'raider':(ENTITY_ROOT/'entities/mine-raider-idle.png',(40,54)),
 }
-ENTRANCE_POINTS=[(1020,230),(1005,243),(990,250),(975,260),(960,270),(945,280),(930,295)]
-GANTRY_POINTS=[(790,430),(750,450),(710,470),(670,490),(630,510),(590,530),(550,550)]
+ENTRANCE_POINTS=[(1065,150),(1050,165),(1035,185),(1000,210),(950,235),(860,260),(780,290)]
+GANTRY_POINTS=[(1000,180),(960,190),(920,200),(904,204),(880,210),(840,220),(804,229),(760,240)]
 FONT_PATH=Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
 FONT_HASHES={
  FONT_PATH:'57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e',
@@ -123,12 +123,12 @@ def make_sweep(plate,overlay,points,subject_name,title,subtitle,lighting:str|Non
 
 def make_combined_sweeps(plate,overlays,actual:bool)->Image.Image:
  a=make_sweep(plate,overlays['entrance-shell'],ENTRANCE_POINTS,'raider' if actual else 'solid-raider','ENTRANCE SHELL — '+('PRODUCTION RAIDER' if actual else 'SOLID RAIDER PROXY'),('lit aperture-clearance sequence; shell alpha does not affect route subjects' if actual else 'fully visible aperture clearance; no route-subject occlusion expected'),lighting='entrance' if actual else None)
- b=make_sweep(plate,overlays['gantry-shell'],GANTRY_POINTS,'warden' if actual else 'solid-warden','GANTRY SHELL — '+('PRODUCTION WARDEN' if actual else 'SOLID WARDEN PROXY'),'upper terrace → behind full gantry mass → defended plaza; no visibility toggle',lighting='gantry' if actual else None)
+ b=make_sweep(plate,overlays['gantry-shell'],GANTRY_POINTS,'warden' if actual else 'solid-warden','GANTRY SHELL — '+('PRODUCTION WARDEN' if actual else 'SOLID WARDEN PROXY'),'approach → maximum overhead coverage → open defense road; both supports remain off-route',lighting='gantry' if actual else None)
  out=Image.new('RGBA',(max(a.width,b.width),a.height+b.height),(8,12,17,255));out.alpha_composite(a);out.alpha_composite(b,(0,a.height));return out
 
 def make_card_sweeps(plate,overlays)->Image.Image:
  a=make_sweep(plate,overlays['entrance-shell'],ENTRANCE_POINTS,'raider-card','ENTRANCE SHELL — 44 PX BANDED CARD','fully visible aperture clearance; expected hidden alpha is zero')
- b=make_sweep(plate,overlays['gantry-shell'],GANTRY_POINTS,'warden-card','GANTRY SHELL — 56 PX BANDED CARD','exact Warden canvas and pivot; bridge mass produces one coherent cutoff')
+ b=make_sweep(plate,overlays['gantry-shell'],GANTRY_POINTS,'warden-card','GANTRY SHELL — 56 PX BANDED CARD','exact Warden canvas and pivot; overhead beam produces one coherent cutoff; supports remain off-route')
  out=Image.new('RGBA',(max(a.width,b.width),a.height+b.height),(8,12,17,255));out.alpha_composite(a);out.alpha_composite(b,(0,a.height));return out
 
 def alpha_visibility(mask:Image.Image,subject:Image.Image,ground:tuple[int,int],pivot:tuple[int,int])->tuple[int,int]:
@@ -154,19 +154,19 @@ def boundary_pair(plate:Image.Image,overlay:Image.Image,subject:Image.Image,pivo
 def make_gantry_boundary_diagnostics(plate:Image.Image,overlay:Image.Image)->Image.Image:
  subject,pivot=sprite('solid-warden')
  groups=[
-  ('FIRST CONTACT',[(780-2*i,435+i) for i in range(8)]),
-  ('APPROACH FULL HIDE',[(726-2*i,462+i) for i in range(8)]),
-  ('FIRST REAPPEARANCE',[(704-2*i,473+i) for i in range(8)]),
-  ('APPROACH FULL EMERGENCE',[(656-2*i,497+i) for i in range(8)]),
+  ('FIRST CONTACT',[(1000-4*i,180+i) for i in range(8)]),
+  ('APPROACH MAXIMUM COVERAGE',[(932-4*i,197+i) for i in range(8)]),
+  ('RECOVERY FROM MAXIMUM COVERAGE',[(904-4*i,204+i) for i in range(8)]),
+  ('APPROACH FULL EMERGENCE',[(832-4*i,222+i) for i in range(8)]),
  ]
- board=Image.new('RGBA',(2100,1130),(8,12,17,255));panel_header(board,(24,14),'GANTRY BOUNDARY DIAGNOSTICS — BEFORE | AFTER','adjacent 2 px x / 1 px y route samples; exact solid-Warden alpha and pivot')
+ board=Image.new('RGBA',(2100,1130),(8,12,17,255));panel_header(board,(24,14),'GANTRY BOUNDARY DIAGNOSTICS — BEFORE | AFTER','adjacent 4 px x / 1 px y route samples; exact solid-Warden alpha and pivot')
  d=ImageDraw.Draw(board)
  for row,(label,samples) in enumerate(groups):
   y=105+row*185;d.text((20,y-30),label,font=font(17,True),fill=(235,196,112,255))
   for i,p in enumerate(samples):
    pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,80,1);x=20+i*255;board.alpha_composite(pair,(x,y))
    pct=100*v/(h+v);d.text((x,y+84),f'{p[0]},{p[1]}  {pct:.1f}% visible',font=font(12),fill=(225,230,234,255));d.text((x,y+101),f'alpha V {v}  H {h}',font=font(10),fill=(176,196,208,255));d.text((x,y+116),'native B | A',font=font(11),fill=(160,180,195,255))
- critical=[('contact',(776,437)),('hidden',(712,469)),('reappears',(702,474)),('visible',(642,504))]
+ critical=[('contact',(984,184)),('max cover',(904,204)),('recovery',(900,205)),('visible',(804,229))]
  y=855;d.text((20,y-35),'4× NEAREST-NEIGHBOR EDGE CHECKS',font=font(17,True),fill=(235,196,112,255))
  for i,(label,p) in enumerate(critical):
   pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,48,4);x=20+i*500;board.alpha_composite(pair,(x,y))
@@ -187,7 +187,7 @@ def make_noop_heatmap(plate:Image.Image,overlays:dict[str,Image.Image])->Image.I
  board.alpha_composite(heat,(0,90));return board
 
 def make_isolation(plate,masks,overlays)->Image.Image:
- specs=[('entrance-shell',(900,0,1180,270)),('gantry-shell',(390,270,810,680))]
+ specs=[('entrance-shell',(950,0,1170,240)),('gantry-shell',(400,20,990,390))]
  board=Image.new('RGBA',(1500,1060),(10,14,20,255));panel_header(board,(24,14),'CANONICAL FOREGROUND ARTIFACTS','source pixels + authored alpha; checker, alpha, one-pixel contour, and no-op reconstruction')
  d=ImageDraw.Draw(board)
  for col,(name,crop) in enumerate(specs):
@@ -212,10 +212,19 @@ def make_isolation(plate,masks,overlays)->Image.Image:
  d.text((885,48),f'NO-ENTITY RECONSTRUCTION: changedPixels={changed}  maxDelta={mx}',font=font(13,True),fill=(100,255,170,255) if changed==0 else (255,80,80,255))
  return board
 
+def make_entrance_alignment(plate:Image.Image,mask:Image.Image,overlay:Image.Image)->Image.Image:
+ crop=(970,5,1160,215);size=(760,840)
+ board=Image.new('RGBA',(1560,930),(8,12,17,255));panel_header(board,(24,14),'ENTRANCE MASK — EXACT 4× ALIGNMENT','nearest-neighbor magnification; cyan is the one-pixel binary-alpha contour; aperture and route floor remain transparent')
+ source=plate.crop(crop);edge=contour(mask).crop(crop);tint=Image.new('RGBA',source.size,(40,255,220,0));tint.putalpha(edge);source.alpha_composite(tint)
+ board.alpha_composite(source.resize(size,Image.Resampling.NEAREST),(20,80))
+ checked=checker(FRAME);checked.alpha_composite(overlay);board.alpha_composite(checked.crop(crop).resize(size,Image.Resampling.NEAREST),(800,80))
+ d=ImageDraw.Draw(board);d.text((20,62),'SOURCE + 1 PX CONTOUR',font=font(14,True),fill=(235,196,112,255));d.text((800,62),'REGISTERED RGBA ON CHECKER',font=font(14,True),fill=(235,196,112,255))
+ return board
+
 def make_overview(plate,overlays)->Image.Image:
  scene=plate.copy();raider,rp=sprite('raider');warden,wp=sprite('warden')
- world_ring(scene,(990,250),(255,76,62));soft_contact_shadow(scene,(990,250));place(scene,presentation_lighting(raider,0.08,1.18),(990,250),rp);scene.alpha_composite(overlays['entrance-shell'])
- world_ring(scene,(630,510),(82,205,255));soft_contact_shadow(scene,(630,510));place(scene,presentation_lighting(warden,0.04,1.18),(630,510),wp);scene.alpha_composite(overlays['gantry-shell'])
+ world_ring(scene,(1000,210),(255,76,62));soft_contact_shadow(scene,(1000,210));place(scene,presentation_lighting(raider,0.08,1.18),(1000,210),rp);scene.alpha_composite(overlays['entrance-shell'])
+ world_ring(scene,(840,220),(82,205,255));soft_contact_shadow(scene,(840,220));place(scene,presentation_lighting(warden,0.04,1.18),(840,220),wp);scene.alpha_composite(overlays['gantry-shell'])
  board=Image.new('RGBA',(1280,810),(9,13,18,255));board.alpha_composite(scene,(0,90));panel_header(board,(24,16),'LAYERED SHUTTERGATE — PROOF OF CONCEPT','one clean map, two explicit foreground RGBA artifacts, approved 56/44 px units; no HUD or runtime-state claim')
  return board
 
@@ -251,6 +260,7 @@ def build(out_root:Path)->list[Path]:
  artifacts={
   'layered-map-overview.png':make_overview(plate,overlays),
   'foreground-artifact-isolation.png':make_isolation(plate,masks,overlays),
+  'entrance-mask-alignment.png':make_entrance_alignment(plate,masks['entrance-shell'],overlays['entrance-shell']),
   'solid-proxy-traversal.png':make_combined_sweeps(plate,overlays,False),
   'calibration-card-traversal.png':make_card_sweeps(plate,overlays),
   'gantry-boundary-diagnostics.png':make_gantry_boundary_diagnostics(plate,overlays['gantry-shell']),
@@ -260,11 +270,11 @@ def build(out_root:Path)->list[Path]:
  for name,img in artifacts.items():p=ev/name;img.save(p,optimize=False,compress_level=9);files.append(p)
  contract={
   'schemaVersion':2,'authority':'presentation-only-proof-of-concept','frame':[1280,720],
-  'route':{'id':'route.layered-shuttergate','entrance':[990,250],'gantry':[650,500],'backstop':[230,520],'branching':False,'authoritativeMovement':False},
+  'route':{'id':'route.layered-shuttergate','entrance':[1000,210],'gantry':[904,204],'backstop':[230,520],'branching':False,'authoritativeMovement':False},
   'layerOrder':['environment-base','world-rings-behind-structure','world-effects-behind-structure','world-subjects-behind-structure','structure-foreground-artifact','world-rings-in-front','world-effects-in-front','world-subjects-in-front','screen-focus-indicators','hud'],
   'foregroundArtifacts':[
    {'id':'entrance-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'entrance-aperture','states':['inside','aperture','outside']},'routeBehavior':'fully-visible-aperture','behindZone':'none-for-route-subjects','insideZone':'aperture-subject-remains-visible','frontZone':'open-road','affectedClasses':['off-route-world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/entrance-shell-mask.png','evidence':['solid-proxy-traversal.png','calibration-card-traversal.png','foreground-artifact-isolation.png']},
-   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'gantry-crossing','states':['upper-terrace','behind-gantry','defended-plaza']},'routeBehavior':'progressive-architectural-occlusion','behindZone':{'firstContact':[776,437],'fullyHiddenAt':[712,469]},'insideZone':{'fullyHiddenAt':[712,469],'reappearanceStarts':[702,474]},'frontZone':{'fullyVisibleFrom':[642,504]},'affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/gantry-shell-mask.png','evidence':['gantry-boundary-diagnostics.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
+   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'gantry-crossing','states':['approach','beneath-overhead-beam','defended-plaza']},'routeBehavior':'progressive-overhead-occlusion','supportPlacement':'both supports anchored on raised plinths outside route margins','behindZone':{'firstContact':[984,184],'maximumCoverageAt':[904,204],'visibleAlphaAtMaximum':20},'insideZone':{'recoveryStarts':[900,205]},'frontZone':{'fullyVisibleFrom':[804,229]},'affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/gantry-shell-mask.png','evidence':['gantry-boundary-diagnostics.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
   'subjects':{'warden':{'nominalHeight':56,'pivot':[56,66]},'raider':{'nominalHeight':44,'pivot':[40,54]}},
   'presentationLighting':{'raider':'warm entrance adaptation plus contact shadow and hostile world ring','warden':'bounded brightness/contrast adaptation plus contact shadow and allied world ring','baseSpriteGeometryChanged':False},
   'nonClaims':['runtime integration','simulation authority','HUD approval','final animation']}

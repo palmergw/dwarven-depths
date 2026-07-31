@@ -22,6 +22,9 @@ Create a new character-, effect-, text-, and HUD-free elevated 2.5D dwarven fort
 4. Made the upper hostile tunnel shell and timber gantry the two explicit foreground artifacts.
 5. Expanded usable combat floor and reduced dead chasm space.
 6. Moved the complete tunnel shell inside the frame and removed clutter from both artifact boundaries.
-7. Preserved a clean continuous route from tunnel aperture, beneath the gantry, to the shutter plaza.
+7. Product-owner review rejected approximate arch-mask alignment and a gantry support planted in the defense walkway.
+8. Regenerated the map around a crisp masonry entrance whose visible arch ring follows explicit stone/mortar edges.
+9. Rebuilt the gantry as an overhead bridge with both columns anchored on raised shoulder plinths outside the route.
+10. Preserved a clean continuous route from tunnel aperture, beneath the unobstructed gantry span, to the shutter plaza.
 
 The final source intentionally improves compositing clarity and map usability rather than reproducing the previous Shuttergate plate pixel-for-pixel.

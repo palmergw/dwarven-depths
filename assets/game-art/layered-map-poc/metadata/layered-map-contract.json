@@ -43,8 +43,8 @@
         "routeSegment": "gantry-crossing",
         "source": "presentation-route-state",
         "states": [
-          "upper-terrace",
-          "behind-gantry",
+          "approach",
+          "beneath-overhead-beam",
           "defended-plaza"
         ]
       },
@@ -56,13 +56,14 @@
       "alpha": "straight",
       "behindZone": {
         "firstContact": [
-          776,
-          437
+          984,
+          184
         ],
-        "fullyHiddenAt": [
-          712,
-          469
-        ]
+        "maximumCoverageAt": [
+          904,
+          204
+        ],
+        "visibleAlphaAtMaximum": 20
       },
       "evidence": [
         "gantry-boundary-diagnostics.png",
@@ -76,23 +77,20 @@
       ],
       "frontZone": {
         "fullyVisibleFrom": [
-          642,
-          504
+          804,
+          229
         ]
       },
       "id": "gantry-shell",
       "insideZone": {
-        "fullyHiddenAt": [
-          712,
-          469
-        ],
-        "reappearanceStarts": [
-          702,
-          474
+        "recoveryStarts": [
+          900,
+          205
         ]
       },
-      "routeBehavior": "progressive-architectural-occlusion",
+      "routeBehavior": "progressive-overhead-occlusion",
       "sourceMask": "sources/gantry-shell-mask.png",
+      "supportPlacement": "both supports anchored on raised plinths outside route margins",
       "transparentRgb": [
         0,
         0,
@@ -135,12 +133,12 @@
     ],
     "branching": false,
     "entrance": [
-      990,
-      250
+      1000,
+      210
     ],
     "gantry": [
-      650,
-      500
+      904,
+      204
     ],
     "id": "route.layered-shuttergate"
   },

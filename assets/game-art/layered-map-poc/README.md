@@ -30,13 +30,14 @@ The clean plate retains the same pixels as the foreground shells. With no subjec
 
 1. [`evidence/layered-map-overview.png`](evidence/layered-map-overview.png) — cohesive full-frame map with approved-scale units.
 2. [`evidence/foreground-artifact-isolation.png`](evidence/foreground-artifact-isolation.png) — checkerboard RGBA artifacts, authored alpha, source contours, and exact no-op result.
-3. [`evidence/solid-proxy-traversal.png`](evidence/solid-proxy-traversal.png) — high-contrast alpha-footprint traversal.
-4. [`evidence/calibration-card-traversal.png`](evidence/calibration-card-traversal.png) — banded exact-height/pivot cards exposing cutoff seams independently of silhouette texture.
-5. [`evidence/gantry-boundary-diagnostics.png`](evidence/gantry-boundary-diagnostics.png) — paired before/after native and 4× crops at 2 px onset and reappearance increments with visible-alpha percentages.
-6. [`evidence/no-op-difference-heatmap.png`](evidence/no-op-difference-heatmap.png) — real per-pixel no-entity difference heatmap.
-7. [`evidence/production-sprite-traversal.png`](evidence/production-sprite-traversal.png) — environmentally lit production sprites at the same geometry.
-8. [`metadata/layered-map-contract.json`](metadata/layered-map-contract.json) — per-artifact route states, affected/exempt classes, and layer contract.
-9. [`metadata/manifest.json`](metadata/manifest.json) and [`metadata/provenance.json`](metadata/provenance.json) — immutable file binding and source/tool provenance.
+3. [`evidence/entrance-mask-alignment.png`](evidence/entrance-mask-alignment.png) — native one-pixel entrance contour and registered RGBA shown at 4× nearest-neighbor.
+4. [`evidence/solid-proxy-traversal.png`](evidence/solid-proxy-traversal.png) — high-contrast alpha-footprint traversal.
+5. [`evidence/calibration-card-traversal.png`](evidence/calibration-card-traversal.png) — banded exact-height/pivot cards exposing cutoff seams independently of silhouette texture.
+6. [`evidence/gantry-boundary-diagnostics.png`](evidence/gantry-boundary-diagnostics.png) — paired before/after native and 4× crops at adjacent 4 px x / 1 px y route increments with visible-alpha percentages.
+7. [`evidence/no-op-difference-heatmap.png`](evidence/no-op-difference-heatmap.png) — real per-pixel no-entity difference heatmap.
+8. [`evidence/production-sprite-traversal.png`](evidence/production-sprite-traversal.png) — environmentally lit production sprites at the same geometry.
+9. [`metadata/layered-map-contract.json`](metadata/layered-map-contract.json) — per-artifact route states, affected/exempt classes, and layer contract.
+10. [`metadata/manifest.json`](metadata/manifest.json) and [`metadata/provenance.json`](metadata/provenance.json) — immutable file binding and source/tool provenance.
 
 ## Canonical sources
 

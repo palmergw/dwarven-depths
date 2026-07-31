@@ -7,12 +7,12 @@
     "pillow": "12.3.0"
   },
   "generator": "assets/game-art/layered-map-poc/build_poc.py",
-  "generatorSha256": "8c88d9a02eb948e2f5435caf364faa2870264a2113c0fc8583f60a7aed79a99f",
+  "generatorSha256": "ba5f5a7064c808d40b44237a379031b9588c0eb749ab144800adb80ef1a2a990",
   "inputs": {
     "assets/game-art/layered-map-poc/requirements.lock": "41b54a6fb2918667ca47a61d73b522629d84490f3d78f0f20b21135faba10d35",
-    "assets/game-art/layered-map-poc/sources/entrance-shell-mask.png": "3657c8f191fb7c234658f4c097ea0139a05550b487bd2f29c073cb82da8f8616",
-    "assets/game-art/layered-map-poc/sources/gantry-shell-mask.png": "dee8784dc86548e674154c11f0a510c02b408c5663ff4f5c60345e4d0c854085",
-    "assets/game-art/layered-map-poc/sources/generation-notes.md": "88160d4a5d326d10673df40bc1f71e15453160e7fb284116390f030cfbd9ce93",
+    "assets/game-art/layered-map-poc/sources/entrance-shell-mask.png": "519dc6b76fd97e1b0b8ca8348c266e55a57e94e11fb02e4a6f5011badb58ec27",
+    "assets/game-art/layered-map-poc/sources/gantry-shell-mask.png": "4b72edce44636b079a67b4e205e3b6f998459405308358b40b3e00d26b82eeb2",
+    "assets/game-art/layered-map-poc/sources/generation-notes.md": "e86bc6c92a86cfa24a9cb66754bf716fc68abe646d543a989ac50d30038e272b",
     "assets/game-art/production-scene/exports/diagnostics/raider-calibration-card.png": "67e58a9c4d2d0d04eee1b97507e09d875c0322b1624cd8e2f5ec51386c2818c9",
     "assets/game-art/production-scene/exports/diagnostics/solid-raider-proxy.png": "8020dcd21259ba28fa32ea37537c50240b75aab20eae74bd864a63d8cdb17bcc",
     "assets/game-art/production-scene/exports/diagnostics/solid-warden-proxy.png": "e0c3112b89b02d6a3dce24b97ce81d94adf7cfed3f0f39f4657487a951a298f4",
@@ -21,5 +21,5 @@
     "assets/game-art/production-scene/exports/entities/mine-raider-idle.png": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83"
   },
   "master": "assets/game-art/layered-map-poc/sources/layered-shuttergate-master.png",
-  "masterSha256": "745aceb498392d9afdc758ce9a14c943dabdbb79741bf1aec3729fae4f2597e3"
+  "masterSha256": "5142cad1f8cbdbfb7f57dadabfdaee1d004b66963043e5306bf9fe3dec944c30"
 }
