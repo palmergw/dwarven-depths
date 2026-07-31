@@ -92,11 +92,11 @@
         "extractionCrop": [900, 100, 1065, 240],
         "applicability": "architecture-hidden-segment-only",
         "samples": {
-          "approach": [1052, 170],
-          "lastVisibleLip": [1035, 174],
+          "approach": [1080, 156],
+          "lastVisibleLip": [1072, 160],
           "fullyHidden": [982, 180],
-          "firstVisibleLip": [934, 184],
-          "emerged": [918, 187]
+          "firstVisibleLip": [918, 187],
+          "emerged": [902, 190]
         },
         "traversalOwnerIssue": 273
       },
@@ -128,8 +128,8 @@
         "applicability": "hidden-segment-only-visible-mouth-excluded",
         "samples": {
           "approach": [818, 271],
-          "lastVisibleLip": [822, 281],
-          "partiallyOccluded": [829, 309],
+          "lastVisibleLip": [832, 307],
+          "partiallyOccluded": [839, 323],
           "firstVisibleMouth": [842, 331],
           "mouthCenter": [835, 343],
           "emerged": [820, 358]
@@ -204,9 +204,11 @@
       "environment",
       "rings",
       "entities-by-depthSortY",
+      "portal-occluder-when-active",
       "foreground-occluder",
       "lighting-normal-srgb",
       "combat-effects",
+      "screen-space-focus",
       "hud"
     ]
   },

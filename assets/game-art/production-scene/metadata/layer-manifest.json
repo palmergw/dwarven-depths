@@ -8,9 +8,9 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "02ad05691c131c989ebdd98af182fdd97e06dab8ea46075554c2074fdbbf44ba",
+    "provenance.json": "0772709b3f4ae6c1a409b7d3f216d6b2269fffb07d626fab117a3841e34650f4",
     "reconstruction.json": "97c048a7cad5df9dfec5fcfc99cb9816a13940b03a0e8a2e71291b2923489ad0",
-    "scene-contract.json": "09a8e58687c4673be0bc8694ad56b0921ff7e537e7e838eb369fe4c1c20ecdc4"
+    "scene-contract.json": "9d2f143609d80bc1872b6757d332b738b2f2f85418a1fbe7743063879ce9d40c"
   },
   "files": [
     {
@@ -479,51 +479,61 @@
       "id": "portal-lower-gate-transition",
       "path": "docs/visual-evidence/production-scene/portal-lower-gate-transition.png",
       "category": "evidence",
-      "dimensions": [1440, 810],
+      "dimensions": [874, 396],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "02819ffa370c1a156a768229f206ca36b74335d67aa549645e3e72de5051b129"
+      "sha256": "193d8996439926b2a9846b5c7fbce4e7c06b855710cc5f0c58e76459888a94db"
     },
     {
       "id": "portal-lower-mouth-exclusion",
       "path": "docs/visual-evidence/production-scene/portal-lower-mouth-exclusion.png",
       "category": "evidence",
-      "dimensions": [1000, 620],
+      "dimensions": [1460, 1200],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "877a666f4744fa4919a930afd5f95846db94d01f126c91fa6fba5a693a67591d"
+      "sha256": "43fa9770d03a0b7889418c914580a1888e5a0f6852c740a4fdb9746342c78fcc"
     },
     {
       "id": "portal-mask-isolation",
       "path": "docs/visual-evidence/production-scene/portal-mask-isolation.png",
       "category": "evidence",
-      "dimensions": [1680, 760],
+      "dimensions": [2760, 2150],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "8677daa11a8a00fbc22529a566dba1bab5a8e1f90ef3a41af58a62d8085a2acd"
+      "sha256": "0608d3907e7de773e805b46cb66537f8aab4ef97be79d0d8ed7c821bb78a3519"
     },
     {
       "id": "portal-ring-effect-depth",
       "path": "docs/visual-evidence/production-scene/portal-ring-effect-depth.png",
       "category": "evidence",
-      "dimensions": [1640, 500],
+      "dimensions": [2544, 860],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "aafa61b63443da03d70ca21ee401d5f85e53a7378ee818c4bf9ee23d2fad8472"
+      "sha256": "71ee4c312c0b1ba0e4cf16dbabed6117cee50d2ab85a7436bb6d0b2f4826ddca"
+    },
+    {
+      "id": "portal-upper-boundary-diagnostics",
+      "path": "docs/visual-evidence/production-scene/portal-upper-boundary-diagnostics.png",
+      "category": "evidence",
+      "dimensions": [2544, 860],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "93ba7c38c4859e55ec6c0197b61869e8e002af37c65276ade0db645d8da8790c"
     },
     {
       "id": "portal-upper-gate-transition",
       "path": "docs/visual-evidence/production-scene/portal-upper-gate-transition.png",
       "category": "evidence",
-      "dimensions": [1090, 810],
+      "dimensions": [1149, 366],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "279a51fd60eadc58c048a516b9da22634100cca3c1ca31a4c1a63a208bfe0d10"
+      "sha256": "31413cf72d5faed074445284817ffdfc80e6b158d358d09bf188808439230df2"
     },
     {
       "id": "reconstruction-entities-removed",
