@@ -56,15 +56,16 @@
       "alpha": "straight",
       "behindZone": {
         "firstContact": [
-          984,
-          184
+          849,
+          132
         ],
         "maximumCoverageAt": [
-          904,
-          204
+          825,
+          180
         ],
-        "visibleAlphaAtMaximum": 20
+        "visibleAlphaAtMaximum": 19385
       },
+      "diagnosticPath": "support-free span at adjacent delta [-1,+2]",
       "evidence": [
         "gantry-boundary-diagnostics.png",
         "solid-proxy-traversal.png",
@@ -77,15 +78,15 @@
       ],
       "frontZone": {
         "fullyVisibleFrom": [
-          804,
-          229
+          801,
+          228
         ]
       },
       "id": "gantry-shell",
       "insideZone": {
         "recoveryStarts": [
-          900,
-          205
+          824,
+          182
         ]
       },
       "routeBehavior": "progressive-overhead-occlusion",
@@ -137,8 +138,8 @@
       210
     ],
     "gantry": [
-      904,
-      204
+      825,
+      180
     ],
     "id": "route.layered-shuttergate"
   },

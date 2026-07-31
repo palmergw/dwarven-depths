@@ -1,20 +1,20 @@
 {
   "files": {
-    "evidence/calibration-card-traversal.png": "99cffaacf08ab201c99c1a457e01d2e91d0f2dacee93b162241ae4f3d8673578",
+    "evidence/calibration-card-traversal.png": "094f2325aacfcbd422f0a3eb495801fc97f544e07b9bcb977708c076433ec616",
     "evidence/entrance-mask-alignment.png": "c28196b5ea27d21a4559f59322cb3d2cb0daf72c0edf9ebf1919dd708fba77d2",
     "evidence/foreground-artifact-isolation.png": "31aeb945142f899fdbf13756cf9999d76d24d801af0069fcc57aa397375adb17",
-    "evidence/gantry-boundary-diagnostics.png": "f862d545c3f3708edc00268bf22893d3442cca413010e4cb50fd649a605d3bff",
+    "evidence/gantry-boundary-diagnostics.png": "9245e7ab1a32487843207f6b006687dca0973cde0f0ece01b8c922bacdb15b51",
     "evidence/layered-map-overview.png": "18b334633e45bbf37fb92dbe5683bce04faa050f362a080a73e65a3ed825043f",
     "evidence/no-op-difference-heatmap.png": "b2045b12b59e772519c0025b57840090d2176a6c1297c534280203d151616976",
-    "evidence/production-sprite-traversal.png": "7c441258dbc146704dd70589ba83b1e3b0686179cb403e6e626f5efe4f2e571f",
-    "evidence/solid-proxy-traversal.png": "df588f43a9e0047a18b96bc1657c14a68540c500bb4ddd5f4158a95fbbda4e25",
+    "evidence/production-sprite-traversal.png": "1307fe9ff7a903ddb313adcecde5c92df08b43aed94447fdb40699f35cb30d6b",
+    "evidence/solid-proxy-traversal.png": "cab6ab2a846bad781556d94215a9a7fdc7ddfc150bc855d8d3a0380ca90364c2",
     "exports/environment/layered-shuttergate-clean-plate-1280x720.png": "d8643298c9da12317132d937d7c6d11d9343519a85fc4375961c0fec060fdb69",
     "exports/foreground/entrance-shell-mask.png": "519dc6b76fd97e1b0b8ca8348c266e55a57e94e11fb02e4a6f5011badb58ec27",
     "exports/foreground/entrance-shell.png": "96344c13e1ca9efa2c17f083141eb8cb0b51963a297669e6f5d62a4d36c61b34",
     "exports/foreground/gantry-shell-mask.png": "4b72edce44636b079a67b4e205e3b6f998459405308358b40b3e00d26b82eeb2",
     "exports/foreground/gantry-shell.png": "cc165c99f63cede97a123f2071ca5966738a0ffa3dbd08482890741f0f15933d",
-    "metadata/layered-map-contract.json": "5041e956ce0ccf58c708c08fd7c2339ee353b3ff972b30e31e53d847e54f0fff",
-    "metadata/provenance.json": "1a1e5b4c09021e88a57d985d15a68cc42b1216750ec3d89332aea735cfd03289"
+    "metadata/layered-map-contract.json": "16b9fa3afe482f145c3a8072a0a1c824e98c76145efa27ebc6192f63cfc2bdd2",
+    "metadata/provenance.json": "1a0dbd00252464d30f16c8059ea6eeff24303a8c6d8477ef4a7f536c4483a022"
   },
   "schemaVersion": 1
 }

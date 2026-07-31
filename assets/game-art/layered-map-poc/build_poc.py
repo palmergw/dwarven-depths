@@ -23,7 +23,7 @@ SPRITES={
  'raider':(ENTITY_ROOT/'entities/mine-raider-idle.png',(40,54)),
 }
 ENTRANCE_POINTS=[(1065,150),(1050,165),(1035,185),(1000,210),(950,235),(860,260),(780,290)]
-GANTRY_POINTS=[(1000,180),(960,190),(920,200),(904,204),(880,210),(840,220),(804,229),(760,240)]
+GANTRY_POINTS=[(865,100),(849,132),(840,150),(830,170),(825,180),(820,190),(810,210),(801,228)]
 FONT_PATH=Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
 FONT_HASHES={
  FONT_PATH:'57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e',
@@ -53,11 +53,22 @@ def prepare_plate()->Image.Image:
  return src.resize(FRAME,Image.Resampling.LANCZOS)
 
 def load_mask(path:Path)->Image.Image:
- m=Image.open(path).convert('L')
+ with Image.open(path) as source:
+  if source.format!='PNG':raise ValueError(f'mask must be a PNG: {path}')
+  if source.mode!='L' or 'transparency' in source.info:raise ValueError(f'mask must use mode L without transparency: {path}')
+  m=source.copy()
  if m.size!=FRAME:raise ValueError(f'bad mask dimensions: {path}')
  if m.getbbox() is None:raise ValueError(f'empty mask: {path}')
  if sum(m.histogram()[1:255])!=0:raise ValueError(f'mask must be strictly binary: {path}')
  return m
+
+def assert_mask_mode_tamper_rejected(mask:Image.Image,root:Path)->None:
+ probe=root/'rgba-mask-alpha-tamper.png'
+ rgba=Image.merge('RGBA',(mask,mask,mask,Image.new('L',mask.size,0)))
+ rgba.save(probe,optimize=False,compress_level=9)
+ try:load_mask(probe)
+ except ValueError:pass
+ else:raise AssertionError('RGBA source-mask alpha tamper was not rejected')
 
 def overlay_from(plate:Image.Image,mask:Image.Image)->Image.Image:
  out=Image.new('RGBA',FRAME,(0,0,0,0));out.paste(plate,(0,0),mask);out.putalpha(mask);return out
@@ -154,19 +165,19 @@ def boundary_pair(plate:Image.Image,overlay:Image.Image,subject:Image.Image,pivo
 def make_gantry_boundary_diagnostics(plate:Image.Image,overlay:Image.Image)->Image.Image:
  subject,pivot=sprite('solid-warden')
  groups=[
-  ('FIRST CONTACT',[(1000-4*i,180+i) for i in range(8)]),
-  ('APPROACH MAXIMUM COVERAGE',[(932-4*i,197+i) for i in range(8)]),
-  ('RECOVERY FROM MAXIMUM COVERAGE',[(904-4*i,204+i) for i in range(8)]),
-  ('APPROACH FULL EMERGENCE',[(832-4*i,222+i) for i in range(8)]),
+  ('FIRST CONTACT',[(853-i,124+2*i) for i in range(8)]),
+  ('APPROACH MAXIMUM COVERAGE',[(832-i,166+2*i) for i in range(8)]),
+  ('RECOVERY FROM MAXIMUM COVERAGE',[(825-i,180+2*i) for i in range(8)]),
+  ('APPROACH FULL EMERGENCE',[(808-i,214+2*i) for i in range(8)]),
  ]
- board=Image.new('RGBA',(2100,1130),(8,12,17,255));panel_header(board,(24,14),'GANTRY BOUNDARY DIAGNOSTICS — BEFORE | AFTER','adjacent 4 px x / 1 px y route samples; exact solid-Warden alpha and pivot')
+ board=Image.new('RGBA',(2100,1130),(8,12,17,255));panel_header(board,(24,14),'GANTRY BOUNDARY DIAGNOSTICS — BEFORE | AFTER','adjacent 1 px x / 2 px y route samples through the support-free span; exact solid-Warden alpha and pivot')
  d=ImageDraw.Draw(board)
  for row,(label,samples) in enumerate(groups):
   y=105+row*185;d.text((20,y-30),label,font=font(17,True),fill=(235,196,112,255))
   for i,p in enumerate(samples):
    pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,80,1);x=20+i*255;board.alpha_composite(pair,(x,y))
    pct=100*v/(h+v);d.text((x,y+84),f'{p[0]},{p[1]}  {pct:.1f}% visible',font=font(12),fill=(225,230,234,255));d.text((x,y+101),f'alpha V {v}  H {h}',font=font(10),fill=(176,196,208,255));d.text((x,y+116),'native B | A',font=font(11),fill=(160,180,195,255))
- critical=[('contact',(984,184)),('max cover',(904,204)),('recovery',(900,205)),('visible',(804,229))]
+ critical=[('contact',(849,132)),('max cover',(825,180)),('recovery',(824,182)),('visible',(801,228))]
  y=855;d.text((20,y-35),'4× NEAREST-NEIGHBOR EDGE CHECKS',font=font(17,True),fill=(235,196,112,255))
  for i,(label,p) in enumerate(critical):
   pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,48,4);x=20+i*500;board.alpha_composite(pair,(x,y))
@@ -239,7 +250,9 @@ def build(out_root:Path)->list[Path]:
  exp=out_root/'exports';ev=out_root/'evidence';meta=out_root/'metadata'
  for p in [exp/'environment',exp/'foreground',ev,meta]:p.mkdir(parents=True,exist_ok=True)
  plate=prepare_plate();plate_path=exp/'environment/layered-shuttergate-clean-plate-1280x720.png';plate.save(plate_path,optimize=False,compress_level=9)
- masks={k:load_mask(v) for k,v in MASKS.items()};overlays={k:overlay_from(plate,m) for k,m in masks.items()}
+ masks={k:load_mask(v) for k,v in MASKS.items()}
+ with tempfile.TemporaryDirectory() as td:assert_mask_mode_tamper_rejected(masks['entrance-shell'],Path(td))
+ overlays={k:overlay_from(plate,m) for k,m in masks.items()}
  for key,artifact in overlays.items():
   alpha=artifact.getchannel('A');transparent=ImageOps.invert(alpha)
   if any(ImageChops.multiply(channel,transparent).getbbox() is not None for channel in artifact.convert('RGB').split()):
@@ -270,11 +283,11 @@ def build(out_root:Path)->list[Path]:
  for name,img in artifacts.items():p=ev/name;img.save(p,optimize=False,compress_level=9);files.append(p)
  contract={
   'schemaVersion':2,'authority':'presentation-only-proof-of-concept','frame':[1280,720],
-  'route':{'id':'route.layered-shuttergate','entrance':[1000,210],'gantry':[904,204],'backstop':[230,520],'branching':False,'authoritativeMovement':False},
+  'route':{'id':'route.layered-shuttergate','entrance':[1000,210],'gantry':[825,180],'backstop':[230,520],'branching':False,'authoritativeMovement':False},
   'layerOrder':['environment-base','world-rings-behind-structure','world-effects-behind-structure','world-subjects-behind-structure','structure-foreground-artifact','world-rings-in-front','world-effects-in-front','world-subjects-in-front','screen-focus-indicators','hud'],
   'foregroundArtifacts':[
    {'id':'entrance-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'entrance-aperture','states':['inside','aperture','outside']},'routeBehavior':'fully-visible-aperture','behindZone':'none-for-route-subjects','insideZone':'aperture-subject-remains-visible','frontZone':'open-road','affectedClasses':['off-route-world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/entrance-shell-mask.png','evidence':['solid-proxy-traversal.png','calibration-card-traversal.png','foreground-artifact-isolation.png']},
-   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'gantry-crossing','states':['approach','beneath-overhead-beam','defended-plaza']},'routeBehavior':'progressive-overhead-occlusion','supportPlacement':'both supports anchored on raised plinths outside route margins','behindZone':{'firstContact':[984,184],'maximumCoverageAt':[904,204],'visibleAlphaAtMaximum':20},'insideZone':{'recoveryStarts':[900,205]},'frontZone':{'fullyVisibleFrom':[804,229]},'affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/gantry-shell-mask.png','evidence':['gantry-boundary-diagnostics.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
+   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'activation':{'source':'presentation-route-state','routeSegment':'gantry-crossing','states':['approach','beneath-overhead-beam','defended-plaza']},'routeBehavior':'progressive-overhead-occlusion','supportPlacement':'both supports anchored on raised plinths outside route margins','diagnosticPath':'support-free span at adjacent delta [-1,+2]','behindZone':{'firstContact':[849,132],'maximumCoverageAt':[825,180],'visibleAlphaAtMaximum':19385},'insideZone':{'recoveryStarts':[824,182]},'frontZone':{'fullyVisibleFrom':[801,228]},'affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'sourceMask':'sources/gantry-shell-mask.png','evidence':['gantry-boundary-diagnostics.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
   'subjects':{'warden':{'nominalHeight':56,'pivot':[56,66]},'raider':{'nominalHeight':44,'pivot':[40,54]}},
   'presentationLighting':{'raider':'warm entrance adaptation plus contact shadow and hostile world ring','warden':'bounded brightness/contrast adaptation plus contact shadow and allied world ring','baseSpriteGeometryChanged':False},
   'nonClaims':['runtime integration','simulation authority','HUD approval','final animation']}
