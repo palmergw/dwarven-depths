@@ -17,7 +17,7 @@ const WIDTH = 1280;
 const HEIGHT = 720;
 const PADDING = 96;
 const FIXTURE_ID = "scenarios/conformance/shuttergate-web-truth.json";
-const textureAlphaMetricsCache = new WeakMap<object, TextureAlphaMetrics>();
+const textureAlphaMetricsCache = new Map<string, TextureAlphaMetrics>();
 
 const environmentUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
@@ -71,6 +71,8 @@ interface TextureAlphaMetrics {
   readonly height: number;
   readonly alphaBounds: readonly [number, number, number, number];
   readonly nonzeroAlphaPixels: number;
+  readonly fullAlphaPixels: number;
+  readonly partialAlphaPixels: number;
   readonly alpha: Uint8ClampedArray;
 }
 
@@ -106,6 +108,8 @@ export interface TruthScreenSidecar {
       readonly canvasBounds: readonly [number, number, number, number];
       readonly alphaBounds: readonly [number, number, number, number];
       readonly nonzeroAlphaPixels: number;
+      readonly fullAlphaPixels: number;
+      readonly partialAlphaPixels: number;
       readonly intersectsUnobscuredWorldViewport: boolean;
     }[];
   };
@@ -264,6 +268,8 @@ export function buildTruthScreenSidecar(
         ] as const,
         alphaBounds,
         nonzeroAlphaPixels: source.nonzeroAlphaPixels,
+        fullAlphaPixels: source.fullAlphaPixels,
+        partialAlphaPixels: source.partialAlphaPixels,
         intersectsUnobscuredWorldViewport:
           source.nonzeroAlphaPixels > 0 &&
           alphaBounds[0] < WIDTH &&
@@ -378,6 +384,7 @@ export function buildTruthScreenSidecar(
         entities.every(
           (entity) =>
             entity.nonzeroAlphaPixels > 0 &&
+            entity.fullAlphaPixels * 5 >= entity.nonzeroAlphaPixels * 4 &&
             entity.intersectsUnobscuredWorldViewport
         ) &&
         subjectPixelsBehindArtifact === 0 &&
@@ -393,7 +400,7 @@ function measureTextureAlpha(
   const source = scene.textures.get(textureKey).getSourceImage() as
     | HTMLImageElement
     | HTMLCanvasElement;
-  const cached = textureAlphaMetricsCache.get(source);
+  const cached = textureAlphaMetricsCache.get(textureKey);
   if (cached !== undefined) return cached;
   const canvas = document.createElement("canvas");
   canvas.width = source.width;
@@ -409,12 +416,14 @@ function measureTextureAlpha(
   let maximumX = -1;
   let maximumY = -1;
   let nonzeroAlphaPixels = 0;
+  let fullAlphaPixels = 0;
   for (let y = 0; y < source.height; y += 1) {
     for (let x = 0; x < source.width; x += 1) {
       const value = rgba[(y * source.width + x) * 4 + 3] ?? 0;
       alpha[y * source.width + x] = value;
       if (value === 0) continue;
       nonzeroAlphaPixels += 1;
+      if (value === 255) fullAlphaPixels += 1;
       minimumX = Math.min(minimumX, x);
       minimumY = Math.min(minimumY, y);
       maximumX = Math.max(maximumX, x);
@@ -434,9 +443,11 @@ function measureTextureAlpha(
             maximumY - minimumY + 1
           ],
     nonzeroAlphaPixels,
+    fullAlphaPixels,
+    partialAlphaPixels: nonzeroAlphaPixels - fullAlphaPixels,
     alpha
   };
-  textureAlphaMetricsCache.set(source, metrics);
+  textureAlphaMetricsCache.set(textureKey, metrics);
   return metrics;
 }
 
@@ -459,8 +470,12 @@ function normalizeAlphaTexture(
   context.clearRect(0, 0, source.width, source.height);
   context.drawImage(source, 0, 0);
   const pixels = context.getImageData(0, 0, source.width, source.height);
-  for (let index = 3; index < pixels.data.length; index += 4)
-    pixels.data[index] = Math.min(255, (pixels.data[index] ?? 0) * 4);
+  for (let index = 3; index < pixels.data.length; index += 4) {
+    const alpha = pixels.data[index] ?? 0;
+    // Keep the original antialiased support, but make every interior pixel
+    // fully opaque so backlighting cannot wash a combatant out.
+    pixels.data[index] = alpha >= 16 ? 255 : alpha;
+  }
   context.putImageData(pixels, 0, 0);
   texture.refresh();
   return outputKey;
@@ -476,7 +491,19 @@ function drawBattlefield(
   scene.children.removeAll();
   scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base");
 
-  const primitives = buildBattlefieldPrimitives(snapshot);
+  const basePrimitives = buildBattlefieldPrimitives(snapshot);
+  const depthProbe =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("depthProbe") ===
+      "entrance";
+  const primitives = depthProbe
+    ? {
+        ...basePrimitives,
+        entities: basePrimitives.entities.map((entity) =>
+          entity.faction === "enemy" ? { ...entity, x: 1060, y: 200 } : entity
+        )
+      }
+    : basePrimitives;
   const world = scene.add.graphics();
   for (const entity of primitives.entities) {
     if (entity.faction === "dwarf") {
@@ -558,8 +585,8 @@ function drawBattlefield(
       snapshot,
       primitives,
       {
-        dwarf: measureTextureAlpha(scene, "warden-source"),
-        enemy: measureTextureAlpha(scene, "raider-source"),
+        dwarf: measureTextureAlpha(scene, wardenTexture),
+        enemy: measureTextureAlpha(scene, raiderTexture),
         foreground: measureTextureAlpha(scene, "entrance-shell")
       }
     );

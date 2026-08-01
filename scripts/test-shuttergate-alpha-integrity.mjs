@@ -1,5 +1,5 @@
 import { execFile as execFileCallback, spawn } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,11 +11,40 @@ const temporaryDirectory = await mkdtemp(
   resolve(tmpdir(), "shuttergate-alpha-integrity-")
 );
 const transparentWarden = resolve(temporaryDirectory, "transparent-warden.png");
+const transparentEnemy = resolve(temporaryDirectory, "transparent-enemy.png");
+const outputDirectory = resolve(temporaryDirectory, "capture");
 const port = 4187;
 const baseUrl = `http://127.0.0.1:${port}`;
 let server;
 
+async function requireRejectedMutation(name, environment) {
+  let rejected = false;
+  let diagnostics = "";
+  try {
+    await execFile("node", ["scripts/capture-shuttergate-truth.mjs"], {
+      cwd: root,
+      env: {
+        ...process.env,
+        DD_WEB_URL: baseUrl,
+        DD_TRUTH_OUTPUT_DIRECTORY: outputDirectory,
+        ...environment
+      },
+      maxBuffer: 4 * 1024 * 1024
+    });
+  } catch (error) {
+    diagnostics = `${error.stdout ?? ""}\n${error.stderr ?? ""}`;
+    rejected =
+      error.code !== 0 &&
+      diagnostics.includes('"nonzeroAlphaPixels":0') &&
+      diagnostics.includes('"valid":false');
+  }
+  if (!rejected)
+    throw new Error(`${name} mutation was not rejected\n${diagnostics}`);
+  return { mutation: name, rejected: true };
+}
+
 try {
+  await mkdir(outputDirectory, { recursive: true });
   await execFile(
     "uv",
     [
@@ -24,7 +53,7 @@ try {
       "assets/game-art/layered-map-poc/requirements.lock",
       "python3",
       "-c",
-      `from PIL import Image; Image.new("RGBA", (112, 72), (0, 0, 0, 0)).save(${JSON.stringify(transparentWarden)})`
+      `from PIL import Image; Image.new("RGBA", (112, 72), (0, 0, 0, 0)).save(${JSON.stringify(transparentWarden)}); Image.new("RGBA", (80, 60), (0, 0, 0, 0)).save(${JSON.stringify(transparentEnemy)})`
     ],
     { cwd: root }
   );
@@ -55,33 +84,15 @@ try {
   }
   if (!ready) throw new Error("temporary Vite server did not become ready");
 
-  let rejected = false;
-  let diagnostics = "";
-  try {
-    await execFile("node", ["scripts/capture-shuttergate-truth.mjs"], {
-      cwd: root,
-      env: {
-        ...process.env,
-        DD_WEB_URL: baseUrl,
-        DD_TRUTH_WARDEN_ASSET: transparentWarden,
-        DD_TRUTH_OUTPUT_DIRECTORY: temporaryDirectory
-      },
-      maxBuffer: 4 * 1024 * 1024
-    });
-  } catch (error) {
-    diagnostics = `${error.stdout ?? ""}\n${error.stderr ?? ""}`;
-    rejected =
-      error.code !== 0 &&
-      diagnostics.includes('"nonzeroAlphaPixels":0') &&
-      diagnostics.includes('"valid":false');
-  }
-  if (!rejected)
-    throw new Error(
-      `transparent Warden mutation was not rejected\n${diagnostics}`
-    );
-  process.stdout.write(
-    `${JSON.stringify({ ok: true, mutation: "transparent-warden", rejected: true })}\n`
-  );
+  const mutations = [
+    await requireRejectedMutation("transparent-warden", {
+      DD_TRUTH_WARDEN_ASSET: transparentWarden
+    }),
+    await requireRejectedMutation("transparent-enemy", {
+      DD_TRUTH_ENEMY_ASSET: transparentEnemy
+    })
+  ];
+  process.stdout.write(`${JSON.stringify({ ok: true, mutations })}\n`);
 } finally {
   if (server !== undefined) {
     const exited = new Promise((resolveExit) => {

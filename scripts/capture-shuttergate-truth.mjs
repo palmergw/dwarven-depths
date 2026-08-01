@@ -61,10 +61,12 @@ const visualAssetPaths = {
         "../assets/game-art/production-scene/exports/entities/iron-warden-idle.png",
         import.meta.url
       ),
-  enemy: new URL(
-    "../assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
-    import.meta.url
-  ),
+  enemy: process.env.DD_TRUTH_ENEMY_ASSET
+    ? pathToFileURL(process.env.DD_TRUTH_ENEMY_ASSET)
+    : new URL(
+        "../assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
+        import.meta.url
+      ),
   foreground: new URL(
     "../assets/game-art/layered-map-poc/blender/outputs/entrance-shell.png",
     import.meta.url
@@ -132,7 +134,7 @@ try {
   }));
   const observedVisuals = await page.evaluate(
     async ({ assets, registry }) => {
-      const decode = async (pngBase64) => {
+      const decode = async (pngBase64, normalizePresentationAlpha = false) => {
         const response = await fetch(`data:image/png;base64,${pngBase64}`);
         const bitmap = await createImageBitmap(await response.blob());
         const canvas = document.createElement("canvas");
@@ -141,21 +143,31 @@ try {
         const context = canvas.getContext("2d", { willReadFrequently: true });
         if (context === null) throw new Error("2D audit context unavailable");
         context.drawImage(bitmap, 0, 0);
-        const rgba = context.getImageData(
+        const imageData = context.getImageData(
           0,
           0,
           bitmap.width,
           bitmap.height
-        ).data;
+        );
+        const rgba = imageData.data;
+        if (normalizePresentationAlpha) {
+          for (let index = 3; index < rgba.length; index += 4) {
+            const alpha = rgba[index] ?? 0;
+            rgba[index] = alpha >= 16 ? 255 : alpha;
+          }
+        }
         let minimumX = bitmap.width;
         let minimumY = bitmap.height;
         let maximumX = -1;
         let maximumY = -1;
         let nonzeroAlphaPixels = 0;
+        let fullAlphaPixels = 0;
         for (let y = 0; y < bitmap.height; y += 1) {
           for (let x = 0; x < bitmap.width; x += 1) {
-            if ((rgba[(y * bitmap.width + x) * 4 + 3] ?? 0) === 0) continue;
+            const alpha = rgba[(y * bitmap.width + x) * 4 + 3] ?? 0;
+            if (alpha === 0) continue;
             nonzeroAlphaPixels += 1;
+            if (alpha === 255) fullAlphaPixels += 1;
             minimumX = Math.min(minimumX, x);
             minimumY = Math.min(minimumY, y);
             maximumX = Math.max(maximumX, x);
@@ -175,12 +187,14 @@ try {
                   maximumY - minimumY + 1
                 ],
           nonzeroAlphaPixels,
+          fullAlphaPixels,
+          partialAlphaPixels: nonzeroAlphaPixels - fullAlphaPixels,
           rgba
         };
       };
       const decoded = {
-        dwarf: await decode(assets.dwarf.pngBase64),
-        enemy: await decode(assets.enemy.pngBase64),
+        dwarf: await decode(assets.dwarf.pngBase64, true),
+        enemy: await decode(assets.enemy.pngBase64, true),
         foreground: await decode(assets.foreground.pngBase64)
       };
       const entities = registry.entities.map((entity) => {
@@ -228,6 +242,8 @@ try {
           source.height === canvasHeight &&
           JSON.stringify(alphaBounds) === JSON.stringify(entity.alphaBounds) &&
           source.nonzeroAlphaPixels === entity.nonzeroAlphaPixels &&
+          source.fullAlphaPixels === entity.fullAlphaPixels &&
+          source.partialAlphaPixels === entity.partialAlphaPixels &&
           intersectsWorldViewport === entity.intersectsUnobscuredWorldViewport;
         return {
           id: entity.id,
@@ -236,6 +252,12 @@ try {
           sourceAlphaBounds: source.alphaBounds,
           worldAlphaBounds: alphaBounds,
           nonzeroAlphaPixels: source.nonzeroAlphaPixels,
+          fullAlphaPixels: source.fullAlphaPixels,
+          partialAlphaPixels: source.partialAlphaPixels,
+          fullAlphaRatio:
+            source.nonzeroAlphaPixels === 0
+              ? 0
+              : source.fullAlphaPixels / source.nonzeroAlphaPixels,
           intersectsWorldViewport,
           subjectPixelsBehindArtifact,
           matchesRuntimeRegistry
@@ -291,13 +313,17 @@ try {
             width: decoded.dwarf.width,
             height: decoded.dwarf.height,
             alphaBounds: decoded.dwarf.alphaBounds,
-            nonzeroAlphaPixels: decoded.dwarf.nonzeroAlphaPixels
+            nonzeroAlphaPixels: decoded.dwarf.nonzeroAlphaPixels,
+            fullAlphaPixels: decoded.dwarf.fullAlphaPixels,
+            partialAlphaPixels: decoded.dwarf.partialAlphaPixels
           },
           enemy: {
             width: decoded.enemy.width,
             height: decoded.enemy.height,
             alphaBounds: decoded.enemy.alphaBounds,
-            nonzeroAlphaPixels: decoded.enemy.nonzeroAlphaPixels
+            nonzeroAlphaPixels: decoded.enemy.nonzeroAlphaPixels,
+            fullAlphaPixels: decoded.enemy.fullAlphaPixels,
+            partialAlphaPixels: decoded.enemy.partialAlphaPixels
           },
           foreground: {
             width: decoded.foreground.width,
@@ -321,7 +347,8 @@ try {
             (entity) =>
               entity.nonzeroAlphaPixels > 0 &&
               entity.intersectsWorldViewport &&
-              entity.matchesRuntimeRegistry
+              entity.matchesRuntimeRegistry &&
+              entity.fullAlphaRatio >= 0.8
           ) &&
           occlusionMatchesRuntime &&
           hostile?.subjectPixelsBehindArtifact === 0 &&
