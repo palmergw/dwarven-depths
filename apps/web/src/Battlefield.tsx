@@ -13,9 +13,40 @@ import {
   type RenderSnapshot
 } from "./render-snapshot.js";
 
-const WIDTH = 640;
-const HEIGHT = 360;
-const PADDING = 64;
+const WIDTH = 1280;
+const HEIGHT = 720;
+const PADDING = 96;
+const FIXTURE_ID = "scenarios/conformance/shuttergate-web-truth.json";
+
+const environmentUrl = new URL(
+  "../../../assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
+  import.meta.url
+).href;
+const entranceShellUrl = new URL(
+  "../../../assets/game-art/layered-map-poc/blender/outputs/entrance-shell.png",
+  import.meta.url
+).href;
+const wardenUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/entities/iron-warden-idle.png",
+  import.meta.url
+).href;
+const raiderUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
+  import.meta.url
+).href;
+
+const SHUTTERGATE_NODE_POSITIONS: Readonly<
+  Record<string, { readonly x: number; readonly y: number }>
+> = {
+  "node.shuttergate_west_entry": { x: 1054, y: 302 },
+  "node.shuttergate_west_hall": { x: 838, y: 330 },
+  "node.shuttergate_east_entry": { x: 1054, y: 302 },
+  "node.shuttergate_east_hall": { x: 838, y: 330 },
+  "node.shuttergate_gate": { x: 1060, y: 200 },
+  "node.shuttergate_north_guard": { x: 605, y: 320 },
+  "node.shuttergate_keep": { x: 432, y: 402 },
+  "node.shuttergate_keep_guard": { x: 364, y: 476 }
+};
 
 export interface RenderPrimitive {
   readonly id: string;
@@ -32,6 +63,61 @@ export interface BattlefieldPrimitives {
     readonly fromId: string;
     readonly toId: string;
   }[];
+}
+
+export interface TruthScreenSidecar {
+  readonly schemaVersion: 1;
+  readonly captureReady: boolean;
+  readonly fixtureId: string;
+  readonly viewport: readonly [1440, 900];
+  readonly frame: readonly [1280, 720];
+  readonly snapshot: {
+    readonly levelId: string;
+    readonly mapId: string | null;
+    readonly tick: number;
+    readonly phase: RenderSnapshot["phase"];
+  };
+  readonly registry: {
+    readonly dwarfCount: number;
+    readonly hostileCount: number;
+    readonly totalCount: number;
+    readonly entities: readonly {
+      readonly id: string;
+      readonly faction: RenderEntity["faction"];
+      readonly nodeId: string;
+      readonly x: number;
+      readonly y: number;
+      readonly nominalHeight: number;
+    }[];
+  };
+  readonly occlusion: {
+    readonly artifactId: "entrance-shell";
+    readonly layerOrder: readonly string[];
+    readonly clips: readonly ["world-ring", "world-effect", "world-subject"];
+    readonly exempts: readonly ["screen-focus-indicator", "hud"];
+  };
+  readonly alignment: {
+    readonly snapshotCount: number;
+    readonly registryCount: number;
+    readonly exactlyOneWardenAndOneHostile: boolean;
+    readonly valid: boolean;
+  };
+}
+
+declare global {
+  interface Window {
+    __DWARVEN_DEPTHS_TRUTH_SCREEN__?: TruthScreenSidecar;
+  }
+}
+
+function authoredPosition(
+  snapshot: RenderSnapshot,
+  id: string,
+  fallback: { readonly x: number; readonly y: number }
+): { readonly x: number; readonly y: number } {
+  return snapshot.mapId === "map.shuttergate_hall"
+    ? (SHUTTERGATE_NODE_POSITIONS[id] ?? fallback)
+    : fallback;
 }
 
 export function buildBattlefieldPrimitives(
@@ -52,7 +138,7 @@ export function buildBattlefieldPrimitives(
   });
   const nodes = orderedNodes.map((node) => ({
     id: node.id,
-    ...project(node.x, node.y)
+    ...authoredPosition(snapshot, node.id, project(node.x, node.y))
   }));
   const positions = new Map(nodes.map((node) => [node.id, node]));
   const orderedEntities = [...snapshot.entities].sort((left, right) =>
@@ -107,46 +193,100 @@ export function buildDepartureFeedbackPrimitives(
   );
 }
 
-function drawEntity(
-  graphics: Phaser.GameObjects.Graphics,
-  entity: RenderPrimitive & { readonly faction: RenderEntity["faction"] }
-): void {
-  const colors = { dwarf: 0xe6b85c, enemy: 0xd85b50, deployable: 0x67b6d4 };
-  graphics.fillStyle(colors[entity.faction], 1);
-  if (entity.faction === "dwarf") {
-    graphics.fillPoints(
-      [
-        new Phaser.Math.Vector2(entity.x - 14, entity.y - 12),
-        new Phaser.Math.Vector2(entity.x + 14, entity.y - 12),
-        new Phaser.Math.Vector2(entity.x + 11, entity.y + 7),
-        new Phaser.Math.Vector2(entity.x, entity.y + 17),
-        new Phaser.Math.Vector2(entity.x - 11, entity.y + 7)
+export function buildTruthScreenSidecar(
+  snapshot: RenderSnapshot,
+  primitives: BattlefieldPrimitives
+): TruthScreenSidecar {
+  const byId = new Map(snapshot.entities.map((entity) => [entity.id, entity]));
+  const entities = primitives.entities.flatMap((primitive) => {
+    const entity = byId.get(primitive.id);
+    if (entity === undefined) return [];
+    return [
+      {
+        id: entity.id,
+        faction: entity.faction,
+        nodeId: entity.nodeId,
+        x: Math.round(primitive.x),
+        y: Math.round(primitive.y),
+        nominalHeight:
+          entity.faction === "dwarf" ? 56 : entity.faction === "enemy" ? 44 : 0
+      }
+    ];
+  });
+  const dwarfCount = entities.filter(
+    ({ faction }) => faction === "dwarf"
+  ).length;
+  const hostileCount = entities.filter(
+    ({ faction }) => faction === "enemy"
+  ).length;
+  const exactlyOneWardenAndOneHostile = dwarfCount === 1 && hostileCount === 1;
+  return {
+    schemaVersion: 1,
+    captureReady: true,
+    fixtureId: FIXTURE_ID,
+    viewport: [1440, 900],
+    frame: [WIDTH, HEIGHT],
+    snapshot: {
+      levelId: snapshot.levelId,
+      mapId: snapshot.mapId,
+      tick: snapshot.tick,
+      phase: snapshot.phase
+    },
+    registry: {
+      dwarfCount,
+      hostileCount,
+      totalCount: entities.length,
+      entities
+    },
+    occlusion: {
+      artifactId: "entrance-shell",
+      layerOrder: [
+        "environment-base",
+        "world-rings",
+        "world-effects",
+        "world-subjects",
+        "entrance-shell",
+        "screen-focus-indicators",
+        "hud"
       ],
-      true
-    );
-    graphics.fillStyle(0x17130f, 1);
-    graphics.fillRect(entity.x - 2, entity.y - 8, 4, 17);
-    graphics.fillRect(entity.x - 7, entity.y - 3, 14, 4);
-  } else if (entity.faction === "enemy") {
-    graphics.fillPoints(
-      [
-        new Phaser.Math.Vector2(entity.x, entity.y - 17),
-        new Phaser.Math.Vector2(entity.x + 16, entity.y),
-        new Phaser.Math.Vector2(entity.x, entity.y + 17),
-        new Phaser.Math.Vector2(entity.x - 16, entity.y)
-      ],
-      true
-    );
-    graphics.fillStyle(0x17130f, 1);
-    graphics.fillRect(entity.x - 8, entity.y - 3, 5, 5);
-    graphics.fillRect(entity.x + 3, entity.y - 3, 5, 5);
-  } else {
-    graphics.fillRect(entity.x - 14, entity.y - 14, 28, 28);
-    graphics.fillStyle(0x17130f, 1);
-    graphics.fillRect(entity.x - 8, entity.y - 8, 16, 16);
-    graphics.fillStyle(colors.deployable, 1);
-    graphics.fillRect(entity.x - 3, entity.y - 3, 6, 6);
-  }
+      clips: ["world-ring", "world-effect", "world-subject"],
+      exempts: ["screen-focus-indicator", "hud"]
+    },
+    alignment: {
+      snapshotCount: snapshot.entities.length,
+      registryCount: entities.length,
+      exactlyOneWardenAndOneHostile,
+      valid:
+        snapshot.entities.length === entities.length &&
+        exactlyOneWardenAndOneHostile
+    }
+  };
+}
+
+function normalizeAlphaTexture(
+  scene: Phaser.Scene,
+  sourceKey: string,
+  outputKey: string
+): string {
+  if (scene.textures.exists(outputKey)) return outputKey;
+  const source = scene.textures.get(sourceKey).getSourceImage() as
+    | HTMLImageElement
+    | HTMLCanvasElement;
+  const texture = scene.textures.createCanvas(
+    outputKey,
+    source.width,
+    source.height
+  );
+  if (texture === null) return sourceKey;
+  const context = texture.context;
+  context.clearRect(0, 0, source.width, source.height);
+  context.drawImage(source, 0, 0);
+  const pixels = context.getImageData(0, 0, source.width, source.height);
+  for (let index = 3; index < pixels.data.length; index += 4)
+    pixels.data[index] = Math.min(255, (pixels.data[index] ?? 0) * 4);
+  context.putImageData(pixels, 0, 0);
+  texture.refresh();
+  return outputKey;
 }
 
 function drawBattlefield(
@@ -154,88 +294,93 @@ function drawBattlefield(
   snapshot: RenderSnapshot,
   feedback: CombatFeedback | undefined,
   reduceMotion: boolean,
-  previousSnapshot: RenderSnapshot | undefined
+  _previousSnapshot: RenderSnapshot | undefined
 ): void {
   scene.children.removeAll();
-  const graphics = scene.add.graphics();
-  graphics.fillStyle(0x17130f, 1);
-  graphics.fillRect(0, 0, WIDTH, HEIGHT);
-  graphics.lineStyle(3, 0x80683f, 1);
-  graphics.strokeRoundedRect(16, 16, WIDTH - 32, HEIGHT - 32, 12);
+  scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base");
 
   const primitives = buildBattlefieldPrimitives(snapshot);
-  const nodes = new Map(primitives.nodes.map((node) => [node.id, node]));
-  graphics.lineStyle(7, 0x3e3327, 1);
-  for (const connection of primitives.connections) {
-    const from = nodes.get(connection.fromId);
-    const to = nodes.get(connection.toId);
-    if (from !== undefined && to !== undefined)
-      graphics.lineBetween(from.x, from.y, to.x, to.y);
-  }
-  graphics.lineStyle(3, 0xb18a4f, 1);
-  for (const connection of primitives.connections) {
-    const from = nodes.get(connection.fromId);
-    const to = nodes.get(connection.toId);
-    if (from !== undefined && to !== undefined)
-      graphics.lineBetween(from.x, from.y, to.x, to.y);
-  }
-  graphics.fillStyle(0xd6c8a8, 1);
-  for (const node of primitives.nodes)
-    graphics.fillRect(node.x - 6, node.y - 6, 12, 12);
-
+  const world = scene.add.graphics();
   for (const entity of primitives.entities) {
-    if (entity.faction === undefined) continue;
-    drawEntity(graphics, { ...entity, faction: entity.faction });
-  }
-
-  if (feedback !== undefined) {
-    const transient = scene.add.graphics();
-    transient.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 1);
-    const changedIds = new Set([
-      ...feedback.arrivals.map((entity) => entity.id),
-      ...feedback.departures.map((entity) => entity.id)
-    ]);
-    for (const entity of primitives.entities)
-      if (changedIds.has(entity.id))
-        transient.strokeRect(entity.x - 21, entity.y - 21, 42, 42);
-    if (previousSnapshot !== undefined)
-      for (const entity of buildDepartureFeedbackPrimitives(
-        previousSnapshot,
-        feedback
-      ))
-        transient.strokeRect(entity.x - 19, entity.y - 19, 38, 38);
-    if (feedback.terminal)
-      transient.strokeRect(22, 22, WIDTH - 44, HEIGHT - 44);
-    if (!reduceMotion)
-      scene.tweens.add({
-        targets: transient,
-        alpha: 0.2,
-        duration: 450,
-        yoyo: true,
-        repeat: 1
-      });
-  }
-
-  if (primitives.nodes.length === 0) {
-    scene.add
-      .text(WIDTH / 2, HEIGHT / 2, "Empty level — no combatants deployed", {
-        align: "center",
-        color: "#d8cdb9",
-        fontFamily: "sans-serif",
-        fontSize: "20px"
-      })
-      .setOrigin(0.5);
-  }
-  scene.add.text(
-    32,
-    28,
-    `${snapshot.levelId} · ${snapshot.phase} · tick ${snapshot.tick}`,
-    {
-      color: "#f4ead5",
-      fontFamily: "monospace",
-      fontSize: "14px"
+    if (entity.faction === "dwarf") {
+      world.fillStyle(0x65b9df, 0.32);
+      world.fillEllipse(entity.x, entity.y - 2, 72, 26);
+      world.lineStyle(3, 0xaee9ff, 0.9);
+      world.strokeEllipse(entity.x, entity.y - 2, 72, 26);
+    } else if (entity.faction === "enemy") {
+      world.fillStyle(0xa92720, 0.3);
+      world.fillEllipse(entity.x, entity.y - 1, 58, 20);
+      world.lineStyle(3, 0xff725f, 0.95);
+      world.strokeEllipse(entity.x, entity.y - 1, 58, 20);
     }
+  }
+
+  const wardenTexture = normalizeAlphaTexture(
+    scene,
+    "warden-source",
+    "warden-runtime"
   );
+  const raiderTexture = normalizeAlphaTexture(
+    scene,
+    "raider-source",
+    "raider-runtime"
+  );
+  for (const entity of [...primitives.entities].sort(
+    (left, right) => left.y - right.y
+  )) {
+    if (entity.faction === "dwarf")
+      scene.add
+        .image(entity.x, entity.y, wardenTexture)
+        .setOrigin(56 / 112, 66 / 72);
+    else if (entity.faction === "enemy")
+      scene.add
+        .image(entity.x, entity.y, raiderTexture)
+        .setOrigin(40 / 80, 54 / 60);
+  }
+
+  if (feedback !== undefined && !reduceMotion) {
+    const transient = scene.add.graphics();
+    transient.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
+    for (const entity of primitives.entities)
+      if (
+        feedback.arrivals.some(({ id }) => id === entity.id) ||
+        feedback.departures.some(({ id }) => id === entity.id)
+      )
+        transient.strokeEllipse(entity.x, entity.y - 12, 88, 50);
+    scene.tweens.add({
+      targets: transient,
+      alpha: 0.15,
+      duration: 420,
+      yoyo: true,
+      repeat: 1
+    });
+  }
+
+  // Renderer-native shared-camera architecture is deliberately composited
+  // after subjects/rings so the entrance clips all world-space presentation.
+  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell");
+
+  // This screen-space focus indicator is intentionally exempt from occlusion.
+  const selectedWarden = primitives.entities.find(
+    ({ faction }) => faction === "dwarf"
+  );
+  if (selectedWarden !== undefined) {
+    const focus = scene.add.graphics();
+    focus.lineStyle(2, 0xf3d78f, 0.9);
+    focus.strokeRoundedRect(
+      selectedWarden.x - 40,
+      selectedWarden.y - 72,
+      80,
+      78,
+      10
+    );
+  }
+
+  if (typeof window !== "undefined")
+    window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ = buildTruthScreenSidecar(
+      snapshot,
+      primitives
+    );
 }
 
 interface BattlefieldRenderer {
@@ -264,12 +409,18 @@ function createBattlefieldRenderer(
     width: WIDTH,
     height: HEIGHT,
     parent,
-    backgroundColor: "#17130f",
+    backgroundColor: "#080604",
     banner: false,
     audio: { noAudio: true },
-    render: { antialias: false, pixelArt: true },
+    render: { antialias: true, pixelArt: false },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: {
+      preload(this: Phaser.Scene) {
+        this.load.image("environment-base", environmentUrl);
+        this.load.image("entrance-shell", entranceShellUrl);
+        this.load.image("warden-source", wardenUrl);
+        this.load.image("raider-source", raiderUrl);
+      },
       create(this: Phaser.Scene) {
         scene = this;
         drawBattlefield(
@@ -301,6 +452,8 @@ function createBattlefieldRenderer(
       scene = undefined;
       game.destroy(true);
       parent.replaceChildren();
+      if (typeof window !== "undefined")
+        delete window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
     }
   };
 }
@@ -379,11 +532,15 @@ export function Battlefield({
   }, [reduceMotion, snapshot]);
 
   return (
-    <figure className="battlefield">
+    <figure
+      className="battlefield"
+      data-fixture-id={FIXTURE_ID}
+      data-simulation-tick={snapshot.tick}
+      data-entity-count={snapshot.entities.length}
+    >
       <div ref={parentRef} className="battlefield-canvas" aria-hidden="true" />
-      <figcaption aria-live="off">
-        Battlefield {snapshot.levelId}: {snapshot.phase} at tick {snapshot.tick}
-        ; {snapshot.entities.length}{" "}
+      <figcaption className="visually-hidden" aria-live="off">
+        Shuttergate battlefield, {snapshot.phase}; {snapshot.entities.length}{" "}
         {snapshot.entities.length === 1 ? "entity" : "entities"}.
         {feedback !== undefined && (
           <span

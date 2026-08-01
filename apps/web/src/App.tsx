@@ -981,11 +981,12 @@ export function App({
       data-motion-preference={motionPreference}
       data-sound-preference={soundPreference}
       data-text-scale={textScale}
+      data-view-phase={view.phase}
     >
       <p className="eyebrow">Authoritative checkpoint</p>
       <h1 id="app-heading">Dwarven Depths</h1>
       <section className="panel" aria-labelledby="run-heading">
-        <h2 id="run-heading">Empty Level Conformance Run</h2>
+        <h2 id="run-heading">Shuttergate Tutorial Run</h2>
         <RunJourneyGuide phase={view.phase} />
         {view.phase === "checkpoint" &&
           !settingsOpen &&
@@ -997,7 +998,7 @@ export function App({
               >
                 <div>
                   <dt>Current level</dt>
-                  <dd>Empty Level</dd>
+                  <dd>The Shuttergate</dd>
                 </div>
                 <div>
                   <dt>Next step</dt>
@@ -1038,7 +1039,46 @@ export function App({
               </section>
             </>
           )}
-        {renderSnapshot !== undefined && (
+        {renderSnapshot !== undefined && view.phase === "running" && (
+          <section
+            className="active-combat-screen"
+            aria-label="Shuttergate active combat"
+          >
+            <Battlefield
+              snapshot={renderSnapshot}
+              reduceMotion={
+                motionPreference === "reduce" ||
+                (motionPreference === "device" && deviceReducedMotion)
+              }
+              soundEnabled={soundPreference === "on"}
+            />
+            <div className="combat-top-overlay">
+              <CombatHud
+                snapshot={renderSnapshot}
+                manualPaused={view.manualPaused}
+              />
+              <button
+                className="combat-pause"
+                type="button"
+                aria-pressed={view.manualPaused}
+                onClick={() => setManualPause(!view.manualPaused)}
+              >
+                {view.manualPaused ? "Resume combat" : "Pause combat"}
+              </button>
+            </div>
+            {combatControls !== undefined && (
+              <div className="combat-bottom-overlay">
+                <CombatControls
+                  dwarves={combatControls.dwarves}
+                  pendingAbilityKeys={pendingAbilityKeys}
+                  onSetTargetPolicy={setTargetPolicy}
+                  onActivateAbility={activateAbility}
+                />
+              </div>
+            )}
+          </section>
+        )}
+        {renderSnapshot !== undefined && view.phase !== "running" && (
           <Battlefield
             snapshot={renderSnapshot}
             reduceMotion={
@@ -1049,18 +1089,9 @@ export function App({
           />
         )}
         {renderSnapshot !== undefined &&
-          (renderSnapshot.phase === "running" ||
-            renderSnapshot.phase === "terminal") && (
+          renderSnapshot.phase === "terminal" && (
             <CombatHud snapshot={renderSnapshot} />
           )}
-        {view.phase === "running" && combatControls !== undefined && (
-          <CombatControls
-            dwarves={combatControls.dwarves}
-            pendingAbilityKeys={pendingAbilityKeys}
-            onSetTargetPolicy={setTargetPolicy}
-            onActivateAbility={activateAbility}
-          />
-        )}
         {view.phase === "preparation" && (
           <dl className="preparation-summary" aria-label="Preparation summary">
             <div>
@@ -1072,7 +1103,9 @@ export function App({
               <dd>
                 {view.deployableEntityCount === 0
                   ? "Empty — no dwarves require placement"
-                  : `${view.deployableEntityCount} dwarves`}
+                  : view.deployableEntityCount === 1
+                    ? "1 dwarf"
+                    : `${view.deployableEntityCount} dwarves`}
               </dd>
             </div>
             <div>
@@ -1602,7 +1635,7 @@ export function App({
             Confirm preparation
           </button>
         )}
-        {view.phase === "running" && (
+        {view.phase === "running" && renderSnapshot === undefined && (
           <button
             type="button"
             aria-pressed={view.manualPaused}

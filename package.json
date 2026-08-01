@@ -23,6 +23,7 @@
     "build:desktop:docker": "./scripts/build-desktop-docker.sh",
     "build:mobile:docker": "./scripts/build-mobile-docker.sh",
     "test:web-offline": "node scripts/test-web-offline.mjs",
+    "capture:shuttergate-truth": "node scripts/capture-shuttergate-truth.mjs",
     "sim": "pnpm build && node apps/sim-cli/dist/cli.js",
     "sim:built": "node apps/sim-cli/dist/cli.js",
     "validate": "pnpm sim validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",

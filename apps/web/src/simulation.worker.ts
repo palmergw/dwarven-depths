@@ -16,7 +16,7 @@ import {
 import emptyContentFixture from "../../../content/fixtures/empty-content.json";
 import shieldSlamContentFixture from "../../../content/fixtures/phase-3-shuttergate.json";
 import emptyScenarioFixture from "../../../scenarios/conformance/empty-level.json";
-import shieldSlamScenarioFixture from "../../../scenarios/conformance/shield-slam.json";
+import shieldSlamScenarioFixture from "../../../scenarios/conformance/shuttergate-web-truth.json";
 import {
   type CombatControlDwarf,
   EMPTY_CONTENT_MANIFEST_HASH,
@@ -358,7 +358,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         phase: "preparation",
         levelId: preparationSnapshot.levelId,
         deployableEntityCount: preparationSnapshot.entities.filter(
-          (entity) => entity.faction === "deployable"
+          (entity) => entity.faction !== "enemy"
         ).length,
         placementPointCount: preparedMap?.placementPoints.length ?? 0
       });
@@ -536,12 +536,31 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
   }
   commandAccepted = true;
   liveHost.scheduleCommand({ atTick: liveHost.state.tick, ...message.command });
-  manualPaused = protocolVersion !== 1;
   resumeRequestId = null;
   pendingExecutionRequestId = null;
+
+  if (protocolVersion === 4) {
+    // Materialize the first authoritative combat frame before pausing. This
+    // applies preparation, spawns the first hostile, and gives the renderer a
+    // stable one-Warden/one-hostile tick without starting the live loop.
+    manualPaused = false;
+    await executePreparedScenario();
+    manualPaused = true;
+    pendingExecutionRequestId = null;
+    postRunningSnapshot();
+    return;
+  }
+
+  manualPaused = protocolVersion !== 1;
   postRunningSnapshot();
   postRenderSnapshot(
-    createRenderSnapshot(preparedContent, preparedScenario, "running", 0)
+    createRenderSnapshot(
+      preparedContent,
+      preparedScenario,
+      "running",
+      liveHost.state.tick,
+      liveHost.state.battlefield
+    )
   );
 
   if (protocolVersion === 1) await executePreparedScenario();

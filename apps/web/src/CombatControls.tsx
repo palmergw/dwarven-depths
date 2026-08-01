@@ -41,18 +41,20 @@ export function CombatControls({
         </p>
       ) : (
         dwarves.map((dwarf) => (
-          <fieldset key={dwarf.entityId}>
-            <legend>{dwarf.characterId}</legend>
-            <p className="control-entity-id">{dwarf.entityId}</p>
-            {dwarf.supportedTargetPolicies.map((policy) => (
-              <button
-                key={policy}
-                type="button"
-                onClick={() => onSetTargetPolicy(dwarf.entityId, policy)}
-              >
-                {TARGET_POLICY_LABELS[policy]}
-              </button>
-            ))}
+          <fieldset key={dwarf.entityId} data-entity-id={dwarf.entityId}>
+            <legend>Iron Warden</legend>
+            <span className="control-group-label">Target priority</span>
+            <div className="target-policy-controls">
+              {dwarf.supportedTargetPolicies.map((policy) => (
+                <button
+                  key={policy}
+                  type="button"
+                  onClick={() => onSetTargetPolicy(dwarf.entityId, policy)}
+                >
+                  {TARGET_POLICY_LABELS[policy]}
+                </button>
+              ))}
+            </div>
             {(dwarf.activeAbilities ?? []).map((ability) => {
               const feedbackId = `${dwarf.entityId}-${ability.abilityId}-feedback`;
               const pending = pendingAbilityKeys.has(
@@ -74,13 +76,20 @@ export function CombatControls({
                   >
                     Shield Slam
                   </button>
-                  <span id={feedbackId} role="status">
+                  <span
+                    id={feedbackId}
+                    role="status"
+                    data-cooldown-complete-at-tick={
+                      ability.cooldownCompleteAtTick ?? undefined
+                    }
+                  >
                     {pending
                       ? "Activation queued"
-                      : (ability.rejectionReason ??
-                        (ability.cooldownCompleteAtTick === null
+                      : ability.rejectionReason !== null
+                        ? "Unavailable"
+                        : ability.cooldownCompleteAtTick === null
                           ? "Ready"
-                          : `Cooldown until tick ${ability.cooldownCompleteAtTick}`))}
+                          : "Recharging"}
                   </span>
                 </span>
               );

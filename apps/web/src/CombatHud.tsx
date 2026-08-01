@@ -2,9 +2,10 @@ import type { RenderSnapshot } from "./render-snapshot.js";
 
 interface CombatHudProps {
   readonly snapshot: RenderSnapshot;
+  readonly manualPaused?: boolean;
 }
 
-export function CombatHud({ snapshot }: CombatHudProps) {
+export function CombatHud({ snapshot, manualPaused = false }: CombatHudProps) {
   const alliedDwarves = snapshot.entities.filter(
     (entity) => entity.faction === "dwarf"
   ).length;
@@ -13,32 +14,31 @@ export function CombatHud({ snapshot }: CombatHudProps) {
   ).length;
 
   return (
-    <section className="combat-hud" aria-labelledby="combat-hud-heading">
-      <h3 id="combat-hud-heading">Combat status</h3>
+    <section
+      className="combat-hud"
+      aria-labelledby="combat-hud-heading"
+      data-authoritative-tick={snapshot.tick}
+    >
+      <div className="combat-hud-title">
+        <p className="combat-hud-kicker">Tutorial encounter</p>
+        <h2 id="combat-hud-heading">The Shuttergate</h2>
+      </div>
       <dl aria-label="Authoritative combat status">
         <div>
-          <dt>Level</dt>
-          <dd>{snapshot.levelId}</dd>
+          <dt>Wave</dt>
+          <dd>1 / 5</dd>
         </div>
         <div>
-          <dt>Phase</dt>
-          <dd>
-            {snapshot.phase === "running"
-              ? "Combat in progress"
-              : "Combat complete"}
-          </dd>
-        </div>
-        <div>
-          <dt>Simulation tick</dt>
-          <dd>{snapshot.tick}</dd>
-        </div>
-        <div>
-          <dt>Allied dwarves</dt>
+          <dt>Warden</dt>
           <dd>{alliedDwarves}</dd>
         </div>
         <div>
-          <dt>Hostile enemies</dt>
+          <dt>Hostiles</dt>
           <dd>{hostileEnemies}</dd>
+        </div>
+        <div>
+          <dt>Combat</dt>
+          <dd>{manualPaused ? "Paused" : "Active"}</dd>
         </div>
       </dl>
     </section>

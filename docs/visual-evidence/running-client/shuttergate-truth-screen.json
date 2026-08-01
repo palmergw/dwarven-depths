@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "capture": {
+    "screenshot": "shuttergate-truth-screen.png",
+    "screenshotSha256": "62f37aad294095109d12cb0e7fce20c1bddf64866d4383689b5d576ad08880b8",
+    "viewport": [1440, 900],
+    "devicePixelRatio": 1,
+    "route": "checkpoint -> preparation -> paused combat"
+  },
+  "viewport": [1440, 900],
+  "devicePixelRatio": 1,
+  "truth": {
+    "schemaVersion": 1,
+    "captureReady": true,
+    "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+    "viewport": [1440, 900],
+    "frame": [1280, 720],
+    "snapshot": {
+      "levelId": "level.shuttergate_hall",
+      "mapId": "map.shuttergate_hall",
+      "tick": 1,
+      "phase": "running"
+    },
+    "registry": {
+      "dwarfCount": 1,
+      "hostileCount": 1,
+      "totalCount": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "faction": "dwarf",
+          "nodeId": "node.shuttergate_north_guard",
+          "x": 605,
+          "y": 320,
+          "nominalHeight": 56
+        },
+        {
+          "id": "entity.enemy.shield_slam_target",
+          "faction": "enemy",
+          "nodeId": "node.shuttergate_gate",
+          "x": 1060,
+          "y": 200,
+          "nominalHeight": 44
+        }
+      ]
+    },
+    "occlusion": {
+      "artifactId": "entrance-shell",
+      "layerOrder": [
+        "environment-base",
+        "world-rings",
+        "world-effects",
+        "world-subjects",
+        "entrance-shell",
+        "screen-focus-indicators",
+        "hud"
+      ],
+      "clips": ["world-ring", "world-effect", "world-subject"],
+      "exempts": ["screen-focus-indicator", "hud"]
+    },
+    "alignment": {
+      "snapshotCount": 2,
+      "registryCount": 2,
+      "exactlyOneWardenAndOneHostile": true,
+      "valid": true
+    }
+  },
+  "controls": {
+    "pause": "Resume combat",
+    "shieldSlamReady": true,
+    "targetPolicyButtons": [
+      "Nearest",
+      "Lowest health",
+      "Highest health",
+      "Highest armor",
+      "Fastest",
+      "Boss or elite first"
+    ]
+  },
+  "interactionVerification": {
+    "targetPolicyAccepted": true,
+    "shieldSlamQueued": true,
+    "resumedFromTick": 1,
+    "advancedToTick": 2,
+    "resultingPhase": "running"
+  }
+}
