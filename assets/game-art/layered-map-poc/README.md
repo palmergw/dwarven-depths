@@ -28,16 +28,13 @@ The complete clean plate is deterministically reconstructed from the same-camera
 
 ## Start-here evidence
 
-1. [`evidence/layered-map-overview.png`](evidence/layered-map-overview.png) — cohesive full-frame map with approved-scale units.
-2. [`evidence/foreground-artifact-isolation.png`](evidence/foreground-artifact-isolation.png) — checkerboard RGBA artifacts, authored alpha, source contours, and exact no-op result.
-3. [`evidence/entrance-mask-alignment.png`](evidence/entrance-mask-alignment.png) — native one-pixel entrance contour and same-camera RGBA shown at 4× nearest-neighbor.
-4. [`evidence/solid-proxy-traversal.png`](evidence/solid-proxy-traversal.png) — high-contrast alpha-footprint traversal.
-5. [`evidence/calibration-card-traversal.png`](evidence/calibration-card-traversal.png) — banded exact-height/pivot cards exposing cutoff seams independently of silhouette texture.
-6. [`evidence/gantry-boundary-diagnostics.png`](evidence/gantry-boundary-diagnostics.png) — paired before/after native and 4× crops at adjacent 1 px x / 2 px y increments through the support-free span, with visible-alpha percentages.
-7. [`evidence/no-op-difference-heatmap.png`](evidence/no-op-difference-heatmap.png) — real per-pixel no-entity difference heatmap.
-8. [`evidence/production-sprite-traversal.png`](evidence/production-sprite-traversal.png) — environmentally lit production sprites at the same geometry.
-9. [`metadata/layered-map-contract.json`](metadata/layered-map-contract.json) — per-artifact route states, affected/exempt classes, and layer contract.
-10. [`metadata/manifest.json`](metadata/manifest.json) and [`metadata/provenance.json`](metadata/provenance.json) — immutable file binding and source/tool provenance.
+1. [`evidence/shared-camera-product-owner-review.png`](evidence/shared-camera-product-owner-review.png) — one labeled board containing the clean map, approved production-sprite scale/occlusion, native foreground isolation, and the bounded review questions.
+2. [`blender/outputs/reference-plate.png`](blender/outputs/reference-plate.png) — clean 1280×720 map with no entities or diagnostics.
+3. [`blender/outputs/production-sprite-traversal.png`](blender/outputs/production-sprite-traversal.png) — approved 56 px Warden and 44 px raiders across tunnel, bridge, and route.
+4. [`evidence/shared-camera-foreground-isolation.png`](evidence/shared-camera-foreground-isolation.png) — full-frame registered entrance and service-bridge RGBA on checkerboard.
+5. [`evidence/shared-camera-review-index.md`](evidence/shared-camera-review-index.md) — exact review order, measurable contract, requested judgments, and explicit non-claims.
+
+Other generated images in `evidence/` are engineering diagnostics or historical compositor outputs. They are **not** the product-owner start surface and must not be substituted for the five items above.
 
 ## Canonical shared-scene source
 
