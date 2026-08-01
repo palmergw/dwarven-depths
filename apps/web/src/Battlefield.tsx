@@ -17,6 +17,7 @@ const WIDTH = 1280;
 const HEIGHT = 720;
 const PADDING = 96;
 const FIXTURE_ID = "scenarios/conformance/shuttergate-web-truth.json";
+const textureAlphaMetricsCache = new WeakMap<object, TextureAlphaMetrics>();
 
 const environmentUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
@@ -65,6 +66,20 @@ export interface BattlefieldPrimitives {
   }[];
 }
 
+interface TextureAlphaMetrics {
+  readonly width: number;
+  readonly height: number;
+  readonly alphaBounds: readonly [number, number, number, number];
+  readonly nonzeroAlphaPixels: number;
+  readonly alpha: Uint8ClampedArray;
+}
+
+interface TruthVisualMetrics {
+  readonly dwarf: TextureAlphaMetrics;
+  readonly enemy: TextureAlphaMetrics;
+  readonly foreground: TextureAlphaMetrics;
+}
+
 export interface TruthScreenSidecar {
   readonly schemaVersion: 1;
   readonly captureReady: boolean;
@@ -101,8 +116,8 @@ export interface TruthScreenSidecar {
     readonly exempts: readonly ["screen-focus-indicator", "hud"];
     readonly witness: {
       readonly entityId: string;
-      readonly subjectAlphaPixels: 1341;
-      readonly subjectPixelsBehindArtifact: 469;
+      readonly subjectAlphaPixels: number;
+      readonly subjectPixelsBehindArtifact: number;
     };
   };
   readonly alignment: {
@@ -204,27 +219,27 @@ export function buildDepartureFeedbackPrimitives(
 
 export function buildTruthScreenSidecar(
   snapshot: RenderSnapshot,
-  primitives: BattlefieldPrimitives
+  primitives: BattlefieldPrimitives,
+  visualMetrics: TruthVisualMetrics
 ): TruthScreenSidecar {
   const byId = new Map(snapshot.entities.map((entity) => [entity.id, entity]));
   const entities = primitives.entities.flatMap((primitive) => {
     const entity = byId.get(primitive.id);
-    if (entity === undefined) return [];
-    const isWarden = entity.faction === "dwarf";
-    const canvasWidth = isWarden ? 112 : 80;
-    const canvasHeight = isWarden ? 72 : 60;
-    const pivotX = isWarden ? 56 : 40;
-    const pivotY = isWarden ? 66 : 54;
-    const sourceAlphaBounds = isWarden
-      ? ([24, 10, 88, 66] as const)
-      : ([14, 10, 66, 54] as const);
+    if (
+      entity === undefined ||
+      (entity.faction !== "dwarf" && entity.faction !== "enemy")
+    )
+      return [];
+    const source = visualMetrics[entity.faction];
+    const pivotX = Math.round(source.width / 2);
+    const pivotY = entity.faction === "dwarf" ? 66 : 54;
     const canvasLeft = Math.round(primitive.x - pivotX);
     const canvasTop = Math.round(primitive.y - pivotY);
     const alphaBounds = [
-      canvasLeft + sourceAlphaBounds[0],
-      canvasTop + sourceAlphaBounds[1],
-      sourceAlphaBounds[2] - sourceAlphaBounds[0],
-      sourceAlphaBounds[3] - sourceAlphaBounds[1]
+      canvasLeft + source.alphaBounds[0],
+      canvasTop + source.alphaBounds[1],
+      source.alphaBounds[2],
+      source.alphaBounds[3]
     ] as const;
     return [
       {
@@ -233,17 +248,17 @@ export function buildTruthScreenSidecar(
         nodeId: entity.nodeId,
         x: Math.round(primitive.x),
         y: Math.round(primitive.y),
-        nominalHeight:
-          entity.faction === "dwarf" ? 56 : entity.faction === "enemy" ? 44 : 0,
+        nominalHeight: entity.faction === "dwarf" ? 56 : 44,
         canvasBounds: [
           canvasLeft,
           canvasTop,
-          canvasWidth,
-          canvasHeight
+          source.width,
+          source.height
         ] as const,
         alphaBounds,
-        nonzeroAlphaPixels: isWarden ? 2354 : 1341,
+        nonzeroAlphaPixels: source.nonzeroAlphaPixels,
         intersectsUnobscuredWorldViewport:
+          source.nonzeroAlphaPixels > 0 &&
           alphaBounds[0] < WIDTH &&
           alphaBounds[1] < HEIGHT &&
           alphaBounds[0] + alphaBounds[2] > 0 &&
@@ -258,6 +273,35 @@ export function buildTruthScreenSidecar(
     ({ faction }) => faction === "enemy"
   ).length;
   const exactlyOneWardenAndOneHostile = dwarfCount === 1 && hostileCount === 1;
+  const hostile = entities.find(({ faction }) => faction === "enemy");
+  let subjectPixelsBehindArtifact = 0;
+  if (hostile !== undefined) {
+    const [canvasLeft, canvasTop] = hostile.canvasBounds;
+    for (let y = 0; y < visualMetrics.enemy.height; y += 1) {
+      for (let x = 0; x < visualMetrics.enemy.width; x += 1) {
+        if (
+          (visualMetrics.enemy.alpha[y * visualMetrics.enemy.width + x] ??
+            0) === 0
+        )
+          continue;
+        const worldX = canvasLeft + x;
+        const worldY = canvasTop + y;
+        if (
+          worldX < 0 ||
+          worldY < 0 ||
+          worldX >= visualMetrics.foreground.width ||
+          worldY >= visualMetrics.foreground.height
+        )
+          continue;
+        if (
+          (visualMetrics.foreground.alpha[
+            worldY * visualMetrics.foreground.width + worldX
+          ] ?? 0) > 0
+        )
+          subjectPixelsBehindArtifact += 1;
+      }
+    }
+  }
   return {
     schemaVersion: 1,
     captureReady: true,
@@ -290,9 +334,9 @@ export function buildTruthScreenSidecar(
       clips: ["world-ring", "world-effect", "world-subject"],
       exempts: ["screen-focus-indicator", "hud"],
       witness: {
-        entityId: "entity.enemy.shield_slam_target",
-        subjectAlphaPixels: 1341,
-        subjectPixelsBehindArtifact: 469
+        entityId: hostile?.id ?? "",
+        subjectAlphaPixels: visualMetrics.enemy.nonzeroAlphaPixels,
+        subjectPixelsBehindArtifact
       }
     },
     alignment: {
@@ -306,9 +350,64 @@ export function buildTruthScreenSidecar(
           (entity) =>
             entity.nonzeroAlphaPixels > 0 &&
             entity.intersectsUnobscuredWorldViewport
-        )
+        ) &&
+        subjectPixelsBehindArtifact > 0
     }
   };
+}
+
+function measureTextureAlpha(
+  scene: Phaser.Scene,
+  textureKey: string
+): TextureAlphaMetrics {
+  const source = scene.textures.get(textureKey).getSourceImage() as
+    | HTMLImageElement
+    | HTMLCanvasElement;
+  const cached = textureAlphaMetricsCache.get(source);
+  if (cached !== undefined) return cached;
+  const canvas = document.createElement("canvas");
+  canvas.width = source.width;
+  canvas.height = source.height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (context === null)
+    throw new Error(`unable to inspect texture alpha: ${textureKey}`);
+  context.drawImage(source, 0, 0);
+  const rgba = context.getImageData(0, 0, source.width, source.height).data;
+  const alpha = new Uint8ClampedArray(source.width * source.height);
+  let minimumX = source.width;
+  let minimumY = source.height;
+  let maximumX = -1;
+  let maximumY = -1;
+  let nonzeroAlphaPixels = 0;
+  for (let y = 0; y < source.height; y += 1) {
+    for (let x = 0; x < source.width; x += 1) {
+      const value = rgba[(y * source.width + x) * 4 + 3] ?? 0;
+      alpha[y * source.width + x] = value;
+      if (value === 0) continue;
+      nonzeroAlphaPixels += 1;
+      minimumX = Math.min(minimumX, x);
+      minimumY = Math.min(minimumY, y);
+      maximumX = Math.max(maximumX, x);
+      maximumY = Math.max(maximumY, y);
+    }
+  }
+  const metrics: TextureAlphaMetrics = {
+    width: source.width,
+    height: source.height,
+    alphaBounds:
+      nonzeroAlphaPixels === 0
+        ? [0, 0, 0, 0]
+        : [
+            minimumX,
+            minimumY,
+            maximumX - minimumX + 1,
+            maximumY - minimumY + 1
+          ],
+    nonzeroAlphaPixels,
+    alpha
+  };
+  textureAlphaMetricsCache.set(source, metrics);
+  return metrics;
 }
 
 function normalizeAlphaTexture(
@@ -427,7 +526,12 @@ function drawBattlefield(
   if (typeof window !== "undefined")
     window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ = buildTruthScreenSidecar(
       snapshot,
-      primitives
+      primitives,
+      {
+        dwarf: measureTextureAlpha(scene, "warden-source"),
+        enemy: measureTextureAlpha(scene, "raider-source"),
+        foreground: measureTextureAlpha(scene, "entrance-shell")
+      }
     );
 }
 
