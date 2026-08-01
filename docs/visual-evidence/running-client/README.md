@@ -11,6 +11,8 @@ This package is the reproducible product-owner review surface for issue #287. It
 - Registry: exactly one 56 px Warden and one 44 px hostile.
 - Layer order: environment, world rings/effects/subjects, entrance shell, screen-space focus indicator, HUD.
 - Controls present and exercised by the capture script: target priority, Shield Slam, and pause/resume.
+- Environment manifest: hashes only the clean plate and entrance-shell architecture; prohibited entity/effect/state/HUD roles fail capture.
+- Exact runtime source head and one capture ID bind the screenshot hash, fixture, tick, viewport, registry, HUD count labels, and sprite alpha bounds.
 - Player-facing pixels contain no raw entity IDs, map IDs, or simulation ticks. Those values remain in the machine-readable sidecar.
 
 ## Reproduce
@@ -19,6 +21,8 @@ Start the web client, then run:
 
 ```bash
 pnpm capture:shuttergate-truth
+pnpm capture:shuttergate-clip
+pnpm capture:shuttergate-comparison
 ```
 
 The script fails unless the viewport, exact tick, registry counts, controls, and sidecar alignment agree. It captures the paused truth screen, hashes the PNG into the sidecar, then queues a target-policy change and Shield Slam, resumes the simulation, and requires the authoritative tick to advance.
@@ -27,3 +31,6 @@ The script fails unless the viewport, exact tick, registry counts, controls, and
 
 - `shuttergate-truth-screen.png`: product-owner review image.
 - `shuttergate-truth-screen.json`: atomic capture sidecar, registry, layer order, control checks, and screenshot SHA-256.
+- `shuttergate-interaction-clip.webm`: 8.4-second pointer/keyboard proof of target policy, Shield Slam, authoritative advancement, and pause.
+- `shuttergate-interaction-clip.json`: clip hash, exact runtime source head, fixture, viewport, tick interval, and interactions.
+- `approved-keyframe-vs-running-client.png`: equal-size comparison against the issue #284 approved keyframe.

@@ -86,7 +86,7 @@ try {
     viewport: [1440, 900],
     video: "shuttergate-interaction-clip.webm",
     videoSha256,
-    approximateDurationSeconds: 6,
+    approximateDurationSeconds: 8.4,
     startingTick,
     endingTick,
     interactions: [

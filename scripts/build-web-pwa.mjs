@@ -21,7 +21,7 @@ const shellFiles = (await filesBelow(distDirectory))
   .filter(
     (path) => !path.endsWith(".map") && !path.endsWith("service-worker.js")
   )
-  .sort((left, right) => left.localeCompare(right));
+  .sort();
 
 const precacheUrls = shellFiles.map(
   (path) => `/${relative(distDirectory, path).split(sep).join("/")}`
