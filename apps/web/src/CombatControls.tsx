@@ -12,6 +12,7 @@ const TARGET_POLICY_LABELS: Readonly<Record<TargetPolicy, string>> = {
 interface CombatControlsProps {
   readonly dwarves: readonly CombatControlDwarf[];
   readonly pendingAbilityKeys?: ReadonlySet<string>;
+  readonly pendingTargetPolicies?: ReadonlyMap<string, TargetPolicy>;
   readonly onSetTargetPolicy: (
     dwarfEntityId: string,
     requestedPolicy: TargetPolicy
@@ -25,6 +26,7 @@ interface CombatControlsProps {
 export function CombatControls({
   dwarves,
   pendingAbilityKeys = new Set(),
+  pendingTargetPolicies = new Map(),
   onSetTargetPolicy,
   onActivateAbility
 }: CombatControlsProps) {
@@ -49,9 +51,15 @@ export function CombatControls({
                 <button
                   key={policy}
                   type="button"
+                  aria-pressed={
+                    pendingTargetPolicies.get(dwarf.entityId) === policy
+                  }
                   onClick={() => onSetTargetPolicy(dwarf.entityId, policy)}
                 >
                   {TARGET_POLICY_LABELS[policy]}
+                  {pendingTargetPolicies.get(dwarf.entityId) === policy
+                    ? " ✓"
+                    : ""}
                 </button>
               ))}
             </div>

@@ -367,6 +367,9 @@ export function App({
   const [pendingAbilityKeys, setPendingAbilityKeys] = useState<
     ReadonlySet<string>
   >(new Set());
+  const [pendingTargetPolicies, setPendingTargetPolicies] = useState<
+    ReadonlyMap<string, TargetPolicy>
+  >(new Map());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [upgradeInventoryOpen, setUpgradeInventoryOpen] = useState(false);
   const [recycleConfirmationOpen, setRecycleConfirmationOpen] = useState(false);
@@ -680,6 +683,7 @@ export function App({
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "combat_controls") {
         clearPendingAbilities();
+        setPendingTargetPolicies(new Map());
         setCombatControls(message);
       } else if (message.type === "snapshot") {
         if (message.phase === "running" && message.protocolVersion !== 1) {
@@ -754,6 +758,7 @@ export function App({
     submittedRef.current = false;
     manualPauseRequestedRef.current = undefined;
     clearPendingAbilities();
+    setPendingTargetPolicies(new Map());
     setCombatControls(undefined);
     setRenderSnapshot(undefined);
     setView({ phase: "checkpoint" });
@@ -785,6 +790,11 @@ export function App({
         (candidate) => candidate.entityId === dwarfEntityId
       );
       if (!dwarf?.supportedTargetPolicies.includes(requestedPolicy)) return;
+      setPendingTargetPolicies((current) => {
+        const next = new Map(current);
+        next.set(dwarfEntityId, requestedPolicy);
+        return next;
+      });
       workerRef.current?.postMessage({
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "command",
@@ -1071,6 +1081,7 @@ export function App({
                 <CombatControls
                   dwarves={combatControls.dwarves}
                   pendingAbilityKeys={pendingAbilityKeys}
+                  pendingTargetPolicies={pendingTargetPolicies}
                   onSetTargetPolicy={setTargetPolicy}
                   onActivateAbility={activateAbility}
                 />

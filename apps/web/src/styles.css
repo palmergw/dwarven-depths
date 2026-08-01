@@ -641,6 +641,10 @@ main[data-view-phase="running"] .panel {
   color: #d9c8a7;
   font-size: 0.72rem;
 }
+.active-combat-screen .target-policy-controls button[aria-pressed="true"] {
+  border-color: #aee9ff;
+  box-shadow: 0 0 0 2px #aee9ff;
+}
 @media (max-width: 900px), (max-height: 560px) {
   main[data-view-phase="running"] .panel {
     width: calc(100vw - 16px);
