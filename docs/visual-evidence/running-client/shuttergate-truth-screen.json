@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "captureId": "capture-287-308056d495f115f09753",
-  "sourceHead": "e5bd57b023bcbf77b7be243e780e9d14d9e07710",
+  "captureId": "capture-287-70c833a37da0e31d44c4",
+  "sourceHead": "05b5aaea01df10b2fddef5e8b542b454dde24199",
   "capture": {
     "screenshot": "shuttergate-truth-screen.png",
-    "screenshotSha256": "256a0a4efcfa5a3ad8ea53dfc0437f00da36597e590f298b843ece7cbde7ed7a",
+    "screenshotSha256": "79fa1c34f5ee3e2c68c6966c3666e1ca9c9162f12c24d512d5bdc6a97f112548",
     "viewport": [1440, 900],
     "devicePixelRatio": 1,
     "route": "checkpoint -> preparation -> paused combat"
@@ -59,14 +59,21 @@
         "faction": "enemy",
         "sourceCanvas": [80, 60],
         "sourceAlphaBounds": [14, 10, 52, 44],
-        "worldAlphaBounds": [1034, 211, 52, 44],
+        "worldAlphaBounds": [1004, 226, 52, 44],
         "nonzeroAlphaPixels": 1341,
         "intersectsWorldViewport": true,
         "subjectPixelsBehindArtifact": 0,
         "matchesRuntimeRegistry": true
       }
     ],
-    "occlusionMatchesRuntime": true
+    "occlusionMatchesRuntime": true,
+    "depthResolution": {
+      "intent": "foreground-clear",
+      "actualPixelsBehindArtifact": 0,
+      "probeAnchor": [1060, 200],
+      "probePixelsBehindArtifact": 478,
+      "matchesRuntime": true
+    }
   },
   "viewport": [1440, 900],
   "devicePixelRatio": 1,
@@ -103,11 +110,11 @@
           "id": "entity.enemy.shield_slam_target",
           "faction": "enemy",
           "nodeId": "node.shuttergate_gate",
-          "x": 1060,
-          "y": 255,
+          "x": 1030,
+          "y": 270,
           "nominalHeight": 44,
-          "canvasBounds": [1020, 201, 80, 60],
-          "alphaBounds": [1034, 211, 52, 44],
+          "canvasBounds": [990, 216, 80, 60],
+          "alphaBounds": [1004, 226, 52, 44],
           "nonzeroAlphaPixels": 1341,
           "intersectsUnobscuredWorldViewport": true
         }
@@ -130,6 +137,13 @@
         "entityId": "entity.enemy.shield_slam_target",
         "subjectAlphaPixels": 1341,
         "subjectPixelsBehindArtifact": 0
+      },
+      "depthResolution": {
+        "intent": "foreground-clear",
+        "actualAnchor": [1030, 270],
+        "actualPixelsBehindArtifact": 0,
+        "probeAnchor": [1060, 200],
+        "probePixelsBehindArtifact": 478
       }
     },
     "alignment": {
