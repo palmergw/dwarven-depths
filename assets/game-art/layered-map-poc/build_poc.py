@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse, hashlib, json, shutil, subprocess, tempfile
 from pathlib import Path
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont
+from blender.build_review_packet import build_review_packet
 
 ROOT=Path(__file__).resolve().parents[3]
 PACKAGE=Path(__file__).resolve().parent
@@ -14,6 +15,7 @@ BLENDER_MANIFEST=BLENDER_ROOT/'render-manifest.json'
 BLENDER_SOURCE=BLENDER_ROOT/'layered-shuttergate.blend'
 BLENDER_BUILDER=BLENDER_ROOT/'build_scene.py'
 BLENDER_COMPOSITOR=BLENDER_ROOT/'compose_reference.py'
+REVIEW_PACKET_BUILDER=BLENDER_ROOT/'build_review_packet.py'
 BASE=BLENDER_OUTPUTS/'environment-base.png'
 REFERENCE=BLENDER_OUTPUTS/'reference-plate.png'
 ARTIFACTS={
@@ -336,6 +338,7 @@ def build(out_root:Path)->list[Path]:
   'production-sprite-traversal.png':make_combined_sweeps(underlays,overlays,True),
  }
  for name,img in artifacts.items():p=ev/name;img.save(p,optimize=False,compress_level=9);files.append(p)
+ files.extend(build_review_packet(ev))
  contract={
   'schemaVersion':2,'authority':'presentation-only-proof-of-concept','frame':[1280,720],
   'route':{'id':'route.layered-shuttergate','entrance':[930,175],'gantry':[730,322],'backstop':[500,500],'branching':False,'authoritativeMovement':False},
@@ -347,7 +350,7 @@ def build(out_root:Path)->list[Path]:
   'presentationLighting':{'raider':'warm entrance adaptation plus contact shadow and hostile world ring','warden':'bounded brightness/contrast adaptation plus contact shadow and allied world ring','baseSpriteGeometryChanged':False},
   'nonClaims':['runtime integration','simulation authority','HUD approval','final animation']}
  cp=meta/'layered-map-contract.json';write_json(cp,contract);files.append(cp)
- provenance_inputs=[BASE,REFERENCE,*ARTIFACTS.values(),BLENDER_BUILDER,BLENDER_COMPOSITOR,BLENDER_SOURCE,BLENDER_MANIFEST,BLENDER_OUTPUTS/'production-sprite-subjects.png',BLENDER_OUTPUTS/'production-sprite-traversal.png',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
+ provenance_inputs=[BASE,REFERENCE,*ARTIFACTS.values(),BLENDER_BUILDER,BLENDER_COMPOSITOR,REVIEW_PACKET_BUILDER,BLENDER_SOURCE,BLENDER_MANIFEST,BLENDER_OUTPUTS/'production-sprite-subjects.png',BLENDER_OUTPUTS/'production-sprite-traversal.png',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
  provenance={'generator':'assets/game-art/layered-map-poc/build_poc.py','generatorSha256':sha(Path(__file__)),'authoringModel':'single editable Blender scene and orthographic camera; complete plate derives from same-camera environment plus canonical RGBA passes','environment':{'blender':'4.3.2','cycles':'CPU 16 samples, denoising disabled','pillow':'12.3.0','fonts':{str(path):digest for path,digest in FONT_HASHES.items()}},'inputs':{str(p.relative_to(ROOT)):sha(p) for p in provenance_inputs}}
  pp=meta/'provenance.json';write_json(pp,provenance);files.append(pp)
  manifest={'schemaVersion':1,'files':{str(p.relative_to(out_root)):sha(p) for p in sorted(files)}}

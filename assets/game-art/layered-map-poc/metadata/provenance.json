@@ -10,8 +10,9 @@
     "pillow": "12.3.0"
   },
   "generator": "assets/game-art/layered-map-poc/build_poc.py",
-  "generatorSha256": "ae0662561d293f34d6c8edbaf39cdeb943e30706f1dbcef5fa54f64e6eba845c",
+  "generatorSha256": "07ea90e60606985ee7af6361e29d16cb70ef50c9c660cf55c4de145e52a3f76f",
   "inputs": {
+    "assets/game-art/layered-map-poc/blender/build_review_packet.py": "3c1e4f9b867fc8af2ac06ea8d6e0835c19154c18974fec722d5eb67928af2f4b",
     "assets/game-art/layered-map-poc/blender/build_scene.py": "c920515eaddbe45e43bed22145f3a8b39963f8e90e6aa600b15ab3b27e888a29",
     "assets/game-art/layered-map-poc/blender/compose_reference.py": "6b5918f9b516a7fa3e9714500dd82c45e7c1bdbdd5bfd0764996bd318e3031cc",
     "assets/game-art/layered-map-poc/blender/layered-shuttergate.blend": "b3a429ba54f7e059b05a4d68fc1fcc8a66918f806a9915d32615bf4960623e04",

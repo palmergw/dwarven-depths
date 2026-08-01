@@ -7,6 +7,9 @@
     "evidence/layered-map-overview.png": "d5c202d201d4119c4b2a26087fec8e5ceda2cdb26affe995523f003616ed03ec",
     "evidence/no-op-difference-heatmap.png": "b2045b12b59e772519c0025b57840090d2176a6c1297c534280203d151616976",
     "evidence/production-sprite-traversal.png": "9ea456f2902e3e519946a56997b91ec389464fde47d35ab062d0e90294478bbf",
+    "evidence/shared-camera-foreground-isolation.png": "8e3004861e1d58184a65914e1602ce0ddeb5f3409dc5890d91e0e57c957da785",
+    "evidence/shared-camera-product-owner-review.png": "344ef300c23a4acab195fc5d9bfcd9e095747bb184f3be7f81155fee56ba6056",
+    "evidence/shared-camera-review-index.md": "75c464e79b99129a1788680989be39fd71608b09de307d8a42c82e90b6835895",
     "evidence/solid-proxy-traversal.png": "0474aaf7a6413e7d9d0602448fdc2e3c2343c929193281250523e4656bf04653",
     "exports/environment/layered-shuttergate-clean-plate-1280x720.png": "7d0210f6fc4ec9484c5a1915cd2159472964e0bbf4007a60066a1b274c929144",
     "exports/environment/structure-free-environment-base-1280x720.png": "0d506693f80b6088f4ac7517347ee7c1e33bbd9f66142db90a8956108aff36c0",
@@ -15,7 +18,7 @@
     "exports/foreground/gantry-shell-mask.png": "c7a7f6316fa1dc21ed64d717a210f06c3bfa3178c40e2bfae1ea122277721b96",
     "exports/foreground/gantry-shell.png": "92e831eb0e9028fdea4282de44ec9062a5952d6917e266aa97c6192bbf9fcdc4",
     "metadata/layered-map-contract.json": "e7e530bed99ddc0497fc8ecb102528060043173e6f525a54fbc1be6584d54354",
-    "metadata/provenance.json": "1eb36f019398f241c5f24291557c7a7784c481c802c390888a5a366947f1828b"
+    "metadata/provenance.json": "23e8907e52eedbe8c4facec48f4cdb224ac7e063e090b0e5c6c383013775f875"
   },
   "schemaVersion": 1
 }
