@@ -825,8 +825,14 @@ describe("semantic combat controls", () => {
     );
 
     await vi.waitFor(() =>
-      expect(document.querySelectorAll("fieldset button")).toHaveLength(2)
+      expect(document.querySelectorAll("fieldset button")).toHaveLength(3)
     );
+    const targetingTrigger = document.querySelector(
+      ".character-portrait-button"
+    );
+    if (!(targetingTrigger instanceof HTMLButtonElement))
+      throw new Error("expected character targeting trigger");
+    await userEvent.click(targetingTrigger);
     const highestArmor = Array.from(document.querySelectorAll("button")).find(
       (button) => button.textContent === "Highest armor"
     );
@@ -867,7 +873,7 @@ describe("semantic combat controls", () => {
     );
     const shieldSlam = await vi.waitFor(() => {
       const button = Array.from(document.querySelectorAll("button")).find(
-        (candidate) => candidate.textContent === "Shield Slam"
+        (candidate) => candidate.getAttribute("aria-label") === "Shield Slam"
       );
       expect(button).toBeInstanceOf(HTMLButtonElement);
       return button as HTMLButtonElement;
@@ -915,7 +921,7 @@ describe("semantic combat controls", () => {
 
     const shieldSlam = await vi.waitFor(() => {
       const button = Array.from(document.querySelectorAll("button")).find(
-        (candidate) => candidate.textContent === "Shield Slam"
+        (candidate) => candidate.getAttribute("aria-label") === "Shield Slam"
       );
       expect(button).toBeInstanceOf(HTMLButtonElement);
       return button as HTMLButtonElement;
@@ -1836,7 +1842,7 @@ describe("authoritative web worker", () => {
     await userEvent.keyboard("{Enter}");
     const resumeButton = await vi.waitFor(() => {
       const candidate = Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "Resume combat"
+        (button) => button.getAttribute("aria-label") === "Resume combat"
       );
       expect(candidate).toBeInstanceOf(HTMLButtonElement);
       return candidate as HTMLButtonElement;
@@ -1854,31 +1860,37 @@ describe("authoritative web worker", () => {
     await userEvent.click(resumeButton);
     await vi.waitFor(
       () => {
-        expect(resumeButton.textContent).toBe("Pause combat");
+        expect(resumeButton.getAttribute("aria-label")).toBe("Pause combat");
         expect(combatControls?.textContent).toContain("Ready");
       },
       { timeout: 10_000 }
     );
     await userEvent.click(resumeButton);
     await vi.waitFor(
-      () => expect(resumeButton.textContent).toBe("Resume combat"),
+      () =>
+        expect(resumeButton.getAttribute("aria-label")).toBe("Resume combat"),
       { timeout: 10_000 }
     );
     const shieldSlam = Array.from(document.querySelectorAll("button")).find(
-      (candidate) => candidate.textContent === "Shield Slam"
+      (candidate) => candidate.getAttribute("aria-label") === "Shield Slam"
     );
     if (!(shieldSlam instanceof HTMLButtonElement))
       throw new Error("expected Shield Slam button");
-    shieldSlam.focus();
-    await userEvent.keyboard("{Enter}");
-    expect(shieldSlam.disabled).toBe(true);
+    await userEvent.click(shieldSlam);
+    await vi.waitFor(() => expect(shieldSlam.disabled).toBe(true));
     expect(combatControls?.textContent).toContain("Activation queued");
+    const targeting = Array.from(document.querySelectorAll("button")).find(
+      (candidate) =>
+        candidate.getAttribute("aria-label") === "Open Iron Warden targeting"
+    );
+    if (!(targeting instanceof HTMLButtonElement))
+      throw new Error("expected Iron Warden targeting trigger");
+    await userEvent.click(targeting);
     const nearest = Array.from(document.querySelectorAll("button")).find(
       (candidate) => candidate.textContent === "Nearest"
     );
     if (!(nearest instanceof HTMLButtonElement))
       throw new Error("expected Nearest target-policy button");
-    await userEvent.click(nearest);
     await userEvent.click(nearest);
     await new Promise((resolve) => window.setTimeout(resolve, 100));
     expect(shieldSlam.disabled).toBe(true);
@@ -1917,7 +1929,7 @@ describe("authoritative web worker", () => {
     const resumeButton = await vi.waitFor(
       () => {
         const candidate = Array.from(document.querySelectorAll("button")).find(
-          (button) => button.textContent === "Resume combat"
+          (button) => button.getAttribute("aria-label") === "Resume combat"
         );
         expect(candidate).toBeInstanceOf(HTMLButtonElement);
         return candidate as HTMLButtonElement;
@@ -1930,7 +1942,7 @@ describe("authoritative web worker", () => {
     window.dispatchEvent(new Event("focus"));
     await new Promise((resolve) => window.setTimeout(resolve, 100));
     const pausedButton = Array.from(document.querySelectorAll("button")).find(
-      (button) => button.textContent === "Resume combat"
+      (button) => button.getAttribute("aria-label") === "Resume combat"
     );
     expect(pausedButton).toBeInstanceOf(HTMLButtonElement);
     expect(pausedButton?.getAttribute("aria-pressed")).toBe("true");

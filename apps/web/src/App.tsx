@@ -1067,14 +1067,6 @@ export function App({
                 snapshot={renderSnapshot}
                 manualPaused={view.manualPaused}
               />
-              <button
-                className="combat-pause"
-                type="button"
-                aria-pressed={view.manualPaused}
-                onClick={() => setManualPause(!view.manualPaused)}
-              >
-                {view.manualPaused ? "Resume combat" : "Pause combat"}
-              </button>
             </div>
             {combatControls !== undefined && (
               <div className="combat-bottom-overlay">
@@ -1087,6 +1079,15 @@ export function App({
                 />
               </div>
             )}
+            <button
+              className="combat-pause"
+              type="button"
+              aria-label={view.manualPaused ? "Resume combat" : "Pause combat"}
+              aria-pressed={view.manualPaused}
+              onClick={() => setManualPause(!view.manualPaused)}
+            >
+              <span aria-hidden="true">{view.manualPaused ? "▶" : "Ⅱ"}</span>
+            </button>
           </section>
         )}
         {renderSnapshot !== undefined && view.phase !== "running" && (

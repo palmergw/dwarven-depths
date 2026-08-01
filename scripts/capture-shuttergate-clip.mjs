@@ -57,6 +57,10 @@ try {
     () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick
   );
   await page.waitForTimeout(1200);
+  await page
+    .getByRole("button", { name: "Open Iron Warden targeting" })
+    .click();
+  await page.waitForTimeout(500);
   await page.getByRole("button", { name: "Nearest", exact: true }).click();
   await page.waitForTimeout(900);
   await page.getByRole("button", { name: "Shield Slam" }).click();

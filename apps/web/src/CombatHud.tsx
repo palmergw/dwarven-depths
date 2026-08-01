@@ -19,28 +19,33 @@ export function CombatHud({ snapshot, manualPaused = false }: CombatHudProps) {
       aria-labelledby="combat-hud-heading"
       data-authoritative-tick={snapshot.tick}
     >
-      <div className="combat-hud-title">
-        <p className="combat-hud-kicker">Tutorial encounter</p>
-        <h2 id="combat-hud-heading">The Shuttergate</h2>
-      </div>
+      <h2 id="combat-hud-heading" className="visually-hidden">
+        The Shuttergate
+      </h2>
+
       <dl aria-label="Authoritative combat status">
-        <div>
-          <dt>Wave</dt>
-          <dd>1 / 5</dd>
-        </div>
-        <div className="hud-count" data-faction="dwarf">
+        <div
+          className="hud-count hud-plaque hud-plaque-left"
+          data-faction="dwarf"
+        >
           <dt>Warden</dt>
           <dd>{alliedDwarves}</dd>
         </div>
-        <div className="hud-count" data-faction="enemy">
+        <div className="hud-plaque hud-plaque-center">
+          <dt>Wave</dt>
+          <dd>1 / 5</dd>
+        </div>
+        <div
+          className="hud-count hud-plaque hud-plaque-right"
+          data-faction="enemy"
+        >
           <dt>Hostiles</dt>
           <dd>{hostileEnemies}</dd>
         </div>
-        <div>
-          <dt>Combat</dt>
-          <dd>{manualPaused ? "Paused" : "Active"}</dd>
-        </div>
       </dl>
+      <p className="visually-hidden">
+        Combat {manualPaused ? "paused" : "active"}
+      </p>
     </section>
   );
 }

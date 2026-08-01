@@ -103,6 +103,9 @@ try {
   });
   await page.getByRole("button", { name: "Resume combat" }).waitFor();
   await page.getByRole("button", { name: "Shield Slam" }).waitFor();
+  await page
+    .getByRole("button", { name: "Open Iron Warden targeting" })
+    .click();
   await page.getByRole("button", { name: "Nearest", exact: true }).waitFor();
   await page.waitForTimeout(250);
 
@@ -115,10 +118,12 @@ try {
         `${node.querySelector("dt")?.textContent?.trim()} ${node.querySelector("dd")?.textContent?.trim()}`
     ),
     controls: {
-      pause: document.querySelector(".combat-pause")?.textContent,
+      pause: document
+        .querySelector(".combat-pause")
+        ?.getAttribute("aria-label"),
       shieldSlamReady:
         [...document.querySelectorAll("button")].find(
-          (button) => button.textContent?.trim() === "Shield Slam"
+          (button) => button.getAttribute("aria-label") === "Shield Slam"
         )?.disabled === false,
       targetPolicyButtons: [
         ...document.querySelectorAll(".target-policy-controls button")
