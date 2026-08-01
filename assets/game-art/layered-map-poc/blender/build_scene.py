@@ -493,37 +493,53 @@ LIGHTS = collection("SHARED_LIGHTING")
 stone = mat("Basalt", (0.06, 0.085, 0.11), roughness=0.9, texture_scale=3.5)
 stone2 = mat("CarvedStone", (0.12, 0.15, 0.17), roughness=0.85, texture_scale=5.0)
 roadmat = mat("RoadStone", (0.18, 0.20, 0.19), roughness=0.95, texture_scale=7.0)
+floor_dark = mat("FloorSlate", (0.085, 0.105, 0.12), roughness=0.94, texture_scale=8.0)
+floor_warm = mat("WornFloorStone", (0.14, 0.135, 0.12), roughness=0.96, texture_scale=9.0)
 timber = mat("Ironwood", (0.15, 0.065, 0.028), roughness=0.8, texture_scale=4.0)
 iron = mat("BlackIron", (0.055, 0.065, 0.072), metallic=0.7, roughness=0.42)
+bronze = mat("DwarvenBronze", (0.24, 0.095, 0.025), metallic=0.62, roughness=0.38)
 ember = mat("Ember", (0.35, 0.08, 0.015), roughness=0.5, emission=(1.0, 0.16, 0.025), strength=6.0)
 black = mat("TunnelVoid", (0.004, 0.006, 0.009), roughness=1.0)
 route_blue = mat("RouteSubjectBlue", (0.02, 0.22, 0.42), metallic=0.35, roughness=0.35, emission=(0.02, 0.25, 0.8), strength=1.5)
 route_gold = mat("RouteRingGold", (0.55, 0.23, 0.015), metallic=0.55, roughness=0.3, emission=(1.0, 0.24, 0.01), strength=2.0)
 
-# Monumental fortress hall: a larger authored world, not a camera-only zoom.
+# Monumental fortress hall: back and side architecture define the cavern without
+# building a near-camera box around the playable floor.
 box("CavernFloor", (0, 0, -0.6), (20.0, 23.0, 0.5), stone, ENV, bevel=0.18)
 for x in (-15.5, 15.5):
-    box(f"FortressSideWall_{x}", (x, 0.0, 2.0), (2.6, 22.0, 2.5), stone, ENV, bevel=0.28)
-    for y in range(-18, 19, 6):
+    box(f"FortressSideWall_{x}", (x, 7.0, 2.0), (2.6, 14.0, 2.5), stone, ENV, bevel=0.28)
+    for y in (-5, 1, 7, 13, 19):
         inner_x = x - math.copysign(1.75, x)
         box(f"MonumentalButtress_{x}_{y}", (inner_x, y, 3.2), (0.65, 1.0, 3.4), stone2, ENV, bevel=0.18)
         box(f"ButtressCrown_{x}_{y}", (inner_x, y, 6.35), (1.0, 1.35, 0.28), iron, ENV, bevel=0.08)
 
-# One readable, nonbranching hooked route crosses a broad central defense floor.
-# Architecture stays beyond its kerbs; there is no overhead bridge or floor-consuming bastion.
-ROUTE_POINTS = ((7.0, 20.0), (7.0, 13.5), (3.5, 8.5), (-2.5, 4.0), (-4.5, -2.0), (-3.0, -9.0), (-5.0, -14.0), (-5.0, -21.0))
-route_ribbon("DefenseRouteBorder", ROUTE_POINTS, 3.9, 0.22, 0.28, stone2, ENV)
-route_ribbon("DefenseRouteFloor", ROUTE_POINTS, 3.5, 0.30, 0.24, roadmat, ENV)
+# A broad paver court provides formation room. Small deterministic variations break
+# up the blockout grid while keeping the entire center free of architecture.
+box("CentralDefenseFloor", (-0.5, -2.5, -0.20), (11.2, 11.5, 0.16), floor_dark, ENV, bevel=0.22)
+for row, y in enumerate(range(-12, 9, 2)):
+    for column, x in enumerate(range(-10, 11, 2)):
+        jitter_x = 0.08 * math.sin(row * 2.3 + column)
+        jitter_y = 0.07 * math.cos(column * 1.7 - row)
+        slab = floor_warm if (row + column) % 5 == 0 else stone2
+        box(
+            f"CourtPaver_{row}_{column}",
+            (x + jitter_x, y + jitter_y, 0.02 + 0.012 * ((row + column) % 3)),
+            (0.92, 0.92, 0.08),
+            slab,
+            ENV,
+            bevel=0.06,
+            rot=(0, 0, 0.018 * math.sin(row + column * 1.4)),
+        )
 
-# A large unobstructed court supplies formation room without branching the lane.
-box("CentralDefenseFloor", (-0.5, -3.0, -0.12), (9.5, 8.0, 0.18), stone2, ENV, bevel=0.18)
-for index, x in enumerate((-7.5, -4.0, -0.5, 3.0, 6.5)):
-    box(f"CourtInlayVertical_{index}", (x, -3.0, 0.075), (0.035, 7.5, 0.025), iron, ENV, bevel=0.01)
-for index, y in enumerate((-9.0, -6.0, -3.0, 0.0, 3.0)):
-    box(f"CourtInlayHorizontal_{index}", (-0.5, y, 0.075), (9.0, 0.035, 0.025), iron, ENV, bevel=0.01)
-for x, y, suffix in ((-8.5, 6.5, "West"), (9.0, -8.0, "East")):
-    cylinder(f"EdgeDais_{suffix}", (x, y, 0.36), 1.45, 0.10, stone2, ENV, vertices=16)
-    cylinder(f"EdgeEmber_{suffix}", (x, y, 0.48), 0.28, 0.10, ember, ENV, vertices=12)
+# One readable nonbranching defense road enters at upper right, crosses the court,
+# hooks through the center, and terminates at a side-wall shutter. Nothing spans it.
+ROUTE_POINTS = ((8.0, 20.0), (8.0, 14.0), (5.0, 10.0), (0.0, 7.0), (-4.0, 3.0), (-3.0, -3.0), (-6.0, -8.0), (-11.5, -8.0))
+route_ribbon("DefenseRouteOuterKerb", ROUTE_POINTS, 4.15, 0.18, 0.30, iron, ENV)
+route_ribbon("DefenseRouteBorder", ROUTE_POINTS, 3.92, 0.24, 0.28, stone, ENV)
+route_ribbon("DefenseRouteFloor", ROUTE_POINTS, 3.52, 0.32, 0.24, roadmat, ENV)
+for x, y, suffix in ((-9.0, 8.5, "West"), (9.5, -10.5, "East")):
+    cylinder(f"EdgeDais_{suffix}", (x, y, 0.36), 1.30, 0.10, stone2, ENV, vertices=16)
+    cylinder(f"EdgeEmber_{suffix}", (x, y, 0.48), 0.26, 0.10, ember, ENV, vertices=12)
 
 # Irregular shoulder dressing stays well outside the active route.
 for index in range(56):
@@ -541,15 +557,16 @@ for index in range(56):
         rot=(random.uniform(-0.18, 0.18), random.uniform(-0.18, 0.18), random.uniform(0, math.pi)),
     )
 
-# Lower defended shutter is an edge destination, not a wall across playable space.
-box("GateWall", (-5.0, -21.4, 4.2), (10.0, 1.0, 4.7), stone, ENV, bevel=0.24)
-box("GateRecess", (-5.0, -22.42, 3.0), (4.2, 0.18, 3.1), black, ENV, bevel=0.04)
-for x in (-8.2, -7.1, -6.05, -5.0, -3.95, -2.9, -1.8):
-    box(f"ShutterBar_{x}", (x, -22.64, 2.9), (0.20, 0.20, 2.9), iron, ENV, bevel=0.04)
-for x in (-10.5, 0.5):
-    cylinder(f"GateTower_{x}", (x, -20.5, 4.2), 1.8, 8.4, stone2, ENV, vertices=10)
-    box(f"GateWinch_{x}", (x, -22.05, 5.2), (0.85, 0.45, 0.85), iron, ENV, bevel=0.12)
-box("GateEmber", (-5.0, -22.68, 0.42), (3.8, 0.16, 0.14), ember, ENV, bevel=0.02)
+# The defended shutter is embedded in the left wall. It reads as the route's
+# destination without becoming a near-camera wall across the battlefield.
+box("GateWall", (-16.3, -8.0, 4.2), (1.0, 7.0, 4.7), stone, ENV, bevel=0.24)
+box("GateRecess", (-15.26, -8.0, 3.0), (0.18, 4.2, 3.1), black, ENV, bevel=0.04)
+for y in (-11.2, -10.1, -9.05, -8.0, -6.95, -5.9, -4.8):
+    box(f"ShutterBar_{y}", (-15.04, y, 2.9), (0.20, 0.20, 2.9), iron, ENV, bevel=0.04)
+for y in (-13.2, -2.8):
+    cylinder(f"GateTower_{y}", (-15.4, y, 4.2), 1.65, 8.4, stone2, ENV, vertices=10)
+    box(f"GateWinch_{y}", (-13.85, y, 5.2), (0.45, 0.85, 0.85), bronze, ENV, bevel=0.12)
+box("GateEmber", (-14.82, -8.0, 0.42), (0.16, 3.8, 0.14), ember, ENV, bevel=0.02)
 
 # Upper hostile approach. The arch shell remains the exact foreground artifact.
 box("TunnelBackWall", (7.0, 21.0, 4.2), (8.0, 1.0, 4.7), stone, ENV, bevel=0.24)
@@ -565,14 +582,14 @@ for n, theta in enumerate([12, 31, 50, 69, 88, 107, 126, 145, 164]):
     z = 3.75 + 2.15 * math.sin(rad)
     box(f"ArchVoussoir_{n}", (x, 19.68, z), (0.78, 0.72, 0.58), stone2, ENTRANCE, bevel=0.13, rot=(0, rad - math.pi/2, 0))
 
-# Native foreground architecture hugs the frame edges and never crosses the route.
-for x, y, suffix in ((-14.0, -12.0, "LowerWest"), (13.5, -7.0, "LowerEast")):
-    box(f"FramePillar_{suffix}", (x, y, 4.0), (1.1, 1.4, 4.2), stone2, FRAMING, bevel=0.20)
-    box(f"FrameCrown_{suffix}", (x, y, 8.0), (1.5, 1.8, 0.34), iron, FRAMING, bevel=0.08)
-    box(f"FrameBanner_{suffix}", (x, y - 0.15, 4.5), (0.12, 0.08, 1.7), timber, FRAMING, bevel=0.03)
+# Native foreground architecture is limited to two cropped corner markers; the
+# open near edge preserves the tactical floor instead of forming another wall.
+for x, y, suffix in ((-14.8, -13.8, "LowerWest"), (14.8, -11.5, "LowerEast")):
+    box(f"FramePillar_{suffix}", (x, y, 2.8), (0.75, 0.9, 3.0), stone2, FRAMING, bevel=0.20)
+    box(f"FrameCrown_{suffix}", (x, y, 5.55), (1.05, 1.15, 0.28), bronze, FRAMING, bevel=0.08)
 
 # Review-only subjects expose the complete hooked route and broad central floor.
-for index, (x, y) in enumerate(((7, 17.5), (6.5, 13), (3.5, 9), (0, 6), (-3, 2), (-4, -3), (-3, -8), (-5, -13), (-5, -18))):
+for index, (x, y) in enumerate(((8, 17.5), (7.5, 13.5), (5, 10), (1, 7.5), (-3, 4), (-3.8, 0), (-4, -4), (-7, -8), (-11, -8))):
     cylinder(f"RouteRing_{index}", (x, y, 0.34), 0.72, 0.08, route_gold, SUBJECTS, vertices=24)
     cylinder(f"RouteSubject_{index}", (x, y, 1.02), 0.42, 1.35, route_blue, SUBJECTS, vertices=12)
     cylinder(f"RouteHead_{index}", (x, y, 1.88), 0.34, 0.42, route_blue, SUBJECTS, vertices=12)
@@ -583,14 +600,14 @@ warden_material = sprite_material("ApprovedIronWardenIdle", WARDEN_SOURCE)
 raider_material = sprite_material("ApprovedMineRaiderIdle", RAIDER_SOURCE)
 billboard_sprite(
     "ApprovedIronWarden_56px",
-    (-1.5, -6.5, 0.39),
+    (-4.2, -4.5, 0.39),
     (112, 72),
     (56, 66),
     warden_material,
     PRODUCTION_SUBJECTS,
     shared_camera,
 )
-for index, (x, y) in enumerate(((7.0, 16.8), (6.2, 13.0), (3.0, 9.0), (-0.2, 5.8), (-3.2, 1.0))):
+for index, (x, y) in enumerate(((8.0, 17.0), (7.5, 13.5), (4.7, 10.0), (0.8, 7.4), (-2.8, 4.0))):
     billboard_sprite(
         f"ApprovedMineRaider_{index}_44px",
         (x, y, 0.39),
@@ -601,10 +618,10 @@ for index, (x, y) in enumerate(((7.0, 16.8), (6.2, 13.0), (3.0, 9.0), (-0.2, 5.8
         shared_camera,
     )
 area_light("TunnelWarm", (7.0, 17.5, 7.0), 1600, (1.0, 0.25, 0.06), 6.0)
-area_light("GateWarm", (-5.0, -18.0, 6.0), 1300, (1.0, 0.20, 0.04), 5.0)
-area_light("CourtWarm", (7.5, -7.5, 9.5), 700, (1.0, 0.28, 0.08), 5.0)
+area_light("GateWarm", (-13.0, -8.0, 6.0), 1500, (1.0, 0.20, 0.04), 5.0)
+area_light("CourtWarm", (8.5, -9.5, 9.5), 650, (1.0, 0.28, 0.08), 5.0)
 area_light("CoolFill", (-7, -1, 20), 2400, (0.18, 0.36, 0.58), 13.0)
-point_light("GateFaceGlow", (-5.0, -24.0, 5.0), 4200, (1.0, 0.16, 0.035), 4.5)
+point_light("GateFaceGlow", (-18.0, -8.0, 5.0), 4200, (1.0, 0.16, 0.035), 4.5)
 point_light("TunnelMouthGlow", (7.0, 18.2, 3.5), 850, (1.0, 0.22, 0.05), 2.0)
 
 scene = bpy.context.scene

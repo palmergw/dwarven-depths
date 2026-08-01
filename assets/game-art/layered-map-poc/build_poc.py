@@ -31,8 +31,8 @@ SPRITES={
  'warden':(ENTITY_ROOT/'entities/iron-warden-idle.png',(56,66)),
  'raider':(ENTITY_ROOT/'entities/mine-raider-idle.png',(40,54)),
 }
-ENTRANCE_POINTS=[(990,125),(960,150),(930,175),(900,200),(870,225),(840,250)]
-FLOOR_POINTS=[(870,245),(820,280),(760,320),(700,360),(640,400),(580,440),(520,480)]
+ENTRANCE_POINTS=[(1120,225),(1090,240),(1060,255),(1030,270),(1000,280),(970,285)]
+FLOOR_POINTS=[(940,285),(820,280),(685,295),(605,320),(535,360),(415,378),(335,348)]
 FONT_PATH=Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
 FONT_HASHES={
  FONT_PATH:'57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e',
@@ -338,7 +338,7 @@ def build(out_root:Path)->list[Path]:
  files.extend(build_review_packet(ev))
  contract={
   'schemaVersion':2,'authority':'presentation-only-proof-of-concept','frame':[1280,720],
-  'route':{'id':'route.layered-shuttergate','entrance':[930,175],'centralCourt':[640,400],'backstop':[500,500],'branching':False,'authoritativeMovement':False},
+  'route':{'id':'route.layered-shuttergate','entrance':[1060,255],'centralCourt':[605,320],'backstop':[335,348],'branching':False,'authoritativeMovement':False},
   'layerOrder':['environment-base','world-rings-behind-structure','world-effects-behind-structure','world-subjects-behind-structure','structure-foreground-artifact','world-rings-in-front','world-effects-in-front','world-subjects-in-front','screen-focus-indicators','hud'],
   'foregroundArtifacts':[
    {'id':'entrance-shell','alpha':'straight','transparentRgb':[0,0,0],'sourceArtifact':'blender/outputs/entrance-shell.png','activation':{'source':'presentation-route-state','routeSegment':'entrance-aperture','states':['inside','aperture','outside']},'routeBehavior':'shared-camera-authored-arch-occlusion','affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'evidence':['solid-proxy-traversal.png','calibration-card-traversal.png','foreground-artifact-isolation.png']},

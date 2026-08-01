@@ -103,17 +103,17 @@
   "route": {
     "authoritativeMovement": false,
     "backstop": [
-      500,
-      500
+      335,
+      348
     ],
     "branching": false,
     "centralCourt": [
-      640,
-      400
+      605,
+      320
     ],
     "entrance": [
-      930,
-      175
+      1060,
+      255
     ],
     "id": "route.layered-shuttergate"
   },
