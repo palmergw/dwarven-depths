@@ -68,7 +68,11 @@ const visualAssetPaths = {
         import.meta.url
       ),
   foreground: new URL(
-    "../assets/game-art/layered-map-poc/blender/outputs/entrance-shell.png",
+    "../assets/game-art/layered-map-poc/blender/outputs/entrance-route-foreground.png",
+    import.meta.url
+  ),
+  rear: new URL(
+    "../assets/game-art/layered-map-poc/blender/outputs/entrance-route-rear.png",
     import.meta.url
   )
 };
@@ -195,7 +199,8 @@ try {
       const decoded = {
         dwarf: await decode(assets.dwarf.pngBase64, true),
         enemy: await decode(assets.enemy.pngBase64, true),
-        foreground: await decode(assets.foreground.pngBase64)
+        foreground: await decode(assets.foreground.pngBase64),
+        rear: await decode(assets.rear.pngBase64)
       };
       const entities = registry.entities.map((entity) => {
         const source = decoded[entity.faction];
@@ -209,28 +214,36 @@ try {
           sourceWidth,
           sourceHeight
         ];
-        let subjectPixelsBehindArtifact = 0;
-        for (let y = 0; y < source.height; y += 1) {
-          for (let x = 0; x < source.width; x += 1) {
-            if ((source.rgba[(y * source.width + x) * 4 + 3] ?? 0) === 0)
-              continue;
-            const worldX = canvasLeft + x;
-            const worldY = canvasTop + y;
-            if (
-              worldX < 0 ||
-              worldY < 0 ||
-              worldX >= decoded.foreground.width ||
-              worldY >= decoded.foreground.height
-            )
-              continue;
-            if (
-              (decoded.foreground.rgba[
-                (worldY * decoded.foreground.width + worldX) * 4 + 3
-              ] ?? 0) > 0
-            )
-              subjectPixelsBehindArtifact += 1;
+        const countArtifactOverlap = (artifact) => {
+          let overlap = 0;
+          for (let y = 0; y < source.height; y += 1) {
+            for (let x = 0; x < source.width; x += 1) {
+              if ((source.rgba[(y * source.width + x) * 4 + 3] ?? 0) === 0)
+                continue;
+              const worldX = canvasLeft + x;
+              const worldY = canvasTop + y;
+              if (
+                worldX < 0 ||
+                worldY < 0 ||
+                worldX >= artifact.width ||
+                worldY >= artifact.height
+              )
+                continue;
+              if (
+                (artifact.rgba[(worldY * artifact.width + worldX) * 4 + 3] ??
+                  0) > 0
+              )
+                overlap += 1;
+            }
           }
-        }
+          return overlap;
+        };
+        const subjectPixelsOverRearArtifact = countArtifactOverlap(
+          decoded.rear
+        );
+        const subjectPixelsBehindForegroundArtifact = countArtifactOverlap(
+          decoded.foreground
+        );
         const intersectsWorldViewport =
           source.nonzeroAlphaPixels > 0 &&
           alphaBounds[0] < 1280 &&
@@ -259,54 +272,30 @@ try {
               ? 0
               : source.fullAlphaPixels / source.nonzeroAlphaPixels,
           intersectsWorldViewport,
-          subjectPixelsBehindArtifact,
+          subjectPixelsOverRearArtifact,
+          subjectPixelsBehindForegroundArtifact,
           matchesRuntimeRegistry
         };
       });
       const hostile = entities.find((entity) => entity.faction === "enemy");
-      const probeAnchor = [1060, 200];
-      const probeCanvasLeft = probeAnchor[0] - 40;
-      const probeCanvasTop = probeAnchor[1] - 54;
-      let probePixelsBehindArtifact = 0;
-      for (let y = 0; y < decoded.enemy.height; y += 1) {
-        for (let x = 0; x < decoded.enemy.width; x += 1) {
-          if (
-            (decoded.enemy.rgba[(y * decoded.enemy.width + x) * 4 + 3] ?? 0) ===
-            0
-          )
-            continue;
-          const worldX = probeCanvasLeft + x;
-          const worldY = probeCanvasTop + y;
-          if (
-            worldX < 0 ||
-            worldY < 0 ||
-            worldX >= decoded.foreground.width ||
-            worldY >= decoded.foreground.height
-          )
-            continue;
-          if (
-            (decoded.foreground.rgba[
-              (worldY * decoded.foreground.width + worldX) * 4 + 3
-            ] ?? 0) > 0
-          )
-            probePixelsBehindArtifact += 1;
-        }
-      }
       const occlusionMatchesRuntime =
         hostile !== undefined &&
         hostile.nonzeroAlphaPixels ===
           registry.occlusionWitness.subjectAlphaPixels &&
-        hostile.subjectPixelsBehindArtifact ===
-          registry.occlusionWitness.subjectPixelsBehindArtifact;
+        hostile.subjectPixelsOverRearArtifact ===
+          registry.occlusionWitness.subjectPixelsOverRearArtifact &&
+        hostile.subjectPixelsBehindForegroundArtifact ===
+          registry.occlusionWitness.subjectPixelsBehindForegroundArtifact;
       const depthResolutionMatchesRuntime =
         hostile !== undefined &&
-        hostile.subjectPixelsBehindArtifact === 0 &&
-        registry.depthResolution.intent === "foreground-clear" &&
-        registry.depthResolution.actualPixelsBehindArtifact === 0 &&
-        registry.depthResolution.probeAnchor[0] === probeAnchor[0] &&
-        registry.depthResolution.probeAnchor[1] === probeAnchor[1] &&
-        registry.depthResolution.probePixelsBehindArtifact ===
-          probePixelsBehindArtifact;
+        hostile.subjectPixelsOverRearArtifact > 0 &&
+        hostile.subjectPixelsBehindForegroundArtifact > 0 &&
+        registry.depthResolution.intent ===
+          "rear-visible-and-foreground-occluded" &&
+        registry.depthResolution.rearOverlapPixels ===
+          hostile.subjectPixelsOverRearArtifact &&
+        registry.depthResolution.foregroundOcclusionPixels ===
+          hostile.subjectPixelsBehindForegroundArtifact;
       return {
         assets: {
           dwarf: {
@@ -330,16 +319,21 @@ try {
             height: decoded.foreground.height,
             alphaBounds: decoded.foreground.alphaBounds,
             nonzeroAlphaPixels: decoded.foreground.nonzeroAlphaPixels
+          },
+          rear: {
+            width: decoded.rear.width,
+            height: decoded.rear.height,
+            alphaBounds: decoded.rear.alphaBounds,
+            nonzeroAlphaPixels: decoded.rear.nonzeroAlphaPixels
           }
         },
         entities,
         occlusionMatchesRuntime,
         depthResolution: {
-          intent: "foreground-clear",
-          actualPixelsBehindArtifact:
-            hostile?.subjectPixelsBehindArtifact ?? -1,
-          probeAnchor,
-          probePixelsBehindArtifact,
+          intent: "rear-visible-and-foreground-occluded",
+          rearOverlapPixels: hostile?.subjectPixelsOverRearArtifact ?? -1,
+          foregroundOcclusionPixels:
+            hostile?.subjectPixelsBehindForegroundArtifact ?? -1,
           matchesRuntime: depthResolutionMatchesRuntime
         },
         valid:
@@ -351,8 +345,8 @@ try {
               entity.fullAlphaRatio >= 0.8
           ) &&
           occlusionMatchesRuntime &&
-          hostile?.subjectPixelsBehindArtifact === 0 &&
-          probePixelsBehindArtifact > 0 &&
+          (hostile?.subjectPixelsOverRearArtifact ?? 0) > 0 &&
+          (hostile?.subjectPixelsBehindForegroundArtifact ?? 0) > 0 &&
           depthResolutionMatchesRuntime
       };
     },

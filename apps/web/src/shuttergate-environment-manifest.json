@@ -7,13 +7,25 @@
       "id": "environment-base",
       "role": "environment",
       "source": "assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
-      "sha256": "9603f8ddb4f87d9301dff37dd5661cea95759d1fb12e0531eb6c7c562c3224af"
+      "sha256": "98609f70f300cb3345a2f1b0c0da6b26ed32781e6326c2c6458ceaa0661e9613"
+    },
+    {
+      "id": "entrance-route-rear",
+      "role": "authored-background-depth-witness",
+      "source": "assets/game-art/layered-map-poc/blender/outputs/entrance-route-rear.png",
+      "sha256": "8f55aff32511cb765bbe67515762291353abd0be3640cccc3c1145edbafc6bfe"
     },
     {
       "id": "entrance-shell",
       "role": "foreground-architecture",
       "source": "assets/game-art/layered-map-poc/blender/outputs/entrance-shell.png",
-      "sha256": "763e0f0317f5dc7fae7c7159e3a0fb7f5c85885766525250e5c7394aaeaca4a5"
+      "sha256": "a450ff5621a3bef481a9df0fd62f849afa6cece9d0a823e75f2cda4d7591862e"
+    },
+    {
+      "id": "entrance-route-foreground",
+      "role": "authored-foreground-depth",
+      "source": "assets/game-art/layered-map-poc/blender/outputs/entrance-route-foreground.png",
+      "sha256": "6542a8f27e6b3c713f99662d4a28c48f1b2689e98dc5dce01e4265043368e8f3"
     }
   ],
   "prohibitedRoles": ["entity", "effect", "state", "hud"]

@@ -27,6 +27,14 @@ const entranceShellUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/entrance-shell.png",
   import.meta.url
 ).href;
+const entranceRouteForegroundUrl = new URL(
+  "../../../assets/game-art/layered-map-poc/blender/outputs/entrance-route-foreground.png",
+  import.meta.url
+).href;
+const entranceRouteRearUrl = new URL(
+  "../../../assets/game-art/layered-map-poc/blender/outputs/entrance-route-rear.png",
+  import.meta.url
+).href;
 const wardenUrl = new URL(
   "../../../assets/game-art/production-scene/exports/entities/iron-warden-idle.png",
   import.meta.url
@@ -43,7 +51,8 @@ const SHUTTERGATE_NODE_POSITIONS: Readonly<
   "node.shuttergate_west_hall": { x: 838, y: 330 },
   "node.shuttergate_east_entry": { x: 1054, y: 302 },
   "node.shuttergate_east_hall": { x: 838, y: 330 },
-  "node.shuttergate_gate": { x: 1030, y: 270 },
+  // Exact shared-camera projection of Blender route point (8.0, 17.0, 0.39).
+  "node.shuttergate_gate": { x: 1110, y: 253 },
   "node.shuttergate_north_guard": { x: 605, y: 320 },
   "node.shuttergate_keep": { x: 432, y: 402 },
   "node.shuttergate_keep_guard": { x: 364, y: 476 }
@@ -80,6 +89,7 @@ interface TruthVisualMetrics {
   readonly dwarf: TextureAlphaMetrics;
   readonly enemy: TextureAlphaMetrics;
   readonly foreground: TextureAlphaMetrics;
+  readonly rear: TextureAlphaMetrics;
 }
 
 export interface TruthScreenSidecar {
@@ -114,21 +124,21 @@ export interface TruthScreenSidecar {
     }[];
   };
   readonly occlusion: {
-    readonly artifactId: "entrance-shell";
+    readonly artifactId: "authored-entrance-depth";
     readonly layerOrder: readonly string[];
     readonly clips: readonly ["world-ring", "world-effect", "world-subject"];
     readonly exempts: readonly ["screen-focus-indicator", "hud"];
     readonly witness: {
       readonly entityId: string;
       readonly subjectAlphaPixels: number;
-      readonly subjectPixelsBehindArtifact: number;
+      readonly subjectPixelsOverRearArtifact: number;
+      readonly subjectPixelsBehindForegroundArtifact: number;
     };
     readonly depthResolution: {
-      readonly intent: "foreground-clear";
+      readonly intent: "rear-visible-and-foreground-occluded";
       readonly actualAnchor: readonly [number, number];
-      readonly actualPixelsBehindArtifact: number;
-      readonly probeAnchor: readonly [1060, 200];
-      readonly probePixelsBehindArtifact: number;
+      readonly rearOverlapPixels: number;
+      readonly foregroundOcclusionPixels: number;
     };
   };
   readonly alignment: {
@@ -287,7 +297,8 @@ export function buildTruthScreenSidecar(
   ).length;
   const exactlyOneWardenAndOneHostile = dwarfCount === 1 && hostileCount === 1;
   const hostile = entities.find(({ faction }) => faction === "enemy");
-  const countEnemyForegroundOverlap = (
+  const countEnemyArtifactOverlap = (
+    artifact: TextureAlphaMetrics,
     canvasLeft: number,
     canvasTop: number
   ): number => {
@@ -304,32 +315,31 @@ export function buildTruthScreenSidecar(
         if (
           worldX < 0 ||
           worldY < 0 ||
-          worldX >= visualMetrics.foreground.width ||
-          worldY >= visualMetrics.foreground.height
+          worldX >= artifact.width ||
+          worldY >= artifact.height
         )
           continue;
-        if (
-          (visualMetrics.foreground.alpha[
-            worldY * visualMetrics.foreground.width + worldX
-          ] ?? 0) > 0
-        )
+        if ((artifact.alpha[worldY * artifact.width + worldX] ?? 0) > 0)
           overlap += 1;
       }
     }
     return overlap;
   };
-  let subjectPixelsBehindArtifact = 0;
+  let rearOverlapPixels = 0;
+  let foregroundOcclusionPixels = 0;
   if (hostile !== undefined) {
     const [canvasLeft, canvasTop] = hostile.canvasBounds;
-    subjectPixelsBehindArtifact = countEnemyForegroundOverlap(
+    rearOverlapPixels = countEnemyArtifactOverlap(
+      visualMetrics.rear,
+      canvasLeft,
+      canvasTop
+    );
+    foregroundOcclusionPixels = countEnemyArtifactOverlap(
+      visualMetrics.foreground,
       canvasLeft,
       canvasTop
     );
   }
-  const probePixelsBehindArtifact = countEnemyForegroundOverlap(
-    1060 - 40,
-    200 - 54
-  );
   return {
     schemaVersion: 1,
     captureReady: true,
@@ -349,13 +359,14 @@ export function buildTruthScreenSidecar(
       entities
     },
     occlusion: {
-      artifactId: "entrance-shell",
+      artifactId: "authored-entrance-depth",
       layerOrder: [
-        "environment-base",
+        "environment-base-and-rear-architecture",
         "world-rings",
         "world-effects",
         "world-subjects",
         "entrance-shell",
+        "entrance-route-foreground",
         "screen-focus-indicators",
         "hud"
       ],
@@ -364,14 +375,14 @@ export function buildTruthScreenSidecar(
       witness: {
         entityId: hostile?.id ?? "",
         subjectAlphaPixels: visualMetrics.enemy.nonzeroAlphaPixels,
-        subjectPixelsBehindArtifact
+        subjectPixelsOverRearArtifact: rearOverlapPixels,
+        subjectPixelsBehindForegroundArtifact: foregroundOcclusionPixels
       },
       depthResolution: {
-        intent: "foreground-clear",
+        intent: "rear-visible-and-foreground-occluded",
         actualAnchor: [hostile?.x ?? 0, hostile?.y ?? 0],
-        actualPixelsBehindArtifact: subjectPixelsBehindArtifact,
-        probeAnchor: [1060, 200],
-        probePixelsBehindArtifact
+        rearOverlapPixels,
+        foregroundOcclusionPixels
       }
     },
     alignment: {
@@ -387,8 +398,8 @@ export function buildTruthScreenSidecar(
             entity.fullAlphaPixels * 5 >= entity.nonzeroAlphaPixels * 4 &&
             entity.intersectsUnobscuredWorldViewport
         ) &&
-        subjectPixelsBehindArtifact === 0 &&
-        probePixelsBehindArtifact > 0
+        rearOverlapPixels > 0 &&
+        foregroundOcclusionPixels > 0
     }
   };
 }
@@ -491,19 +502,7 @@ function drawBattlefield(
   scene.children.removeAll();
   scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base");
 
-  const basePrimitives = buildBattlefieldPrimitives(snapshot);
-  const depthProbe =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("depthProbe") ===
-      "entrance";
-  const primitives = depthProbe
-    ? {
-        ...basePrimitives,
-        entities: basePrimitives.entities.map((entity) =>
-          entity.faction === "enemy" ? { ...entity, x: 1060, y: 200 } : entity
-        )
-      }
-    : basePrimitives;
+  const primitives = buildBattlefieldPrimitives(snapshot);
   const world = scene.add.graphics();
   for (const entity of primitives.entities) {
     if (entity.faction === "dwarf") {
@@ -560,9 +559,11 @@ function drawBattlefield(
     });
   }
 
-  // Renderer-native shared-camera architecture is deliberately composited
-  // after subjects/rings so the entrance clips all world-space presentation.
+  // Shared-camera authored foreground surfaces are composited after all world
+  // presentation. The hostile therefore sits over the tunnel rear but beneath
+  // the route-facing buttress in this same player-facing frame.
   scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell");
+  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground");
 
   // This screen-space focus indicator is intentionally exempt from occlusion.
   const selectedWarden = primitives.entities.find(
@@ -587,7 +588,8 @@ function drawBattlefield(
       {
         dwarf: measureTextureAlpha(scene, wardenTexture),
         enemy: measureTextureAlpha(scene, raiderTexture),
-        foreground: measureTextureAlpha(scene, "entrance-shell")
+        foreground: measureTextureAlpha(scene, "entrance-route-foreground"),
+        rear: measureTextureAlpha(scene, "entrance-route-rear")
       }
     );
 }
@@ -627,6 +629,11 @@ function createBattlefieldRenderer(
       preload(this: Phaser.Scene) {
         this.load.image("environment-base", environmentUrl);
         this.load.image("entrance-shell", entranceShellUrl);
+        this.load.image(
+          "entrance-route-foreground",
+          entranceRouteForegroundUrl
+        );
+        this.load.image("entrance-route-rear", entranceRouteRearUrl);
         this.load.image("warden-source", wardenUrl);
         this.load.image("raider-source", raiderUrl);
       },

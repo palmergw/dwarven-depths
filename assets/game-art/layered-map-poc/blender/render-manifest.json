@@ -15,28 +15,40 @@
     "SHARED_LIGHTING"
   ],
   "outputs": {
+    "entrance-route-foreground.png": {
+      "alphaSemantics": "straight-alpha-authored-route-foreground-only",
+      "height": 720,
+      "sha256": "6542a8f27e6b3c713f99662d4a28c48f1b2689e98dc5dce01e4265043368e8f3",
+      "width": 1280
+    },
+    "entrance-route-rear.png": {
+      "alphaSemantics": "straight-alpha-authored-route-rear-only",
+      "height": 720,
+      "sha256": "8f55aff32511cb765bbe67515762291353abd0be3640cccc3c1145edbafc6bfe",
+      "width": 1280
+    },
     "entrance-shell.png": {
       "alphaSemantics": "straight-alpha-foreground-only",
       "height": 720,
-      "sha256": "763e0f0317f5dc7fae7c7159e3a0fb7f5c85885766525250e5c7394aaeaca4a5",
+      "sha256": "a450ff5621a3bef481a9df0fd62f849afa6cece9d0a823e75f2cda4d7591862e",
       "width": 1280
     },
     "environment-base.png": {
       "alphaSemantics": "opaque-environment-only",
       "height": 720,
-      "sha256": "9603f8ddb4f87d9301dff37dd5661cea95759d1fb12e0531eb6c7c562c3224af",
+      "sha256": "98609f70f300cb3345a2f1b0c0da6b26ed32781e6326c2c6458ceaa0661e9613",
       "width": 1280
     },
     "production-sprite-subjects.png": {
       "alphaSemantics": "straight-alpha-production-entities-only",
       "height": 720,
-      "sha256": "67cc24b1e129e3db40094a607e69dfdc3eef84eda7d53fd1699c9a8787735ee4",
+      "sha256": "55c084ab9461f3332a0a50f8c4c17216a077812675f848b5ca5aea8ced369849",
       "width": 1280
     },
     "production-sprite-traversal.png": {
       "alphaSemantics": "opaque-production-entity-diagnostic-only",
       "height": 720,
-      "sha256": "f255b49623105739929e0d5568c9b5b08ef07e074006898bcc3311d86b3cc554",
+      "sha256": "11441fabec0ccc6e1d90aa2de58dd4e0b717928f8cc207011580dccc7f1731e3",
       "width": 1280
     },
     "reference-plate.png": {
@@ -48,20 +60,20 @@
     "route-subjects.png": {
       "alphaSemantics": "straight-alpha-diagnostic-only",
       "height": 720,
-      "sha256": "e9e1eaa2eb702cc6818b27654749101938e89357e0e5c89f0185bb3bb24d2cb6",
+      "sha256": "73b682af0e3c29a0304880fdc6e46fe8ea7b0e79bcc495aa1cb92d2972b79a99",
       "width": 1280
     },
     "route-traversal.png": {
       "alphaSemantics": "opaque-diagnostic-only",
       "height": 720,
-      "sha256": "5ba23c758fe61c76b691a683e3a5207c5acd3dfc0baf26ff64a497293be6414d",
+      "sha256": "ecda61aa28e3f31d1416e21cb04839e49a368e64b170ca82edcd920ab238041a",
       "width": 1280
     }
   },
   "schemaVersion": 1,
   "source": {
-    "blendSha256": "a0869dfc89c63bcfa015f92ecd70bca760af1071c7a3f6510ca40cafc2b0709b",
-    "builderSha256": "709ba5b9e2adc58c6127dd956de00ca6554b745fe6f1f0a36e0d9a9b74b43be2",
+    "blendSha256": "544d7d5441ad65e99fb977769993d0f590f59ca6a0727fbdb99f666479fcfdd8",
+    "builderSha256": "cfb3ab5bbf366e5074bcd82dfd155959dca0aac2cb043c549b9f4b7c32e891bb",
     "compositorSha256": "b038785832c04df434adbbd272a8c2cb596e2e11ed090c8fd688fb677b428d12"
   },
   "sourceAssets": {

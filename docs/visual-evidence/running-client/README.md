@@ -12,11 +12,9 @@ This package is the reproducible product-owner review surface for issue #287. It
 
 ![Approved keyframe compared with the current running client](./approved-keyframe-vs-running-client.png)
 
-### Hostile / foreground depth resolution
+### Hostile / authored entrance depth
 
-![Final player frame, positive occlusion probe, and native entrance-shell isolation](./shuttergate-depth-resolution.png)
-
-The final hostile uses authored route coordinate `(1030,270)` and has zero sprite-alpha overlap with the entrance shell. A second diagnostic-only **running-client capture** renders the same fixture, texture, foreground, and Phaser layer order at fixed probe `(1060,200)`, where positive overlap must be visibly occluded. The board no longer substitutes a synthetic Pillow composite for renderer evidence.
+The final hostile uses the exact shared-camera projection of Blender route point `(8.0,17.0,0.39)`, producing runtime anchor `(1110,253)`. That single player-facing frame visibly exercises both sides of the authored depth split: the hostile is drawn over the native-renderer `entrance-route-rear.png` tunnel surface and is clipped by the native-renderer `entrance-route-foreground.png` buttress. No alternate coordinate, diagnostic probe, or synthetic composition is used as product evidence.
 
 ### Target policy, Shield Slam, resume, and pause
 
@@ -31,12 +29,12 @@ The animation is an inline review derivative of the committed WebM. The WebM and
 - Fixture: `scenarios/conformance/shuttergate-web-truth.json`.
 - Authoritative snapshot: simulation tick `1`, paused in the running phase.
 - Registry: exactly one 56 px Warden and one 44 px hostile.
-- Layer order: environment, world rings/effects/subjects, entrance shell, screen-space focus indicator, HUD.
+- Layer order: environment with rear architecture, world rings/effects/subjects, entrance shell and route-facing foreground, screen-space focus indicator, HUD.
 - Controls present and exercised by the capture script: target priority, Shield Slam, and pause/resume.
-- Environment manifest: hashes only the clean plate and entrance-shell architecture; prohibited entity/effect/state/HUD roles fail capture.
+- Environment manifest: hashes the clean plate, authored rear depth witness, entrance shell, and authored route-facing foreground; prohibited entity/effect/state/HUD roles fail capture.
 - Exact runtime source head and one capture ID bind the screenshot hash, fixture, tick, viewport, registry, HUD count labels, and sprite alpha bounds.
 - Runtime and capture independently decode the actual presented sprite/foreground alpha. Interior alpha `>=16` is normalized to fully opaque while retaining lower-alpha antialiased support; at least 80% of every subject's nonzero support must be fully opaque. Transparent-Warden and transparent-enemy mutations must both fail `pnpm test:shuttergate-alpha-integrity`.
-- Runtime and independent capture decoding must agree that the final hostile has zero entrance-shell overlap, while the diagnostic running-client probe must report positive overlap through the same layer order. The depth-resolution board shows both actual browser captures and native authored RGBA isolation together.
+- Runtime and independent capture decoding must agree that the final hostile overlaps both authored depth witnesses in the same frame: positive rear overlap drawn before the hostile and positive foreground overlap drawn after it.
 - Player-facing pixels contain no raw entity IDs, map IDs, or simulation ticks. Those values remain in the machine-readable sidecar.
 
 ## Reproduce
@@ -47,7 +45,6 @@ Start the web client, then run:
 pnpm capture:shuttergate-truth
 pnpm capture:shuttergate-clip
 pnpm capture:shuttergate-comparison
-pnpm capture:shuttergate-depth
 ```
 
 The script fails unless the viewport, exact tick, registry counts, controls, and sidecar alignment agree. It captures the paused truth screen, hashes the PNG into the sidecar, then queues a target-policy change and Shield Slam, resumes the simulation, and requires the authoritative tick to advance.
@@ -60,6 +57,3 @@ The script fails unless the viewport, exact tick, registry counts, controls, and
 - `shuttergate-interaction-clip.json`: clip hash, exact runtime source head, fixture, viewport, tick interval, and interactions.
 - `shuttergate-interaction-proof.gif`: inline review derivative of the interaction clip.
 - `approved-keyframe-vs-running-client.png`: equal-size comparison against the issue #284 approved keyframe.
-- `shuttergate-depth-resolution.png`: final running-client frame, positive foreground-occlusion probe, and native entrance-shell RGBA isolation.
-- `shuttergate-depth-probe.png`: diagnostic-only 1440×900 capture produced by the actual running client at the fixed overlap probe.
-- `shuttergate-depth-probe.json`: probe classification, source head, sprite-opacity witness, layer order, overlap, and screenshot hash.

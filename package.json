@@ -26,7 +26,6 @@
     "capture:shuttergate-truth": "node scripts/capture-shuttergate-truth.mjs",
     "capture:shuttergate-clip": "node scripts/capture-shuttergate-clip.mjs",
     "capture:shuttergate-comparison": "uv run --with-requirements assets/game-art/layered-map-poc/requirements.lock python3 scripts/build_shuttergate_comparison.py",
-    "capture:shuttergate-depth": "node scripts/capture-shuttergate-depth-probe.mjs && uv run --with-requirements assets/game-art/layered-map-poc/requirements.lock python3 scripts/build_shuttergate_depth_resolution.py",
     "test:shuttergate-alpha-integrity": "node scripts/test-shuttergate-alpha-integrity.mjs",
     "sim": "pnpm build && node apps/sim-cli/dist/cli.js",
     "sim:built": "node apps/sim-cli/dist/cli.js",
