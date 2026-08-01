@@ -1,17 +1,11 @@
 {
   "schemaVersion": 1,
   "classification": "diagnostic-only-running-client-depth-probe",
-  "sourceHead": "9363f964d1f1eec813d15c7708979f7486059e96",
+  "sourceHead": "4acdde102c66e463c350f6b163a8a5f001fe6082",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-  "viewport": [
-    1440,
-    900
-  ],
+  "viewport": [1440, 900],
   "tick": 1,
-  "probeAnchor": [
-    1060,
-    200
-  ],
+  "probeAnchor": [1060, 200],
   "hostilePresentation": {
     "nonzeroAlphaPixels": 1341,
     "fullAlphaPixels": 1135,
