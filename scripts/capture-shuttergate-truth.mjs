@@ -277,7 +277,9 @@ try {
               entity.nonzeroAlphaPixels > 0 &&
               entity.intersectsWorldViewport &&
               entity.matchesRuntimeRegistry
-          ) && occlusionMatchesRuntime
+          ) &&
+          occlusionMatchesRuntime &&
+          hostile?.subjectPixelsBehindArtifact === 0
       };
     },
     {

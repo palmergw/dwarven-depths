@@ -43,7 +43,7 @@ const SHUTTERGATE_NODE_POSITIONS: Readonly<
   "node.shuttergate_west_hall": { x: 838, y: 330 },
   "node.shuttergate_east_entry": { x: 1054, y: 302 },
   "node.shuttergate_east_hall": { x: 838, y: 330 },
-  "node.shuttergate_gate": { x: 1060, y: 200 },
+  "node.shuttergate_gate": { x: 1060, y: 255 },
   "node.shuttergate_north_guard": { x: 605, y: 320 },
   "node.shuttergate_keep": { x: 432, y: 402 },
   "node.shuttergate_keep_guard": { x: 364, y: 476 }
@@ -351,7 +351,7 @@ export function buildTruthScreenSidecar(
             entity.nonzeroAlphaPixels > 0 &&
             entity.intersectsUnobscuredWorldViewport
         ) &&
-        subjectPixelsBehindArtifact > 0
+        subjectPixelsBehindArtifact === 0
     }
   };
 }
