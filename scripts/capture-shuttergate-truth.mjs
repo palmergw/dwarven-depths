@@ -278,6 +278,71 @@ try {
         };
       });
       const hostile = entities.find((entity) => entity.faction === "enemy");
+      const hostileRegistry = registry.entities.find(
+        (entity) => entity.faction === "enemy"
+      );
+      const countEllipseArtifactOverlap = (
+        centerX,
+        centerY,
+        radiusX,
+        radiusY,
+        innerRadiusX = 0,
+        innerRadiusY = 0
+      ) => {
+        let overlap = 0;
+        for (
+          let y = Math.floor(centerY - radiusY);
+          y <= centerY + radiusY;
+          y += 1
+        ) {
+          for (
+            let x = Math.floor(centerX - radiusX);
+            x <= centerX + radiusX;
+            x += 1
+          ) {
+            const outer =
+              ((x - centerX) / radiusX) ** 2 + ((y - centerY) / radiusY) ** 2;
+            if (outer > 1) continue;
+            if (innerRadiusX > 0 && innerRadiusY > 0) {
+              const inner =
+                ((x - centerX) / innerRadiusX) ** 2 +
+                ((y - centerY) / innerRadiusY) ** 2;
+              if (inner < 1) continue;
+            }
+            if (
+              x >= 0 &&
+              y >= 0 &&
+              x < decoded.foreground.width &&
+              y < decoded.foreground.height &&
+              (decoded.foreground.rgba[
+                (y * decoded.foreground.width + x) * 4 + 3
+              ] ?? 0) > 0
+            )
+              overlap += 1;
+          }
+        }
+        return overlap;
+      };
+      const worldRingPixelsBehindForegroundArtifact =
+        hostileRegistry === undefined
+          ? 0
+          : countEllipseArtifactOverlap(
+              hostileRegistry.x,
+              hostileRegistry.y - 1,
+              31,
+              12
+            );
+      const transientEffectPixelsBehindForegroundArtifact =
+        hostileRegistry === undefined
+          ? 0
+          : countEllipseArtifactOverlap(
+              hostileRegistry.x,
+              hostileRegistry.y - 12,
+              46,
+              27,
+              42,
+              23
+            );
       const occlusionMatchesRuntime =
         hostile !== undefined &&
         hostile.nonzeroAlphaPixels ===
@@ -285,7 +350,12 @@ try {
         hostile.subjectPixelsOverRearArtifact ===
           registry.occlusionWitness.subjectPixelsOverRearArtifact &&
         hostile.subjectPixelsBehindForegroundArtifact ===
-          registry.occlusionWitness.subjectPixelsBehindForegroundArtifact;
+          registry.occlusionWitness.subjectPixelsBehindForegroundArtifact &&
+        worldRingPixelsBehindForegroundArtifact ===
+          registry.occlusionWitness.worldRingPixelsBehindForegroundArtifact &&
+        transientEffectPixelsBehindForegroundArtifact ===
+          registry.occlusionWitness
+            .transientEffectPixelsBehindForegroundArtifact;
       const depthResolutionMatchesRuntime =
         hostile !== undefined &&
         hostile.subjectPixelsOverRearArtifact > 0 &&
@@ -295,7 +365,13 @@ try {
         registry.depthResolution.rearOverlapPixels ===
           hostile.subjectPixelsOverRearArtifact &&
         registry.depthResolution.foregroundOcclusionPixels ===
-          hostile.subjectPixelsBehindForegroundArtifact;
+          hostile.subjectPixelsBehindForegroundArtifact &&
+        worldRingPixelsBehindForegroundArtifact > 0 &&
+        transientEffectPixelsBehindForegroundArtifact > 0 &&
+        registry.depthResolution.worldRingOcclusionPixels ===
+          worldRingPixelsBehindForegroundArtifact &&
+        registry.depthResolution.transientEffectOcclusionPixels ===
+          transientEffectPixelsBehindForegroundArtifact;
       return {
         assets: {
           dwarf: {
@@ -334,6 +410,9 @@ try {
           rearOverlapPixels: hostile?.subjectPixelsOverRearArtifact ?? -1,
           foregroundOcclusionPixels:
             hostile?.subjectPixelsBehindForegroundArtifact ?? -1,
+          worldRingOcclusionPixels: worldRingPixelsBehindForegroundArtifact,
+          transientEffectOcclusionPixels:
+            transientEffectPixelsBehindForegroundArtifact,
           matchesRuntime: depthResolutionMatchesRuntime
         },
         valid:
@@ -347,6 +426,8 @@ try {
           occlusionMatchesRuntime &&
           (hostile?.subjectPixelsOverRearArtifact ?? 0) > 0 &&
           (hostile?.subjectPixelsBehindForegroundArtifact ?? 0) > 0 &&
+          worldRingPixelsBehindForegroundArtifact > 0 &&
+          transientEffectPixelsBehindForegroundArtifact > 0 &&
           depthResolutionMatchesRuntime
       };
     },

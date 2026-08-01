@@ -133,12 +133,16 @@ export interface TruthScreenSidecar {
       readonly subjectAlphaPixels: number;
       readonly subjectPixelsOverRearArtifact: number;
       readonly subjectPixelsBehindForegroundArtifact: number;
+      readonly worldRingPixelsBehindForegroundArtifact: number;
+      readonly transientEffectPixelsBehindForegroundArtifact: number;
     };
     readonly depthResolution: {
       readonly intent: "rear-visible-and-foreground-occluded";
       readonly actualAnchor: readonly [number, number];
       readonly rearOverlapPixels: number;
       readonly foregroundOcclusionPixels: number;
+      readonly worldRingOcclusionPixels: number;
+      readonly transientEffectOcclusionPixels: number;
     };
   };
   readonly alignment: {
@@ -325,8 +329,51 @@ export function buildTruthScreenSidecar(
     }
     return overlap;
   };
+  const countEllipseArtifactOverlap = (
+    artifact: TextureAlphaMetrics,
+    centerX: number,
+    centerY: number,
+    radiusX: number,
+    radiusY: number,
+    innerRadiusX = 0,
+    innerRadiusY = 0
+  ): number => {
+    let overlap = 0;
+    for (
+      let y = Math.floor(centerY - radiusY);
+      y <= centerY + radiusY;
+      y += 1
+    ) {
+      for (
+        let x = Math.floor(centerX - radiusX);
+        x <= centerX + radiusX;
+        x += 1
+      ) {
+        const outer =
+          ((x - centerX) / radiusX) ** 2 + ((y - centerY) / radiusY) ** 2;
+        if (outer > 1) continue;
+        if (innerRadiusX > 0 && innerRadiusY > 0) {
+          const inner =
+            ((x - centerX) / innerRadiusX) ** 2 +
+            ((y - centerY) / innerRadiusY) ** 2;
+          if (inner < 1) continue;
+        }
+        if (
+          x >= 0 &&
+          y >= 0 &&
+          x < artifact.width &&
+          y < artifact.height &&
+          (artifact.alpha[y * artifact.width + x] ?? 0) > 0
+        )
+          overlap += 1;
+      }
+    }
+    return overlap;
+  };
   let rearOverlapPixels = 0;
   let foregroundOcclusionPixels = 0;
+  let worldRingOcclusionPixels = 0;
+  let transientEffectOcclusionPixels = 0;
   if (hostile !== undefined) {
     const [canvasLeft, canvasTop] = hostile.canvasBounds;
     rearOverlapPixels = countEnemyArtifactOverlap(
@@ -338,6 +385,22 @@ export function buildTruthScreenSidecar(
       visualMetrics.foreground,
       canvasLeft,
       canvasTop
+    );
+    worldRingOcclusionPixels = countEllipseArtifactOverlap(
+      visualMetrics.foreground,
+      hostile.x,
+      hostile.y - 1,
+      31,
+      12
+    );
+    transientEffectOcclusionPixels = countEllipseArtifactOverlap(
+      visualMetrics.foreground,
+      hostile.x,
+      hostile.y - 12,
+      46,
+      27,
+      42,
+      23
     );
   }
   return {
@@ -376,13 +439,18 @@ export function buildTruthScreenSidecar(
         entityId: hostile?.id ?? "",
         subjectAlphaPixels: visualMetrics.enemy.nonzeroAlphaPixels,
         subjectPixelsOverRearArtifact: rearOverlapPixels,
-        subjectPixelsBehindForegroundArtifact: foregroundOcclusionPixels
+        subjectPixelsBehindForegroundArtifact: foregroundOcclusionPixels,
+        worldRingPixelsBehindForegroundArtifact: worldRingOcclusionPixels,
+        transientEffectPixelsBehindForegroundArtifact:
+          transientEffectOcclusionPixels
       },
       depthResolution: {
         intent: "rear-visible-and-foreground-occluded",
         actualAnchor: [hostile?.x ?? 0, hostile?.y ?? 0],
         rearOverlapPixels,
-        foregroundOcclusionPixels
+        foregroundOcclusionPixels,
+        worldRingOcclusionPixels,
+        transientEffectOcclusionPixels
       }
     },
     alignment: {
@@ -399,7 +467,9 @@ export function buildTruthScreenSidecar(
             entity.intersectsUnobscuredWorldViewport
         ) &&
         rearOverlapPixels > 0 &&
-        foregroundOcclusionPixels > 0
+        foregroundOcclusionPixels > 0 &&
+        worldRingOcclusionPixels > 0 &&
+        transientEffectOcclusionPixels > 0
     }
   };
 }

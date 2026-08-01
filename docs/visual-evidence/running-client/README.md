@@ -14,7 +14,7 @@ This package is the reproducible product-owner review surface for issue #287. It
 
 ### Hostile / authored entrance depth
 
-The final hostile uses the exact shared-camera projection of Blender route point `(8.0,17.0,0.39)`, producing runtime anchor `(1110,253)`. That single player-facing frame visibly exercises both sides of the authored depth split: the hostile is drawn over the native-renderer `entrance-route-rear.png` tunnel surface and is clipped by the native-renderer `entrance-route-foreground.png` buttress. No alternate coordinate, diagnostic probe, or synthetic composition is used as product evidence.
+The final hostile uses the exact shared-camera projection of Blender route point `(8.0,17.0,0.39)`, producing runtime anchor `(1110,253)`. That single player-facing frame visibly exercises both sides of the authored depth split: the hostile is drawn over the native-renderer `entrance-route-rear.png` tunnel surface, while `entrance-route-foreground.png` contains every nearer shared-scene object touched by the hostile, its base ring, or its maximum transient effect footprint—including both adjacent wall members and local rubble. No alternate coordinate, diagnostic probe, or synthetic composition is used as product evidence.
 
 ### Target policy, Shield Slam, resume, and pause
 
@@ -34,7 +34,7 @@ The animation is an inline review derivative of the committed WebM. The WebM and
 - Environment manifest: hashes the clean plate, authored rear depth witness, entrance shell, and authored route-facing foreground; prohibited entity/effect/state/HUD roles fail capture.
 - Exact runtime source head and one capture ID bind the screenshot hash, fixture, tick, viewport, registry, HUD count labels, and sprite alpha bounds.
 - Runtime and capture independently decode the actual presented sprite/foreground alpha. Interior alpha `>=16` is normalized to fully opaque while retaining lower-alpha antialiased support; at least 80% of every subject's nonzero support must be fully opaque. Transparent-Warden and transparent-enemy mutations must both fail `pnpm test:shuttergate-alpha-integrity`.
-- Runtime and independent capture decoding must agree that the final hostile overlaps both authored depth witnesses in the same frame: positive rear overlap drawn before the hostile and positive foreground overlap drawn after it.
+- Runtime and independent capture decoding must agree that the final hostile overlaps both authored depth witnesses in the same frame and that the full hostile, base-ring, and maximum transient-effect footprints are clipped by the complete nearer-object pass.
 - Player-facing pixels contain no raw entity IDs, map IDs, or simulation ticks. Those values remain in the machine-readable sidecar.
 
 ## Reproduce

@@ -26,7 +26,17 @@ CAMERA_ORTHO_SCALE = 50.0
 RENDER_HEIGHT = 720
 WARDEN_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "iron-warden-idle.png"
 RAIDER_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "mine-raider-idle.png"
-APPROACH_FOREGROUND_OBJECTS = {"FortressButtress_15.5_13", "ButtressCrown_15.5_13"}
+APPROACH_FOREGROUND_OBJECTS = {
+    # The complete final hostile presentation footprint spans two adjacent wall
+    # members plus authored shoulder rubble. Omitting any of these lets the
+    # sprite/ring paint over a surface that is nearer in the shared 3D scene.
+    "FortressSideWall_15.5",
+    "FortressButtress_15.5_13",
+    "ButtressCrown_15.5_13",
+    "ButtressCrown_15.5_7",
+    "ShoulderRubble_5",
+    "ShoulderRubble_7",
+}
 APPROACH_REAR_OBJECTS = {"TunnelBackWall", "TunnelVoid", "TunnelGlow"}
 random.seed(286)
 
