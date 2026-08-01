@@ -34,49 +34,13 @@
         0,
         0
       ]
-    },
-    {
-      "activation": {
-        "routeSegment": "open-defense-floor",
-        "source": "presentation-route-state",
-        "states": [
-          "approach",
-          "central-court",
-          "shutter-approach"
-        ]
-      },
-      "affectedClasses": [
-        "world-subject",
-        "world-ring",
-        "world-effect"
-      ],
-      "alpha": "straight",
-      "diagnosticPath": "unobstructed shared-camera route",
-      "evidence": [
-        "edge-framing-clearance.png",
-        "solid-proxy-traversal.png",
-        "calibration-card-traversal.png",
-        "production-sprite-traversal.png"
-      ],
-      "exemptClasses": [
-        "screen-focus-indicator",
-        "hud"
-      ],
-      "id": "architecture-framing",
-      "placement": "edge architecture only; no bridge, gantry, bastion, or support occupies the tactical floor",
-      "routeBehavior": "shared-camera-edge-framing-no-route-coverage",
-      "sourceArtifact": "blender/outputs/architecture-framing.png",
-      "transparentRgb": [
-        0,
-        0,
-        0
-      ]
     }
   ],
   "frame": [
     1280,
     720
   ],
+  "largeMapScaleClaim": false,
   "layerOrder": [
     "environment-base",
     "world-rings-behind-structure",
@@ -89,16 +53,18 @@
     "screen-focus-indicators",
     "hud"
   ],
+  "mapCategory": "tutorial",
   "nonClaims": [
+    "large-map scale",
     "runtime integration",
     "simulation authority",
     "HUD approval",
     "final animation"
   ],
   "presentationLighting": {
-    "baseSpriteGeometryChanged": false,
-    "raider": "warm entrance adaptation plus contact shadow and hostile world ring",
-    "warden": "bounded brightness/contrast adaptation plus contact shadow and allied world ring"
+    "baseSpriteCanvasPivotOrSupportChanged": false,
+    "raider": "opacity-normalized warm entrance adaptation plus contact shadow and hostile world ring",
+    "warden": "opacity-normalized bounded brightness/contrast adaptation plus contact shadow and allied world ring"
   },
   "route": {
     "authoritativeMovement": false,

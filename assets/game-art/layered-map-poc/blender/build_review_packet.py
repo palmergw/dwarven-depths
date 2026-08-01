@@ -8,23 +8,25 @@ OUT = HERE / "outputs"
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
-REVIEW_INDEX = """# Shared-camera architecture and scale WIP — product-owner review index
+REVIEW_INDEX = """# Shuttergate tutorial map — corrected product-owner review index
 
 Status: **Changes required / bounded WIP review only**
 
-This index intentionally excludes the obsolete flattened-map and traced-mask evidence. Review the current Blender-source direction using these surfaces in order:
+This map is explicitly categorized as a **tutorial map**. Its scale is not evidence that the large-map composition problem is solved. Review the corrected Blender-source evidence in this order:
 
 1. **Clean map:** `blender/outputs/reference-plate.png`
    - No entities, diagnostics, HUD, or controls.
-   - Judge the new composition, broad tactical floor, hooked route, entrance, defended shutter, and edge-framing architecture.
+   - Judge the tutorial court, hooked route, entrance, and defended shutter.
+   - The rejected lower-edge framing has been removed.
 
 2. **Production sprite scale and occlusion:** `blender/outputs/production-sprite-traversal.png`
    - Approved Warden at 56 px nominal alpha height.
    - Approved raiders at 44 px nominal alpha height.
-   - Judge scale against architecture, route density, entrance occlusion, and route readability.
+   - Raider and Warden presentation alpha is normalized so units read as solid.
+   - Judge tutorial-scale readability and entrance occlusion.
 
 3. **Native foreground isolation:** `evidence/shared-camera-foreground-isolation.png`
-   - Full-frame 1280×720 checkerboard presentation of renderer-native entrance and edge-framing RGBA.
+   - Full-frame 1280×720 checkerboard presentation of the renderer-native entrance RGBA.
    - No traced masks, chroma keying, or post-render geometry transforms.
 
 4. **Single summary board:** `evidence/shared-camera-product-owner-review.png`
@@ -35,13 +37,13 @@ This index intentionally excludes the obsolete flattened-map and traced-mask evi
 - Authored floor: 40×46 world units with a broad unobstructed central court.
 - Route: hooked, broad, and nonbranching.
 - Orthographic camera: 50 world units.
-- Architecture framing stays at the scene edges; nothing spans or occupies the route.
+- No decorative edge-framing foreground pass remains.
+- The entrance shell is the only purposeful foreground occluder.
 - Source: one editable Blender scene and one shared camera.
 
 ## Requested WIP judgment
 
-- Is there meaningful tactical space rather than merely a longer corridor?
-- Does the architecture communicate monumental scale at approved unit size?
+- Is the court readable and appropriately bounded for a tutorial map?
 - Does the hooked route read immediately across the unobstructed tactical floor?
 - Are route, tunnel, shutter, units, and foreground occlusion readable?
 - Is this a viable basis for movement toward the original painterly dwarven-fortress direction?
@@ -52,6 +54,7 @@ This index intentionally excludes the obsolete flattened-map and traced-mask evi
 - Final carved masonry, chains, machinery, or set dressing.
 - Final entrance voussoir and defended-shutter detailing.
 - Final product approval.
+- Any claim that large-map scale has been solved.
 """
 
 
@@ -86,20 +89,25 @@ def text_panel(size=(1235, 695)):
     draw.text((36, 28), "D — REVIEW CONTRACT", font=font(30, True), fill=(244, 211, 142))
     y = 82
     sections = [
-        ("Scale facts", [
-            "Authored floor: 40 × 46; broad central court",
+        ("Product category", [
+            "Explicit category: tutorial map",
+            "Scale accepted only in that bounded category",
+            "Large-map composition remains a separate open problem",
+        ]),
+        ("Evidence facts", [
+            "Authored floor: 40 × 46; one central tutorial court",
             "Hooked route: broad, readable, and nonbranching",
             "Approved Warden: 56 px; Raider: 44 px",
-            "Shared orthographic camera: 50 world units",
+            "Units opacity-normalized without canvas or pivot changes",
         ]),
         ("Architecture intent", [
             "No bridge, gantry, or floor-consuming bastions",
-            "Fortress mass frames rather than covers play space",
-            "Edge framing stays clear; entrance owns local occlusion",
+            "Rejected lower-edge framing removed",
+            "Entrance owns the only purposeful local occlusion",
         ]),
         ("Please judge in this WIP", [
-            "Meaningful tactical space and monumental scale",
-            "Broad floor and hooked route readability",
+            "Tutorial-scale court and hooked-route readability",
+            "Opaque units and unobscured lower frame",
             "Route, gate, tunnel, sprites, and visual direction",
         ]),
         ("Not claimed complete", [
@@ -126,18 +134,15 @@ def build_review_packet(evidence: Path) -> list[Path]:
     reference = Image.open(OUT / "reference-plate.png").convert("RGBA")
     traversal = Image.open(OUT / "production-sprite-traversal.png").convert("RGBA")
     entrance = Image.open(OUT / "entrance-shell.png").convert("RGBA")
-    framing = Image.open(OUT / "architecture-framing.png").convert("RGBA")
-    for name, image in (("reference", reference), ("traversal", traversal), ("entrance", entrance), ("framing", framing)):
+    for name, image in (("reference", reference), ("traversal", traversal), ("entrance", entrance)):
         if image.size != (1280, 720):
             raise ValueError(f"{name} has unexpected size {image.size}")
 
     isolation = checkerboard()
     isolation.alpha_composite(entrance)
-    isolation.alpha_composite(framing)
     draw = ImageDraw.Draw(isolation, "RGBA")
     for title, layer, color in (
-        ("ENTRANCE", entrance, (68, 192, 255, 255)),
-        ("EDGE FRAMING", framing, (255, 175, 66, 255)),
+        ("ENTRANCE ONLY", entrance, (68, 192, 255, 255)),
     ):
         bbox = layer.getchannel("A").getbbox()
         if not bbox:
@@ -151,18 +156,18 @@ def build_review_packet(evidence: Path) -> list[Path]:
 
     board = Image.new("RGB", (2560, 1600), (7, 11, 17))
     draw = ImageDraw.Draw(board)
-    draw.text((34, 22), "DWARVEN DEPTHS — NEW UNOBSTRUCTED-FLOOR COMPOSITION WIP", font=font(36, True), fill=(245, 216, 155))
-    draw.text((35, 68), "Bridge/gantry direction removed; shared scene and camera retained", font=font(21), fill=(183, 199, 214))
+    draw.text((34, 22), "DWARVEN DEPTHS — SHUTTERGATE TUTORIAL MAP", font=font(36, True), fill=(245, 216, 155))
+    draw.text((35, 68), "Corrected scope: tutorial scale; edge framing removed; unit opacity normalized", font=font(21), fill=(183, 199, 214))
     panels = [
-        labeled_panel(reference, "A — CLEAN MAP", "No entities, diagnostics, HUD, or reconstructed masks"),
-        labeled_panel(traversal, "B — PRODUCTION SPRITE SCALE & ROUTE", "Approved 56 px Warden / 44 px raiders across the hooked route"),
-        labeled_panel(isolation, "C — NATIVE FOREGROUND ISOLATION", "Full-frame shared-camera registration on checkerboard"),
+        labeled_panel(reference, "A — CLEAN TUTORIAL MAP", "Rejected lower-edge framing removed; no entities, HUD, or diagnostics"),
+        labeled_panel(traversal, "B — OPAQUE PRODUCTION UNITS", "Approved 56 px Warden / 44 px raiders; canvas and pivots unchanged"),
+        labeled_panel(isolation, "C — PURPOSEFUL FOREGROUND ONLY", "Entrance shell is the sole full-frame shared-camera RGBA artifact"),
         text_panel(),
     ]
     positions = ((30, 112), (1295, 112), (30, 832), (1295, 832))
     for panel, position in zip(panels, positions):
         board.paste(panel, position)
-    draw.text((34, 1542), "Status: WIP / Changes required — intended for bounded architecture, scale, and direction feedback only", font=font(20, True), fill=(241, 145, 102))
+    draw.text((34, 1542), "Status: tutorial-map correction review — no claim that large-map scale is solved", font=font(20, True), fill=(241, 145, 102))
     board.save(board_path, optimize=False, compress_level=9)
     index_path.write_text(REVIEW_INDEX)
     return [board_path, isolation_path, index_path]
