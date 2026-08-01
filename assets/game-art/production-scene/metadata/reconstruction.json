@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 2,
+  "frame": [1280, 720],
+  "output": "docs/visual-evidence/production-scene/reconstruction-one-warden-one-hostile.png",
+  "entityCounts": { "iron-warden": 1, "mine-raider": 1 },
+  "layersBackToFront": [
+    {
+      "asset": "shuttergate-clean-plate-1280x720",
+      "position": [0, 0],
+      "region": "world",
+      "zOrder": 0
+    },
+    {
+      "asset": "warden-selection-ring",
+      "position": [627, 414],
+      "region": "world-effects",
+      "zOrder": 20
+    },
+    {
+      "asset": "hostile-faction-ring",
+      "position": [763, 380],
+      "region": "world-effects",
+      "zOrder": 20
+    },
+    {
+      "asset": "mine-raider-attack",
+      "position": [762, 344],
+      "region": "world-entities",
+      "zOrder": 30,
+      "depthSortY": 398
+    },
+    {
+      "asset": "iron-warden-shield-slam",
+      "position": [618, 368],
+      "region": "world-entities",
+      "zOrder": 30,
+      "depthSortY": 434
+    },
+    {
+      "asset": "foreground-occluder",
+      "position": [0, 0],
+      "region": "foreground-occlusion",
+      "zOrder": 40
+    },
+    {
+      "asset": "warm-light-overlay",
+      "position": [0, 0],
+      "region": "world-lighting",
+      "zOrder": 50
+    },
+    {
+      "asset": "top-hud-frame",
+      "position": [0, 0],
+      "region": "screen-space-hud",
+      "zOrder": 70
+    },
+    {
+      "asset": "bottom-hud-frame",
+      "position": [0, 0],
+      "region": "screen-space-hud",
+      "zOrder": 70
+    },
+    {
+      "asset": "fortress-value",
+      "position": [18, 10],
+      "region": "screen-space-hud",
+      "zOrder": 71
+    },
+    {
+      "asset": "wave-value",
+      "position": [526, 10],
+      "region": "screen-space-hud",
+      "zOrder": 71
+    },
+    {
+      "asset": "ore-value",
+      "position": [1022, 10],
+      "region": "screen-space-hud",
+      "zOrder": 71
+    },
+    {
+      "asset": "warden-name",
+      "position": [272, 604],
+      "region": "screen-space-hud",
+      "zOrder": 71
+    },
+    {
+      "asset": "health-value",
+      "position": [462, 604],
+      "region": "screen-space-hud",
+      "zOrder": 71
+    },
+    {
+      "asset": "target-nearest-state",
+      "position": [662, 604],
+      "region": "screen-space-hud",
+      "zOrder": 71
+    },
+    {
+      "asset": "shield-slam-ready-state",
+      "position": [862, 604],
+      "region": "screen-space-hud",
+      "zOrder": 71
+    },
+    {
+      "asset": "pause-state",
+      "position": [1112, 604],
+      "region": "screen-space-hud",
+      "zOrder": 71
+    },
+    {
+      "asset": "warden-portrait",
+      "position": [282, 614],
+      "region": "screen-space-hud",
+      "zOrder": 72
+    }
+  ],
+  "isolationProofs": {
+    "entitiesRemoved": "docs/visual-evidence/production-scene/reconstruction-entities-removed.png",
+    "individualRemoval": "docs/visual-evidence/production-scene/entity-removal-grid.png",
+    "environmentOnly": "docs/visual-evidence/production-scene/clean-plate.png",
+    "hudControls": "docs/visual-evidence/production-scene/hud-control-isolation.png",
+    "hudMutation": "docs/visual-evidence/production-scene/hud-state-mutation.png",
+    "foreground": "docs/visual-evidence/production-scene/foreground-occlusion-isolation.png",
+    "occlusionDepth": "docs/visual-evidence/production-scene/occlusion-depth-proof.png",
+    "lighting": "docs/visual-evidence/production-scene/lighting-alpha-isolation.png",
+    "lightingEntities": "docs/visual-evidence/production-scene/lighting-entity-proof.png",
+    "route": "docs/visual-evidence/production-scene/route-anchor-validation.png",
+    "portalUpperTransition": "docs/visual-evidence/production-scene/portal-upper-gate-transition.png",
+    "portalLowerTransition": "docs/visual-evidence/production-scene/portal-lower-gate-transition.png",
+    "portalIsolation": "docs/visual-evidence/production-scene/portal-mask-isolation.png",
+    "portalSolidProxySweeps": "docs/visual-evidence/production-scene/portal-solid-proxy-sweeps.png",
+    "portalCalibrationCardSweeps": "docs/visual-evidence/production-scene/portal-calibration-card-sweeps.png",
+    "portalDepth": "docs/visual-evidence/production-scene/portal-ring-effect-depth.png",
+    "portalLowerMouth": "docs/visual-evidence/production-scene/portal-lower-mouth-exclusion.png",
+    "alignment": "docs/visual-evidence/production-scene/entity-state-alignment.png",
+    "impact": "docs/visual-evidence/production-scene/shield-slam-effect-proof.png"
+  }
+}

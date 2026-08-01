@@ -1,0 +1,103 @@
+{
+  "authority": "presentation-only-proof-of-concept",
+  "foregroundArtifacts": [
+    {
+      "activation": {
+        "routeSegment": "entrance-aperture",
+        "source": "presentation-route-state",
+        "states": [
+          "inside",
+          "aperture",
+          "outside"
+        ]
+      },
+      "affectedClasses": [
+        "world-subject",
+        "world-ring",
+        "world-effect"
+      ],
+      "alpha": "straight",
+      "evidence": [
+        "solid-proxy-traversal.png",
+        "calibration-card-traversal.png",
+        "foreground-artifact-isolation.png"
+      ],
+      "exemptClasses": [
+        "screen-focus-indicator",
+        "hud"
+      ],
+      "id": "entrance-shell",
+      "routeBehavior": "shared-camera-authored-arch-occlusion",
+      "sourceArtifact": "blender/outputs/entrance-shell.png",
+      "transparentRgb": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "frame": [
+    1280,
+    720
+  ],
+  "largeMapScaleClaim": false,
+  "layerOrder": [
+    "environment-base",
+    "world-rings-behind-structure",
+    "world-effects-behind-structure",
+    "world-subjects-behind-structure",
+    "structure-foreground-artifact",
+    "world-rings-in-front",
+    "world-effects-in-front",
+    "world-subjects-in-front",
+    "screen-focus-indicators",
+    "hud"
+  ],
+  "mapCategory": "tutorial",
+  "nonClaims": [
+    "large-map scale",
+    "runtime integration",
+    "simulation authority",
+    "HUD approval",
+    "final animation"
+  ],
+  "presentationLighting": {
+    "baseSpriteCanvasPivotOrSupportChanged": false,
+    "raider": "opacity-normalized warm entrance adaptation plus contact shadow and hostile world ring",
+    "warden": "opacity-normalized bounded brightness/contrast adaptation plus contact shadow and allied world ring"
+  },
+  "route": {
+    "authoritativeMovement": false,
+    "backstop": [
+      335,
+      348
+    ],
+    "branching": false,
+    "centralCourt": [
+      605,
+      320
+    ],
+    "entrance": [
+      1060,
+      255
+    ],
+    "id": "route.layered-shuttergate"
+  },
+  "schemaVersion": 2,
+  "subjects": {
+    "raider": {
+      "nominalHeight": 44,
+      "pivot": [
+        40,
+        54
+      ]
+    },
+    "warden": {
+      "nominalHeight": 56,
+      "pivot": [
+        56,
+        66
+      ]
+    }
+  }
+}

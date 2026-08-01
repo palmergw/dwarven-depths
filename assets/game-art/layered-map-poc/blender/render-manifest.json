@@ -1,0 +1,85 @@
+{
+  "blenderVersion": "4.3.2",
+  "camera": {
+    "location": [30.0, -41.5, 32.0],
+    "name": "CAMERA_Shuttergate_Ortho",
+    "orthoScale": 50.0,
+    "projection": "orthographic",
+    "rotationEuler": [1.02221, 0.0, 0.657528]
+  },
+  "collections": [
+    "DIAGNOSTIC_ROUTE_SUBJECTS",
+    "ENVIRONMENT_BASE",
+    "FOREGROUND_ENTRANCE",
+    "PRODUCTION_ROUTE_SUBJECTS",
+    "SHARED_LIGHTING"
+  ],
+  "outputs": {
+    "entrance-shell.png": {
+      "alphaSemantics": "straight-alpha-foreground-only",
+      "height": 720,
+      "sha256": "763e0f0317f5dc7fae7c7159e3a0fb7f5c85885766525250e5c7394aaeaca4a5",
+      "width": 1280
+    },
+    "environment-base.png": {
+      "alphaSemantics": "opaque-environment-only",
+      "height": 720,
+      "sha256": "9603f8ddb4f87d9301dff37dd5661cea95759d1fb12e0531eb6c7c562c3224af",
+      "width": 1280
+    },
+    "production-sprite-subjects.png": {
+      "alphaSemantics": "straight-alpha-production-entities-only",
+      "height": 720,
+      "sha256": "67cc24b1e129e3db40094a607e69dfdc3eef84eda7d53fd1699c9a8787735ee4",
+      "width": 1280
+    },
+    "production-sprite-traversal.png": {
+      "alphaSemantics": "opaque-production-entity-diagnostic-only",
+      "height": 720,
+      "sha256": "f255b49623105739929e0d5568c9b5b08ef07e074006898bcc3311d86b3cc554",
+      "width": 1280
+    },
+    "reference-plate.png": {
+      "alphaSemantics": "opaque-environment-plus-foreground",
+      "height": 720,
+      "sha256": "4dfeae0fcb14a9e05da86785767dc2e235481cc934c2fa1a80811e8a49d79a90",
+      "width": 1280
+    },
+    "route-subjects.png": {
+      "alphaSemantics": "straight-alpha-diagnostic-only",
+      "height": 720,
+      "sha256": "e9e1eaa2eb702cc6818b27654749101938e89357e0e5c89f0185bb3bb24d2cb6",
+      "width": 1280
+    },
+    "route-traversal.png": {
+      "alphaSemantics": "opaque-diagnostic-only",
+      "height": 720,
+      "sha256": "5ba23c758fe61c76b691a683e3a5207c5acd3dfc0baf26ff64a497293be6414d",
+      "width": 1280
+    }
+  },
+  "schemaVersion": 1,
+  "source": {
+    "blendSha256": "a0869dfc89c63bcfa015f92ecd70bca760af1071c7a3f6510ca40cafc2b0709b",
+    "builderSha256": "709ba5b9e2adc58c6127dd956de00ca6554b745fe6f1f0a36e0d9a9b74b43be2",
+    "compositorSha256": "b038785832c04df434adbbd272a8c2cb596e2e11ed090c8fd688fb677b428d12"
+  },
+  "sourceAssets": {
+    "ironWardenIdle": {
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "canvas": [112, 72],
+      "nominalHeight": 56,
+      "path": "assets/game-art/production-scene/exports/entities/iron-warden-idle.png",
+      "pivot": [56, 66],
+      "sha256": "a10be62e061241683ba598ed4d9032880704a5f0c24bf38f9eff0a9bd138af4a"
+    },
+    "mineRaiderIdle": {
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "canvas": [80, 60],
+      "nominalHeight": 44,
+      "path": "assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
+      "pivot": [40, 54],
+      "sha256": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83"
+    }
+  }
+}

@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 5,
+  "package": "dwarven-depths-issue-286-production-scene",
+  "authority": "presentation-only",
+  "coordinateSpace": {
+    "origin": "top-left",
+    "logicalFrame": [640, 360],
+    "reviewFrame": [1280, 720],
+    "logicalTexelScale": 2
+  },
+  "safeAreas": {
+    "world": [0, 0, 1280, 720],
+    "unobscuredWorldBand": [0, 72, 1280, 590],
+    "entitySafe": [80, 80, 1200, 590],
+    "hudOcclusionRects": [[272, 604, 1262, 704]]
+  },
+  "camera": {
+    "projection": "elevated-orthographic-2.5d",
+    "viewDirection": "upper-right-background-to-lower-left-foreground",
+    "fixedReviewFrame": true
+  },
+  "route": {
+    "topology": "single-piecewise-painted-floor-route",
+    "scope": "presentation-only-fixed-truth-screen",
+    "entrance": {
+      "id": "entrance.background-opening",
+      "anchor": [1145, 100]
+    },
+    "objective": {
+      "id": "objective.foreground-shutter",
+      "anchor": [590, 480],
+      "kind": "terminal-backstop",
+      "traversable": false
+    },
+    "zones": [
+      {
+        "id": "route-zone.background-approach",
+        "depthOrder": 100,
+        "bounds": [1045, 80, 1165, 180],
+        "visiblePolyline": [[1145, 100], [1120, 125], [1090, 150], [1052, 170]]
+      },
+      {
+        "id": "route-zone.upper-causeway",
+        "depthOrder": 200,
+        "bounds": [790, 175, 925, 295],
+        "visiblePolyline": [
+          [918, 187],
+          [885, 195],
+          [855, 210],
+          [830, 230],
+          [810, 255],
+          [818, 271],
+          [822, 281]
+        ]
+      },
+      {
+        "id": "route-zone.lower-causeway",
+        "depthOrder": 300,
+        "bounds": [580, 350, 830, 495],
+        "visiblePolyline": [
+          [820, 358],
+          [800, 360],
+          [760, 390],
+          [720, 415],
+          [680, 440],
+          [640, 465],
+          [605, 485],
+          [590, 480]
+        ]
+      }
+    ],
+    "portals": [
+      {
+        "id": "portal.upper-gate",
+        "incomingZoneId": "route-zone.background-approach",
+        "outgoingZoneId": "route-zone.upper-causeway",
+        "incomingAnchor": [1052, 170],
+        "outgoingAnchor": [918, 187],
+        "bounds": [860, 90, 1140, 250],
+        "visibleMouthBounds": null,
+        "segments": [
+          {
+            "kind": "architecture-hidden",
+            "from": [1052, 170],
+            "to": [918, 187]
+          }
+        ],
+        "visibility": "architecture-hidden",
+        "occlusionMode": "architecture-depth-transition",
+        "maskAsset": "portal-upper-gate-mask",
+        "occluderAsset": "portal-upper-gate-occluder",
+        "extractionCrop": [860, 90, 1140, 250],
+        "applicability": "architecture-hidden-segment-only",
+        "explicitHiddenState": {
+          "from": [1042, 171],
+          "to": [930, 185],
+          "renderWorldSubject": false,
+          "reason": "wholly-behind-gatehouse-no-sky-pixel-occluder"
+        },
+        "samples": {
+          "approach": [1080, 156],
+          "lastVisibleLip": [1056, 167],
+          "fullyHidden": [982, 180],
+          "firstVisibleLip": [916, 187],
+          "emerged": [902, 190]
+        },
+        "traversalOwnerIssue": 273
+      },
+      {
+        "id": "portal.lower-gate",
+        "incomingZoneId": "route-zone.upper-causeway",
+        "outgoingZoneId": "route-zone.lower-causeway",
+        "incomingAnchor": [822, 281],
+        "outgoingAnchor": [820, 358],
+        "bounds": [775, 220, 885, 375],
+        "visibleMouthBounds": [815, 328, 870, 365],
+        "segments": [
+          {
+            "kind": "architecture-hidden",
+            "from": [822, 281],
+            "to": [842, 331]
+          },
+          {
+            "kind": "visible-floor-gate-mouth",
+            "from": [842, 331],
+            "to": [820, 358]
+          }
+        ],
+        "visibility": "compound-hidden-visible-mouth",
+        "occlusionMode": "compound-depth-transition",
+        "maskAsset": "portal-lower-gate-mask",
+        "occluderAsset": "portal-lower-gate-occluder",
+        "extractionCrop": [775, 220, 885, 375],
+        "applicability": "hidden-segment-only-visible-mouth-excluded",
+        "explicitHiddenState": null,
+        "samples": {
+          "approach": [818, 271],
+          "lastVisibleLip": [832, 307],
+          "partiallyOccluded": [839, 323],
+          "firstVisibleMouth": [842, 331],
+          "mouthCenter": [835, 343],
+          "emerged": [820, 358]
+        },
+        "traversalOwnerIssue": 273
+      }
+    ],
+    "chokepointPortalIds": ["portal.upper-gate", "portal.lower-gate"],
+    "validation": "pixel-surveyed-visible-segments-and-compound-registered-gate-transitions"
+  },
+  "entityAnchors": {
+    "ironWardenTruthScreen": {
+      "groundPosition": [674, 434],
+      "depthSortY": 434
+    },
+    "mineRaiderTruthScreen": {
+      "groundPosition": [802, 398],
+      "depthSortY": 398
+    }
+  },
+  "entityStates": {
+    "iron-warden-idle": {
+      "canvas": [112, 72],
+      "pivot": [56, 66],
+      "facing": "upper-right",
+      "nominalHeight": 56
+    },
+    "iron-warden-shield-slam": {
+      "canvas": [112, 72],
+      "pivot": [56, 66],
+      "facing": "upper-right",
+      "nominalHeight": 56
+    },
+    "mine-raider-idle": {
+      "canvas": [80, 60],
+      "pivot": [40, 54],
+      "facing": "lower-left",
+      "nominalHeight": 44
+    },
+    "mine-raider-attack": {
+      "canvas": [80, 60],
+      "pivot": [40, 54],
+      "facing": "lower-left",
+      "nominalHeight": 44
+    }
+  },
+  "occlusion": {
+    "mask": "architecture-mask",
+    "foreground": "foreground-occluder",
+    "scope": "fixed-issue-287-truth-screen-anchors-only",
+    "routeTraversalOwner": 273,
+    "portalPolicy": {
+      "maskScope": "portal-segment-specific-never-global",
+      "worldRingsAndEffects": "obey-active-portal-occlusion",
+      "screenSpaceFocus": "render-after-world-occlusion",
+      "lowerVisibleMouth": [[842, 331], [835, 343], [820, 358]],
+      "fullTraversalOwnerIssue": 273
+    },
+    "zones": [
+      {
+        "id": "upper-left-column",
+        "depthThreshold": 260,
+        "bounds": [0, 92, 189, 421]
+      },
+      {
+        "id": "lower-right-balustrade",
+        "depthThreshold": 520,
+        "bounds": [1030, 421, 1280, 720]
+      }
+    ],
+    "depthOrder": [
+      "environment",
+      "rings",
+      "entities-by-depthSortY",
+      "portal-occluder-when-active",
+      "foreground-occluder",
+      "lighting-normal-srgb",
+      "combat-effects",
+      "screen-space-focus",
+      "hud"
+    ]
+  },
+  "lighting": {
+    "asset": "warm-light-overlay",
+    "blendMode": "normal",
+    "colorSpace": "sRGB",
+    "alpha": "straight",
+    "affects": ["environment", "entities", "foreground"],
+    "excludes": ["combat-effects", "hud"]
+  },
+  "hudRegions": {
+    "top": [0, 0, 1280, 72],
+    "bottom": [272, 590, 1280, 720],
+    "fortressStatus": [18, 10, 258, 60],
+    "waveStatus": [526, 10, 754, 60],
+    "oreStatus": [1022, 10, 1262, 60],
+    "wardenNameplate": [272, 604, 452, 704],
+    "portrait": [282, 614, 360, 694],
+    "health": [462, 604, 652, 704],
+    "targetPolicy": [662, 604, 852, 704],
+    "shieldSlam": [862, 604, 1102, 704],
+    "pause": [1112, 604, 1262, 704]
+  },
+  "hudDynamicState": {
+    "font": "project-authored-5x7-pixel-uppercase",
+    "textColor": [222, 170, 88, 255],
+    "baselinePolicy": "regions-use-top-left-local-integer-pixel-baselines",
+    "fixture": {
+      "fortress": "18/20",
+      "wave": "7",
+      "ore": "840",
+      "health": "84/100",
+      "targetPolicy": "nearest",
+      "shieldSlam": "ready",
+      "paused": false
+    },
+    "minimumVariants": {
+      "targetPolicy": ["nearest", "strongest"],
+      "shieldSlam": ["ready", "cooldown"],
+      "pause": ["pause", "resume"]
+    }
+  },
+  "cropPolicy": {
+    "desktop": "show-full-16:9-frame",
+    "laptop": "fit-full-frame-before-cropping; preserve both HUD bands and entrance/gate anchors",
+    "mobile": "later-work-may-letterbox-or-use-authored-camera-crop; never crop both entrance and gate; HUD must reflow rather than scale below legibility",
+    "status": "metadata-only-for-later-responsive-work"
+  }
+}

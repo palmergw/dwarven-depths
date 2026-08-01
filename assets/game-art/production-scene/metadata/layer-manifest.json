@@ -1,0 +1,659 @@
+{
+  "schemaVersion": 2,
+  "package": "dwarven-depths-issue-286-production-scene",
+  "logicalFrame": [640, 360],
+  "reviewFrame": [1280, 720],
+  "entityLayerCounts": {
+    "iron-warden": 1,
+    "mine-raider": 1
+  },
+  "contractDigests": {
+    "provenance.json": "3d5a04ca7da39c3607b88cf4f8495d654164b39e2d6e48e98d860672247b59bc",
+    "reconstruction.json": "3ab3e0d74cca2e35415f243675c5a411f8b25b11a5239fd069dd82e1f221b36a",
+    "scene-contract.json": "9d015cc40703b52f21d707f04a9c46a8b18726ed39f9fad306c6084424ebad06"
+  },
+  "files": [
+    {
+      "id": "shuttergate-clean-plate-1280x720",
+      "path": "assets/game-art/production-scene/exports/environment/shuttergate-clean-plate-1280x720.png",
+      "category": "environment",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "opaque-clean-plate",
+      "contributesTo": ["world"],
+      "sha256": "76bf2e9bbd2fe72e8d0437a13a5a5eec52cfb1187a99ef1df46e6ce51562b925"
+    },
+    {
+      "id": "iron-warden-idle",
+      "path": "assets/game-art/production-scene/exports/entities/iron-warden-idle.png",
+      "category": "entity",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "contributesTo": ["world-entities"],
+      "sha256": "a10be62e061241683ba598ed4d9032880704a5f0c24bf38f9eff0a9bd138af4a"
+    },
+    {
+      "id": "iron-warden-shield-slam",
+      "path": "assets/game-art/production-scene/exports/entities/iron-warden-shield-slam.png",
+      "category": "entity",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "contributesTo": ["world-entities"],
+      "sha256": "153dc9095ee96907c600377bac6cb7155cc97ac62d0a4b7e7ed7889ac3e0faf2"
+    },
+    {
+      "id": "mine-raider-attack",
+      "path": "assets/game-art/production-scene/exports/entities/mine-raider-attack.png",
+      "category": "entity",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "contributesTo": ["world-entities"],
+      "sha256": "406330aa7f1331d0d1c6e0120352f210a7055cc847a66693b9fab0cc8bde5c1b"
+    },
+    {
+      "id": "mine-raider-idle",
+      "path": "assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
+      "category": "entity",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "contributesTo": ["world-entities"],
+      "sha256": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83"
+    },
+    {
+      "id": "raider-calibration-card",
+      "path": "assets/game-art/production-scene/exports/diagnostics/raider-calibration-card.png",
+      "category": "diagnostic-subject",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-review-only",
+      "contributesTo": ["review-diagnostics"],
+      "sha256": "67e58a9c4d2d0d04eee1b97507e09d875c0322b1624cd8e2f5ec51386c2818c9"
+    },
+    {
+      "id": "solid-raider-proxy",
+      "path": "assets/game-art/production-scene/exports/diagnostics/solid-raider-proxy.png",
+      "category": "diagnostic-subject",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-review-only",
+      "contributesTo": ["review-diagnostics"],
+      "sha256": "8020dcd21259ba28fa32ea37537c50240b75aab20eae74bd864a63d8cdb17bcc"
+    },
+    {
+      "id": "solid-warden-proxy",
+      "path": "assets/game-art/production-scene/exports/diagnostics/solid-warden-proxy.png",
+      "category": "diagnostic-subject",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-review-only",
+      "contributesTo": ["review-diagnostics"],
+      "sha256": "e0c3112b89b02d6a3dce24b97ce81d94adf7cfed3f0f39f4657487a951a298f4"
+    },
+    {
+      "id": "warden-calibration-card",
+      "path": "assets/game-art/production-scene/exports/diagnostics/warden-calibration-card.png",
+      "category": "diagnostic-subject",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-review-only",
+      "contributesTo": ["review-diagnostics"],
+      "sha256": "ab626707a1f61ee1a04f25c9a0611856214808620d6109c35b8bd82188e8e072"
+    },
+    {
+      "id": "hostile-faction-ring",
+      "path": "assets/game-art/production-scene/exports/effects/hostile-faction-ring.png",
+      "category": "effect",
+      "dimensions": [78, 36],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha",
+      "contributesTo": ["world-effects"],
+      "sha256": "19e2c3a9c1961a48b4552c50f52c317af799b7b71bdbd533e00bbd31a559eb3c"
+    },
+    {
+      "id": "shield-slam-impact",
+      "path": "assets/game-art/production-scene/exports/effects/shield-slam-impact.png",
+      "category": "effect",
+      "dimensions": [140, 96],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha",
+      "contributesTo": ["world-effects"],
+      "sha256": "b108174f8bd5145af09267ceea68c845256271a479795db04318652c65cb0ee0"
+    },
+    {
+      "id": "warden-selection-ring",
+      "path": "assets/game-art/production-scene/exports/effects/warden-selection-ring.png",
+      "category": "effect",
+      "dimensions": [94, 42],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha",
+      "contributesTo": ["world-effects"],
+      "sha256": "e5e7e6e2cf98729d396e892652bf7a1edd0b7886036563f39fcb700b637572d1"
+    },
+    {
+      "id": "warm-light-overlay",
+      "path": "assets/game-art/production-scene/exports/lighting/warm-light-overlay.png",
+      "category": "lighting",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-normal-srgb-no-entities",
+      "contributesTo": ["world-lighting"],
+      "sha256": "d506b19d36d32ae5a55f2d76a24c5306042a3a6f6e44b043b9a9386ec7a8f0af"
+    },
+    {
+      "id": "architecture-mask",
+      "path": "assets/game-art/production-scene/exports/occlusion/architecture-mask.png",
+      "category": "occlusion-mask",
+      "dimensions": [1280, 720],
+      "mode": "L",
+      "alphaSemantics": "grayscale-mask",
+      "contributesTo": ["foreground-occlusion"],
+      "sha256": "7badeac99d022bed591978c79e25153a41d342198fc5330b6b7654dbbcb0b1df"
+    },
+    {
+      "id": "foreground-occluder",
+      "path": "assets/game-art/production-scene/exports/occlusion/foreground-occluder.png",
+      "category": "foreground",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-environment-only",
+      "contributesTo": ["foreground-occlusion"],
+      "sha256": "6dc02193115a745222a767efc3cdd8693c7a65f6e7d026562311ed98d1c3e974"
+    },
+    {
+      "id": "portal-lower-gate-mask",
+      "path": "assets/game-art/production-scene/exports/occlusion/portal-lower-gate-mask.png",
+      "category": "portal-occlusion-mask",
+      "dimensions": [1280, 720],
+      "mode": "L",
+      "alphaSemantics": "grayscale-mask-portal-local",
+      "contributesTo": ["portal-occlusion"],
+      "sha256": "b8da19fa46b04dd6a1f73622603bf21ebbd4df386874fc36e479418584a9cd74"
+    },
+    {
+      "id": "portal-upper-gate-mask",
+      "path": "assets/game-art/production-scene/exports/occlusion/portal-upper-gate-mask.png",
+      "category": "portal-occlusion-mask",
+      "dimensions": [1280, 720],
+      "mode": "L",
+      "alphaSemantics": "grayscale-mask-portal-local",
+      "contributesTo": ["portal-occlusion"],
+      "sha256": "acca5c9b885823d6ce17471587799b8f99aa64d5ed74e4e4c32de4eee13af9fa"
+    },
+    {
+      "id": "portal-lower-gate-occluder",
+      "path": "assets/game-art/production-scene/exports/occlusion/portal-lower-gate-occluder.png",
+      "category": "portal-foreground",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-source-pixel-exact-zero-rgb",
+      "contributesTo": ["portal-occlusion"],
+      "sha256": "41c519ed2819754496f9b77b38e2e8b25674ae067f33d87ab3e5a0819cc28b0b"
+    },
+    {
+      "id": "portal-upper-gate-occluder",
+      "path": "assets/game-art/production-scene/exports/occlusion/portal-upper-gate-occluder.png",
+      "category": "portal-foreground",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-source-pixel-exact-zero-rgb",
+      "contributesTo": ["portal-occlusion"],
+      "sha256": "8cad77fd6e964bb26745fadf29e2f178357e91478691da5bde77c1ff0f02a07f"
+    },
+    {
+      "id": "bottom-hud-frame",
+      "path": "assets/game-art/production-scene/exports/hud/bottom-hud-frame.png",
+      "category": "hud",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "d9b8b9d597f050153e8e7bc41fb8c8e5076f2788a13497c3b5dece3c1dbf1ebe"
+    },
+    {
+      "id": "fortress-value",
+      "path": "assets/game-art/production-scene/exports/hud/fortress-value.png",
+      "category": "hud",
+      "dimensions": [240, 50],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "7c0af03515c50966c420b075ee2c0d9259e2f4a7616e28b2aa2c28a24acafda3"
+    },
+    {
+      "id": "health-value",
+      "path": "assets/game-art/production-scene/exports/hud/health-value.png",
+      "category": "hud",
+      "dimensions": [190, 100],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "b4ae7df59ce62c0779ff0c351a52174d741845a7c5abb925dfecd1db5b11f1d7"
+    },
+    {
+      "id": "ore-value",
+      "path": "assets/game-art/production-scene/exports/hud/ore-value.png",
+      "category": "hud",
+      "dimensions": [240, 50],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "fc2b3ff4ce049546e984502df62d77ece4934fc751d445f92ee41c7cec3f40ef"
+    },
+    {
+      "id": "pause-state",
+      "path": "assets/game-art/production-scene/exports/hud/pause-state.png",
+      "category": "hud",
+      "dimensions": [150, 100],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "b03357db4318e587a5ae408bda3d0669c5dd2683bd11e63fb4c54bdeeb89faec"
+    },
+    {
+      "id": "resume-state",
+      "path": "assets/game-art/production-scene/exports/hud/resume-state.png",
+      "category": "hud",
+      "dimensions": [150, 100],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "af152dd89cc0ffa6bb81fc47328054c56234d7fd72b2001bed5c773e5ca07d67"
+    },
+    {
+      "id": "shield-slam-cooldown-state",
+      "path": "assets/game-art/production-scene/exports/hud/shield-slam-cooldown-state.png",
+      "category": "hud",
+      "dimensions": [240, 100],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "e5ed18d34c546f6996b26c030b157ea16ee1cbc0849503d611017ee7cddc0dd3"
+    },
+    {
+      "id": "shield-slam-ready-state",
+      "path": "assets/game-art/production-scene/exports/hud/shield-slam-ready-state.png",
+      "category": "hud",
+      "dimensions": [240, 100],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "274192465b9b44493a9e6265d8ed1340a77a45d88f95254d837c82dc13dd3ecf"
+    },
+    {
+      "id": "target-nearest-state",
+      "path": "assets/game-art/production-scene/exports/hud/target-nearest-state.png",
+      "category": "hud",
+      "dimensions": [190, 100],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "4373025a0d3a5919ae7b57490220210c40c667a273f298fb6d6f3a469d9d2e2b"
+    },
+    {
+      "id": "target-strongest-state",
+      "path": "assets/game-art/production-scene/exports/hud/target-strongest-state.png",
+      "category": "hud",
+      "dimensions": [190, 100],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "fad049cf7c94a10196970b76e112391aa94839ed16f4b1f3ac921aa3a980bcb5"
+    },
+    {
+      "id": "top-hud-frame",
+      "path": "assets/game-art/production-scene/exports/hud/top-hud-frame.png",
+      "category": "hud",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "3150de79b89e911a6695563b40593e7d603212b831a26b6451a4e6373d91d89c"
+    },
+    {
+      "id": "warden-name",
+      "path": "assets/game-art/production-scene/exports/hud/warden-name.png",
+      "category": "hud",
+      "dimensions": [180, 100],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "ab544d22536b4d1cdb65d4a3ced57833d2d53916f9aac54b4e87029b4a90863a"
+    },
+    {
+      "id": "warden-portrait",
+      "path": "assets/game-art/production-scene/exports/hud/warden-portrait.png",
+      "category": "hud",
+      "dimensions": [78, 80],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "1507f194e6a31c64e3c33864e7c2245dda443ef2581a7774a69f3797aea18fc9"
+    },
+    {
+      "id": "wave-value",
+      "path": "assets/game-art/production-scene/exports/hud/wave-value.png",
+      "category": "hud",
+      "dimensions": [228, 50],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-runtime-state-or-chrome",
+      "contributesTo": ["screen-space-hud"],
+      "sha256": "a817b8ccaea90127b67eaf889075fc5d163ffb6300564b9ddc5ae2c673b47fd3"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "approved-keyframe-vs-reconstruction",
+      "path": "docs/visual-evidence/production-scene/approved-keyframe-vs-reconstruction.png",
+      "category": "evidence",
+      "dimensions": [2560, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "ae966e14464c4feeeeca19777ae788d2fc593c4a1a4e9010c362845b9252781e"
+    },
+    {
+      "id": "character-scale-study",
+      "path": "docs/visual-evidence/production-scene/character-scale-study.png",
+      "category": "evidence",
+      "dimensions": [2560, 820],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "aedda8addbc644c7a53c68976a1f691aa8e90349d782eb1eafbdb7ceaa383aa0"
+    },
+    {
+      "id": "clean-plate",
+      "path": "docs/visual-evidence/production-scene/clean-plate.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "76bf2e9bbd2fe72e8d0437a13a5a5eec52cfb1187a99ef1df46e6ce51562b925"
+    },
+    {
+      "id": "composition-decision",
+      "path": "docs/visual-evidence/production-scene/composition-decision.png",
+      "category": "evidence",
+      "dimensions": [2560, 900],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "73de26937ae47e363466f5acb7d6458eff93abb48f13bcb60c468f828976d45e"
+    },
+    {
+      "id": "entity-removal-grid",
+      "path": "docs/visual-evidence/production-scene/entity-removal-grid.png",
+      "category": "evidence",
+      "dimensions": [1280, 820],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "96672eb6afc4b301b215d5e70a09811452f0f186790cabe9b10667975ccdaac5"
+    },
+    {
+      "id": "entity-state-alignment",
+      "path": "docs/visual-evidence/production-scene/entity-state-alignment.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "47e2d4b122c3544986e4f04f7d15ba99945c39dc03ee0a321ee7ddca7eb837ae"
+    },
+    {
+      "id": "environment-and-presentation-lighting",
+      "path": "docs/visual-evidence/production-scene/environment-and-presentation-lighting.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "2148726c6fa8ba8a5c4d3a4447419e3d4588f469d3e5c67f214c8e86d619e29a"
+    },
+    {
+      "id": "foreground-occlusion-isolation",
+      "path": "docs/visual-evidence/production-scene/foreground-occlusion-isolation.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "3a6edce710de011a4aa896771287ba2f2b303e1d23c68a2f10169a905158de1b"
+    },
+    {
+      "id": "hud-control-isolation",
+      "path": "docs/visual-evidence/production-scene/hud-control-isolation.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "77943111bdf3de895c49c1bcf2f1810b75fde4d365bfc6061072695251189578"
+    },
+    {
+      "id": "hud-state-mutation",
+      "path": "docs/visual-evidence/production-scene/hud-state-mutation.png",
+      "category": "evidence",
+      "dimensions": [2560, 820],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "83a44a1b03ac95f6c9d10a68449e347a83fa4166da061247765f8341d4c20665"
+    },
+    {
+      "id": "iron-warden-alpha-states-4x",
+      "path": "docs/visual-evidence/production-scene/iron-warden-alpha-states-4x.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "a854ae4be05b8b137c9aeb5f9ef4ca167d63270ead001b1fb5be22a933862b92"
+    },
+    {
+      "id": "iron-warden-alpha-states-native",
+      "path": "docs/visual-evidence/production-scene/iron-warden-alpha-states-native.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "fc0cd5fd0e1153b9d43e7649fda941c7c601621666a48f234345361b1c5a1cd2"
+    },
+    {
+      "id": "lighting-alpha-isolation",
+      "path": "docs/visual-evidence/production-scene/lighting-alpha-isolation.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "d506b19d36d32ae5a55f2d76a24c5306042a3a6f6e44b043b9a9386ec7a8f0af"
+    },
+    {
+      "id": "lighting-entity-proof",
+      "path": "docs/visual-evidence/production-scene/lighting-entity-proof.png",
+      "category": "evidence",
+      "dimensions": [1280, 820],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "1088b099e43efaa0a6545b60ad81e05257fa26b5b41abda43d1f7c945b3d459c"
+    },
+    {
+      "id": "mine-raider-alpha-states-4x",
+      "path": "docs/visual-evidence/production-scene/mine-raider-alpha-states-4x.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "2f90578fba61bf28d713f8804ad2067cc203f4ec954bb105d5ce98a0077ffbf1"
+    },
+    {
+      "id": "mine-raider-alpha-states-native",
+      "path": "docs/visual-evidence/production-scene/mine-raider-alpha-states-native.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "856de9c04fbafb5a5b404bb34b579597a3d6bb8ab28dd234d3b7e2be31481ade"
+    },
+    {
+      "id": "occlusion-depth-proof",
+      "path": "docs/visual-evidence/production-scene/occlusion-depth-proof.png",
+      "category": "evidence",
+      "dimensions": [1280, 820],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "39cbe79ad027def5209cf48c99a0eaa885a8201224db97244cc08c6b454f495f"
+    },
+    {
+      "id": "portal-calibration-card-sweeps",
+      "path": "docs/visual-evidence/production-scene/portal-calibration-card-sweeps.png",
+      "category": "evidence",
+      "dimensions": [4696, 724],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "629ae13f48fe33fd600eb46ae320ee0d98dafa3dbff8d6cf4f4b019f1ce7d670"
+    },
+    {
+      "id": "portal-lower-gate-transition",
+      "path": "docs/visual-evidence/production-scene/portal-lower-gate-transition.png",
+      "category": "evidence",
+      "dimensions": [874, 396],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "71c7b4952f96ae21ba1e3b891bcfff0111a62bb61c8a6f792715b7afb2e35af5"
+    },
+    {
+      "id": "portal-lower-mouth-exclusion",
+      "path": "docs/visual-evidence/production-scene/portal-lower-mouth-exclusion.png",
+      "category": "evidence",
+      "dimensions": [1460, 1200],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "9ba6a49f5944b10054eb33c5edb770a9c617be7e7dfcb4988b49cfaa525b5904"
+    },
+    {
+      "id": "portal-mask-isolation",
+      "path": "docs/visual-evidence/production-scene/portal-mask-isolation.png",
+      "category": "evidence",
+      "dimensions": [4596, 2235],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "eda5c6cec803288784c7c1181b6f4e10cc5f6d9cdf712d10249e4d86efca348d"
+    },
+    {
+      "id": "portal-ring-effect-depth",
+      "path": "docs/visual-evidence/production-scene/portal-ring-effect-depth.png",
+      "category": "evidence",
+      "dimensions": [2544, 860],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "a77dc5fe5f741b15b5370fd20693eb0d5c540f95b5aeb2844c06e153a017e99b"
+    },
+    {
+      "id": "portal-solid-proxy-sweeps",
+      "path": "docs/visual-evidence/production-scene/portal-solid-proxy-sweeps.png",
+      "category": "evidence",
+      "dimensions": [4696, 724],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "3e847242583fdab2d4eac4444e07b80969482e722010ac17b33f70cce7ebadb1"
+    },
+    {
+      "id": "portal-upper-boundary-diagnostics",
+      "path": "docs/visual-evidence/production-scene/portal-upper-boundary-diagnostics.png",
+      "category": "evidence",
+      "dimensions": [2544, 860],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "76c4f2b4f20f6109b3c0fb53cd5a804f6c9f4df30bd380ee51218c8e829591fa"
+    },
+    {
+      "id": "portal-upper-gate-transition",
+      "path": "docs/visual-evidence/production-scene/portal-upper-gate-transition.png",
+      "category": "evidence",
+      "dimensions": [1724, 406],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "636d9d704199c6354bb32f491de5a9823ba5fe4cc2bbd40d074a4d9248103a36"
+    },
+    {
+      "id": "reconstruction-entities-removed",
+      "path": "docs/visual-evidence/production-scene/reconstruction-entities-removed.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "6cb57edef32a69e055e56bc55b6aa31f8f78393ec2b146531a3f26121404fc99"
+    },
+    {
+      "id": "reconstruction-one-warden-one-hostile",
+      "path": "docs/visual-evidence/production-scene/reconstruction-one-warden-one-hostile.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "bf76addeb39de3babc441cb51df27ae736109448409b80a477beb4450f4045ef"
+    },
+    {
+      "id": "route-anchor-validation",
+      "path": "docs/visual-evidence/production-scene/route-anchor-validation.png",
+      "category": "evidence",
+      "dimensions": [1280, 860],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "0c228d633cb540601539a4eba77d62c70170edc92531f53ebe127bd9e63d3678"
+    },
+    {
+      "id": "route-registration-closeups",
+      "path": "docs/visual-evidence/production-scene/route-registration-closeups.png",
+      "category": "evidence",
+      "dimensions": [1920, 680],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "4088ecf2caa5d2577add6e541519c7dc7b7f321ff510035259126743819f06c9"
+    },
+    {
+      "id": "selection-and-combat-effect-isolation",
+      "path": "docs/visual-evidence/production-scene/selection-and-combat-effect-isolation.png",
+      "category": "evidence",
+      "dimensions": [1280, 720],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "0d4495bf420a57309f34442a9313778258a8a3e44296f6b79461fb3cbf48c735"
+    },
+    {
+      "id": "shield-slam-effect-proof",
+      "path": "docs/visual-evidence/production-scene/shield-slam-effect-proof.png",
+      "category": "evidence",
+      "dimensions": [2560, 820],
+      "mode": "RGBA",
+      "alphaSemantics": "review-only",
+      "contributesTo": ["review"],
+      "sha256": "92ce2c1dfff97ee7229ea6e73cb3123a127c10255d5aa759d0a03a57ccf0b5b7"
+    }
+  ]
+}
