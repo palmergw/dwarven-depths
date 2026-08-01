@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "captureId": "capture-287-2b557845f6f6062aa062",
-  "sourceHead": "77e993cc61526c42ec90f444dbf65274c89f5b5e",
+  "captureId": "capture-287-5002f43ac7fa2406accc",
+  "sourceHead": "ee60afec3e061048eac8cfc14c4e5d97d6d4ecff",
   "capture": {
     "screenshot": "shuttergate-truth-screen.png",
     "screenshotSha256": "62f37aad294095109d12cb0e7fce20c1bddf64866d4383689b5d576ad08880b8",
@@ -14,6 +14,59 @@
     "path": "apps/web/src/shuttergate-environment-manifest.json",
     "sha256": "e858f3ab22ddad407a0f2376729c99f6107646db130824a55a9f89bab775d456",
     "prohibitedRolesAbsent": true
+  },
+  "visualAssetAudit": {
+    "valid": true,
+    "sourceSha256": {
+      "dwarf": "a10be62e061241683ba598ed4d9032880704a5f0c24bf38f9eff0a9bd138af4a",
+      "enemy": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83",
+      "foreground": "763e0f0317f5dc7fae7c7159e3a0fb7f5c85885766525250e5c7394aaeaca4a5"
+    },
+    "assets": {
+      "dwarf": {
+        "width": 112,
+        "height": 72,
+        "alphaBounds": [24, 10, 64, 56],
+        "nonzeroAlphaPixels": 2354
+      },
+      "enemy": {
+        "width": 80,
+        "height": 60,
+        "alphaBounds": [14, 10, 52, 44],
+        "nonzeroAlphaPixels": 1341
+      },
+      "foreground": {
+        "width": 1280,
+        "height": 720,
+        "alphaBounds": [1008, 54, 246, 220],
+        "nonzeroAlphaPixels": 21053
+      }
+    },
+    "entities": [
+      {
+        "id": "entity.dwarf.warden",
+        "faction": "dwarf",
+        "sourceCanvas": [112, 72],
+        "sourceAlphaBounds": [24, 10, 64, 56],
+        "worldAlphaBounds": [573, 264, 64, 56],
+        "nonzeroAlphaPixels": 2354,
+        "intersectsWorldViewport": true,
+        "subjectPixelsBehindArtifact": 0,
+        "matchesRuntimeRegistry": true
+      },
+      {
+        "id": "entity.enemy.shield_slam_target",
+        "faction": "enemy",
+        "sourceCanvas": [80, 60],
+        "sourceAlphaBounds": [14, 10, 52, 44],
+        "worldAlphaBounds": [1034, 156, 52, 44],
+        "nonzeroAlphaPixels": 1341,
+        "intersectsWorldViewport": true,
+        "subjectPixelsBehindArtifact": 478,
+        "matchesRuntimeRegistry": true
+      }
+    ],
+    "occlusionMatchesRuntime": true
   },
   "viewport": [1440, 900],
   "devicePixelRatio": 1,
@@ -76,7 +129,7 @@
       "witness": {
         "entityId": "entity.enemy.shield_slam_target",
         "subjectAlphaPixels": 1341,
-        "subjectPixelsBehindArtifact": 469
+        "subjectPixelsBehindArtifact": 478
       }
     },
     "alignment": {
