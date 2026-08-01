@@ -24,6 +24,8 @@
     "build:mobile:docker": "./scripts/build-mobile-docker.sh",
     "test:web-offline": "node scripts/test-web-offline.mjs",
     "capture:shuttergate-truth": "node scripts/capture-shuttergate-truth.mjs",
+    "capture:shuttergate-clip": "node scripts/capture-shuttergate-clip.mjs",
+    "capture:shuttergate-comparison": "uv run --with-requirements assets/game-art/layered-map-poc/requirements.lock python3 scripts/build_shuttergate_comparison.py",
     "sim": "pnpm build && node apps/sim-cli/dist/cli.js",
     "sim:built": "node apps/sim-cli/dist/cli.js",
     "validate": "pnpm sim validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",

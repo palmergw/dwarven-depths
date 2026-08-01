@@ -88,6 +88,10 @@ export interface TruthScreenSidecar {
       readonly x: number;
       readonly y: number;
       readonly nominalHeight: number;
+      readonly canvasBounds: readonly [number, number, number, number];
+      readonly alphaBounds: readonly [number, number, number, number];
+      readonly nonzeroAlphaPixels: number;
+      readonly intersectsUnobscuredWorldViewport: boolean;
     }[];
   };
   readonly occlusion: {
@@ -95,6 +99,11 @@ export interface TruthScreenSidecar {
     readonly layerOrder: readonly string[];
     readonly clips: readonly ["world-ring", "world-effect", "world-subject"];
     readonly exempts: readonly ["screen-focus-indicator", "hud"];
+    readonly witness: {
+      readonly entityId: string;
+      readonly subjectAlphaPixels: 1341;
+      readonly subjectPixelsBehindArtifact: 469;
+    };
   };
   readonly alignment: {
     readonly snapshotCount: number;
@@ -201,6 +210,22 @@ export function buildTruthScreenSidecar(
   const entities = primitives.entities.flatMap((primitive) => {
     const entity = byId.get(primitive.id);
     if (entity === undefined) return [];
+    const isWarden = entity.faction === "dwarf";
+    const canvasWidth = isWarden ? 112 : 80;
+    const canvasHeight = isWarden ? 72 : 60;
+    const pivotX = isWarden ? 56 : 40;
+    const pivotY = isWarden ? 66 : 54;
+    const sourceAlphaBounds = isWarden
+      ? ([24, 10, 88, 66] as const)
+      : ([14, 10, 66, 54] as const);
+    const canvasLeft = Math.round(primitive.x - pivotX);
+    const canvasTop = Math.round(primitive.y - pivotY);
+    const alphaBounds = [
+      canvasLeft + sourceAlphaBounds[0],
+      canvasTop + sourceAlphaBounds[1],
+      sourceAlphaBounds[2] - sourceAlphaBounds[0],
+      sourceAlphaBounds[3] - sourceAlphaBounds[1]
+    ] as const;
     return [
       {
         id: entity.id,
@@ -209,7 +234,20 @@ export function buildTruthScreenSidecar(
         x: Math.round(primitive.x),
         y: Math.round(primitive.y),
         nominalHeight:
-          entity.faction === "dwarf" ? 56 : entity.faction === "enemy" ? 44 : 0
+          entity.faction === "dwarf" ? 56 : entity.faction === "enemy" ? 44 : 0,
+        canvasBounds: [
+          canvasLeft,
+          canvasTop,
+          canvasWidth,
+          canvasHeight
+        ] as const,
+        alphaBounds,
+        nonzeroAlphaPixels: isWarden ? 2354 : 1341,
+        intersectsUnobscuredWorldViewport:
+          alphaBounds[0] < WIDTH &&
+          alphaBounds[1] < HEIGHT &&
+          alphaBounds[0] + alphaBounds[2] > 0 &&
+          alphaBounds[1] + alphaBounds[3] > 0
       }
     ];
   });
@@ -250,7 +288,12 @@ export function buildTruthScreenSidecar(
         "hud"
       ],
       clips: ["world-ring", "world-effect", "world-subject"],
-      exempts: ["screen-focus-indicator", "hud"]
+      exempts: ["screen-focus-indicator", "hud"],
+      witness: {
+        entityId: "entity.enemy.shield_slam_target",
+        subjectAlphaPixels: 1341,
+        subjectPixelsBehindArtifact: 469
+      }
     },
     alignment: {
       snapshotCount: snapshot.entities.length,
@@ -258,7 +301,12 @@ export function buildTruthScreenSidecar(
       exactlyOneWardenAndOneHostile,
       valid:
         snapshot.entities.length === entities.length &&
-        exactlyOneWardenAndOneHostile
+        exactlyOneWardenAndOneHostile &&
+        entities.every(
+          (entity) =>
+            entity.nonzeroAlphaPixels > 0 &&
+            entity.intersectsUnobscuredWorldViewport
+        )
     }
   };
 }

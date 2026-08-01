@@ -1,11 +1,12 @@
 import { execFile as execFileCallback } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { chromium } from "playwright";
 
 const execFile = promisify(execFileCallback);
+const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 
 const baseUrl = process.env.DD_WEB_URL ?? "http://127.0.0.1:5173";
 const outputDirectory = new URL(
@@ -16,6 +17,42 @@ const screenshotUrl = new URL("shuttergate-truth-screen.png", outputDirectory);
 const sidecarUrl = new URL("shuttergate-truth-screen.json", outputDirectory);
 
 await mkdir(outputDirectory, { recursive: true });
+await Promise.all([
+  rm(screenshotUrl, { force: true }),
+  rm(sidecarUrl, { force: true })
+]);
+const { stdout: sourceHeadOutput } = await execFile(
+  "git",
+  ["rev-parse", "HEAD"],
+  { cwd: repositoryRoot }
+);
+const sourceHead = sourceHeadOutput.trim();
+const environmentManifestPath = fileURLToPath(
+  new URL(
+    "../apps/web/src/shuttergate-environment-manifest.json",
+    import.meta.url
+  )
+);
+const environmentManifestBytes = await readFile(environmentManifestPath);
+const environmentManifest = JSON.parse(
+  environmentManifestBytes.toString("utf8")
+);
+if (
+  !Array.isArray(environmentManifest.layers) ||
+  environmentManifest.layers.some((layer) =>
+    environmentManifest.prohibitedRoles.includes(layer.role)
+  )
+)
+  throw new Error("environment manifest contains a prohibited runtime role");
+for (const layer of environmentManifest.layers) {
+  const bytes = await readFile(new URL(`../${layer.source}`, import.meta.url));
+  const actual = createHash("sha256").update(bytes).digest("hex");
+  if (actual !== layer.sha256)
+    throw new Error(`environment layer hash mismatch: ${layer.id}`);
+}
+const environmentManifestSha256 = createHash("sha256")
+  .update(environmentManifestBytes)
+  .digest("hex");
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({
@@ -39,6 +76,9 @@ try {
     viewport: [window.innerWidth, window.innerHeight],
     devicePixelRatio: window.devicePixelRatio,
     truth: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__,
+    hudCountLabels: [...document.querySelectorAll(".hud-count")].map((node) =>
+      node.textContent?.trim()
+    ),
     controls: {
       pause: document.querySelector(".combat-pause")?.textContent,
       shieldSlamReady:
@@ -57,6 +97,7 @@ try {
     evidence.truth.registry.dwarfCount !== 1 ||
     evidence.truth.registry.hostileCount !== 1 ||
     evidence.truth.alignment.valid !== true ||
+    evidence.hudCountLabels.join("|") !== "Warden 1|Hostiles 1" ||
     evidence.controls.pause !== "Resume combat" ||
     evidence.controls.shieldSlamReady !== true
   )
@@ -69,6 +110,17 @@ try {
   const screenshotSha256 = createHash("sha256")
     .update(await readFile(screenshotPath))
     .digest("hex");
+  const captureId = `capture-287-${createHash("sha256")
+    .update(
+      [
+        sourceHead,
+        evidence.truth.fixtureId,
+        String(evidence.truth.snapshot.tick),
+        screenshotSha256
+      ].join("\u0000")
+    )
+    .digest("hex")
+    .slice(0, 20)}`;
 
   await page.getByRole("button", { name: "Nearest", exact: true }).click();
   await page.getByRole("button", { name: "Shield Slam" }).click();
@@ -95,12 +147,20 @@ try {
     `${JSON.stringify(
       {
         schemaVersion: 1,
+        captureId,
+        sourceHead,
         capture: {
           screenshot: "shuttergate-truth-screen.png",
           screenshotSha256,
           viewport: evidence.viewport,
           devicePixelRatio: evidence.devicePixelRatio,
           route: "checkpoint -> preparation -> paused combat"
+        },
+        environmentManifest: {
+          id: environmentManifest.id,
+          path: "apps/web/src/shuttergate-environment-manifest.json",
+          sha256: environmentManifestSha256,
+          prohibitedRolesAbsent: true
         },
         ...evidence,
         interactionVerification

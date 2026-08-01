@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "manifest.web.shuttergate_environment",
+  "frame": [1280, 720],
+  "layers": [
+    {
+      "id": "environment-base",
+      "role": "environment",
+      "source": "assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
+      "sha256": "9603f8ddb4f87d9301dff37dd5661cea95759d1fb12e0531eb6c7c562c3224af"
+    },
+    {
+      "id": "entrance-shell",
+      "role": "foreground-architecture",
+      "source": "assets/game-art/layered-map-poc/blender/outputs/entrance-shell.png",
+      "sha256": "763e0f0317f5dc7fae7c7159e3a0fb7f5c85885766525250e5c7394aaeaca4a5"
+    }
+  ],
+  "prohibitedRoles": ["entity", "effect", "state", "hud"]
+}
