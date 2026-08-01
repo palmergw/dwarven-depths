@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "classification": "diagnostic-only-running-client-depth-probe",
+  "sourceHead": "9363f964d1f1eec813d15c7708979f7486059e96",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [
+    1440,
+    900
+  ],
+  "tick": 1,
+  "probeAnchor": [
+    1060,
+    200
+  ],
+  "hostilePresentation": {
+    "nonzeroAlphaPixels": 1341,
+    "fullAlphaPixels": 1135,
+    "partialAlphaPixels": 206,
+    "fullAlphaRatio": 0.8463832960477256
+  },
+  "foregroundOverlapPixels": 478,
+  "layerOrder": [
+    "environment-base",
+    "world-rings",
+    "world-effects",
+    "world-subjects",
+    "entrance-shell",
+    "screen-focus-indicators",
+    "hud"
+  ],
+  "screenshot": "shuttergate-depth-probe.png",
+  "screenshotSha256": "8b871ed7464709d18fc96d530c42d4162f7e18274b88a9fe2dfe6cb0b74a5bd2"
+}

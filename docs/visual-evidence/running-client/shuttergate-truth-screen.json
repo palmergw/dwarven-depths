@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "captureId": "capture-287-70c833a37da0e31d44c4",
-  "sourceHead": "05b5aaea01df10b2fddef5e8b542b454dde24199",
+  "captureId": "capture-287-8798957e4462efe4218a",
+  "sourceHead": "9363f964d1f1eec813d15c7708979f7486059e96",
   "capture": {
     "screenshot": "shuttergate-truth-screen.png",
-    "screenshotSha256": "79fa1c34f5ee3e2c68c6966c3666e1ca9c9162f12c24d512d5bdc6a97f112548",
+    "screenshotSha256": "3c58cc05f76bfdff4edd26aa19d55dbec70824750897875dea21c6695abbaa7c",
     "viewport": [1440, 900],
     "devicePixelRatio": 1,
     "route": "checkpoint -> preparation -> paused combat"
@@ -27,13 +27,17 @@
         "width": 112,
         "height": 72,
         "alphaBounds": [24, 10, 64, 56],
-        "nonzeroAlphaPixels": 2354
+        "nonzeroAlphaPixels": 2354,
+        "fullAlphaPixels": 2157,
+        "partialAlphaPixels": 197
       },
       "enemy": {
         "width": 80,
         "height": 60,
         "alphaBounds": [14, 10, 52, 44],
-        "nonzeroAlphaPixels": 1341
+        "nonzeroAlphaPixels": 1341,
+        "fullAlphaPixels": 1135,
+        "partialAlphaPixels": 206
       },
       "foreground": {
         "width": 1280,
@@ -50,6 +54,9 @@
         "sourceAlphaBounds": [24, 10, 64, 56],
         "worldAlphaBounds": [573, 264, 64, 56],
         "nonzeroAlphaPixels": 2354,
+        "fullAlphaPixels": 2157,
+        "partialAlphaPixels": 197,
+        "fullAlphaRatio": 0.9163126593033135,
         "intersectsWorldViewport": true,
         "subjectPixelsBehindArtifact": 0,
         "matchesRuntimeRegistry": true
@@ -61,6 +68,9 @@
         "sourceAlphaBounds": [14, 10, 52, 44],
         "worldAlphaBounds": [1004, 226, 52, 44],
         "nonzeroAlphaPixels": 1341,
+        "fullAlphaPixels": 1135,
+        "partialAlphaPixels": 206,
+        "fullAlphaRatio": 0.8463832960477256,
         "intersectsWorldViewport": true,
         "subjectPixelsBehindArtifact": 0,
         "matchesRuntimeRegistry": true
@@ -104,6 +114,8 @@
           "canvasBounds": [549, 254, 112, 72],
           "alphaBounds": [573, 264, 64, 56],
           "nonzeroAlphaPixels": 2354,
+          "fullAlphaPixels": 2157,
+          "partialAlphaPixels": 197,
           "intersectsUnobscuredWorldViewport": true
         },
         {
@@ -116,6 +128,8 @@
           "canvasBounds": [990, 216, 80, 60],
           "alphaBounds": [1004, 226, 52, 44],
           "nonzeroAlphaPixels": 1341,
+          "fullAlphaPixels": 1135,
+          "partialAlphaPixels": 206,
           "intersectsUnobscuredWorldViewport": true
         }
       ]
