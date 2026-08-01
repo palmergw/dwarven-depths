@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import random
+import re
 import subprocess
 import sys
 import tempfile
@@ -49,6 +50,18 @@ RENDER_RECIPES = {
 
 def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def biome_json(data):
+    """Emit deterministic JSON with short numeric arrays in Biome's canonical form."""
+    text = json.dumps(data, indent=2, sort_keys=True)
+    numeric_array = re.compile(r"\[\n((?:\s+-?\d+(?:\.\d+)?,?\n)+)\s+\]")
+
+    def compact(match):
+        values = re.findall(r"-?\d+(?:\.\d+)?", match.group(1))
+        return "[" + ", ".join(values) + "]"
+
+    return numeric_array.sub(compact, text) + "\n"
 
 
 def verify_image(path, alpha_semantics):
@@ -736,6 +749,6 @@ manifest = {
         for name, semantics in OUTPUT_CONTRACT.items()
     },
 }
-MANIFEST.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+MANIFEST.write_text(biome_json(manifest))
 verify_or_exit()
 print("SHARED_SCENE_RENDER_OK", BLEND, OUT)
