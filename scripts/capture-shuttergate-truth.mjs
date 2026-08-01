@@ -76,8 +76,9 @@ try {
     viewport: [window.innerWidth, window.innerHeight],
     devicePixelRatio: window.devicePixelRatio,
     truth: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__,
-    hudCountLabels: [...document.querySelectorAll(".hud-count")].map((node) =>
-      node.textContent?.trim()
+    hudCountLabels: [...document.querySelectorAll(".hud-count")].map(
+      (node) =>
+        `${node.querySelector("dt")?.textContent?.trim()} ${node.querySelector("dd")?.textContent?.trim()}`
     ),
     controls: {
       pause: document.querySelector(".combat-pause")?.textContent,

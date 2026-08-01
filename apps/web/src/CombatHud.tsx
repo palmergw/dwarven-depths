@@ -28,11 +28,11 @@ export function CombatHud({ snapshot, manualPaused = false }: CombatHudProps) {
           <dt>Wave</dt>
           <dd>1 / 5</dd>
         </div>
-        <div>
+        <div className="hud-count" data-faction="dwarf">
           <dt>Warden</dt>
           <dd>{alliedDwarves}</dd>
         </div>
-        <div>
+        <div className="hud-count" data-faction="enemy">
           <dt>Hostiles</dt>
           <dd>{hostileEnemies}</dd>
         </div>
