@@ -92,6 +92,11 @@ try {
     screenshotSha256
   };
   await writeFile(sidecarUrl, `${JSON.stringify(sidecar, null, 2)}\n`);
+  await execFile(
+    "pnpm",
+    ["exec", "biome", "format", "--write", fileURLToPath(sidecarUrl)],
+    { cwd: root }
+  );
   console.log(JSON.stringify({ ok: true, ...sidecar }));
 } finally {
   await browser.close();
