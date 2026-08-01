@@ -1,24 +1,24 @@
 {
   "files": {
-    "evidence/calibration-card-traversal.png": "66089611e713d3a5464fb02dc1b0910e940f1b7e3b4d7730f4d0d5ecf92ae55e",
-    "evidence/edge-framing-clearance.png": "881fac02bb0f35e5e0bd70ba9d1f139655c02b495de47addeb4dec0fce4d31ed",
-    "evidence/entrance-mask-alignment.png": "bfb60a3d19b5688265a15a17babb34bce5a916b73db7e45bb460132a6b78b5d3",
-    "evidence/foreground-artifact-isolation.png": "e4fe19dbc05c406344e6e70d3750f5582237ff3ddf97b28a498721a52a5291f8",
-    "evidence/layered-map-overview.png": "e0e646d957b981daf116fff2ac2e890a337f70cb8f220eba1200f69c12618eff",
+    "evidence/calibration-card-traversal.png": "58c625bb43bfcbfec692f0ee1c13be165b4ffdd82faf1f9a7d8b230aa50b0215",
+    "evidence/edge-framing-clearance.png": "7af338994b54da340322958d5f4f5d8ca846418e561654f58c458263f80686c7",
+    "evidence/entrance-mask-alignment.png": "f49089c2d6af213731abd7e7d2c96ab71d9930c957ccf0a1c87e07f500f2be5c",
+    "evidence/foreground-artifact-isolation.png": "d78f62f943fb929b563946820c0444eb65c829d99dffdd127f21413749848ecb",
+    "evidence/layered-map-overview.png": "62ed8c999b7a5bb65aaf88b5defd6dad7fdb1d491bf30d6afd2ec93da49c73b4",
     "evidence/no-op-difference-heatmap.png": "b2045b12b59e772519c0025b57840090d2176a6c1297c534280203d151616976",
-    "evidence/production-sprite-traversal.png": "ca156ba2d49a146798d8e0039d4609e9de1b16bfe1c1eeef6eb598349ac0dd75",
+    "evidence/production-sprite-traversal.png": "d4430cd24b6f5f005c57477668ee70b3f0767ca40d9d26cd0aa79c1f99deb579",
     "evidence/shared-camera-foreground-isolation.png": "570efe0cdc68d8c4dd0fbb2d71a558b8991b94a2967e52de930c4ebc74f267f1",
-    "evidence/shared-camera-product-owner-review.png": "d5bed232fe48c8604e93ffd37432d87489f3bb7029dc19211eaf342028ff6764",
+    "evidence/shared-camera-product-owner-review.png": "20cf371f8143b793bcd541c958e6b8a6d535bd05faa516f8cc6ba5eb84ce3064",
     "evidence/shared-camera-review-index.md": "0d281983f627e3618b760773f241c6e64cbc0e4b2654bb094b5f49b8feb6d177",
-    "evidence/solid-proxy-traversal.png": "de8b942acaf41b3288012ffefe528d7714ec636dd734c9daeb92f0c0de6003f7",
-    "exports/environment/layered-shuttergate-clean-plate-1280x720.png": "6a92764d378ccf87d9653705301f66f3c500db50caff1e4a78dcbfaf67dff7ce",
-    "exports/environment/structure-free-environment-base-1280x720.png": "4b00ec5e62d61b1829b07222ff9d6d5d4290a928decba29e8ab91069bbd70479",
+    "evidence/solid-proxy-traversal.png": "cf02b1905551cc7130457b99a6fb2eadcd8e22eb29d99102e4b2ee5faec68d7f",
+    "exports/environment/layered-shuttergate-clean-plate-1280x720.png": "bf02212bb0297fb7379d70c35b2d8527b29cbf09a33dd0476fa6e1f56adba86e",
+    "exports/environment/structure-free-environment-base-1280x720.png": "fdfc71119f06b80581ba0a2ea2f3b8257b01ec9207202f2ca722b81161e9cb2d",
     "exports/foreground/architecture-framing-mask.png": "3ba0e77120b9f897509d4efae7d0129dce8cffa655489e9938e3c2f4a1db21dc",
     "exports/foreground/architecture-framing.png": "62955d13b2b79ed4ec26b33b04a471c83100741332378848d49e87d6cf7ad6d1",
     "exports/foreground/entrance-shell-mask.png": "007b6ae0b05587ffd9ff153918b52a4f8ae14fe4f88412b209af48c87b2aef08",
     "exports/foreground/entrance-shell.png": "870c278fc4b4fccc831b3ec80c218bf65b7c02b4789aafb3d81b379d1019e09e",
     "metadata/layered-map-contract.json": "c63f26bff85e1b094ee22f895d201be228d387eac4787abb7d7d1022695c34b1",
-    "metadata/provenance.json": "3df5b0eedbf907d761114a0e8a8e77a57e9f1cdeea5cf65dd348858709263eb4"
+    "metadata/provenance.json": "f6b18ec17e5b2ba4ddd233ccbeee536b098b6479104949f76b091ee2929885b3"
   },
   "schemaVersion": 1
 }

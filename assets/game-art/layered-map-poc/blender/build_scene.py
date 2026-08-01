@@ -328,27 +328,34 @@ def box(name, loc, scale, material, coll, bevel=0.08, rot=(0, 0, 0)):
     return o
 
 
-def route_segment(name, start, end, half_width, material, coll):
-    """Author one joined floor segment; overlap prevents cracks at bends."""
-    x1, y1 = start
-    x2, y2 = end
-    dx, dy = x2 - x1, y2 - y1
-    length = math.hypot(dx, dy)
-    angle = math.atan2(dy, dx)
-    midpoint = ((x1 + x2) / 2, (y1 + y2) / 2, 0.04)
-    box(name, midpoint, (length / 2 + 0.35, half_width, 0.20), material, coll, bevel=0.10, rot=(0, 0, angle))
-    nx, ny = -dy / length, dx / length
-    for side in (-1, 1):
-        offset = side * (half_width + 0.28)
-        box(
-            f"{name}_Kerb_{side}",
-            (midpoint[0] + nx * offset, midpoint[1] + ny * offset, 0.28),
-            (length / 2 + 0.22, 0.24, 0.38),
-            stone2,
-            coll,
-            bevel=0.07,
-            rot=(0, 0, angle),
+def route_ribbon(name, points, half_width, elevation, thickness, material, coll):
+    """Build one continuous nonbranching floor ribbon with averaged bend normals."""
+    vertices = []
+    for index, (x, y) in enumerate(points):
+        previous = Vector(points[max(0, index - 1)])
+        following = Vector(points[min(len(points) - 1, index + 1)])
+        tangent = (following - previous).normalized()
+        normal = Vector((-tangent.y, tangent.x))
+        vertices.extend(
+            [
+                (x + normal.x * half_width, y + normal.y * half_width, elevation),
+                (x - normal.x * half_width, y - normal.y * half_width, elevation),
+            ]
         )
+    faces = [(index * 2, index * 2 + 1, index * 2 + 3, index * 2 + 2) for index in range(len(points) - 1)]
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    obj.data.materials.append(material)
+    coll.objects.link(obj)
+    solidify = obj.modifiers.new("route_depth", "SOLIDIFY")
+    solidify.thickness = thickness
+    solidify.offset = -1.0
+    bevel = obj.modifiers.new("worn_route_edges", "BEVEL")
+    bevel.width = 0.08
+    bevel.segments = 2
+    return obj
 
 
 def cylinder(name, loc, radius, depth, material, coll, vertices=8, rot=(0, 0, 0)):
@@ -499,17 +506,21 @@ for x in (-15.5, 15.5):
     box(f"FortressSideWall_{x}", (x, 0.0, 2.0), (2.6, 22.0, 2.5), stone, ENV, bevel=0.28)
     for y in range(-18, 19, 6):
         inner_x = x - math.copysign(1.75, x)
-        box(f"MonumentalButtress_{x}_{y}", (inner_x, y, 4.0), (0.9, 1.35, 4.4), stone2, ENV, bevel=0.18)
-        box(f"ButtressCrown_{x}_{y}", (inner_x, y, 8.15), (1.35, 1.75, 0.35), iron, ENV, bevel=0.08)
+        box(f"MonumentalButtress_{x}_{y}", (inner_x, y, 3.2), (0.65, 1.0, 3.4), stone2, ENV, bevel=0.18)
+        box(f"ButtressCrown_{x}_{y}", (inner_x, y, 6.35), (1.0, 1.35, 0.28), iron, ENV, bevel=0.08)
 
 # One readable, nonbranching hooked route crosses a broad central defense floor.
 # Architecture stays beyond its kerbs; there is no overhead bridge or floor-consuming bastion.
 ROUTE_POINTS = ((7.0, 20.0), (7.0, 13.5), (3.5, 8.5), (-2.5, 4.0), (-4.5, -2.0), (-3.0, -9.0), (-5.0, -14.0), (-5.0, -21.0))
-for index, (start, end) in enumerate(zip(ROUTE_POINTS, ROUTE_POINTS[1:])):
-    route_segment(f"DefenseRoute_{index}", start, end, 3.5, roadmat if index % 2 == 0 else stone2, ENV)
+route_ribbon("DefenseRouteBorder", ROUTE_POINTS, 3.9, 0.22, 0.28, stone2, ENV)
+route_ribbon("DefenseRouteFloor", ROUTE_POINTS, 3.5, 0.30, 0.24, roadmat, ENV)
 
 # A large unobstructed court supplies formation room without branching the lane.
-box("CentralDefenseFloor", (-0.5, -3.0, -0.01), (9.5, 8.0, 0.28), roadmat, ENV, bevel=0.18)
+box("CentralDefenseFloor", (-0.5, -3.0, -0.12), (9.5, 8.0, 0.18), stone2, ENV, bevel=0.18)
+for index, x in enumerate((-7.5, -4.0, -0.5, 3.0, 6.5)):
+    box(f"CourtInlayVertical_{index}", (x, -3.0, 0.075), (0.035, 7.5, 0.025), iron, ENV, bevel=0.01)
+for index, y in enumerate((-9.0, -6.0, -3.0, 0.0, 3.0)):
+    box(f"CourtInlayHorizontal_{index}", (-0.5, y, 0.075), (9.0, 0.035, 0.025), iron, ENV, bevel=0.01)
 for x, y, suffix in ((-8.5, 6.5, "West"), (9.0, -8.0, "East")):
     cylinder(f"EdgeDais_{suffix}", (x, y, 0.36), 1.45, 0.10, stone2, ENV, vertices=16)
     cylinder(f"EdgeEmber_{suffix}", (x, y, 0.48), 0.28, 0.10, ember, ENV, vertices=12)

@@ -217,24 +217,21 @@ def boundary_pair(plate:Image.Image,overlay:Image.Image,subject:Image.Image,pivo
 
 def make_framing_clearance_diagnostics(plate:Image.Image,overlay:Image.Image)->Image.Image:
  subject,pivot=sprite('solid-warden')
- groups=[
-  ('FIRST CONTACT',[(880-4*i,210+3*i) for i in range(8)]),
-  ('INCREASING VISIBILITY',[(848-4*i,234+3*i) for i in range(8)]),
-  ('RECOVERY FROM OVERHEAD COVERAGE',[(816-4*i,258+3*i) for i in range(8)]),
-  ('FULL EMERGENCE',[(784-4*i,282+3*i) for i in range(8)]),
- ]
- board=Image.new('RGBA',(2100,1130),(8,12,17,255));panel_header(board,(24,14),'EDGE-FRAMING CLEARANCE — BEFORE | AFTER','route samples prove architecture frames rather than covers the tactical floor')
+ labels=('entrance approach','upper bend','high court','central court','lower court','shutter bend','shutter approach')
+ board=Image.new('RGBA',(2100,610),(8,12,17,255));panel_header(board,(24,14),'EDGE-FRAMING ROUTE CLEARANCE — BEFORE | AFTER','all declared open-floor samples must retain 100% subject alpha after edge framing')
  d=ImageDraw.Draw(board)
- for row,(label,samples) in enumerate(groups):
-  y=105+row*185;d.text((20,y-30),label,font=font(17,True),fill=(235,196,112,255))
-  for i,p in enumerate(samples):
-   pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,80,1);x=20+i*255;board.alpha_composite(pair,(x,y))
-   pct=100*v/(h+v);d.text((x,y+84),f'{p[0]},{p[1]}  {pct:.1f}% visible',font=font(12),fill=(225,230,234,255));d.text((x,y+101),f'alpha V {v}  H {h}',font=font(10),fill=(176,196,208,255));d.text((x,y+116),'native B | A',font=font(11),fill=(160,180,195,255))
- critical=[('hidden',(880,210)),('mid transition',(820,255)),('recovery',(800,270)),('visible',(780,285))]
- y=855;d.text((20,y-35),'4× NEAREST-NEIGHBOR EDGE CHECKS',font=font(17,True),fill=(235,196,112,255))
+ for i,(label,p) in enumerate(zip(labels,FLOOR_POINTS,strict=True)):
+  pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,80,1)
+  if h!=0:raise ValueError(f'edge framing covers route sample {label} at {p}: hidden alpha {h}')
+  x=20+i*290;board.alpha_composite(pair,(x,105))
+  d.text((x,80),label.upper(),font=font(14,True),fill=(235,196,112,255))
+  d.text((x,189),f'{p[0]},{p[1]}  100.0% visible',font=font(12),fill=(110,255,190,255))
+  d.text((x,207),f'alpha V {v}  H {h}  native B | A',font=font(10),fill=(176,196,208,255))
+ critical=((labels[0],FLOOR_POINTS[0]),(labels[2],FLOOR_POINTS[2]),(labels[4],FLOOR_POINTS[4]),(labels[6],FLOOR_POINTS[6]))
+ y=315;d.text((20,y-35),'4× NEAREST-NEIGHBOR CLEARANCE CHECKS',font=font(17,True),fill=(235,196,112,255))
  for i,(label,p) in enumerate(critical):
   pair,h,v=boundary_pair(plate,overlay,subject,pivot,p,48,4);x=20+i*500;board.alpha_composite(pair,(x,y))
-  pct=100*v/(h+v);d.text((x,y+198),f'{label}: {p[0]},{p[1]}  {pct:.1f}% visible  V {v}  H {h}  4× B | A',font=font(12,True),fill=(110,255,190,255))
+  d.text((x,y+198),f'{label}: {p[0]},{p[1]}  100.0% visible  V {v}  H {h}',font=font(12,True),fill=(110,255,190,255))
  return board
 
 def make_noop_heatmap(base:Image.Image,reference:Image.Image,overlays:dict[str,Image.Image])->Image.Image:
