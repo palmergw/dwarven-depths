@@ -9,7 +9,7 @@ import PIL
 from PIL import Image
 
 FRAME = (1280, 720)
-LAYERS = ("environment-base.png", "entrance-shell.png", "gantry-shell.png")
+LAYERS = ("environment-base.png", "entrance-shell.png", "architecture-framing.png")
 
 
 def load(root: Path, name: str) -> Image.Image:

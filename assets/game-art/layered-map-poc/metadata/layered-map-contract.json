@@ -37,12 +37,12 @@
     },
     {
       "activation": {
-        "routeSegment": "gantry-crossing",
+        "routeSegment": "open-defense-floor",
         "source": "presentation-route-state",
         "states": [
           "approach",
-          "beneath-overhead-beam",
-          "defended-plaza"
+          "central-court",
+          "shutter-approach"
         ]
       },
       "affectedClasses": [
@@ -51,9 +51,9 @@
         "world-effect"
       ],
       "alpha": "straight",
-      "diagnosticPath": "support-free shared-camera span",
+      "diagnosticPath": "unobstructed shared-camera route",
       "evidence": [
-        "gantry-boundary-diagnostics.png",
+        "edge-framing-clearance.png",
         "solid-proxy-traversal.png",
         "calibration-card-traversal.png",
         "production-sprite-traversal.png"
@@ -62,10 +62,10 @@
         "screen-focus-indicator",
         "hud"
       ],
-      "id": "gantry-shell",
-      "routeBehavior": "shared-camera-progressive-overhead-occlusion",
-      "sourceArtifact": "blender/outputs/gantry-shell.png",
-      "supportPlacement": "service bridge keyed into opposite raised bastions outside route margins",
+      "id": "architecture-framing",
+      "placement": "edge architecture only; no bridge, gantry, bastion, or support occupies the tactical floor",
+      "routeBehavior": "shared-camera-edge-framing-no-route-coverage",
+      "sourceArtifact": "blender/outputs/architecture-framing.png",
       "transparentRgb": [
         0,
         0,
@@ -107,13 +107,13 @@
       500
     ],
     "branching": false,
+    "centralCourt": [
+      640,
+      400
+    ],
     "entrance": [
       930,
       175
-    ],
-    "gantry": [
-      730,
-      322
     ],
     "id": "route.layered-shuttergate"
   },

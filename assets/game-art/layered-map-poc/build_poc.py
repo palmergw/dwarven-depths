@@ -20,7 +20,7 @@ BASE=BLENDER_OUTPUTS/'environment-base.png'
 REFERENCE=BLENDER_OUTPUTS/'reference-plate.png'
 ARTIFACTS={
  'entrance-shell':BLENDER_OUTPUTS/'entrance-shell.png',
- 'gantry-shell':BLENDER_OUTPUTS/'gantry-shell.png',
+ 'architecture-framing':BLENDER_OUTPUTS/'architecture-framing.png',
 }
 ENTITY_ROOT=ROOT/'assets/game-art/production-scene/exports'
 SPRITES={
@@ -32,7 +32,7 @@ SPRITES={
  'raider':(ENTITY_ROOT/'entities/mine-raider-idle.png',(40,54)),
 }
 ENTRANCE_POINTS=[(990,125),(960,150),(930,175),(900,200),(870,225),(840,250)]
-GANTRY_POINTS=[(820,255),(790,278),(760,300),(730,322),(700,345),(670,367),(640,390),(610,412)]
+FLOOR_POINTS=[(870,245),(820,280),(760,320),(700,360),(640,400),(580,440),(520,480)]
 FONT_PATH=Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
 FONT_HASHES={
  FONT_PATH:'57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e',
@@ -86,7 +86,7 @@ def assert_authoring_reproducible()->None:
   raise ValueError('unexpected shared-camera contract')
  if manifest['source']!={'builderSha256':sha(BLENDER_BUILDER),'blendSha256':sha(BLENDER_SOURCE),'compositorSha256':sha(BLENDER_COMPOSITOR)}:
   raise ValueError('Blender editable-source binding drift')
- expected_outputs={'environment-base.png','entrance-shell.png','gantry-shell.png','route-subjects.png','production-sprite-subjects.png','reference-plate.png','route-traversal.png','production-sprite-traversal.png'}
+ expected_outputs={'environment-base.png','entrance-shell.png','architecture-framing.png','route-subjects.png','production-sprite-subjects.png','reference-plate.png','route-traversal.png','production-sprite-traversal.png'}
  if set(manifest['outputs'])!=expected_outputs:raise ValueError('unexpected Blender output set')
  bad=[name for name in expected_outputs if manifest['outputs'][name]['sha256']!=sha(BLENDER_OUTPUTS/name)]
  if bad:raise ValueError('shared-camera render drift: '+', '.join(sorted(bad)))
@@ -187,12 +187,12 @@ def make_sweep(plate,overlay,points,subject_name,title,subtitle,lighting:str|Non
 
 def make_combined_sweeps(underlays,overlays,actual:bool)->Image.Image:
  a=make_sweep(underlays['entrance-shell'],overlays['entrance-shell'],ENTRANCE_POINTS,'raider' if actual else 'solid-raider','ENTRANCE SHELL — '+('PRODUCTION RAIDER' if actual else 'SOLID RAIDER PROXY'),'native authored arch alpha; entrance transition remains inside the open route',lighting='entrance' if actual else None)
- b=make_sweep(underlays['gantry-shell'],overlays['gantry-shell'],GANTRY_POINTS,'warden' if actual else 'solid-warden','GANTRY SHELL — '+('PRODUCTION WARDEN' if actual else 'SOLID WARDEN PROXY'),'approach → overhead coverage → open defense road; both supports remain off-route',lighting='gantry' if actual else None)
+ b=make_sweep(underlays['architecture-framing'],overlays['architecture-framing'],FLOOR_POINTS,'warden' if actual else 'solid-warden','OPEN FLOOR — '+('PRODUCTION WARDEN' if actual else 'SOLID WARDEN PROXY'),'route samples remain clear of edge-framing architecture',lighting='floor' if actual else None)
  out=Image.new('RGBA',(max(a.width,b.width),a.height+b.height),(8,12,17,255));out.alpha_composite(a);out.alpha_composite(b,(0,a.height));return out
 
 def make_card_sweeps(underlays,overlays)->Image.Image:
  a=make_sweep(underlays['entrance-shell'],overlays['entrance-shell'],ENTRANCE_POINTS,'raider-card','ENTRANCE SHELL — 44 PX BANDED CARD','exact Raider canvas and pivot through the native authored arch')
- b=make_sweep(underlays['gantry-shell'],overlays['gantry-shell'],GANTRY_POINTS,'warden-card','GANTRY SHELL — 56 PX BANDED CARD','exact Warden canvas and pivot; overhead beam produces one coherent cutoff; supports remain off-route')
+ b=make_sweep(underlays['architecture-framing'],overlays['architecture-framing'],FLOOR_POINTS,'warden-card','OPEN FLOOR — 56 PX BANDED CARD','exact Warden canvas and pivot remains unobscured across the tactical floor')
  out=Image.new('RGBA',(max(a.width,b.width),a.height+b.height),(8,12,17,255));out.alpha_composite(a);out.alpha_composite(b,(0,a.height));return out
 
 def alpha_visibility(mask:Image.Image,subject:Image.Image,ground:tuple[int,int],pivot:tuple[int,int])->tuple[int,int]:
@@ -215,7 +215,7 @@ def boundary_pair(plate:Image.Image,overlay:Image.Image,subject:Image.Image,pivo
  pair.alpha_composite(after.crop(box).resize((crop_size*scale,crop_size*scale),Image.Resampling.NEAREST),(crop_size*scale,0))
  return pair,*alpha_visibility(overlay.getchannel('A'),subject,ground,pivot)
 
-def make_gantry_boundary_diagnostics(plate:Image.Image,overlay:Image.Image)->Image.Image:
+def make_framing_clearance_diagnostics(plate:Image.Image,overlay:Image.Image)->Image.Image:
  subject,pivot=sprite('solid-warden')
  groups=[
   ('FIRST CONTACT',[(880-4*i,210+3*i) for i in range(8)]),
@@ -223,7 +223,7 @@ def make_gantry_boundary_diagnostics(plate:Image.Image,overlay:Image.Image)->Ima
   ('RECOVERY FROM OVERHEAD COVERAGE',[(816-4*i,258+3*i) for i in range(8)]),
   ('FULL EMERGENCE',[(784-4*i,282+3*i) for i in range(8)]),
  ]
- board=Image.new('RGBA',(2100,1130),(8,12,17,255));panel_header(board,(24,14),'GANTRY BOUNDARY DIAGNOSTICS — BEFORE | AFTER','adjacent 4 px x / 3 px y route samples through the support-free span; exact solid-Warden alpha and pivot')
+ board=Image.new('RGBA',(2100,1130),(8,12,17,255));panel_header(board,(24,14),'EDGE-FRAMING CLEARANCE — BEFORE | AFTER','route samples prove architecture frames rather than covers the tactical floor')
  d=ImageDraw.Draw(board)
  for row,(label,samples) in enumerate(groups):
   y=105+row*185;d.text((20,y-30),label,font=font(17,True),fill=(235,196,112,255))
@@ -238,7 +238,7 @@ def make_gantry_boundary_diagnostics(plate:Image.Image,overlay:Image.Image)->Ima
  return board
 
 def make_noop_heatmap(base:Image.Image,reference:Image.Image,overlays:dict[str,Image.Image])->Image.Image:
- recon=base.copy();recon.alpha_composite(overlays['entrance-shell']);recon.alpha_composite(overlays['gantry-shell'])
+ recon=base.copy();recon.alpha_composite(overlays['entrance-shell']);recon.alpha_composite(overlays['architecture-framing'])
  diff=ImageChops.difference(reference,recon);changed=0;mx=0;heat=Image.new('RGBA',FRAME,(0,0,0,255));hp=heat.load()
  if hp is None:raise RuntimeError('heatmap pixel access unavailable')
  for y in range(FRAME[1]):
@@ -251,7 +251,7 @@ def make_noop_heatmap(base:Image.Image,reference:Image.Image,overlays:dict[str,I
  board.alpha_composite(heat,(0,90));return board
 
 def make_isolation(base,reference,masks,overlays)->Image.Image:
- specs=[('entrance-shell',(1000,0,1230,230)),('gantry-shell',(450,0,1040,470))]
+ specs=[('entrance-shell',(900,0,1280,260)),('architecture-framing',(0,260,1280,720))]
  board=Image.new('RGBA',(1500,1060),(10,14,20,255));panel_header(board,(24,14),'CANONICAL FOREGROUND ARTIFACTS','source pixels + authored alpha; checker, alpha, one-pixel contour, and no-op reconstruction')
  d=ImageDraw.Draw(board)
  for col,(name,crop) in enumerate(specs):
@@ -264,7 +264,7 @@ def make_isolation(base,reference,masks,overlays)->Image.Image:
   tint=Image.new('RGBA',crop_size,(40,255,220,0));tint.putalpha(c);src.alpha_composite(tint);board.alpha_composite(src,(x,730))
   d.text((x,394),'checkerboard RGBA artifact',font=font(14),fill=(180,190,200,255));d.text((x,714),'authored alpha',font=font(14),fill=(180,190,200,255));d.text((x,1034),'source + cyan alpha contour',font=font(14),fill=(180,190,200,255))
  # no-op assertion in title area
- recon=base.copy();recon.alpha_composite(overlays['entrance-shell']);recon.alpha_composite(overlays['gantry-shell']);diff=ImageChops.difference(reference,recon)
+ recon=base.copy();recon.alpha_composite(overlays['entrance-shell']);recon.alpha_composite(overlays['architecture-framing']);diff=ImageChops.difference(reference,recon)
  pixels=[]
  for y in range(diff.height):
   for x in range(diff.width):
@@ -288,7 +288,7 @@ def make_entrance_alignment(plate:Image.Image,mask:Image.Image,overlay:Image.Ima
 def make_overview(base,overlays)->Image.Image:
  scene=base.copy();raider,rp=sprite('raider');warden,wp=sprite('warden')
  world_ring(scene,(930,175),(255,76,62));soft_contact_shadow(scene,(930,175));place(scene,presentation_lighting(raider,0.08,1.18),(930,175),rp);scene.alpha_composite(overlays['entrance-shell'])
- world_ring(scene,(650,390),(82,205,255));soft_contact_shadow(scene,(650,390));place(scene,presentation_lighting(warden,0.04,1.18),(650,390),wp);scene.alpha_composite(overlays['gantry-shell'])
+ world_ring(scene,(620,410),(82,205,255));soft_contact_shadow(scene,(620,410));place(scene,presentation_lighting(warden,0.04,1.18),(620,410),wp);scene.alpha_composite(overlays['architecture-framing'])
  board=Image.new('RGBA',(1280,810),(9,13,18,255));board.alpha_composite(scene,(0,90));panel_header(board,(24,16),'LAYERED SHUTTERGATE — PROOF OF CONCEPT','one clean map, two explicit foreground RGBA artifacts, approved 56/44 px units; no HUD or runtime-state claim')
  return board
 
@@ -313,7 +313,7 @@ def build(out_root:Path)->list[Path]:
  plate_path=exp/'environment/layered-shuttergate-clean-plate-1280x720.png'
  base.save(base_path,optimize=False,compress_level=9);reference.save(plate_path,optimize=False,compress_level=9)
  reconstruction=base.copy()
- for key in ('entrance-shell','gantry-shell'):reconstruction.alpha_composite(overlays[key])
+ for key in ('entrance-shell','architecture-framing'):reconstruction.alpha_composite(overlays[key])
  assert_exact_noop(reference,reconstruction)
  # Regression: unchanged-alpha RGB drift must be rejected.
  probe=reference.copy();px=probe.getpixel((0,0))
@@ -322,8 +322,8 @@ def build(out_root:Path)->list[Path]:
  try:assert_exact_noop(reference,probe)
  except ValueError:pass
  else:raise AssertionError('RGB-only unchanged-alpha no-op drift was not rejected')
- underlays={'entrance-shell':base.copy(),'gantry-shell':base.copy()}
- underlays['gantry-shell'].alpha_composite(overlays['entrance-shell'])
+ underlays={'entrance-shell':base.copy(),'architecture-framing':base.copy()}
+ underlays['architecture-framing'].alpha_composite(overlays['entrance-shell'])
  files=[base_path,plate_path]
  for k in masks:
   mp=exp/'foreground'/f'{k}-mask.png';op=exp/'foreground'/f'{k}.png';masks[k].save(mp,optimize=False,compress_level=9);overlays[k].save(op,optimize=False,compress_level=9);files += [mp,op]
@@ -333,7 +333,7 @@ def build(out_root:Path)->list[Path]:
   'entrance-mask-alignment.png':make_entrance_alignment(reference,masks['entrance-shell'],overlays['entrance-shell']),
   'solid-proxy-traversal.png':make_combined_sweeps(underlays,overlays,False),
   'calibration-card-traversal.png':make_card_sweeps(underlays,overlays),
-  'gantry-boundary-diagnostics.png':make_gantry_boundary_diagnostics(underlays['gantry-shell'],overlays['gantry-shell']),
+  'edge-framing-clearance.png':make_framing_clearance_diagnostics(underlays['architecture-framing'],overlays['architecture-framing']),
   'no-op-difference-heatmap.png':make_noop_heatmap(base,reference,overlays),
   'production-sprite-traversal.png':make_combined_sweeps(underlays,overlays,True),
  }
@@ -341,11 +341,11 @@ def build(out_root:Path)->list[Path]:
  files.extend(build_review_packet(ev))
  contract={
   'schemaVersion':2,'authority':'presentation-only-proof-of-concept','frame':[1280,720],
-  'route':{'id':'route.layered-shuttergate','entrance':[930,175],'gantry':[730,322],'backstop':[500,500],'branching':False,'authoritativeMovement':False},
+  'route':{'id':'route.layered-shuttergate','entrance':[930,175],'centralCourt':[640,400],'backstop':[500,500],'branching':False,'authoritativeMovement':False},
   'layerOrder':['environment-base','world-rings-behind-structure','world-effects-behind-structure','world-subjects-behind-structure','structure-foreground-artifact','world-rings-in-front','world-effects-in-front','world-subjects-in-front','screen-focus-indicators','hud'],
   'foregroundArtifacts':[
    {'id':'entrance-shell','alpha':'straight','transparentRgb':[0,0,0],'sourceArtifact':'blender/outputs/entrance-shell.png','activation':{'source':'presentation-route-state','routeSegment':'entrance-aperture','states':['inside','aperture','outside']},'routeBehavior':'shared-camera-authored-arch-occlusion','affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'evidence':['solid-proxy-traversal.png','calibration-card-traversal.png','foreground-artifact-isolation.png']},
-   {'id':'gantry-shell','alpha':'straight','transparentRgb':[0,0,0],'sourceArtifact':'blender/outputs/gantry-shell.png','activation':{'source':'presentation-route-state','routeSegment':'gantry-crossing','states':['approach','beneath-overhead-beam','defended-plaza']},'routeBehavior':'shared-camera-progressive-overhead-occlusion','supportPlacement':'service bridge keyed into opposite raised bastions outside route margins','diagnosticPath':'support-free shared-camera span','affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'evidence':['gantry-boundary-diagnostics.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
+   {'id':'architecture-framing','alpha':'straight','transparentRgb':[0,0,0],'sourceArtifact':'blender/outputs/architecture-framing.png','activation':{'source':'presentation-route-state','routeSegment':'open-defense-floor','states':['approach','central-court','shutter-approach']},'routeBehavior':'shared-camera-edge-framing-no-route-coverage','placement':'edge architecture only; no bridge, gantry, bastion, or support occupies the tactical floor','diagnosticPath':'unobstructed shared-camera route','affectedClasses':['world-subject','world-ring','world-effect'],'exemptClasses':['screen-focus-indicator','hud'],'evidence':['edge-framing-clearance.png','solid-proxy-traversal.png','calibration-card-traversal.png','production-sprite-traversal.png']}],
   'subjects':{'warden':{'nominalHeight':56,'pivot':[56,66]},'raider':{'nominalHeight':44,'pivot':[40,54]}},
   'presentationLighting':{'raider':'warm entrance adaptation plus contact shadow and hostile world ring','warden':'bounded brightness/contrast adaptation plus contact shadow and allied world ring','baseSpriteGeometryChanged':False},
   'nonClaims':['runtime integration','simulation authority','HUD approval','final animation']}

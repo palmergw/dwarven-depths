@@ -16,15 +16,15 @@ This index intentionally excludes the obsolete flattened-map and traced-mask evi
 
 1. **Clean map:** `blender/outputs/reference-plate.png`
    - No entities, diagnostics, HUD, or controls.
-   - Judge overall composition, tactical space, entrance, defended shutter, and whether the service bridge earns its place architecturally.
+   - Judge the new composition, broad tactical floor, hooked route, entrance, defended shutter, and edge-framing architecture.
 
 2. **Production sprite scale and occlusion:** `blender/outputs/production-sprite-traversal.png`
    - Approved Warden at 56 px nominal alpha height.
    - Approved raiders at 44 px nominal alpha height.
-   - Judge scale against architecture, route density, progressive entrance/bridge occlusion, and route readability.
+   - Judge scale against architecture, route density, entrance occlusion, and route readability.
 
 3. **Native foreground isolation:** `evidence/shared-camera-foreground-isolation.png`
-   - Full-frame 1280×720 checkerboard presentation of renderer-native entrance and service-bridge RGBA.
+   - Full-frame 1280×720 checkerboard presentation of renderer-native entrance and edge-framing RGBA.
    - No traced masks, chroma keying, or post-render geometry transforms.
 
 4. **Single summary board:** `evidence/shared-camera-product-owner-review.png`
@@ -32,17 +32,17 @@ This index intentionally excludes the obsolete flattened-map and traced-mask evi
 
 ## Current measurable contract
 
-- Authored floor: 40×46 world units.
-- Route: 42 world units, broad and nonbranching.
+- Authored floor: 40×46 world units with a broad unobstructed central court.
+- Route: hooked, broad, and nonbranching.
 - Orthographic camera: 50 world units.
-- Service bridge: keyed into side bastions; no support enters the route.
+- Architecture framing stays at the scene edges; nothing spans or occupies the route.
 - Source: one editable Blender scene and one shared camera.
 
 ## Requested WIP judgment
 
 - Is there meaningful tactical space rather than merely a longer corridor?
 - Does the architecture communicate monumental scale at approved unit size?
-- Does the service bridge earn its place by connecting the fortress and creating a useful overhead threshold?
+- Does the hooked route read immediately across the unobstructed tactical floor?
 - Are route, tunnel, shutter, units, and foreground occlusion readable?
 - Is this a viable basis for movement toward the original painterly dwarven-fortress direction?
 
@@ -87,19 +87,19 @@ def text_panel(size=(1235, 695)):
     y = 82
     sections = [
         ("Scale facts", [
-            "Authored floor: 40 × 46 world units",
-            "Route: 42 world units; broad nonbranching lane",
+            "Authored floor: 40 × 46; broad central court",
+            "Hooked route: broad, readable, and nonbranching",
             "Approved Warden: 56 px; Raider: 44 px",
             "Shared orthographic camera: 50 world units",
         ]),
         ("Architecture intent", [
-            "Service bridge connects two fortress bastions",
-            "Bridge creates a deliberate overhead threshold",
-            "Bastions and supports remain outside the route",
+            "No bridge, gantry, or floor-consuming bastions",
+            "Fortress mass frames rather than covers play space",
+            "Edge framing stays clear; entrance owns local occlusion",
         ]),
         ("Please judge in this WIP", [
             "Meaningful tactical space and monumental scale",
-            "Whether the bridge earns its place architecturally",
+            "Broad floor and hooked route readability",
             "Route, gate, tunnel, sprites, and visual direction",
         ]),
         ("Not claimed complete", [
@@ -126,18 +126,18 @@ def build_review_packet(evidence: Path) -> list[Path]:
     reference = Image.open(OUT / "reference-plate.png").convert("RGBA")
     traversal = Image.open(OUT / "production-sprite-traversal.png").convert("RGBA")
     entrance = Image.open(OUT / "entrance-shell.png").convert("RGBA")
-    gantry = Image.open(OUT / "gantry-shell.png").convert("RGBA")
-    for name, image in (("reference", reference), ("traversal", traversal), ("entrance", entrance), ("gantry", gantry)):
+    framing = Image.open(OUT / "architecture-framing.png").convert("RGBA")
+    for name, image in (("reference", reference), ("traversal", traversal), ("entrance", entrance), ("framing", framing)):
         if image.size != (1280, 720):
             raise ValueError(f"{name} has unexpected size {image.size}")
 
     isolation = checkerboard()
     isolation.alpha_composite(entrance)
-    isolation.alpha_composite(gantry)
+    isolation.alpha_composite(framing)
     draw = ImageDraw.Draw(isolation, "RGBA")
     for title, layer, color in (
         ("ENTRANCE", entrance, (68, 192, 255, 255)),
-        ("SERVICE BRIDGE", gantry, (255, 175, 66, 255)),
+        ("EDGE FRAMING", framing, (255, 175, 66, 255)),
     ):
         bbox = layer.getchannel("A").getbbox()
         if not bbox:
@@ -149,20 +149,14 @@ def build_review_packet(evidence: Path) -> list[Path]:
         draw.text((tx, ty), title, font=font(20, True), fill=color)
     isolation.convert("RGB").save(isolation_path, optimize=False, compress_level=9)
 
-    # Magnify the occupied registered-frame region for the summary board while
-    # the standalone artifact preserves exact 1280×720 registration.
-    isolation_focus = Image.new("RGBA", (1280, 720), (62, 67, 74, 255))
-    focus_crop = isolation.crop((410, 0, 1190, 390)).resize((1280, 640), Image.Resampling.LANCZOS)
-    isolation_focus.paste(focus_crop, (0, 80))
-
     board = Image.new("RGB", (2560, 1600), (7, 11, 17))
     draw = ImageDraw.Draw(board)
-    draw.text((34, 22), "DWARVEN DEPTHS — SHARED-CAMERA ARCHITECTURE & SCALE WIP", font=font(36, True), fill=(245, 216, 155))
-    draw.text((35, 68), "Four explicit review surfaces; no obsolete traced-mask evidence", font=font(21), fill=(183, 199, 214))
+    draw.text((34, 22), "DWARVEN DEPTHS — NEW UNOBSTRUCTED-FLOOR COMPOSITION WIP", font=font(36, True), fill=(245, 216, 155))
+    draw.text((35, 68), "Bridge/gantry direction removed; shared scene and camera retained", font=font(21), fill=(183, 199, 214))
     panels = [
         labeled_panel(reference, "A — CLEAN MAP", "No entities, diagnostics, HUD, or reconstructed masks"),
-        labeled_panel(traversal, "B — PRODUCTION SPRITE SCALE & OCCLUSION", "Approved 56 px Warden / 44 px raiders across tunnel, bridge, and route"),
-        labeled_panel(isolation_focus, "C — NATIVE FOREGROUND ISOLATION", "Magnified view; standalone artifact preserves full-frame registration"),
+        labeled_panel(traversal, "B — PRODUCTION SPRITE SCALE & ROUTE", "Approved 56 px Warden / 44 px raiders across the hooked route"),
+        labeled_panel(isolation, "C — NATIVE FOREGROUND ISOLATION", "Full-frame shared-camera registration on checkerboard"),
         text_panel(),
     ]
     positions = ((30, 112), (1295, 112), (30, 832), (1295, 832))

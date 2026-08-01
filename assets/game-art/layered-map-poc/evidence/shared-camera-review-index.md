@@ -6,15 +6,15 @@ This index intentionally excludes the obsolete flattened-map and traced-mask evi
 
 1. **Clean map:** `blender/outputs/reference-plate.png`
    - No entities, diagnostics, HUD, or controls.
-   - Judge overall composition, tactical space, entrance, defended shutter, and whether the service bridge earns its place architecturally.
+   - Judge the new composition, broad tactical floor, hooked route, entrance, defended shutter, and edge-framing architecture.
 
 2. **Production sprite scale and occlusion:** `blender/outputs/production-sprite-traversal.png`
    - Approved Warden at 56 px nominal alpha height.
    - Approved raiders at 44 px nominal alpha height.
-   - Judge scale against architecture, route density, progressive entrance/bridge occlusion, and route readability.
+   - Judge scale against architecture, route density, entrance occlusion, and route readability.
 
 3. **Native foreground isolation:** `evidence/shared-camera-foreground-isolation.png`
-   - Full-frame 1280×720 checkerboard presentation of renderer-native entrance and service-bridge RGBA.
+   - Full-frame 1280×720 checkerboard presentation of renderer-native entrance and edge-framing RGBA.
    - No traced masks, chroma keying, or post-render geometry transforms.
 
 4. **Single summary board:** `evidence/shared-camera-product-owner-review.png`
@@ -22,17 +22,17 @@ This index intentionally excludes the obsolete flattened-map and traced-mask evi
 
 ## Current measurable contract
 
-- Authored floor: 40×46 world units.
-- Route: 42 world units, broad and nonbranching.
+- Authored floor: 40×46 world units with a broad unobstructed central court.
+- Route: hooked, broad, and nonbranching.
 - Orthographic camera: 50 world units.
-- Service bridge: keyed into side bastions; no support enters the route.
+- Architecture framing stays at the scene edges; nothing spans or occupies the route.
 - Source: one editable Blender scene and one shared camera.
 
 ## Requested WIP judgment
 
 - Is there meaningful tactical space rather than merely a longer corridor?
 - Does the architecture communicate monumental scale at approved unit size?
-- Does the service bridge earn its place by connecting the fortress and creating a useful overhead threshold?
+- Does the hooked route read immediately across the unobstructed tactical floor?
 - Are route, tunnel, shutter, units, and foreground occlusion readable?
 - Is this a viable basis for movement toward the original painterly dwarven-fortress direction?
 

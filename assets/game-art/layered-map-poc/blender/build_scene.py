@@ -30,7 +30,7 @@ random.seed(286)
 OUTPUT_CONTRACT = {
     "environment-base.png": "opaque-environment-only",
     "entrance-shell.png": "straight-alpha-foreground-only",
-    "gantry-shell.png": "straight-alpha-foreground-only",
+    "architecture-framing.png": "straight-alpha-foreground-only",
     "route-subjects.png": "straight-alpha-diagnostic-only",
     "production-sprite-subjects.png": "straight-alpha-production-entities-only",
     "reference-plate.png": "opaque-environment-plus-foreground",
@@ -41,7 +41,7 @@ OUTPUT_CONTRACT = {
 RENDER_RECIPES = {
     "environment-base.png": (True, False, False, False, False, False),
     "entrance-shell.png": (False, True, False, False, False, True),
-    "gantry-shell.png": (False, False, True, False, False, True),
+    "architecture-framing.png": (False, False, True, False, False, True),
     "route-subjects.png": (False, False, False, True, False, True),
     "production-sprite-subjects.png": (False, False, False, False, True, True),
     "route-traversal.png": (True, True, True, True, False, False),
@@ -131,7 +131,7 @@ def verify_existing():
     expected_collections = {
         "ENVIRONMENT_BASE",
         "FOREGROUND_ENTRANCE",
-        "FOREGROUND_GANTRY",
+        "FOREGROUND_ARCHITECTURE_FRAMING",
         "DIAGNOSTIC_ROUTE_SUBJECTS",
         "PRODUCTION_ROUTE_SUBJECTS",
         "SHARED_LIGHTING",
@@ -243,17 +243,17 @@ def verify_render_reproducibility(manifest):
     collections = {
         "env": bpy.data.collections["ENVIRONMENT_BASE"],
         "entrance": bpy.data.collections["FOREGROUND_ENTRANCE"],
-        "gantry": bpy.data.collections["FOREGROUND_GANTRY"],
+        "framing": bpy.data.collections["FOREGROUND_ARCHITECTURE_FRAMING"],
         "subjects": bpy.data.collections["DIAGNOSTIC_ROUTE_SUBJECTS"],
         "production": bpy.data.collections["PRODUCTION_ROUTE_SUBJECTS"],
     }
     with tempfile.TemporaryDirectory() as directory:
         output_root = Path(directory)
         for name, recipe in RENDER_RECIPES.items():
-            env, entrance, gantry, subjects, production, transparent = recipe
+            env, entrance, framing, subjects, production, transparent = recipe
             collections["env"].hide_render = not env
             collections["entrance"].hide_render = not entrance
-            collections["gantry"].hide_render = not gantry
+            collections["framing"].hide_render = not framing
             collections["subjects"].hide_render = not subjects
             collections["production"].hide_render = not production
             output = output_root / name
@@ -326,6 +326,29 @@ def box(name, loc, scale, material, coll, bevel=0.08, rot=(0, 0, 0)):
     o.data.materials.append(material)
     move_to(o, coll)
     return o
+
+
+def route_segment(name, start, end, half_width, material, coll):
+    """Author one joined floor segment; overlap prevents cracks at bends."""
+    x1, y1 = start
+    x2, y2 = end
+    dx, dy = x2 - x1, y2 - y1
+    length = math.hypot(dx, dy)
+    angle = math.atan2(dy, dx)
+    midpoint = ((x1 + x2) / 2, (y1 + y2) / 2, 0.04)
+    box(name, midpoint, (length / 2 + 0.35, half_width, 0.20), material, coll, bevel=0.10, rot=(0, 0, angle))
+    nx, ny = -dy / length, dx / length
+    for side in (-1, 1):
+        offset = side * (half_width + 0.28)
+        box(
+            f"{name}_Kerb_{side}",
+            (midpoint[0] + nx * offset, midpoint[1] + ny * offset, 0.28),
+            (length / 2 + 0.22, 0.24, 0.38),
+            stone2,
+            coll,
+            bevel=0.07,
+            rot=(0, 0, angle),
+        )
 
 
 def cylinder(name, loc, radius, depth, material, coll, vertices=8, rot=(0, 0, 0)):
@@ -422,8 +445,8 @@ def camera():
     bpy.ops.object.camera_add(location=(30.0, -41.5, 32.0))
     o = bpy.context.object
     o.name = "CAMERA_Shuttergate_Ortho"
-    # Bias the shared frame toward the defended shutter without losing the entrance.
-    target = Vector((0, -4.0, 1.8))
+    # Keep the whole hooked route and broad central tactical floor in one shared frame.
+    target = Vector((-0.5, -2.0, 1.5))
     o.rotation_euler = ((target - o.location).to_track_quat("-Z", "Y")).to_euler()
     o.data.type = "ORTHO"
     o.data.ortho_scale = CAMERA_ORTHO_SCALE
@@ -431,10 +454,10 @@ def camera():
     return o
 
 
-def render(name, env, entrance, gantry, subjects, production_subjects, transparent):
+def render(name, env, entrance, framing, subjects, production_subjects, transparent):
     ENV.hide_render = not env
     ENTRANCE.hide_render = not entrance
-    GANTRY.hide_render = not gantry
+    FRAMING.hide_render = not framing
     SUBJECTS.hide_render = not subjects
     PRODUCTION_SUBJECTS.hide_render = not production_subjects
     scene = bpy.context.scene
@@ -455,7 +478,7 @@ bpy.context.preferences.filepaths.save_version = 0
 OUT.mkdir(parents=True, exist_ok=True)
 ENV = collection("ENVIRONMENT_BASE")
 ENTRANCE = collection("FOREGROUND_ENTRANCE")
-GANTRY = collection("FOREGROUND_GANTRY")
+FRAMING = collection("FOREGROUND_ARCHITECTURE_FRAMING")
 SUBJECTS = collection("DIAGNOSTIC_ROUTE_SUBJECTS")
 PRODUCTION_SUBJECTS = collection("PRODUCTION_ROUTE_SUBJECTS")
 LIGHTS = collection("SHARED_LIGHTING")
@@ -479,38 +502,17 @@ for x in (-15.5, 15.5):
         box(f"MonumentalButtress_{x}_{y}", (inner_x, y, 4.0), (0.9, 1.35, 4.4), stone2, ENV, bevel=0.18)
         box(f"ButtressCrown_{x}_{y}", (inner_x, y, 8.15), (1.35, 1.75, 0.35), iron, ENV, bevel=0.08)
 
-# Broad 42-unit non-branching defense road and open tactical shoulders.
-for i, y in enumerate(range(-21, 22, 2)):
-    tone = roadmat if i % 2 == 0 else stone2
-    box(f"RoadSlab_{i}", (0, y, 0.05), (4.6, 0.94, 0.18), tone, ENV, bevel=0.06)
-    for x in (-5.05, 5.05):
-        box(f"RoadKerb_{i}_{x}", (x, y, 0.28), (0.35, 0.94, 0.45), stone2, ENV, bevel=0.08)
-    for x in (-3.75, 3.75):
-        box(f"RoadRail_{i}_{x}", (x, y, 0.29), (0.09, 0.91, 0.07), iron, ENV, bevel=0.025)
+# One readable, nonbranching hooked route crosses a broad central defense floor.
+# Architecture stays beyond its kerbs; there is no overhead bridge or floor-consuming bastion.
+ROUTE_POINTS = ((7.0, 20.0), (7.0, 13.5), (3.5, 8.5), (-2.5, 4.0), (-4.5, -2.0), (-3.0, -9.0), (-5.0, -14.0), (-5.0, -21.0))
+for index, (start, end) in enumerate(zip(ROUTE_POINTS, ROUTE_POINTS[1:])):
+    route_segment(f"DefenseRoute_{index}", start, end, 3.5, roadmat if index % 2 == 0 else stone2, ENV)
 
-# Two broad off-route defense courts create visible formation space without
-# branching the hostile lane. Their thresholds connect directly to the road.
-for court_x, court_y, suffix in ((-9.0, -10.5, "LowerLeft"), (9.0, 10.5, "UpperRight")):
-    box(f"DefenseCourt_{suffix}", (court_x, court_y, 0.0), (4.35, 5.0, 0.30), roadmat, ENV, bevel=0.14)
-    box(
-        f"CourtThreshold_{suffix}",
-        (math.copysign(5.7, court_x), court_y, 0.12),
-        (1.35, 2.8, 0.26),
-        stone2,
-        ENV,
-        bevel=0.10,
-    )
-    cylinder(f"CourtDais_{suffix}", (court_x, court_y, 0.36), 1.75, 0.08, stone2, ENV, vertices=16)
-    cylinder(f"CourtEmber_{suffix}", (court_x, court_y, 0.43), 0.34, 0.08, ember, ENV, vertices=12)
-    for corner_y in (-4.15, 4.15):
-        box(
-            f"CourtMachinery_{suffix}_{corner_y}",
-            (court_x + math.copysign(3.45, court_x), court_y + corner_y, 0.75),
-            (0.55, 0.55, 0.75),
-            stone2,
-            ENV,
-            bevel=0.14,
-        )
+# A large unobstructed court supplies formation room without branching the lane.
+box("CentralDefenseFloor", (-0.5, -3.0, -0.01), (9.5, 8.0, 0.28), roadmat, ENV, bevel=0.18)
+for x, y, suffix in ((-8.5, 6.5, "West"), (9.0, -8.0, "East")):
+    cylinder(f"EdgeDais_{suffix}", (x, y, 0.36), 1.45, 0.10, stone2, ENV, vertices=16)
+    cylinder(f"EdgeEmber_{suffix}", (x, y, 0.48), 0.28, 0.10, ember, ENV, vertices=12)
 
 # Irregular shoulder dressing stays well outside the active route.
 for index in range(56):
@@ -528,64 +530,41 @@ for index in range(56):
         rot=(random.uniform(-0.18, 0.18), random.uniform(-0.18, 0.18), random.uniform(0, math.pi)),
     )
 
-# Lower defended shutter: a destination-scale fortress machine rather than a small doorway.
-box("GateWall", (0, -21.4, 4.2), (15.0, 1.0, 4.7), stone, ENV, bevel=0.24)
-box("GateRecess", (0, -22.42, 3.0), (4.2, 0.18, 3.1), black, ENV, bevel=0.04)
-for x in (-3.2, -2.1, -1.05, 0, 1.05, 2.1, 3.2):
+# Lower defended shutter is an edge destination, not a wall across playable space.
+box("GateWall", (-5.0, -21.4, 4.2), (10.0, 1.0, 4.7), stone, ENV, bevel=0.24)
+box("GateRecess", (-5.0, -22.42, 3.0), (4.2, 0.18, 3.1), black, ENV, bevel=0.04)
+for x in (-8.2, -7.1, -6.05, -5.0, -3.95, -2.9, -1.8):
     box(f"ShutterBar_{x}", (x, -22.64, 2.9), (0.20, 0.20, 2.9), iron, ENV, bevel=0.04)
-for x in (-5.5, 5.5):
+for x in (-10.5, 0.5):
     cylinder(f"GateTower_{x}", (x, -20.5, 4.2), 1.8, 8.4, stone2, ENV, vertices=10)
     box(f"GateWinch_{x}", (x, -22.05, 5.2), (0.85, 0.45, 0.85), iron, ENV, bevel=0.12)
-box("GateEmber", (0, -22.68, 0.42), (3.8, 0.16, 0.14), ember, ENV, bevel=0.02)
+box("GateEmber", (-5.0, -22.68, 0.42), (3.8, 0.16, 0.14), ember, ENV, bevel=0.02)
 
 # Upper hostile approach. The arch shell remains the exact foreground artifact.
-box("TunnelBackWall", (0, 21.0, 4.2), (15.0, 1.0, 4.7), stone, ENV, bevel=0.24)
-box("TunnelVoid", (0, 19.94, 3.0), (4.0, 0.16, 3.0), black, ENV, bevel=0.10)
-box("TunnelGlow", (0, 19.86, 0.48), (3.6, 0.12, 0.18), ember, ENV, bevel=0.02)
+box("TunnelBackWall", (7.0, 21.0, 4.2), (8.0, 1.0, 4.7), stone, ENV, bevel=0.24)
+box("TunnelVoid", (7.0, 19.94, 3.0), (4.0, 0.16, 3.0), black, ENV, bevel=0.10)
+box("TunnelGlow", (7.0, 19.86, 0.48), (3.6, 0.12, 0.18), ember, ENV, bevel=0.02)
 for side in (-1, 1):
-    x = side * 4.75
+    x = 7.0 + side * 4.75
     for z in (0.75, 2.15, 3.55):
         box(f"ArchJamb_{side}_{z}", (x, 19.68, z), (0.78, 0.72, 0.66), stone2, ENTRANCE, bevel=0.13)
 for n, theta in enumerate([12, 31, 50, 69, 88, 107, 126, 145, 164]):
     rad = math.radians(theta)
-    x = 4.75 * math.cos(rad)
+    x = 7.0 + 4.75 * math.cos(rad)
     z = 3.75 + 2.15 * math.sin(rad)
     box(f"ArchVoussoir_{n}", (x, 19.68, z), (0.78, 0.72, 0.58), stone2, ENTRANCE, bevel=0.13, rot=(0, rad - math.pi/2, 0))
 
-# Purposeful gantry: a high service bridge connecting two fortress bastions.
-# The masonry bastions and approach platforms belong to the environment; there are
-# no arbitrary floor posts. Units pass below the bridge between the two strongholds.
-for x in (-9.0, 9.0):
-    box(f"BridgeBastion_{x}", (x, 0.5, 4.0), (2.65, 3.2, 4.2), stone2, ENV, bevel=0.22)
-    box(f"BridgeBastionPlinth_{x}", (x, 0.5, 0.45), (3.15, 3.65, 0.52), stone, ENV, bevel=0.16)
-    box(f"BridgeApproach_{x}", (x + math.copysign(4.0, x), 0.5, 7.1), (2.1, 3.0, 0.48), stone2, ENV, bevel=0.14)
-    cylinder(
-        f"BridgeWinch_{x}",
-        (x, 0.5, 7.65),
-        0.72,
-        1.1,
-        iron,
-        ENV,
-        vertices=12,
-        rot=(math.pi / 2, 0, 0),
-    )
-    box(f"BridgeWinchAxle_{x}", (x, 0.5, 7.65), (0.12, 0.85, 0.12), iron, ENV, bevel=0.03)
+# Native foreground architecture hugs the frame edges and never crosses the route.
+for x, y, suffix in ((-14.0, -12.0, "LowerWest"), (13.5, -7.0, "LowerEast")):
+    box(f"FramePillar_{suffix}", (x, y, 4.0), (1.1, 1.4, 4.2), stone2, FRAMING, bevel=0.20)
+    box(f"FrameCrown_{suffix}", (x, y, 8.0), (1.5, 1.8, 0.34), iron, FRAMING, bevel=0.08)
+    box(f"FrameBanner_{suffix}", (x, y - 0.15, 4.5), (0.12, 0.08, 1.7), timber, FRAMING, bevel=0.03)
 
-# Native foreground bridge/deck, keyed directly into the side bastions.
-box("GantryDeck", (0, 0.5, 7.2), (9.0, 2.0, 0.50), timber, GANTRY, bevel=0.14)
-box("GantryUnderbeam", (0, 0.5, 6.55), (9.15, 0.34, 0.32), iron, GANTRY, bevel=0.07)
-for y in (-1.35, 2.35):
-    box(f"GantryParapet_{y}", (0, y, 8.0), (9.0, 0.18, 0.22), iron, GANTRY, bevel=0.06)
-    for x in (-8, -6, -4, -2, 0, 2, 4, 6, 8):
-        box(f"GantryRailPost_{y}_{x}", (x, y, 7.65), (0.11, 0.16, 0.62), iron, GANTRY, bevel=0.035)
-for x in (-7.5, -4.5, -1.5, 1.5, 4.5, 7.5):
-    box(f"GantryDeckTie_{x}", (x, 0.5, 6.95), (0.16, 2.1, 0.22), iron, GANTRY, bevel=0.04)
-
-# Review-only subjects show the long route and the bridge's purposeful overhead scale.
-for index, y in enumerate((17.5, 13.0, 8.5, 4.0, 1.4, 0.5, -0.4, -4.0, -8.5, -13.0, -17.5)):
-    cylinder(f"RouteRing_{index}", (0, y, 0.34), 0.72, 0.08, route_gold, SUBJECTS, vertices=24)
-    cylinder(f"RouteSubject_{index}", (0, y, 1.02), 0.42, 1.35, route_blue, SUBJECTS, vertices=12)
-    cylinder(f"RouteHead_{index}", (0, y, 1.88), 0.34, 0.42, route_blue, SUBJECTS, vertices=12)
+# Review-only subjects expose the complete hooked route and broad central floor.
+for index, (x, y) in enumerate(((7, 17.5), (6.5, 13), (3.5, 9), (0, 6), (-3, 2), (-4, -3), (-3, -8), (-5, -13), (-5, -18))):
+    cylinder(f"RouteRing_{index}", (x, y, 0.34), 0.72, 0.08, route_gold, SUBJECTS, vertices=24)
+    cylinder(f"RouteSubject_{index}", (x, y, 1.02), 0.42, 1.35, route_blue, SUBJECTS, vertices=12)
+    cylinder(f"RouteHead_{index}", (x, y, 1.88), 0.34, 0.42, route_blue, SUBJECTS, vertices=12)
 
 
 shared_camera = camera()
@@ -593,14 +572,14 @@ warden_material = sprite_material("ApprovedIronWardenIdle", WARDEN_SOURCE)
 raider_material = sprite_material("ApprovedMineRaiderIdle", RAIDER_SOURCE)
 billboard_sprite(
     "ApprovedIronWarden_56px",
-    (1.8, -8.5, 0.39),
+    (-1.5, -6.5, 0.39),
     (112, 72),
     (56, 66),
     warden_material,
     PRODUCTION_SUBJECTS,
     shared_camera,
 )
-for index, (x, y) in enumerate(((0.5, 15.8), (-1.5, 12.3), (1.5, 8.8), (-1.5, 5.1), (-1.3, -3.4))):
+for index, (x, y) in enumerate(((7.0, 16.8), (6.2, 13.0), (3.0, 9.0), (-0.2, 5.8), (-3.2, 1.0))):
     billboard_sprite(
         f"ApprovedMineRaider_{index}_44px",
         (x, y, 0.39),
@@ -610,12 +589,12 @@ for index, (x, y) in enumerate(((0.5, 15.8), (-1.5, 12.3), (1.5, 8.8), (-1.5, 5.
         PRODUCTION_SUBJECTS,
         shared_camera,
     )
-area_light("TunnelWarm", (0, 17.5, 7.0), 1600, (1.0, 0.25, 0.06), 6.0)
-area_light("GateWarm", (0, -18.0, 6.0), 1300, (1.0, 0.20, 0.04), 5.0)
-area_light("BridgeWarm", (7.0, 0.5, 10.5), 900, (1.0, 0.28, 0.08), 4.0)
+area_light("TunnelWarm", (7.0, 17.5, 7.0), 1600, (1.0, 0.25, 0.06), 6.0)
+area_light("GateWarm", (-5.0, -18.0, 6.0), 1300, (1.0, 0.20, 0.04), 5.0)
+area_light("CourtWarm", (7.5, -7.5, 9.5), 700, (1.0, 0.28, 0.08), 5.0)
 area_light("CoolFill", (-7, -1, 20), 2400, (0.18, 0.36, 0.58), 13.0)
-point_light("GateFaceGlow", (0, -24.0, 5.0), 4200, (1.0, 0.16, 0.035), 4.5)
-point_light("TunnelMouthGlow", (0, 18.2, 3.5), 850, (1.0, 0.22, 0.05), 2.0)
+point_light("GateFaceGlow", (-5.0, -24.0, 5.0), 4200, (1.0, 0.16, 0.035), 4.5)
+point_light("TunnelMouthGlow", (7.0, 18.2, 3.5), 850, (1.0, 0.22, 0.05), 2.0)
 
 scene = bpy.context.scene
 scene.render.engine = "CYCLES"
@@ -637,12 +616,12 @@ scene["layer_contract"] = "issue-286-shared-camera-v1"
 scene["presentation_only"] = True
 
 # Save the editable source with all collections visible, then emit same-camera passes.
-ENV.hide_render = ENTRANCE.hide_render = GANTRY.hide_render = False
+ENV.hide_render = ENTRANCE.hide_render = FRAMING.hide_render = False
 SUBJECTS.hide_render = PRODUCTION_SUBJECTS.hide_render = True
 bpy.ops.wm.save_as_mainfile(filepath=str(BLEND))
 render("environment-base", True, False, False, False, False, False)
 render("entrance-shell", False, True, False, False, False, True)
-render("gantry-shell", False, False, True, False, False, True)
+render("architecture-framing", False, False, True, False, False, True)
 render("route-subjects", False, False, False, True, False, True)
 render("production-sprite-subjects", False, False, False, False, True, True)
 compose_reference(OUT)
@@ -660,7 +639,7 @@ manifest = {
         "rotationEuler": [round(value, 6) for value in shared_camera.rotation_euler],
     },
     "collections": sorted(
-        (ENV.name, ENTRANCE.name, GANTRY.name, SUBJECTS.name, PRODUCTION_SUBJECTS.name, LIGHTS.name)
+        (ENV.name, ENTRANCE.name, FRAMING.name, SUBJECTS.name, PRODUCTION_SUBJECTS.name, LIGHTS.name)
     ),
     "source": {
         "builderSha256": sha256(Path(__file__).resolve()),

@@ -19,7 +19,7 @@ It proves presentation composability only. It does not claim runtime integration
 1. `environment-base`
 2. world subjects behind route-crossing architecture
 3. `entrance-shell`
-4. `gantry-shell`
+4. `architecture-framing`
 5. world subjects in front of route-crossing architecture
 6. screen-space indicators
 7. HUD
@@ -42,7 +42,7 @@ Other generated images in `evidence/` are engineering diagnostics or historical 
 - `blender/build_scene.py`
 - `blender/outputs/environment-base.png`
 - `blender/outputs/entrance-shell.png`
-- `blender/outputs/gantry-shell.png`
+- `blender/outputs/architecture-framing.png`
 - `blender/render-manifest.json`
 
 The environment and foreground passes are rendered from named collections through `CAMERA_Shuttergate_Ortho`. Transparent RGB is decontaminated at export, and `build_poc.py` uses those exact pass pixels without resizing, registration, tracing, chroma keying, or perspective correction. The Blender verifier rerenders every committed pass and rejects stale pixels, source drift, extra manifest properties, alpha contamination, or source-asset drift.
@@ -58,7 +58,7 @@ uv run --with-requirements assets/game-art/layered-map-poc/requirements.lock \
 
 Verification first rerenders every pass from the committed editable Blender source, then rebuilds the entire compositor package in a temporary directory and requires byte-identical committed outputs. It also binds the approved production sprites used in the traversal boards.
 
-The entrance shell is intentionally a **fully visible aperture** for route subjects; its evidence proves clearance and alpha isolation rather than claiming an occlusion transition. The gantry is the progressive-occlusion proof case.
+The entrance shell supplies the route-local occlusion proof. The architecture-framing layer stays outside the hooked route and proves that foreground depth can frame the broad tactical floor without an overhead bridge or floor-consuming support.
 
 ## Production recommendation
 
