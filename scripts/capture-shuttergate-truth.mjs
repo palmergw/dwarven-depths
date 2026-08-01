@@ -242,12 +242,49 @@ try {
         };
       });
       const hostile = entities.find((entity) => entity.faction === "enemy");
+      const probeAnchor = [1060, 200];
+      const probeCanvasLeft = probeAnchor[0] - 40;
+      const probeCanvasTop = probeAnchor[1] - 54;
+      let probePixelsBehindArtifact = 0;
+      for (let y = 0; y < decoded.enemy.height; y += 1) {
+        for (let x = 0; x < decoded.enemy.width; x += 1) {
+          if (
+            (decoded.enemy.rgba[(y * decoded.enemy.width + x) * 4 + 3] ?? 0) ===
+            0
+          )
+            continue;
+          const worldX = probeCanvasLeft + x;
+          const worldY = probeCanvasTop + y;
+          if (
+            worldX < 0 ||
+            worldY < 0 ||
+            worldX >= decoded.foreground.width ||
+            worldY >= decoded.foreground.height
+          )
+            continue;
+          if (
+            (decoded.foreground.rgba[
+              (worldY * decoded.foreground.width + worldX) * 4 + 3
+            ] ?? 0) > 0
+          )
+            probePixelsBehindArtifact += 1;
+        }
+      }
       const occlusionMatchesRuntime =
         hostile !== undefined &&
         hostile.nonzeroAlphaPixels ===
           registry.occlusionWitness.subjectAlphaPixels &&
         hostile.subjectPixelsBehindArtifact ===
           registry.occlusionWitness.subjectPixelsBehindArtifact;
+      const depthResolutionMatchesRuntime =
+        hostile !== undefined &&
+        hostile.subjectPixelsBehindArtifact === 0 &&
+        registry.depthResolution.intent === "foreground-clear" &&
+        registry.depthResolution.actualPixelsBehindArtifact === 0 &&
+        registry.depthResolution.probeAnchor[0] === probeAnchor[0] &&
+        registry.depthResolution.probeAnchor[1] === probeAnchor[1] &&
+        registry.depthResolution.probePixelsBehindArtifact ===
+          probePixelsBehindArtifact;
       return {
         assets: {
           dwarf: {
@@ -271,6 +308,14 @@ try {
         },
         entities,
         occlusionMatchesRuntime,
+        depthResolution: {
+          intent: "foreground-clear",
+          actualPixelsBehindArtifact:
+            hostile?.subjectPixelsBehindArtifact ?? -1,
+          probeAnchor,
+          probePixelsBehindArtifact,
+          matchesRuntime: depthResolutionMatchesRuntime
+        },
         valid:
           entities.every(
             (entity) =>
@@ -279,14 +324,17 @@ try {
               entity.matchesRuntimeRegistry
           ) &&
           occlusionMatchesRuntime &&
-          hostile?.subjectPixelsBehindArtifact === 0
+          hostile?.subjectPixelsBehindArtifact === 0 &&
+          probePixelsBehindArtifact > 0 &&
+          depthResolutionMatchesRuntime
       };
     },
     {
       assets: visualAssetInputs,
       registry: {
         entities: evidence.truth?.registry.entities,
-        occlusionWitness: evidence.truth?.occlusion.witness
+        occlusionWitness: evidence.truth?.occlusion.witness,
+        depthResolution: evidence.truth?.occlusion.depthResolution
       }
     }
   );

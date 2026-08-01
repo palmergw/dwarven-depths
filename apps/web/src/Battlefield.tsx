@@ -43,7 +43,7 @@ const SHUTTERGATE_NODE_POSITIONS: Readonly<
   "node.shuttergate_west_hall": { x: 838, y: 330 },
   "node.shuttergate_east_entry": { x: 1054, y: 302 },
   "node.shuttergate_east_hall": { x: 838, y: 330 },
-  "node.shuttergate_gate": { x: 1060, y: 255 },
+  "node.shuttergate_gate": { x: 1030, y: 270 },
   "node.shuttergate_north_guard": { x: 605, y: 320 },
   "node.shuttergate_keep": { x: 432, y: 402 },
   "node.shuttergate_keep_guard": { x: 364, y: 476 }
@@ -118,6 +118,13 @@ export interface TruthScreenSidecar {
       readonly entityId: string;
       readonly subjectAlphaPixels: number;
       readonly subjectPixelsBehindArtifact: number;
+    };
+    readonly depthResolution: {
+      readonly intent: "foreground-clear";
+      readonly actualAnchor: readonly [number, number];
+      readonly actualPixelsBehindArtifact: number;
+      readonly probeAnchor: readonly [1060, 200];
+      readonly probePixelsBehindArtifact: number;
     };
   };
   readonly alignment: {
@@ -274,9 +281,11 @@ export function buildTruthScreenSidecar(
   ).length;
   const exactlyOneWardenAndOneHostile = dwarfCount === 1 && hostileCount === 1;
   const hostile = entities.find(({ faction }) => faction === "enemy");
-  let subjectPixelsBehindArtifact = 0;
-  if (hostile !== undefined) {
-    const [canvasLeft, canvasTop] = hostile.canvasBounds;
+  const countEnemyForegroundOverlap = (
+    canvasLeft: number,
+    canvasTop: number
+  ): number => {
+    let overlap = 0;
     for (let y = 0; y < visualMetrics.enemy.height; y += 1) {
       for (let x = 0; x < visualMetrics.enemy.width; x += 1) {
         if (
@@ -298,10 +307,23 @@ export function buildTruthScreenSidecar(
             worldY * visualMetrics.foreground.width + worldX
           ] ?? 0) > 0
         )
-          subjectPixelsBehindArtifact += 1;
+          overlap += 1;
       }
     }
+    return overlap;
+  };
+  let subjectPixelsBehindArtifact = 0;
+  if (hostile !== undefined) {
+    const [canvasLeft, canvasTop] = hostile.canvasBounds;
+    subjectPixelsBehindArtifact = countEnemyForegroundOverlap(
+      canvasLeft,
+      canvasTop
+    );
   }
+  const probePixelsBehindArtifact = countEnemyForegroundOverlap(
+    1060 - 40,
+    200 - 54
+  );
   return {
     schemaVersion: 1,
     captureReady: true,
@@ -337,6 +359,13 @@ export function buildTruthScreenSidecar(
         entityId: hostile?.id ?? "",
         subjectAlphaPixels: visualMetrics.enemy.nonzeroAlphaPixels,
         subjectPixelsBehindArtifact
+      },
+      depthResolution: {
+        intent: "foreground-clear",
+        actualAnchor: [hostile?.x ?? 0, hostile?.y ?? 0],
+        actualPixelsBehindArtifact: subjectPixelsBehindArtifact,
+        probeAnchor: [1060, 200],
+        probePixelsBehindArtifact
       }
     },
     alignment: {
@@ -351,7 +380,8 @@ export function buildTruthScreenSidecar(
             entity.nonzeroAlphaPixels > 0 &&
             entity.intersectsUnobscuredWorldViewport
         ) &&
-        subjectPixelsBehindArtifact === 0
+        subjectPixelsBehindArtifact === 0 &&
+        probePixelsBehindArtifact > 0
     }
   };
 }
