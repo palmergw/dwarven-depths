@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "captureId": "capture-287-5002f43ac7fa2406accc",
-  "sourceHead": "ee60afec3e061048eac8cfc14c4e5d97d6d4ecff",
+  "captureId": "capture-287-e03d0a110b557e3755bb",
+  "sourceHead": "ba04bea1e49e7374114514b1162b1bb15ec7ed8e",
   "capture": {
     "screenshot": "shuttergate-truth-screen.png",
-    "screenshotSha256": "62f37aad294095109d12cb0e7fce20c1bddf64866d4383689b5d576ad08880b8",
+    "screenshotSha256": "d9de79666f608d79093eb6a2dd03afce5e45aab9fe08f40da256326d1b141264",
     "viewport": [1440, 900],
     "devicePixelRatio": 1,
     "route": "checkpoint -> preparation -> paused combat"
