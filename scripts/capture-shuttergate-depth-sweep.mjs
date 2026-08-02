@@ -54,18 +54,8 @@ try {
   await page.addScriptTag({
     type: "module",
     content: `
-      import React from "/@id/react";
-      import { createRoot } from "/@id/react-dom/client";
-      import { Battlefield } from "/src/Battlefield.tsx";
-      import "/src/styles.css";
-      const root = createRoot(document.querySelector("#depth-sweep-root"));
-      window.__mountDepthSweep = (snapshot) => root.render(
-        React.createElement(Battlefield, {
-          snapshot,
-          reduceMotion: true,
-          soundEnabled: false
-        })
-      );
+      import { mountDepthSweep } from "/src/depth-sweep-evidence.ts";
+      window.__mountDepthSweep = mountDepthSweep;
     `
   });
   await page.waitForFunction(
