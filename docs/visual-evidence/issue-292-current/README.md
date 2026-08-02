@@ -14,6 +14,6 @@ The images differ at 177 pixels in bounding box `(648,305)–(1214,403)`. The ch
 
 ## Route sweep
 
-`../issue-292-depth-sweep/manifest.json` binds eight actual-running-Phaser native-pixel crops to the same renderer head and static-depth SHA-256. Every authored route ID contains both fixed-scale runtime subjects and ground rings; coincident east/west aliases intentionally produce byte-identical crops. Two reproducible gate arrival samples at 0 ms and 210 ms cover the transient upright-billboard effect while it is depth masked.
+`../issue-292-depth-sweep/manifest.json` binds eight actual-running-Phaser native-pixel crops to its exact renderer head and static-depth SHA-256. Every authored route ID contains both fixed-scale runtime subjects and ground rings; coincident east/west aliases intentionally produce byte-identical crops. Two deterministic gate arrival samples at effect alpha 1 and 0.5 cover the transient upright-billboard effect while it is depth masked. Independent consecutive captures are byte-identical; the two alpha samples differ at 430 pixels within crop-local bounding box `(8,40)–(99,80)` and leave the scene and subjects unchanged.
 
 The route images are evidence only. The independent CPU oracle and mutation regression live in `apps/web/src/shuttergate-depth-sweep.test.ts`.
