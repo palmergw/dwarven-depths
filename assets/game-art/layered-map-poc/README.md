@@ -44,6 +44,7 @@ Other generated images in `evidence/` are engineering diagnostics or historical 
 - `blender/outputs/environment-base.png`
 - `blender/outputs/entrance-shell.png`
 - `blender/outputs/entrance-route-rear.png`
+- `blender/outputs/entrance-route-ground-foreground.png`
 - `blender/outputs/entrance-route-foreground.png`
 - `blender/render-manifest.json`
 

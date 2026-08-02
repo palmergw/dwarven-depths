@@ -18,7 +18,13 @@
     "entrance-route-foreground.png": {
       "alphaSemantics": "straight-alpha-authored-route-foreground-only",
       "height": 720,
-      "sha256": "2b730ebba39653753b0f9f657dc57ae433c74933939a9d73cd88b5870c3a0154",
+      "sha256": "3bf32536b020eb8d7c9e64df6d5ed75a34be01053027b3ac93ada7b9944d3c76",
+      "width": 1280
+    },
+    "entrance-route-ground-foreground.png": {
+      "alphaSemantics": "straight-alpha-authored-ground-occluders-only",
+      "height": 720,
+      "sha256": "dba694a66f32dab4e7d57e3bf8f3a14821b3f8097a93c407705cd8233206baa8",
       "width": 1280
     },
     "entrance-route-rear.png": {
@@ -73,7 +79,7 @@
   "schemaVersion": 1,
   "source": {
     "blendSha256": "3240a4437cb5144b246699548c7e37ddd1724c267cfc19c8e556e332a789de65",
-    "builderSha256": "aef1ca8ae9d5b13038ec26796627654c012daa4b8d946f0ec5eed0c3a4d8efb8",
+    "builderSha256": "8d0bad4612c4319ef6e0634a70558c7d8a5da8abe7609630a47b7ac154fa209c",
     "compositorSha256": "b038785832c04df434adbbd272a8c2cb596e2e11ed090c8fd688fb677b428d12"
   },
   "sourceAssets": {

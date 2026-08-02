@@ -67,6 +67,10 @@ const visualAssetPaths = {
         "../assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
         import.meta.url
       ),
+  groundForeground: new URL(
+    "../assets/game-art/layered-map-poc/blender/outputs/entrance-route-ground-foreground.png",
+    import.meta.url
+  ),
   foreground: new URL(
     "../assets/game-art/layered-map-poc/blender/outputs/entrance-route-foreground.png",
     import.meta.url
@@ -199,6 +203,7 @@ try {
       const decoded = {
         dwarf: await decode(assets.dwarf.pngBase64, true),
         enemy: await decode(assets.enemy.pngBase64, true),
+        groundForeground: await decode(assets.groundForeground.pngBase64),
         foreground: await decode(assets.foreground.pngBase64),
         rear: await decode(assets.rear.pngBase64)
       };
@@ -241,6 +246,9 @@ try {
         const subjectPixelsOverRearArtifact = countArtifactOverlap(
           decoded.rear
         );
+        const subjectPixelsOverGroundArtifact = countArtifactOverlap(
+          decoded.groundForeground
+        );
         const subjectPixelsBehindForegroundArtifact = countArtifactOverlap(
           decoded.foreground
         );
@@ -273,6 +281,7 @@ try {
               : source.fullAlphaPixels / source.nonzeroAlphaPixels,
           intersectsWorldViewport,
           subjectPixelsOverRearArtifact,
+          subjectPixelsOverGroundArtifact,
           subjectPixelsBehindForegroundArtifact,
           matchesRuntimeRegistry
         };
@@ -312,11 +321,12 @@ try {
             if (
               x >= 0 &&
               y >= 0 &&
-              x < decoded.foreground.width &&
-              y < decoded.foreground.height &&
-              (decoded.foreground.rgba[
-                (y * decoded.foreground.width + x) * 4 + 3
-              ] ?? 0) > 0
+              [decoded.groundForeground, decoded.foreground].some(
+                (artifact) =>
+                  x < artifact.width &&
+                  y < artifact.height &&
+                  (artifact.rgba[(y * artifact.width + x) * 4 + 3] ?? 0) > 0
+              )
             )
               overlap += 1;
           }
@@ -349,6 +359,8 @@ try {
           registry.occlusionWitness.subjectAlphaPixels &&
         hostile.subjectPixelsOverRearArtifact ===
           registry.occlusionWitness.subjectPixelsOverRearArtifact &&
+        hostile.subjectPixelsOverGroundArtifact ===
+          registry.occlusionWitness.subjectPixelsOverGroundArtifact &&
         hostile.subjectPixelsBehindForegroundArtifact ===
           registry.occlusionWitness.subjectPixelsBehindForegroundArtifact &&
         worldRingPixelsBehindForegroundArtifact ===
@@ -359,11 +371,14 @@ try {
       const depthResolutionMatchesRuntime =
         hostile !== undefined &&
         hostile.subjectPixelsOverRearArtifact > 0 &&
+        hostile.subjectPixelsOverGroundArtifact > 0 &&
         hostile.subjectPixelsBehindForegroundArtifact > 0 &&
         registry.depthResolution.intent ===
           "rear-visible-and-foreground-occluded" &&
         registry.depthResolution.rearOverlapPixels ===
           hostile.subjectPixelsOverRearArtifact &&
+        registry.depthResolution.subjectGroundOverlapPixels ===
+          hostile.subjectPixelsOverGroundArtifact &&
         registry.depthResolution.foregroundOcclusionPixels ===
           hostile.subjectPixelsBehindForegroundArtifact &&
         worldRingPixelsBehindForegroundArtifact > 0 &&
@@ -390,6 +405,12 @@ try {
             fullAlphaPixels: decoded.enemy.fullAlphaPixels,
             partialAlphaPixels: decoded.enemy.partialAlphaPixels
           },
+          groundForeground: {
+            width: decoded.groundForeground.width,
+            height: decoded.groundForeground.height,
+            alphaBounds: decoded.groundForeground.alphaBounds,
+            nonzeroAlphaPixels: decoded.groundForeground.nonzeroAlphaPixels
+          },
           foreground: {
             width: decoded.foreground.width,
             height: decoded.foreground.height,
@@ -408,6 +429,8 @@ try {
         depthResolution: {
           intent: "rear-visible-and-foreground-occluded",
           rearOverlapPixels: hostile?.subjectPixelsOverRearArtifact ?? -1,
+          subjectGroundOverlapPixels:
+            hostile?.subjectPixelsOverGroundArtifact ?? -1,
           foregroundOcclusionPixels:
             hostile?.subjectPixelsBehindForegroundArtifact ?? -1,
           worldRingOcclusionPixels: worldRingPixelsBehindForegroundArtifact,
@@ -425,6 +448,7 @@ try {
           ) &&
           occlusionMatchesRuntime &&
           (hostile?.subjectPixelsOverRearArtifact ?? 0) > 0 &&
+          (hostile?.subjectPixelsOverGroundArtifact ?? 0) > 0 &&
           (hostile?.subjectPixelsBehindForegroundArtifact ?? 0) > 0 &&
           worldRingPixelsBehindForegroundArtifact > 0 &&
           transientEffectPixelsBehindForegroundArtifact > 0 &&

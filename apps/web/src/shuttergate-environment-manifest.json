@@ -22,10 +22,16 @@
       "sha256": "f53b2912a61ba1c03841d768c270263afc6abf2bfca6025face4b84916880baf"
     },
     {
+      "id": "entrance-route-ground-foreground",
+      "role": "authored-ground-occluder",
+      "source": "assets/game-art/layered-map-poc/blender/outputs/entrance-route-ground-foreground.png",
+      "sha256": "dba694a66f32dab4e7d57e3bf8f3a14821b3f8097a93c407705cd8233206baa8"
+    },
+    {
       "id": "entrance-route-foreground",
-      "role": "authored-foreground-depth",
+      "role": "authored-subject-foreground-depth",
       "source": "assets/game-art/layered-map-poc/blender/outputs/entrance-route-foreground.png",
-      "sha256": "2b730ebba39653753b0f9f657dc57ae433c74933939a9d73cd88b5870c3a0154"
+      "sha256": "3bf32536b020eb8d7c9e64df6d5ed75a34be01053027b3ac93ada7b9944d3c76"
     }
   ],
   "prohibitedRoles": ["entity", "effect", "state", "hud"]

@@ -31,6 +31,10 @@ const entranceRouteForegroundUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/entrance-route-foreground.png",
   import.meta.url
 ).href;
+const entranceRouteGroundForegroundUrl = new URL(
+  "../../../assets/game-art/layered-map-poc/blender/outputs/entrance-route-ground-foreground.png",
+  import.meta.url
+).href;
 const entranceRouteRearUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/entrance-route-rear.png",
   import.meta.url
@@ -88,6 +92,7 @@ interface TextureAlphaMetrics {
 interface TruthVisualMetrics {
   readonly dwarf: TextureAlphaMetrics;
   readonly enemy: TextureAlphaMetrics;
+  readonly groundForeground: TextureAlphaMetrics;
   readonly foreground: TextureAlphaMetrics;
   readonly rear: TextureAlphaMetrics;
 }
@@ -132,6 +137,7 @@ export interface TruthScreenSidecar {
       readonly entityId: string;
       readonly subjectAlphaPixels: number;
       readonly subjectPixelsOverRearArtifact: number;
+      readonly subjectPixelsOverGroundArtifact: number;
       readonly subjectPixelsBehindForegroundArtifact: number;
       readonly worldRingPixelsBehindForegroundArtifact: number;
       readonly transientEffectPixelsBehindForegroundArtifact: number;
@@ -140,6 +146,7 @@ export interface TruthScreenSidecar {
       readonly intent: "rear-visible-and-foreground-occluded";
       readonly actualAnchor: readonly [number, number];
       readonly rearOverlapPixels: number;
+      readonly subjectGroundOverlapPixels: number;
       readonly foregroundOcclusionPixels: number;
       readonly worldRingOcclusionPixels: number;
       readonly transientEffectOcclusionPixels: number;
@@ -330,7 +337,7 @@ export function buildTruthScreenSidecar(
     return overlap;
   };
   const countEllipseArtifactOverlap = (
-    artifact: TextureAlphaMetrics,
+    artifacts: readonly TextureAlphaMetrics[],
     centerX: number,
     centerY: number,
     radiusX: number,
@@ -361,9 +368,12 @@ export function buildTruthScreenSidecar(
         if (
           x >= 0 &&
           y >= 0 &&
-          x < artifact.width &&
-          y < artifact.height &&
-          (artifact.alpha[y * artifact.width + x] ?? 0) > 0
+          artifacts.some(
+            (artifact) =>
+              x < artifact.width &&
+              y < artifact.height &&
+              (artifact.alpha[y * artifact.width + x] ?? 0) > 0
+          )
         )
           overlap += 1;
       }
@@ -371,6 +381,7 @@ export function buildTruthScreenSidecar(
     return overlap;
   };
   let rearOverlapPixels = 0;
+  let subjectGroundOverlapPixels = 0;
   let foregroundOcclusionPixels = 0;
   let worldRingOcclusionPixels = 0;
   let transientEffectOcclusionPixels = 0;
@@ -381,20 +392,25 @@ export function buildTruthScreenSidecar(
       canvasLeft,
       canvasTop
     );
+    subjectGroundOverlapPixels = countEnemyArtifactOverlap(
+      visualMetrics.groundForeground,
+      canvasLeft,
+      canvasTop
+    );
     foregroundOcclusionPixels = countEnemyArtifactOverlap(
       visualMetrics.foreground,
       canvasLeft,
       canvasTop
     );
     worldRingOcclusionPixels = countEllipseArtifactOverlap(
-      visualMetrics.foreground,
+      [visualMetrics.groundForeground, visualMetrics.foreground],
       hostile.x,
       hostile.y - 1,
       31,
       12
     );
     transientEffectOcclusionPixels = countEllipseArtifactOverlap(
-      visualMetrics.foreground,
+      [visualMetrics.groundForeground, visualMetrics.foreground],
       hostile.x,
       hostile.y - 12,
       46,
@@ -427,6 +443,7 @@ export function buildTruthScreenSidecar(
         "environment-base-and-rear-architecture",
         "world-rings",
         "world-effects",
+        "entrance-route-ground-foreground",
         "world-subjects",
         "entrance-shell",
         "entrance-route-foreground",
@@ -439,6 +456,7 @@ export function buildTruthScreenSidecar(
         entityId: hostile?.id ?? "",
         subjectAlphaPixels: visualMetrics.enemy.nonzeroAlphaPixels,
         subjectPixelsOverRearArtifact: rearOverlapPixels,
+        subjectPixelsOverGroundArtifact: subjectGroundOverlapPixels,
         subjectPixelsBehindForegroundArtifact: foregroundOcclusionPixels,
         worldRingPixelsBehindForegroundArtifact: worldRingOcclusionPixels,
         transientEffectPixelsBehindForegroundArtifact:
@@ -448,6 +466,7 @@ export function buildTruthScreenSidecar(
         intent: "rear-visible-and-foreground-occluded",
         actualAnchor: [hostile?.x ?? 0, hostile?.y ?? 0],
         rearOverlapPixels,
+        subjectGroundOverlapPixels,
         foregroundOcclusionPixels,
         worldRingOcclusionPixels,
         transientEffectOcclusionPixels
@@ -467,6 +486,7 @@ export function buildTruthScreenSidecar(
             entity.intersectsUnobscuredWorldViewport
         ) &&
         rearOverlapPixels > 0 &&
+        subjectGroundOverlapPixels > 0 &&
         foregroundOcclusionPixels > 0 &&
         worldRingOcclusionPixels > 0 &&
         transientEffectOcclusionPixels > 0
@@ -588,6 +608,27 @@ function drawBattlefield(
     }
   }
 
+  if (feedback !== undefined && !reduceMotion) {
+    const transient = scene.add.graphics();
+    transient.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
+    for (const entity of primitives.entities)
+      if (
+        feedback.arrivals.some(({ id }) => id === entity.id) ||
+        feedback.departures.some(({ id }) => id === entity.id)
+      )
+        transient.strokeEllipse(entity.x, entity.y - 12, 88, 50);
+    scene.tweens.add({
+      targets: transient,
+      alpha: 0.15,
+      duration: 420,
+      yoyo: true,
+      repeat: 1
+    });
+  }
+
+  // Ground-level props cover rings/effects but remain beneath upright subjects.
+  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-ground-foreground");
+
   const wardenTexture = normalizeAlphaTexture(
     scene,
     "warden-source",
@@ -611,27 +652,8 @@ function drawBattlefield(
         .setOrigin(40 / 80, 54 / 60);
   }
 
-  if (feedback !== undefined && !reduceMotion) {
-    const transient = scene.add.graphics();
-    transient.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
-    for (const entity of primitives.entities)
-      if (
-        feedback.arrivals.some(({ id }) => id === entity.id) ||
-        feedback.departures.some(({ id }) => id === entity.id)
-      )
-        transient.strokeEllipse(entity.x, entity.y - 12, 88, 50);
-    scene.tweens.add({
-      targets: transient,
-      alpha: 0.15,
-      duration: 420,
-      yoyo: true,
-      repeat: 1
-    });
-  }
-
-  // Shared-camera authored foreground surfaces are composited after all world
-  // presentation. The hostile therefore sits over the tunnel rear but beneath
-  // the route-facing buttress in this same player-facing frame.
+  // Shared-camera authored foreground surfaces are depth-clipped against the
+  // hostile billboard and composited after upright world subjects.
   scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell");
   scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground");
 
@@ -658,6 +680,10 @@ function drawBattlefield(
       {
         dwarf: measureTextureAlpha(scene, wardenTexture),
         enemy: measureTextureAlpha(scene, raiderTexture),
+        groundForeground: measureTextureAlpha(
+          scene,
+          "entrance-route-ground-foreground"
+        ),
         foreground: measureTextureAlpha(scene, "entrance-route-foreground"),
         rear: measureTextureAlpha(scene, "entrance-route-rear")
       }
@@ -699,6 +725,10 @@ function createBattlefieldRenderer(
       preload(this: Phaser.Scene) {
         this.load.image("environment-base", environmentUrl);
         this.load.image("entrance-shell", entranceShellUrl);
+        this.load.image(
+          "entrance-route-ground-foreground",
+          entranceRouteGroundForegroundUrl
+        );
         this.load.image(
           "entrance-route-foreground",
           entranceRouteForegroundUrl

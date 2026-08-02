@@ -85,7 +85,7 @@ def assert_authoring_reproducible()->None:
   raise ValueError('unexpected shared-camera contract')
  if manifest['source']!={'builderSha256':sha(BLENDER_BUILDER),'blendSha256':sha(BLENDER_SOURCE),'compositorSha256':sha(BLENDER_COMPOSITOR)}:
   raise ValueError('Blender editable-source binding drift')
- expected_outputs={'environment-base.png','entrance-shell.png','entrance-route-foreground.png','entrance-route-rear.png','route-subjects.png','production-sprite-subjects.png','reference-plate.png','route-traversal.png','production-sprite-traversal.png'}
+ expected_outputs={'environment-base.png','entrance-shell.png','entrance-route-ground-foreground.png','entrance-route-foreground.png','entrance-route-rear.png','route-subjects.png','production-sprite-subjects.png','reference-plate.png','route-traversal.png','production-sprite-traversal.png'}
  if set(manifest['outputs'])!=expected_outputs:raise ValueError('unexpected Blender output set')
  for record in manifest['outputs'].values():
   if set(record)!={'width','height','alphaSemantics','sha256'}:raise ValueError('unexpected Blender output shape')
@@ -312,7 +312,7 @@ def build(out_root:Path)->list[Path]:
   'presentationLighting':{'raider':'opacity-normalized warm entrance adaptation plus contact shadow and hostile world ring','warden':'opacity-normalized bounded brightness/contrast adaptation plus contact shadow and allied world ring','baseSpriteCanvasPivotOrSupportChanged':False},
   'nonClaims':['large-map scale','runtime integration','simulation authority','HUD approval','final animation']}
  cp=meta/'layered-map-contract.json';write_json(cp,contract);files.append(cp)
- provenance_inputs=[BASE,REFERENCE,*ARTIFACTS.values(),BLENDER_BUILDER,BLENDER_COMPOSITOR,REVIEW_PACKET_BUILDER,BLENDER_SOURCE,BLENDER_MANIFEST,BLENDER_OUTPUTS/'entrance-route-foreground.png',BLENDER_OUTPUTS/'entrance-route-rear.png',BLENDER_OUTPUTS/'production-sprite-subjects.png',BLENDER_OUTPUTS/'production-sprite-traversal.png',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
+ provenance_inputs=[BASE,REFERENCE,*ARTIFACTS.values(),BLENDER_BUILDER,BLENDER_COMPOSITOR,REVIEW_PACKET_BUILDER,BLENDER_SOURCE,BLENDER_MANIFEST,BLENDER_OUTPUTS/'entrance-route-ground-foreground.png',BLENDER_OUTPUTS/'entrance-route-foreground.png',BLENDER_OUTPUTS/'entrance-route-rear.png',BLENDER_OUTPUTS/'production-sprite-subjects.png',BLENDER_OUTPUTS/'production-sprite-traversal.png',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
  provenance={'generator':'assets/game-art/layered-map-poc/build_poc.py','generatorSha256':sha(Path(__file__)),'authoringModel':'single editable Blender scene and orthographic camera; complete plate derives from same-camera environment plus canonical RGBA passes','environment':{'blender':'4.3.2','cycles':'CPU 16 samples, denoising disabled','pillow':'12.3.0','fonts':{str(path):digest for path,digest in FONT_HASHES.items()}},'inputs':{str(p.relative_to(ROOT)):sha(p) for p in provenance_inputs}}
  pp=meta/'provenance.json';write_json(pp,provenance);files.append(pp)
  manifest={'schemaVersion':1,'files':{str(p.relative_to(out_root)):sha(p) for p in sorted(files)}}
