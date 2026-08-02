@@ -1,6 +1,6 @@
 # Issue #292 current visual evidence
 
-Renderer source head: `ad6cd358efd53ad2b396084c8bac522166415b30`
+Renderer source head: `119e1749123705c3804d3dba43019bd930a5cee1`
 
 ## Atomic truth screen
 
