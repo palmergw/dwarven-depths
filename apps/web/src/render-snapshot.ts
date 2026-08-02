@@ -257,7 +257,11 @@ function parseV1(value: UnknownRecord): RenderSnapshotV1 | undefined {
   if (nodes === undefined) return undefined;
   const nodeIds = new Set(nodes.map((node) => node.id));
   const connections = parseConnections(value.connections, nodeIds);
-  if (connections === undefined || !Array.isArray(value.entities))
+  if (
+    connections === undefined ||
+    !Array.isArray(value.entities) ||
+    value.entities.length > 4096
+  )
     return undefined;
   const entities: RenderEntity[] = [];
   for (const entity of value.entities) {
@@ -278,8 +282,7 @@ function parseV1(value: UnknownRecord): RenderSnapshotV1 | undefined {
       faction: entity.faction
     });
   }
-  if (entities.length > 4096 || !hasCanonicalUniqueIds(entities))
-    return undefined;
+  if (!hasCanonicalUniqueIds(entities)) return undefined;
   return {
     schemaVersion: 1,
     levelId: value.levelId,
@@ -335,7 +338,8 @@ function parseStatuses(value: unknown): readonly RenderStatus[] | undefined {
 
 function parseV2Entity(
   value: unknown,
-  nodeIds: ReadonlySet<string>
+  nodesById: ReadonlyMap<string, RenderNode>,
+  tick: number
 ): RenderEntityV2 | undefined {
   if (
     !isRecord(value) ||
@@ -359,7 +363,7 @@ function parseV2Entity(
     ]) ||
     !isIdentifier(value.id) ||
     !isIdentifier(value.nodeId) ||
-    !nodeIds.has(value.nodeId) ||
+    !nodesById.has(value.nodeId) ||
     (value.faction !== "dwarf" &&
       value.faction !== "enemy" &&
       value.faction !== "deployable") ||
@@ -390,11 +394,26 @@ function parseV2Entity(
       ? null
       : parsePosition(value.previousPosition);
   const statuses = parseStatuses(value.statuses);
+  const authoredPosition = nodesById.get(value.nodeId);
+  const authoredPreviousPosition =
+    previousPosition === null || previousPosition === undefined
+      ? undefined
+      : nodesById.get(previousPosition.nodeId);
   if (
     position === undefined ||
     position.nodeId !== value.nodeId ||
     previousPosition === undefined ||
     statuses === undefined ||
+    authoredPosition === undefined ||
+    position.x !== authoredPosition.x ||
+    position.y !== authoredPosition.y ||
+    (previousPosition !== null &&
+      (authoredPreviousPosition === undefined ||
+        previousPosition.x !== authoredPreviousPosition.x ||
+        previousPosition.y !== authoredPreviousPosition.y)) ||
+    statuses.some(
+      (status) => status.appliedAtTick > tick || status.expiresAtTick < tick
+    ) ||
     !isRecord(value.action) ||
     !hasExactKeys(value.action, ["abilityId", "kind", "phase"]) ||
     (value.action.kind !== "idle" &&
@@ -407,6 +426,27 @@ function parseV2Entity(
       value.action.phase !== "impact" &&
       value.action.phase !== "recovery") ||
     (value.action.abilityId !== null && !isIdentifier(value.action.abilityId))
+  )
+    return undefined;
+  const moved =
+    previousPosition !== null && previousPosition.nodeId !== position.nodeId;
+  if (
+    (value.faction === "dwarf" &&
+      (value.archetype !== "character" || value.elite || value.boss)) ||
+    (value.faction === "enemy" &&
+      (value.archetype === "character" || value.archetype === "deployable")) ||
+    (value.faction === "deployable" && value.archetype !== "deployable") ||
+    value.elite !== (value.archetype === "elite") ||
+    value.boss !== (value.archetype === "boss") ||
+    (value.action.kind === "ability") !== (value.action.abilityId !== null) ||
+    ((value.action.kind === "idle" || value.action.kind === "moving") &&
+      value.action.phase !== "idle") ||
+    ((value.action.kind === "basic_attack" ||
+      value.action.kind === "ability") &&
+      value.action.phase === "idle") ||
+    (value.transition === "spawned") !== (previousPosition === null) ||
+    (value.transition === "moving") !== moved ||
+    (value.transition === "active" && (previousPosition === null || moved))
   )
     return undefined;
   return {
@@ -526,6 +566,7 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
   const nodes = parseNodes(value.nodes);
   if (nodes === undefined) return undefined;
   const nodeIds = new Set(nodes.map((node) => node.id));
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
   const connections = parseConnections(value.connections, nodeIds);
   if (
     connections === undefined ||
@@ -535,7 +576,7 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
     return undefined;
   const entities: RenderEntityV2[] = [];
   for (const candidate of value.entities) {
-    const entity = parseV2Entity(candidate, nodeIds);
+    const entity = parseV2Entity(candidate, nodesById, value.tick);
     if (entity === undefined) return undefined;
     entities.push(entity);
   }
@@ -545,6 +586,33 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
     !hasCanonicalUniqueIds(entities) ||
     transitions === undefined ||
     encounter === undefined
+  )
+    return undefined;
+  const entityIds = new Set(entities.map((entity) => entity.id));
+  if (
+    transitions.some((transition) =>
+      transition.kind === "spawned"
+        ? !entityIds.has(transition.entityId) ||
+          entities.find((entity) => entity.id === transition.entityId)
+            ?.transition !== "spawned"
+        : entityIds.has(transition.entityId)
+    ) ||
+    entities.some(
+      (entity) =>
+        entity.transition === "spawned" &&
+        !transitions.some(
+          (transition) =>
+            transition.entityId === entity.id && transition.kind === "spawned"
+        )
+    ) ||
+    (value.previousTick === null &&
+      entities.some((entity) => entity.previousPosition !== null)) ||
+    encounter.livingHostileCount !==
+      entities.filter((entity) => entity.faction === "enemy").length ||
+    (encounter.startedWaveIds.length === 0) !==
+      (encounter.activeWaveId === null) ||
+    (value.phase !== "terminal" && encounter.terminalResult !== null) ||
+    (value.phase === "terminal" && encounter.terminalResult === null)
   )
     return undefined;
   return {

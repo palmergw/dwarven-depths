@@ -69,6 +69,11 @@ function actionFor(
             : "impact",
       abilityId: null
     };
+  if (
+    combatant.actionState.cooldownCompleteAtTick !== null &&
+    combatant.actionState.cooldownCompleteAtTick > state.tick
+  )
+    return { kind: "basic_attack", phase: "recovery", abilityId: null };
   return moved
     ? { kind: "moving", phase: "idle", abilityId: null }
     : { kind: "idle", phase: "idle", abilityId: null };
