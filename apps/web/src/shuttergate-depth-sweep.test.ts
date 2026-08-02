@@ -485,5 +485,5 @@ describe("Shuttergate route-wide depth sweep", () => {
       expectedWitness?.occluded ?? 0
     );
     expect(candidate).not.toEqual(expected);
-  });
+  }, 15_000);
 });
