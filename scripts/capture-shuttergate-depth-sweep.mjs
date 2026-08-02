@@ -135,14 +135,10 @@ try {
     ]
   };
   await page.evaluate(
-    (value) => window.__mountDepthSweep(value, false),
+    (value) => window.__mountDepthSweep(value, false, undefined),
     quietGate
   );
-  await page.waitForTimeout(1800);
-  await page.evaluate(
-    (value) => window.__mountDepthSweep(value, false),
-    arrivalGate
-  );
+  await page.waitForTimeout(50);
   const gateAnchor = spatialContract.anchors[gateId].rasterPivot;
   const motionCrop = {
     x: gateAnchor[0] - cropWidth / 2,
@@ -150,17 +146,25 @@ try {
     width: cropWidth,
     height: cropHeight
   };
-  let elapsedMilliseconds = 0;
-  for (const delayMilliseconds of [0, 210]) {
-    await page.waitForTimeout(delayMilliseconds);
-    elapsedMilliseconds += delayMilliseconds;
-    const filename = `motion-gate-${elapsedMilliseconds}ms.png`;
+  for (const effectAlpha of [1, 0.5]) {
+    await page.evaluate(
+      ({ snapshot, effectAlpha }) =>
+        window.__mountDepthSweep(snapshot, false, effectAlpha),
+      { snapshot: arrivalGate, effectAlpha }
+    );
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        )
+    );
+    const filename = `motion-gate-alpha-${effectAlpha * 100}.png`;
     const screenshot = await page.screenshot({
       path: fileURLToPath(new URL(filename, outputDirectory)),
       clip: motionCrop
     });
     motionSamples.push({
-      elapsedMilliseconds,
+      effectAlpha,
       screenshot: filename,
       screenshotSha256: createHash("sha256").update(screenshot).digest("hex")
     });
@@ -175,8 +179,9 @@ const depthBytes = await readFile(
     import.meta.url
   )
 );
+const manifestPath = fileURLToPath(new URL("manifest.json", outputDirectory));
 await writeFile(
-  new URL("manifest.json", outputDirectory),
+  manifestPath,
   `${JSON.stringify(
     {
       schemaVersion: 1,
@@ -193,6 +198,9 @@ await writeFile(
     2
   )}\n`
 );
+await execFile("pnpm", ["exec", "biome", "format", "--write", manifestPath], {
+  cwd: repositoryRoot
+});
 console.log(
   JSON.stringify({
     ok: true,

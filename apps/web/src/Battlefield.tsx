@@ -825,8 +825,16 @@ function drawBattlefield(
   feedback: CombatFeedback | undefined,
   reduceMotion: boolean,
   _previousSnapshot: RenderSnapshot | undefined,
-  staticDepth: StaticSceneDepth
+  staticDepth: StaticSceneDepth,
+  evidenceEffectAlpha: number | undefined
 ): void {
+  if (
+    evidenceEffectAlpha !== undefined &&
+    (!Number.isFinite(evidenceEffectAlpha) ||
+      evidenceEffectAlpha < 0 ||
+      evidenceEffectAlpha > 1)
+  )
+    throw new Error("invalid evidence effect alpha");
   scene.children.removeAll();
   scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base");
   scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-ground-foreground");
@@ -855,13 +863,17 @@ function drawBattlefield(
         );
         if (transient !== undefined) transients.push(transient);
       }
-    scene.tweens.add({
-      targets: transients,
-      alpha: 0.15,
-      duration: 420,
-      yoyo: true,
-      repeat: 1
-    });
+    if (evidenceEffectAlpha === undefined)
+      scene.tweens.add({
+        targets: transients,
+        alpha: 0.15,
+        duration: 420,
+        yoyo: true,
+        repeat: 1
+      });
+    else
+      for (const transient of transients)
+        transient.setAlpha(evidenceEffectAlpha);
   }
 
   const wardenTexture = normalizeAlphaTexture(
@@ -937,7 +949,8 @@ interface BattlefieldRenderer {
     snapshot: RenderSnapshot,
     feedback: CombatFeedback | undefined,
     reduceMotion: boolean,
-    previousSnapshot: RenderSnapshot | undefined
+    previousSnapshot: RenderSnapshot | undefined,
+    evidenceEffectAlpha: number | undefined
   ): void;
   destroy(): void;
 }
@@ -946,11 +959,13 @@ function createBattlefieldRenderer(
   parent: HTMLElement,
   initialSnapshot: RenderSnapshot,
   initialFeedback: CombatFeedback | undefined,
-  initialReduceMotion: boolean
+  initialReduceMotion: boolean,
+  initialEvidenceEffectAlpha: number | undefined
 ): BattlefieldRenderer {
   let snapshot = initialSnapshot;
   let feedback = initialFeedback;
   let reduceMotion = initialReduceMotion;
+  let evidenceEffectAlpha = initialEvidenceEffectAlpha;
   let previousSnapshot: RenderSnapshot | undefined;
   let scene: Phaser.Scene | undefined;
   let staticDepth: StaticSceneDepth | undefined;
@@ -998,17 +1013,25 @@ function createBattlefieldRenderer(
           feedback,
           reduceMotion,
           previousSnapshot,
-          staticDepth
+          staticDepth,
+          evidenceEffectAlpha
         );
       }
     }
   });
   return {
-    update(nextSnapshot, nextFeedback, nextReduceMotion, nextPreviousSnapshot) {
+    update(
+      nextSnapshot,
+      nextFeedback,
+      nextReduceMotion,
+      nextPreviousSnapshot,
+      nextEvidenceEffectAlpha
+    ) {
       snapshot = nextSnapshot;
       feedback = nextFeedback;
       reduceMotion = nextReduceMotion;
       previousSnapshot = nextPreviousSnapshot;
+      evidenceEffectAlpha = nextEvidenceEffectAlpha;
       if (scene !== undefined && staticDepth !== undefined)
         drawBattlefield(
           scene,
@@ -1016,7 +1039,8 @@ function createBattlefieldRenderer(
           feedback,
           reduceMotion,
           previousSnapshot,
-          staticDepth
+          staticDepth,
+          evidenceEffectAlpha
         );
     },
     destroy() {
@@ -1032,22 +1056,26 @@ function createBattlefieldRenderer(
 export function Battlefield({
   snapshot,
   reduceMotion,
-  soundEnabled
+  soundEnabled,
+  evidenceEffectAlpha
 }: {
   readonly snapshot: RenderSnapshot;
   readonly reduceMotion: boolean;
   readonly soundEnabled: boolean;
+  readonly evidenceEffectAlpha?: number;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<BattlefieldRenderer | undefined>(undefined);
   const latestSnapshotRef = useRef(snapshot);
   const latestFeedbackRef = useRef<CombatFeedback | undefined>(undefined);
   const latestReduceMotionRef = useRef(reduceMotion);
+  const latestEvidenceEffectAlphaRef = useRef(evidenceEffectAlpha);
   const previousSnapshotRef = useRef<RenderSnapshot | undefined>(undefined);
   const soundPlayerRef = useRef<CombatSoundPlayer | undefined>(undefined);
   const [feedback, setFeedback] = useState<CombatFeedback | undefined>();
   latestSnapshotRef.current = snapshot;
   latestReduceMotionRef.current = reduceMotion;
+  latestEvidenceEffectAlphaRef.current = evidenceEffectAlpha;
 
   useEffect(() => {
     if (!soundEnabled) {
@@ -1072,7 +1100,8 @@ export function Battlefield({
         parent,
         latestSnapshotRef.current,
         latestFeedbackRef.current,
-        latestReduceMotionRef.current
+        latestReduceMotionRef.current,
+        latestEvidenceEffectAlphaRef.current
       );
       rendererRef.current = renderer;
     });
@@ -1086,21 +1115,26 @@ export function Battlefield({
   useEffect(() => {
     const previousSnapshot = previousSnapshotRef.current;
     const nextFeedback = deriveCombatFeedback(previousSnapshot, snapshot);
+    const renderedFeedback =
+      evidenceEffectAlpha !== undefined && nextFeedback === undefined
+        ? latestFeedbackRef.current
+        : nextFeedback;
     if (
       previousSnapshot === undefined ||
       isCombatFeedbackProgression(previousSnapshot, snapshot)
     )
       previousSnapshotRef.current = snapshot;
-    latestFeedbackRef.current = nextFeedback;
+    latestFeedbackRef.current = renderedFeedback;
     setFeedback(nextFeedback);
     rendererRef.current?.update(
       snapshot,
-      nextFeedback,
+      renderedFeedback,
       reduceMotion,
-      previousSnapshot
+      previousSnapshot,
+      evidenceEffectAlpha
     );
     if (nextFeedback !== undefined) soundPlayerRef.current?.play(nextFeedback);
-  }, [reduceMotion, snapshot]);
+  }, [evidenceEffectAlpha, reduceMotion, snapshot]);
 
   return (
     <figure

@@ -8,7 +8,8 @@ let root: Root | undefined;
 
 export function mountDepthSweep(
   snapshot: RenderSnapshot,
-  reduceMotion = true
+  reduceMotion = true,
+  evidenceEffectAlpha?: number
 ): void {
   const parent = document.querySelector("#depth-sweep-root");
   if (!(parent instanceof HTMLElement))
@@ -18,7 +19,8 @@ export function mountDepthSweep(
     createElement(Battlefield, {
       snapshot,
       reduceMotion,
-      soundEnabled: false
+      soundEnabled: false,
+      ...(evidenceEffectAlpha === undefined ? {} : { evidenceEffectAlpha })
     })
   );
 }
