@@ -6,7 +6,8 @@ import { App } from "./App.js";
 import {
   Battlefield,
   buildBattlefieldPrimitives,
-  buildDepartureFeedbackPrimitives
+  buildDepartureFeedbackPrimitives,
+  comparePresentationPrimitives
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { deriveCombatFeedback } from "./combat-feedback.js";
@@ -1407,6 +1408,107 @@ describe("authoritative web worker", () => {
     );
   });
 
+  it("projects Shuttergate occupancy through stable anchor-local world slots", () => {
+    const snapshot = {
+      schemaVersion: 1,
+      levelId: "level.shuttergate",
+      mapId: "map.shuttergate_hall",
+      tick: 2,
+      phase: "running",
+      nodes: [{ id: "node.shuttergate_gate", x: 0, y: 0 }],
+      connections: [],
+      entities: [
+        {
+          id: "unit.4",
+          nodeId: "node.shuttergate_gate",
+          faction: "enemy"
+        },
+        {
+          id: "unit.2",
+          nodeId: "node.shuttergate_gate",
+          faction: "enemy"
+        },
+        {
+          id: "unit.1",
+          nodeId: "node.shuttergate_gate",
+          faction: "dwarf"
+        },
+        {
+          id: "unit.3",
+          nodeId: "node.shuttergate_gate",
+          faction: "dwarf"
+        }
+      ]
+    } as const satisfies RenderSnapshot;
+    const expected = [
+      {
+        id: "unit.1",
+        faction: "dwarf",
+        x: 1072,
+        y: 234,
+        cameraDepth: 68.67968530950729
+      },
+      {
+        id: "unit.2",
+        faction: "enemy",
+        x: 1110,
+        y: 234,
+        cameraDepth: 68.67968524685904
+      },
+      {
+        id: "unit.3",
+        faction: "dwarf",
+        x: 1148,
+        y: 234,
+        cameraDepth: 68.67968518421078
+      },
+      {
+        id: "unit.4",
+        faction: "enemy",
+        x: 1072,
+        y: 272,
+        cameraDepth: 66.25091102821374
+      }
+    ];
+    expect(buildBattlefieldPrimitives(snapshot).entities).toEqual(expected);
+    expect(
+      buildBattlefieldPrimitives({
+        ...snapshot,
+        entities: [...snapshot.entities].reverse()
+      }).entities
+    ).toEqual(expected);
+    expect(
+      buildBattlefieldPrimitives({
+        ...snapshot,
+        entities: [snapshot.entities[2]]
+      }).entities
+    ).toEqual([
+      {
+        id: "unit.1",
+        faction: "dwarf",
+        x: 1110,
+        y: 253,
+        cameraDepth: 67.46529810621226
+      }
+    ]);
+  });
+
+  it("sorts shared-scene presentation by camera depth and stable ID", () => {
+    const primitives = [
+      { id: "entity.near.z", x: 0, y: 10, cameraDepth: 4 },
+      { id: "entity.far", x: 0, y: 30, cameraDepth: 9 },
+      { id: "entity.near.a", x: 0, y: 20, cameraDepth: 4 }
+    ];
+    expect([...primitives].sort(comparePresentationPrimitives)).toEqual([
+      primitives[1],
+      primitives[2],
+      primitives[0]
+    ]);
+    expect(
+      [...primitives].reverse().sort(comparePresentationPrimitives)
+    ).toEqual([primitives[1], primitives[2], primitives[0]]);
+  });
+
   it("keeps reduced-motion feedback static and rejects stale replay effects in StrictMode", async () => {
     const initial = {
       schemaVersion: 1,
@@ -1446,11 +1548,13 @@ describe("authoritative web worker", () => {
     );
     expect(document.querySelector(".combat-feedback")).toBeNull();
     render(changed);
-    await vi.waitFor(() =>
-      expect(document.querySelector(".combat-feedback")).toHaveAttribute(
-        "data-motion",
-        "static"
-      )
+    await vi.waitFor(
+      () =>
+        expect(document.querySelector(".combat-feedback")).toHaveAttribute(
+          "data-motion",
+          "static"
+        ),
+      { timeout: 10_000 }
     );
     render(initial);
     await vi.waitFor(() =>

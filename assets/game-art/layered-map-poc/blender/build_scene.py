@@ -7,6 +7,7 @@ import json
 import math
 import random
 import re
+import struct
 import subprocess
 import sys
 import tempfile
@@ -20,10 +21,18 @@ HERE = Path(__file__).resolve().parent
 OUT = HERE / "outputs"
 BLEND = HERE / "layered-shuttergate.blend"
 MANIFEST = HERE / "render-manifest.json"
+SPATIAL_CONTRACT = HERE / "shuttergate-spatial-contract.json"
+STATIC_SCENE_DEPTH = OUT / "static-scene-depth.bin"
 COMPOSITOR = HERE / "compose_reference.py"
 REQUIREMENTS = HERE.parent / "requirements.lock"
 CAMERA_ORTHO_SCALE = 50.0
 RENDER_HEIGHT = 720
+STATIC_DEPTH_MAGIC = b"DDDEPTH\0"
+STATIC_DEPTH_SCHEMA_VERSION = 1
+STATIC_DEPTH_MINIMUM = 0.0
+STATIC_DEPTH_MAXIMUM = 128.0
+STATIC_DEPTH_MAX_CODE = 65534
+STATIC_DEPTH_NO_SURFACE = 65535
 WARDEN_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "iron-warden-idle.png"
 RAIDER_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "mine-raider-idle.png"
 APPROACH_SUBJECT_FOREGROUND_OBJECTS = {
@@ -38,6 +47,25 @@ APPROACH_SUBJECT_FOREGROUND_OBJECTS = {
 APPROACH_GROUND_OCCLUDER_OBJECTS = {"ShoulderRubble_5", "ShoulderRubble_7"}
 APPROACH_SUBJECT_WORLD_POINT = (8.0, 17.0, 0.39)
 APPROACH_REAR_OBJECTS = {"TunnelBackWall", "TunnelVoid", "TunnelGlow"}
+GAMEPLAY_ANCHOR_WORLD = {
+    # Bootstrap the approved #287 integer pivots onto the authored ground plane.
+    # Coincident west/east aliases preserve the simulation topology without
+    # changing the approved nonbranching tutorial presentation.
+    "node.shuttergate_west_entry": (8.53485775, 12.75995636, 0.39),
+    "node.shuttergate_west_hall": (3.13837862, 5.943180084, 0.39),
+    "node.shuttergate_east_entry": (8.53485775, 12.75995636, 0.39),
+    "node.shuttergate_east_hall": (3.13837862, 5.943180084, 0.39),
+    "node.shuttergate_gate": (8.0, 17.0, 0.39),
+    "node.shuttergate_north_guard": (-4.523356438, 0.973539114, 0.39),
+    "node.shuttergate_keep": (-6.118225098, -8.018285751, 0.39),
+    "node.shuttergate_keep_guard": (-4.83292675, -14.02907753, 0.39),
+}
+COINCIDENT_GROUPS = {
+    "node.shuttergate_west_entry": "shuttergate-entry-alias",
+    "node.shuttergate_east_entry": "shuttergate-entry-alias",
+    "node.shuttergate_west_hall": "shuttergate-hall-alias",
+    "node.shuttergate_east_hall": "shuttergate-hall-alias",
+}
 random.seed(286)
 
 OUTPUT_CONTRACT = {
@@ -70,13 +98,178 @@ def sha256(path):
 def biome_json(data):
     """Emit deterministic JSON with short numeric arrays in Biome's canonical form."""
     text = json.dumps(data, indent=2, sort_keys=True)
-    numeric_array = re.compile(r"\[\n((?:\s+-?\d+(?:\.\d+)?,?\n)+)\s+\]")
+    number = r"-?\d+(?:\.\d+)?(?:e[+-]?\d+)?"
+    numeric_array = re.compile(rf"\[\n((?:\s+{number},?\n)+)\s+\]")
 
     def compact(match):
-        values = re.findall(r"-?\d+(?:\.\d+)?", match.group(1))
+        values = re.findall(number, match.group(1))
         return "[" + ", ".join(values) + "]"
 
-    return numeric_array.sub(compact, text) + "\n"
+    text = numeric_array.sub(compact, text)
+    return re.sub(r"e([+-]?)0+(\d+)", r"e\1\2", text) + "\n"
+
+
+def matrix_rows(matrix):
+    return [[round(float(matrix[row][column]), 12) for column in range(4)] for row in range(4)]
+
+
+def static_depth_contract():
+    return {
+        "asset": str(STATIC_SCENE_DEPTH.relative_to(HERE.parents[3])),
+        "sha256": sha256(STATIC_SCENE_DEPTH),
+        "encoding": "uint16-linear-camera-depth",
+        "byteOrder": "little-endian",
+        "rowOrder": "top-left-row-major",
+        "width": 1280,
+        "height": 720,
+        "cameraDepthRange": [STATIC_DEPTH_MINIMUM, STATIC_DEPTH_MAXIMUM],
+        "noSurfaceCode": STATIC_DEPTH_NO_SURFACE,
+        "quantization": "round-to-nearest",
+        "maximumQuantizationError": (STATIC_DEPTH_MAXIMUM - STATIC_DEPTH_MINIMUM)
+        / STATIC_DEPTH_MAX_CODE
+        / 2,
+    }
+
+
+def build_spatial_contract(scene, camera_obj):
+    world_to_camera = camera_obj.matrix_world.normalized().inverted()
+    camera_to_clip = camera_obj.calc_matrix_camera(
+        bpy.context.evaluated_depsgraph_get(),
+        x=scene.render.resolution_x,
+        y=scene.render.resolution_y,
+        scale_x=scene.render.pixel_aspect_x,
+        scale_y=scene.render.pixel_aspect_y,
+    )
+    world_to_clip = camera_to_clip @ world_to_camera
+    packed_matrix = b"".join(
+        struct.pack("<d", float(world_to_clip[row][column]))
+        for row in range(4)
+        for column in range(4)
+    )
+    anchors = {}
+    for node_id in sorted(GAMEPLAY_ANCHOR_WORLD):
+        object_name = f"ANCHOR_{node_id}"
+        anchor = bpy.data.objects[object_name]
+        world = anchor.matrix_world.translation
+        camera_point = world_to_camera @ world
+        clip = world_to_clip @ world.to_4d()
+        ndc_x = clip.x / clip.w
+        ndc_y = clip.y / clip.w
+        screen_x = (ndc_x * 0.5 + 0.5) * scene.render.resolution_x
+        screen_y = (1.0 - (ndc_y * 0.5 + 0.5)) * scene.render.resolution_y
+        anchors[node_id] = {
+            "objectName": object_name,
+            "world": [round(float(value), 9) for value in world],
+            "cameraDepth": round(float(-camera_point.z), 9),
+            "projectedPivot": [round(float(screen_x), 6), round(float(screen_y), 6)],
+            "rasterPivot": [math.floor(screen_x + 0.5), math.floor(screen_y + 0.5)],
+            "coincidentGroup": COINCIDENT_GROUPS.get(node_id),
+        }
+    return {
+        "schemaVersion": 2,
+        "mapId": "map.shuttergate_hall",
+        "frame": {
+            "width": scene.render.resolution_x,
+            "height": scene.render.resolution_y,
+            "pixelAspect": [scene.render.pixel_aspect_x, scene.render.pixel_aspect_y],
+            "origin": "top-left",
+            "pixelCenter": "integer-plus-0.5",
+            "rasterQuantization": "floor(value-plus-0.5)",
+        },
+        "world": {"handedness": "right", "upAxis": "+Z", "cameraForwardAxis": "-Z"},
+        "camera": {
+            "name": camera_obj.name,
+            "projection": "orthographic",
+            "orthoScale": camera_obj.data.ortho_scale,
+            "shift": [camera_obj.data.shift_x, camera_obj.data.shift_y],
+            "clip": [camera_obj.data.clip_start, camera_obj.data.clip_end],
+            "worldToCameraRowMajor": matrix_rows(world_to_camera),
+            "cameraToClipRowMajor": matrix_rows(camera_to_clip),
+            "worldToClipRowMajor": matrix_rows(world_to_clip),
+            "worldToClipFloat64LeSha256": hashlib.sha256(packed_matrix).hexdigest(),
+        },
+        "anchors": anchors,
+        "staticDepth": static_depth_contract(),
+        "source": {
+            "builderSha256": sha256(Path(__file__).resolve()),
+            "blendSha256": sha256(BLEND),
+        },
+    }
+
+
+def encode_static_scene_depth(depth_values):
+    expected_pixels = 1280 * 720
+    assert len(depth_values) == expected_pixels, f"unexpected static depth sample count: {len(depth_values)}"
+    codes = []
+    for depth in depth_values:
+        if not math.isfinite(depth) or depth >= 1.0e9:
+            codes.append(STATIC_DEPTH_NO_SURFACE)
+            continue
+        assert STATIC_DEPTH_MINIMUM <= depth <= STATIC_DEPTH_MAXIMUM, f"static depth outside encoded range: {depth}"
+        normalized = (depth - STATIC_DEPTH_MINIMUM) / (STATIC_DEPTH_MAXIMUM - STATIC_DEPTH_MINIMUM)
+        codes.append(math.floor(normalized * STATIC_DEPTH_MAX_CODE + 0.5))
+    header = STATIC_DEPTH_MAGIC + struct.pack("<HHHH", STATIC_DEPTH_SCHEMA_VERSION, 1280, 720, 0)
+    return header + struct.pack(f"<{expected_pixels}H", *codes)
+
+
+def verify_static_scene_depth(path):
+    data = path.read_bytes()
+    expected_length = 16 + 1280 * 720 * 2
+    assert len(data) == expected_length, f"unexpected static depth byte length: {len(data)}"
+    assert data[:8] == STATIC_DEPTH_MAGIC
+    assert struct.unpack("<HHHH", data[8:16]) == (STATIC_DEPTH_SCHEMA_VERSION, 1280, 720, 0)
+    codes = struct.unpack(f"<{1280 * 720}H", data[16:])
+    assert any(code != STATIC_DEPTH_NO_SURFACE for code in codes), "static depth contains no scene surfaces"
+
+
+def render_static_scene_depth(output):
+    """Export Cycles' nearest static-surface camera depth without color conversion."""
+    scene = bpy.context.scene
+    bpy.data.collections["ENVIRONMENT_BASE"].hide_render = False
+    bpy.data.collections["FOREGROUND_ENTRANCE"].hide_render = False
+    bpy.data.collections["DIAGNOSTIC_ROUTE_SUBJECTS"].hide_render = True
+    bpy.data.collections["PRODUCTION_ROUTE_SUBJECTS"].hide_render = True
+    scene.view_layers[0].use_pass_z = True
+    scene.use_nodes = True
+    nodes = scene.node_tree.nodes
+    links = scene.node_tree.links
+    nodes.clear()
+    render_layers = nodes.new("CompositorNodeRLayers")
+    combine = nodes.new("CompositorNodeCombineColor")
+    combine.mode = "RGB"
+    composite = nodes.new("CompositorNodeComposite")
+    depth_output = render_layers.outputs["Depth" if "Depth" in render_layers.outputs else "Z"]
+    for channel in ("Red", "Green", "Blue"):
+        links.new(depth_output, combine.inputs[channel])
+    combine.inputs["Alpha"].default_value = 1.0
+    links.new(combine.outputs["Image"], composite.inputs["Image"])
+    with tempfile.TemporaryDirectory() as directory:
+        exr = Path(directory) / "static-depth.exr"
+        scene.render.image_settings.file_format = "OPEN_EXR"
+        scene.render.image_settings.color_mode = "RGBA"
+        scene.render.image_settings.color_depth = "32"
+        scene.render.filepath = str(exr)
+        bpy.ops.render.render(write_still=True)
+        image = bpy.data.images.load(str(exr), check_existing=False)
+        try:
+            from array import array
+
+            pixels = array("f", [0.0]) * len(image.pixels)
+            image.pixels.foreach_get(pixels)
+            values = [float(value) for value in pixels[0::4]]
+        finally:
+            bpy.data.images.remove(image)
+    scene.use_nodes = False
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.image_settings.color_mode = "RGBA"
+    scene.render.image_settings.color_depth = "8"
+    top_left_values = [
+        values[(719 - y) * 1280 + x]
+        for y in range(720)
+        for x in range(1280)
+    ]
+    output.write_bytes(encode_static_scene_depth(top_left_values))
+    verify_static_scene_depth(output)
 
 
 def verify_image(path, alpha_semantics):
@@ -141,6 +334,8 @@ def pixel_digest(path):
 def verify_existing():
     assert BLEND.is_file(), f"missing editable source: {BLEND}"
     assert MANIFEST.is_file(), f"missing render manifest: {MANIFEST}"
+    assert SPATIAL_CONTRACT.is_file(), f"missing spatial contract: {SPATIAL_CONTRACT}"
+    assert STATIC_SCENE_DEPTH.is_file(), f"missing static scene depth: {STATIC_SCENE_DEPTH}"
     manifest = json.loads(MANIFEST.read_text())
     assert set(manifest) == {"schemaVersion", "blenderVersion", "camera", "collections", "source", "sourceAssets", "outputs"}
     assert manifest["schemaVersion"] == 1
@@ -153,16 +348,27 @@ def verify_existing():
     assert len(cameras) == 1 and cameras[0].name == "CAMERA_Shuttergate_Ortho"
     assert scene.camera == cameras[0]
     assert cameras[0].data.type == "ORTHO" and cameras[0].data.ortho_scale == CAMERA_ORTHO_SCALE
-    assert scene.get("layer_contract") == "issue-286-shared-camera-v1"
+    assert scene.get("layer_contract") == "issue-292-shared-scene-v2"
     expected_collections = {
         "ENVIRONMENT_BASE",
         "FOREGROUND_ENTRANCE",
         "DIAGNOSTIC_ROUTE_SUBJECTS",
         "PRODUCTION_ROUTE_SUBJECTS",
         "SHARED_LIGHTING",
+        "GAMEPLAY_ANCHORS",
     }
     assert set(manifest["collections"]) == expected_collections
     assert expected_collections == set(bpy.data.collections.keys())
+    anchor_objects = bpy.data.collections["GAMEPLAY_ANCHORS"].objects
+    assert {obj.name for obj in anchor_objects} == {
+        f"ANCHOR_{node_id}" for node_id in GAMEPLAY_ANCHOR_WORLD
+    }
+    for node_id, expected_world in GAMEPLAY_ANCHOR_WORLD.items():
+        actual = bpy.data.objects[f"ANCHOR_{node_id}"].location
+        assert all(abs(float(actual[index]) - expected_world[index]) < 1e-6 for index in range(3))
+    spatial_contract = json.loads(SPATIAL_CONTRACT.read_text())
+    verify_static_scene_depth(STATIC_SCENE_DEPTH)
+    assert spatial_contract == build_spatial_contract(scene, cameras[0])
     assert manifest["camera"] == {
         "name": cameras[0].name,
         "projection": "orthographic",
@@ -310,6 +516,9 @@ def verify_render_reproducibility(manifest):
         assert pixel_digest(output_root / "reference-plate.png") == pixel_digest(
             OUT / "reference-plate.png"
         ), "stale composited reference pixels"
+        regenerated_depth = output_root / "static-scene-depth.bin"
+        render_static_scene_depth(regenerated_depth)
+        assert regenerated_depth.read_bytes() == STATIC_SCENE_DEPTH.read_bytes(), "stale static scene depth"
 
 
 def mat(name, color, metallic=0.0, roughness=0.75, emission=None, strength=0.0, texture_scale=0.0):
@@ -587,6 +796,7 @@ ENTRANCE = collection("FOREGROUND_ENTRANCE")
 SUBJECTS = collection("DIAGNOSTIC_ROUTE_SUBJECTS")
 PRODUCTION_SUBJECTS = collection("PRODUCTION_ROUTE_SUBJECTS")
 LIGHTS = collection("SHARED_LIGHTING")
+ANCHORS = collection("GAMEPLAY_ANCHORS")
 
 stone = mat("Basalt", (0.06, 0.085, 0.11), roughness=0.9, texture_scale=3.5)
 stone2 = mat("CarvedStone", (0.12, 0.15, 0.17), roughness=0.85, texture_scale=5.0)
@@ -730,6 +940,15 @@ for index, (x, y) in enumerate(((8, 17.5), (7.5, 13.5), (5, 10), (1, 7.5), (-3, 
 
 
 shared_camera = camera()
+for node_id, world in GAMEPLAY_ANCHOR_WORLD.items():
+    anchor = bpy.data.objects.new(f"ANCHOR_{node_id}", None)
+    anchor.location = world
+    anchor.empty_display_type = "PLAIN_AXES"
+    anchor.empty_display_size = 0.35
+    anchor["node_id"] = node_id
+    if node_id in COINCIDENT_GROUPS:
+        anchor["coincident_group"] = COINCIDENT_GROUPS[node_id]
+    ANCHORS.objects.link(anchor)
 warden_material = sprite_material("ApprovedIronWardenIdle", WARDEN_SOURCE)
 raider_material = sprite_material("ApprovedMineRaiderIdle", RAIDER_SOURCE)
 billboard_sprite(
@@ -775,7 +994,7 @@ scene.render.film_transparent = False
 scene.view_settings.look = "AgX - Medium High Contrast"
 scene.world = bpy.data.worlds.new("CavernWorld")
 scene.world.color = (0.008, 0.012, 0.020)
-scene["layer_contract"] = "issue-286-shared-camera-v1"
+scene["layer_contract"] = "issue-292-shared-scene-v2"
 scene["presentation_only"] = True
 
 # Save the editable source with all collections visible, then emit same-camera passes.
@@ -796,6 +1015,7 @@ render("production-sprite-subjects", False, False, False, True, True)
 compose_reference(OUT)
 render("route-traversal", True, True, True, False, False)
 render("production-sprite-traversal", True, True, False, True, False)
+render_static_scene_depth(STATIC_SCENE_DEPTH)
 
 manifest = {
     "schemaVersion": 1,
@@ -808,7 +1028,7 @@ manifest = {
         "rotationEuler": [round(value, 6) for value in shared_camera.rotation_euler],
     },
     "collections": sorted(
-        (ENV.name, ENTRANCE.name, SUBJECTS.name, PRODUCTION_SUBJECTS.name, LIGHTS.name)
+        (ENV.name, ENTRANCE.name, SUBJECTS.name, PRODUCTION_SUBJECTS.name, LIGHTS.name, ANCHORS.name)
     ),
     "source": {
         "builderSha256": sha256(Path(__file__).resolve()),
@@ -844,5 +1064,6 @@ manifest = {
     },
 }
 MANIFEST.write_text(biome_json(manifest))
+SPATIAL_CONTRACT.write_text(biome_json(build_spatial_contract(scene, shared_camera)))
 verify_or_exit()
 print("SHARED_SCENE_RENDER_OK", BLEND, OUT)

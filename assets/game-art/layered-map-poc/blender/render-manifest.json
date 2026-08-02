@@ -11,6 +11,7 @@
     "DIAGNOSTIC_ROUTE_SUBJECTS",
     "ENVIRONMENT_BASE",
     "FOREGROUND_ENTRANCE",
+    "GAMEPLAY_ANCHORS",
     "PRODUCTION_ROUTE_SUBJECTS",
     "SHARED_LIGHTING"
   ],
@@ -78,8 +79,8 @@
   },
   "schemaVersion": 1,
   "source": {
-    "blendSha256": "3240a4437cb5144b246699548c7e37ddd1724c267cfc19c8e556e332a789de65",
-    "builderSha256": "8d0bad4612c4319ef6e0634a70558c7d8a5da8abe7609630a47b7ac154fa209c",
+    "blendSha256": "8e20c2d320d5327d4d48d1df4151a5ffe0c9316b3c80f0cbaded4fa637ebab49",
+    "builderSha256": "925b546cd2f8788d732466327103f9a11ae96058896f8e05456e8af5ae58d2a3",
     "compositorSha256": "b038785832c04df434adbbd272a8c2cb596e2e11ed090c8fd688fb677b428d12"
   },
   "sourceAssets": {

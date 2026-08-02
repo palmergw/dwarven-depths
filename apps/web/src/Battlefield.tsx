@@ -12,6 +12,21 @@ import {
   type RenderEntity,
   type RenderSnapshot
 } from "./render-snapshot.js";
+import {
+  clipPresentationPixels,
+  decodeStaticSceneDepth,
+  type PresentationDepthModel,
+  type StaticSceneDepth,
+  type StaticSceneDepthContract
+} from "./shuttergate-depth.js";
+import {
+  projectShuttergateOccupants,
+  SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
+  SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
+  SHUTTERGATE_NODE_POSITIONS,
+  SHUTTERGATE_SPATIAL_CONTRACT,
+  SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y
+} from "./shuttergate-spatial.js";
 
 const WIDTH = 1280;
 const HEIGHT = 720;
@@ -47,26 +62,17 @@ const raiderUrl = new URL(
   "../../../assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
   import.meta.url
 ).href;
-
-const SHUTTERGATE_NODE_POSITIONS: Readonly<
-  Record<string, { readonly x: number; readonly y: number }>
-> = {
-  "node.shuttergate_west_entry": { x: 1054, y: 302 },
-  "node.shuttergate_west_hall": { x: 838, y: 330 },
-  "node.shuttergate_east_entry": { x: 1054, y: 302 },
-  "node.shuttergate_east_hall": { x: 838, y: 330 },
-  // Exact shared-camera projection of Blender route point (8.0, 17.0, 0.39).
-  "node.shuttergate_gate": { x: 1110, y: 253 },
-  "node.shuttergate_north_guard": { x: 605, y: 320 },
-  "node.shuttergate_keep": { x: 432, y: 402 },
-  "node.shuttergate_keep_guard": { x: 364, y: 476 }
-};
+const staticSceneDepthUrl = new URL(
+  "../../../assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.bin",
+  import.meta.url
+).href;
 
 export interface RenderPrimitive {
   readonly id: string;
   readonly x: number;
   readonly y: number;
   readonly faction?: RenderEntity["faction"];
+  readonly cameraDepth?: number;
 }
 
 export interface BattlefieldPrimitives {
@@ -77,6 +83,20 @@ export interface BattlefieldPrimitives {
     readonly fromId: string;
     readonly toId: string;
   }[];
+}
+
+export function comparePresentationPrimitives(
+  left: RenderPrimitive,
+  right: RenderPrimitive
+): number {
+  if (left.cameraDepth !== undefined && right.cameraDepth !== undefined) {
+    const depthOrder = right.cameraDepth - left.cameraDepth;
+    if (depthOrder !== 0) return depthOrder;
+  } else {
+    const verticalOrder = left.y - right.y;
+    if (verticalOrder !== 0) return verticalOrder;
+  }
+  return compareRenderIds(left.id, right.id);
 }
 
 interface TextureAlphaMetrics {
@@ -131,8 +151,13 @@ export interface TruthScreenSidecar {
   readonly occlusion: {
     readonly artifactId: "authored-entrance-depth";
     readonly layerOrder: readonly string[];
-    readonly clips: readonly ["world-ring", "world-effect", "world-subject"];
-    readonly exempts: readonly ["screen-focus-indicator", "hud"];
+    readonly clips: readonly [
+      "world-ring",
+      "world-effect",
+      "world-subject",
+      "world-focus"
+    ];
+    readonly exempts: readonly ["hud"];
     readonly witness: {
       readonly entityId: string;
       readonly subjectAlphaPixels: number;
@@ -207,6 +232,10 @@ export function buildBattlefieldPrimitives(
       (nodeOccupancy.get(entity.nodeId) ?? 0) + 1
     );
   const nodeSlots = new Map<string, number>();
+  const shuttergateOccupants =
+    snapshot.mapId === "map.shuttergate_hall"
+      ? projectShuttergateOccupants(orderedEntities)
+      : undefined;
   return {
     nodes,
     connections: [...snapshot.connections]
@@ -216,7 +245,7 @@ export function buildBattlefieldPrimitives(
         fromId: connection.fromNodeId,
         toId: connection.toNodeId
       })),
-    entities: orderedEntities.map((entity) => {
+    entities: orderedEntities.map((entity, entityIndex) => {
       const position = positions.get(entity.nodeId);
       if (position === undefined)
         throw new Error(
@@ -229,11 +258,23 @@ export function buildBattlefieldPrimitives(
       const rows = Math.ceil(occupancy / columns);
       const column = slot % columns;
       const row = Math.floor(slot / columns);
+      const columnOffset = column - (columns - 1) / 2;
+      const rowOffset = row - (rows - 1) / 2;
+      const occupiedPosition =
+        shuttergateOccupants !== undefined
+          ? shuttergateOccupants[entityIndex]
+          : {
+              x: position.x + columnOffset * 38,
+              y: position.y + rowOffset * 38
+            };
+      if (occupiedPosition === undefined)
+        throw new Error(
+          `missing Shuttergate occupant projection: ${entity.id}`
+        );
       return {
         id: entity.id,
         faction: entity.faction,
-        x: position.x + (column - (columns - 1) / 2) * 38,
-        y: position.y + (row - (rows - 1) / 2) * 38
+        ...occupiedPosition
       };
     })
   };
@@ -440,18 +481,15 @@ export function buildTruthScreenSidecar(
     occlusion: {
       artifactId: "authored-entrance-depth",
       layerOrder: [
-        "environment-base-and-rear-architecture",
-        "world-rings",
-        "world-effects",
-        "entrance-route-ground-foreground",
-        "world-subjects",
-        "entrance-shell",
-        "entrance-route-foreground",
-        "screen-focus-indicators",
+        "complete-static-scene-color",
+        "depth-tested-world-rings",
+        "depth-tested-world-effects",
+        "depth-tested-world-subjects",
+        "depth-tested-world-focus",
         "hud"
       ],
-      clips: ["world-ring", "world-effect", "world-subject"],
-      exempts: ["screen-focus-indicator", "hud"],
+      clips: ["world-ring", "world-effect", "world-subject", "world-focus"],
+      exempts: ["hud"],
       witness: {
         entityId: hostile?.id ?? "",
         subjectAlphaPixels: visualMetrics.enemy.nonzeroAlphaPixels,
@@ -581,53 +619,298 @@ function normalizeAlphaTexture(
   texture.refresh();
   return outputKey;
 }
+function createDepthClippedPresentationTexture(
+  scene: Phaser.Scene,
+  sourceKey: string,
+  outputKey: string,
+  width: number,
+  height: number,
+  model: PresentationDepthModel,
+  staticDepth: StaticSceneDepth
+): string {
+  const source = scene.textures.get(sourceKey).getSourceImage() as
+    | HTMLImageElement
+    | HTMLCanvasElement;
+  if (scene.textures.exists(outputKey)) scene.textures.remove(outputKey);
+  const texture = scene.textures.createCanvas(outputKey, width, height);
+  if (texture === null)
+    throw new Error(`unable to create depth-clipped texture: ${outputKey}`);
+  const context = texture.context;
+  context.clearRect(0, 0, width, height);
+  context.drawImage(source, 0, 0, width, height);
+  const pixels = context.getImageData(0, 0, width, height);
+  pixels.data.set(
+    clipPresentationPixels(
+      pixels.data,
+      width,
+      height,
+      staticDepth,
+      model,
+      SHUTTERGATE_SPATIAL_CONTRACT.staticDepth.maximumQuantizationError
+    )
+  );
+  context.putImageData(pixels, 0, 0);
+  texture.refresh();
+  return outputKey;
+}
+
+function createDepthVisibilityMask(
+  scene: Phaser.Scene,
+  width: number,
+  height: number,
+  model: PresentationDepthModel,
+  staticDepth: StaticSceneDepth
+): Phaser.Display.Masks.GeometryMask {
+  const opaque = new Uint8ClampedArray(width * height * 4);
+  for (let index = 3; index < opaque.length; index += 4) opaque[index] = 255;
+  const visible = clipPresentationPixels(
+    opaque,
+    width,
+    height,
+    staticDepth,
+    model,
+    SHUTTERGATE_SPATIAL_CONTRACT.staticDepth.maximumQuantizationError
+  );
+  const shape = scene.make.graphics({}, false);
+  shape.fillStyle(0xffffff, 1);
+  for (let y = 0; y < height; y += 1) {
+    let runStart = -1;
+    for (let x = 0; x <= width; x += 1) {
+      const pixelVisible =
+        x < width && (visible[(y * width + x) * 4 + 3] ?? 0) !== 0;
+      if (pixelVisible && runStart < 0) runStart = x;
+      if (!pixelVisible && runStart >= 0) {
+        shape.fillRect(
+          model.frameLeft + runStart,
+          model.frameTop + y,
+          x - runStart,
+          1
+        );
+        runStart = -1;
+      }
+    }
+  }
+  return shape.createGeometryMask();
+}
+
+function addDepthTestedRing(
+  scene: Phaser.Scene,
+  entity: RenderPrimitive,
+  staticDepth: StaticSceneDepth
+): void {
+  if (entity.cameraDepth === undefined || entity.faction === undefined) return;
+  const dwarf = entity.faction === "dwarf";
+  const ellipseWidth = dwarf ? 72 : 58;
+  const ellipseHeight = dwarf ? 26 : 20;
+  const width = 80;
+  const height = 40;
+  const pivotX = width / 2;
+  const centerYOffset = dwarf ? -2 : -1;
+  const pivotY = height / 2;
+  const frameLeft = Math.round(entity.x) - pivotX;
+  const frameTop = Math.round(entity.y) - pivotY;
+  const ring = scene.add.graphics();
+  ring.fillStyle(dwarf ? 0x65b9df : 0xa92720, dwarf ? 0.32 : 0.3);
+  ring.fillEllipse(
+    entity.x,
+    entity.y + centerYOffset,
+    ellipseWidth,
+    ellipseHeight
+  );
+  ring.lineStyle(3, dwarf ? 0xaee9ff : 0xff725f, dwarf ? 0.9 : 0.95);
+  ring.strokeEllipse(
+    entity.x,
+    entity.y + centerYOffset,
+    ellipseWidth,
+    ellipseHeight
+  );
+  ring.setMask(
+    createDepthVisibilityMask(
+      scene,
+      width,
+      height,
+      {
+        kind: "ground-plane",
+        cameraDepth: entity.cameraDepth,
+        cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
+        cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
+        depthEdgeGuardPixels: 0,
+        frameLeft,
+        frameTop,
+        pivotX,
+        pivotY
+      },
+      staticDepth
+    )
+  );
+}
+
+function addDepthTestedEffect(
+  scene: Phaser.Scene,
+  entity: RenderPrimitive,
+  feedback: CombatFeedback,
+  staticDepth: StaticSceneDepth
+): Phaser.GameObjects.Graphics | undefined {
+  if (entity.cameraDepth === undefined) return undefined;
+  const width = 100;
+  const height = 60;
+  const pivotX = width / 2;
+  const pivotY = 42;
+  const frameLeft = Math.round(entity.x) - pivotX;
+  const frameTop = Math.round(entity.y) - pivotY;
+  const effect = scene.add.graphics();
+  effect.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
+  effect.strokeEllipse(entity.x, entity.y - 12, 88, 50);
+  effect.setMask(
+    createDepthVisibilityMask(
+      scene,
+      width,
+      height,
+      {
+        kind: "upright-billboard",
+        cameraDepth: entity.cameraDepth,
+        cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+        depthEdgeGuardPixels: 1,
+        frameLeft,
+        frameTop,
+        pivotY
+      },
+      staticDepth
+    )
+  );
+  return effect;
+}
+
+function addDepthTestedFocus(
+  scene: Phaser.Scene,
+  entity: RenderPrimitive,
+  staticDepth: StaticSceneDepth
+): void {
+  const width = 84;
+  const height = 80;
+  const pivotX = width / 2;
+  const pivotY = 74;
+  const frameLeft = Math.round(entity.x) - pivotX;
+  const frameTop = Math.round(entity.y) - pivotY;
+  const focus = scene.add.graphics();
+  focus.lineStyle(2, 0xf3d78f, 0.9);
+  focus.strokeRoundedRect(entity.x - 40, entity.y - 72, 80, 78, 10);
+  if (entity.cameraDepth !== undefined)
+    focus.setMask(
+      createDepthVisibilityMask(
+        scene,
+        width,
+        height,
+        {
+          kind: "upright-billboard",
+          cameraDepth: entity.cameraDepth,
+          cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+          depthEdgeGuardPixels: 1,
+          frameLeft,
+          frameTop,
+          pivotY
+        },
+        staticDepth
+      )
+    );
+}
+
+function addDepthTestedBillboard(
+  scene: Phaser.Scene,
+  entity: RenderPrimitive,
+  sourceKey: string,
+  width: number,
+  height: number,
+  pivotX: number,
+  pivotY: number,
+  staticDepth: StaticSceneDepth
+): void {
+  if (entity.cameraDepth === undefined) {
+    scene.add
+      .image(entity.x, entity.y, sourceKey)
+      .setOrigin(pivotX / width, pivotY / height);
+    return;
+  }
+  const frameLeft = Math.round(entity.x) - pivotX;
+  const frameTop = Math.round(entity.y) - pivotY;
+  const texture = createDepthClippedPresentationTexture(
+    scene,
+    sourceKey,
+    `subject-depth-${entity.id}`,
+    width,
+    height,
+    {
+      kind: "upright-billboard",
+      cameraDepth: entity.cameraDepth,
+      cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+      depthEdgeGuardPixels: 1,
+      frameLeft,
+      frameTop,
+      pivotY
+    },
+    staticDepth
+  );
+  scene.add
+    .image(entity.x, entity.y, texture)
+    .setOrigin(pivotX / width, pivotY / height);
+}
 
 function drawBattlefield(
   scene: Phaser.Scene,
   snapshot: RenderSnapshot,
   feedback: CombatFeedback | undefined,
   reduceMotion: boolean,
-  _previousSnapshot: RenderSnapshot | undefined
+  _previousSnapshot: RenderSnapshot | undefined,
+  staticDepth: StaticSceneDepth,
+  evidenceEffectAlpha: number | undefined
 ): void {
+  if (
+    evidenceEffectAlpha !== undefined &&
+    (!Number.isFinite(evidenceEffectAlpha) ||
+      evidenceEffectAlpha < 0 ||
+      evidenceEffectAlpha > 1)
+  )
+    throw new Error("invalid evidence effect alpha");
   scene.children.removeAll();
   scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base");
+  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-ground-foreground");
+  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell");
+  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground");
 
   const primitives = buildBattlefieldPrimitives(snapshot);
-  const world = scene.add.graphics();
-  for (const entity of primitives.entities) {
-    if (entity.faction === "dwarf") {
-      world.fillStyle(0x65b9df, 0.32);
-      world.fillEllipse(entity.x, entity.y - 2, 72, 26);
-      world.lineStyle(3, 0xaee9ff, 0.9);
-      world.strokeEllipse(entity.x, entity.y - 2, 72, 26);
-    } else if (entity.faction === "enemy") {
-      world.fillStyle(0xa92720, 0.3);
-      world.fillEllipse(entity.x, entity.y - 1, 58, 20);
-      world.lineStyle(3, 0xff725f, 0.95);
-      world.strokeEllipse(entity.x, entity.y - 1, 58, 20);
-    }
-  }
+  const orderedEntities = [...primitives.entities].sort(
+    comparePresentationPrimitives
+  );
+  for (const entity of orderedEntities)
+    addDepthTestedRing(scene, entity, staticDepth);
 
   if (feedback !== undefined && !reduceMotion) {
-    const transient = scene.add.graphics();
-    transient.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
-    for (const entity of primitives.entities)
+    const transients: Phaser.GameObjects.Graphics[] = [];
+    for (const entity of orderedEntities)
       if (
         feedback.arrivals.some(({ id }) => id === entity.id) ||
         feedback.departures.some(({ id }) => id === entity.id)
-      )
-        transient.strokeEllipse(entity.x, entity.y - 12, 88, 50);
-    scene.tweens.add({
-      targets: transient,
-      alpha: 0.15,
-      duration: 420,
-      yoyo: true,
-      repeat: 1
-    });
+      ) {
+        const transient = addDepthTestedEffect(
+          scene,
+          entity,
+          feedback,
+          staticDepth
+        );
+        if (transient !== undefined) transients.push(transient);
+      }
+    if (evidenceEffectAlpha === undefined)
+      scene.tweens.add({
+        targets: transients,
+        alpha: 0.15,
+        duration: 420,
+        yoyo: true,
+        repeat: 1
+      });
+    else
+      for (const transient of transients)
+        transient.setAlpha(evidenceEffectAlpha);
   }
-
-  // Ground-level props cover rings/effects but remain beneath upright subjects.
-  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-ground-foreground");
 
   const wardenTexture = normalizeAlphaTexture(
     scene,
@@ -639,39 +922,36 @@ function drawBattlefield(
     "raider-source",
     "raider-runtime"
   );
-  for (const entity of [...primitives.entities].sort(
-    (left, right) => left.y - right.y
-  )) {
+  for (const entity of orderedEntities) {
     if (entity.faction === "dwarf")
-      scene.add
-        .image(entity.x, entity.y, wardenTexture)
-        .setOrigin(56 / 112, 66 / 72);
+      addDepthTestedBillboard(
+        scene,
+        entity,
+        wardenTexture,
+        112,
+        72,
+        56,
+        66,
+        staticDepth
+      );
     else if (entity.faction === "enemy")
-      scene.add
-        .image(entity.x, entity.y, raiderTexture)
-        .setOrigin(40 / 80, 54 / 60);
+      addDepthTestedBillboard(
+        scene,
+        entity,
+        raiderTexture,
+        80,
+        60,
+        40,
+        54,
+        staticDepth
+      );
   }
 
-  // Shared-camera authored foreground surfaces are depth-clipped against the
-  // hostile billboard and composited after upright world subjects.
-  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell");
-  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground");
-
-  // This screen-space focus indicator is intentionally exempt from occlusion.
   const selectedWarden = primitives.entities.find(
     ({ faction }) => faction === "dwarf"
   );
-  if (selectedWarden !== undefined) {
-    const focus = scene.add.graphics();
-    focus.lineStyle(2, 0xf3d78f, 0.9);
-    focus.strokeRoundedRect(
-      selectedWarden.x - 40,
-      selectedWarden.y - 72,
-      80,
-      78,
-      10
-    );
-  }
+  if (selectedWarden !== undefined)
+    addDepthTestedFocus(scene, selectedWarden, staticDepth);
 
   if (typeof window !== "undefined")
     window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ = buildTruthScreenSidecar(
@@ -695,7 +975,8 @@ interface BattlefieldRenderer {
     snapshot: RenderSnapshot,
     feedback: CombatFeedback | undefined,
     reduceMotion: boolean,
-    previousSnapshot: RenderSnapshot | undefined
+    previousSnapshot: RenderSnapshot | undefined,
+    evidenceEffectAlpha: number | undefined
   ): void;
   destroy(): void;
 }
@@ -704,13 +985,16 @@ function createBattlefieldRenderer(
   parent: HTMLElement,
   initialSnapshot: RenderSnapshot,
   initialFeedback: CombatFeedback | undefined,
-  initialReduceMotion: boolean
+  initialReduceMotion: boolean,
+  initialEvidenceEffectAlpha: number | undefined
 ): BattlefieldRenderer {
   let snapshot = initialSnapshot;
   let feedback = initialFeedback;
   let reduceMotion = initialReduceMotion;
+  let evidenceEffectAlpha = initialEvidenceEffectAlpha;
   let previousSnapshot: RenderSnapshot | undefined;
   let scene: Phaser.Scene | undefined;
+  let staticDepth: StaticSceneDepth | undefined;
   const game = new Phaser.Game({
     type: Phaser.CANVAS,
     width: WIDTH,
@@ -736,32 +1020,53 @@ function createBattlefieldRenderer(
         this.load.image("entrance-route-rear", entranceRouteRearUrl);
         this.load.image("warden-source", wardenUrl);
         this.load.image("raider-source", raiderUrl);
+        this.load.binary("static-scene-depth", staticSceneDepthUrl);
       },
       create(this: Phaser.Scene) {
         scene = this;
+        const depthBuffer = this.cache.binary.get(
+          "static-scene-depth"
+        ) as unknown;
+        if (!(depthBuffer instanceof ArrayBuffer))
+          throw new Error("missing Shuttergate static scene depth asset");
+        staticDepth = decodeStaticSceneDepth(
+          depthBuffer,
+          SHUTTERGATE_SPATIAL_CONTRACT.staticDepth as unknown as StaticSceneDepthContract
+        );
         drawBattlefield(
           this,
           snapshot,
           feedback,
           reduceMotion,
-          previousSnapshot
+          previousSnapshot,
+          staticDepth,
+          evidenceEffectAlpha
         );
       }
     }
   });
   return {
-    update(nextSnapshot, nextFeedback, nextReduceMotion, nextPreviousSnapshot) {
+    update(
+      nextSnapshot,
+      nextFeedback,
+      nextReduceMotion,
+      nextPreviousSnapshot,
+      nextEvidenceEffectAlpha
+    ) {
       snapshot = nextSnapshot;
       feedback = nextFeedback;
       reduceMotion = nextReduceMotion;
       previousSnapshot = nextPreviousSnapshot;
-      if (scene !== undefined)
+      evidenceEffectAlpha = nextEvidenceEffectAlpha;
+      if (scene !== undefined && staticDepth !== undefined)
         drawBattlefield(
           scene,
           snapshot,
           feedback,
           reduceMotion,
-          previousSnapshot
+          previousSnapshot,
+          staticDepth,
+          evidenceEffectAlpha
         );
     },
     destroy() {
@@ -777,22 +1082,26 @@ function createBattlefieldRenderer(
 export function Battlefield({
   snapshot,
   reduceMotion,
-  soundEnabled
+  soundEnabled,
+  evidenceEffectAlpha
 }: {
   readonly snapshot: RenderSnapshot;
   readonly reduceMotion: boolean;
   readonly soundEnabled: boolean;
+  readonly evidenceEffectAlpha?: number;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<BattlefieldRenderer | undefined>(undefined);
   const latestSnapshotRef = useRef(snapshot);
   const latestFeedbackRef = useRef<CombatFeedback | undefined>(undefined);
   const latestReduceMotionRef = useRef(reduceMotion);
+  const latestEvidenceEffectAlphaRef = useRef(evidenceEffectAlpha);
   const previousSnapshotRef = useRef<RenderSnapshot | undefined>(undefined);
   const soundPlayerRef = useRef<CombatSoundPlayer | undefined>(undefined);
   const [feedback, setFeedback] = useState<CombatFeedback | undefined>();
   latestSnapshotRef.current = snapshot;
   latestReduceMotionRef.current = reduceMotion;
+  latestEvidenceEffectAlphaRef.current = evidenceEffectAlpha;
 
   useEffect(() => {
     if (!soundEnabled) {
@@ -817,7 +1126,8 @@ export function Battlefield({
         parent,
         latestSnapshotRef.current,
         latestFeedbackRef.current,
-        latestReduceMotionRef.current
+        latestReduceMotionRef.current,
+        latestEvidenceEffectAlphaRef.current
       );
       rendererRef.current = renderer;
     });
@@ -831,21 +1141,26 @@ export function Battlefield({
   useEffect(() => {
     const previousSnapshot = previousSnapshotRef.current;
     const nextFeedback = deriveCombatFeedback(previousSnapshot, snapshot);
+    const renderedFeedback =
+      evidenceEffectAlpha !== undefined && nextFeedback === undefined
+        ? latestFeedbackRef.current
+        : nextFeedback;
     if (
       previousSnapshot === undefined ||
       isCombatFeedbackProgression(previousSnapshot, snapshot)
     )
       previousSnapshotRef.current = snapshot;
-    latestFeedbackRef.current = nextFeedback;
+    latestFeedbackRef.current = renderedFeedback;
     setFeedback(nextFeedback);
     rendererRef.current?.update(
       snapshot,
-      nextFeedback,
+      renderedFeedback,
       reduceMotion,
-      previousSnapshot
+      previousSnapshot,
+      evidenceEffectAlpha
     );
     if (nextFeedback !== undefined) soundPlayerRef.current?.play(nextFeedback);
-  }, [reduceMotion, snapshot]);
+  }, [evidenceEffectAlpha, reduceMotion, snapshot]);
 
   return (
     <figure

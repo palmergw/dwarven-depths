@@ -15,6 +15,7 @@ The authored composition is explicitly a **tutorial map**. Its scale is not a la
   - `DIAGNOSTIC_ROUTE_SUBJECTS`
   - `PRODUCTION_ROUTE_SUBJECTS`
   - `SHARED_LIGHTING`
+  - `GAMEPLAY_ANCHORS` (stable map-node empties in authored world coordinates)
 - Cycles CPU, 16 samples, denoising disabled
 - 1280×720 RGBA outputs
 
@@ -37,7 +38,9 @@ The script recreates the `.blend` file and emits all source passes from the same
 - `outputs/reference-plate.png`
 - `outputs/route-traversal.png` (review-only proxy evidence)
 - `outputs/production-sprite-traversal.png` (review-only production-sprite scale/density evidence)
+- `outputs/static-scene-depth.bin` (renderer-native nearest static surface, top-left row-major little-endian uint16 camera depth)
 - `render-manifest.json` (camera/source/output hashes and alpha semantics)
+- `shuttergate-spatial-contract.json` (full camera matrices, world anchors, projections, raster pivots, and depth encoding/hash)
 
 Verify the committed editable source by rerendering every pass into an isolated temporary directory and comparing decoded pixels with the committed outputs:
 

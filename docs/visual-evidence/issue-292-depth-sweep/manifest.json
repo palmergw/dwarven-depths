@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "119e1749123705c3804d3dba43019bd930a5cee1",
+  "viewport": [1280, 720],
+  "devicePixelRatio": 1,
+  "fixture": "two fixed-scale runtime subjects, ground rings, depth-tested focus, and transient VFX at every authored route node",
+  "staticDepthSha256": "71887686980068411caffb558e6e38caa93ea33d28ded110cb639d13cdf2901a",
+  "captures": [
+    {
+      "nodeId": "node.shuttergate_east_entry",
+      "effectAlpha": 1,
+      "authoredPivot": [1054, 302],
+      "crop": [982, 224, 144, 112],
+      "screenshot": "node-shuttergate_east_entry.png",
+      "screenshotSha256": "0188d65fc7f6f17fb7bbb05952dc6061eea16d12b02cdce8b404c7e1af568335"
+    },
+    {
+      "nodeId": "node.shuttergate_east_hall",
+      "effectAlpha": 1,
+      "authoredPivot": [838, 330],
+      "crop": [766, 252, 144, 112],
+      "screenshot": "node-shuttergate_east_hall.png",
+      "screenshotSha256": "002cffdb7f7c660a395ded42502939a6faa666661c36fe49ab17440f0dd93a1f"
+    },
+    {
+      "nodeId": "node.shuttergate_gate",
+      "effectAlpha": 1,
+      "authoredPivot": [1110, 253],
+      "crop": [1038, 175, 144, 112],
+      "screenshot": "node-shuttergate_gate.png",
+      "screenshotSha256": "fe22d39a4535afb083e2b71f63f2453110a3cbfed558cc4efb19c0d5b3641a58"
+    },
+    {
+      "nodeId": "node.shuttergate_keep",
+      "effectAlpha": 1,
+      "authoredPivot": [432, 402],
+      "crop": [360, 324, 144, 112],
+      "screenshot": "node-shuttergate_keep.png",
+      "screenshotSha256": "91e1c4cf339f065d1331dbbfdd0b88f01a190ca73e063c4b2ce705c067514b9f"
+    },
+    {
+      "nodeId": "node.shuttergate_keep_guard",
+      "effectAlpha": 1,
+      "authoredPivot": [364, 476],
+      "crop": [292, 398, 144, 112],
+      "screenshot": "node-shuttergate_keep_guard.png",
+      "screenshotSha256": "bb98e1ec6a3865bace0a076d4027959ab5dfd901d67d9f7aadde69c19407f508"
+    },
+    {
+      "nodeId": "node.shuttergate_north_guard",
+      "effectAlpha": 1,
+      "authoredPivot": [605, 320],
+      "crop": [533, 242, 144, 112],
+      "screenshot": "node-shuttergate_north_guard.png",
+      "screenshotSha256": "8d5e5d7af1a74ccdff295c1c41e49c26239ab976f9b45815a1ff3cce7c1f0b6e"
+    },
+    {
+      "nodeId": "node.shuttergate_west_entry",
+      "effectAlpha": 1,
+      "authoredPivot": [1054, 302],
+      "crop": [982, 224, 144, 112],
+      "screenshot": "node-shuttergate_west_entry.png",
+      "screenshotSha256": "0188d65fc7f6f17fb7bbb05952dc6061eea16d12b02cdce8b404c7e1af568335"
+    },
+    {
+      "nodeId": "node.shuttergate_west_hall",
+      "effectAlpha": 1,
+      "authoredPivot": [838, 330],
+      "crop": [766, 252, 144, 112],
+      "screenshot": "node-shuttergate_west_hall.png",
+      "screenshotSha256": "002cffdb7f7c660a395ded42502939a6faa666661c36fe49ab17440f0dd93a1f"
+    }
+  ],
+  "motionSamples": [
+    {
+      "nodeId": "node.shuttergate_east_entry",
+      "effectAlpha": 0.5,
+      "screenshot": "motion-node-shuttergate_east_entry-alpha-50.png",
+      "screenshotSha256": "2032e81633879fe15568d07cd5f386f0e355c34d94d322b2a7412f000013635d"
+    },
+    {
+      "nodeId": "node.shuttergate_east_hall",
+      "effectAlpha": 0.5,
+      "screenshot": "motion-node-shuttergate_east_hall-alpha-50.png",
+      "screenshotSha256": "a11f7f6fc13263c1d7b9610af4ecac383416db0b8df0686c6aaec2694b0c2661"
+    },
+    {
+      "nodeId": "node.shuttergate_gate",
+      "effectAlpha": 0.5,
+      "screenshot": "motion-node-shuttergate_gate-alpha-50.png",
+      "screenshotSha256": "88e4064a1eecaf5d61b114fd6211190cf8279d792b4ed72f0188d27f830a78b5"
+    },
+    {
+      "nodeId": "node.shuttergate_keep",
+      "effectAlpha": 0.5,
+      "screenshot": "motion-node-shuttergate_keep-alpha-50.png",
+      "screenshotSha256": "2c66fb3064e293504ec01954bf688e599ffcd9669d281ccffd91c2d73e252f85"
+    },
+    {
+      "nodeId": "node.shuttergate_keep_guard",
+      "effectAlpha": 0.5,
+      "screenshot": "motion-node-shuttergate_keep_guard-alpha-50.png",
+      "screenshotSha256": "ce6c1a826326b14239c7e340d0d168f93455f0a3877013504f8382fc3ec5e01b"
+    },
+    {
+      "nodeId": "node.shuttergate_north_guard",
+      "effectAlpha": 0.5,
+      "screenshot": "motion-node-shuttergate_north_guard-alpha-50.png",
+      "screenshotSha256": "9a095707121b82ef9cacc04a0ea248bcb368b4c836ee01150853a7a87b50c3e6"
+    },
+    {
+      "nodeId": "node.shuttergate_west_entry",
+      "effectAlpha": 0.5,
+      "screenshot": "motion-node-shuttergate_west_entry-alpha-50.png",
+      "screenshotSha256": "2032e81633879fe15568d07cd5f386f0e355c34d94d322b2a7412f000013635d"
+    },
+    {
+      "nodeId": "node.shuttergate_west_hall",
+      "effectAlpha": 0.5,
+      "screenshot": "motion-node-shuttergate_west_hall-alpha-50.png",
+      "screenshotSha256": "a11f7f6fc13263c1d7b9610af4ecac383416db0b8df0686c6aaec2694b0c2661"
+    }
+  ]
+}
