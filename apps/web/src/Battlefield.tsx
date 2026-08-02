@@ -652,6 +652,45 @@ function createDepthClippedPresentationTexture(
   return outputKey;
 }
 
+function createDepthVisibilityMask(
+  scene: Phaser.Scene,
+  width: number,
+  height: number,
+  model: PresentationDepthModel,
+  staticDepth: StaticSceneDepth
+): Phaser.Display.Masks.GeometryMask {
+  const opaque = new Uint8ClampedArray(width * height * 4);
+  for (let index = 3; index < opaque.length; index += 4) opaque[index] = 255;
+  const visible = clipPresentationPixels(
+    opaque,
+    width,
+    height,
+    staticDepth,
+    model,
+    SHUTTERGATE_SPATIAL_CONTRACT.staticDepth.maximumQuantizationError
+  );
+  const shape = scene.make.graphics({}, false);
+  shape.fillStyle(0xffffff, 1);
+  for (let y = 0; y < height; y += 1) {
+    let runStart = -1;
+    for (let x = 0; x <= width; x += 1) {
+      const pixelVisible =
+        x < width && (visible[(y * width + x) * 4 + 3] ?? 0) !== 0;
+      if (pixelVisible && runStart < 0) runStart = x;
+      if (!pixelVisible && runStart >= 0) {
+        shape.fillRect(
+          model.frameLeft + runStart,
+          model.frameTop + y,
+          x - runStart,
+          1
+        );
+        runStart = -1;
+      }
+    }
+  }
+  return shape.createGeometryMask();
+}
+
 function addDepthTestedRing(
   scene: Phaser.Scene,
   entity: RenderPrimitive,
@@ -668,40 +707,40 @@ function addDepthTestedRing(
   const pivotY = height / 2;
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
-  const sourceKey = `ring-source-${entity.id}`;
-  if (scene.textures.exists(sourceKey)) scene.textures.remove(sourceKey);
-  const ring = scene.make.graphics({}, false);
+  const ring = scene.add.graphics();
   ring.fillStyle(dwarf ? 0x65b9df : 0xa92720, dwarf ? 0.32 : 0.3);
-  ring.fillEllipse(pivotX, pivotY + centerYOffset, ellipseWidth, ellipseHeight);
-  ring.lineStyle(3, dwarf ? 0xaee9ff : 0xff725f, dwarf ? 0.9 : 0.95);
-  ring.strokeEllipse(
-    pivotX,
-    pivotY + centerYOffset,
+  ring.fillEllipse(
+    entity.x,
+    entity.y + centerYOffset,
     ellipseWidth,
     ellipseHeight
   );
-  ring.generateTexture(sourceKey, width, height);
-  ring.destroy();
-  const texture = createDepthClippedPresentationTexture(
-    scene,
-    sourceKey,
-    `ring-depth-${entity.id}`,
-    width,
-    height,
-    {
-      kind: "ground-plane",
-      cameraDepth: entity.cameraDepth,
-      cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
-      cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
-      depthEdgeGuardPixels: 1,
-      frameLeft,
-      frameTop,
-      pivotX,
-      pivotY
-    },
-    staticDepth
+  ring.lineStyle(3, dwarf ? 0xaee9ff : 0xff725f, dwarf ? 0.9 : 0.95);
+  ring.strokeEllipse(
+    entity.x,
+    entity.y + centerYOffset,
+    ellipseWidth,
+    ellipseHeight
   );
-  scene.add.image(frameLeft, frameTop, texture).setOrigin(0, 0);
+  ring.setMask(
+    createDepthVisibilityMask(
+      scene,
+      width,
+      height,
+      {
+        kind: "ground-plane",
+        cameraDepth: entity.cameraDepth,
+        cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
+        cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
+        depthEdgeGuardPixels: 0,
+        frameLeft,
+        frameTop,
+        pivotX,
+        pivotY
+      },
+      staticDepth
+    )
+  );
 }
 
 function addDepthTestedEffect(
@@ -709,7 +748,7 @@ function addDepthTestedEffect(
   entity: RenderPrimitive,
   feedback: CombatFeedback,
   staticDepth: StaticSceneDepth
-): Phaser.GameObjects.Image | undefined {
+): Phaser.GameObjects.Graphics | undefined {
   if (entity.cameraDepth === undefined) return undefined;
   const width = 100;
   const height = 60;
@@ -717,31 +756,27 @@ function addDepthTestedEffect(
   const pivotY = 42;
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
-  const sourceKey = `effect-source-${entity.id}`;
-  if (scene.textures.exists(sourceKey)) scene.textures.remove(sourceKey);
-  const effect = scene.make.graphics({}, false);
+  const effect = scene.add.graphics();
   effect.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
-  effect.strokeEllipse(pivotX, 30, 88, 50);
-  effect.generateTexture(sourceKey, width, height);
-  effect.destroy();
-  const texture = createDepthClippedPresentationTexture(
-    scene,
-    sourceKey,
-    `effect-depth-${entity.id}`,
-    width,
-    height,
-    {
-      kind: "upright-billboard",
-      cameraDepth: entity.cameraDepth,
-      cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
-      depthEdgeGuardPixels: 1,
-      frameLeft,
-      frameTop,
-      pivotY
-    },
-    staticDepth
+  effect.strokeEllipse(entity.x, entity.y - 12, 88, 50);
+  effect.setMask(
+    createDepthVisibilityMask(
+      scene,
+      width,
+      height,
+      {
+        kind: "upright-billboard",
+        cameraDepth: entity.cameraDepth,
+        cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+        depthEdgeGuardPixels: 1,
+        frameLeft,
+        frameTop,
+        pivotY
+      },
+      staticDepth
+    )
   );
-  return scene.add.image(frameLeft, frameTop, texture).setOrigin(0, 0);
+  return effect;
 }
 
 function addDepthTestedBillboard(
@@ -806,7 +841,7 @@ function drawBattlefield(
     addDepthTestedRing(scene, entity, staticDepth);
 
   if (feedback !== undefined && !reduceMotion) {
-    const transients: Phaser.GameObjects.Image[] = [];
+    const transients: Phaser.GameObjects.Graphics[] = [];
     for (const entity of orderedEntities)
       if (
         feedback.arrivals.some(({ id }) => id === entity.id) ||
