@@ -557,7 +557,7 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
     !isTick(value.tick) ||
     (value.previousTick !== null && !isTick(value.previousTick)) ||
     (typeof value.previousTick === "number" &&
-      value.previousTick > value.tick) ||
+      value.previousTick >= value.tick) ||
     (value.phase !== "preparation" &&
       value.phase !== "running" &&
       value.phase !== "terminal")
@@ -590,6 +590,12 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
     return undefined;
   const entityIds = new Set(entities.map((entity) => entity.id));
   if (
+    entities.some(
+      (entity) =>
+        entity.targetEntityId !== null &&
+        (entity.targetEntityId === entity.id ||
+          !entityIds.has(entity.targetEntityId))
+    ) ||
     transitions.some((transition) =>
       transition.kind === "spawned"
         ? !entityIds.has(transition.entityId) ||

@@ -20,6 +20,10 @@ export function isCombatFeedbackProgression(
 ): boolean {
   return (
     previous.levelId === current.levelId &&
+    (current.schemaVersion !== 2 ||
+      (previous.schemaVersion === 2 &&
+        current.previousTick === previous.tick &&
+        previous.mapId === current.mapId)) &&
     (current.tick > previous.tick ||
       (current.tick === previous.tick &&
         phaseOrder[current.phase] > phaseOrder[previous.phase]))

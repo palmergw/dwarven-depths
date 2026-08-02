@@ -257,6 +257,12 @@ describe("presentation snapshot v2", () => {
     expect(deriveCombatFeedback(active, destroyed)?.departures).toEqual([
       expect.objectContaining({ id: "entity.enemy.shield_slam_target" })
     ]);
+    expect(
+      deriveCombatFeedback(active, { ...destroyed, previousTick: 0 })
+    ).toBeUndefined();
+    expect(
+      deriveCombatFeedback(active, { ...destroyed, mapId: "map.foreign" })
+    ).toBeUndefined();
     expect(JSON.stringify(preparation)).toBe(baseline);
   });
 
@@ -294,6 +300,21 @@ describe("presentation snapshot v2", () => {
     expect(
       parseRenderSnapshot({
         ...snapshot,
+        previousTick: snapshot.tick,
+        entities: snapshot.entities
+      })
+    ).toBeUndefined();
+    expect(
+      parseRenderSnapshot({
+        ...snapshot,
+        entities: snapshot.entities.map((entity, index) =>
+          index === 0 ? { ...entity, targetEntityId: "entity.foreign" } : entity
+        )
+      })
+    ).toBeUndefined();
+    expect(
+      parseRenderSnapshot({
+        ...snapshot,
         entities: snapshot.entities.map((entity, index) =>
           index === 0
             ? {
@@ -305,5 +326,43 @@ describe("presentation snapshot v2", () => {
       })
     ).toBeUndefined();
     expect(parseRenderSnapshot({ ...legacy, extra: true })).toBeUndefined();
+  });
+
+  it("rejects a replayed or cross-encounter predecessor", async () => {
+    const content = await compileContent(
+      contentFixture as unknown as ContentBundle
+    );
+    const scenario = compileScenario(
+      scenarioFixture as unknown as ScenarioDefinition,
+      content
+    );
+    const state = createShieldSlamWebPreparationState(content, scenario);
+    const previous = createPresentationSnapshot(
+      content,
+      scenario,
+      state,
+      "preparation"
+    );
+    expect(() =>
+      createPresentationSnapshot(
+        content,
+        scenario,
+        state,
+        "preparation",
+        previous
+      )
+    ).toThrow(/does not precede/);
+    expect(() =>
+      createPresentationSnapshot(
+        content,
+        scenario,
+        { ...state, tick: 1 },
+        "running",
+        {
+          ...previous,
+          levelId: "level.foreign"
+        }
+      )
+    ).toThrow(/same authored encounter/);
   });
 });

@@ -89,6 +89,15 @@ export function createPresentationSnapshot(
   const level = content.levels.get(scenario.levelId);
   const map =
     level?.mapId === undefined ? undefined : content.maps.get(level.mapId);
+  if (
+    previous !== undefined &&
+    (previous.levelId !== scenario.levelId ||
+      previous.mapId !== (map?.id ?? null) ||
+      previous.tick >= state.tick)
+  )
+    throw new Error(
+      "The previous presentation snapshot does not precede the same authored encounter."
+    );
   const nodes = [...(map?.nodes ?? [])]
     .sort((left, right) => compareRenderIds(left.id, right.id))
     .map(({ id, x, y }) => ({ id, x, y }));

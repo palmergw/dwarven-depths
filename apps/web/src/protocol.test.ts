@@ -434,6 +434,38 @@ describe("web worker protocol", () => {
     const message = { protocolVersion: 1, type: "render_snapshot", snapshot };
     expect(parseWorkerMessage(message)).toEqual(message);
     expect(
+      parseWorkerMessage({ ...message, protocolVersion: 4 })
+    ).toBeUndefined();
+    const presentationMessage = {
+      protocolVersion: 4,
+      type: "render_snapshot",
+      snapshot: {
+        schemaVersion: 2,
+        levelId: "level.test",
+        mapId: null,
+        tick: 0,
+        previousTick: null,
+        phase: "preparation",
+        nodes: [],
+        connections: [],
+        entities: [],
+        entityTransitions: [],
+        encounter: {
+          startedWaveIds: [],
+          activeWaveId: null,
+          pendingSpawnCount: 0,
+          livingHostileCount: 0,
+          terminalResult: null
+        }
+      }
+    };
+    expect(parseWorkerMessage(presentationMessage)).toEqual(
+      presentationMessage
+    );
+    expect(
+      parseWorkerMessage({ ...presentationMessage, protocolVersion: 1 })
+    ).toBeUndefined();
+    expect(
       parseWorkerMessage({ ...message, protocolVersion: 5 })
     ).toBeUndefined();
     expect(
