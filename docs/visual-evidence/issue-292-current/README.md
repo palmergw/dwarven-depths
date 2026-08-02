@@ -1,19 +1,19 @@
 # Issue #292 current visual evidence
 
-Renderer source head: `05de837589bab71ebddc81fcfe31d5b744c407d2`
+Renderer source head: `ad6cd358efd53ad2b396084c8bac522166415b30`
 
 ## Atomic truth screen
 
 - Actual running client, 1440×900, DPR 1, authoritative fixture `scenarios/conformance/shuttergate-web-truth.json`, tick 1.
 - Sidecar count/state/control checks pass for one Warden and one hostile.
-- Current screenshot SHA-256: `f0ad6d9b3ea31eeecd69d284c601355d8562d1b31cce67835d20692e5a55edbc`.
+- Current screenshot SHA-256: `188631c8ee5c9e524cc8ed0c70d11f3f70dc01e7d9b7fcf0c429c4d5547ea6cd`.
 - Approved #291 screenshot SHA-256: `efef3884fe4dc83d44af1495d410390e31d60dcfae82943af7cc09cf1a395d7a`.
-- `approved-comparison.png` shows the approved gate crop, current gate crop, and a 4× RGB difference crop.
+- `approved-comparison.png` shows approved/current/4×-RGB-difference witness rows for the Warden focus and gate subject.
 
-The images differ at 177 pixels in bounding box `(648,305)–(1214,403)`. The changed pixels are confined to depth-tested antialiased ring/subject coverage: nine Warden-ring edge pixels and 168 gate subject/ring pixels. Viewport, environment assets, entity pivots and scale, HUD, controls, and simulation state are unchanged. This is not pixel-identical to #291, so the issue's explicit product-owner approval condition remains open.
+The images differ at 512 pixels in bounding box `(643,305)–(1214,417)`. Of those, 177 are the previously published antialiased Warden-ring and gate subject/ring changes; 335 depth-test the Warden focus frame against static scene geometry. Viewport, environment assets, entity pivots and scale, HUD, controls, and simulation state are unchanged. This is not pixel-identical to #291, so the issue's explicit product-owner approval condition remains open.
 
 ## Route sweep
 
-`../issue-292-depth-sweep/manifest.json` binds eight actual-running-Phaser native-pixel crops to its exact renderer head and static-depth SHA-256. Every authored route ID contains both fixed-scale runtime subjects and ground rings; coincident east/west aliases intentionally produce byte-identical crops. Two deterministic gate arrival samples at effect alpha 1 and 0.5 cover the transient upright-billboard effect while it is depth masked. Independent consecutive captures are byte-identical; the two alpha samples differ at 430 pixels within crop-local bounding box `(8,40)–(99,80)` and leave the scene and subjects unchanged.
+`../issue-292-depth-sweep/manifest.json` binds eight actual-running-Phaser native-pixel full-opacity captures and eight half-opacity motion samples to its exact renderer head and static-depth SHA-256. Every authored route ID contains both fixed-scale runtime subjects, ground rings, the depth-tested Warden focus, and maximum transient VFX. Independent consecutive captures are byte-identical; each authored occlusion boundary is represented at both effect opacities while the scene and subjects remain fixed.
 
 The route images are evidence only. The independent CPU oracle and mutation regression live in `apps/web/src/shuttergate-depth-sweep.test.ts`.
