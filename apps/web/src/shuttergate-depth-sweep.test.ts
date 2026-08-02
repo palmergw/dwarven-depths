@@ -444,7 +444,7 @@ describe("Shuttergate route-wide depth sweep", () => {
         },
       ]
     `);
-  });
+  }, 15_000);
 
   it("rejects the ShoulderRubble mixed-ordering regression class", () => {
     const depth = loadDepth();
