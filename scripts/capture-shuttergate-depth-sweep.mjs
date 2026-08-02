@@ -151,7 +151,7 @@ try {
     height: cropHeight
   };
   let elapsedMilliseconds = 0;
-  for (const delayMilliseconds of [0, 210, 420]) {
+  for (const delayMilliseconds of [0, 210]) {
     await page.waitForTimeout(delayMilliseconds);
     elapsedMilliseconds += delayMilliseconds;
     const filename = `motion-gate-${elapsedMilliseconds}ms.png`;
