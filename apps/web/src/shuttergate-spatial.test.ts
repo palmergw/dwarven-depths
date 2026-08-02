@@ -3,6 +3,8 @@ import {
   projectShuttergateOccupancyPoint,
   projectShuttergateWorldPoint,
   quantizeShuttergatePivot,
+  SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
+  SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
   SHUTTERGATE_NODE_POSITIONS,
   SHUTTERGATE_SPATIAL_CONTRACT,
   SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
@@ -55,6 +57,17 @@ describe("Shuttergate shared-scene projection", () => {
   it("derives upright per-pixel depth from the locked camera matrices", () => {
     expect(SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y).toBeCloseTo(
       0.023873517721913432,
+      12
+    );
+  });
+
+  it("derives ground-plane per-pixel depth from the locked camera matrices", () => {
+    expect(SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X).toBeCloseTo(
+      -5.699541116843676e-10,
+      12
+    );
+    expect(SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y).toBeCloseTo(
+      -0.06391511297167159,
       12
     );
   });

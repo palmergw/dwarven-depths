@@ -6,7 +6,8 @@ import { App } from "./App.js";
 import {
   Battlefield,
   buildBattlefieldPrimitives,
-  buildDepartureFeedbackPrimitives
+  buildDepartureFeedbackPrimitives,
+  comparePresentationPrimitives
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { deriveCombatFeedback } from "./combat-feedback.js";
@@ -1490,6 +1491,22 @@ describe("authoritative web worker", () => {
         cameraDepth: 67.46529810621226
       }
     ]);
+  });
+
+  it("sorts shared-scene presentation by camera depth and stable ID", () => {
+    const primitives = [
+      { id: "entity.near.z", x: 0, y: 10, cameraDepth: 4 },
+      { id: "entity.far", x: 0, y: 30, cameraDepth: 9 },
+      { id: "entity.near.a", x: 0, y: 20, cameraDepth: 4 }
+    ];
+    expect([...primitives].sort(comparePresentationPrimitives)).toEqual([
+      primitives[1],
+      primitives[2],
+      primitives[0]
+    ]);
+    expect(
+      [...primitives].reverse().sort(comparePresentationPrimitives)
+    ).toEqual([primitives[1], primitives[2], primitives[0]]);
   });
 
   it("keeps reduced-motion feedback static and rejects stale replay effects in StrictMode", async () => {

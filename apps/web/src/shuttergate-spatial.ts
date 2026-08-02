@@ -121,6 +121,25 @@ export const SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y =
   (UPRIGHT_UNIT.cameraDepth - UPRIGHT_ORIGIN.cameraDepth) /
   (UPRIGHT_UNIT.y - UPRIGHT_ORIGIN.y);
 
+const GROUND_X_UNIT = projectShuttergateWorldPoint({ x: 1, y: 0, z: 0 });
+const GROUND_Y_UNIT = projectShuttergateWorldPoint({ x: 0, y: 1, z: 0 });
+const groundScreenXX = GROUND_X_UNIT.x - UPRIGHT_ORIGIN.x;
+const groundScreenXY = GROUND_Y_UNIT.x - UPRIGHT_ORIGIN.x;
+const groundScreenYX = GROUND_X_UNIT.y - UPRIGHT_ORIGIN.y;
+const groundScreenYY = GROUND_Y_UNIT.y - UPRIGHT_ORIGIN.y;
+const groundScreenDeterminant =
+  groundScreenXX * groundScreenYY - groundScreenXY * groundScreenYX;
+if (!Number.isFinite(groundScreenDeterminant) || groundScreenDeterminant === 0)
+  throw new Error("invalid Shuttergate ground-plane projection");
+const groundDepthX = GROUND_X_UNIT.cameraDepth - UPRIGHT_ORIGIN.cameraDepth;
+const groundDepthY = GROUND_Y_UNIT.cameraDepth - UPRIGHT_ORIGIN.cameraDepth;
+export const SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X =
+  (groundDepthX * groundScreenYY - groundDepthY * groundScreenYX) /
+  groundScreenDeterminant;
+export const SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y =
+  (-groundDepthX * groundScreenXY + groundDepthY * groundScreenXX) /
+  groundScreenDeterminant;
+
 export const SHUTTERGATE_WORLD_ANCHORS: Readonly<Record<string, WorldPoint>> =
   Object.fromEntries(
     Object.entries(spatialContract.anchors).map(([nodeId, anchor]) => [

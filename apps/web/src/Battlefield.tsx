@@ -13,14 +13,17 @@ import {
   type RenderSnapshot
 } from "./render-snapshot.js";
 import {
-  clipUprightBillboardPixels,
+  clipPresentationPixels,
   decodeStaticSceneDepth,
+  type PresentationDepthModel,
   type StaticSceneDepth,
   type StaticSceneDepthContract
 } from "./shuttergate-depth.js";
 import {
   projectShuttergateOccupancyPoint,
   quantizeShuttergatePivot,
+  SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
+  SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
   SHUTTERGATE_NODE_POSITIONS,
   SHUTTERGATE_SPATIAL_CONTRACT,
   SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y
@@ -81,6 +84,20 @@ export interface BattlefieldPrimitives {
     readonly fromId: string;
     readonly toId: string;
   }[];
+}
+
+export function comparePresentationPrimitives(
+  left: RenderPrimitive,
+  right: RenderPrimitive
+): number {
+  if (left.cameraDepth !== undefined && right.cameraDepth !== undefined) {
+    const depthOrder = right.cameraDepth - left.cameraDepth;
+    if (depthOrder !== 0) return depthOrder;
+  } else {
+    const verticalOrder = left.y - right.y;
+    if (verticalOrder !== 0) return verticalOrder;
+  }
+  return compareRenderIds(left.id, right.id);
 }
 
 interface TextureAlphaMetrics {
@@ -462,13 +479,10 @@ export function buildTruthScreenSidecar(
     occlusion: {
       artifactId: "authored-entrance-depth",
       layerOrder: [
-        "environment-base-and-rear-architecture",
-        "world-rings",
-        "world-effects",
-        "entrance-route-ground-foreground",
-        "world-subjects",
-        "entrance-shell",
-        "entrance-route-foreground",
+        "complete-static-scene-color",
+        "depth-tested-world-rings",
+        "depth-tested-world-effects",
+        "depth-tested-world-subjects",
         "screen-focus-indicators",
         "hud"
       ],
@@ -603,55 +617,171 @@ function normalizeAlphaTexture(
   texture.refresh();
   return outputKey;
 }
-
-function createDepthClippedBillboardTexture(
+function createDepthClippedPresentationTexture(
   scene: Phaser.Scene,
   sourceKey: string,
   outputKey: string,
-  primitive: RenderPrimitive,
-  pivotX: number,
-  pivotY: number,
+  width: number,
+  height: number,
+  model: PresentationDepthModel,
   staticDepth: StaticSceneDepth
 ): string {
-  if (primitive.cameraDepth === undefined) return sourceKey;
   const source = scene.textures.get(sourceKey).getSourceImage() as
     | HTMLImageElement
     | HTMLCanvasElement;
   if (scene.textures.exists(outputKey)) scene.textures.remove(outputKey);
-  const texture = scene.textures.createCanvas(
-    outputKey,
-    source.width,
-    source.height
-  );
+  const texture = scene.textures.createCanvas(outputKey, width, height);
   if (texture === null)
     throw new Error(`unable to create depth-clipped texture: ${outputKey}`);
   const context = texture.context;
-  context.clearRect(0, 0, source.width, source.height);
-  context.drawImage(source, 0, 0);
-  const pixels = context.getImageData(0, 0, source.width, source.height);
-  const clipped = clipUprightBillboardPixels(
-    pixels.data,
-    source.width,
-    source.height,
-    staticDepth,
-    {
-      kind: "upright-billboard",
-      cameraDepth: primitive.cameraDepth,
-      cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
-      // The depth raster has no fractional coverage channel. Keep its one-pixel
-      // discontinuities in the authored antialiased foreground pass so #291's
-      // edge compositing stays byte-identical while stable interiors clip.
-      depthEdgeGuardPixels: 1,
-      frameLeft: primitive.x - pivotX,
-      frameTop: primitive.y - pivotY,
-      pivotY
-    },
-    SHUTTERGATE_SPATIAL_CONTRACT.staticDepth.maximumQuantizationError
+  context.clearRect(0, 0, width, height);
+  context.drawImage(source, 0, 0, width, height);
+  const pixels = context.getImageData(0, 0, width, height);
+  pixels.data.set(
+    clipPresentationPixels(
+      pixels.data,
+      width,
+      height,
+      staticDepth,
+      model,
+      SHUTTERGATE_SPATIAL_CONTRACT.staticDepth.maximumQuantizationError
+    )
   );
-  pixels.data.set(clipped);
   context.putImageData(pixels, 0, 0);
   texture.refresh();
   return outputKey;
+}
+
+function addDepthTestedRing(
+  scene: Phaser.Scene,
+  entity: RenderPrimitive,
+  staticDepth: StaticSceneDepth
+): void {
+  if (entity.cameraDepth === undefined || entity.faction === undefined) return;
+  const dwarf = entity.faction === "dwarf";
+  const ellipseWidth = dwarf ? 72 : 58;
+  const ellipseHeight = dwarf ? 26 : 20;
+  const width = 80;
+  const height = 40;
+  const pivotX = width / 2;
+  const centerYOffset = dwarf ? -2 : -1;
+  const pivotY = height / 2;
+  const frameLeft = Math.round(entity.x) - pivotX;
+  const frameTop = Math.round(entity.y) - pivotY;
+  const sourceKey = `ring-source-${entity.id}`;
+  if (scene.textures.exists(sourceKey)) scene.textures.remove(sourceKey);
+  const ring = scene.make.graphics({}, false);
+  ring.fillStyle(dwarf ? 0x65b9df : 0xa92720, dwarf ? 0.32 : 0.3);
+  ring.fillEllipse(pivotX, pivotY + centerYOffset, ellipseWidth, ellipseHeight);
+  ring.lineStyle(3, dwarf ? 0xaee9ff : 0xff725f, dwarf ? 0.9 : 0.95);
+  ring.strokeEllipse(
+    pivotX,
+    pivotY + centerYOffset,
+    ellipseWidth,
+    ellipseHeight
+  );
+  ring.generateTexture(sourceKey, width, height);
+  ring.destroy();
+  const texture = createDepthClippedPresentationTexture(
+    scene,
+    sourceKey,
+    `ring-depth-${entity.id}`,
+    width,
+    height,
+    {
+      kind: "ground-plane",
+      cameraDepth: entity.cameraDepth,
+      cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
+      cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
+      depthEdgeGuardPixels: 1,
+      frameLeft,
+      frameTop,
+      pivotX,
+      pivotY
+    },
+    staticDepth
+  );
+  scene.add.image(frameLeft, frameTop, texture).setOrigin(0, 0);
+}
+
+function addDepthTestedEffect(
+  scene: Phaser.Scene,
+  entity: RenderPrimitive,
+  feedback: CombatFeedback,
+  staticDepth: StaticSceneDepth
+): Phaser.GameObjects.Image | undefined {
+  if (entity.cameraDepth === undefined) return undefined;
+  const width = 100;
+  const height = 60;
+  const pivotX = width / 2;
+  const pivotY = 42;
+  const frameLeft = Math.round(entity.x) - pivotX;
+  const frameTop = Math.round(entity.y) - pivotY;
+  const sourceKey = `effect-source-${entity.id}`;
+  if (scene.textures.exists(sourceKey)) scene.textures.remove(sourceKey);
+  const effect = scene.make.graphics({}, false);
+  effect.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
+  effect.strokeEllipse(pivotX, 30, 88, 50);
+  effect.generateTexture(sourceKey, width, height);
+  effect.destroy();
+  const texture = createDepthClippedPresentationTexture(
+    scene,
+    sourceKey,
+    `effect-depth-${entity.id}`,
+    width,
+    height,
+    {
+      kind: "upright-billboard",
+      cameraDepth: entity.cameraDepth,
+      cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+      depthEdgeGuardPixels: 1,
+      frameLeft,
+      frameTop,
+      pivotY
+    },
+    staticDepth
+  );
+  return scene.add.image(frameLeft, frameTop, texture).setOrigin(0, 0);
+}
+
+function addDepthTestedBillboard(
+  scene: Phaser.Scene,
+  entity: RenderPrimitive,
+  sourceKey: string,
+  width: number,
+  height: number,
+  pivotX: number,
+  pivotY: number,
+  staticDepth: StaticSceneDepth
+): void {
+  if (entity.cameraDepth === undefined) {
+    scene.add
+      .image(entity.x, entity.y, sourceKey)
+      .setOrigin(pivotX / width, pivotY / height);
+    return;
+  }
+  const frameLeft = Math.round(entity.x) - pivotX;
+  const frameTop = Math.round(entity.y) - pivotY;
+  const texture = createDepthClippedPresentationTexture(
+    scene,
+    sourceKey,
+    `subject-depth-${entity.id}`,
+    width,
+    height,
+    {
+      kind: "upright-billboard",
+      cameraDepth: entity.cameraDepth,
+      cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+      depthEdgeGuardPixels: 1,
+      frameLeft,
+      frameTop,
+      pivotY
+    },
+    staticDepth
+  );
+  scene.add
+    .image(entity.x, entity.y, texture)
+    .setOrigin(pivotX / width, pivotY / height);
 }
 
 function drawBattlefield(
@@ -664,43 +794,40 @@ function drawBattlefield(
 ): void {
   scene.children.removeAll();
   scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base");
+  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-ground-foreground");
+  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell");
+  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground");
 
   const primitives = buildBattlefieldPrimitives(snapshot);
-  const world = scene.add.graphics();
-  for (const entity of primitives.entities) {
-    if (entity.faction === "dwarf") {
-      world.fillStyle(0x65b9df, 0.32);
-      world.fillEllipse(entity.x, entity.y - 2, 72, 26);
-      world.lineStyle(3, 0xaee9ff, 0.9);
-      world.strokeEllipse(entity.x, entity.y - 2, 72, 26);
-    } else if (entity.faction === "enemy") {
-      world.fillStyle(0xa92720, 0.3);
-      world.fillEllipse(entity.x, entity.y - 1, 58, 20);
-      world.lineStyle(3, 0xff725f, 0.95);
-      world.strokeEllipse(entity.x, entity.y - 1, 58, 20);
-    }
-  }
+  const orderedEntities = [...primitives.entities].sort(
+    comparePresentationPrimitives
+  );
+  for (const entity of orderedEntities)
+    addDepthTestedRing(scene, entity, staticDepth);
 
   if (feedback !== undefined && !reduceMotion) {
-    const transient = scene.add.graphics();
-    transient.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
-    for (const entity of primitives.entities)
+    const transients: Phaser.GameObjects.Image[] = [];
+    for (const entity of orderedEntities)
       if (
         feedback.arrivals.some(({ id }) => id === entity.id) ||
         feedback.departures.some(({ id }) => id === entity.id)
-      )
-        transient.strokeEllipse(entity.x, entity.y - 12, 88, 50);
+      ) {
+        const transient = addDepthTestedEffect(
+          scene,
+          entity,
+          feedback,
+          staticDepth
+        );
+        if (transient !== undefined) transients.push(transient);
+      }
     scene.tweens.add({
-      targets: transient,
+      targets: transients,
       alpha: 0.15,
       duration: 420,
       yoyo: true,
       repeat: 1
     });
   }
-
-  // Ground-level props cover rings/effects but remain beneath upright subjects.
-  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-ground-foreground");
 
   const wardenTexture = normalizeAlphaTexture(
     scene,
@@ -712,38 +839,30 @@ function drawBattlefield(
     "raider-source",
     "raider-runtime"
   );
-  for (const entity of [...primitives.entities].sort(
-    (left, right) => left.y - right.y
-  )) {
-    if (entity.faction === "dwarf") {
-      const texture = createDepthClippedBillboardTexture(
+  for (const entity of orderedEntities) {
+    if (entity.faction === "dwarf")
+      addDepthTestedBillboard(
         scene,
-        wardenTexture,
-        `warden-depth-${entity.id}`,
         entity,
+        wardenTexture,
+        112,
+        72,
         56,
         66,
         staticDepth
       );
-      scene.add.image(entity.x, entity.y, texture).setOrigin(56 / 112, 66 / 72);
-    } else if (entity.faction === "enemy") {
-      const texture = createDepthClippedBillboardTexture(
+    else if (entity.faction === "enemy")
+      addDepthTestedBillboard(
         scene,
-        raiderTexture,
-        `raider-depth-${entity.id}`,
         entity,
+        raiderTexture,
+        80,
+        60,
         40,
         54,
         staticDepth
       );
-      scene.add.image(entity.x, entity.y, texture).setOrigin(40 / 80, 54 / 60);
-    }
   }
-
-  // Shared-camera authored foreground surfaces are depth-clipped against the
-  // hostile billboard and composited after upright world subjects.
-  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell");
-  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground");
 
   // This screen-space focus indicator is intentionally exempt from occlusion.
   const selectedWarden = primitives.entities.find(

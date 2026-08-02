@@ -33,6 +33,22 @@ export interface UprightBillboardDepthModel {
   readonly pivotY: number;
 }
 
+export interface GroundPlaneDepthModel {
+  readonly kind: "ground-plane";
+  readonly cameraDepth: number;
+  readonly cameraDepthPerPixelX: number;
+  readonly cameraDepthPerPixelY: number;
+  readonly depthEdgeGuardPixels: number;
+  readonly frameLeft: number;
+  readonly frameTop: number;
+  readonly pivotX: number;
+  readonly pivotY: number;
+}
+
+export type PresentationDepthModel =
+  | GroundPlaneDepthModel
+  | UprightBillboardDepthModel;
+
 function requireSupportedContract(contract: StaticSceneDepthContract): void {
   const [minimum, maximum] = contract.cameraDepthRange;
   if (
@@ -116,12 +132,24 @@ export function staticSceneDepthAt(
   return minimum + (code / STATIC_DEPTH_MAX_CODE) * (maximum - minimum);
 }
 
-export function clipUprightBillboardPixels(
+function presentationDepthAt(
+  model: PresentationDepthModel,
+  localX: number,
+  localY: number
+): number {
+  const yDepth =
+    model.cameraDepth + (localY - model.pivotY) * model.cameraDepthPerPixelY;
+  return model.kind === "ground-plane"
+    ? yDepth + (localX - model.pivotX) * model.cameraDepthPerPixelX
+    : yDepth;
+}
+
+export function clipPresentationPixels(
   source: Uint8ClampedArray,
   width: number,
   height: number,
   depth: StaticSceneDepth,
-  model: UprightBillboardDepthModel,
+  model: PresentationDepthModel,
   maximumQuantizationError: number
 ): Uint8ClampedArray {
   if (
@@ -131,11 +159,14 @@ export function clipUprightBillboardPixels(
     height <= 0 ||
     source.length !== width * height * 4
   )
-    throw new Error("invalid upright billboard pixel buffer");
+    throw new Error("invalid presentation pixel buffer");
   if (
-    model.kind !== "upright-billboard" ||
+    (model.kind !== "upright-billboard" && model.kind !== "ground-plane") ||
     !Number.isFinite(model.cameraDepth) ||
     !Number.isFinite(model.cameraDepthPerPixelY) ||
+    (model.kind === "ground-plane" &&
+      (!Number.isFinite(model.cameraDepthPerPixelX) ||
+        !Number.isInteger(model.pivotX))) ||
     !Number.isInteger(model.depthEdgeGuardPixels) ||
     model.depthEdgeGuardPixels < 0 ||
     !Number.isInteger(model.frameLeft) ||
@@ -144,21 +175,20 @@ export function clipUprightBillboardPixels(
     !Number.isFinite(maximumQuantizationError) ||
     maximumQuantizationError < 0
   )
-    throw new Error("invalid upright billboard depth model");
+    throw new Error("invalid presentation depth model");
 
   const clipped = new Uint8ClampedArray(source);
   for (let localY = 0; localY < height; localY += 1) {
     const frameY = model.frameTop + localY;
     if (frameY < 0 || frameY >= depth.height) continue;
-    const billboardDepth =
-      model.cameraDepth + (localY - model.pivotY) * model.cameraDepthPerPixelY;
     for (let localX = 0; localX < width; localX += 1) {
       const frameX = model.frameLeft + localX;
       if (frameX < 0 || frameX >= depth.width) continue;
       const rgbaIndex = (localY * width + localX) * 4;
       if ((source[rgbaIndex + 3] ?? 0) === 0) continue;
+      const presentationDepth = presentationDepthAt(model, localX, localY);
       const staticDepth = staticSceneDepthAt(depth, frameX, frameY);
-      if (staticDepth >= billboardDepth - maximumQuantizationError) continue;
+      if (staticDepth >= presentationDepth - maximumQuantizationError) continue;
       let stableOccluder = true;
       for (
         let offsetY = -model.depthEdgeGuardPixels;
@@ -181,7 +211,7 @@ export function clipUprightBillboardPixels(
             continue;
           if (
             staticSceneDepthAt(depth, neighborX, neighborY) >=
-            billboardDepth - maximumQuantizationError
+            presentationDepth - maximumQuantizationError
           ) {
             stableOccluder = false;
             break;
@@ -193,4 +223,22 @@ export function clipUprightBillboardPixels(
     }
   }
   return clipped;
+}
+
+export function clipUprightBillboardPixels(
+  source: Uint8ClampedArray,
+  width: number,
+  height: number,
+  depth: StaticSceneDepth,
+  model: UprightBillboardDepthModel,
+  maximumQuantizationError: number
+): Uint8ClampedArray {
+  return clipPresentationPixels(
+    source,
+    width,
+    height,
+    depth,
+    model,
+    maximumQuantizationError
+  );
 }

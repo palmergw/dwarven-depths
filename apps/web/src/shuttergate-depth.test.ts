@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clipPresentationPixels,
   clipUprightBillboardPixels,
   decodeStaticSceneDepth,
   STATIC_DEPTH_HEADER_BYTES,
@@ -135,6 +136,39 @@ describe("Shuttergate static scene depth", () => {
         CONTRACT.maximumQuantizationError
       )
     ]).toEqual([1, 2, 3, 255, 0, 0, 0, 0]);
+  });
+
+  it("depth-tests ground presentation per pixel in both screen axes", () => {
+    const depth = decodeStaticSceneDepth(
+      fixture([28159, 28159, 28159, 28159]),
+      CONTRACT
+    );
+    const source = new Uint8ClampedArray([
+      1, 2, 3, 255, 4, 5, 6, 255, 7, 8, 9, 255, 10, 11, 12, 255
+    ]);
+    expect([
+      ...clipPresentationPixels(
+        source,
+        2,
+        2,
+        depth,
+        {
+          kind: "ground-plane",
+          cameraDepth: 50,
+          cameraDepthPerPixelX: 10,
+          cameraDepthPerPixelY: 20,
+          depthEdgeGuardPixels: 0,
+          frameLeft: 0,
+          frameTop: 0,
+          pivotX: 0,
+          pivotY: 0
+        },
+        CONTRACT.maximumQuantizationError
+      )
+    ]).toEqual([1, 2, 3, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect([...source]).toEqual([
+      1, 2, 3, 255, 4, 5, 6, 255, 7, 8, 9, 255, 10, 11, 12, 255
+    ]);
   });
 
   it("guards unstable static-depth edges used by antialiased authored surfaces", () => {
