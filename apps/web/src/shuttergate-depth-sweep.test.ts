@@ -311,16 +311,13 @@ describe("Shuttergate route-wide depth sweep", () => {
     const depth = loadDepth();
     const expected = sweep(depth);
     const mutated = { ...depth, codes: new Uint16Array(depth.codes) };
-    const witness = expected.find(({ occluded }) => occluded > 0);
-    if (witness === undefined)
-      throw new Error("route sweep has no occlusion witness");
-    const [nodeId, footprintId] = witness.id.split("/");
-    const footprint = FOOTPRINTS.find(({ id }) => id === footprintId);
-    if (nodeId === undefined || footprint === undefined)
-      throw new Error("invalid route sweep witness");
+    const nodeId = "node.shuttergate_gate";
+    const footprint = FOOTPRINTS.find(({ id }) => id === "ring");
+    if (footprint === undefined)
+      throw new Error("missing ring sweep footprint");
     const model = modelFor(nodeId, footprint);
     for (let y = 0; y < footprint.height; y += 1) {
-      for (let x = 0; x < footprint.width; x += 1) {
+      for (let x = 0; x < footprint.pivotX; x += 1) {
         const frameX = model.frameLeft + x;
         const frameY = model.frameTop + y;
         if (
@@ -332,6 +329,14 @@ describe("Shuttergate route-wide depth sweep", () => {
           mutated.codes[frameY * depth.width + frameX] = depth.noSurfaceCode;
       }
     }
-    expect(sweep(mutated)).not.toEqual(expected);
+    const candidate = sweep(mutated);
+    const expectedWitness = expected.find(({ id }) => id === `${nodeId}/ring`);
+    const candidateWitness = candidate.find(
+      ({ id }) => id === `${nodeId}/ring`
+    );
+    expect(expectedWitness?.occluded).toBe(930);
+    expect(candidateWitness?.occluded).toBeGreaterThan(0);
+    expect(candidateWitness?.occluded).toBeLessThan(930);
+    expect(candidate).not.toEqual(expected);
   });
 });
