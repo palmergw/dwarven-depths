@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import spatialContract from "../../../assets/game-art/layered-map-poc/blender/shuttergate-spatial-contract.json";
+import { compareRenderIds } from "./render-snapshot.js";
 import {
   clipPresentationPixels,
   decodeStaticSceneDepth,
@@ -11,7 +12,8 @@ import {
   staticSceneDepthAt
 } from "./shuttergate-depth.js";
 import {
-  projectShuttergateWorldPoint,
+  type ProjectedShuttergateOccupant,
+  projectShuttergateOccupants,
   SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
   SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
   SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
@@ -19,54 +21,82 @@ import {
 } from "./shuttergate-spatial.js";
 
 interface Footprint {
-  readonly id: "effect" | "focus" | "raider" | "ring" | "warden";
+  readonly id:
+    | "effect"
+    | "focus"
+    | "raider"
+    | "raider-ring"
+    | "warden"
+    | "warden-ring";
+  readonly anchor: "dwarf" | "enemy";
   readonly width: number;
   readonly height: number;
   readonly pivotX: number;
   readonly pivotY: number;
   readonly plane: "ground-plane" | "upright-billboard";
+  readonly depthEdgeGuardPixels: number;
 }
 
 const FOOTPRINTS: readonly Footprint[] = [
   {
     id: "effect",
+    anchor: "enemy",
     width: 100,
     height: 60,
     pivotX: 50,
     pivotY: 42,
-    plane: "upright-billboard"
+    plane: "upright-billboard",
+    depthEdgeGuardPixels: 1
   },
   {
     id: "focus",
+    anchor: "dwarf",
     width: 84,
     height: 80,
     pivotX: 42,
     pivotY: 74,
-    plane: "upright-billboard"
+    plane: "upright-billboard",
+    depthEdgeGuardPixels: 1
   },
   {
     id: "raider",
+    anchor: "enemy",
     width: 80,
     height: 60,
     pivotX: 40,
     pivotY: 54,
-    plane: "upright-billboard"
+    plane: "upright-billboard",
+    depthEdgeGuardPixels: 1
   },
   {
-    id: "ring",
-    width: 78,
-    height: 32,
-    pivotX: 39,
-    pivotY: 18,
-    plane: "ground-plane"
+    id: "raider-ring",
+    anchor: "enemy",
+    width: 80,
+    height: 40,
+    pivotX: 40,
+    pivotY: 20,
+    plane: "ground-plane",
+    depthEdgeGuardPixels: 0
   },
   {
     id: "warden",
+    anchor: "dwarf",
     width: 112,
     height: 72,
     pivotX: 56,
     pivotY: 66,
-    plane: "upright-billboard"
+    plane: "upright-billboard",
+    depthEdgeGuardPixels: 1
+  },
+  {
+    id: "warden-ring",
+    anchor: "dwarf",
+    width: 80,
+    height: 40,
+    pivotX: 40,
+    pivotY: 20,
+    plane: "ground-plane",
+    depthEdgeGuardPixels: 0
   }
 ];
 
@@ -87,17 +117,16 @@ function loadDepth(): StaticSceneDepth {
 }
 
 function modelFor(
-  nodeId: string,
+  entity: ProjectedShuttergateOccupant,
   footprint: Footprint
 ): PresentationDepthModel {
-  const world = SHUTTERGATE_WORLD_ANCHORS[nodeId];
-  if (world === undefined) throw new Error(`missing sweep anchor: ${nodeId}`);
-  const projected = projectShuttergateWorldPoint(world);
+  if (entity.cameraDepth === undefined)
+    throw new Error(`missing sweep camera depth: ${entity.id}`);
   const shared = {
-    cameraDepth: projected.cameraDepth,
-    depthEdgeGuardPixels: 0,
-    frameLeft: Math.round(projected.x) - footprint.pivotX,
-    frameTop: Math.round(projected.y) - footprint.pivotY,
+    cameraDepth: entity.cameraDepth,
+    depthEdgeGuardPixels: footprint.depthEdgeGuardPixels,
+    frameLeft: Math.round(entity.x) - footprint.pivotX,
+    frameTop: Math.round(entity.y) - footprint.pivotY,
     pivotY: footprint.pivotY
   } as const;
   return footprint.plane === "ground-plane"
@@ -134,18 +163,56 @@ function oracleVisible(
     model.cameraDepth + (localY - model.pivotY) * model.cameraDepthPerPixelY;
   if (model.kind === "ground-plane")
     presentationDepth += (localX - model.pivotX) * model.cameraDepthPerPixelX;
-  return (
-    staticSceneDepthAt(depth, frameX, frameY) >=
-    presentationDepth - spatialContract.staticDepth.maximumQuantizationError
+  const visibleDepth =
+    presentationDepth - spatialContract.staticDepth.maximumQuantizationError;
+  if (staticSceneDepthAt(depth, frameX, frameY) >= visibleDepth) return true;
+  for (
+    let offsetY = -model.depthEdgeGuardPixels;
+    offsetY <= model.depthEdgeGuardPixels;
+    offsetY += 1
+  )
+    for (
+      let offsetX = -model.depthEdgeGuardPixels;
+      offsetX <= model.depthEdgeGuardPixels;
+      offsetX += 1
+    ) {
+      const neighborX = frameX + offsetX;
+      const neighborY = frameY + offsetY;
+      if (
+        neighborX >= 0 &&
+        neighborY >= 0 &&
+        neighborX < depth.width &&
+        neighborY < depth.height &&
+        staticSceneDepthAt(depth, neighborX, neighborY) >= visibleDepth
+      )
+        return true;
+    }
+  return false;
+}
+
+function primitivesAt(nodeId: string) {
+  return projectShuttergateOccupants(
+    [
+      { id: "entity.sweep.warden", nodeId },
+      { id: "entity.sweep.raider", nodeId }
+    ].sort((left, right) => compareRenderIds(left.id, right.id))
   );
 }
 
 function sweep(depth: StaticSceneDepth) {
   return Object.keys(SHUTTERGATE_WORLD_ANCHORS)
     .sort()
-    .flatMap((nodeId) =>
-      FOOTPRINTS.map((footprint) => {
-        const model = modelFor(nodeId, footprint);
+    .flatMap((nodeId) => {
+      const primitives = primitivesAt(nodeId);
+      return FOOTPRINTS.map((footprint) => {
+        const entity = primitives.find(({ id }) =>
+          footprint.anchor === "dwarf"
+            ? id === "entity.sweep.warden"
+            : id === "entity.sweep.raider"
+        );
+        if (entity === undefined)
+          throw new Error(`missing ${footprint.anchor} sweep primitive`);
+        const model = modelFor(entity, footprint);
         const source = new Uint8ClampedArray(
           footprint.width * footprint.height * 4
         );
@@ -175,8 +242,8 @@ function sweep(depth: StaticSceneDepth) {
           id: `${nodeId}/${footprint.id}`,
           occluded: footprint.width * footprint.height - visible
         };
-      })
-    );
+      });
+    });
 }
 
 describe("Shuttergate route-wide depth sweep", () => {
@@ -185,23 +252,27 @@ describe("Shuttergate route-wide depth sweep", () => {
       [
         {
           "id": "node.shuttergate_east_entry/effect",
-          "occluded": 4513,
+          "occluded": 3597,
         },
         {
           "id": "node.shuttergate_east_entry/focus",
-          "occluded": 3199,
+          "occluded": 3773,
         },
         {
           "id": "node.shuttergate_east_entry/raider",
-          "occluded": 3090,
+          "occluded": 2008,
         },
         {
-          "id": "node.shuttergate_east_entry/ring",
-          "occluded": 1679,
+          "id": "node.shuttergate_east_entry/raider-ring",
+          "occluded": 1411,
         },
         {
           "id": "node.shuttergate_east_entry/warden",
-          "occluded": 3915,
+          "occluded": 4412,
+        },
+        {
+          "id": "node.shuttergate_east_entry/warden-ring",
+          "occluded": 2893,
         },
         {
           "id": "node.shuttergate_east_hall/effect",
@@ -216,7 +287,7 @@ describe("Shuttergate route-wide depth sweep", () => {
           "occluded": 320,
         },
         {
-          "id": "node.shuttergate_east_hall/ring",
+          "id": "node.shuttergate_east_hall/raider-ring",
           "occluded": 0,
         },
         {
@@ -224,48 +295,60 @@ describe("Shuttergate route-wide depth sweep", () => {
           "occluded": 448,
         },
         {
+          "id": "node.shuttergate_east_hall/warden-ring",
+          "occluded": 0,
+        },
+        {
           "id": "node.shuttergate_gate/effect",
-          "occluded": 2935,
+          "occluded": 1998,
         },
         {
           "id": "node.shuttergate_gate/focus",
-          "occluded": 1546,
-        },
-        {
-          "id": "node.shuttergate_gate/raider",
-          "occluded": 1375,
-        },
-        {
-          "id": "node.shuttergate_gate/ring",
-          "occluded": 930,
-        },
-        {
-          "id": "node.shuttergate_gate/warden",
           "occluded": 2610,
         },
         {
+          "id": "node.shuttergate_gate/raider",
+          "occluded": 480,
+        },
+        {
+          "id": "node.shuttergate_gate/raider-ring",
+          "occluded": 1196,
+        },
+        {
+          "id": "node.shuttergate_gate/warden",
+          "occluded": 3643,
+        },
+        {
+          "id": "node.shuttergate_gate/warden-ring",
+          "occluded": 1803,
+        },
+        {
           "id": "node.shuttergate_keep/effect",
-          "occluded": 1742,
+          "occluded": 1699,
         },
         {
           "id": "node.shuttergate_keep/focus",
-          "occluded": 478,
+          "occluded": 435,
         },
         {
           "id": "node.shuttergate_keep/raider",
-          "occluded": 462,
+          "occluded": 419,
         },
         {
-          "id": "node.shuttergate_keep/ring",
+          "id": "node.shuttergate_keep/raider-ring",
           "occluded": 544,
         },
         {
           "id": "node.shuttergate_keep/warden",
-          "occluded": 590,
+          "occluded": 547,
+        },
+        {
+          "id": "node.shuttergate_keep/warden-ring",
+          "occluded": 544,
         },
         {
           "id": "node.shuttergate_keep_guard/effect",
-          "occluded": 803,
+          "occluded": 973,
         },
         {
           "id": "node.shuttergate_keep_guard/focus",
@@ -273,19 +356,23 @@ describe("Shuttergate route-wide depth sweep", () => {
         },
         {
           "id": "node.shuttergate_keep_guard/raider",
-          "occluded": 0,
+          "occluded": 117,
         },
         {
-          "id": "node.shuttergate_keep_guard/ring",
-          "occluded": 0,
+          "id": "node.shuttergate_keep_guard/raider-ring",
+          "occluded": 228,
         },
         {
           "id": "node.shuttergate_keep_guard/warden",
-          "occluded": 104,
+          "occluded": 0,
+        },
+        {
+          "id": "node.shuttergate_keep_guard/warden-ring",
+          "occluded": 0,
         },
         {
           "id": "node.shuttergate_north_guard/effect",
-          "occluded": 1600,
+          "occluded": 1598,
         },
         {
           "id": "node.shuttergate_north_guard/focus",
@@ -296,32 +383,40 @@ describe("Shuttergate route-wide depth sweep", () => {
           "occluded": 320,
         },
         {
-          "id": "node.shuttergate_north_guard/ring",
-          "occluded": 95,
+          "id": "node.shuttergate_north_guard/raider-ring",
+          "occluded": 0,
         },
         {
           "id": "node.shuttergate_north_guard/warden",
           "occluded": 448,
         },
         {
+          "id": "node.shuttergate_north_guard/warden-ring",
+          "occluded": 319,
+        },
+        {
           "id": "node.shuttergate_west_entry/effect",
-          "occluded": 4513,
+          "occluded": 3597,
         },
         {
           "id": "node.shuttergate_west_entry/focus",
-          "occluded": 3199,
+          "occluded": 3773,
         },
         {
           "id": "node.shuttergate_west_entry/raider",
-          "occluded": 3090,
+          "occluded": 2008,
         },
         {
-          "id": "node.shuttergate_west_entry/ring",
-          "occluded": 1679,
+          "id": "node.shuttergate_west_entry/raider-ring",
+          "occluded": 1411,
         },
         {
           "id": "node.shuttergate_west_entry/warden",
-          "occluded": 3915,
+          "occluded": 4412,
+        },
+        {
+          "id": "node.shuttergate_west_entry/warden-ring",
+          "occluded": 2893,
         },
         {
           "id": "node.shuttergate_west_hall/effect",
@@ -336,12 +431,16 @@ describe("Shuttergate route-wide depth sweep", () => {
           "occluded": 320,
         },
         {
-          "id": "node.shuttergate_west_hall/ring",
+          "id": "node.shuttergate_west_hall/raider-ring",
           "occluded": 0,
         },
         {
           "id": "node.shuttergate_west_hall/warden",
           "occluded": 448,
+        },
+        {
+          "id": "node.shuttergate_west_hall/warden-ring",
+          "occluded": 0,
         },
       ]
     `);
@@ -352,10 +451,14 @@ describe("Shuttergate route-wide depth sweep", () => {
     const expected = sweep(depth);
     const mutated = { ...depth, codes: new Uint16Array(depth.codes) };
     const nodeId = "node.shuttergate_gate";
-    const footprint = FOOTPRINTS.find(({ id }) => id === "ring");
+    const footprint = FOOTPRINTS.find(({ id }) => id === "raider-ring");
     if (footprint === undefined)
       throw new Error("missing ring sweep footprint");
-    const model = modelFor(nodeId, footprint);
+    const raider = primitivesAt(nodeId).find(
+      ({ id }) => id === "entity.sweep.raider"
+    );
+    if (raider === undefined) throw new Error("missing raider sweep primitive");
+    const model = modelFor(raider, footprint);
     for (let y = 0; y < footprint.height; y += 1) {
       for (let x = 0; x < footprint.pivotX; x += 1) {
         const frameX = model.frameLeft + x;
@@ -370,13 +473,17 @@ describe("Shuttergate route-wide depth sweep", () => {
       }
     }
     const candidate = sweep(mutated);
-    const expectedWitness = expected.find(({ id }) => id === `${nodeId}/ring`);
-    const candidateWitness = candidate.find(
-      ({ id }) => id === `${nodeId}/ring`
+    const expectedWitness = expected.find(
+      ({ id }) => id === `${nodeId}/raider-ring`
     );
-    expect(expectedWitness?.occluded).toBe(930);
+    const candidateWitness = candidate.find(
+      ({ id }) => id === `${nodeId}/raider-ring`
+    );
+    expect(expectedWitness?.occluded).toBeGreaterThan(0);
     expect(candidateWitness?.occluded).toBeGreaterThan(0);
-    expect(candidateWitness?.occluded).toBeLessThan(930);
+    expect(candidateWitness?.occluded).toBeLessThan(
+      expectedWitness?.occluded ?? 0
+    );
     expect(candidate).not.toEqual(expected);
   });
 });

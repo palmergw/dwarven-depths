@@ -183,6 +183,46 @@ export function projectShuttergateOccupancyPoint(
   );
 }
 
+export interface ShuttergateOccupant {
+  readonly id: string;
+  readonly nodeId: string;
+}
+
+export interface ProjectedShuttergateOccupant extends ProjectedPoint {
+  readonly id: string;
+}
+
+export function projectShuttergateOccupants(
+  orderedOccupants: readonly ShuttergateOccupant[]
+): readonly ProjectedShuttergateOccupant[] {
+  const nodeOccupancy = new Map<string, number>();
+  for (const occupant of orderedOccupants)
+    nodeOccupancy.set(
+      occupant.nodeId,
+      (nodeOccupancy.get(occupant.nodeId) ?? 0) + 1
+    );
+  const nodeSlots = new Map<string, number>();
+  return orderedOccupants.map((occupant) => {
+    const occupancy = nodeOccupancy.get(occupant.nodeId) ?? 1;
+    const slot = nodeSlots.get(occupant.nodeId) ?? 0;
+    nodeSlots.set(occupant.nodeId, slot + 1);
+    const columns = Math.min(3, occupancy);
+    const rows = Math.ceil(occupancy / columns);
+    const column = slot % columns;
+    const row = Math.floor(slot / columns);
+    const projected = projectShuttergateOccupancyPoint(
+      occupant.nodeId,
+      column - (columns - 1) / 2,
+      row - (rows - 1) / 2
+    );
+    return {
+      id: occupant.id,
+      ...quantizeShuttergatePivot(projected),
+      cameraDepth: projected.cameraDepth
+    };
+  });
+}
+
 export const SHUTTERGATE_NODE_POSITIONS: Readonly<
   Record<string, { readonly x: number; readonly y: number }>
 > = Object.fromEntries(

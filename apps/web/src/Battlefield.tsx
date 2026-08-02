@@ -20,8 +20,7 @@ import {
   type StaticSceneDepthContract
 } from "./shuttergate-depth.js";
 import {
-  projectShuttergateOccupancyPoint,
-  quantizeShuttergatePivot,
+  projectShuttergateOccupants,
   SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
   SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
   SHUTTERGATE_NODE_POSITIONS,
@@ -233,6 +232,10 @@ export function buildBattlefieldPrimitives(
       (nodeOccupancy.get(entity.nodeId) ?? 0) + 1
     );
   const nodeSlots = new Map<string, number>();
+  const shuttergateOccupants =
+    snapshot.mapId === "map.shuttergate_hall"
+      ? projectShuttergateOccupants(orderedEntities)
+      : undefined;
   return {
     nodes,
     connections: [...snapshot.connections]
@@ -242,7 +245,7 @@ export function buildBattlefieldPrimitives(
         fromId: connection.fromNodeId,
         toId: connection.toNodeId
       })),
-    entities: orderedEntities.map((entity) => {
+    entities: orderedEntities.map((entity, entityIndex) => {
       const position = positions.get(entity.nodeId);
       if (position === undefined)
         throw new Error(
@@ -258,22 +261,16 @@ export function buildBattlefieldPrimitives(
       const columnOffset = column - (columns - 1) / 2;
       const rowOffset = row - (rows - 1) / 2;
       const occupiedPosition =
-        snapshot.mapId === "map.shuttergate_hall"
-          ? (() => {
-              const projected = projectShuttergateOccupancyPoint(
-                entity.nodeId,
-                columnOffset,
-                rowOffset
-              );
-              return {
-                ...quantizeShuttergatePivot(projected),
-                cameraDepth: projected.cameraDepth
-              };
-            })()
+        shuttergateOccupants !== undefined
+          ? shuttergateOccupants[entityIndex]
           : {
               x: position.x + columnOffset * 38,
               y: position.y + rowOffset * 38
             };
+      if (occupiedPosition === undefined)
+        throw new Error(
+          `missing Shuttergate occupant projection: ${entity.id}`
+        );
       return {
         id: entity.id,
         faction: entity.faction,
