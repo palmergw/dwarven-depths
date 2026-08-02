@@ -26,11 +26,26 @@ CAMERA_ORTHO_SCALE = 50.0
 RENDER_HEIGHT = 720
 WARDEN_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "iron-warden-idle.png"
 RAIDER_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "mine-raider-idle.png"
+APPROACH_SUBJECT_FOREGROUND_OBJECTS = {
+    # Architecture that may sit camera-nearer than the hostile billboard. The
+    # renderer also depth-clips this set against the authored hostile plane so
+    # one object cannot redraw its camera-far pixels over the sprite.
+    "FortressSideWall_15.5",
+    "FortressButtress_15.5_13",
+    "ButtressCrown_15.5_13",
+    "ButtressCrown_15.5_7",
+}
+APPROACH_GROUND_OCCLUDER_OBJECTS = {"ShoulderRubble_5", "ShoulderRubble_7"}
+APPROACH_SUBJECT_WORLD_POINT = (8.0, 17.0, 0.39)
+APPROACH_REAR_OBJECTS = {"TunnelBackWall", "TunnelVoid", "TunnelGlow"}
 random.seed(286)
 
 OUTPUT_CONTRACT = {
     "environment-base.png": "opaque-environment-only",
     "entrance-shell.png": "straight-alpha-foreground-only",
+    "entrance-route-ground-foreground.png": "straight-alpha-authored-ground-occluders-only",
+    "entrance-route-foreground.png": "straight-alpha-authored-route-foreground-only",
+    "entrance-route-rear.png": "straight-alpha-authored-route-rear-only",
     "route-subjects.png": "straight-alpha-diagnostic-only",
     "production-sprite-subjects.png": "straight-alpha-production-entities-only",
     "reference-plate.png": "opaque-environment-plus-foreground",
@@ -272,6 +287,25 @@ def verify_render_reproducibility(manifest):
                 sanitize_transparent_rgb(output)
             committed = OUT / name
             assert pixel_digest(output) == pixel_digest(committed), f"stale render pixels: {name}"
+        indexed_ground_output = output_root / "entrance-route-ground-foreground.png"
+        render_indexed_foreground(indexed_ground_output, APPROACH_GROUND_OCCLUDER_OBJECTS)
+        assert pixel_digest(indexed_ground_output) == pixel_digest(
+            OUT / "entrance-route-ground-foreground.png"
+        ), "stale indexed ground foreground pixels"
+        indexed_output = output_root / "entrance-route-foreground.png"
+        render_indexed_foreground(
+            indexed_output,
+            APPROACH_SUBJECT_FOREGROUND_OBJECTS,
+            maximum_camera_depth=subject_camera_depth(),
+        )
+        assert pixel_digest(indexed_output) == pixel_digest(
+            OUT / "entrance-route-foreground.png"
+        ), "stale indexed foreground pixels"
+        indexed_rear_output = output_root / "entrance-route-rear.png"
+        render_indexed_foreground(indexed_rear_output, APPROACH_REAR_OBJECTS)
+        assert pixel_digest(indexed_rear_output) == pixel_digest(
+            OUT / "entrance-route-rear.png"
+        ), "stale indexed rear pixels"
         compose_reference(output_root)
         assert pixel_digest(output_root / "reference-plate.png") == pixel_digest(
             OUT / "reference-plate.png"
@@ -487,6 +521,59 @@ def render(name, env, entrance, subjects, production_subjects, transparent):
         sanitize_transparent_rgb(OUT / f"{name}.png")
 
 
+def subject_camera_depth():
+    camera_space = bpy.context.scene.camera.matrix_world.inverted() @ Vector(APPROACH_SUBJECT_WORLD_POINT)
+    return -camera_space.z
+
+
+def render_indexed_foreground(output, object_names, maximum_camera_depth=None):
+    """Export selected visible scene pixels through Blender's object-index pass."""
+    scene = bpy.context.scene
+    env = bpy.data.collections["ENVIRONMENT_BASE"]
+    entrance = bpy.data.collections["FOREGROUND_ENTRANCE"]
+    subjects = bpy.data.collections["DIAGNOSTIC_ROUTE_SUBJECTS"]
+    production = bpy.data.collections["PRODUCTION_ROUTE_SUBJECTS"]
+    env.hide_render = entrance.hide_render = False
+    subjects.hide_render = production.hide_render = True
+    for obj in bpy.data.objects:
+        obj.pass_index = 1 if obj.name in object_names else 0
+    view_layer = scene.view_layers[0]
+    view_layer.use_pass_object_index = True
+    view_layer.use_pass_z = True
+    scene.use_nodes = True
+    nodes = scene.node_tree.nodes
+    links = scene.node_tree.links
+    nodes.clear()
+    render_layers = nodes.new("CompositorNodeRLayers")
+    id_mask = nodes.new("CompositorNodeIDMask")
+    id_mask.index = 1
+    id_mask.use_antialiasing = True
+    set_alpha = nodes.new("CompositorNodeSetAlpha")
+    composite = nodes.new("CompositorNodeComposite")
+    links.new(render_layers.outputs["Image"], set_alpha.inputs["Image"])
+    links.new(render_layers.outputs["IndexOB"], id_mask.inputs["ID value"])
+    alpha_output = id_mask.outputs["Alpha"]
+    if maximum_camera_depth is not None:
+        depth_test = nodes.new("CompositorNodeMath")
+        depth_test.operation = "LESS_THAN"
+        depth_test.inputs[1].default_value = maximum_camera_depth
+        links.new(render_layers.outputs["Depth" if "Depth" in render_layers.outputs else "Z"], depth_test.inputs[0])
+        depth_mask = nodes.new("CompositorNodeMath")
+        depth_mask.operation = "MULTIPLY"
+        links.new(alpha_output, depth_mask.inputs[0])
+        links.new(depth_test.outputs[0], depth_mask.inputs[1])
+        alpha_output = depth_mask.outputs[0]
+    links.new(alpha_output, set_alpha.inputs["Alpha"])
+    links.new(set_alpha.outputs["Image"], composite.inputs["Image"])
+    scene.render.film_transparent = False
+    scene.render.filepath = str(output)
+    bpy.ops.render.render(write_still=True)
+    scene.use_nodes = False
+    for obj in bpy.data.objects:
+        obj.pass_index = 0
+    sanitize_transparent_rgb(output)
+
+
 verify_requested = "--" in sys.argv and "--verify" in sys.argv[sys.argv.index("--") + 1 :]
 if verify_requested:
     verify_or_exit()
@@ -697,6 +784,13 @@ SUBJECTS.hide_render = PRODUCTION_SUBJECTS.hide_render = True
 bpy.ops.wm.save_as_mainfile(filepath=str(BLEND))
 render("environment-base", True, False, False, False, False)
 render("entrance-shell", False, True, False, False, True)
+render_indexed_foreground(OUT / "entrance-route-ground-foreground.png", APPROACH_GROUND_OCCLUDER_OBJECTS)
+render_indexed_foreground(
+    OUT / "entrance-route-foreground.png",
+    APPROACH_SUBJECT_FOREGROUND_OBJECTS,
+    maximum_camera_depth=subject_camera_depth(),
+)
+render_indexed_foreground(OUT / "entrance-route-rear.png", APPROACH_REAR_OBJECTS)
 render("route-subjects", False, False, True, False, True)
 render("production-sprite-subjects", False, False, False, True, True)
 compose_reference(OUT)

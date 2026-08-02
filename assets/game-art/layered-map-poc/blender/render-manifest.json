@@ -15,28 +15,46 @@
     "SHARED_LIGHTING"
   ],
   "outputs": {
+    "entrance-route-foreground.png": {
+      "alphaSemantics": "straight-alpha-authored-route-foreground-only",
+      "height": 720,
+      "sha256": "3bf32536b020eb8d7c9e64df6d5ed75a34be01053027b3ac93ada7b9944d3c76",
+      "width": 1280
+    },
+    "entrance-route-ground-foreground.png": {
+      "alphaSemantics": "straight-alpha-authored-ground-occluders-only",
+      "height": 720,
+      "sha256": "dba694a66f32dab4e7d57e3bf8f3a14821b3f8097a93c407705cd8233206baa8",
+      "width": 1280
+    },
+    "entrance-route-rear.png": {
+      "alphaSemantics": "straight-alpha-authored-route-rear-only",
+      "height": 720,
+      "sha256": "35dd8c5b5df1b4df0290c5b0e826084a0937992f89e4e72cbcea5f8c962ee24b",
+      "width": 1280
+    },
     "entrance-shell.png": {
       "alphaSemantics": "straight-alpha-foreground-only",
       "height": 720,
-      "sha256": "763e0f0317f5dc7fae7c7159e3a0fb7f5c85885766525250e5c7394aaeaca4a5",
+      "sha256": "f53b2912a61ba1c03841d768c270263afc6abf2bfca6025face4b84916880baf",
       "width": 1280
     },
     "environment-base.png": {
       "alphaSemantics": "opaque-environment-only",
       "height": 720,
-      "sha256": "9603f8ddb4f87d9301dff37dd5661cea95759d1fb12e0531eb6c7c562c3224af",
+      "sha256": "7cd37eb83a5cfb12567b8db0d59db2c80b63fdad036bb8bf540c22f5bef79b69",
       "width": 1280
     },
     "production-sprite-subjects.png": {
       "alphaSemantics": "straight-alpha-production-entities-only",
       "height": 720,
-      "sha256": "67cc24b1e129e3db40094a607e69dfdc3eef84eda7d53fd1699c9a8787735ee4",
+      "sha256": "50f4c8cbfc419559f24c19a03e12183d950afb13f3c389a49690994a67182fb5",
       "width": 1280
     },
     "production-sprite-traversal.png": {
       "alphaSemantics": "opaque-production-entity-diagnostic-only",
       "height": 720,
-      "sha256": "f255b49623105739929e0d5568c9b5b08ef07e074006898bcc3311d86b3cc554",
+      "sha256": "e89bc465e4490b3acbfb7a0e8e336917c2b31feac5c2975773327f398cfa75a2",
       "width": 1280
     },
     "reference-plate.png": {
@@ -48,20 +66,20 @@
     "route-subjects.png": {
       "alphaSemantics": "straight-alpha-diagnostic-only",
       "height": 720,
-      "sha256": "e9e1eaa2eb702cc6818b27654749101938e89357e0e5c89f0185bb3bb24d2cb6",
+      "sha256": "88145d5cd25d645bbcd81cee1327804f966aaf7c44baec8c07fcfe5f375bbc94",
       "width": 1280
     },
     "route-traversal.png": {
       "alphaSemantics": "opaque-diagnostic-only",
       "height": 720,
-      "sha256": "5ba23c758fe61c76b691a683e3a5207c5acd3dfc0baf26ff64a497293be6414d",
+      "sha256": "07b2097dd50f3e0bd22a405d78fcd1d13edcc01532065dd83e161133b45a070f",
       "width": 1280
     }
   },
   "schemaVersion": 1,
   "source": {
-    "blendSha256": "a0869dfc89c63bcfa015f92ecd70bca760af1071c7a3f6510ca40cafc2b0709b",
-    "builderSha256": "709ba5b9e2adc58c6127dd956de00ca6554b745fe6f1f0a36e0d9a9b74b43be2",
+    "blendSha256": "3240a4437cb5144b246699548c7e37ddd1724c267cfc19c8e556e332a789de65",
+    "builderSha256": "8d0bad4612c4319ef6e0634a70558c7d8a5da8abe7609630a47b7ac154fa209c",
     "compositorSha256": "b038785832c04df434adbbd272a8c2cb596e2e11ed090c8fd688fb677b428d12"
   },
   "sourceAssets": {

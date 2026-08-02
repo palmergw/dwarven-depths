@@ -43,6 +43,9 @@ Other generated images in `evidence/` are engineering diagnostics or historical 
 - `blender/build_scene.py`
 - `blender/outputs/environment-base.png`
 - `blender/outputs/entrance-shell.png`
+- `blender/outputs/entrance-route-rear.png`
+- `blender/outputs/entrance-route-ground-foreground.png`
+- `blender/outputs/entrance-route-foreground.png`
 - `blender/render-manifest.json`
 
 The environment and foreground passes are rendered from named collections through `CAMERA_Shuttergate_Ortho`. Transparent RGB is decontaminated at export, and `build_poc.py` uses those exact pass pixels without resizing, registration, tracing, chroma keying, or perspective correction. The Blender verifier rerenders every committed pass and rejects stale pixels, source drift, extra manifest properties, alpha contamination, or source-asset drift.

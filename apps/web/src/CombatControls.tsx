@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { CombatControlDwarf, TargetPolicy } from "./protocol.js";
 
 const TARGET_POLICY_LABELS: Readonly<Record<TargetPolicy, string>> = {
@@ -9,9 +10,19 @@ const TARGET_POLICY_LABELS: Readonly<Record<TargetPolicy, string>> = {
   boss_or_elite_first: "Boss or elite first"
 };
 
+const wardenPortraitUrl = new URL(
+  "../../../assets/game-art/visual-direction/exports/hud/warden-portrait-frame.png",
+  import.meta.url
+).href;
+const shieldSlamIconUrl = new URL(
+  "../../../assets/game-art/visual-direction/exports/hud/ability-shield-slam.png",
+  import.meta.url
+).href;
+
 interface CombatControlsProps {
   readonly dwarves: readonly CombatControlDwarf[];
   readonly pendingAbilityKeys?: ReadonlySet<string>;
+  readonly pendingTargetPolicies?: ReadonlyMap<string, TargetPolicy>;
   readonly onSetTargetPolicy: (
     dwarfEntityId: string,
     requestedPolicy: TargetPolicy
@@ -25,68 +36,177 @@ interface CombatControlsProps {
 export function CombatControls({
   dwarves,
   pendingAbilityKeys = new Set(),
+  pendingTargetPolicies = new Map(),
   onSetTargetPolicy,
   onActivateAbility
 }: CombatControlsProps) {
+  const [openTargetingFor, setOpenTargetingFor] = useState<string>();
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenTargetingFor(undefined);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, []);
+
   return (
     <section
       className="combat-controls"
       aria-labelledby="combat-controls-heading"
     >
-      <h3 id="combat-controls-heading">Combat controls</h3>
+      <h3 id="combat-controls-heading" className="visually-hidden">
+        Combat controls
+      </h3>
       {dwarves.length === 0 ? (
-        <p>
+        <p className="combat-controls-unavailable">
           Target policies and abilities are unavailable because no dwarves are
           deployed.
         </p>
       ) : (
-        dwarves.map((dwarf) => (
-          <fieldset key={dwarf.entityId}>
-            <legend>{dwarf.characterId}</legend>
-            <p className="control-entity-id">{dwarf.entityId}</p>
-            {dwarf.supportedTargetPolicies.map((policy) => (
-              <button
-                key={policy}
-                type="button"
-                onClick={() => onSetTargetPolicy(dwarf.entityId, policy)}
-              >
-                {TARGET_POLICY_LABELS[policy]}
-              </button>
-            ))}
-            {(dwarf.activeAbilities ?? []).map((ability) => {
-              const feedbackId = `${dwarf.entityId}-${ability.abilityId}-feedback`;
-              const pending = pendingAbilityKeys.has(
-                `${dwarf.entityId}\u0000${ability.abilityId}`
-              );
-              const disabled =
-                pending ||
-                ability.cooldownCompleteAtTick !== null ||
-                ability.rejectionReason !== null;
-              return (
-                <span key={ability.abilityId}>
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    aria-describedby={feedbackId}
-                    onClick={() =>
-                      onActivateAbility?.(dwarf.entityId, ability.abilityId)
-                    }
-                  >
-                    Shield Slam
-                  </button>
-                  <span id={feedbackId} role="status">
-                    {pending
-                      ? "Activation queued"
-                      : (ability.rejectionReason ??
-                        (ability.cooldownCompleteAtTick === null
-                          ? "Ready"
-                          : `Cooldown until tick ${ability.cooldownCompleteAtTick}`))}
-                  </span>
-                </span>
-              );
-            })}
-          </fieldset>
-        ))
+        <ul className="character-dock" aria-label="Deployed dwarves">
+          {dwarves.map((dwarf, index) => {
+            const menuId = `target-policy-menu-${index}`;
+            const menuHeadingId = `${menuId}-heading`;
+            const menuOpen = openTargetingFor === dwarf.entityId;
+            const selectedPolicy = pendingTargetPolicies.get(dwarf.entityId);
+            return (
+              <li key={dwarf.entityId}>
+                <fieldset
+                  className="character-controls"
+                  data-entity-id={dwarf.entityId}
+                >
+                  <legend className="visually-hidden">Iron Warden</legend>
+                  <div className="character-portrait-cluster">
+                    <button
+                      className="character-portrait-button"
+                      type="button"
+                      aria-label="Open Iron Warden targeting"
+                      aria-expanded={menuOpen}
+                      aria-controls={menuId}
+                      onClick={() =>
+                        setOpenTargetingFor(
+                          menuOpen ? undefined : dwarf.entityId
+                        )
+                      }
+                    >
+                      <img src={wardenPortraitUrl} alt="" aria-hidden="true" />
+                      <span
+                        className="character-selection-rune"
+                        aria-hidden="true"
+                      >
+                        ◆
+                      </span>
+                    </button>
+                    <div className="character-nameplate" aria-hidden="true">
+                      <strong>Iron Warden</strong>
+                      <span>
+                        {selectedPolicy
+                          ? TARGET_POLICY_LABELS[selectedPolicy]
+                          : "Targeting"}
+                      </span>
+                    </div>
+                    <div
+                      id={menuId}
+                      className="target-policy-menu"
+                      hidden={!menuOpen}
+                      role="dialog"
+                      aria-labelledby={menuHeadingId}
+                    >
+                      <p id={menuHeadingId}>Target priority</p>
+                      <div className="target-policy-controls">
+                        {dwarf.supportedTargetPolicies.map((policy) => (
+                          <button
+                            key={policy}
+                            type="button"
+                            aria-pressed={selectedPolicy === policy}
+                            onClick={() => {
+                              onSetTargetPolicy(dwarf.entityId, policy);
+                              setOpenTargetingFor(undefined);
+                            }}
+                          >
+                            {TARGET_POLICY_LABELS[policy]}
+                            {selectedPolicy === policy ? " ✓" : ""}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="ability-rack">
+                    <span className="visually-hidden">
+                      Iron Warden abilities
+                    </span>
+                    {(dwarf.activeAbilities ?? []).map((ability) => {
+                      const feedbackId = `${dwarf.entityId}-${ability.abilityId}-feedback`;
+                      const pending = pendingAbilityKeys.has(
+                        `${dwarf.entityId}\u0000${ability.abilityId}`
+                      );
+                      const disabled =
+                        pending ||
+                        ability.cooldownCompleteAtTick !== null ||
+                        ability.rejectionReason !== null;
+                      return (
+                        <div
+                          className="ability-control"
+                          key={ability.abilityId}
+                        >
+                          <button
+                            className="ability-slot"
+                            type="button"
+                            disabled={disabled}
+                            aria-describedby={feedbackId}
+                            aria-label="Shield Slam"
+                            onClick={() =>
+                              onActivateAbility?.(
+                                dwarf.entityId,
+                                ability.abilityId
+                              )
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter" && event.key !== " ")
+                                return;
+                              event.preventDefault();
+                              onActivateAbility?.(
+                                dwarf.entityId,
+                                ability.abilityId
+                              );
+                            }}
+                          >
+                            <span className="visually-hidden">Shield Slam</span>
+                            <img
+                              src={shieldSlamIconUrl}
+                              alt=""
+                              aria-hidden="true"
+                            />
+                            <span className="ability-key" aria-hidden="true">
+                              1
+                            </span>
+                          </button>
+                          <span
+                            id={feedbackId}
+                            className="ability-state"
+                            role="status"
+                            data-cooldown-complete-at-tick={
+                              ability.cooldownCompleteAtTick ?? undefined
+                            }
+                          >
+                            {pending
+                              ? "Activation queued"
+                              : ability.rejectionReason !== null
+                                ? "Unavailable"
+                                : ability.cooldownCompleteAtTick === null
+                                  ? "Ready"
+                                  : "Recharging"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </section>
   );

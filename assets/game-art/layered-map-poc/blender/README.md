@@ -29,6 +29,9 @@ The script recreates the `.blend` file and emits all source passes from the same
 
 - `outputs/environment-base.png`
 - `outputs/entrance-shell.png`
+- `outputs/entrance-route-rear.png` (native-renderer rear-depth witness)
+- `outputs/entrance-route-ground-foreground.png` (native-renderer ground occluders drawn above rings/effects and below subjects)
+- `outputs/entrance-route-foreground.png` (native-renderer subject foreground, depth-clipped against the hostile billboard plane)
 - `outputs/route-subjects.png` (transparent diagnostic proxy isolation)
 - `outputs/production-sprite-subjects.png` (approved 56 px Warden / 44 px raider isolation)
 - `outputs/reference-plate.png`

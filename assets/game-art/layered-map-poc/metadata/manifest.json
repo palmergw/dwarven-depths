@@ -15,7 +15,7 @@
     "exports/foreground/entrance-shell-mask.png": "8f320ea270a8d418f32fa866c173b1c76485eb036b62fc50c1e8fa5103db0477",
     "exports/foreground/entrance-shell.png": "bf96fde64c12f2b640855059e6bf512524b107eb07890736c17b3df29f35d9db",
     "metadata/layered-map-contract.json": "032ec6d7683b4a92de0b851a01722ca02d2e691d03110caafd60ebc681c949d2",
-    "metadata/provenance.json": "318b1c6ee1669e4bdfac30d592cdc3564b3b01d828eb6718cf31725f8a3bbff2"
+    "metadata/provenance.json": "6d40b60560df81def2554b8880d72cca9d0ec76430550d8153eb9bf1bf7f9480"
   },
   "schemaVersion": 1
 }
