@@ -22,10 +22,17 @@ OUT = HERE / "outputs"
 BLEND = HERE / "layered-shuttergate.blend"
 MANIFEST = HERE / "render-manifest.json"
 SPATIAL_CONTRACT = HERE / "shuttergate-spatial-contract.json"
+STATIC_SCENE_DEPTH = OUT / "static-scene-depth.bin"
 COMPOSITOR = HERE / "compose_reference.py"
 REQUIREMENTS = HERE.parent / "requirements.lock"
 CAMERA_ORTHO_SCALE = 50.0
 RENDER_HEIGHT = 720
+STATIC_DEPTH_MAGIC = b"DDDEPTH\0"
+STATIC_DEPTH_SCHEMA_VERSION = 1
+STATIC_DEPTH_MINIMUM = 0.0
+STATIC_DEPTH_MAXIMUM = 128.0
+STATIC_DEPTH_MAX_CODE = 65534
+STATIC_DEPTH_NO_SURFACE = 65535
 WARDEN_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "iron-warden-idle.png"
 RAIDER_SOURCE = HERE.parent.parent / "production-scene" / "exports" / "entities" / "mine-raider-idle.png"
 APPROACH_SUBJECT_FOREGROUND_OBJECTS = {
@@ -91,17 +98,37 @@ def sha256(path):
 def biome_json(data):
     """Emit deterministic JSON with short numeric arrays in Biome's canonical form."""
     text = json.dumps(data, indent=2, sort_keys=True)
-    numeric_array = re.compile(r"\[\n((?:\s+-?\d+(?:\.\d+)?,?\n)+)\s+\]")
+    number = r"-?\d+(?:\.\d+)?(?:e[+-]?\d+)?"
+    numeric_array = re.compile(rf"\[\n((?:\s+{number},?\n)+)\s+\]")
 
     def compact(match):
-        values = re.findall(r"-?\d+(?:\.\d+)?", match.group(1))
+        values = re.findall(number, match.group(1))
         return "[" + ", ".join(values) + "]"
 
-    return numeric_array.sub(compact, text) + "\n"
+    text = numeric_array.sub(compact, text)
+    return re.sub(r"e([+-]?)0+(\d+)", r"e\1\2", text) + "\n"
 
 
 def matrix_rows(matrix):
     return [[round(float(matrix[row][column]), 12) for column in range(4)] for row in range(4)]
+
+
+def static_depth_contract():
+    return {
+        "asset": str(STATIC_SCENE_DEPTH.relative_to(HERE.parents[3])),
+        "sha256": sha256(STATIC_SCENE_DEPTH),
+        "encoding": "uint16-linear-camera-depth",
+        "byteOrder": "little-endian",
+        "rowOrder": "top-left-row-major",
+        "width": 1280,
+        "height": 720,
+        "cameraDepthRange": [STATIC_DEPTH_MINIMUM, STATIC_DEPTH_MAXIMUM],
+        "noSurfaceCode": STATIC_DEPTH_NO_SURFACE,
+        "quantization": "round-to-nearest",
+        "maximumQuantizationError": (STATIC_DEPTH_MAXIMUM - STATIC_DEPTH_MINIMUM)
+        / STATIC_DEPTH_MAX_CODE
+        / 2,
+    }
 
 
 def build_spatial_contract(scene, camera_obj):
@@ -139,7 +166,7 @@ def build_spatial_contract(scene, camera_obj):
             "coincidentGroup": COINCIDENT_GROUPS.get(node_id),
         }
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "mapId": "map.shuttergate_hall",
         "frame": {
             "width": scene.render.resolution_x,
@@ -162,11 +189,87 @@ def build_spatial_contract(scene, camera_obj):
             "worldToClipFloat64LeSha256": hashlib.sha256(packed_matrix).hexdigest(),
         },
         "anchors": anchors,
+        "staticDepth": static_depth_contract(),
         "source": {
             "builderSha256": sha256(Path(__file__).resolve()),
             "blendSha256": sha256(BLEND),
         },
     }
+
+
+def encode_static_scene_depth(depth_values):
+    expected_pixels = 1280 * 720
+    assert len(depth_values) == expected_pixels, f"unexpected static depth sample count: {len(depth_values)}"
+    codes = []
+    for depth in depth_values:
+        if not math.isfinite(depth) or depth >= 1.0e9:
+            codes.append(STATIC_DEPTH_NO_SURFACE)
+            continue
+        assert STATIC_DEPTH_MINIMUM <= depth <= STATIC_DEPTH_MAXIMUM, f"static depth outside encoded range: {depth}"
+        normalized = (depth - STATIC_DEPTH_MINIMUM) / (STATIC_DEPTH_MAXIMUM - STATIC_DEPTH_MINIMUM)
+        codes.append(math.floor(normalized * STATIC_DEPTH_MAX_CODE + 0.5))
+    header = STATIC_DEPTH_MAGIC + struct.pack("<HHHH", STATIC_DEPTH_SCHEMA_VERSION, 1280, 720, 0)
+    return header + struct.pack(f"<{expected_pixels}H", *codes)
+
+
+def verify_static_scene_depth(path):
+    data = path.read_bytes()
+    expected_length = 16 + 1280 * 720 * 2
+    assert len(data) == expected_length, f"unexpected static depth byte length: {len(data)}"
+    assert data[:8] == STATIC_DEPTH_MAGIC
+    assert struct.unpack("<HHHH", data[8:16]) == (STATIC_DEPTH_SCHEMA_VERSION, 1280, 720, 0)
+    codes = struct.unpack(f"<{1280 * 720}H", data[16:])
+    assert any(code != STATIC_DEPTH_NO_SURFACE for code in codes), "static depth contains no scene surfaces"
+
+
+def render_static_scene_depth(output):
+    """Export Cycles' nearest static-surface camera depth without color conversion."""
+    scene = bpy.context.scene
+    bpy.data.collections["ENVIRONMENT_BASE"].hide_render = False
+    bpy.data.collections["FOREGROUND_ENTRANCE"].hide_render = False
+    bpy.data.collections["DIAGNOSTIC_ROUTE_SUBJECTS"].hide_render = True
+    bpy.data.collections["PRODUCTION_ROUTE_SUBJECTS"].hide_render = True
+    scene.view_layers[0].use_pass_z = True
+    scene.use_nodes = True
+    nodes = scene.node_tree.nodes
+    links = scene.node_tree.links
+    nodes.clear()
+    render_layers = nodes.new("CompositorNodeRLayers")
+    combine = nodes.new("CompositorNodeCombineColor")
+    combine.mode = "RGB"
+    composite = nodes.new("CompositorNodeComposite")
+    depth_output = render_layers.outputs["Depth" if "Depth" in render_layers.outputs else "Z"]
+    for channel in ("Red", "Green", "Blue"):
+        links.new(depth_output, combine.inputs[channel])
+    combine.inputs["Alpha"].default_value = 1.0
+    links.new(combine.outputs["Image"], composite.inputs["Image"])
+    with tempfile.TemporaryDirectory() as directory:
+        exr = Path(directory) / "static-depth.exr"
+        scene.render.image_settings.file_format = "OPEN_EXR"
+        scene.render.image_settings.color_mode = "RGBA"
+        scene.render.image_settings.color_depth = "32"
+        scene.render.filepath = str(exr)
+        bpy.ops.render.render(write_still=True)
+        image = bpy.data.images.load(str(exr), check_existing=False)
+        try:
+            from array import array
+
+            pixels = array("f", [0.0]) * len(image.pixels)
+            image.pixels.foreach_get(pixels)
+            values = [float(value) for value in pixels[0::4]]
+        finally:
+            bpy.data.images.remove(image)
+    scene.use_nodes = False
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.image_settings.color_mode = "RGBA"
+    scene.render.image_settings.color_depth = "8"
+    top_left_values = [
+        values[(719 - y) * 1280 + x]
+        for y in range(720)
+        for x in range(1280)
+    ]
+    output.write_bytes(encode_static_scene_depth(top_left_values))
+    verify_static_scene_depth(output)
 
 
 def verify_image(path, alpha_semantics):
@@ -232,6 +335,7 @@ def verify_existing():
     assert BLEND.is_file(), f"missing editable source: {BLEND}"
     assert MANIFEST.is_file(), f"missing render manifest: {MANIFEST}"
     assert SPATIAL_CONTRACT.is_file(), f"missing spatial contract: {SPATIAL_CONTRACT}"
+    assert STATIC_SCENE_DEPTH.is_file(), f"missing static scene depth: {STATIC_SCENE_DEPTH}"
     manifest = json.loads(MANIFEST.read_text())
     assert set(manifest) == {"schemaVersion", "blenderVersion", "camera", "collections", "source", "sourceAssets", "outputs"}
     assert manifest["schemaVersion"] == 1
@@ -263,6 +367,7 @@ def verify_existing():
         actual = bpy.data.objects[f"ANCHOR_{node_id}"].location
         assert all(abs(float(actual[index]) - expected_world[index]) < 1e-6 for index in range(3))
     spatial_contract = json.loads(SPATIAL_CONTRACT.read_text())
+    verify_static_scene_depth(STATIC_SCENE_DEPTH)
     assert spatial_contract == build_spatial_contract(scene, cameras[0])
     assert manifest["camera"] == {
         "name": cameras[0].name,
@@ -411,6 +516,9 @@ def verify_render_reproducibility(manifest):
         assert pixel_digest(output_root / "reference-plate.png") == pixel_digest(
             OUT / "reference-plate.png"
         ), "stale composited reference pixels"
+        regenerated_depth = output_root / "static-scene-depth.bin"
+        render_static_scene_depth(regenerated_depth)
+        assert regenerated_depth.read_bytes() == STATIC_SCENE_DEPTH.read_bytes(), "stale static scene depth"
 
 
 def mat(name, color, metallic=0.0, roughness=0.75, emission=None, strength=0.0, texture_scale=0.0):
@@ -907,6 +1015,7 @@ render("production-sprite-subjects", False, False, False, True, True)
 compose_reference(OUT)
 render("route-traversal", True, True, True, False, False)
 render("production-sprite-traversal", True, True, False, True, False)
+render_static_scene_depth(STATIC_SCENE_DEPTH)
 
 manifest = {
     "schemaVersion": 1,

@@ -100,10 +100,23 @@
     "width": 1280
   },
   "mapId": "map.shuttergate_hall",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "source": {
-    "blendSha256": "a59336b2c90ac1f2973e47395392d4dbc066bd60af987f92db00340447bfb85c",
-    "builderSha256": "8f81e0c1259a05608cf7edd865048672b81579078c68572bc2410414e5dd5c8a"
+    "blendSha256": "8e20c2d320d5327d4d48d1df4151a5ffe0c9316b3c80f0cbaded4fa637ebab49",
+    "builderSha256": "925b546cd2f8788d732466327103f9a11ae96058896f8e05456e8af5ae58d2a3"
+  },
+  "staticDepth": {
+    "asset": "assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.bin",
+    "byteOrder": "little-endian",
+    "cameraDepthRange": [0.0, 128.0],
+    "encoding": "uint16-linear-camera-depth",
+    "height": 720,
+    "maximumQuantizationError": 0.0009765923032319102,
+    "noSurfaceCode": 65535,
+    "quantization": "round-to-nearest",
+    "rowOrder": "top-left-row-major",
+    "sha256": "71887686980068411caffb558e6e38caa93ea33d28ded110cb639d13cdf2901a",
+    "width": 1280
   },
   "world": {
     "cameraForwardAxis": "-Z",

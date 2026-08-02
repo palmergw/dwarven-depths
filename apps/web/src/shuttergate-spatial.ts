@@ -43,7 +43,7 @@ function multiplyPoint(
 
 function requireSpatialContract(): void {
   if (
-    spatialContract.schemaVersion !== 1 ||
+    spatialContract.schemaVersion !== 2 ||
     spatialContract.mapId !== "map.shuttergate_hall" ||
     spatialContract.frame.width !== 1280 ||
     spatialContract.frame.height !== 720 ||

@@ -38,8 +38,9 @@ The script recreates the `.blend` file and emits all source passes from the same
 - `outputs/reference-plate.png`
 - `outputs/route-traversal.png` (review-only proxy evidence)
 - `outputs/production-sprite-traversal.png` (review-only production-sprite scale/density evidence)
+- `outputs/static-scene-depth.bin` (renderer-native nearest static surface, top-left row-major little-endian uint16 camera depth)
 - `render-manifest.json` (camera/source/output hashes and alpha semantics)
-- `shuttergate-spatial-contract.json` (full camera matrices, world anchors, unrounded projections, and raster pivots)
+- `shuttergate-spatial-contract.json` (full camera matrices, world anchors, projections, raster pivots, and depth encoding/hash)
 
 Verify the committed editable source by rerendering every pass into an isolated temporary directory and comparing decoded pixels with the committed outputs:
 
