@@ -20,6 +20,11 @@ export function isCombatFeedbackProgression(
 ): boolean {
   return (
     previous.levelId === current.levelId &&
+    (current.schemaVersion !== 2 ||
+      (previous.schemaVersion === 2 &&
+        previous.scenarioId === current.scenarioId &&
+        current.previousTick === previous.tick &&
+        previous.mapId === current.mapId)) &&
     (current.tick > previous.tick ||
       (current.tick === previous.tick &&
         phaseOrder[current.phase] > phaseOrder[previous.phase]))
@@ -38,10 +43,25 @@ export function deriveCombatFeedback(
   );
   const currentIds = new Set(current.entities.map((entity) => entity.id));
   const arrivals = current.entities
-    .filter((entity) => !previousById.has(entity.id))
+    .filter((entity) =>
+      current.schemaVersion === 2
+        ? current.entityTransitions.some(
+            (transition) =>
+              transition.entityId === entity.id && transition.kind === "spawned"
+          )
+        : !previousById.has(entity.id)
+    )
     .sort(byId);
   const departures = previous.entities
-    .filter((entity) => !currentIds.has(entity.id))
+    .filter((entity) =>
+      current.schemaVersion === 2
+        ? current.entityTransitions.some(
+            (transition) =>
+              transition.entityId === entity.id &&
+              (transition.kind === "downed" || transition.kind === "destroyed")
+          )
+        : !currentIds.has(entity.id)
+    )
     .sort(byId);
   const terminal =
     previous.phase !== "terminal" && current.phase === "terminal";

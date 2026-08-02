@@ -17,6 +17,7 @@ import emptyContentFixture from "../../../content/fixtures/empty-content.json";
 import shieldSlamContentFixture from "../../../content/fixtures/phase-3-shuttergate.json";
 import emptyScenarioFixture from "../../../scenarios/conformance/empty-level.json";
 import shieldSlamScenarioFixture from "../../../scenarios/conformance/shuttergate-web-truth.json";
+import { createPresentationSnapshot } from "./presentation-snapshot.js";
 import {
   type CombatControlDwarf,
   EMPTY_CONTENT_MANIFEST_HASH,
@@ -29,7 +30,8 @@ import {
 import {
   compareRenderIds,
   type RenderPhase,
-  type RenderSnapshot
+  type RenderSnapshot,
+  type RenderSnapshotV2
 } from "./render-snapshot.js";
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -50,12 +52,13 @@ let protocolVersion: 1 | 2 | 3 | 4 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
 let liveHost: LiveScenarioHost | undefined;
+let previousPresentationSnapshot: RenderSnapshotV2 | undefined;
 
 function post(message: WorkerMessage): void {
   self.postMessage(message);
 }
 
-function createRenderSnapshot(
+function createLegacyRenderSnapshot(
   content: CompiledContent,
   scenario: ScenarioDefinition,
   phase: RenderPhase,
@@ -107,6 +110,7 @@ function postRenderSnapshot(snapshot: RenderSnapshot): void {
     type: "render_snapshot",
     snapshot
   });
+  if (snapshot.schemaVersion === 2) previousPresentationSnapshot = snapshot;
 }
 
 function postRunningSnapshot(): void {
@@ -213,13 +217,21 @@ async function executePreparedScenario(): Promise<void> {
     }
     if (step.state.phase === "TERMINAL") terminal = true;
     postRenderSnapshot(
-      createRenderSnapshot(
-        preparedContent,
-        preparedScenario,
-        step.state.phase === "TERMINAL" ? "terminal" : "running",
-        step.state.tick,
-        step.state.battlefield
-      )
+      protocolVersion === 4
+        ? createPresentationSnapshot(
+            preparedContent,
+            preparedScenario,
+            step.state,
+            step.state.phase === "TERMINAL" ? "terminal" : "running",
+            previousPresentationSnapshot
+          )
+        : createLegacyRenderSnapshot(
+            preparedContent,
+            preparedScenario,
+            step.state.phase === "TERMINAL" ? "terminal" : "running",
+            step.state.tick,
+            step.state.battlefield
+          )
     );
     if (protocolVersion === 4) postCombatControls();
     if (step.state.phase !== "TERMINAL") {
@@ -336,13 +348,22 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
             )
           : undefined
       );
-      const preparationSnapshot = createRenderSnapshot(
-        preparedContent,
-        preparedScenario,
-        "preparation",
-        0,
-        liveHost.state.battlefield
-      );
+      previousPresentationSnapshot = undefined;
+      const preparationSnapshot =
+        protocolVersion === 4
+          ? createPresentationSnapshot(
+              preparedContent,
+              preparedScenario,
+              liveHost.state,
+              "preparation"
+            )
+          : createLegacyRenderSnapshot(
+              preparedContent,
+              preparedScenario,
+              "preparation",
+              0,
+              liveHost.state.battlefield
+            );
       const preparedLevel = preparedContent.levels.get(
         preparedScenario.levelId
       );
@@ -554,7 +575,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
   manualPaused = protocolVersion !== 1;
   postRunningSnapshot();
   postRenderSnapshot(
-    createRenderSnapshot(
+    createLegacyRenderSnapshot(
       preparedContent,
       preparedScenario,
       "running",

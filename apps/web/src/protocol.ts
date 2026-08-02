@@ -437,7 +437,8 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     if (!hasExactKeys(value, ["protocolVersion", "snapshot", "type"]))
       return undefined;
     const snapshot = parseRenderSnapshot(value.snapshot);
-    return snapshot === undefined
+    return snapshot === undefined ||
+      (value.protocolVersion === 4) !== (snapshot.schemaVersion === 2)
       ? undefined
       : {
           protocolVersion: value.protocolVersion as WebProtocolVersion,
