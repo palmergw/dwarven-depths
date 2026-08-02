@@ -31,6 +31,7 @@ const { stdout: sourceHeadOutput } = await execFile(
 const sourceHead = sourceHeadOutput.trim();
 const browser = await chromium.launch({ headless: true });
 const captures = [];
+const motionSamples = [];
 try {
   const page = await browser.newPage({
     viewport: { width: 1280, height: 720 },
@@ -78,7 +79,10 @@ try {
         { id: "entity.sweep.raider", nodeId, faction: "enemy" }
       ]
     };
-    await page.evaluate((value) => window.__mountDepthSweep(value), snapshot);
+    await page.evaluate(
+      (value) => window.__mountDepthSweep(value, true),
+      snapshot
+    );
     await page.waitForFunction((expectedNodeId) => {
       const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
       return (
@@ -107,6 +111,60 @@ try {
       screenshotSha256: createHash("sha256").update(screenshot).digest("hex")
     });
   }
+
+  const gateId = "node.shuttergate_gate";
+  const gateBase = {
+    schemaVersion: 1,
+    levelId: "level.shuttergate_hall",
+    mapId: "map.shuttergate_hall",
+    phase: "running",
+    nodes: [{ id: gateId, x: 0, y: 0 }],
+    connections: []
+  };
+  const quietGate = {
+    ...gateBase,
+    tick: 293,
+    entities: [{ id: "entity.sweep.warden", nodeId: gateId, faction: "dwarf" }]
+  };
+  const arrivalGate = {
+    ...gateBase,
+    tick: 294,
+    entities: [
+      ...quietGate.entities,
+      { id: "entity.sweep.raider", nodeId: gateId, faction: "enemy" }
+    ]
+  };
+  await page.evaluate(
+    (value) => window.__mountDepthSweep(value, false),
+    quietGate
+  );
+  await page.waitForTimeout(1800);
+  await page.evaluate(
+    (value) => window.__mountDepthSweep(value, false),
+    arrivalGate
+  );
+  const gateAnchor = spatialContract.anchors[gateId].rasterPivot;
+  const motionCrop = {
+    x: gateAnchor[0] - cropWidth / 2,
+    y: gateAnchor[1] - 78,
+    width: cropWidth,
+    height: cropHeight
+  };
+  let elapsedMilliseconds = 0;
+  for (const delayMilliseconds of [0, 210, 420]) {
+    await page.waitForTimeout(delayMilliseconds);
+    elapsedMilliseconds += delayMilliseconds;
+    const filename = `motion-gate-${elapsedMilliseconds}ms.png`;
+    const screenshot = await page.screenshot({
+      path: fileURLToPath(new URL(filename, outputDirectory)),
+      clip: motionCrop
+    });
+    motionSamples.push({
+      elapsedMilliseconds,
+      screenshot: filename,
+      screenshotSha256: createHash("sha256").update(screenshot).digest("hex")
+    });
+  }
 } finally {
   await browser.close();
 }
@@ -128,12 +186,18 @@ await writeFile(
       fixture:
         "two fixed-scale runtime subjects and ground rings at every authored route node",
       staticDepthSha256: createHash("sha256").update(depthBytes).digest("hex"),
-      captures
+      captures,
+      motionSamples
     },
     null,
     2
   )}\n`
 );
 console.log(
-  JSON.stringify({ ok: true, sourceHead, captures: captures.length })
+  JSON.stringify({
+    ok: true,
+    sourceHead,
+    captures: captures.length,
+    motionSamples: motionSamples.length
+  })
 );

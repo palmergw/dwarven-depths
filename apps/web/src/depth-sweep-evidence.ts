@@ -6,7 +6,10 @@ import "./styles.css";
 
 let root: Root | undefined;
 
-export function mountDepthSweep(snapshot: RenderSnapshot): void {
+export function mountDepthSweep(
+  snapshot: RenderSnapshot,
+  reduceMotion = true
+): void {
   const parent = document.querySelector("#depth-sweep-root");
   if (!(parent instanceof HTMLElement))
     throw new Error("missing depth sweep capture root");
@@ -14,7 +17,7 @@ export function mountDepthSweep(snapshot: RenderSnapshot): void {
   root.render(
     createElement(Battlefield, {
       snapshot,
-      reduceMotion: true,
+      reduceMotion,
       soundEnabled: false
     })
   );
