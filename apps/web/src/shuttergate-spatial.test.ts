@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  projectShuttergateOccupancyPoint,
   projectShuttergateWorldPoint,
   quantizeShuttergatePivot,
   SHUTTERGATE_NODE_POSITIONS,
   SHUTTERGATE_SPATIAL_CONTRACT,
-  SHUTTERGATE_WORLD_ANCHORS
+  SHUTTERGATE_WORLD_ANCHORS,
+  shuttergateOccupancyWorldPoint
 } from "./shuttergate-spatial.js";
 
 const EXPECTED_LEGACY_PIVOTS = {
@@ -56,5 +58,52 @@ describe("Shuttergate shared-scene projection", () => {
     expect(SHUTTERGATE_WORLD_ANCHORS["node.shuttergate_west_hall"]).toEqual(
       SHUTTERGATE_WORLD_ANCHORS["node.shuttergate_east_hall"]
     );
+  });
+
+  it("projects same-node occupancy from anchor-local ground offsets", () => {
+    for (const [nodeId, anchor] of Object.entries(SHUTTERGATE_WORLD_ANCHORS)) {
+      const pivot =
+        EXPECTED_LEGACY_PIVOTS[nodeId as keyof typeof EXPECTED_LEGACY_PIVOTS];
+      expect(
+        quantizeShuttergatePivot(projectShuttergateOccupancyPoint(nodeId, 0, 0))
+      ).toEqual(pivot);
+      for (const [column, row] of [
+        [-1, -0.5],
+        [0, -0.5],
+        [1, -0.5],
+        [-1, 0.5]
+      ] as const) {
+        const world = shuttergateOccupancyWorldPoint(nodeId, column, row);
+        expect(world.z).toBe(anchor.z);
+        expect(
+          quantizeShuttergatePivot(
+            projectShuttergateOccupancyPoint(nodeId, column, row)
+          )
+        ).toEqual({
+          x: pivot.x + column * 38,
+          y: pivot.y + row * 38
+        });
+      }
+    }
+  });
+
+  it("applies identical local displacement to coincident aliases", () => {
+    expect(
+      shuttergateOccupancyWorldPoint("node.shuttergate_west_entry", 1, 0.5)
+    ).toEqual(
+      shuttergateOccupancyWorldPoint("node.shuttergate_east_entry", 1, 0.5)
+    );
+  });
+
+  it("strictly rejects invalid occupancy requests", () => {
+    expect(() =>
+      shuttergateOccupancyWorldPoint("node.shuttergate_absent", 0, 0)
+    ).toThrow("unknown Shuttergate node");
+    expect(() =>
+      shuttergateOccupancyWorldPoint("node.shuttergate_gate", Number.NaN, 0)
+    ).toThrow("must be finite");
+    expect(() =>
+      shuttergateOccupancyWorldPoint("node.shuttergate_gate", 0, Infinity)
+    ).toThrow("must be finite");
   });
 });

@@ -1407,6 +1407,59 @@ describe("authoritative web worker", () => {
     );
   });
 
+  it("projects Shuttergate occupancy through stable anchor-local world slots", () => {
+    const snapshot = {
+      schemaVersion: 1,
+      levelId: "level.shuttergate",
+      mapId: "map.shuttergate_hall",
+      tick: 2,
+      phase: "running",
+      nodes: [{ id: "node.shuttergate_gate", x: 0, y: 0 }],
+      connections: [],
+      entities: [
+        {
+          id: "unit.4",
+          nodeId: "node.shuttergate_gate",
+          faction: "enemy"
+        },
+        {
+          id: "unit.2",
+          nodeId: "node.shuttergate_gate",
+          faction: "enemy"
+        },
+        {
+          id: "unit.1",
+          nodeId: "node.shuttergate_gate",
+          faction: "dwarf"
+        },
+        {
+          id: "unit.3",
+          nodeId: "node.shuttergate_gate",
+          faction: "dwarf"
+        }
+      ]
+    } as const satisfies RenderSnapshot;
+    const expected = [
+      { id: "unit.1", faction: "dwarf", x: 1072, y: 234 },
+      { id: "unit.2", faction: "enemy", x: 1110, y: 234 },
+      { id: "unit.3", faction: "dwarf", x: 1148, y: 234 },
+      { id: "unit.4", faction: "enemy", x: 1072, y: 272 }
+    ];
+    expect(buildBattlefieldPrimitives(snapshot).entities).toEqual(expected);
+    expect(
+      buildBattlefieldPrimitives({
+        ...snapshot,
+        entities: [...snapshot.entities].reverse()
+      }).entities
+    ).toEqual(expected);
+    expect(
+      buildBattlefieldPrimitives({
+        ...snapshot,
+        entities: [snapshot.entities[2]]
+      }).entities
+    ).toEqual([{ id: "unit.1", faction: "dwarf", x: 1110, y: 253 }]);
+  });
+
   it("keeps reduced-motion feedback static and rejects stale replay effects in StrictMode", async () => {
     const initial = {
       schemaVersion: 1,

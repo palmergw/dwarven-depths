@@ -12,7 +12,11 @@ import {
   type RenderEntity,
   type RenderSnapshot
 } from "./render-snapshot.js";
-import { SHUTTERGATE_NODE_POSITIONS } from "./shuttergate-spatial.js";
+import {
+  projectShuttergateOccupancyPoint,
+  quantizeShuttergatePivot,
+  SHUTTERGATE_NODE_POSITIONS
+} from "./shuttergate-spatial.js";
 
 const WIDTH = 1280;
 const HEIGHT = 720;
@@ -216,11 +220,25 @@ export function buildBattlefieldPrimitives(
       const rows = Math.ceil(occupancy / columns);
       const column = slot % columns;
       const row = Math.floor(slot / columns);
+      const columnOffset = column - (columns - 1) / 2;
+      const rowOffset = row - (rows - 1) / 2;
+      const occupiedPosition =
+        snapshot.mapId === "map.shuttergate_hall"
+          ? quantizeShuttergatePivot(
+              projectShuttergateOccupancyPoint(
+                entity.nodeId,
+                columnOffset,
+                rowOffset
+              )
+            )
+          : {
+              x: position.x + columnOffset * 38,
+              y: position.y + rowOffset * 38
+            };
       return {
         id: entity.id,
         faction: entity.faction,
-        x: position.x + (column - (columns - 1) / 2) * 38,
-        y: position.y + (row - (rows - 1) / 2) * 38
+        ...occupiedPosition
       };
     })
   };

@@ -64,6 +64,26 @@ const WORLD_TO_CAMERA = spatialContract.camera
 const WORLD_TO_CLIP = spatialContract.camera
   .worldToClipRowMajor as unknown as Matrix4;
 
+// These are authored ground-plane distances under the locked Shuttergate camera,
+// not screen-space nudges. They preserve the approved 38 px occupancy footprint
+// while allowing every displaced pivot to participate in world/depth projection.
+const OCCUPANCY_COLUMN_SPACING_WORLD = 1.4843748465614681;
+const OCCUPANCY_ROW_SPACING_WORLD = 2.8464562818556933;
+
+function normalizedGroundCameraRight(): readonly [number, number] {
+  const [x, y] = WORLD_TO_CAMERA[0];
+  const length = Math.hypot(x, y);
+  if (!Number.isFinite(length) || length === 0)
+    throw new Error("invalid Shuttergate ground-plane camera basis");
+  return [x / length, y / length];
+}
+
+const GROUND_CAMERA_RIGHT = normalizedGroundCameraRight();
+const GROUND_CAMERA_DOWN = [
+  GROUND_CAMERA_RIGHT[1],
+  -GROUND_CAMERA_RIGHT[0]
+] as const;
+
 function worldPoint(values: readonly number[], nodeId: string): WorldPoint {
   const [x, y, z] = values;
   if (x === undefined || y === undefined || z === undefined) {
@@ -102,6 +122,41 @@ export const SHUTTERGATE_WORLD_ANCHORS: Readonly<Record<string, WorldPoint>> =
       worldPoint(anchor.world, nodeId)
     ])
   );
+
+export function shuttergateOccupancyWorldPoint(
+  nodeId: string,
+  columnOffset: number,
+  rowOffset: number
+): WorldPoint {
+  const anchor = SHUTTERGATE_WORLD_ANCHORS[nodeId];
+  if (anchor === undefined)
+    throw new Error(`unknown Shuttergate node: ${nodeId}`);
+  if (!Number.isFinite(columnOffset) || !Number.isFinite(rowOffset))
+    throw new Error("Shuttergate occupancy offsets must be finite");
+  const lateral = columnOffset * OCCUPANCY_COLUMN_SPACING_WORLD;
+  const downward = rowOffset * OCCUPANCY_ROW_SPACING_WORLD;
+  return {
+    x:
+      anchor.x +
+      GROUND_CAMERA_RIGHT[0] * lateral +
+      GROUND_CAMERA_DOWN[0] * downward,
+    y:
+      anchor.y +
+      GROUND_CAMERA_RIGHT[1] * lateral +
+      GROUND_CAMERA_DOWN[1] * downward,
+    z: anchor.z
+  };
+}
+
+export function projectShuttergateOccupancyPoint(
+  nodeId: string,
+  columnOffset: number,
+  rowOffset: number
+): ProjectedPoint {
+  return projectShuttergateWorldPoint(
+    shuttergateOccupancyWorldPoint(nodeId, columnOffset, rowOffset)
+  );
+}
 
 export const SHUTTERGATE_NODE_POSITIONS: Readonly<
   Record<string, { readonly x: number; readonly y: number }>
