@@ -19,7 +19,7 @@ import {
 } from "./shuttergate-spatial.js";
 
 interface Footprint {
-  readonly id: "effect" | "raider" | "ring" | "warden";
+  readonly id: "effect" | "focus" | "raider" | "ring" | "warden";
   readonly width: number;
   readonly height: number;
   readonly pivotX: number;
@@ -30,10 +30,18 @@ interface Footprint {
 const FOOTPRINTS: readonly Footprint[] = [
   {
     id: "effect",
-    width: 96,
-    height: 58,
-    pivotX: 48,
-    pivotY: 41,
+    width: 100,
+    height: 60,
+    pivotX: 50,
+    pivotY: 42,
+    plane: "upright-billboard"
+  },
+  {
+    id: "focus",
+    width: 84,
+    height: 80,
+    pivotX: 42,
+    pivotY: 74,
     plane: "upright-billboard"
   },
   {
@@ -177,7 +185,11 @@ describe("Shuttergate route-wide depth sweep", () => {
       [
         {
           "id": "node.shuttergate_east_entry/effect",
-          "occluded": 4216,
+          "occluded": 4513,
+        },
+        {
+          "id": "node.shuttergate_east_entry/focus",
+          "occluded": 3199,
         },
         {
           "id": "node.shuttergate_east_entry/raider",
@@ -193,7 +205,11 @@ describe("Shuttergate route-wide depth sweep", () => {
         },
         {
           "id": "node.shuttergate_east_hall/effect",
-          "occluded": 1440,
+          "occluded": 1600,
+        },
+        {
+          "id": "node.shuttergate_east_hall/focus",
+          "occluded": 336,
         },
         {
           "id": "node.shuttergate_east_hall/raider",
@@ -209,7 +225,11 @@ describe("Shuttergate route-wide depth sweep", () => {
         },
         {
           "id": "node.shuttergate_gate/effect",
-          "occluded": 2651,
+          "occluded": 2935,
+        },
+        {
+          "id": "node.shuttergate_gate/focus",
+          "occluded": 1546,
         },
         {
           "id": "node.shuttergate_gate/raider",
@@ -225,7 +245,11 @@ describe("Shuttergate route-wide depth sweep", () => {
         },
         {
           "id": "node.shuttergate_keep/effect",
-          "occluded": 1582,
+          "occluded": 1742,
+        },
+        {
+          "id": "node.shuttergate_keep/focus",
+          "occluded": 478,
         },
         {
           "id": "node.shuttergate_keep/raider",
@@ -241,7 +265,11 @@ describe("Shuttergate route-wide depth sweep", () => {
         },
         {
           "id": "node.shuttergate_keep_guard/effect",
-          "occluded": 639,
+          "occluded": 803,
+        },
+        {
+          "id": "node.shuttergate_keep_guard/focus",
+          "occluded": 0,
         },
         {
           "id": "node.shuttergate_keep_guard/raider",
@@ -257,7 +285,11 @@ describe("Shuttergate route-wide depth sweep", () => {
         },
         {
           "id": "node.shuttergate_north_guard/effect",
-          "occluded": 1440,
+          "occluded": 1600,
+        },
+        {
+          "id": "node.shuttergate_north_guard/focus",
+          "occluded": 336,
         },
         {
           "id": "node.shuttergate_north_guard/raider",
@@ -273,7 +305,11 @@ describe("Shuttergate route-wide depth sweep", () => {
         },
         {
           "id": "node.shuttergate_west_entry/effect",
-          "occluded": 4216,
+          "occluded": 4513,
+        },
+        {
+          "id": "node.shuttergate_west_entry/focus",
+          "occluded": 3199,
         },
         {
           "id": "node.shuttergate_west_entry/raider",
@@ -289,7 +325,11 @@ describe("Shuttergate route-wide depth sweep", () => {
         },
         {
           "id": "node.shuttergate_west_hall/effect",
-          "occluded": 1440,
+          "occluded": 1600,
+        },
+        {
+          "id": "node.shuttergate_west_hall/focus",
+          "occluded": 336,
         },
         {
           "id": "node.shuttergate_west_hall/raider",

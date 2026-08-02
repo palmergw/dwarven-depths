@@ -63,35 +63,73 @@ try {
     () => typeof window.__mountDepthSweep === "function"
   );
 
-  for (const [nodeId, anchor] of Object.entries(spatialContract.anchors).sort(
+  const orderedAnchors = Object.entries(spatialContract.anchors).sort(
     ([left], [right]) => left.localeCompare(right)
-  )) {
-    const snapshot = {
+  );
+  for (const [nodeIndex, [nodeId, anchor]] of orderedAnchors.entries()) {
+    const baseSnapshot = {
       schemaVersion: 1,
       levelId: "level.shuttergate_hall",
       mapId: "map.shuttergate_hall",
-      tick: 292,
       phase: "running",
       nodes: [{ id: nodeId, x: 0, y: 0 }],
-      connections: [],
+      connections: []
+    };
+    const quietSnapshot = {
+      ...baseSnapshot,
+      tick: 292 + nodeIndex * 2,
+      entities: [{ id: "entity.sweep.warden", nodeId, faction: "dwarf" }]
+    };
+    const arrivalSnapshot = {
+      ...baseSnapshot,
+      tick: quietSnapshot.tick + 1,
       entities: [
         { id: "entity.sweep.warden", nodeId, faction: "dwarf" },
         { id: "entity.sweep.raider", nodeId, faction: "enemy" }
       ]
     };
     await page.evaluate(
-      (value) => window.__mountDepthSweep(value, true),
-      snapshot
+      (value) => window.__mountDepthSweep(value, false, undefined),
+      quietSnapshot
     );
-    await page.waitForFunction((expectedNodeId) => {
-      const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
-      return (
-        truth?.captureReady === true &&
-        truth.registry.totalCount === 2 &&
-        truth.registry.entities.every(({ nodeId }) => nodeId === expectedNodeId)
-      );
-    }, nodeId);
-    await page.waitForTimeout(50);
+    await page.waitForFunction(
+      ({ expectedNodeId, expectedTick }) => {
+        const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+        return (
+          truth?.captureReady === true &&
+          truth.snapshot.tick === expectedTick &&
+          truth.registry.totalCount === 1 &&
+          truth.registry.entities.every(
+            ({ nodeId }) => nodeId === expectedNodeId
+          )
+        );
+      },
+      { expectedNodeId: nodeId, expectedTick: quietSnapshot.tick }
+    );
+    await page.evaluate(
+      (value) => window.__mountDepthSweep(value, false, 1),
+      arrivalSnapshot
+    );
+    await page.waitForFunction(
+      ({ expectedNodeId, expectedTick }) => {
+        const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+        return (
+          truth?.captureReady === true &&
+          truth.snapshot.tick === expectedTick &&
+          truth.registry.totalCount === 2 &&
+          truth.registry.entities.every(
+            ({ nodeId }) => nodeId === expectedNodeId
+          )
+        );
+      },
+      { expectedNodeId: nodeId, expectedTick: arrivalSnapshot.tick }
+    );
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        )
+    );
     const [pivotX, pivotY] = anchor.rasterPivot;
     const left = Math.max(
       0,
@@ -105,52 +143,16 @@ try {
     });
     captures.push({
       nodeId,
+      effectAlpha: 1,
       authoredPivot: anchor.rasterPivot,
       crop: [left, top, cropWidth, cropHeight],
       screenshot: filename,
       screenshotSha256: createHash("sha256").update(screenshot).digest("hex")
     });
-  }
-
-  const gateId = "node.shuttergate_gate";
-  const gateBase = {
-    schemaVersion: 1,
-    levelId: "level.shuttergate_hall",
-    mapId: "map.shuttergate_hall",
-    phase: "running",
-    nodes: [{ id: gateId, x: 0, y: 0 }],
-    connections: []
-  };
-  const quietGate = {
-    ...gateBase,
-    tick: 293,
-    entities: [{ id: "entity.sweep.warden", nodeId: gateId, faction: "dwarf" }]
-  };
-  const arrivalGate = {
-    ...gateBase,
-    tick: 294,
-    entities: [
-      ...quietGate.entities,
-      { id: "entity.sweep.raider", nodeId: gateId, faction: "enemy" }
-    ]
-  };
-  await page.evaluate(
-    (value) => window.__mountDepthSweep(value, false, undefined),
-    quietGate
-  );
-  await page.waitForTimeout(50);
-  const gateAnchor = spatialContract.anchors[gateId].rasterPivot;
-  const motionCrop = {
-    x: gateAnchor[0] - cropWidth / 2,
-    y: gateAnchor[1] - 78,
-    width: cropWidth,
-    height: cropHeight
-  };
-  for (const effectAlpha of [1, 0.5]) {
     await page.evaluate(
       ({ snapshot, effectAlpha }) =>
         window.__mountDepthSweep(snapshot, false, effectAlpha),
-      { snapshot: arrivalGate, effectAlpha }
+      { snapshot: arrivalSnapshot, effectAlpha: 0.5 }
     );
     await page.evaluate(
       () =>
@@ -158,15 +160,18 @@ try {
           requestAnimationFrame(() => requestAnimationFrame(resolve))
         )
     );
-    const filename = `motion-gate-alpha-${effectAlpha * 100}.png`;
-    const screenshot = await page.screenshot({
-      path: fileURLToPath(new URL(filename, outputDirectory)),
-      clip: motionCrop
+    const motionFilename = `motion-${nodeId.replaceAll(".", "-")}-alpha-50.png`;
+    const motionScreenshot = await page.screenshot({
+      path: fileURLToPath(new URL(motionFilename, outputDirectory)),
+      clip: { x: left, y: top, width: cropWidth, height: cropHeight }
     });
     motionSamples.push({
-      effectAlpha,
-      screenshot: filename,
-      screenshotSha256: createHash("sha256").update(screenshot).digest("hex")
+      nodeId,
+      effectAlpha: 0.5,
+      screenshot: motionFilename,
+      screenshotSha256: createHash("sha256")
+        .update(motionScreenshot)
+        .digest("hex")
     });
   }
 } finally {
@@ -189,7 +194,7 @@ await writeFile(
       viewport: [1280, 720],
       devicePixelRatio: 1,
       fixture:
-        "two fixed-scale runtime subjects and ground rings at every authored route node",
+        "two fixed-scale runtime subjects, ground rings, depth-tested focus, and transient VFX at every authored route node",
       staticDepthSha256: createHash("sha256").update(depthBytes).digest("hex"),
       captures,
       motionSamples

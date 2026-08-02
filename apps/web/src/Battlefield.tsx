@@ -152,8 +152,13 @@ export interface TruthScreenSidecar {
   readonly occlusion: {
     readonly artifactId: "authored-entrance-depth";
     readonly layerOrder: readonly string[];
-    readonly clips: readonly ["world-ring", "world-effect", "world-subject"];
-    readonly exempts: readonly ["screen-focus-indicator", "hud"];
+    readonly clips: readonly [
+      "world-ring",
+      "world-effect",
+      "world-subject",
+      "world-focus"
+    ];
+    readonly exempts: readonly ["hud"];
     readonly witness: {
       readonly entityId: string;
       readonly subjectAlphaPixels: number;
@@ -483,11 +488,11 @@ export function buildTruthScreenSidecar(
         "depth-tested-world-rings",
         "depth-tested-world-effects",
         "depth-tested-world-subjects",
-        "screen-focus-indicators",
+        "depth-tested-world-focus",
         "hud"
       ],
-      clips: ["world-ring", "world-effect", "world-subject"],
-      exempts: ["screen-focus-indicator", "hud"],
+      clips: ["world-ring", "world-effect", "world-subject", "world-focus"],
+      exempts: ["hud"],
       witness: {
         entityId: hostile?.id ?? "",
         subjectAlphaPixels: visualMetrics.enemy.nonzeroAlphaPixels,
@@ -779,6 +784,40 @@ function addDepthTestedEffect(
   return effect;
 }
 
+function addDepthTestedFocus(
+  scene: Phaser.Scene,
+  entity: RenderPrimitive,
+  staticDepth: StaticSceneDepth
+): void {
+  const width = 84;
+  const height = 80;
+  const pivotX = width / 2;
+  const pivotY = 74;
+  const frameLeft = Math.round(entity.x) - pivotX;
+  const frameTop = Math.round(entity.y) - pivotY;
+  const focus = scene.add.graphics();
+  focus.lineStyle(2, 0xf3d78f, 0.9);
+  focus.strokeRoundedRect(entity.x - 40, entity.y - 72, 80, 78, 10);
+  if (entity.cameraDepth !== undefined)
+    focus.setMask(
+      createDepthVisibilityMask(
+        scene,
+        width,
+        height,
+        {
+          kind: "upright-billboard",
+          cameraDepth: entity.cameraDepth,
+          cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+          depthEdgeGuardPixels: 1,
+          frameLeft,
+          frameTop,
+          pivotY
+        },
+        staticDepth
+      )
+    );
+}
+
 function addDepthTestedBillboard(
   scene: Phaser.Scene,
   entity: RenderPrimitive,
@@ -911,21 +950,11 @@ function drawBattlefield(
       );
   }
 
-  // This screen-space focus indicator is intentionally exempt from occlusion.
   const selectedWarden = primitives.entities.find(
     ({ faction }) => faction === "dwarf"
   );
-  if (selectedWarden !== undefined) {
-    const focus = scene.add.graphics();
-    focus.lineStyle(2, 0xf3d78f, 0.9);
-    focus.strokeRoundedRect(
-      selectedWarden.x - 40,
-      selectedWarden.y - 72,
-      80,
-      78,
-      10
-    );
-  }
+  if (selectedWarden !== undefined)
+    addDepthTestedFocus(scene, selectedWarden, staticDepth);
 
   if (typeof window !== "undefined")
     window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ = buildTruthScreenSidecar(
