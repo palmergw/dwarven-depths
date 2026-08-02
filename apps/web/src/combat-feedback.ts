@@ -22,6 +22,7 @@ export function isCombatFeedbackProgression(
     previous.levelId === current.levelId &&
     (current.schemaVersion !== 2 ||
       (previous.schemaVersion === 2 &&
+        previous.scenarioId === current.scenarioId &&
         current.previousTick === previous.tick &&
         previous.mapId === current.mapId)) &&
     (current.tick > previous.tick ||

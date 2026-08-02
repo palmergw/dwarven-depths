@@ -441,6 +441,7 @@ describe("web worker protocol", () => {
       type: "render_snapshot",
       snapshot: {
         schemaVersion: 2,
+        scenarioId: "scenario.test",
         levelId: "level.test",
         mapId: null,
         tick: 0,

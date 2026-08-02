@@ -78,6 +78,7 @@ export interface RenderEncounter {
 
 export interface RenderSnapshotV2 {
   readonly schemaVersion: 2;
+  readonly scenarioId: string;
   readonly levelId: string;
   readonly mapId: string | null;
   readonly tick: number;
@@ -98,6 +99,7 @@ export function compareRenderIds(left: string, right: string): number {
 
 type UnknownRecord = Record<string, unknown> & {
   schemaVersion?: unknown;
+  scenarioId?: unknown;
   levelId?: unknown;
   mapId?: unknown;
   tick?: unknown;
@@ -548,10 +550,12 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
       "nodes",
       "phase",
       "previousTick",
+      "scenarioId",
       "schemaVersion",
       "tick"
     ]) ||
     value.schemaVersion !== 2 ||
+    !isIdentifier(value.scenarioId) ||
     !isIdentifier(value.levelId) ||
     (value.mapId !== null && !isIdentifier(value.mapId)) ||
     !isTick(value.tick) ||
@@ -623,6 +627,7 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
     return undefined;
   return {
     schemaVersion: 2,
+    scenarioId: value.scenarioId,
     levelId: value.levelId,
     mapId: value.mapId,
     tick: value.tick,

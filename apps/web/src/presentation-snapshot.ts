@@ -91,7 +91,8 @@ export function createPresentationSnapshot(
     level?.mapId === undefined ? undefined : content.maps.get(level.mapId);
   if (
     previous !== undefined &&
-    (previous.levelId !== scenario.levelId ||
+    (previous.scenarioId !== scenario.id ||
+      previous.levelId !== scenario.levelId ||
       previous.mapId !== (map?.id ?? null) ||
       previous.tick >= state.tick)
   )
@@ -205,6 +206,7 @@ export function createPresentationSnapshot(
   const authoredActiveWaveId = state.battlefield?.startedWaveIds.at(-1) ?? null;
   return {
     schemaVersion: 2,
+    scenarioId: scenario.id,
     levelId: scenario.levelId,
     mapId: map?.id ?? null,
     tick: state.tick,

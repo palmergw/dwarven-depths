@@ -364,5 +364,14 @@ describe("presentation snapshot v2", () => {
         }
       )
     ).toThrow(/same authored encounter/);
+    expect(() =>
+      createPresentationSnapshot(
+        content,
+        { ...scenario, id: "scenario.other" as never },
+        { ...state, tick: 1 },
+        "running",
+        previous
+      )
+    ).toThrow(/same authored encounter/);
   });
 });
