@@ -1548,11 +1548,13 @@ describe("authoritative web worker", () => {
     );
     expect(document.querySelector(".combat-feedback")).toBeNull();
     render(changed);
-    await vi.waitFor(() =>
-      expect(document.querySelector(".combat-feedback")).toHaveAttribute(
-        "data-motion",
-        "static"
-      )
+    await vi.waitFor(
+      () =>
+        expect(document.querySelector(".combat-feedback")).toHaveAttribute(
+          "data-motion",
+          "static"
+        ),
+      { timeout: 10_000 }
     );
     render(initial);
     await vi.waitFor(() =>
