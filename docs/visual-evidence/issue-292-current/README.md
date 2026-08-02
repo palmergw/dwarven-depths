@@ -10,7 +10,7 @@ Renderer source head: `119e1749123705c3804d3dba43019bd930a5cee1`
 - Approved #291 screenshot SHA-256: `efef3884fe4dc83d44af1495d410390e31d60dcfae82943af7cc09cf1a395d7a`.
 - `approved-comparison.png` shows approved/current/4×-RGB-difference witness rows for the Warden focus and gate subject.
 
-The images differ at 512 pixels in bounding box `(643,305)–(1214,417)`. Of those, 177 are the previously published antialiased Warden-ring and gate subject/ring changes; 335 depth-test the Warden focus frame against static scene geometry. Viewport, environment assets, entity pivots and scale, HUD, controls, and simulation state are unchanged. This is not pixel-identical to #291, so the issue's explicit product-owner approval condition remains open.
+The images differ at 512 pixels in bounding box `(643,305)–(1214,417)`. Of those, 177 are the previously published antialiased Warden-ring and gate subject/ring changes; 335 depth-test the Warden focus frame against static scene geometry. Viewport, environment assets, entity pivots and scale, HUD, controls, and simulation state are unchanged. The product owner explicitly approved these pixels at exact renderer/evidence head `3aea32ae017073d6829d809cfab7312eded0bcf0` on 2026-08-02; subsequent release-gate-only test changes do not alter this packet.
 
 ## Route sweep
 
