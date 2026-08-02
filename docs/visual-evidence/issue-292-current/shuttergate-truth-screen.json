@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "captureId": "capture-287-87748a75218c3f0dd442",
+  "sourceHead": "05de837589bab71ebddc81fcfe31d5b744c407d2",
+  "capture": {
+    "screenshot": "shuttergate-truth-screen.png",
+    "screenshotSha256": "f0ad6d9b3ea31eeecd69d284c601355d8562d1b31cce67835d20692e5a55edbc",
+    "viewport": [1440, 900],
+    "devicePixelRatio": 1,
+    "route": "checkpoint -> preparation -> paused combat"
+  },
+  "environmentManifest": {
+    "id": "manifest.web.shuttergate_environment",
+    "path": "apps/web/src/shuttergate-environment-manifest.json",
+    "sha256": "f7db919ff755642957d5686840d2a26105b2ae0bd52096867959cdb8fb855457",
+    "prohibitedRolesAbsent": true
+  },
+  "visualAssetAudit": {
+    "valid": true,
+    "sourceSha256": {
+      "dwarf": "a10be62e061241683ba598ed4d9032880704a5f0c24bf38f9eff0a9bd138af4a",
+      "enemy": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83",
+      "groundForeground": "dba694a66f32dab4e7d57e3bf8f3a14821b3f8097a93c407705cd8233206baa8",
+      "foreground": "3bf32536b020eb8d7c9e64df6d5ed75a34be01053027b3ac93ada7b9944d3c76",
+      "rear": "35dd8c5b5df1b4df0290c5b0e826084a0937992f89e4e72cbcea5f8c962ee24b"
+    },
+    "assets": {
+      "dwarf": {
+        "width": 112,
+        "height": 72,
+        "alphaBounds": [24, 10, 64, 56],
+        "nonzeroAlphaPixels": 2354,
+        "fullAlphaPixels": 2157,
+        "partialAlphaPixels": 197
+      },
+      "enemy": {
+        "width": 80,
+        "height": 60,
+        "alphaBounds": [14, 10, 52, 44],
+        "nonzeroAlphaPixels": 1341,
+        "fullAlphaPixels": 1135,
+        "partialAlphaPixels": 206
+      },
+      "groundForeground": {
+        "width": 1280,
+        "height": 720,
+        "alphaBounds": [1099, 227, 18, 26],
+        "nonzeroAlphaPixels": 125
+      },
+      "foreground": {
+        "width": 1280,
+        "height": 720,
+        "alphaBounds": [836, 185, 444, 413],
+        "nonzeroAlphaPixels": 89127
+      },
+      "rear": {
+        "width": 1280,
+        "height": 720,
+        "alphaBounds": [977, 0, 303, 213],
+        "nonzeroAlphaPixels": 38324
+      }
+    },
+    "entities": [
+      {
+        "id": "entity.dwarf.warden",
+        "faction": "dwarf",
+        "sourceCanvas": [112, 72],
+        "sourceAlphaBounds": [24, 10, 64, 56],
+        "worldAlphaBounds": [573, 264, 64, 56],
+        "nonzeroAlphaPixels": 2354,
+        "fullAlphaPixels": 2157,
+        "partialAlphaPixels": 197,
+        "fullAlphaRatio": 0.9163126593033135,
+        "intersectsWorldViewport": true,
+        "subjectPixelsOverRearArtifact": 0,
+        "subjectPixelsOverGroundArtifact": 0,
+        "subjectPixelsBehindForegroundArtifact": 0,
+        "matchesRuntimeRegistry": true
+      },
+      {
+        "id": "entity.enemy.shield_slam_target",
+        "faction": "enemy",
+        "sourceCanvas": [80, 60],
+        "sourceAlphaBounds": [14, 10, 52, 44],
+        "worldAlphaBounds": [1084, 209, 52, 44],
+        "nonzeroAlphaPixels": 1341,
+        "fullAlphaPixels": 1135,
+        "partialAlphaPixels": 206,
+        "fullAlphaRatio": 0.8463832960477256,
+        "intersectsWorldViewport": true,
+        "subjectPixelsOverRearArtifact": 5,
+        "subjectPixelsOverGroundArtifact": 110,
+        "subjectPixelsBehindForegroundArtifact": 66,
+        "matchesRuntimeRegistry": true
+      }
+    ],
+    "occlusionMatchesRuntime": true,
+    "depthResolution": {
+      "intent": "rear-visible-and-foreground-occluded",
+      "rearOverlapPixels": 5,
+      "subjectGroundOverlapPixels": 110,
+      "foregroundOcclusionPixels": 66,
+      "worldRingOcclusionPixels": 243,
+      "transientEffectOcclusionPixels": 536,
+      "matchesRuntime": true
+    }
+  },
+  "viewport": [1440, 900],
+  "devicePixelRatio": 1,
+  "truth": {
+    "schemaVersion": 1,
+    "captureReady": true,
+    "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+    "viewport": [1440, 900],
+    "frame": [1280, 720],
+    "snapshot": {
+      "levelId": "level.shuttergate_hall",
+      "mapId": "map.shuttergate_hall",
+      "tick": 1,
+      "phase": "running"
+    },
+    "registry": {
+      "dwarfCount": 1,
+      "hostileCount": 1,
+      "totalCount": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "faction": "dwarf",
+          "nodeId": "node.shuttergate_north_guard",
+          "x": 605,
+          "y": 320,
+          "nominalHeight": 56,
+          "canvasBounds": [549, 254, 112, 72],
+          "alphaBounds": [573, 264, 64, 56],
+          "nonzeroAlphaPixels": 2354,
+          "fullAlphaPixels": 2157,
+          "partialAlphaPixels": 197,
+          "intersectsUnobscuredWorldViewport": true
+        },
+        {
+          "id": "entity.enemy.shield_slam_target",
+          "faction": "enemy",
+          "nodeId": "node.shuttergate_gate",
+          "x": 1110,
+          "y": 253,
+          "nominalHeight": 44,
+          "canvasBounds": [1070, 199, 80, 60],
+          "alphaBounds": [1084, 209, 52, 44],
+          "nonzeroAlphaPixels": 1341,
+          "fullAlphaPixels": 1135,
+          "partialAlphaPixels": 206,
+          "intersectsUnobscuredWorldViewport": true
+        }
+      ]
+    },
+    "occlusion": {
+      "artifactId": "authored-entrance-depth",
+      "layerOrder": [
+        "complete-static-scene-color",
+        "depth-tested-world-rings",
+        "depth-tested-world-effects",
+        "depth-tested-world-subjects",
+        "screen-focus-indicators",
+        "hud"
+      ],
+      "clips": ["world-ring", "world-effect", "world-subject"],
+      "exempts": ["screen-focus-indicator", "hud"],
+      "witness": {
+        "entityId": "entity.enemy.shield_slam_target",
+        "subjectAlphaPixels": 1341,
+        "subjectPixelsOverRearArtifact": 5,
+        "subjectPixelsOverGroundArtifact": 110,
+        "subjectPixelsBehindForegroundArtifact": 66,
+        "worldRingPixelsBehindForegroundArtifact": 243,
+        "transientEffectPixelsBehindForegroundArtifact": 536
+      },
+      "depthResolution": {
+        "intent": "rear-visible-and-foreground-occluded",
+        "actualAnchor": [1110, 253],
+        "rearOverlapPixels": 5,
+        "subjectGroundOverlapPixels": 110,
+        "foregroundOcclusionPixels": 66,
+        "worldRingOcclusionPixels": 243,
+        "transientEffectOcclusionPixels": 536
+      }
+    },
+    "alignment": {
+      "snapshotCount": 2,
+      "registryCount": 2,
+      "exactlyOneWardenAndOneHostile": true,
+      "valid": true
+    }
+  },
+  "hudCountLabels": ["Warden 1", "Hostiles 1"],
+  "controls": {
+    "pause": "Resume combat",
+    "shieldSlamReady": true,
+    "targetPolicyButtons": [
+      "Nearest",
+      "Lowest health",
+      "Highest health",
+      "Highest armor",
+      "Fastest",
+      "Boss or elite first"
+    ]
+  },
+  "interactionVerification": {
+    "targetPolicyAccepted": true,
+    "shieldSlamQueued": true,
+    "resumedFromTick": 1,
+    "advancedToTick": 2,
+    "resultingPhase": "running"
+  }
+}

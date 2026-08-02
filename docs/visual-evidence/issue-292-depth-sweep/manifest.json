@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "05de837589bab71ebddc81fcfe31d5b744c407d2",
+  "viewport": [
+    1280,
+    720
+  ],
+  "devicePixelRatio": 1,
+  "fixture": "two fixed-scale runtime subjects and ground rings at every authored route node",
+  "staticDepthSha256": "71887686980068411caffb558e6e38caa93ea33d28ded110cb639d13cdf2901a",
+  "captures": [
+    {
+      "nodeId": "node.shuttergate_east_entry",
+      "authoredPivot": [
+        1054,
+        302
+      ],
+      "crop": [
+        982,
+        224,
+        144,
+        112
+      ],
+      "screenshot": "node-shuttergate_east_entry.png",
+      "screenshotSha256": "f6cce97aae86ccf87c7202df9ec568fcfc2275efa59b71ed3d8d364fe0a191ca"
+    },
+    {
+      "nodeId": "node.shuttergate_east_hall",
+      "authoredPivot": [
+        838,
+        330
+      ],
+      "crop": [
+        766,
+        252,
+        144,
+        112
+      ],
+      "screenshot": "node-shuttergate_east_hall.png",
+      "screenshotSha256": "7525aed4a58500b6f231cb841588738edad8d38b821b688a7443c69cf86b78f5"
+    },
+    {
+      "nodeId": "node.shuttergate_gate",
+      "authoredPivot": [
+        1110,
+        253
+      ],
+      "crop": [
+        1038,
+        175,
+        144,
+        112
+      ],
+      "screenshot": "node-shuttergate_gate.png",
+      "screenshotSha256": "4f4c0f57856e578e4670bdc9f475a7ca7e4612f236de8349e284a7164396f201"
+    },
+    {
+      "nodeId": "node.shuttergate_keep",
+      "authoredPivot": [
+        432,
+        402
+      ],
+      "crop": [
+        360,
+        324,
+        144,
+        112
+      ],
+      "screenshot": "node-shuttergate_keep.png",
+      "screenshotSha256": "efc0774c050dd4165746820d6fe96c876fddd511dbcd88e6084f196573f28e8b"
+    },
+    {
+      "nodeId": "node.shuttergate_keep_guard",
+      "authoredPivot": [
+        364,
+        476
+      ],
+      "crop": [
+        292,
+        398,
+        144,
+        112
+      ],
+      "screenshot": "node-shuttergate_keep_guard.png",
+      "screenshotSha256": "e83d7366d01aa8c41148d74140a2407a4dd3b560ee881588b52c9ca694c3bc27"
+    },
+    {
+      "nodeId": "node.shuttergate_north_guard",
+      "authoredPivot": [
+        605,
+        320
+      ],
+      "crop": [
+        533,
+        242,
+        144,
+        112
+      ],
+      "screenshot": "node-shuttergate_north_guard.png",
+      "screenshotSha256": "186dfd032eaf594c5d39b2c1a1f7e982735504e85d24fec058595871351c5ab4"
+    },
+    {
+      "nodeId": "node.shuttergate_west_entry",
+      "authoredPivot": [
+        1054,
+        302
+      ],
+      "crop": [
+        982,
+        224,
+        144,
+        112
+      ],
+      "screenshot": "node-shuttergate_west_entry.png",
+      "screenshotSha256": "f6cce97aae86ccf87c7202df9ec568fcfc2275efa59b71ed3d8d364fe0a191ca"
+    },
+    {
+      "nodeId": "node.shuttergate_west_hall",
+      "authoredPivot": [
+        838,
+        330
+      ],
+      "crop": [
+        766,
+        252,
+        144,
+        112
+      ],
+      "screenshot": "node-shuttergate_west_hall.png",
+      "screenshotSha256": "7525aed4a58500b6f231cb841588738edad8d38b821b688a7443c69cf86b78f5"
+    }
+  ],
+  "motionSamples": [
+    {
+      "elapsedMilliseconds": 0,
+      "screenshot": "motion-gate-0ms.png",
+      "screenshotSha256": "390c7e7b037a2054a180b4510ca35096196ca0d4f262eaf9cb35d655f45a9c9d"
+    },
+    {
+      "elapsedMilliseconds": 210,
+      "screenshot": "motion-gate-210ms.png",
+      "screenshotSha256": "fcb53de5689753a96a012e7bfac155612587ec8ed2c658b2f56b8000879cd2d7"
+    },
+    {
+      "elapsedMilliseconds": 630,
+      "screenshot": "motion-gate-630ms.png",
+      "screenshotSha256": "18ff10b3aff262856268e823d8801a35059b9c4d94598cc2e960dd42735b945c"
+    }
+  ]
+}
