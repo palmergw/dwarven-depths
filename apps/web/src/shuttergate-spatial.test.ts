@@ -5,6 +5,7 @@ import {
   quantizeShuttergatePivot,
   SHUTTERGATE_NODE_POSITIONS,
   SHUTTERGATE_SPATIAL_CONTRACT,
+  SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
   SHUTTERGATE_WORLD_ANCHORS,
   shuttergateOccupancyWorldPoint
 } from "./shuttergate-spatial.js";
@@ -49,6 +50,13 @@ describe("Shuttergate shared-scene projection", () => {
         y: anchor.rasterPivot[1]
       });
     }
+  });
+
+  it("derives upright per-pixel depth from the locked camera matrices", () => {
+    expect(SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y).toBeCloseTo(
+      0.023873517721913432,
+      12
+    );
   });
 
   it("preserves explicit coincident topology aliases", () => {

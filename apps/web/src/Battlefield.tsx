@@ -13,9 +13,17 @@ import {
   type RenderSnapshot
 } from "./render-snapshot.js";
 import {
+  clipUprightBillboardPixels,
+  decodeStaticSceneDepth,
+  type StaticSceneDepth,
+  type StaticSceneDepthContract
+} from "./shuttergate-depth.js";
+import {
   projectShuttergateOccupancyPoint,
   quantizeShuttergatePivot,
-  SHUTTERGATE_NODE_POSITIONS
+  SHUTTERGATE_NODE_POSITIONS,
+  SHUTTERGATE_SPATIAL_CONTRACT,
+  SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y
 } from "./shuttergate-spatial.js";
 
 const WIDTH = 1280;
@@ -52,12 +60,17 @@ const raiderUrl = new URL(
   "../../../assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
   import.meta.url
 ).href;
+const staticSceneDepthUrl = new URL(
+  "../../../assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.bin",
+  import.meta.url
+).href;
 
 export interface RenderPrimitive {
   readonly id: string;
   readonly x: number;
   readonly y: number;
   readonly faction?: RenderEntity["faction"];
+  readonly cameraDepth?: number;
 }
 
 export interface BattlefieldPrimitives {
@@ -224,13 +237,17 @@ export function buildBattlefieldPrimitives(
       const rowOffset = row - (rows - 1) / 2;
       const occupiedPosition =
         snapshot.mapId === "map.shuttergate_hall"
-          ? quantizeShuttergatePivot(
-              projectShuttergateOccupancyPoint(
+          ? (() => {
+              const projected = projectShuttergateOccupancyPoint(
                 entity.nodeId,
                 columnOffset,
                 rowOffset
-              )
-            )
+              );
+              return {
+                ...quantizeShuttergatePivot(projected),
+                cameraDepth: projected.cameraDepth
+              };
+            })()
           : {
               x: position.x + columnOffset * 38,
               y: position.y + rowOffset * 38
@@ -587,12 +604,63 @@ function normalizeAlphaTexture(
   return outputKey;
 }
 
+function createDepthClippedBillboardTexture(
+  scene: Phaser.Scene,
+  sourceKey: string,
+  outputKey: string,
+  primitive: RenderPrimitive,
+  pivotX: number,
+  pivotY: number,
+  staticDepth: StaticSceneDepth
+): string {
+  if (primitive.cameraDepth === undefined) return sourceKey;
+  const source = scene.textures.get(sourceKey).getSourceImage() as
+    | HTMLImageElement
+    | HTMLCanvasElement;
+  if (scene.textures.exists(outputKey)) scene.textures.remove(outputKey);
+  const texture = scene.textures.createCanvas(
+    outputKey,
+    source.width,
+    source.height
+  );
+  if (texture === null)
+    throw new Error(`unable to create depth-clipped texture: ${outputKey}`);
+  const context = texture.context;
+  context.clearRect(0, 0, source.width, source.height);
+  context.drawImage(source, 0, 0);
+  const pixels = context.getImageData(0, 0, source.width, source.height);
+  const clipped = clipUprightBillboardPixels(
+    pixels.data,
+    source.width,
+    source.height,
+    staticDepth,
+    {
+      kind: "upright-billboard",
+      cameraDepth: primitive.cameraDepth,
+      cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+      // The depth raster has no fractional coverage channel. Keep its one-pixel
+      // discontinuities in the authored antialiased foreground pass so #291's
+      // edge compositing stays byte-identical while stable interiors clip.
+      depthEdgeGuardPixels: 1,
+      frameLeft: primitive.x - pivotX,
+      frameTop: primitive.y - pivotY,
+      pivotY
+    },
+    SHUTTERGATE_SPATIAL_CONTRACT.staticDepth.maximumQuantizationError
+  );
+  pixels.data.set(clipped);
+  context.putImageData(pixels, 0, 0);
+  texture.refresh();
+  return outputKey;
+}
+
 function drawBattlefield(
   scene: Phaser.Scene,
   snapshot: RenderSnapshot,
   feedback: CombatFeedback | undefined,
   reduceMotion: boolean,
-  _previousSnapshot: RenderSnapshot | undefined
+  _previousSnapshot: RenderSnapshot | undefined,
+  staticDepth: StaticSceneDepth
 ): void {
   scene.children.removeAll();
   scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base");
@@ -647,14 +715,29 @@ function drawBattlefield(
   for (const entity of [...primitives.entities].sort(
     (left, right) => left.y - right.y
   )) {
-    if (entity.faction === "dwarf")
-      scene.add
-        .image(entity.x, entity.y, wardenTexture)
-        .setOrigin(56 / 112, 66 / 72);
-    else if (entity.faction === "enemy")
-      scene.add
-        .image(entity.x, entity.y, raiderTexture)
-        .setOrigin(40 / 80, 54 / 60);
+    if (entity.faction === "dwarf") {
+      const texture = createDepthClippedBillboardTexture(
+        scene,
+        wardenTexture,
+        `warden-depth-${entity.id}`,
+        entity,
+        56,
+        66,
+        staticDepth
+      );
+      scene.add.image(entity.x, entity.y, texture).setOrigin(56 / 112, 66 / 72);
+    } else if (entity.faction === "enemy") {
+      const texture = createDepthClippedBillboardTexture(
+        scene,
+        raiderTexture,
+        `raider-depth-${entity.id}`,
+        entity,
+        40,
+        54,
+        staticDepth
+      );
+      scene.add.image(entity.x, entity.y, texture).setOrigin(40 / 80, 54 / 60);
+    }
   }
 
   // Shared-camera authored foreground surfaces are depth-clipped against the
@@ -716,6 +799,7 @@ function createBattlefieldRenderer(
   let reduceMotion = initialReduceMotion;
   let previousSnapshot: RenderSnapshot | undefined;
   let scene: Phaser.Scene | undefined;
+  let staticDepth: StaticSceneDepth | undefined;
   const game = new Phaser.Game({
     type: Phaser.CANVAS,
     width: WIDTH,
@@ -741,15 +825,26 @@ function createBattlefieldRenderer(
         this.load.image("entrance-route-rear", entranceRouteRearUrl);
         this.load.image("warden-source", wardenUrl);
         this.load.image("raider-source", raiderUrl);
+        this.load.binary("static-scene-depth", staticSceneDepthUrl);
       },
       create(this: Phaser.Scene) {
         scene = this;
+        const depthBuffer = this.cache.binary.get(
+          "static-scene-depth"
+        ) as unknown;
+        if (!(depthBuffer instanceof ArrayBuffer))
+          throw new Error("missing Shuttergate static scene depth asset");
+        staticDepth = decodeStaticSceneDepth(
+          depthBuffer,
+          SHUTTERGATE_SPATIAL_CONTRACT.staticDepth as unknown as StaticSceneDepthContract
+        );
         drawBattlefield(
           this,
           snapshot,
           feedback,
           reduceMotion,
-          previousSnapshot
+          previousSnapshot,
+          staticDepth
         );
       }
     }
@@ -760,13 +855,14 @@ function createBattlefieldRenderer(
       feedback = nextFeedback;
       reduceMotion = nextReduceMotion;
       previousSnapshot = nextPreviousSnapshot;
-      if (scene !== undefined)
+      if (scene !== undefined && staticDepth !== undefined)
         drawBattlefield(
           scene,
           snapshot,
           feedback,
           reduceMotion,
-          previousSnapshot
+          previousSnapshot,
+          staticDepth
         );
     },
     destroy() {

@@ -115,6 +115,12 @@ export function quantizeShuttergatePivot(point: ProjectedPoint): {
   return { x: Math.floor(point.x + 0.5), y: Math.floor(point.y + 0.5) };
 }
 
+const UPRIGHT_ORIGIN = projectShuttergateWorldPoint({ x: 0, y: 0, z: 0 });
+const UPRIGHT_UNIT = projectShuttergateWorldPoint({ x: 0, y: 0, z: 1 });
+export const SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y =
+  (UPRIGHT_UNIT.cameraDepth - UPRIGHT_ORIGIN.cameraDepth) /
+  (UPRIGHT_UNIT.y - UPRIGHT_ORIGIN.y);
+
 export const SHUTTERGATE_WORLD_ANCHORS: Readonly<Record<string, WorldPoint>> =
   Object.fromEntries(
     Object.entries(spatialContract.anchors).map(([nodeId, anchor]) => [

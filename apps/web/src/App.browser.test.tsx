@@ -1440,10 +1440,34 @@ describe("authoritative web worker", () => {
       ]
     } as const satisfies RenderSnapshot;
     const expected = [
-      { id: "unit.1", faction: "dwarf", x: 1072, y: 234 },
-      { id: "unit.2", faction: "enemy", x: 1110, y: 234 },
-      { id: "unit.3", faction: "dwarf", x: 1148, y: 234 },
-      { id: "unit.4", faction: "enemy", x: 1072, y: 272 }
+      {
+        id: "unit.1",
+        faction: "dwarf",
+        x: 1072,
+        y: 234,
+        cameraDepth: 68.67968530950729
+      },
+      {
+        id: "unit.2",
+        faction: "enemy",
+        x: 1110,
+        y: 234,
+        cameraDepth: 68.67968524685904
+      },
+      {
+        id: "unit.3",
+        faction: "dwarf",
+        x: 1148,
+        y: 234,
+        cameraDepth: 68.67968518421078
+      },
+      {
+        id: "unit.4",
+        faction: "enemy",
+        x: 1072,
+        y: 272,
+        cameraDepth: 66.25091102821374
+      }
     ];
     expect(buildBattlefieldPrimitives(snapshot).entities).toEqual(expected);
     expect(
@@ -1457,7 +1481,15 @@ describe("authoritative web worker", () => {
         ...snapshot,
         entities: [snapshot.entities[2]]
       }).entities
-    ).toEqual([{ id: "unit.1", faction: "dwarf", x: 1110, y: 253 }]);
+    ).toEqual([
+      {
+        id: "unit.1",
+        faction: "dwarf",
+        x: 1110,
+        y: 253,
+        cameraDepth: 67.46529810621226
+      }
+    ]);
   });
 
   it("keeps reduced-motion feedback static and rejects stale replay effects in StrictMode", async () => {

@@ -23,6 +23,16 @@ export interface StaticSceneDepth {
   readonly noSurfaceCode: 65535;
 }
 
+export interface UprightBillboardDepthModel {
+  readonly kind: "upright-billboard";
+  readonly cameraDepth: number;
+  readonly cameraDepthPerPixelY: number;
+  readonly depthEdgeGuardPixels: number;
+  readonly frameLeft: number;
+  readonly frameTop: number;
+  readonly pivotY: number;
+}
+
 function requireSupportedContract(contract: StaticSceneDepthContract): void {
   const [minimum, maximum] = contract.cameraDepthRange;
   if (
@@ -104,4 +114,83 @@ export function staticSceneDepthAt(
   if (code === depth.noSurfaceCode) return Number.POSITIVE_INFINITY;
   const [minimum, maximum] = depth.cameraDepthRange;
   return minimum + (code / STATIC_DEPTH_MAX_CODE) * (maximum - minimum);
+}
+
+export function clipUprightBillboardPixels(
+  source: Uint8ClampedArray,
+  width: number,
+  height: number,
+  depth: StaticSceneDepth,
+  model: UprightBillboardDepthModel,
+  maximumQuantizationError: number
+): Uint8ClampedArray {
+  if (
+    !Number.isInteger(width) ||
+    !Number.isInteger(height) ||
+    width <= 0 ||
+    height <= 0 ||
+    source.length !== width * height * 4
+  )
+    throw new Error("invalid upright billboard pixel buffer");
+  if (
+    model.kind !== "upright-billboard" ||
+    !Number.isFinite(model.cameraDepth) ||
+    !Number.isFinite(model.cameraDepthPerPixelY) ||
+    !Number.isInteger(model.depthEdgeGuardPixels) ||
+    model.depthEdgeGuardPixels < 0 ||
+    !Number.isInteger(model.frameLeft) ||
+    !Number.isInteger(model.frameTop) ||
+    !Number.isInteger(model.pivotY) ||
+    !Number.isFinite(maximumQuantizationError) ||
+    maximumQuantizationError < 0
+  )
+    throw new Error("invalid upright billboard depth model");
+
+  const clipped = new Uint8ClampedArray(source);
+  for (let localY = 0; localY < height; localY += 1) {
+    const frameY = model.frameTop + localY;
+    if (frameY < 0 || frameY >= depth.height) continue;
+    const billboardDepth =
+      model.cameraDepth + (localY - model.pivotY) * model.cameraDepthPerPixelY;
+    for (let localX = 0; localX < width; localX += 1) {
+      const frameX = model.frameLeft + localX;
+      if (frameX < 0 || frameX >= depth.width) continue;
+      const rgbaIndex = (localY * width + localX) * 4;
+      if ((source[rgbaIndex + 3] ?? 0) === 0) continue;
+      const staticDepth = staticSceneDepthAt(depth, frameX, frameY);
+      if (staticDepth >= billboardDepth - maximumQuantizationError) continue;
+      let stableOccluder = true;
+      for (
+        let offsetY = -model.depthEdgeGuardPixels;
+        offsetY <= model.depthEdgeGuardPixels && stableOccluder;
+        offsetY += 1
+      ) {
+        for (
+          let offsetX = -model.depthEdgeGuardPixels;
+          offsetX <= model.depthEdgeGuardPixels;
+          offsetX += 1
+        ) {
+          const neighborX = frameX + offsetX;
+          const neighborY = frameY + offsetY;
+          if (
+            neighborX < 0 ||
+            neighborY < 0 ||
+            neighborX >= depth.width ||
+            neighborY >= depth.height
+          )
+            continue;
+          if (
+            staticSceneDepthAt(depth, neighborX, neighborY) >=
+            billboardDepth - maximumQuantizationError
+          ) {
+            stableOccluder = false;
+            break;
+          }
+        }
+      }
+      if (!stableOccluder) continue;
+      clipped.fill(0, rgbaIndex, rgbaIndex + 4);
+    }
+  }
+  return clipped;
 }

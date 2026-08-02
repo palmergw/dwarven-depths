@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clipUprightBillboardPixels,
   decodeStaticSceneDepth,
   STATIC_DEPTH_HEADER_BYTES,
   type StaticSceneDepthContract,
@@ -76,5 +77,171 @@ describe("Shuttergate static scene depth", () => {
     expect(() => decodeStaticSceneDepth(reserved, CONTRACT)).toThrow(
       /reserved/
     );
+  });
+
+  it("clips only opaque billboard pixels behind camera-nearer static depth", () => {
+    const depth = decodeStaticSceneDepth(
+      fixture([16384, 32767, 65535, 49151]),
+      CONTRACT
+    );
+    const source = new Uint8ClampedArray([
+      1, 2, 3, 255, 4, 5, 6, 128, 7, 8, 9, 255, 10, 11, 12, 255
+    ]);
+    const clipped = clipUprightBillboardPixels(
+      source,
+      2,
+      2,
+      depth,
+      {
+        kind: "upright-billboard",
+        cameraDepth: 64,
+        cameraDepthPerPixelY: 0,
+        depthEdgeGuardPixels: 0,
+        frameLeft: 0,
+        frameTop: 0,
+        pivotY: 0
+      },
+      CONTRACT.maximumQuantizationError
+    );
+    expect([...clipped]).toEqual([
+      0, 0, 0, 0, 4, 5, 6, 128, 7, 8, 9, 255, 10, 11, 12, 255
+    ]);
+    expect([...source]).toEqual([
+      1, 2, 3, 255, 4, 5, 6, 128, 7, 8, 9, 255, 10, 11, 12, 255
+    ]);
+  });
+
+  it("uses the upright plane slope instead of one depth for the whole billboard", () => {
+    const depth = decodeStaticSceneDepth(
+      fixture([30720, 65535, 30720, 65535]),
+      CONTRACT
+    );
+    const source = new Uint8ClampedArray([1, 2, 3, 255, 4, 5, 6, 255]);
+    expect([
+      ...clipUprightBillboardPixels(
+        source,
+        1,
+        2,
+        depth,
+        {
+          kind: "upright-billboard",
+          cameraDepth: 64,
+          cameraDepthPerPixelY: 20,
+          depthEdgeGuardPixels: 0,
+          frameLeft: 0,
+          frameTop: 0,
+          pivotY: 1
+        },
+        CONTRACT.maximumQuantizationError
+      )
+    ]).toEqual([1, 2, 3, 255, 0, 0, 0, 0]);
+  });
+
+  it("guards unstable static-depth edges used by antialiased authored surfaces", () => {
+    const depth = decodeStaticSceneDepth(
+      fixture([0, 65535, 65535, 65535]),
+      CONTRACT
+    );
+    const source = new Uint8ClampedArray([1, 2, 3, 255]);
+    expect([
+      ...clipUprightBillboardPixels(
+        source,
+        1,
+        1,
+        depth,
+        {
+          kind: "upright-billboard",
+          cameraDepth: 64,
+          cameraDepthPerPixelY: 0,
+          depthEdgeGuardPixels: 1,
+          frameLeft: 0,
+          frameTop: 0,
+          pivotY: 0
+        },
+        CONTRACT.maximumQuantizationError
+      )
+    ]).toEqual([...source]);
+  });
+
+  it("preserves quantization-equal, transparent, and off-frame pixels", () => {
+    const depth = decodeStaticSceneDepth(fixture([32767, 0, 0, 0]), CONTRACT);
+    const equalDepth = staticSceneDepthAt(depth, 0, 0);
+    const source = new Uint8ClampedArray([20, 21, 22, 255, 30, 31, 32, 0]);
+    expect([
+      ...clipUprightBillboardPixels(
+        source,
+        2,
+        1,
+        depth,
+        {
+          kind: "upright-billboard",
+          cameraDepth: equalDepth + CONTRACT.maximumQuantizationError,
+          cameraDepthPerPixelY: 0,
+          depthEdgeGuardPixels: 0,
+          frameLeft: 0,
+          frameTop: 0,
+          pivotY: 0
+        },
+        CONTRACT.maximumQuantizationError
+      )
+    ]).toEqual([...source]);
+    expect([
+      ...clipUprightBillboardPixels(
+        source,
+        2,
+        1,
+        depth,
+        {
+          kind: "upright-billboard",
+          cameraDepth: 128,
+          cameraDepthPerPixelY: 0,
+          depthEdgeGuardPixels: 0,
+          frameLeft: -2,
+          frameTop: 0,
+          pivotY: 0
+        },
+        CONTRACT.maximumQuantizationError
+      )
+    ]).toEqual([...source]);
+  });
+
+  it("strictly rejects malformed billboard models and buffers", () => {
+    const depth = decodeStaticSceneDepth(fixture([0, 0, 0, 0]), CONTRACT);
+    expect(() =>
+      clipUprightBillboardPixels(
+        new Uint8ClampedArray(3),
+        1,
+        1,
+        depth,
+        {
+          kind: "upright-billboard",
+          cameraDepth: 1,
+          cameraDepthPerPixelY: 0,
+          depthEdgeGuardPixels: 0,
+          frameLeft: 0,
+          frameTop: 0,
+          pivotY: 0
+        },
+        CONTRACT.maximumQuantizationError
+      )
+    ).toThrow(/pixel buffer/);
+    expect(() =>
+      clipUprightBillboardPixels(
+        new Uint8ClampedArray(4),
+        1,
+        1,
+        depth,
+        {
+          kind: "upright-billboard",
+          cameraDepth: Number.NaN,
+          cameraDepthPerPixelY: 0,
+          depthEdgeGuardPixels: 0,
+          frameLeft: 0,
+          frameTop: 0,
+          pivotY: 0
+        },
+        CONTRACT.maximumQuantizationError
+      )
+    ).toThrow(/depth model/);
   });
 });
