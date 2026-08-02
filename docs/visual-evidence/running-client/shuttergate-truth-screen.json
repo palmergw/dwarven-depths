@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "captureId": "capture-287-a0edfb8fc601cd77b000",
-  "sourceHead": "723b94f19093a2a7d494aaff8bc9c7c6302dd2d0",
+  "captureId": "capture-287-f52b466b7a1dddc706e5",
+  "sourceHead": "b40219832ddc8ac8facca77928dc90dbdea76f55",
   "capture": {
     "screenshot": "shuttergate-truth-screen.png",
-    "screenshotSha256": "a880d8ada802c46cf444d0695adfedf29c4481046329abb39dcd5009e684ea6a",
+    "screenshotSha256": "efef3884fe4dc83d44af1495d410390e31d60dcfae82943af7cc09cf1a395d7a",
     "viewport": [1440, 900],
     "devicePixelRatio": 1,
     "route": "checkpoint -> preparation -> paused combat"
@@ -12,7 +12,7 @@
   "environmentManifest": {
     "id": "manifest.web.shuttergate_environment",
     "path": "apps/web/src/shuttergate-environment-manifest.json",
-    "sha256": "061d04d789996e9e4b473150c1b10a43acf672e6742327023eec23d7a40e8860",
+    "sha256": "f7db919ff755642957d5686840d2a26105b2ae0bd52096867959cdb8fb855457",
     "prohibitedRolesAbsent": true
   },
   "visualAssetAudit": {
@@ -20,7 +20,8 @@
     "sourceSha256": {
       "dwarf": "a10be62e061241683ba598ed4d9032880704a5f0c24bf38f9eff0a9bd138af4a",
       "enemy": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83",
-      "foreground": "2b730ebba39653753b0f9f657dc57ae433c74933939a9d73cd88b5870c3a0154",
+      "groundForeground": "dba694a66f32dab4e7d57e3bf8f3a14821b3f8097a93c407705cd8233206baa8",
+      "foreground": "3bf32536b020eb8d7c9e64df6d5ed75a34be01053027b3ac93ada7b9944d3c76",
       "rear": "35dd8c5b5df1b4df0290c5b0e826084a0937992f89e4e72cbcea5f8c962ee24b"
     },
     "assets": {
@@ -40,11 +41,17 @@
         "fullAlphaPixels": 1135,
         "partialAlphaPixels": 206
       },
+      "groundForeground": {
+        "width": 1280,
+        "height": 720,
+        "alphaBounds": [1099, 227, 18, 26],
+        "nonzeroAlphaPixels": 125
+      },
       "foreground": {
         "width": 1280,
         "height": 720,
         "alphaBounds": [836, 185, 444, 413],
-        "nonzeroAlphaPixels": 89340
+        "nonzeroAlphaPixels": 89127
       },
       "rear": {
         "width": 1280,
@@ -66,6 +73,7 @@
         "fullAlphaRatio": 0.9163126593033135,
         "intersectsWorldViewport": true,
         "subjectPixelsOverRearArtifact": 0,
+        "subjectPixelsOverGroundArtifact": 0,
         "subjectPixelsBehindForegroundArtifact": 0,
         "matchesRuntimeRegistry": true
       },
@@ -81,7 +89,8 @@
         "fullAlphaRatio": 0.8463832960477256,
         "intersectsWorldViewport": true,
         "subjectPixelsOverRearArtifact": 5,
-        "subjectPixelsBehindForegroundArtifact": 184,
+        "subjectPixelsOverGroundArtifact": 110,
+        "subjectPixelsBehindForegroundArtifact": 66,
         "matchesRuntimeRegistry": true
       }
     ],
@@ -89,9 +98,10 @@
     "depthResolution": {
       "intent": "rear-visible-and-foreground-occluded",
       "rearOverlapPixels": 5,
-      "foregroundOcclusionPixels": 184,
-      "worldRingOcclusionPixels": 258,
-      "transientEffectOcclusionPixels": 538,
+      "subjectGroundOverlapPixels": 110,
+      "foregroundOcclusionPixels": 66,
+      "worldRingOcclusionPixels": 243,
+      "transientEffectOcclusionPixels": 536,
       "matchesRuntime": true
     }
   },
@@ -150,6 +160,7 @@
         "environment-base-and-rear-architecture",
         "world-rings",
         "world-effects",
+        "entrance-route-ground-foreground",
         "world-subjects",
         "entrance-shell",
         "entrance-route-foreground",
@@ -162,17 +173,19 @@
         "entityId": "entity.enemy.shield_slam_target",
         "subjectAlphaPixels": 1341,
         "subjectPixelsOverRearArtifact": 5,
-        "subjectPixelsBehindForegroundArtifact": 184,
-        "worldRingPixelsBehindForegroundArtifact": 258,
-        "transientEffectPixelsBehindForegroundArtifact": 538
+        "subjectPixelsOverGroundArtifact": 110,
+        "subjectPixelsBehindForegroundArtifact": 66,
+        "worldRingPixelsBehindForegroundArtifact": 243,
+        "transientEffectPixelsBehindForegroundArtifact": 536
       },
       "depthResolution": {
         "intent": "rear-visible-and-foreground-occluded",
         "actualAnchor": [1110, 253],
         "rearOverlapPixels": 5,
-        "foregroundOcclusionPixels": 184,
-        "worldRingOcclusionPixels": 258,
-        "transientEffectOcclusionPixels": 538
+        "subjectGroundOverlapPixels": 110,
+        "foregroundOcclusionPixels": 66,
+        "worldRingOcclusionPixels": 243,
+        "transientEffectOcclusionPixels": 536
       }
     },
     "alignment": {
