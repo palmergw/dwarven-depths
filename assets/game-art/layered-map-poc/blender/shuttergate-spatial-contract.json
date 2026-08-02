@@ -1,0 +1,113 @@
+{
+  "anchors": {
+    "node.shuttergate_east_entry": {
+      "cameraDepth": 64.322814941,
+      "coincidentGroup": "shuttergate-entry-alias",
+      "objectName": "ANCHOR_node.shuttergate_east_entry",
+      "projectedPivot": [1053.999977, 301.999998],
+      "rasterPivot": [1054, 302],
+      "world": [8.53485775, 12.75995636, 0.389999986]
+    },
+    "node.shuttergate_east_hall": {
+      "cameraDepth": 62.533191681,
+      "coincidentGroup": "shuttergate-hall-alias",
+      "objectName": "ANCHOR_node.shuttergate_east_hall",
+      "projectedPivot": [837.999992, 330.000002],
+      "rasterPivot": [838, 330],
+      "world": [3.13837862, 5.943180084, 0.389999986]
+    },
+    "node.shuttergate_gate": {
+      "cameraDepth": 67.465301514,
+      "coincidentGroup": null,
+      "objectName": "ANCHOR_node.shuttergate_gate",
+      "projectedPivot": [1109.501114, 252.833508],
+      "rasterPivot": [1110, 253],
+      "world": [8.0, 17.0, 0.389999986]
+    },
+    "node.shuttergate_keep": {
+      "cameraDepth": 57.931304932,
+      "coincidentGroup": null,
+      "objectName": "ANCHOR_node.shuttergate_keep",
+      "projectedPivot": [432.000008, 401.999995],
+      "rasterPivot": [432, 402],
+      "world": [-6.118225098, -8.018285751, 0.389999986]
+    },
+    "node.shuttergate_keep_guard": {
+      "cameraDepth": 53.201587677,
+      "coincidentGroup": null,
+      "objectName": "ANCHOR_node.shuttergate_keep_guard",
+      "projectedPivot": [364.000015, 476.000004],
+      "rasterPivot": [364, 476],
+      "world": [-4.83292675, -14.02907753, 0.389999986]
+    },
+    "node.shuttergate_north_guard": {
+      "cameraDepth": 63.172344208,
+      "coincidentGroup": null,
+      "objectName": "ANCHOR_node.shuttergate_north_guard",
+      "projectedPivot": [605.00001, 320.000002],
+      "rasterPivot": [605, 320],
+      "world": [-4.523356438, 0.973539114, 0.389999986]
+    },
+    "node.shuttergate_west_entry": {
+      "cameraDepth": 64.322814941,
+      "coincidentGroup": "shuttergate-entry-alias",
+      "objectName": "ANCHOR_node.shuttergate_west_entry",
+      "projectedPivot": [1053.999977, 301.999998],
+      "rasterPivot": [1054, 302],
+      "world": [8.53485775, 12.75995636, 0.389999986]
+    },
+    "node.shuttergate_west_hall": {
+      "cameraDepth": 62.533191681,
+      "coincidentGroup": "shuttergate-hall-alias",
+      "objectName": "ANCHOR_node.shuttergate_west_hall",
+      "projectedPivot": [837.999992, 330.000002],
+      "rasterPivot": [838, 330],
+      "world": [3.13837862, 5.943180084, 0.389999986]
+    }
+  },
+  "camera": {
+    "cameraToClipRowMajor": [
+      [0.039999999106, 0.0, 0.0, -0.0],
+      [0.0, 0.071111112833, 0.0, -0.0],
+      [0.0, 0.0, -0.002000199864, -1.000199913979],
+      [0.0, 0.0, 0.0, 1.0]
+    ],
+    "clip": [0.10000000149011612, 1000.0],
+    "name": "CAMERA_Shuttergate_Ortho",
+    "orthoScale": 50.0,
+    "projection": "orthographic",
+    "shift": [0.0, 0.0],
+    "worldToCameraRowMajor": [
+      [0.791505336761, 0.611162424088, -2.9802e-8, 1.618083119392],
+      [-0.318710029125, 0.412755519152, 0.853262543678, -0.61374515295],
+      [0.52148193121, -0.675361692905, 0.521481692791, -60.359382629395],
+      [-0.0, 0.0, -0.0, 1.0]
+    ],
+    "worldToClipFloat64LeSha256": "7c4fcf042d7b049b8d516dab5df985af5f2af87e9b9fe49dd1d7be31356ee522",
+    "worldToClipRowMajor": [
+      [0.031660214067, 0.02444649674, -1.192e-9, 0.064723320305],
+      [-0.02266382426, 0.02935150452, 0.060676448047, -0.043644100428],
+      [-0.001043068129, 0.001350858365, -0.001043067663, -0.879469096661],
+      [0.0, 0.0, 0.0, 1.0]
+    ]
+  },
+  "frame": {
+    "height": 720,
+    "origin": "top-left",
+    "pixelAspect": [1.0, 1.0],
+    "pixelCenter": "integer-plus-0.5",
+    "rasterQuantization": "floor(value-plus-0.5)",
+    "width": 1280
+  },
+  "mapId": "map.shuttergate_hall",
+  "schemaVersion": 1,
+  "source": {
+    "blendSha256": "a59336b2c90ac1f2973e47395392d4dbc066bd60af987f92db00340447bfb85c",
+    "builderSha256": "8f81e0c1259a05608cf7edd865048672b81579078c68572bc2410414e5dd5c8a"
+  },
+  "world": {
+    "cameraForwardAxis": "-Z",
+    "handedness": "right",
+    "upAxis": "+Z"
+  }
+}

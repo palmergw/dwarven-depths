@@ -12,6 +12,7 @@ import {
   type RenderEntity,
   type RenderSnapshot
 } from "./render-snapshot.js";
+import { SHUTTERGATE_NODE_POSITIONS } from "./shuttergate-spatial.js";
 
 const WIDTH = 1280;
 const HEIGHT = 720;
@@ -47,20 +48,6 @@ const raiderUrl = new URL(
   "../../../assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
   import.meta.url
 ).href;
-
-const SHUTTERGATE_NODE_POSITIONS: Readonly<
-  Record<string, { readonly x: number; readonly y: number }>
-> = {
-  "node.shuttergate_west_entry": { x: 1054, y: 302 },
-  "node.shuttergate_west_hall": { x: 838, y: 330 },
-  "node.shuttergate_east_entry": { x: 1054, y: 302 },
-  "node.shuttergate_east_hall": { x: 838, y: 330 },
-  // Exact shared-camera projection of Blender route point (8.0, 17.0, 0.39).
-  "node.shuttergate_gate": { x: 1110, y: 253 },
-  "node.shuttergate_north_guard": { x: 605, y: 320 },
-  "node.shuttergate_keep": { x: 432, y: 402 },
-  "node.shuttergate_keep_guard": { x: 364, y: 476 }
-};
 
 export interface RenderPrimitive {
   readonly id: string;

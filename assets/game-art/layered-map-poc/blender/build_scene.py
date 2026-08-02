@@ -7,6 +7,7 @@ import json
 import math
 import random
 import re
+import struct
 import subprocess
 import sys
 import tempfile
@@ -20,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 OUT = HERE / "outputs"
 BLEND = HERE / "layered-shuttergate.blend"
 MANIFEST = HERE / "render-manifest.json"
+SPATIAL_CONTRACT = HERE / "shuttergate-spatial-contract.json"
 COMPOSITOR = HERE / "compose_reference.py"
 REQUIREMENTS = HERE.parent / "requirements.lock"
 CAMERA_ORTHO_SCALE = 50.0
@@ -38,6 +40,25 @@ APPROACH_SUBJECT_FOREGROUND_OBJECTS = {
 APPROACH_GROUND_OCCLUDER_OBJECTS = {"ShoulderRubble_5", "ShoulderRubble_7"}
 APPROACH_SUBJECT_WORLD_POINT = (8.0, 17.0, 0.39)
 APPROACH_REAR_OBJECTS = {"TunnelBackWall", "TunnelVoid", "TunnelGlow"}
+GAMEPLAY_ANCHOR_WORLD = {
+    # Bootstrap the approved #287 integer pivots onto the authored ground plane.
+    # Coincident west/east aliases preserve the simulation topology without
+    # changing the approved nonbranching tutorial presentation.
+    "node.shuttergate_west_entry": (8.53485775, 12.75995636, 0.39),
+    "node.shuttergate_west_hall": (3.13837862, 5.943180084, 0.39),
+    "node.shuttergate_east_entry": (8.53485775, 12.75995636, 0.39),
+    "node.shuttergate_east_hall": (3.13837862, 5.943180084, 0.39),
+    "node.shuttergate_gate": (8.0, 17.0, 0.39),
+    "node.shuttergate_north_guard": (-4.523356438, 0.973539114, 0.39),
+    "node.shuttergate_keep": (-6.118225098, -8.018285751, 0.39),
+    "node.shuttergate_keep_guard": (-4.83292675, -14.02907753, 0.39),
+}
+COINCIDENT_GROUPS = {
+    "node.shuttergate_west_entry": "shuttergate-entry-alias",
+    "node.shuttergate_east_entry": "shuttergate-entry-alias",
+    "node.shuttergate_west_hall": "shuttergate-hall-alias",
+    "node.shuttergate_east_hall": "shuttergate-hall-alias",
+}
 random.seed(286)
 
 OUTPUT_CONTRACT = {
@@ -77,6 +98,75 @@ def biome_json(data):
         return "[" + ", ".join(values) + "]"
 
     return numeric_array.sub(compact, text) + "\n"
+
+
+def matrix_rows(matrix):
+    return [[round(float(matrix[row][column]), 12) for column in range(4)] for row in range(4)]
+
+
+def build_spatial_contract(scene, camera_obj):
+    world_to_camera = camera_obj.matrix_world.normalized().inverted()
+    camera_to_clip = camera_obj.calc_matrix_camera(
+        bpy.context.evaluated_depsgraph_get(),
+        x=scene.render.resolution_x,
+        y=scene.render.resolution_y,
+        scale_x=scene.render.pixel_aspect_x,
+        scale_y=scene.render.pixel_aspect_y,
+    )
+    world_to_clip = camera_to_clip @ world_to_camera
+    packed_matrix = b"".join(
+        struct.pack("<d", float(world_to_clip[row][column]))
+        for row in range(4)
+        for column in range(4)
+    )
+    anchors = {}
+    for node_id in sorted(GAMEPLAY_ANCHOR_WORLD):
+        object_name = f"ANCHOR_{node_id}"
+        anchor = bpy.data.objects[object_name]
+        world = anchor.matrix_world.translation
+        camera_point = world_to_camera @ world
+        clip = world_to_clip @ world.to_4d()
+        ndc_x = clip.x / clip.w
+        ndc_y = clip.y / clip.w
+        screen_x = (ndc_x * 0.5 + 0.5) * scene.render.resolution_x
+        screen_y = (1.0 - (ndc_y * 0.5 + 0.5)) * scene.render.resolution_y
+        anchors[node_id] = {
+            "objectName": object_name,
+            "world": [round(float(value), 9) for value in world],
+            "cameraDepth": round(float(-camera_point.z), 9),
+            "projectedPivot": [round(float(screen_x), 6), round(float(screen_y), 6)],
+            "rasterPivot": [math.floor(screen_x + 0.5), math.floor(screen_y + 0.5)],
+            "coincidentGroup": COINCIDENT_GROUPS.get(node_id),
+        }
+    return {
+        "schemaVersion": 1,
+        "mapId": "map.shuttergate_hall",
+        "frame": {
+            "width": scene.render.resolution_x,
+            "height": scene.render.resolution_y,
+            "pixelAspect": [scene.render.pixel_aspect_x, scene.render.pixel_aspect_y],
+            "origin": "top-left",
+            "pixelCenter": "integer-plus-0.5",
+            "rasterQuantization": "floor(value-plus-0.5)",
+        },
+        "world": {"handedness": "right", "upAxis": "+Z", "cameraForwardAxis": "-Z"},
+        "camera": {
+            "name": camera_obj.name,
+            "projection": "orthographic",
+            "orthoScale": camera_obj.data.ortho_scale,
+            "shift": [camera_obj.data.shift_x, camera_obj.data.shift_y],
+            "clip": [camera_obj.data.clip_start, camera_obj.data.clip_end],
+            "worldToCameraRowMajor": matrix_rows(world_to_camera),
+            "cameraToClipRowMajor": matrix_rows(camera_to_clip),
+            "worldToClipRowMajor": matrix_rows(world_to_clip),
+            "worldToClipFloat64LeSha256": hashlib.sha256(packed_matrix).hexdigest(),
+        },
+        "anchors": anchors,
+        "source": {
+            "builderSha256": sha256(Path(__file__).resolve()),
+            "blendSha256": sha256(BLEND),
+        },
+    }
 
 
 def verify_image(path, alpha_semantics):
@@ -141,6 +231,7 @@ def pixel_digest(path):
 def verify_existing():
     assert BLEND.is_file(), f"missing editable source: {BLEND}"
     assert MANIFEST.is_file(), f"missing render manifest: {MANIFEST}"
+    assert SPATIAL_CONTRACT.is_file(), f"missing spatial contract: {SPATIAL_CONTRACT}"
     manifest = json.loads(MANIFEST.read_text())
     assert set(manifest) == {"schemaVersion", "blenderVersion", "camera", "collections", "source", "sourceAssets", "outputs"}
     assert manifest["schemaVersion"] == 1
@@ -153,16 +244,26 @@ def verify_existing():
     assert len(cameras) == 1 and cameras[0].name == "CAMERA_Shuttergate_Ortho"
     assert scene.camera == cameras[0]
     assert cameras[0].data.type == "ORTHO" and cameras[0].data.ortho_scale == CAMERA_ORTHO_SCALE
-    assert scene.get("layer_contract") == "issue-286-shared-camera-v1"
+    assert scene.get("layer_contract") == "issue-292-shared-scene-v2"
     expected_collections = {
         "ENVIRONMENT_BASE",
         "FOREGROUND_ENTRANCE",
         "DIAGNOSTIC_ROUTE_SUBJECTS",
         "PRODUCTION_ROUTE_SUBJECTS",
         "SHARED_LIGHTING",
+        "GAMEPLAY_ANCHORS",
     }
     assert set(manifest["collections"]) == expected_collections
     assert expected_collections == set(bpy.data.collections.keys())
+    anchor_objects = bpy.data.collections["GAMEPLAY_ANCHORS"].objects
+    assert {obj.name for obj in anchor_objects} == {
+        f"ANCHOR_{node_id}" for node_id in GAMEPLAY_ANCHOR_WORLD
+    }
+    for node_id, expected_world in GAMEPLAY_ANCHOR_WORLD.items():
+        actual = bpy.data.objects[f"ANCHOR_{node_id}"].location
+        assert all(abs(float(actual[index]) - expected_world[index]) < 1e-6 for index in range(3))
+    spatial_contract = json.loads(SPATIAL_CONTRACT.read_text())
+    assert spatial_contract == build_spatial_contract(scene, cameras[0])
     assert manifest["camera"] == {
         "name": cameras[0].name,
         "projection": "orthographic",
@@ -587,6 +688,7 @@ ENTRANCE = collection("FOREGROUND_ENTRANCE")
 SUBJECTS = collection("DIAGNOSTIC_ROUTE_SUBJECTS")
 PRODUCTION_SUBJECTS = collection("PRODUCTION_ROUTE_SUBJECTS")
 LIGHTS = collection("SHARED_LIGHTING")
+ANCHORS = collection("GAMEPLAY_ANCHORS")
 
 stone = mat("Basalt", (0.06, 0.085, 0.11), roughness=0.9, texture_scale=3.5)
 stone2 = mat("CarvedStone", (0.12, 0.15, 0.17), roughness=0.85, texture_scale=5.0)
@@ -730,6 +832,15 @@ for index, (x, y) in enumerate(((8, 17.5), (7.5, 13.5), (5, 10), (1, 7.5), (-3, 
 
 
 shared_camera = camera()
+for node_id, world in GAMEPLAY_ANCHOR_WORLD.items():
+    anchor = bpy.data.objects.new(f"ANCHOR_{node_id}", None)
+    anchor.location = world
+    anchor.empty_display_type = "PLAIN_AXES"
+    anchor.empty_display_size = 0.35
+    anchor["node_id"] = node_id
+    if node_id in COINCIDENT_GROUPS:
+        anchor["coincident_group"] = COINCIDENT_GROUPS[node_id]
+    ANCHORS.objects.link(anchor)
 warden_material = sprite_material("ApprovedIronWardenIdle", WARDEN_SOURCE)
 raider_material = sprite_material("ApprovedMineRaiderIdle", RAIDER_SOURCE)
 billboard_sprite(
@@ -775,7 +886,7 @@ scene.render.film_transparent = False
 scene.view_settings.look = "AgX - Medium High Contrast"
 scene.world = bpy.data.worlds.new("CavernWorld")
 scene.world.color = (0.008, 0.012, 0.020)
-scene["layer_contract"] = "issue-286-shared-camera-v1"
+scene["layer_contract"] = "issue-292-shared-scene-v2"
 scene["presentation_only"] = True
 
 # Save the editable source with all collections visible, then emit same-camera passes.
@@ -808,7 +919,7 @@ manifest = {
         "rotationEuler": [round(value, 6) for value in shared_camera.rotation_euler],
     },
     "collections": sorted(
-        (ENV.name, ENTRANCE.name, SUBJECTS.name, PRODUCTION_SUBJECTS.name, LIGHTS.name)
+        (ENV.name, ENTRANCE.name, SUBJECTS.name, PRODUCTION_SUBJECTS.name, LIGHTS.name, ANCHORS.name)
     ),
     "source": {
         "builderSha256": sha256(Path(__file__).resolve()),
@@ -844,5 +955,6 @@ manifest = {
     },
 }
 MANIFEST.write_text(biome_json(manifest))
+SPATIAL_CONTRACT.write_text(biome_json(build_spatial_contract(scene, shared_camera)))
 verify_or_exit()
 print("SHARED_SCENE_RENDER_OK", BLEND, OUT)

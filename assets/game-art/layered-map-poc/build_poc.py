@@ -12,6 +12,7 @@ FRAME=(1280,720)
 BLENDER_ROOT=PACKAGE/'blender'
 BLENDER_OUTPUTS=BLENDER_ROOT/'outputs'
 BLENDER_MANIFEST=BLENDER_ROOT/'render-manifest.json'
+BLENDER_SPATIAL_CONTRACT=BLENDER_ROOT/'shuttergate-spatial-contract.json'
 BLENDER_SOURCE=BLENDER_ROOT/'layered-shuttergate.blend'
 BLENDER_BUILDER=BLENDER_ROOT/'build_scene.py'
 BLENDER_COMPOSITOR=BLENDER_ROOT/'compose_reference.py'
@@ -79,12 +80,21 @@ def load_artifact(path:Path)->Image.Image:
 
 def assert_authoring_reproducible()->None:
  manifest=json.loads(BLENDER_MANIFEST.read_text())
+ spatial=json.loads(BLENDER_SPATIAL_CONTRACT.read_text())
  if set(manifest)!={'schemaVersion','blenderVersion','camera','collections','source','sourceAssets','outputs'}:
   raise ValueError('unexpected Blender manifest shape')
  if manifest['schemaVersion']!=1 or manifest['camera'].get('name')!='CAMERA_Shuttergate_Ortho' or manifest['camera'].get('projection')!='orthographic':
   raise ValueError('unexpected shared-camera contract')
  if manifest['source']!={'builderSha256':sha(BLENDER_BUILDER),'blendSha256':sha(BLENDER_SOURCE),'compositorSha256':sha(BLENDER_COMPOSITOR)}:
   raise ValueError('Blender editable-source binding drift')
+ if set(spatial)!={'schemaVersion','mapId','frame','world','camera','anchors','source'} or spatial['schemaVersion']!=1 or spatial['mapId']!='map.shuttergate_hall':
+  raise ValueError('unexpected Shuttergate spatial contract')
+ if spatial['source']!={'builderSha256':sha(BLENDER_BUILDER),'blendSha256':sha(BLENDER_SOURCE)}:
+  raise ValueError('Shuttergate spatial source binding drift')
+ expected_node_ids={'node.shuttergate_west_entry','node.shuttergate_west_hall','node.shuttergate_east_entry','node.shuttergate_east_hall','node.shuttergate_gate','node.shuttergate_north_guard','node.shuttergate_keep','node.shuttergate_keep_guard'}
+ if set(spatial['anchors'])!=expected_node_ids:raise ValueError('Shuttergate spatial node coverage drift')
+ for node_id,anchor in spatial['anchors'].items():
+  if set(anchor)!={'objectName','world','cameraDepth','projectedPivot','rasterPivot','coincidentGroup'}:raise ValueError(f'unexpected Shuttergate anchor shape: {node_id}')
  expected_outputs={'environment-base.png','entrance-shell.png','entrance-route-ground-foreground.png','entrance-route-foreground.png','entrance-route-rear.png','route-subjects.png','production-sprite-subjects.png','reference-plate.png','route-traversal.png','production-sprite-traversal.png'}
  if set(manifest['outputs'])!=expected_outputs:raise ValueError('unexpected Blender output set')
  for record in manifest['outputs'].values():
@@ -312,7 +322,7 @@ def build(out_root:Path)->list[Path]:
   'presentationLighting':{'raider':'opacity-normalized warm entrance adaptation plus contact shadow and hostile world ring','warden':'opacity-normalized bounded brightness/contrast adaptation plus contact shadow and allied world ring','baseSpriteCanvasPivotOrSupportChanged':False},
   'nonClaims':['large-map scale','runtime integration','simulation authority','HUD approval','final animation']}
  cp=meta/'layered-map-contract.json';write_json(cp,contract);files.append(cp)
- provenance_inputs=[BASE,REFERENCE,*ARTIFACTS.values(),BLENDER_BUILDER,BLENDER_COMPOSITOR,REVIEW_PACKET_BUILDER,BLENDER_SOURCE,BLENDER_MANIFEST,BLENDER_OUTPUTS/'entrance-route-ground-foreground.png',BLENDER_OUTPUTS/'entrance-route-foreground.png',BLENDER_OUTPUTS/'entrance-route-rear.png',BLENDER_OUTPUTS/'production-sprite-subjects.png',BLENDER_OUTPUTS/'production-sprite-traversal.png',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
+ provenance_inputs=[BASE,REFERENCE,*ARTIFACTS.values(),BLENDER_BUILDER,BLENDER_COMPOSITOR,REVIEW_PACKET_BUILDER,BLENDER_SOURCE,BLENDER_MANIFEST,BLENDER_SPATIAL_CONTRACT,BLENDER_OUTPUTS/'entrance-route-ground-foreground.png',BLENDER_OUTPUTS/'entrance-route-foreground.png',BLENDER_OUTPUTS/'entrance-route-rear.png',BLENDER_OUTPUTS/'production-sprite-subjects.png',BLENDER_OUTPUTS/'production-sprite-traversal.png',PACKAGE/'requirements.lock',*(x[0] for x in SPRITES.values())]
  provenance={'generator':'assets/game-art/layered-map-poc/build_poc.py','generatorSha256':sha(Path(__file__)),'authoringModel':'single editable Blender scene and orthographic camera; complete plate derives from same-camera environment plus canonical RGBA passes','environment':{'blender':'4.3.2','cycles':'CPU 16 samples, denoising disabled','pillow':'12.3.0','fonts':{str(path):digest for path,digest in FONT_HASHES.items()}},'inputs':{str(p.relative_to(ROOT)):sha(p) for p in provenance_inputs}}
  pp=meta/'provenance.json';write_json(pp,provenance);files.append(pp)
  manifest={'schemaVersion':1,'files':{str(p.relative_to(out_root)):sha(p) for p in sorted(files)}}
