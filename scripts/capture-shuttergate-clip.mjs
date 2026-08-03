@@ -34,6 +34,25 @@ const { stdout } = await execFile("git", ["rev-parse", "HEAD"], {
 });
 const sourceHead = stdout.trim();
 
+async function resumeAndObserveTick(page, startingTick) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await page.getByRole("button", { name: "Resume combat" }).click();
+    try {
+      await page.waitForFunction(
+        (tick) =>
+          (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick ?? -1) > tick,
+        startingTick,
+        { timeout: 5_000 }
+      );
+      return;
+    } catch (error) {
+      if (attempt > 0) throw error;
+      const pause = page.getByRole("button", { name: "Pause combat" });
+      if (await pause.isVisible()) await pause.click();
+    }
+  }
+}
+
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
   viewport: { width: 1440, height: 900 },
@@ -65,12 +84,7 @@ try {
   await page.waitForTimeout(500);
   await page.getByRole("button", { name: "Nearest", exact: true }).click();
   await page.waitForTimeout(900);
-  await page.getByRole("button", { name: "Resume combat" }).click();
-  await page.waitForFunction(
-    (tick) =>
-      (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick ?? -1) > tick,
-    startingTick
-  );
+  await resumeAndObserveTick(page, startingTick);
   await page.waitForTimeout(2900);
   await page.getByRole("button", { name: "Pause combat" }).click();
   await page.getByRole("button", { name: "Resume combat" }).waitFor();
