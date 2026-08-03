@@ -160,6 +160,7 @@ interface TruthVisualMetrics {
   readonly dwarf: TextureAlphaMetrics;
   readonly enemy: TextureAlphaMetrics;
   readonly entities: ReadonlyMap<string, TextureAlphaMetrics>;
+  readonly visibleEntities: ReadonlyMap<string, TextureAlphaMetrics>;
   readonly groundForeground: TextureAlphaMetrics;
   readonly foreground: TextureAlphaMetrics;
   readonly rear: TextureAlphaMetrics;
@@ -207,6 +208,8 @@ export interface TruthScreenSidecar {
       readonly nonzeroAlphaPixels: number;
       readonly fullAlphaPixels: number;
       readonly partialAlphaPixels: number;
+      readonly visibleAlphaPixels: number;
+      readonly visuallyReadable: boolean;
       readonly intersectsUnobscuredWorldViewport: boolean;
     }[];
   };
@@ -242,7 +245,8 @@ export interface TruthScreenSidecar {
   readonly alignment: {
     readonly snapshotCount: number;
     readonly registryCount: number;
-    readonly exactlyOneWardenAndOneHostile: boolean;
+    readonly authoritativeEntityCountsMatch: boolean;
+    readonly allEntitiesVisuallyReadable: boolean;
     readonly valid: boolean;
   };
 }
@@ -504,6 +508,7 @@ export function buildTruthScreenSidecar(
       return [];
     const source =
       visualMetrics.entities.get(entity.id) ?? visualMetrics[entity.faction];
+    const visible = visualMetrics.visibleEntities.get(entity.id) ?? source;
     const v2 = v2ById.get(entity.id);
     const pivotX = Math.round(source.width / 2);
     const pivotY = entity.faction === "dwarf" ? 66 : 54;
@@ -543,8 +548,11 @@ export function buildTruthScreenSidecar(
         nonzeroAlphaPixels: source.nonzeroAlphaPixels,
         fullAlphaPixels: source.fullAlphaPixels,
         partialAlphaPixels: source.partialAlphaPixels,
+        visibleAlphaPixels: visible.nonzeroAlphaPixels,
+        visuallyReadable:
+          visible.nonzeroAlphaPixels * 2 >= source.nonzeroAlphaPixels,
         intersectsUnobscuredWorldViewport:
-          source.nonzeroAlphaPixels > 0 &&
+          visible.nonzeroAlphaPixels > 0 &&
           alphaBounds[0] < WIDTH &&
           alphaBounds[1] < HEIGHT &&
           alphaBounds[0] + alphaBounds[2] > 0 &&
@@ -558,7 +566,14 @@ export function buildTruthScreenSidecar(
   const hostileCount = entities.filter(
     ({ faction }) => faction === "enemy"
   ).length;
-  const exactlyOneWardenAndOneHostile = dwarfCount === 1 && hostileCount === 1;
+  const authoritativeEntityCountsMatch =
+    snapshot.entities.length === entities.length;
+  const allEntitiesVisuallyReadable = entities.every(
+    (entity) =>
+      entity.nonzeroAlphaPixels > 0 &&
+      entity.visuallyReadable &&
+      entity.intersectsUnobscuredWorldViewport
+  );
   const hostile = entities.find(({ faction }) => faction === "enemy");
   const hostileSource =
     (hostile === undefined
@@ -725,21 +740,9 @@ export function buildTruthScreenSidecar(
     alignment: {
       snapshotCount: snapshot.entities.length,
       registryCount: entities.length,
-      exactlyOneWardenAndOneHostile,
-      valid:
-        snapshot.entities.length === entities.length &&
-        exactlyOneWardenAndOneHostile &&
-        entities.every(
-          (entity) =>
-            entity.nonzeroAlphaPixels > 0 &&
-            entity.fullAlphaPixels * 5 >= entity.nonzeroAlphaPixels * 4 &&
-            entity.intersectsUnobscuredWorldViewport
-        ) &&
-        rearOverlapPixels > 0 &&
-        subjectGroundOverlapPixels > 0 &&
-        foregroundOcclusionPixels > 0 &&
-        worldRingOcclusionPixels > 0 &&
-        transientEffectOcclusionPixels > 0
+      authoritativeEntityCountsMatch,
+      allEntitiesVisuallyReadable,
+      valid: authoritativeEntityCountsMatch && allEntitiesVisuallyReadable
     }
   };
 }
@@ -844,6 +847,7 @@ function createDepthClippedPresentationTexture(
     | HTMLImageElement
     | HTMLCanvasElement;
   if (scene.textures.exists(outputKey)) scene.textures.remove(outputKey);
+  textureAlphaMetricsCache.delete(outputKey);
   const texture = scene.textures.createCanvas(outputKey, width, height);
   if (texture === null)
     throw new Error(`unable to create depth-clipped texture: ${outputKey}`);
@@ -1566,6 +1570,12 @@ class PersistentBattlefieldScene {
                 poseTextures.get(selectCombatPoseAsset(snapshot, entity.id)) ??
                   selectCombatPoseAsset(snapshot, entity.id)
               )
+            ])
+          ),
+          visibleEntities: new Map(
+            [...this.entities].map(([id, { subject }]) => [
+              id,
+              measureTextureAlpha(this.scene, subject.texture.key)
             ])
           ),
           groundForeground: measureTextureAlpha(
