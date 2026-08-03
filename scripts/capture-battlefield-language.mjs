@@ -84,8 +84,12 @@ async function armAutomaticPause(page, state) {
 }
 
 async function waitForAutomaticPause(page) {
-  await page.getByRole("button", { name: "Pause combat" }).waitFor();
-  await page.getByRole("button", { name: "Resume combat" }).waitFor();
+  await page
+    .getByRole("button", { name: "Pause combat" })
+    .waitFor({ timeout: 60_000 });
+  await page
+    .getByRole("button", { name: "Resume combat" })
+    .waitFor({ timeout: 60_000 });
   await page.evaluate(() => {
     window.clearInterval(window.__DD_CAPTURE_PAUSE_INTERVAL__);
   });
@@ -251,14 +255,6 @@ try {
         ) === true
     )
   );
-  await desktop.getByRole("button", { name: "Resume combat" }).click();
-  await desktop.waitForFunction(
-    () =>
-      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
-        (entity) => entity.elite === true
-      ) === true
-  );
-  await desktop.getByRole("button", { name: "Pause combat" }).click();
   captures.push(
     await capture(
       desktop,
