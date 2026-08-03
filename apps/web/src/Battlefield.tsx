@@ -169,7 +169,7 @@ export interface TruthScreenSidecar {
   readonly schemaVersion: 1;
   readonly captureReady: boolean;
   readonly fixtureId: string;
-  readonly viewport: readonly [1440, 900];
+  readonly viewport: readonly [number, number];
   readonly frame: readonly [1280, 720];
   readonly snapshot: {
     readonly levelId: string;
@@ -486,7 +486,8 @@ export function buildDepartureFeedbackPrimitives(
 export function buildTruthScreenSidecar(
   snapshot: RenderSnapshot,
   primitives: BattlefieldPrimitives,
-  visualMetrics: TruthVisualMetrics
+  visualMetrics: TruthVisualMetrics,
+  viewport: readonly [number, number]
 ): TruthScreenSidecar {
   const byId = new Map(snapshot.entities.map((entity) => [entity.id, entity]));
   const v2ById = new Map(
@@ -675,7 +676,7 @@ export function buildTruthScreenSidecar(
     schemaVersion: 1,
     captureReady: true,
     fixtureId: FIXTURE_ID,
-    viewport: [1440, 900],
+    viewport,
     frame: [WIDTH, HEIGHT],
     snapshot: {
       levelId: snapshot.levelId,
@@ -1576,7 +1577,8 @@ class PersistentBattlefieldScene {
             "entrance-route-foreground"
           ),
           rear: measureTextureAlpha(this.scene, "entrance-route-rear")
-        }
+        },
+        [window.innerWidth, window.innerHeight]
       );
       window.__DWARVEN_DEPTHS_RENDERER__ = this.diagnostics();
     }
