@@ -48,6 +48,43 @@ async function startClient(browser, viewport, reducedMotion) {
   return page;
 }
 
+async function armAutomaticPause(page, state) {
+  await page.evaluate((expectedState) => {
+    window.__DD_CAPTURE_PAUSE_INTERVAL__ = window.setInterval(() => {
+      const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+      const matched =
+        expectedState === "damage-status"
+          ? truth?.registry.entities.some(
+              (entity) =>
+                entity.faction === "enemy" &&
+                entity.currentHealth !== null &&
+                entity.maximumHealth !== null &&
+                entity.currentHealth < entity.maximumHealth &&
+                entity.statusIds.length > 0
+            ) === true
+          : truth?.registry.entities.some(
+              (entity) =>
+                entity.action?.abilityId ===
+                  "ability.iron_warden.shield_slam" &&
+                entity.action.phase === expectedState
+            ) === true;
+      if (!matched) return;
+      const pause = [...document.querySelectorAll("button")].find(
+        (button) => button.getAttribute("aria-label") === "Pause combat"
+      );
+      pause?.click();
+      window.clearInterval(window.__DD_CAPTURE_PAUSE_INTERVAL__);
+    }, 1);
+  }, state);
+}
+
+async function waitForAutomaticPause(page) {
+  await page.getByRole("button", { name: "Resume combat" }).waitFor();
+  await page.evaluate(() => {
+    window.clearInterval(window.__DD_CAPTURE_PAUSE_INTERVAL__);
+  });
+}
+
 async function capture(page, id, expected) {
   const screenshotUrl = new URL(`${id}.png`, outputDirectory);
   const sidecarUrl = new URL(`${id}.json`, outputDirectory);
@@ -133,16 +170,9 @@ try {
   );
   await desktop.getByRole("button", { name: "Pause combat" }).click();
   await desktop.getByRole("button", { name: "Shield Slam" }).click();
+  await armAutomaticPause(desktop, "committed");
   await desktop.getByRole("button", { name: "Resume combat" }).click();
-  await desktop.waitForFunction(
-    () =>
-      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
-        (entity) =>
-          entity.action?.abilityId === "ability.iron_warden.shield_slam" &&
-          entity.action.phase === "committed"
-      ) === true
-  );
-  await desktop.getByRole("button", { name: "Pause combat" }).click();
+  await waitForAutomaticPause(desktop);
   captures.push(
     await capture(
       desktop,
@@ -155,16 +185,9 @@ try {
         ) === true
     )
   );
+  await armAutomaticPause(desktop, "impact");
   await desktop.getByRole("button", { name: "Resume combat" }).click();
-  await desktop.waitForFunction(
-    () =>
-      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
-        (entity) =>
-          entity.action?.abilityId === "ability.iron_warden.shield_slam" &&
-          entity.action.phase === "impact"
-      ) === true
-  );
-  await desktop.getByRole("button", { name: "Pause combat" }).click();
+  await waitForAutomaticPause(desktop);
   captures.push(
     await capture(
       desktop,
@@ -177,19 +200,9 @@ try {
         ) === true
     )
   );
+  await armAutomaticPause(desktop, "damage-status");
   await desktop.getByRole("button", { name: "Resume combat" }).click();
-  await desktop.waitForFunction(
-    () =>
-      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
-        (entity) =>
-          entity.faction === "enemy" &&
-          entity.currentHealth !== null &&
-          entity.maximumHealth !== null &&
-          entity.currentHealth < entity.maximumHealth &&
-          entity.statusIds.length > 0
-      ) === true
-  );
-  await desktop.getByRole("button", { name: "Pause combat" }).click();
+  await waitForAutomaticPause(desktop);
   captures.push(
     await capture(
       desktop,
