@@ -7,10 +7,7 @@
       "id": "quiet-paused-reduced-motion",
       "screenshot": "quiet-paused-reduced-motion.png",
       "screenshotSha256": "4ac6bc6fe0c8395f706d6ef87748df52260e32ed0a2887abde467855094df978",
-      "viewport": [
-        1440,
-        900
-      ],
+      "viewport": [1440, 900],
       "tick": 2,
       "phase": "running",
       "entityCount": 2
@@ -19,10 +16,7 @@
       "id": "dense-wave-reduced-motion",
       "screenshot": "dense-wave-reduced-motion.png",
       "screenshotSha256": "241ed73d303ecd20ebbe2ee582a0f0b1c1b459680ebffd200b53734b2d9feefe",
-      "viewport": [
-        1440,
-        900
-      ],
+      "viewport": [1440, 900],
       "tick": 1801,
       "phase": "running",
       "entityCount": 3
@@ -31,10 +25,7 @@
       "id": "shield-slam-committed-reduced-motion",
       "screenshot": "shield-slam-committed-reduced-motion.png",
       "screenshotSha256": "61a08db27776ec01b13fd56564f4c7e677e737fac0a446bf089b20dbf754b4d9",
-      "viewport": [
-        1440,
-        900
-      ],
+      "viewport": [1440, 900],
       "tick": 1826,
       "phase": "running",
       "entityCount": 3
@@ -43,10 +34,7 @@
       "id": "shield-slam-impact-reduced-motion",
       "screenshot": "shield-slam-impact-reduced-motion.png",
       "screenshotSha256": "b8c8d8a5db2587400759d6298a8f84379b3f2850ecb70feb8213a92da71310d1",
-      "viewport": [
-        1440,
-        900
-      ],
+      "viewport": [1440, 900],
       "tick": 1832,
       "phase": "running",
       "entityCount": 3
@@ -55,10 +43,7 @@
       "id": "damage-stagger-reduced-motion",
       "screenshot": "damage-stagger-reduced-motion.png",
       "screenshotSha256": "e9bed2580608d9451d8a602cb2051cfa63acbd67006e21da098b66892163fc7b",
-      "viewport": [
-        1440,
-        900
-      ],
+      "viewport": [1440, 900],
       "tick": 1833,
       "phase": "running",
       "entityCount": 3
@@ -67,10 +52,7 @@
       "id": "terminal-defeat-reduced-motion",
       "screenshot": "terminal-defeat-reduced-motion.png",
       "screenshotSha256": "f8f1d56b46cc0d9d1e6dd7832c15a6961b520fb75d617708acacd239d1b2e004",
-      "viewport": [
-        1440,
-        900
-      ],
+      "viewport": [1440, 900],
       "tick": 1834,
       "phase": "terminal",
       "entityCount": 2
@@ -79,10 +61,7 @@
       "id": "quiet-paused-mobile-reduced-motion",
       "screenshot": "quiet-paused-mobile-reduced-motion.png",
       "screenshotSha256": "ca75e972807ca2ee17d80e6b85cd452c53af8fe9146264c8a9fdd4901d43603e",
-      "viewport": [
-        390,
-        844
-      ],
+      "viewport": [390, 844],
       "tick": 2,
       "phase": "running",
       "entityCount": 2
