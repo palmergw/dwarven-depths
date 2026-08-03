@@ -1,6 +1,11 @@
 import Phaser from "phaser";
 import { useEffect, useRef, useState } from "react";
 import {
+  BATTLEFIELD_ASSET_MANIFEST,
+  BATTLEFIELD_LAYER_ORDER,
+  type BattlefieldLayerId
+} from "./battlefield-assets.js";
+import {
   type CombatFeedback,
   type CombatSoundPlayer,
   createCombatSoundPlayer,
@@ -31,6 +36,8 @@ import {
 const WIDTH = 1280;
 const HEIGHT = 720;
 const PADDING = 96;
+const INTERPOLATION_DURATION_MS = 180;
+const MAX_POOLED_EFFECTS = 64;
 const FIXTURE_ID = "scenarios/conformance/shuttergate-web-truth.json";
 const textureAlphaMetricsCache = new Map<string, TextureAlphaMetrics>();
 
@@ -66,6 +73,16 @@ const staticSceneDepthUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.bin",
   import.meta.url
 ).href;
+const battlefieldAssetUrls: Readonly<Record<string, string>> = {
+  "environment-base": environmentUrl,
+  "entrance-shell": entranceShellUrl,
+  "entrance-route-ground-foreground": entranceRouteGroundForegroundUrl,
+  "entrance-route-foreground": entranceRouteForegroundUrl,
+  "entrance-route-rear": entranceRouteRearUrl,
+  "warden-source": wardenUrl,
+  "raider-source": raiderUrl,
+  "static-scene-depth": staticSceneDepthUrl
+};
 
 export interface RenderPrimitive {
   readonly id: string;
@@ -188,7 +205,28 @@ export interface TruthScreenSidecar {
 declare global {
   interface Window {
     __DWARVEN_DEPTHS_TRUTH_SCREEN__?: TruthScreenSidecar;
+    __DWARVEN_DEPTHS_RENDERER__?: BattlefieldRendererDiagnostics;
   }
+}
+
+export interface BattlefieldRendererDiagnostics {
+  readonly schemaVersion: 1;
+  readonly updateCount: number;
+  readonly entityObjects: number;
+  readonly pooledEffects: number;
+  readonly activeEffects: number;
+  readonly staticObjects: number;
+  readonly sceneObjects: number;
+  readonly runtimeTextures: number;
+  readonly activeTweens: number;
+  readonly timerEvents: number;
+  readonly loaderListeners: number;
+  readonly camera: {
+    readonly frame: readonly [1280, 720];
+    readonly scaleMode: "fit";
+    readonly autoCenter: "both";
+  };
+  readonly layerOrder: typeof BATTLEFIELD_LAYER_ORDER;
 }
 
 function authoredPosition(
@@ -278,6 +316,46 @@ export function buildBattlefieldPrimitives(
       };
     })
   };
+}
+
+export function buildInterpolationOrigins(
+  snapshot: RenderSnapshot
+): ReadonlyMap<string, RenderPrimitive> {
+  if (snapshot.schemaVersion !== 2) return new Map();
+  const previousSnapshot = {
+    schemaVersion: 1,
+    levelId: snapshot.levelId,
+    mapId: snapshot.mapId,
+    tick: snapshot.previousTick ?? snapshot.tick,
+    phase: snapshot.phase,
+    nodes: snapshot.nodes,
+    connections: snapshot.connections,
+    entities: snapshot.entities.map((entity) => ({
+      id: entity.id,
+      nodeId: entity.previousPosition?.nodeId ?? entity.nodeId,
+      faction: entity.faction
+    }))
+  } as const;
+  return new Map(
+    buildBattlefieldPrimitives(previousSnapshot).entities.map((entity) => [
+      entity.id,
+      entity
+    ])
+  );
+}
+
+export function decodeBattlefieldDepthAsset(
+  value: unknown
+): StaticSceneDepth | undefined {
+  if (!(value instanceof ArrayBuffer)) return undefined;
+  try {
+    return decodeStaticSceneDepth(
+      value,
+      SHUTTERGATE_SPATIAL_CONTRACT.staticDepth as unknown as StaticSceneDepthContract
+    );
+  } catch {
+    return undefined;
+  }
 }
 
 export function buildDepartureFeedbackPrimitives(
@@ -696,9 +774,10 @@ function createDepthVisibilityMask(
 function addDepthTestedRing(
   scene: Phaser.Scene,
   entity: RenderPrimitive,
-  staticDepth: StaticSceneDepth
-): void {
-  if (entity.cameraDepth === undefined || entity.faction === undefined) return;
+  staticDepth: StaticSceneDepth,
+  existing?: Phaser.GameObjects.Graphics
+): Phaser.GameObjects.Graphics | undefined {
+  if (entity.faction === undefined) return undefined;
   const dwarf = entity.faction === "dwarf";
   const ellipseWidth = dwarf ? 72 : 58;
   const ellipseHeight = dwarf ? 26 : 20;
@@ -709,7 +788,10 @@ function addDepthTestedRing(
   const pivotY = height / 2;
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
-  const ring = scene.add.graphics();
+  const ring = existing ?? scene.add.graphics();
+  ring.setPosition(0, 0);
+  ring.clearMask(true);
+  ring.clear();
   ring.fillStyle(dwarf ? 0x65b9df : 0xa92720, dwarf ? 0.32 : 0.3);
   ring.fillEllipse(
     entity.x,
@@ -724,32 +806,35 @@ function addDepthTestedRing(
     ellipseWidth,
     ellipseHeight
   );
-  ring.setMask(
-    createDepthVisibilityMask(
-      scene,
-      width,
-      height,
-      {
-        kind: "ground-plane",
-        cameraDepth: entity.cameraDepth,
-        cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
-        cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
-        depthEdgeGuardPixels: 0,
-        frameLeft,
-        frameTop,
-        pivotX,
-        pivotY
-      },
-      staticDepth
-    )
-  );
+  if (entity.cameraDepth !== undefined)
+    ring.setMask(
+      createDepthVisibilityMask(
+        scene,
+        width,
+        height,
+        {
+          kind: "ground-plane",
+          cameraDepth: entity.cameraDepth,
+          cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
+          cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
+          depthEdgeGuardPixels: 0,
+          frameLeft,
+          frameTop,
+          pivotX,
+          pivotY
+        },
+        staticDepth
+      )
+    );
+  return ring;
 }
 
 function addDepthTestedEffect(
   scene: Phaser.Scene,
   entity: RenderPrimitive,
   feedback: CombatFeedback,
-  staticDepth: StaticSceneDepth
+  staticDepth: StaticSceneDepth,
+  existing?: Phaser.GameObjects.Graphics
 ): Phaser.GameObjects.Graphics | undefined {
   if (entity.cameraDepth === undefined) return undefined;
   const width = 100;
@@ -758,7 +843,10 @@ function addDepthTestedEffect(
   const pivotY = 42;
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
-  const effect = scene.add.graphics();
+  const effect = existing ?? scene.add.graphics();
+  effect.clearMask(true);
+  effect.clear();
+  effect.setAlpha(1);
   effect.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
   effect.strokeEllipse(entity.x, entity.y - 12, 88, 50);
   effect.setMask(
@@ -784,15 +872,18 @@ function addDepthTestedEffect(
 function addDepthTestedFocus(
   scene: Phaser.Scene,
   entity: RenderPrimitive,
-  staticDepth: StaticSceneDepth
-): void {
+  staticDepth: StaticSceneDepth,
+  existing?: Phaser.GameObjects.Graphics
+): Phaser.GameObjects.Graphics {
   const width = 84;
   const height = 80;
   const pivotX = width / 2;
   const pivotY = 74;
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
-  const focus = scene.add.graphics();
+  const focus = existing ?? scene.add.graphics();
+  focus.clearMask(true);
+  focus.clear();
   focus.lineStyle(2, 0xf3d78f, 0.9);
   focus.strokeRoundedRect(entity.x - 40, entity.y - 72, 80, 78, 10);
   if (entity.cameraDepth !== undefined)
@@ -813,6 +904,7 @@ function addDepthTestedFocus(
         staticDepth
       )
     );
+  return focus;
 }
 
 function addDepthTestedBillboard(
@@ -823,16 +915,19 @@ function addDepthTestedBillboard(
   height: number,
   pivotX: number,
   pivotY: number,
-  staticDepth: StaticSceneDepth
-): void {
+  staticDepth: StaticSceneDepth,
+  existing?: Phaser.GameObjects.Image
+): Phaser.GameObjects.Image {
   if (entity.cameraDepth === undefined) {
-    scene.add
-      .image(entity.x, entity.y, sourceKey)
+    const image = existing ?? scene.add.image(entity.x, entity.y, sourceKey);
+    return image
+      .setTexture(sourceKey)
+      .setPosition(entity.x, entity.y)
       .setOrigin(pivotX / width, pivotY / height);
-    return;
   }
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
+  if (existing !== undefined) existing.setTexture(sourceKey);
   const texture = createDepthClippedPresentationTexture(
     scene,
     sourceKey,
@@ -850,124 +945,334 @@ function addDepthTestedBillboard(
     },
     staticDepth
   );
-  scene.add
-    .image(entity.x, entity.y, texture)
+  const image = existing ?? scene.add.image(entity.x, entity.y, texture);
+  return image
+    .setTexture(texture)
+    .setPosition(entity.x, entity.y)
     .setOrigin(pivotX / width, pivotY / height);
 }
 
-function drawBattlefield(
-  scene: Phaser.Scene,
-  snapshot: RenderSnapshot,
-  feedback: CombatFeedback | undefined,
-  reduceMotion: boolean,
-  _previousSnapshot: RenderSnapshot | undefined,
-  staticDepth: StaticSceneDepth,
-  evidenceEffectAlpha: number | undefined
-): void {
-  if (
-    evidenceEffectAlpha !== undefined &&
-    (!Number.isFinite(evidenceEffectAlpha) ||
-      evidenceEffectAlpha < 0 ||
-      evidenceEffectAlpha > 1)
-  )
-    throw new Error("invalid evidence effect alpha");
-  scene.children.removeAll();
-  scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base");
-  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-ground-foreground");
-  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell");
-  scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground");
+interface PersistentEntityObjects {
+  readonly ring: Phaser.GameObjects.Graphics;
+  readonly subject: Phaser.GameObjects.Image;
+}
 
-  const primitives = buildBattlefieldPrimitives(snapshot);
-  const orderedEntities = [...primitives.entities].sort(
-    comparePresentationPrimitives
-  );
-  for (const entity of orderedEntities)
-    addDepthTestedRing(scene, entity, staticDepth);
+class PersistentBattlefieldScene {
+  readonly layers: Record<
+    BattlefieldLayerId,
+    Set<Phaser.GameObjects.GameObject>
+  >;
+  readonly entities = new Map<string, PersistentEntityObjects>();
+  readonly effects: Phaser.GameObjects.Graphics[] = [];
+  focus: Phaser.GameObjects.Graphics | undefined;
+  updateCount = 0;
+  activeEffects = 0;
+  lastInterpolatedTick: string | undefined;
 
-  if (feedback !== undefined && !reduceMotion) {
-    const transients: Phaser.GameObjects.Graphics[] = [];
-    for (const entity of orderedEntities)
+  constructor(
+    readonly scene: Phaser.Scene,
+    readonly staticDepth: StaticSceneDepth
+  ) {
+    this.layers = Object.fromEntries(
+      BATTLEFIELD_LAYER_ORDER.map((id) => [id, new Set()])
+    ) as Record<BattlefieldLayerId, Set<Phaser.GameObjects.GameObject>>;
+    this.layers.terrain.add(
+      scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base")
+    );
+    this.layers["ground-foreground"].add(
+      scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-ground-foreground")
+    );
+    this.layers.terrain.add(
+      scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell")
+    );
+    this.layers.terrain.add(
+      scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground")
+    );
+  }
+
+  private acquireEffect(index: number): Phaser.GameObjects.Graphics {
+    const pooled = this.effects[index];
+    if (pooled !== undefined) return pooled;
+    const created = this.scene.add.graphics();
+    this.layers["world-effects"].add(created);
+    this.effects.push(created);
+    return created;
+  }
+
+  private interpolateEntity(
+    objects: PersistentEntityObjects,
+    origin: RenderPrimitive,
+    destination: RenderPrimitive
+  ): void {
+    const offsetX = origin.x - destination.x;
+    const offsetY = origin.y - destination.y;
+    if (offsetX === 0 && offsetY === 0) return;
+    objects.ring.setPosition(offsetX, offsetY);
+    objects.subject.setPosition(origin.x, origin.y);
+    const ringMask = objects.ring.mask?.geometryMask;
+    ringMask?.setPosition(offsetX, offsetY);
+    this.scene.tweens.add({
+      targets: objects.ring,
+      x: 0,
+      y: 0,
+      duration: INTERPOLATION_DURATION_MS,
+      ease: "Sine.Out"
+    });
+    if (ringMask !== undefined)
+      this.scene.tweens.add({
+        targets: ringMask,
+        x: 0,
+        y: 0,
+        duration: INTERPOLATION_DURATION_MS,
+        ease: "Sine.Out"
+      });
+    this.scene.tweens.add({
+      targets: objects.subject,
+      x: destination.x,
+      y: destination.y,
+      duration: INTERPOLATION_DURATION_MS,
+      ease: "Sine.Out"
+    });
+  }
+
+  update(
+    snapshot: RenderSnapshot,
+    feedback: CombatFeedback | undefined,
+    reduceMotion: boolean,
+    previousSnapshot: RenderSnapshot | undefined,
+    evidenceEffectAlpha: number | undefined
+  ): void {
+    if (
+      evidenceEffectAlpha !== undefined &&
+      (!Number.isFinite(evidenceEffectAlpha) ||
+        evidenceEffectAlpha < 0 ||
+        evidenceEffectAlpha > 1)
+    )
+      throw new Error("invalid evidence effect alpha");
+    this.updateCount += 1;
+    const primitives = buildBattlefieldPrimitives(snapshot);
+    const interpolationOrigins = buildInterpolationOrigins(snapshot);
+    const interpolationTick =
+      snapshot.schemaVersion === 2
+        ? `${snapshot.scenarioId}:${snapshot.previousTick ?? "spawn"}:${snapshot.tick}`
+        : undefined;
+    const interpolate =
+      !reduceMotion &&
+      interpolationTick !== undefined &&
+      interpolationTick !== this.lastInterpolatedTick;
+    this.scene.tweens.killTweensOf(
+      [...this.entities.values()].flatMap(({ ring, subject }) => {
+        const mask = ring.mask?.geometryMask;
+        return mask === undefined ? [ring, subject] : [ring, subject, mask];
+      })
+    );
+    const orderedEntities = [...primitives.entities].sort(
+      comparePresentationPrimitives
+    );
+    const liveIds = new Set(orderedEntities.map(({ id }) => id));
+    for (const [id, objects] of this.entities)
+      if (!liveIds.has(id)) {
+        this.layers["world-rings"].delete(objects.ring);
+        this.layers["world-entities"].delete(objects.subject);
+        objects.ring.clearMask(true);
+        objects.ring.destroy();
+        objects.subject.setTexture("warden-runtime");
+        objects.subject.destroy();
+        const textureKey = `subject-depth-${id}`;
+        if (this.scene.textures.exists(textureKey))
+          this.scene.textures.remove(textureKey);
+        this.entities.delete(id);
+      }
+
+    const wardenTexture = normalizeAlphaTexture(
+      this.scene,
+      "warden-source",
+      "warden-runtime"
+    );
+    const raiderTexture = normalizeAlphaTexture(
+      this.scene,
+      "raider-source",
+      "raider-runtime"
+    );
+    for (const entity of orderedEntities) {
+      const existing = this.entities.get(entity.id);
+      const ring = addDepthTestedRing(
+        this.scene,
+        entity,
+        this.staticDepth,
+        existing?.ring
+      );
+      if (ring === undefined) continue;
+      if (existing === undefined) this.layers["world-rings"].add(ring);
+      const dwarf = entity.faction === "dwarf";
+      const subject = addDepthTestedBillboard(
+        this.scene,
+        entity,
+        dwarf ? wardenTexture : raiderTexture,
+        dwarf ? 112 : 80,
+        dwarf ? 72 : 60,
+        dwarf ? 56 : 40,
+        dwarf ? 66 : 54,
+        this.staticDepth,
+        existing?.subject
+      );
+      if (existing === undefined) {
+        this.layers["world-entities"].add(subject);
+        this.entities.set(entity.id, { ring, subject });
+      }
+      const objects = this.entities.get(entity.id);
+      const snapshotEntity =
+        snapshot.schemaVersion === 2
+          ? snapshot.entities.find(({ id }) => id === entity.id)
+          : undefined;
+      const origin = interpolationOrigins.get(entity.id);
       if (
-        feedback.arrivals.some(({ id }) => id === entity.id) ||
-        feedback.departures.some(({ id }) => id === entity.id)
-      ) {
-        const transient = addDepthTestedEffect(
-          scene,
+        interpolate &&
+        objects !== undefined &&
+        snapshotEntity?.transition === "moving" &&
+        origin !== undefined
+      )
+        this.interpolateEntity(objects, origin, entity);
+    }
+    if (interpolationTick !== undefined)
+      this.lastInterpolatedTick = interpolationTick;
+
+    this.scene.tweens.killTweensOf(this.effects);
+    this.activeEffects = 0;
+    if (feedback !== undefined && !reduceMotion) {
+      const arrivalIds = new Set(feedback.arrivals.map(({ id }) => id));
+      const effectEntities = [
+        ...orderedEntities.filter(({ id }) => arrivalIds.has(id)),
+        ...(previousSnapshot === undefined
+          ? []
+          : buildDepartureFeedbackPrimitives(previousSnapshot, feedback))
+      ].sort(comparePresentationPrimitives);
+      for (const entity of effectEntities) {
+        if (this.activeEffects >= MAX_POOLED_EFFECTS) continue;
+        const effect = addDepthTestedEffect(
+          this.scene,
           entity,
           feedback,
-          staticDepth
+          this.staticDepth,
+          this.acquireEffect(this.activeEffects)
         );
-        if (transient !== undefined) transients.push(transient);
+        if (effect !== undefined) {
+          effect.setVisible(true);
+          this.activeEffects += 1;
+        }
       }
-    if (evidenceEffectAlpha === undefined)
-      scene.tweens.add({
-        targets: transients,
+    }
+    for (
+      let index = this.activeEffects;
+      index < this.effects.length;
+      index += 1
+    ) {
+      this.effects[index]?.clearMask(true);
+      this.effects[index]?.setVisible(false);
+    }
+    const active = this.effects.slice(0, this.activeEffects);
+    if (active.length > 0 && evidenceEffectAlpha === undefined)
+      this.scene.tweens.add({
+        targets: active,
         alpha: 0.15,
         duration: 420,
         yoyo: true,
         repeat: 1
       });
-    else
-      for (const transient of transients)
-        transient.setAlpha(evidenceEffectAlpha);
-  }
+    else if (evidenceEffectAlpha !== undefined)
+      for (const effect of active) effect.setAlpha(evidenceEffectAlpha);
 
-  const wardenTexture = normalizeAlphaTexture(
-    scene,
-    "warden-source",
-    "warden-runtime"
-  );
-  const raiderTexture = normalizeAlphaTexture(
-    scene,
-    "raider-source",
-    "raider-runtime"
-  );
-  for (const entity of orderedEntities) {
-    if (entity.faction === "dwarf")
-      addDepthTestedBillboard(
-        scene,
-        entity,
-        wardenTexture,
-        112,
-        72,
-        56,
-        66,
-        staticDepth
-      );
-    else if (entity.faction === "enemy")
-      addDepthTestedBillboard(
-        scene,
-        entity,
-        raiderTexture,
-        80,
-        60,
-        40,
-        54,
-        staticDepth
-      );
-  }
-
-  const selectedWarden = primitives.entities.find(
-    ({ faction }) => faction === "dwarf"
-  );
-  if (selectedWarden !== undefined)
-    addDepthTestedFocus(scene, selectedWarden, staticDepth);
-
-  if (typeof window !== "undefined")
-    window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ = buildTruthScreenSidecar(
-      snapshot,
-      primitives,
-      {
-        dwarf: measureTextureAlpha(scene, wardenTexture),
-        enemy: measureTextureAlpha(scene, raiderTexture),
-        groundForeground: measureTextureAlpha(
-          scene,
-          "entrance-route-ground-foreground"
-        ),
-        foreground: measureTextureAlpha(scene, "entrance-route-foreground"),
-        rear: measureTextureAlpha(scene, "entrance-route-rear")
-      }
+    const selectedWarden = primitives.entities.find(
+      ({ faction }) => faction === "dwarf"
     );
+    if (selectedWarden === undefined) this.focus?.setVisible(false);
+    else {
+      this.focus = addDepthTestedFocus(
+        this.scene,
+        selectedWarden,
+        this.staticDepth,
+        this.focus
+      ).setVisible(true);
+      this.layers["world-focus"].add(this.focus);
+    }
+
+    for (const entity of orderedEntities) {
+      const objects = this.entities.get(entity.id);
+      if (objects !== undefined) this.scene.children.bringToTop(objects.ring);
+    }
+    for (const effect of active) this.scene.children.bringToTop(effect);
+    for (const entity of orderedEntities) {
+      const objects = this.entities.get(entity.id);
+      if (objects !== undefined)
+        this.scene.children.bringToTop(objects.subject);
+    }
+    if (this.focus?.visible === true)
+      this.scene.children.bringToTop(this.focus);
+
+    if (typeof window !== "undefined") {
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ = buildTruthScreenSidecar(
+        snapshot,
+        primitives,
+        {
+          dwarf: measureTextureAlpha(this.scene, wardenTexture),
+          enemy: measureTextureAlpha(this.scene, raiderTexture),
+          groundForeground: measureTextureAlpha(
+            this.scene,
+            "entrance-route-ground-foreground"
+          ),
+          foreground: measureTextureAlpha(
+            this.scene,
+            "entrance-route-foreground"
+          ),
+          rear: measureTextureAlpha(this.scene, "entrance-route-rear")
+        }
+      );
+      window.__DWARVEN_DEPTHS_RENDERER__ = this.diagnostics();
+    }
+  }
+
+  diagnostics(): BattlefieldRendererDiagnostics {
+    return {
+      schemaVersion: 1,
+      updateCount: this.updateCount,
+      entityObjects:
+        this.entities.size * 2 + (this.focus === undefined ? 0 : 1),
+      pooledEffects: this.effects.length,
+      activeEffects: this.activeEffects,
+      staticObjects: 4,
+      sceneObjects: this.scene.children.length,
+      runtimeTextures: Object.keys(this.scene.textures.list).filter(
+        (key) => key.endsWith("-runtime") || key.startsWith("subject-depth-")
+      ).length,
+      activeTweens: this.scene.tweens
+        .getTweens()
+        .filter((tween) => tween.isPlaying()).length,
+      timerEvents: 0,
+      loaderListeners: this.scene.load.listenerCount("loaderror"),
+      camera: {
+        frame: [WIDTH, HEIGHT],
+        scaleMode: "fit",
+        autoCenter: "both"
+      },
+      layerOrder: BATTLEFIELD_LAYER_ORDER
+    };
+  }
+
+  destroy(): void {
+    this.scene.tweens.killTweensOf(this.effects);
+    for (const objects of this.entities.values()) {
+      if (objects.ring.mask !== null)
+        this.scene.tweens.killTweensOf(objects.ring.mask.geometryMask);
+      this.scene.tweens.killTweensOf([objects.ring, objects.subject]);
+      objects.ring.clearMask(true);
+      objects.subject.setTexture("warden-runtime");
+    }
+    for (const effect of this.effects) effect.clearMask(true);
+    this.focus?.clearMask(true);
+    this.entities.clear();
+    this.effects.length = 0;
+    for (const layer of Object.values(this.layers)) layer.clear();
+  }
 }
 
 interface BattlefieldRenderer {
@@ -992,9 +1297,8 @@ function createBattlefieldRenderer(
   let feedback = initialFeedback;
   let reduceMotion = initialReduceMotion;
   let evidenceEffectAlpha = initialEvidenceEffectAlpha;
-  let previousSnapshot: RenderSnapshot | undefined;
-  let scene: Phaser.Scene | undefined;
-  let staticDepth: StaticSceneDepth | undefined;
+  let persistentScene: PersistentBattlefieldScene | undefined;
+  const loadErrors = new Set<string>();
   const game = new Phaser.Game({
     type: Phaser.CANVAS,
     width: WIDTH,
@@ -1007,39 +1311,52 @@ function createBattlefieldRenderer(
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: {
       preload(this: Phaser.Scene) {
-        this.load.image("environment-base", environmentUrl);
-        this.load.image("entrance-shell", entranceShellUrl);
-        this.load.image(
-          "entrance-route-ground-foreground",
-          entranceRouteGroundForegroundUrl
-        );
-        this.load.image(
-          "entrance-route-foreground",
-          entranceRouteForegroundUrl
-        );
-        this.load.image("entrance-route-rear", entranceRouteRearUrl);
-        this.load.image("warden-source", wardenUrl);
-        this.load.image("raider-source", raiderUrl);
-        this.load.binary("static-scene-depth", staticSceneDepthUrl);
+        this.load.on("loaderror", (file: { readonly key: string }) => {
+          loadErrors.add(file.key);
+        });
+        for (const asset of BATTLEFIELD_ASSET_MANIFEST.assets) {
+          const url = battlefieldAssetUrls[asset.key];
+          if (url === undefined) {
+            loadErrors.add(asset.key);
+            continue;
+          }
+          if (asset.kind === "image") this.load.image(asset.key, url);
+          else this.load.binary(asset.key, url);
+        }
       },
       create(this: Phaser.Scene) {
-        scene = this;
+        if (loadErrors.size > 0) {
+          parent.setAttribute("data-renderer-error", "asset-load-failed");
+          this.add
+            .text(WIDTH / 2, HEIGHT / 2, "Battlefield assets failed to load.", {
+              color: "#f4d7bd",
+              fontFamily: "system-ui, sans-serif",
+              fontSize: "24px"
+            })
+            .setOrigin(0.5);
+          return;
+        }
         const depthBuffer = this.cache.binary.get(
           "static-scene-depth"
         ) as unknown;
-        if (!(depthBuffer instanceof ArrayBuffer))
-          throw new Error("missing Shuttergate static scene depth asset");
-        staticDepth = decodeStaticSceneDepth(
-          depthBuffer,
-          SHUTTERGATE_SPATIAL_CONTRACT.staticDepth as unknown as StaticSceneDepthContract
-        );
-        drawBattlefield(
-          this,
+        const staticDepth = decodeBattlefieldDepthAsset(depthBuffer);
+        if (staticDepth === undefined) {
+          parent.setAttribute("data-renderer-error", "invalid-depth-asset");
+          this.add
+            .text(WIDTH / 2, HEIGHT / 2, "Battlefield depth data is invalid.", {
+              color: "#f4d7bd",
+              fontFamily: "system-ui, sans-serif",
+              fontSize: "24px"
+            })
+            .setOrigin(0.5);
+          return;
+        }
+        persistentScene = new PersistentBattlefieldScene(this, staticDepth);
+        persistentScene.update(
           snapshot,
           feedback,
           reduceMotion,
-          previousSnapshot,
-          staticDepth,
+          undefined,
           evidenceEffectAlpha
         );
       }
@@ -1056,25 +1373,25 @@ function createBattlefieldRenderer(
       snapshot = nextSnapshot;
       feedback = nextFeedback;
       reduceMotion = nextReduceMotion;
-      previousSnapshot = nextPreviousSnapshot;
       evidenceEffectAlpha = nextEvidenceEffectAlpha;
-      if (scene !== undefined && staticDepth !== undefined)
-        drawBattlefield(
-          scene,
-          snapshot,
-          feedback,
-          reduceMotion,
-          previousSnapshot,
-          staticDepth,
-          evidenceEffectAlpha
-        );
+      persistentScene?.update(
+        snapshot,
+        feedback,
+        reduceMotion,
+        nextPreviousSnapshot,
+        evidenceEffectAlpha
+      );
     },
     destroy() {
-      scene = undefined;
+      persistentScene?.destroy();
+      persistentScene = undefined;
       game.destroy(true);
       parent.replaceChildren();
-      if (typeof window !== "undefined")
+      parent.removeAttribute("data-renderer-error");
+      if (typeof window !== "undefined") {
         delete window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+        delete window.__DWARVEN_DEPTHS_RENDERER__;
+      }
     }
   };
 }

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "issue": 272,
+  "baseline": {
+    "head": "ac9176ba0c512a2b19f44a5ed3dc34af1d332419",
+    "captureSha256": "188631c8ee5c9e524cc8ed0c70d11f3f70dc01e7d9b7fcf0c429c4d5547ea6cd"
+  },
+  "candidate": {
+    "codeHead": "4ddc6ad2689658d1c1e56a6eb4d00432ae03c14a",
+    "capture": "shuttergate-truth-screen.png",
+    "sidecar": "shuttergate-truth-screen.json",
+    "captureSha256": "188631c8ee5c9e524cc8ed0c70d11f3f70dc01e7d9b7fcf0c429c4d5547ea6cd"
+  },
+  "comparison": {
+    "method": "RGBA pixel equality at 1440x900",
+    "changedPixels": 0,
+    "maximumChannelDelta": 0,
+    "equal": true
+  },
+  "scope": "Architecture-only persistent-scene checkpoint; no visual direction or gameplay change claimed."
+}
