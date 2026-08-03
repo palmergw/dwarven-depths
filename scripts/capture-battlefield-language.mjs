@@ -79,6 +79,7 @@ async function armAutomaticPause(page, state) {
 }
 
 async function waitForAutomaticPause(page) {
+  await page.getByRole("button", { name: "Pause combat" }).waitFor();
   await page.getByRole("button", { name: "Resume combat" }).waitFor();
   await page.evaluate(() => {
     window.clearInterval(window.__DD_CAPTURE_PAUSE_INTERVAL__);
