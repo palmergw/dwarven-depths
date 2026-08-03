@@ -52,22 +52,27 @@ async function armAutomaticPause(page, state) {
   await page.evaluate((expectedState) => {
     window.__DD_CAPTURE_PAUSE_INTERVAL__ = window.setInterval(() => {
       const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
-      const matched =
-        expectedState === "damage-status"
-          ? truth?.registry.entities.some(
-              (entity) =>
-                entity.faction === "enemy" &&
-                entity.currentHealth !== null &&
-                entity.maximumHealth !== null &&
-                entity.currentHealth < entity.maximumHealth &&
-                entity.statusIds.length > 0
-            ) === true
-          : truth?.registry.entities.some(
-              (entity) =>
-                entity.action?.abilityId ===
-                  "ability.iron_warden.shield_slam" &&
-                entity.action.phase === expectedState
-            ) === true;
+      let matched;
+      if (expectedState === "dense") {
+        matched = (truth?.registry.hostileCount ?? 0) > 1;
+      } else if (expectedState === "damage-status") {
+        matched =
+          truth?.registry.entities.some(
+            (entity) =>
+              entity.faction === "enemy" &&
+              entity.currentHealth !== null &&
+              entity.maximumHealth !== null &&
+              entity.currentHealth < entity.maximumHealth &&
+              entity.statusIds.length > 0
+          ) === true;
+      } else {
+        matched =
+          truth?.registry.entities.some(
+            (entity) =>
+              entity.action?.abilityId === "ability.iron_warden.shield_slam" &&
+              entity.action.phase === expectedState
+          ) === true;
+      }
       if (!matched) return;
       const pause = [...document.querySelectorAll("button")].find(
         (button) => button.getAttribute("aria-label") === "Pause combat"
@@ -178,6 +183,17 @@ try {
         window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.totalCount > 1
     )
   );
+  await armAutomaticPause(desktop, "dense");
+  await desktop.getByRole("button", { name: "Resume combat" }).click();
+  await waitForAutomaticPause(desktop);
+  captures.push(
+    await capture(
+      desktop,
+      "dense-wave-reduced-motion",
+      () =>
+        (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.hostileCount ?? 0) > 1
+    )
+  );
   await desktop.getByRole("button", { name: "Resume combat" }).click();
   await desktop.waitForFunction(
     () =>
@@ -233,20 +249,6 @@ try {
             entity.currentHealth < entity.maximumHealth &&
             entity.statusIds.length > 0
         ) === true
-    )
-  );
-  await desktop.getByRole("button", { name: "Resume combat" }).click();
-  await desktop.waitForFunction(
-    () =>
-      (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.hostileCount ?? 0) > 1
-  );
-  await desktop.getByRole("button", { name: "Pause combat" }).click();
-  captures.push(
-    await capture(
-      desktop,
-      "dense-wave-reduced-motion",
-      () =>
-        (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.hostileCount ?? 0) > 1
     )
   );
   await desktop.getByRole("button", { name: "Resume combat" }).click();
