@@ -777,8 +777,7 @@ function addDepthTestedRing(
   staticDepth: StaticSceneDepth,
   existing?: Phaser.GameObjects.Graphics
 ): Phaser.GameObjects.Graphics | undefined {
-  if (entity.cameraDepth === undefined || entity.faction === undefined)
-    return undefined;
+  if (entity.faction === undefined) return undefined;
   const dwarf = entity.faction === "dwarf";
   const ellipseWidth = dwarf ? 72 : 58;
   const ellipseHeight = dwarf ? 26 : 20;
@@ -807,25 +806,26 @@ function addDepthTestedRing(
     ellipseWidth,
     ellipseHeight
   );
-  ring.setMask(
-    createDepthVisibilityMask(
-      scene,
-      width,
-      height,
-      {
-        kind: "ground-plane",
-        cameraDepth: entity.cameraDepth,
-        cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
-        cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
-        depthEdgeGuardPixels: 0,
-        frameLeft,
-        frameTop,
-        pivotX,
-        pivotY
-      },
-      staticDepth
-    )
-  );
+  if (entity.cameraDepth !== undefined)
+    ring.setMask(
+      createDepthVisibilityMask(
+        scene,
+        width,
+        height,
+        {
+          kind: "ground-plane",
+          cameraDepth: entity.cameraDepth,
+          cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
+          cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
+          depthEdgeGuardPixels: 0,
+          frameLeft,
+          frameTop,
+          pivotX,
+          pivotY
+        },
+        staticDepth
+      )
+    );
   return ring;
 }
 
@@ -1039,6 +1039,7 @@ class PersistentBattlefieldScene {
     snapshot: RenderSnapshot,
     feedback: CombatFeedback | undefined,
     reduceMotion: boolean,
+    previousSnapshot: RenderSnapshot | undefined,
     evidenceEffectAlpha: number | undefined
   ): void {
     if (
@@ -1138,25 +1139,29 @@ class PersistentBattlefieldScene {
 
     this.scene.tweens.killTweensOf(this.effects);
     this.activeEffects = 0;
-    if (feedback !== undefined && !reduceMotion)
-      for (const entity of orderedEntities)
-        if (
-          feedback.arrivals.some(({ id }) => id === entity.id) ||
-          feedback.departures.some(({ id }) => id === entity.id)
-        ) {
-          if (this.activeEffects >= MAX_POOLED_EFFECTS) continue;
-          const effect = addDepthTestedEffect(
-            this.scene,
-            entity,
-            feedback,
-            this.staticDepth,
-            this.acquireEffect(this.activeEffects)
-          );
-          if (effect !== undefined) {
-            effect.setVisible(true);
-            this.activeEffects += 1;
-          }
+    if (feedback !== undefined && !reduceMotion) {
+      const arrivalIds = new Set(feedback.arrivals.map(({ id }) => id));
+      const effectEntities = [
+        ...orderedEntities.filter(({ id }) => arrivalIds.has(id)),
+        ...(previousSnapshot === undefined
+          ? []
+          : buildDepartureFeedbackPrimitives(previousSnapshot, feedback))
+      ].sort(comparePresentationPrimitives);
+      for (const entity of effectEntities) {
+        if (this.activeEffects >= MAX_POOLED_EFFECTS) continue;
+        const effect = addDepthTestedEffect(
+          this.scene,
+          entity,
+          feedback,
+          this.staticDepth,
+          this.acquireEffect(this.activeEffects)
+        );
+        if (effect !== undefined) {
+          effect.setVisible(true);
+          this.activeEffects += 1;
         }
+      }
+    }
     for (
       let index = this.activeEffects;
       index < this.effects.length;
@@ -1351,6 +1356,7 @@ function createBattlefieldRenderer(
           snapshot,
           feedback,
           reduceMotion,
+          undefined,
           evidenceEffectAlpha
         );
       }
@@ -1361,7 +1367,7 @@ function createBattlefieldRenderer(
       nextSnapshot,
       nextFeedback,
       nextReduceMotion,
-      _nextPreviousSnapshot,
+      nextPreviousSnapshot,
       nextEvidenceEffectAlpha
     ) {
       snapshot = nextSnapshot;
@@ -1372,6 +1378,7 @@ function createBattlefieldRenderer(
         snapshot,
         feedback,
         reduceMotion,
+        nextPreviousSnapshot,
         evidenceEffectAlpha
       );
     },

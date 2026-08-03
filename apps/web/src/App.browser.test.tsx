@@ -1644,6 +1644,7 @@ describe("authoritative web worker", () => {
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.updateCount).toBeGreaterThan(0)
     );
     expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens).toBe(0);
+    expect(window.__DWARVEN_DEPTHS_RENDERER__?.entityObjects).toBe(5);
     render(initial);
     await vi.waitFor(() =>
       expect(document.querySelector(".combat-feedback")).toBeNull()
@@ -1729,6 +1730,7 @@ describe("authoritative web worker", () => {
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.pooledEffects
       ).toBeLessThanOrEqual(1);
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
         cycle % 2 === 0 ? 4 : 3
       );
