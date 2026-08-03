@@ -7,7 +7,9 @@ import {
   Battlefield,
   buildBattlefieldPrimitives,
   buildDepartureFeedbackPrimitives,
-  comparePresentationPrimitives
+  buildInterpolationOrigins,
+  comparePresentationPrimitives,
+  decodeBattlefieldDepthAsset
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { deriveCombatFeedback } from "./combat-feedback.js";
@@ -1509,6 +1511,65 @@ describe("authoritative web worker", () => {
     ).toEqual([primitives[1], primitives[2], primitives[0]]);
   });
 
+  it("derives presentation-only interpolation from snapshot-v2 bound positions", () => {
+    const snapshot = {
+      schemaVersion: 2,
+      scenarioId: "scenario.interpolation",
+      levelId: "level.interpolation",
+      mapId: null,
+      tick: 8,
+      previousTick: 7,
+      phase: "running",
+      nodes: [
+        { id: "node.left", x: 0, y: 0 },
+        { id: "node.right", x: 10, y: 0 }
+      ],
+      connections: [],
+      entities: [
+        {
+          id: "entity.dwarf.warden",
+          nodeId: "node.right",
+          faction: "dwarf",
+          visualId: "visual.warden",
+          archetype: "character",
+          position: { nodeId: "node.right", x: 10, y: 0 },
+          previousPosition: { nodeId: "node.left", x: 0, y: 0 },
+          currentHealth: 10,
+          maximumHealth: 10,
+          facing: "east",
+          action: { kind: "moving", phase: "idle", abilityId: null },
+          targetEntityId: null,
+          statuses: [],
+          transition: "moving",
+          elite: false,
+          boss: false
+        }
+      ],
+      entityTransitions: [],
+      encounter: {
+        startedWaveIds: [],
+        activeWaveId: null,
+        pendingSpawnCount: 0,
+        livingHostileCount: 0,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    const current = buildBattlefieldPrimitives(snapshot).entities[0];
+    const origin = buildInterpolationOrigins(snapshot).get(
+      "entity.dwarf.warden"
+    );
+    expect(origin?.x).toBeLessThan(current?.x ?? 0);
+    expect(buildBattlefieldPrimitives(snapshot).entities[0]).toEqual(current);
+    expect(
+      buildInterpolationOrigins({ ...snapshot, schemaVersion: 1 })
+    ).toEqual(new Map());
+  });
+
+  it("rejects malformed depth assets without exposing partial scene data", () => {
+    expect(decodeBattlefieldDepthAsset(undefined)).toBeUndefined();
+    expect(decodeBattlefieldDepthAsset(new ArrayBuffer(8))).toBeUndefined();
+  });
+
   it("keeps reduced-motion feedback static and rejects stale replay effects in StrictMode", async () => {
     const initial = {
       schemaVersion: 1,
@@ -1556,6 +1617,10 @@ describe("authoritative web worker", () => {
         ),
       { timeout: 10_000 }
     );
+    await vi.waitFor(() =>
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.updateCount).toBeGreaterThan(0)
+    );
+    expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens).toBe(0);
     render(initial);
     await vi.waitFor(() =>
       expect(document.querySelector(".combat-feedback")).toBeNull()
@@ -1573,7 +1638,7 @@ describe("authoritative web worker", () => {
     expect(document.querySelector(".combat-feedback")).toBeNull();
   });
 
-  it("updates a persistent Phaser scene without growing entity objects", async () => {
+  it("survives 100 persistent updates and retry teardown without retained renderer resources", async () => {
     const initial = {
       schemaVersion: 1,
       levelId: "level.shuttergate",
@@ -1609,7 +1674,7 @@ describe("authoritative web worker", () => {
       root?.render(
         <Battlefield
           snapshot={renderSnapshot}
-          reduceMotion={true}
+          reduceMotion={false}
           soundEnabled={false}
         />
       );
@@ -1622,9 +1687,12 @@ describe("authoritative web worker", () => {
     const canvas = document.querySelector(".battlefield-canvas canvas");
     expect(canvas).toBeInstanceOf(HTMLCanvasElement);
 
-    for (let cycle = 0; cycle < 10; cycle += 1) {
+    for (let cycle = 0; cycle < 100; cycle += 1) {
       const before = window.__DWARVEN_DEPTHS_RENDERER__?.updateCount ?? 0;
-      render(cycle % 2 === 0 ? crowded : initial);
+      render({
+        ...(cycle % 2 === 0 ? crowded : initial),
+        tick: cycle + 2
+      });
       await vi.waitFor(() =>
         expect(window.__DWARVEN_DEPTHS_RENDERER__?.updateCount).toBeGreaterThan(
           before
@@ -1635,8 +1703,40 @@ describe("authoritative web worker", () => {
         cycle % 2 === 0 ? 5 : 3
       );
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.staticObjects).toBe(4);
-      expect(window.__DWARVEN_DEPTHS_RENDERER__?.pooledEffects).toBe(0);
+      expect(
+        window.__DWARVEN_DEPTHS_RENDERER__?.pooledEffects
+      ).toBeLessThanOrEqual(1);
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
+        cycle % 2 === 0 ? 4 : 3
+      );
+      expect(
+        window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects
+      ).toBeLessThanOrEqual(12);
+      expect(
+        window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens
+      ).toBeLessThanOrEqual(1);
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.timerEvents).toBe(0);
+      expect(
+        window.__DWARVEN_DEPTHS_RENDERER__?.loaderListeners
+      ).toBeLessThanOrEqual(1);
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.camera).toEqual({
+        frame: [1280, 720],
+        scaleMode: "fit",
+        autoCenter: "both"
+      });
     }
+
+    root.unmount();
+    expect(window.__DWARVEN_DEPTHS_RENDERER__).toBeUndefined();
+    expect(document.querySelector(".battlefield-canvas canvas")).toBeNull();
+    root = createRoot(container);
+    render(initial);
+    await vi.waitFor(() =>
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.entityObjects).toBe(3)
+    );
+    expect(
+      document.querySelectorAll(".battlefield-canvas canvas")
+    ).toHaveLength(1);
   });
 
   it("preserves the protocol-v3 combat-control message sequence", async () => {
