@@ -1511,29 +1511,29 @@ describe("authoritative web worker", () => {
     ).toEqual([primitives[1], primitives[2], primitives[0]]);
   });
 
-  it("derives presentation-only interpolation from snapshot-v2 bound positions", () => {
+  it("derives snapshot-v2 interpolation and cancels it under reduced motion", async () => {
     const snapshot = {
       schemaVersion: 2,
       scenarioId: "scenario.interpolation",
       levelId: "level.interpolation",
-      mapId: null,
+      mapId: "map.shuttergate_hall",
       tick: 8,
       previousTick: 7,
       phase: "running",
       nodes: [
-        { id: "node.left", x: 0, y: 0 },
-        { id: "node.right", x: 10, y: 0 }
+        { id: "node.shuttergate_gate", x: 0, y: 0 },
+        { id: "node.shuttergate_keep", x: 10, y: 0 }
       ],
       connections: [],
       entities: [
         {
           id: "entity.dwarf.warden",
-          nodeId: "node.right",
+          nodeId: "node.shuttergate_keep",
           faction: "dwarf",
           visualId: "visual.warden",
           archetype: "character",
-          position: { nodeId: "node.right", x: 10, y: 0 },
-          previousPosition: { nodeId: "node.left", x: 0, y: 0 },
+          position: { nodeId: "node.shuttergate_keep", x: 10, y: 0 },
+          previousPosition: { nodeId: "node.shuttergate_gate", x: 0, y: 0 },
           currentHealth: 10,
           maximumHealth: 10,
           facing: "east",
@@ -1558,11 +1558,34 @@ describe("authoritative web worker", () => {
     const origin = buildInterpolationOrigins(snapshot).get(
       "entity.dwarf.warden"
     );
-    expect(origin?.x).toBeLessThan(current?.x ?? 0);
+    expect([origin?.x, origin?.y]).not.toEqual([current?.x, current?.y]);
     expect(buildBattlefieldPrimitives(snapshot).entities[0]).toEqual(current);
     expect(
       buildInterpolationOrigins({ ...snapshot, schemaVersion: 1 })
     ).toEqual(new Map());
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    const render = (reduceMotion: boolean): void =>
+      root?.render(
+        <Battlefield
+          snapshot={snapshot}
+          reduceMotion={reduceMotion}
+          soundEnabled={false}
+        />
+      );
+    render(false);
+    await vi.waitFor(
+      () =>
+        expect(
+          window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens
+        ).toBeGreaterThan(0),
+      { timeout: 10_000 }
+    );
+    render(true);
+    await vi.waitFor(() =>
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens).toBe(0)
+    );
   });
 
   it("rejects malformed depth assets without exposing partial scene data", () => {

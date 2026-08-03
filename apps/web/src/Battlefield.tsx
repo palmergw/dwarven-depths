@@ -1009,6 +1009,8 @@ class PersistentBattlefieldScene {
     if (offsetX === 0 && offsetY === 0) return;
     objects.ring.setPosition(offsetX, offsetY);
     objects.subject.setPosition(origin.x, origin.y);
+    const ringMask = objects.ring.mask?.geometryMask;
+    ringMask?.setPosition(offsetX, offsetY);
     this.scene.tweens.add({
       targets: objects.ring,
       x: 0,
@@ -1016,6 +1018,14 @@ class PersistentBattlefieldScene {
       duration: INTERPOLATION_DURATION_MS,
       ease: "Sine.Out"
     });
+    if (ringMask !== undefined)
+      this.scene.tweens.add({
+        targets: ringMask,
+        x: 0,
+        y: 0,
+        duration: INTERPOLATION_DURATION_MS,
+        ease: "Sine.Out"
+      });
     this.scene.tweens.add({
       targets: objects.subject,
       x: destination.x,
@@ -1050,10 +1060,10 @@ class PersistentBattlefieldScene {
       interpolationTick !== undefined &&
       interpolationTick !== this.lastInterpolatedTick;
     this.scene.tweens.killTweensOf(
-      [...this.entities.values()].flatMap(({ ring, subject }) => [
-        ring,
-        subject
-      ])
+      [...this.entities.values()].flatMap(({ ring, subject }) => {
+        const mask = ring.mask?.geometryMask;
+        return mask === undefined ? [ring, subject] : [ring, subject, mask];
+      })
     );
     const orderedEntities = [...primitives.entities].sort(
       comparePresentationPrimitives
@@ -1229,7 +1239,9 @@ class PersistentBattlefieldScene {
       runtimeTextures: Object.keys(this.scene.textures.list).filter(
         (key) => key.endsWith("-runtime") || key.startsWith("subject-depth-")
       ).length,
-      activeTweens: this.scene.tweens.getTweens().length,
+      activeTweens: this.scene.tweens
+        .getTweens()
+        .filter((tween) => tween.isPlaying()).length,
       timerEvents: 0,
       loaderListeners: this.scene.load.listenerCount("loaderror"),
       camera: {
@@ -1244,6 +1256,9 @@ class PersistentBattlefieldScene {
   destroy(): void {
     this.scene.tweens.killTweensOf(this.effects);
     for (const objects of this.entities.values()) {
+      if (objects.ring.mask !== null)
+        this.scene.tweens.killTweensOf(objects.ring.mask.geometryMask);
+      this.scene.tweens.killTweensOf([objects.ring, objects.subject]);
       objects.ring.clearMask(true);
       objects.subject.setTexture("warden-runtime");
     }
