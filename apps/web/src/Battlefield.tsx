@@ -159,6 +159,7 @@ interface TextureAlphaMetrics {
 interface TruthVisualMetrics {
   readonly dwarf: TextureAlphaMetrics;
   readonly enemy: TextureAlphaMetrics;
+  readonly entities: ReadonlyMap<string, TextureAlphaMetrics>;
   readonly groundForeground: TextureAlphaMetrics;
   readonly foreground: TextureAlphaMetrics;
   readonly rear: TextureAlphaMetrics;
@@ -184,6 +185,20 @@ export interface TruthScreenSidecar {
       readonly id: string;
       readonly faction: RenderEntity["faction"];
       readonly nodeId: string;
+      readonly visualId: string | null;
+      readonly archetype: string | null;
+      readonly currentHealth: number | null;
+      readonly maximumHealth: number | null;
+      readonly action: {
+        readonly kind: string;
+        readonly phase: string;
+        readonly abilityId: string | null;
+      } | null;
+      readonly targetEntityId: string | null;
+      readonly statusIds: readonly string[];
+      readonly transition: string | null;
+      readonly elite: boolean;
+      readonly boss: boolean;
       readonly x: number;
       readonly y: number;
       readonly nominalHeight: number;
@@ -474,6 +489,11 @@ export function buildTruthScreenSidecar(
   visualMetrics: TruthVisualMetrics
 ): TruthScreenSidecar {
   const byId = new Map(snapshot.entities.map((entity) => [entity.id, entity]));
+  const v2ById = new Map(
+    snapshot.schemaVersion === 2
+      ? snapshot.entities.map((entity) => [entity.id, entity])
+      : []
+  );
   const entities = primitives.entities.flatMap((primitive) => {
     const entity = byId.get(primitive.id);
     if (
@@ -481,7 +501,9 @@ export function buildTruthScreenSidecar(
       (entity.faction !== "dwarf" && entity.faction !== "enemy")
     )
       return [];
-    const source = visualMetrics[entity.faction];
+    const source =
+      visualMetrics.entities.get(entity.id) ?? visualMetrics[entity.faction];
+    const v2 = v2ById.get(entity.id);
     const pivotX = Math.round(source.width / 2);
     const pivotY = entity.faction === "dwarf" ? 66 : 54;
     const canvasLeft = Math.round(primitive.x - pivotX);
@@ -497,6 +519,16 @@ export function buildTruthScreenSidecar(
         id: entity.id,
         faction: entity.faction,
         nodeId: entity.nodeId,
+        visualId: v2?.visualId ?? null,
+        archetype: v2?.archetype ?? null,
+        currentHealth: v2?.currentHealth ?? null,
+        maximumHealth: v2?.maximumHealth ?? null,
+        action: v2?.action ?? null,
+        targetEntityId: v2?.targetEntityId ?? null,
+        statusIds: v2?.statuses.map(({ id }) => id) ?? [],
+        transition: v2?.transition ?? null,
+        elite: v2?.elite ?? false,
+        boss: v2?.boss ?? false,
         x: Math.round(primitive.x),
         y: Math.round(primitive.y),
         nominalHeight: entity.faction === "dwarf" ? 56 : 44,
@@ -527,18 +559,19 @@ export function buildTruthScreenSidecar(
   ).length;
   const exactlyOneWardenAndOneHostile = dwarfCount === 1 && hostileCount === 1;
   const hostile = entities.find(({ faction }) => faction === "enemy");
+  const hostileSource =
+    (hostile === undefined
+      ? undefined
+      : visualMetrics.entities.get(hostile.id)) ?? visualMetrics.enemy;
   const countEnemyArtifactOverlap = (
     artifact: TextureAlphaMetrics,
     canvasLeft: number,
     canvasTop: number
   ): number => {
     let overlap = 0;
-    for (let y = 0; y < visualMetrics.enemy.height; y += 1) {
-      for (let x = 0; x < visualMetrics.enemy.width; x += 1) {
-        if (
-          (visualMetrics.enemy.alpha[y * visualMetrics.enemy.width + x] ??
-            0) === 0
-        )
+    for (let y = 0; y < hostileSource.height; y += 1) {
+      for (let x = 0; x < hostileSource.width; x += 1) {
+        if ((hostileSource.alpha[y * hostileSource.width + x] ?? 0) === 0)
           continue;
         const worldX = canvasLeft + x;
         const worldY = canvasTop + y;
@@ -932,10 +965,13 @@ function addDepthTestedRing(
 }
 
 function updateEntitySignal(
+  scene: Phaser.Scene,
   signal: Phaser.GameObjects.Graphics,
   entity: RenderPrimitive,
-  presentation: CombatPresentationState | undefined
+  presentation: CombatPresentationState | undefined,
+  staticDepth: StaticSceneDepth
 ): void {
+  signal.clearMask(true);
   signal.clear();
   signal.setPosition(0, 0);
   if (presentation === undefined) return;
@@ -982,6 +1018,24 @@ function updateEntitySignal(
     signal.lineStyle(2, presentation.boss ? 0xe7a2ff : 0xffd45c, 1);
     signal.strokeCircle(entity.x, top - 5, presentation.boss ? 8 : 5);
   }
+  if (entity.cameraDepth !== undefined)
+    signal.setMask(
+      createDepthVisibilityMask(
+        scene,
+        100,
+        90,
+        {
+          kind: "upright-billboard",
+          cameraDepth: entity.cameraDepth,
+          cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+          depthEdgeGuardPixels: 1,
+          frameLeft: Math.round(entity.x) - 50,
+          frameTop: Math.round(entity.y) - 82,
+          pivotY: 82
+        },
+        staticDepth
+      )
+    );
 }
 
 function addDepthTestedEffect(
@@ -1155,6 +1209,8 @@ class PersistentBattlefieldScene {
     objects.ring.setPosition(origin.x, origin.y);
     objects.subject.setPosition(origin.x, origin.y);
     objects.signal.setPosition(offsetX, offsetY);
+    const signalMask = objects.signal.mask?.geometryMask;
+    signalMask?.setPosition(offsetX, offsetY);
     this.scene.tweens.add({
       targets: objects.ring,
       x: destination.x,
@@ -1169,6 +1225,14 @@ class PersistentBattlefieldScene {
       duration: INTERPOLATION_DURATION_MS,
       ease: "Sine.Out"
     });
+    if (signalMask !== undefined)
+      this.scene.tweens.add({
+        targets: signalMask,
+        x: 0,
+        y: 0,
+        duration: INTERPOLATION_DURATION_MS,
+        ease: "Sine.Out"
+      });
     this.scene.tweens.add({
       targets: objects.subject,
       x: destination.x,
@@ -1219,6 +1283,7 @@ class PersistentBattlefieldScene {
         this.layers["world-rings"].delete(objects.ring);
         this.layers["world-entities"].delete(objects.subject);
         objects.ring.destroy();
+        objects.signal.clearMask(true);
         objects.signal.destroy();
         objects.subject.setTexture("warden-runtime");
         objects.subject.destroy();
@@ -1280,7 +1345,13 @@ class PersistentBattlefieldScene {
       }
       const objects = this.entities.get(entity.id);
       if (objects !== undefined)
-        updateEntitySignal(objects.signal, entity, presentation);
+        updateEntitySignal(
+          this.scene,
+          objects.signal,
+          entity,
+          presentation,
+          this.staticDepth
+        );
       const snapshotEntity =
         snapshot.schemaVersion === 2
           ? snapshot.entities.find(({ id }) => id === entity.id)
@@ -1451,6 +1522,16 @@ class PersistentBattlefieldScene {
         {
           dwarf: measureTextureAlpha(this.scene, wardenTexture),
           enemy: measureTextureAlpha(this.scene, raiderTexture),
+          entities: new Map(
+            snapshot.entities.map((entity) => [
+              entity.id,
+              measureTextureAlpha(
+                this.scene,
+                poseTextures.get(selectCombatPoseAsset(snapshot, entity.id)) ??
+                  selectCombatPoseAsset(snapshot, entity.id)
+              )
+            ])
+          ),
           groundForeground: measureTextureAlpha(
             this.scene,
             "entrance-route-ground-foreground"
@@ -1500,6 +1581,7 @@ class PersistentBattlefieldScene {
     this.scene.tweens.killTweensOf(this.effects);
     for (const objects of this.entities.values()) {
       this.scene.tweens.killTweensOf([objects.ring, objects.subject]);
+      objects.signal.clearMask(true);
       objects.subject.setTexture("warden-runtime");
     }
     for (const effect of this.effects) effect.clearMask(true);

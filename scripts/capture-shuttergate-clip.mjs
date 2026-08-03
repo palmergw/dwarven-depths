@@ -1,20 +1,21 @@
 import { execFile as execFileCallback } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { chromium } from "playwright";
 
 const execFile = promisify(execFileCallback);
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 const baseUrl = process.env.DD_WEB_URL ?? "http://127.0.0.1:5173";
-const outputDirectory = new URL(
-  "../docs/visual-evidence/running-client/",
-  import.meta.url
-);
-const videoUrl = new URL("shuttergate-interaction-clip.webm", outputDirectory);
+const outputDirectory = process.env.DD_CLIP_OUTPUT_DIRECTORY
+  ? pathToFileURL(`${process.env.DD_CLIP_OUTPUT_DIRECTORY.replace(/\/$/, "")}/`)
+  : new URL("../docs/visual-evidence/running-client/", import.meta.url);
+const reducedMotion = process.env.DD_CLIP_REDUCED_MOTION !== "false";
+const motionId = reducedMotion ? "reduced-motion" : "normal-motion";
+const videoUrl = new URL(`shuttergate-${motionId}-clip.webm`, outputDirectory);
 const sidecarUrl = new URL(
-  "shuttergate-interaction-clip.json",
+  `shuttergate-${motionId}-clip.json`,
   outputDirectory
 );
 const temporaryVideoDirectory = fileURLToPath(
@@ -37,7 +38,7 @@ const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
   viewport: { width: 1440, height: 900 },
   deviceScaleFactor: 1,
-  reducedMotion: "reduce",
+  reducedMotion: reducedMotion ? "reduce" : "no-preference",
   recordVideo: {
     dir: temporaryVideoDirectory,
     size: { width: 1440, height: 900 }
@@ -88,8 +89,9 @@ try {
     sourceHead,
     fixtureId: "scenarios/conformance/shuttergate-web-truth.json",
     viewport: [1440, 900],
-    video: "shuttergate-interaction-clip.webm",
+    video: `shuttergate-${motionId}-clip.webm`,
     videoSha256,
+    motion: motionId,
     approximateDurationSeconds: 8.4,
     startingTick,
     endingTick,
