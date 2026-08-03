@@ -238,8 +238,7 @@ try {
   await desktop.getByRole("button", { name: "Resume combat" }).click();
   await desktop.waitForFunction(
     () =>
-      (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.encounter
-        .livingHostileCount ?? 0) > 1
+      (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.hostileCount ?? 0) > 1
   );
   await desktop.getByRole("button", { name: "Pause combat" }).click();
   captures.push(
@@ -247,8 +246,7 @@ try {
       desktop,
       "dense-wave-reduced-motion",
       () =>
-        (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.encounter
-          .livingHostileCount ?? 0) > 1
+        (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.hostileCount ?? 0) > 1
     )
   );
   await desktop.getByRole("button", { name: "Resume combat" }).click();
