@@ -738,6 +738,77 @@ function authorizeBattlefieldEnemyHealth(
   );
 }
 
+/** Records enemy health emitted by the trusted active-ability producer. */
+export function authorizeActiveAbilityEnemyHealth(
+  authority: BattlefieldDwarfDeploymentAuthority,
+  content: CompiledContent,
+  source: BattlefieldState,
+  target: BattlefieldState
+): void {
+  requireDeploymentAuthority(authority, source, content);
+  validateBattlefieldEnemyHealth(
+    authority,
+    content,
+    source,
+    source.enemyCombatants
+  );
+  requireDeploymentAuthority(authority, target, content);
+  authorizeBattlefieldEnemyHealth(
+    authority,
+    content,
+    target,
+    target.enemyCombatants
+  );
+}
+
+/** Cancels a dwarf windup when an accepted active ability takes precedence. */
+export function interruptUncommittedDwarfAttackForActiveAbility(
+  source: BattlefieldState,
+  dwarfEntityId: EntityId,
+  currentTick: number,
+  content: CompiledContent,
+  authority?: BattlefieldDwarfDeploymentAuthority
+): BattlefieldState {
+  if (authority !== undefined)
+    requireDeploymentAuthority(authority, source, content);
+  const dwarf = source.dwarfCombatants.find(
+    (combatant) => combatant.entityId === dwarfEntityId
+  );
+  const windup = dwarf?.actionState.activeBasicAttack;
+  if (
+    dwarf === undefined ||
+    windup == null ||
+    windup.commitAtTick <= currentTick
+  )
+    return source;
+  const dwarfCombatants = source.dwarfCombatants.map((combatant) =>
+    combatant.entityId === dwarfEntityId
+      ? Object.freeze({
+          ...combatant,
+          actionState: Object.freeze({
+            ...combatant.actionState,
+            activeBasicAttack: null,
+            cooldownCompleteAtTick: null
+          })
+        })
+      : combatant
+  );
+  const target = freezeBattlefield(
+    source,
+    source.occupancy,
+    dwarfCombatants,
+    source.pendingCommittedAttacks
+  );
+  if (authority !== undefined)
+    acceptDwarfActionTransition(
+      authority,
+      content,
+      source.dwarfCombatants,
+      target.dwarfCombatants
+    );
+  return target;
+}
+
 function sameDwarfActionState(
   left: BattlefieldDwarfCombatant["actionState"],
   right: BattlefieldDwarfCombatant["actionState"]

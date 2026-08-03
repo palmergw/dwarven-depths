@@ -54,12 +54,13 @@ afterEach(async () => {
 
 function waitForMessage(
   worker: Worker,
-  predicate: (message: WorkerMessage) => boolean
+  predicate: (message: WorkerMessage) => boolean,
+  timeoutMilliseconds = 10_000
 ): Promise<WorkerMessage> {
   return new Promise((resolve, reject) => {
     const timeout = window.setTimeout(
       () => reject(new Error("worker response timed out")),
-      10_000
+      timeoutMilliseconds
     );
     worker.addEventListener("message", (event: MessageEvent<unknown>) => {
       const message = parseWorkerMessage(event.data);
@@ -1284,7 +1285,7 @@ describe("authoritative web worker", () => {
         dwarves: [
           {
             activeAbilities: [
-              { cooldownCompleteAtTick: 92, rejectionReason: null }
+              { cooldownCompleteAtTick: 93, rejectionReason: null }
             ]
           }
         ]
@@ -1955,6 +1956,153 @@ describe("authoritative web worker", () => {
       worker.terminate();
     }
   });
+
+  {
+    const runShuttergateEncounter = async () => {
+      const worker = new Worker(
+        new URL("./simulation.worker.ts", import.meta.url),
+        { type: "module" }
+      );
+      const previousNodes = new Map<string, string>();
+      const previousHealth = new Map<string, number>();
+      const startedWaveIds = new Set<string>();
+      let movementObserved = false;
+      let basicAttackObserved = false;
+      let abilityObserved = false;
+      let damageObserved = false;
+      let deathObserved = false;
+      let eliteObserved = false;
+      let maximumLivingHostiles = 0;
+      let abilityRequestSequence = 0;
+      let terminalSnapshot: RenderSnapshot | undefined;
+      worker.addEventListener("message", (event: MessageEvent<unknown>) => {
+        const message = parseWorkerMessage(event.data);
+        if (
+          message?.type !== "render_snapshot" ||
+          message.snapshot.schemaVersion !== 2
+        )
+          return;
+        const snapshot = message.snapshot;
+        for (const waveId of snapshot.encounter.startedWaveIds)
+          startedWaveIds.add(waveId);
+        maximumLivingHostiles = Math.max(
+          maximumLivingHostiles,
+          snapshot.encounter.livingHostileCount
+        );
+        eliteObserved ||= snapshot.entities.some((entity) => entity.elite);
+        deathObserved ||= snapshot.entityTransitions.some(
+          (transition) => transition.kind === "destroyed"
+        );
+        for (const entity of snapshot.entities) {
+          const previousNode = previousNodes.get(entity.id);
+          movementObserved ||=
+            entity.faction === "enemy" &&
+            previousNode !== undefined &&
+            previousNode !== entity.nodeId;
+          previousNodes.set(entity.id, entity.nodeId);
+          const health = previousHealth.get(entity.id);
+          damageObserved ||=
+            health !== undefined && entity.currentHealth < health;
+          previousHealth.set(entity.id, entity.currentHealth);
+          basicAttackObserved ||= entity.action.kind === "basic_attack";
+          abilityObserved ||= entity.action.kind === "ability";
+        }
+        if (
+          !abilityObserved &&
+          snapshot.phase === "running" &&
+          snapshot.tick % 5 === 0 &&
+          snapshot.entities.some(
+            (entity) =>
+              entity.faction === "dwarf" && entity.targetEntityId !== null
+          )
+        )
+          worker.postMessage({
+            protocolVersion: 4,
+            type: "command",
+            requestId: `encounter-ability-${abilityRequestSequence++}`,
+            command: {
+              type: "activateAbility",
+              dwarfEntityId: "entity.dwarf.warden",
+              abilityId: "ability.iron_warden.shield_slam"
+            }
+          });
+        if (snapshot.phase === "terminal") terminalSnapshot = snapshot;
+      });
+      try {
+        const preparation = waitForMessage(
+          worker,
+          (message) =>
+            message.protocolVersion === 4 &&
+            message.type === "snapshot" &&
+            message.phase === "preparation"
+        );
+        worker.postMessage({ protocolVersion: 4, type: "initialize" });
+        await preparation;
+        const paused = waitForMessage(
+          worker,
+          (message) =>
+            message.protocolVersion === 4 &&
+            message.type === "snapshot" &&
+            message.phase === "running" &&
+            message.manualPaused
+        );
+        worker.postMessage({
+          protocolVersion: 4,
+          type: "command",
+          requestId: "encounter-confirm",
+          command: { type: "confirmPreparation" }
+        });
+        await paused;
+        const result = waitForMessage(
+          worker,
+          (message) =>
+            message.protocolVersion === 4 && message.type === "result",
+          60_000
+        );
+        worker.postMessage({
+          protocolVersion: 4,
+          type: "command",
+          requestId: "encounter-resume",
+          command: { type: "setManualPause", paused: false }
+        });
+        worker.postMessage({
+          protocolVersion: 4,
+          type: "command",
+          requestId: "encounter-resume-commit",
+          command: {
+            type: "commitManualResume",
+            resumeRequestId: "encounter-resume"
+          }
+        });
+        await expect(result).resolves.toMatchObject({
+          terminalResult: "defeat"
+        });
+        expect(movementObserved).toBe(true);
+        expect(basicAttackObserved).toBe(true);
+        expect(abilityObserved).toBe(true);
+        expect(damageObserved).toBe(true);
+        expect(deathObserved).toBe(true);
+        expect(eliteObserved).toBe(true);
+        expect(maximumLivingHostiles).toBeGreaterThan(1);
+        expect([...startedWaveIds]).toEqual([
+          "wave.shuttergate_1",
+          "wave.shuttergate_2",
+          "wave.shuttergate_3"
+        ]);
+        expect(terminalSnapshot).toMatchObject({
+          phase: "terminal",
+          encounter: { terminalResult: "defeat" }
+        });
+      } finally {
+        worker.terminate();
+      }
+    };
+    it(
+      "runs one authoritative Shuttergate encounter through movement, combat, waves, and defeat",
+      runShuttergateEncounter,
+      70_000
+    );
+  }
 
   it("preserves the protocol-v1 preparation and result flow", async () => {
     const worker = new Worker(

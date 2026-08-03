@@ -3,6 +3,7 @@
   "id": "scenario.conformance.shield_slam",
   "levelId": "level.shuttergate_hall",
   "seed": "1",
-  "maximumTicks": 200,
-  "commands": []
+  "maximumTicks": 4500,
+  "commands": [],
+  "expectedTerminalResult": "defeat"
 }

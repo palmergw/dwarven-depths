@@ -2000,7 +2000,8 @@ function event(
 export function stepSimulation(
   state: SimulationState,
   commands: readonly CommandEnvelope[],
-  content: CompiledContent
+  content: CompiledContent,
+  dwarfAuthority?: BattlefieldDwarfDeploymentAuthority
 ): StepResult {
   const battlefield = state.battlefield;
   const hasUnavailableAbilityCommand =
@@ -2019,7 +2020,8 @@ export function stepSimulation(
         statuses: state.activeStatuses ?? [],
         committedAbilities: state.committedAbilities ?? []
       },
-      content
+      content,
+      dwarfAuthority
     );
     const events: SimulationEvent[] = ability.activations.map(
       (activation, offset) => {
@@ -2110,7 +2112,8 @@ export function stepSimulation(
         statuses: state.activeStatuses ?? [],
         committedAbilities: state.committedAbilities ?? []
       },
-      content
+      content,
+      dwarfAuthority
     );
     const events: SimulationEvent[] = [];
     for (const activation of ability.activations) {

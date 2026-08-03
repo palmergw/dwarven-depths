@@ -36,7 +36,7 @@ import {
 
 declare const self: DedicatedWorkerGlobalScope;
 
-const FOCUS_LOSS_GUARD_MILLISECONDS = 100;
+const SIMULATION_STEP_MILLISECONDS = 16;
 
 let initialized = false;
 let commandAccepted = false;
@@ -295,7 +295,7 @@ function schedulePreparedScenario(requestId: string): void {
       return;
     pendingExecutionRequestId = null;
     void executePreparedScenario();
-  }, FOCUS_LOSS_GUARD_MILLISECONDS);
+  }, SIMULATION_STEP_MILLISECONDS);
 }
 
 self.addEventListener("message", async (event: MessageEvent<unknown>) => {
@@ -561,10 +561,10 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
   pendingExecutionRequestId = null;
 
   if (protocolVersion === 4) {
-    // Materialize the first authoritative combat frame before pausing. This
-    // applies preparation, spawns the first hostile, and gives the renderer a
-    // stable one-Warden/one-hostile tick without starting the live loop.
+    // Materialize the first authored wave before pausing so the renderer gets
+    // a stable one-Warden/one-hostile frame without starting the live loop.
     manualPaused = false;
+    await executePreparedScenario();
     await executePreparedScenario();
     manualPaused = true;
     pendingExecutionRequestId = null;

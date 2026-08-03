@@ -18,6 +18,12 @@ import type {
   StatusApplicationDecision
 } from "@dwarven-depths/contracts";
 import {
+  authorizeActiveAbilityEnemyHealth,
+  type BattlefieldDwarfDeploymentAuthority,
+  interruptUncommittedDwarfAttackForActiveAbility
+} from "./battlefield-attack-impact.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
+import {
   applyStatusApplications,
   resolveCombatTimers
 } from "./combat-timers.js";
@@ -103,6 +109,13 @@ function freezeEnemy(
   const suppressUncommittedWork =
     activeBasicAttack === null ||
     activeBasicAttack.commitAtTick > staggerExpiresAtTick;
+  const minimumMovementTick = Math.max(
+    enemy.actionState.nextMovementAtTick,
+    staggerExpiresAtTick
+  );
+  const movementIntervalsSinceAdmission = Math.ceil(
+    (minimumMovementTick - enemy.admittedAtTick) / enemy.movementIntervalTicks
+  );
   return Object.freeze({
     ...enemy,
     currentHealth,
@@ -110,13 +123,13 @@ function freezeEnemy(
     basicAttack: Object.freeze({ ...enemy.basicAttack }),
     actionState: Object.freeze({
       ...enemy.actionState,
-      nextMovementAtTick: Math.max(
-        enemy.actionState.nextMovementAtTick,
-        staggerExpiresAtTick
-      ),
+      nextMovementAtTick:
+        enemy.admittedAtTick +
+        movementIntervalsSinceAdmission * enemy.movementIntervalTicks,
       cooldownCompleteAtTick: suppressUncommittedWork
         ? Math.max(
             enemy.actionState.cooldownCompleteAtTick ?? 0,
+            enemy.admittedAtTick + enemy.basicAttack.cooldownTicks,
             staggerExpiresAtTick
           )
         : enemy.actionState.cooldownCompleteAtTick,
@@ -149,7 +162,8 @@ export function isEnemyStaggered(
  */
 export function resolveActiveAbilityTick(
   request: ActiveAbilityTickRequest,
-  content: CompiledContent
+  content: CompiledContent,
+  authority?: BattlefieldDwarfDeploymentAuthority
 ): ActiveAbilityTickResolution {
   if (request.schemaVersion !== 1)
     throw new RangeError(
@@ -173,7 +187,8 @@ export function resolveActiveAbilityTick(
   const activations: AbilityActivationDecision[] = [];
   const impacts: AbilityImpactDecision[] = [];
   const statusApplicationDecisions: StatusApplicationDecision[] = [];
-  const map = content.maps.get(request.battlefield.mapId);
+  let battlefield = request.battlefield;
+  const map = content.maps.get(battlefield.mapId);
   if (map === undefined)
     throw new RangeError("active ability battlefield map is unknown");
   const nodes = new Map(map.nodes.map((node) => [node.id, node] as const));
@@ -218,7 +233,7 @@ export function resolveActiveAbilityTick(
       );
       continue;
     }
-    const dwarf = request.battlefield.dwarfCombatants.find(
+    const dwarf = battlefield.dwarfCombatants.find(
       ({ entityId }) => entityId === command.dwarfEntityId
     );
     if (dwarf === undefined) {
@@ -256,8 +271,10 @@ export function resolveActiveAbilityTick(
       continue;
     }
     if (
-      dwarf.actionState.activeBasicAttack !== null ||
-      request.battlefield.pendingCommittedAttacks.some(
+      (dwarf.actionState.activeBasicAttack !== null &&
+        dwarf.actionState.activeBasicAttack.commitAtTick <=
+          request.currentTick) ||
+      battlefield.pendingCommittedAttacks.some(
         ({ sourceEntityId }) => sourceEntityId === command.dwarfEntityId
       ) ||
       committedAbilities.some(
@@ -269,24 +286,47 @@ export function resolveActiveAbilityTick(
       );
       continue;
     }
-    const target =
-      dwarf.actionState.currentTargetEntityId === null
-        ? undefined
-        : request.battlefield.enemyCombatants.find(
-            (enemy) =>
-              enemy.entityId === dwarf.actionState.currentTargetEntityId &&
-              enemy.lifecycleState === "active" &&
-              enemy.currentHealth > 0
-          );
     const placement = map.placementPoints.find(
       ({ id }) => id === dwarf.placementPointId
     );
     const sourceNode =
       placement === undefined ? undefined : nodes.get(placement.nodeId);
-    const targetNode =
-      target === undefined
+    const eligibleTargets = battlefield.enemyCombatants
+      .filter(
+        (enemy) => enemy.lifecycleState === "active" && enemy.currentHealth > 0
+      )
+      .map((enemy) => ({
+        enemy,
+        node: nodeForEntity(battlefield, nodes, enemy.entityId)
+      }))
+      .filter(
+        (
+          entry
+        ): entry is {
+          enemy: BattlefieldEnemyCombatant;
+          node: NavigationNodeDefinition;
+        } => entry.node !== undefined
+      );
+    const retainedTarget = eligibleTargets.find(
+      ({ enemy }) => enemy.entityId === dwarf.actionState.currentTargetEntityId
+    );
+    const target =
+      retainedTarget ??
+      (sourceNode === undefined
         ? undefined
-        : nodeForEntity(request.battlefield, nodes, target.entityId);
+        : eligibleTargets.sort((left, right) => {
+            const leftX = left.node.x - sourceNode.x;
+            const leftY = left.node.y - sourceNode.y;
+            const rightX = right.node.x - sourceNode.x;
+            const rightY = right.node.y - sourceNode.y;
+            return (
+              leftX * leftX +
+                leftY * leftY -
+                (rightX * rightX + rightY * rightY) ||
+              compareText(left.enemy.entityId, right.enemy.entityId)
+            );
+          })[0]);
+    const targetNode = target === undefined ? undefined : target.node;
     if (
       sourceNode === undefined ||
       targetNode === undefined ||
@@ -297,6 +337,13 @@ export function resolveActiveAbilityTick(
       );
       continue;
     }
+    battlefield = interruptUncommittedDwarfAttackForActiveAbility(
+      battlefield,
+      dwarf.entityId,
+      request.currentTick,
+      content,
+      authority
+    );
     const impactAtTick =
       request.currentTick + ability.windupTicks + ability.impactDelayTicks;
     const cooldownCompleteAtTick = request.currentTick + ability.cooldownTicks;
@@ -351,7 +398,6 @@ export function resolveActiveAbilityTick(
   committedAbilities = committedAbilities.filter(
     ({ impactAtTick }) => impactAtTick > request.currentTick
   );
-  let battlefield = request.battlefield;
   for (const ability of due) {
     const targets = battlefield.enemyCombatants
       .filter(
@@ -421,7 +467,7 @@ export function resolveActiveAbilityTick(
     statuses = statuses.filter(({ ownerEntityId }) =>
       living.has(ownerEntityId)
     );
-    battlefield = Object.freeze({
+    const impactedBattlefield = Object.freeze({
       ...battlefield,
       enemyCombatants: Object.freeze(enemyCombatants),
       occupancy: Object.freeze(
@@ -430,6 +476,8 @@ export function resolveActiveAbilityTick(
         )
       )
     });
+    propagateBattlefieldRoundLineage(battlefield, impactedBattlefield);
+    battlefield = impactedBattlefield;
     impacts.push(
       Object.freeze({
         schemaVersion: 1,
@@ -447,6 +495,13 @@ export function resolveActiveAbilityTick(
     );
   }
 
+  if (authority !== undefined && battlefield !== request.battlefield)
+    authorizeActiveAbilityEnemyHealth(
+      authority,
+      content,
+      request.battlefield,
+      battlefield
+    );
   return Object.freeze({
     schemaVersion: 1,
     battlefield,

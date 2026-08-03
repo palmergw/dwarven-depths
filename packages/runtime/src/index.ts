@@ -9,6 +9,8 @@ import {
   canonicalHash,
   canonicalStringify,
   type DiagnosticCause,
+  type DwarfActionPhaseEntry,
+  type DwarfTargetPolicy,
   type LifecycleDiagnosticRecord,
   type ReplayCheckpoint,
   type ReplayDefinition,
@@ -17,11 +19,16 @@ import {
   type SimulationState,
   type TimelineRecord
 } from "@dwarven-depths/contracts";
+import { createInitialProfile } from "@dwarven-depths/progression";
 import {
+  type BattlefieldDwarfDeploymentAuthority,
+  createBattlefieldDwarfDeploymentAuthority,
   createInitialState,
+  deployBattlefieldDwarves,
   stateChecksum,
   stepSimulation
 } from "@dwarven-depths/sim-core";
+import { resolveAuthoritativeCombatCheckpoint } from "./authoritative-combat-checkpoint.js";
 
 export {
   type AuthoritativeCombatCheckpointRequest,
@@ -504,90 +511,38 @@ export class ReplayDivergenceError extends Error {
   }
 }
 
-/** Canonical preparation state for the currently supported Shield Slam web slice. */
+/** Canonical deployed preparation state for the Shuttergate web encounter. */
 export function createShieldSlamWebPreparationState(
   content: CompiledContent,
   scenario: ScenarioDefinition
 ): SimulationState {
   const character = content.characters.get("character.iron_warden" as never);
-  const enemy = content.enemies.get("enemy.goblin_cutter" as never);
   const level = content.levels.get(scenario.levelId);
-  if (
-    character === undefined ||
-    enemy === undefined ||
-    level?.mapId === undefined
-  )
+  if (character === undefined || level?.mapId === undefined)
     throw new Error(
       "The Shield Slam web scenario is missing authored content."
     );
+  const initial = createInitialState(content, scenario.levelId, scenario.seed);
+  if (initial.battlefield === undefined)
+    throw new Error("The Shield Slam web scenario has no battlefield state.");
+  const deploymentAuthority = createBattlefieldDwarfDeploymentAuthority(
+    [
+      {
+        entityId: "entity.dwarf.warden" as never,
+        characterDefinitionId: character.id,
+        placementPointId: "placement.shuttergate_north_guard" as never
+      }
+    ],
+    initial.battlefield,
+    content
+  );
   return Object.freeze({
-    schemaVersion: 1,
-    contentVersion: content.bundle.contentVersion,
-    tick: 0,
-    seed: scenario.seed,
-    rngState: 1,
-    levelId: scenario.levelId,
-    phase: "PREPARATION",
-    eventSequence: 0,
-    battlefield: Object.freeze({
-      schemaVersion: 1,
-      mapId: level.mapId,
-      startedWaveIds: Object.freeze([]),
-      firedSpawnIds: Object.freeze([]),
-      pendingSpawns: Object.freeze([]),
-      enemyAdmissions: Object.freeze([]),
-      occupancy: Object.freeze([
-        Object.freeze({
-          entityId: "entity.dwarf.warden" as never,
-          nodeId: "node.shuttergate_north_guard" as never
-        }),
-        Object.freeze({
-          entityId: "entity.enemy.shield_slam_target" as never,
-          nodeId: "node.shuttergate_gate" as never
-        })
-      ]),
-      pendingCommittedAttacks: Object.freeze([]),
-      dwarfCombatants: Object.freeze([
-        Object.freeze({
-          schemaVersion: 1,
-          entityId: "entity.dwarf.warden" as never,
-          characterDefinitionId: character.id,
-          placementPointId: "placement.shuttergate_north_guard" as never,
-          currentHealth: character.maximumHealth,
-          maximumHealth: character.maximumHealth,
-          lifecycleState: "active" as const,
-          basicAttack: character.basicAttack,
-          actionState: Object.freeze({
-            schemaVersion: 1,
-            currentTargetEntityId: "entity.enemy.shield_slam_target" as never,
-            activeBasicAttack: null,
-            cooldownCompleteAtTick: null
-          })
-        })
-      ]),
-      enemyCombatants: Object.freeze([
-        Object.freeze({
-          schemaVersion: 1,
-          entityId: "entity.enemy.shield_slam_target" as never,
-          enemyDefinitionId: enemy.id,
-          classification: enemy.classification,
-          currentHealth: enemy.maximumHealth,
-          maximumHealth: enemy.maximumHealth,
-          armor: enemy.armor,
-          movementIntervalTicks: enemy.movementIntervalTicks,
-          admittedAtTick: 0,
-          lifecycleState: "active" as const,
-          basicAttack: enemy.basicAttack,
-          actionState: Object.freeze({
-            schemaVersion: 1,
-            nextMovementAtTick: 0,
-            currentTargetEntityId: "entity.dwarf.warden" as never,
-            activeBasicAttack: null,
-            cooldownCompleteAtTick: null
-          })
-        })
-      ])
-    })
+    ...initial,
+    battlefield: deployBattlefieldDwarves(
+      initial.battlefield,
+      deploymentAuthority,
+      content
+    )
   });
 }
 
@@ -608,7 +563,9 @@ function finalizeShieldSlamWebStep(
     scenario.id !== "scenario.conformance.shield_slam" ||
     result.state.phase !== "COMBAT_RUNNING" ||
     enemies.length === 0 ||
-    enemies.some((enemy) => enemy.lifecycleState === "active")
+    enemies.some((enemy) => enemy.lifecycleState === "active") ||
+    (result.state.battlefield?.startedWaveIds.length ?? 0) > 0 ||
+    (result.state.battlefield?.firedSpawnIds.length ?? 0) > 0
   )
     return result;
   const finalCleanupSequence = result.state.eventSequence;
@@ -652,6 +609,8 @@ export class LiveScenarioHost {
   #events: SimulationEvent[] = [];
   #failed = false;
   readonly #usesShieldSlamWebAuthority: boolean;
+  readonly #dwarfAuthority: BattlefieldDwarfDeploymentAuthority | undefined;
+  readonly #targetPolicies = new Map<string, DwarfTargetPolicy>();
 
   constructor(
     scenario: ScenarioDefinition,
@@ -687,10 +646,45 @@ export class LiveScenarioHost {
       throw new RangeError(
         "live scenario initial state does not match its canonical preparation identity"
       );
+    if (
+      initialState?.battlefield !== undefined &&
+      canonicalInitialState.battlefield === undefined
+    )
+      throw new RangeError(
+        "live scenario deployment requires canonical battlefield state"
+      );
+    const dwarfAuthority =
+      initialState?.battlefield === undefined ||
+      canonicalInitialState.battlefield === undefined
+        ? undefined
+        : createBattlefieldDwarfDeploymentAuthority(
+            initialState.battlefield.dwarfCombatants.map((dwarf) => ({
+              entityId: dwarf.entityId,
+              characterDefinitionId: dwarf.characterDefinitionId,
+              placementPointId: dwarf.placementPointId
+            })),
+            canonicalInitialState.battlefield,
+            content
+          );
+    this.#dwarfAuthority = dwarfAuthority;
     this.#state =
       initialState === undefined
         ? canonicalInitialState
-        : Object.freeze({ ...initialState });
+        : Object.freeze({
+            ...initialState,
+            ...(dwarfAuthority === undefined ||
+            canonicalInitialState.battlefield === undefined
+              ? {}
+              : {
+                  battlefield: deployBattlefieldDwarves(
+                    canonicalInitialState.battlefield,
+                    dwarfAuthority,
+                    content
+                  )
+                })
+          });
+    for (const dwarf of initialState?.battlefield?.dwarfCombatants ?? [])
+      this.#targetPolicies.set(dwarf.entityId, "nearest");
   }
 
   get state(): SimulationState {
@@ -756,11 +750,29 @@ export class LiveScenarioHost {
     const commands = this.#pendingCommands;
     this.#pendingCommands = [];
     const previousState = this.#state;
-    const result = finalizeShieldSlamWebStep(
-      this.#scenario,
-      stepSimulation(previousState, commands, this.#content),
-      this.#usesShieldSlamWebAuthority
+    for (const { command } of commands) {
+      if (command.type === "setTargetPolicy")
+        this.#targetPolicies.set(
+          command.dwarfEntityId,
+          command.requestedPolicy
+        );
+    }
+    const stepped = stepSimulation(
+      previousState,
+      commands,
+      this.#content,
+      this.#dwarfAuthority
     );
+    const result =
+      this.#usesShieldSlamWebAuthority &&
+      previousState.phase === "COMBAT_RUNNING" &&
+      this.#dwarfAuthority !== undefined
+        ? this.#resolveShuttergateCombatStep(previousState, stepped)
+        : finalizeShieldSlamWebStep(
+            this.#scenario,
+            stepped,
+            this.#usesShieldSlamWebAuthority
+          );
     if (result.state === previousState) {
       this.#failed = true;
       this.#pendingCommands = [];
@@ -783,6 +795,86 @@ export class LiveScenarioHost {
       state: immutableState,
       commands: Object.freeze([...commands]),
       events: immutableEvents
+    });
+  }
+
+  #resolveShuttergateCombatStep(
+    previousState: SimulationState,
+    abilityStep: {
+      readonly state: SimulationState;
+      readonly events: readonly SimulationEvent[];
+    }
+  ): {
+    readonly state: SimulationState;
+    readonly events: readonly SimulationEvent[];
+  } {
+    if (this.#dwarfAuthority === undefined)
+      throw new Error("Shuttergate combat requires deployment authority");
+    if (abilityStep.state.battlefield === undefined)
+      throw new Error("Shuttergate combat requires battlefield state");
+    const combatState = Object.freeze({
+      schemaVersion: abilityStep.state.schemaVersion,
+      contentVersion: abilityStep.state.contentVersion,
+      tick: previousState.tick,
+      seed: abilityStep.state.seed,
+      rngState: abilityStep.state.rngState,
+      levelId: abilityStep.state.levelId,
+      phase: "COMBAT_RUNNING" as const,
+      eventSequence: abilityStep.state.eventSequence,
+      battlefield: abilityStep.state.battlefield
+    });
+    const actionEntries: readonly DwarfActionPhaseEntry[] = [
+      ...(combatState.battlefield?.dwarfCombatants ?? [])
+    ]
+      .sort((left, right) => left.entityId.localeCompare(right.entityId))
+      .map((dwarf) =>
+        Object.freeze({
+          schemaVersion: 1 as const,
+          dwarfEntityId: dwarf.entityId,
+          requestedPolicy: this.#targetPolicies.get(dwarf.entityId) ?? "nearest"
+        })
+      );
+    const checkpoint = resolveAuthoritativeCombatCheckpoint(
+      {
+        schemaVersion: 1,
+        state: combatState,
+        dwarfActionEntries: actionEntries,
+        profile: createInitialProfile("character.iron_warden" as never),
+        rewards: [
+          Object.freeze({
+            schemaVersion: 1 as const,
+            rewardId: "reward.boss.gatebreaker_captain" as never,
+            bossEntityId: "entity.enemy.shuttergate_010" as never,
+            characterUnlockId: "character.deep_ranger" as never,
+            forgeOre: 20
+          })
+        ]
+      },
+      this.#content,
+      this.#dwarfAuthority
+    );
+    const terminalResult = checkpoint.terminalEvaluation.terminalResult;
+    return Object.freeze({
+      state: Object.freeze({
+        ...checkpoint.combat.state,
+        tick: previousState.tick + 1,
+        ...(abilityStep.state.activeCooldowns === undefined
+          ? {}
+          : { activeCooldowns: abilityStep.state.activeCooldowns }),
+        ...(abilityStep.state.activeStatuses === undefined
+          ? {}
+          : { activeStatuses: abilityStep.state.activeStatuses }),
+        ...(abilityStep.state.committedAbilities === undefined
+          ? {}
+          : { committedAbilities: abilityStep.state.committedAbilities }),
+        ...(terminalResult === undefined
+          ? {}
+          : { phase: "TERMINAL" as const, terminalResult })
+      }),
+      events: Object.freeze([
+        ...abilityStep.events,
+        ...checkpoint.combat.events
+      ])
     });
   }
 
