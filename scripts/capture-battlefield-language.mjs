@@ -39,7 +39,12 @@ async function startClient(browser, viewport, reducedMotion) {
   await page.getByRole("button", { name: "Confirm preparation" }).click();
   await page.waitForFunction((expectedFixture) => {
     const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
-    return truth?.captureReady === true && truth.fixtureId === expectedFixture;
+    return (
+      truth?.captureReady === true &&
+      truth.fixtureId === expectedFixture &&
+      truth.viewport[0] === window.innerWidth &&
+      truth.viewport[1] === window.innerHeight
+    );
   }, fixtureId);
   await page
     .getByRole("button", { name: "Open Iron Warden targeting" })
@@ -140,6 +145,7 @@ async function capture(page, id, expected) {
     JSON.stringify(before.truth) !== JSON.stringify(stableTruth) ||
     before.truth?.captureReady !== true ||
     before.truth.fixtureId !== fixtureId ||
+    JSON.stringify(before.truth.viewport) !== JSON.stringify(before.viewport) ||
     before.truth.registry.entities.some(
       (entity) => !entity.intersectsUnobscuredWorldViewport
     ) ||
