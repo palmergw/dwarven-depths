@@ -46,7 +46,18 @@ async function resumeAndObserveTick(page, startingTick) {
       );
       return;
     } catch (error) {
-      if (attempt > 0) throw error;
+      if (attempt > 0) {
+        const diagnostic = await page.evaluate(() => ({
+          snapshot: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot,
+          buttons: [...document.querySelectorAll("button")].map((button) =>
+            button.getAttribute("aria-label")
+          )
+        }));
+        throw new Error(
+          `combat did not resume for clip: ${JSON.stringify(diagnostic)}`,
+          { cause: error }
+        );
+      }
       const pause = page.getByRole("button", { name: "Pause combat" });
       if (await pause.isVisible()) await pause.click();
     }
@@ -72,7 +83,11 @@ try {
   await page.getByRole("button", { name: "Confirm preparation" }).click();
   await page.waitForFunction((expectedFixture) => {
     const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
-    return truth?.captureReady === true && truth.fixtureId === expectedFixture;
+    return (
+      truth?.captureReady === true &&
+      truth.fixtureId === expectedFixture &&
+      truth.snapshot.tick === 2
+    );
   }, "scenarios/conformance/shuttergate-web-truth.json");
   const startingTick = await page.evaluate(
     () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick
