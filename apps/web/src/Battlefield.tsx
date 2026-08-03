@@ -1268,11 +1268,12 @@ class PersistentBattlefieldScene {
       interpolationTick !== undefined &&
       interpolationTick !== this.lastInterpolatedTick;
     this.scene.tweens.killTweensOf(
-      [...this.entities.values()].flatMap(({ ring, signal, subject }) => [
-        ring,
-        signal,
-        subject
-      ])
+      [...this.entities.values()].flatMap(({ ring, signal, subject }) => {
+        const signalMask = signal.mask?.geometryMask;
+        return signalMask === undefined
+          ? [ring, signal, subject]
+          : [ring, signal, signalMask, subject];
+      })
     );
     const orderedEntities = [...primitives.entities].sort(
       comparePresentationPrimitives
