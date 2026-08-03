@@ -255,16 +255,6 @@ try {
         ) === true
     )
   );
-  captures.push(
-    await capture(
-      desktop,
-      "elite-entrance-reduced-motion",
-      () =>
-        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
-          (entity) => entity.elite === true
-        ) === true
-    )
-  );
   await desktop.getByRole("button", { name: "Resume combat" }).click();
   await desktop.waitForFunction(
     () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "terminal",
@@ -313,8 +303,8 @@ const manifest = {
     denseWaveCaptured: captures.some(
       ({ id }) => id === "dense-wave-reduced-motion"
     ),
-    eliteCaptured: captures.some(
-      ({ id }) => id === "elite-entrance-reduced-motion"
+    eliteCaptured: captures.some(({ truth }) =>
+      truth.registry.entities.some((entity) => entity.elite === true)
     ),
     terminalCaptured: captures.some(
       ({ id }) => id === "terminal-defeat-reduced-motion"
