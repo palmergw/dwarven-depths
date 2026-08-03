@@ -65,16 +65,13 @@ try {
   await page.waitForTimeout(500);
   await page.getByRole("button", { name: "Nearest", exact: true }).click();
   await page.waitForTimeout(900);
-  await page.getByRole("button", { name: "Shield Slam" }).click();
-  await page.getByText("Activation queued").waitFor();
-  await page.waitForTimeout(1100);
   await page.getByRole("button", { name: "Resume combat" }).click();
   await page.waitForFunction(
     (tick) =>
       (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick ?? -1) > tick,
     startingTick
   );
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(2900);
   await page.getByRole("button", { name: "Pause combat" }).click();
   await page.getByRole("button", { name: "Resume combat" }).waitFor();
   await page.waitForTimeout(1000);
@@ -98,7 +95,6 @@ try {
     endingTick,
     interactions: [
       "target-policy-nearest",
-      "shield-slam-queued",
       "resume",
       "authoritative-tick-advanced",
       "pause"
