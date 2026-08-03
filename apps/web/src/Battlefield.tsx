@@ -905,7 +905,10 @@ interface PersistentEntityObjects {
 }
 
 class PersistentBattlefieldScene {
-  readonly layers: Record<BattlefieldLayerId, Phaser.GameObjects.Layer>;
+  readonly layers: Record<
+    BattlefieldLayerId,
+    Set<Phaser.GameObjects.GameObject>
+  >;
   readonly entities = new Map<string, PersistentEntityObjects>();
   readonly effects: Phaser.GameObjects.Graphics[] = [];
   focus: Phaser.GameObjects.Graphics | undefined;
@@ -917,15 +920,19 @@ class PersistentBattlefieldScene {
     readonly staticDepth: StaticSceneDepth
   ) {
     this.layers = Object.fromEntries(
-      BATTLEFIELD_LAYER_ORDER.map((id) => [id, scene.add.layer()])
-    ) as Record<BattlefieldLayerId, Phaser.GameObjects.Layer>;
-    this.layers.terrain.add([
-      scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base"),
-      scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell"),
-      scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground")
-    ]);
+      BATTLEFIELD_LAYER_ORDER.map((id) => [id, new Set()])
+    ) as Record<BattlefieldLayerId, Set<Phaser.GameObjects.GameObject>>;
+    this.layers.terrain.add(
+      scene.add.image(WIDTH / 2, HEIGHT / 2, "environment-base")
+    );
     this.layers["ground-foreground"].add(
       scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-ground-foreground")
+    );
+    this.layers.terrain.add(
+      scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-shell")
+    );
+    this.layers.terrain.add(
+      scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground")
     );
   }
 
@@ -959,6 +966,8 @@ class PersistentBattlefieldScene {
     const liveIds = new Set(orderedEntities.map(({ id }) => id));
     for (const [id, objects] of this.entities)
       if (!liveIds.has(id)) {
+        this.layers["world-rings"].delete(objects.ring);
+        this.layers["world-entities"].delete(objects.subject);
         objects.ring.clearMask(true);
         objects.ring.destroy();
         objects.subject.setTexture("warden-runtime");
@@ -1061,6 +1070,19 @@ class PersistentBattlefieldScene {
       this.layers["world-focus"].add(this.focus);
     }
 
+    for (const entity of orderedEntities) {
+      const objects = this.entities.get(entity.id);
+      if (objects !== undefined) this.scene.children.bringToTop(objects.ring);
+    }
+    for (const effect of active) this.scene.children.bringToTop(effect);
+    for (const entity of orderedEntities) {
+      const objects = this.entities.get(entity.id);
+      if (objects !== undefined)
+        this.scene.children.bringToTop(objects.subject);
+    }
+    if (this.focus?.visible === true)
+      this.scene.children.bringToTop(this.focus);
+
     if (typeof window !== "undefined") {
       window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ = buildTruthScreenSidecar(
         snapshot,
@@ -1106,6 +1128,7 @@ class PersistentBattlefieldScene {
     this.focus?.clearMask(true);
     this.entities.clear();
     this.effects.length = 0;
+    for (const layer of Object.values(this.layers)) layer.clear();
   }
 }
 
