@@ -51,9 +51,10 @@ try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Begin preparation" }).click();
   await page.getByRole("button", { name: "Confirm preparation" }).click();
-  await page.waitForFunction(
-    () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.alignment.valid === true
-  );
+  await page.waitForFunction((expectedFixture) => {
+    const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+    return truth?.captureReady === true && truth.fixtureId === expectedFixture;
+  }, "scenarios/conformance/shuttergate-web-truth.json");
   const startingTick = await page.evaluate(
     () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick
   );
