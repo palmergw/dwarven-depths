@@ -108,11 +108,6 @@ try {
       `interaction clip did not advance authority: ${JSON.stringify(evidence)}`
     );
   await writeFile(sidecarUrl, `${JSON.stringify(evidence, null, 2)}\n`);
-  await execFile(
-    "pnpm",
-    ["exec", "biome", "format", "--write", fileURLToPath(sidecarUrl)],
-    { cwd: repositoryRoot }
-  );
   process.stdout.write(`${JSON.stringify({ ok: true, ...evidence })}\n`);
 } finally {
   await context.close();
