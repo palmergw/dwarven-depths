@@ -1041,7 +1041,7 @@ function updateEntitySignal(
 function addDepthTestedEffect(
   scene: Phaser.Scene,
   entity: RenderPrimitive,
-  feedback: CombatFeedback,
+  kind: "arrival" | "departure",
   staticDepth: StaticSceneDepth,
   existing?: Phaser.GameObjects.Graphics
 ): Phaser.GameObjects.Graphics | undefined {
@@ -1056,8 +1056,34 @@ function addDepthTestedEffect(
   effect.clearMask(true);
   effect.clear();
   effect.setAlpha(1);
-  effect.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
-  effect.strokeEllipse(entity.x, entity.y - 12, 88, 50);
+  if (kind === "arrival") {
+    effect.lineStyle(3, 0x73d7ef, 0.95);
+    effect.strokeEllipse(entity.x, entity.y - 10, 82, 44);
+    effect.lineBetween(entity.x - 12, entity.y - 2, entity.x, entity.y - 12);
+    effect.lineBetween(entity.x, entity.y - 12, entity.x + 12, entity.y - 2);
+    effect.lineBetween(entity.x - 9, entity.y + 6, entity.x, entity.y - 2);
+    effect.lineBetween(entity.x, entity.y - 2, entity.x + 9, entity.y + 6);
+  } else {
+    effect.lineStyle(4, 0xff695e, 0.95);
+    effect.beginPath();
+    effect.arc(entity.x, entity.y - 12, 38, 0.2, 1.2);
+    effect.arc(entity.x, entity.y - 12, 38, 1.9, 2.9);
+    effect.arc(entity.x, entity.y - 12, 38, 3.3, 4.3);
+    effect.arc(entity.x, entity.y - 12, 38, 5, 6);
+    effect.strokePath();
+    effect.lineBetween(
+      entity.x - 10,
+      entity.y - 22,
+      entity.x + 10,
+      entity.y - 2
+    );
+    effect.lineBetween(
+      entity.x + 10,
+      entity.y - 22,
+      entity.x - 10,
+      entity.y - 2
+    );
+  }
   effect.setMask(
     createDepthVisibilityMask(
       scene,
@@ -1374,17 +1400,23 @@ class PersistentBattlefieldScene {
     if (feedback !== undefined) {
       const arrivalIds = new Set(feedback.arrivals.map(({ id }) => id));
       const effectEntities = [
-        ...orderedEntities.filter(({ id }) => arrivalIds.has(id)),
+        ...orderedEntities
+          .filter(({ id }) => arrivalIds.has(id))
+          .map((entity) => ({ entity, kind: "arrival" as const })),
         ...(previousSnapshot === undefined
           ? []
-          : buildDepartureFeedbackPrimitives(previousSnapshot, feedback))
-      ].sort(comparePresentationPrimitives);
-      for (const entity of effectEntities) {
+          : buildDepartureFeedbackPrimitives(previousSnapshot, feedback).map(
+              (entity) => ({ entity, kind: "departure" as const })
+            ))
+      ].sort((left, right) =>
+        comparePresentationPrimitives(left.entity, right.entity)
+      );
+      for (const { entity, kind } of effectEntities) {
         if (this.activeEffects >= MAX_POOLED_EFFECTS) continue;
         const effect = addDepthTestedEffect(
           this.scene,
           entity,
-          feedback,
+          kind,
           this.staticDepth,
           this.acquireEffect(this.activeEffects)
         );
@@ -1403,7 +1435,7 @@ class PersistentBattlefieldScene {
       this.effects[index]?.setVisible(false);
     }
     const active = this.effects.slice(0, this.activeEffects);
-    if (active.length > 0 && evidenceEffectAlpha === undefined)
+    if (active.length > 0 && !reduceMotion && evidenceEffectAlpha === undefined)
       this.scene.tweens.add({
         targets: active,
         alpha: 0.15,
@@ -1411,6 +1443,8 @@ class PersistentBattlefieldScene {
         yoyo: true,
         repeat: 1
       });
+    else if (active.length > 0 && evidenceEffectAlpha === undefined)
+      for (const effect of active) effect.setAlpha(1);
     else if (evidenceEffectAlpha !== undefined)
       for (const effect of active) effect.setAlpha(evidenceEffectAlpha);
 

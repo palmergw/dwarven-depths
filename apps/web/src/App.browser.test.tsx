@@ -1707,20 +1707,34 @@ describe("authoritative web worker", () => {
     const initial = {
       schemaVersion: 1,
       levelId: "level.test",
-      mapId: "map.test",
+      mapId: "map.shuttergate_hall",
       tick: 1,
       phase: "running",
-      nodes: [{ id: "node.1", x: 0, y: 0 }],
+      nodes: [{ id: "node.shuttergate_gate", x: 0, y: 0 }],
       connections: [],
-      entities: [{ id: "unit.1", nodeId: "node.1", faction: "dwarf" }]
+      entities: [
+        {
+          id: "unit.1",
+          nodeId: "node.shuttergate_gate",
+          faction: "dwarf"
+        }
+      ]
     } as const satisfies RenderSnapshot;
     const changed = {
       ...initial,
       tick: 2,
       entities: [
         ...initial.entities,
-        { id: "unit.2", nodeId: "node.1", faction: "enemy" }
+        {
+          id: "unit.2",
+          nodeId: "node.shuttergate_gate",
+          faction: "enemy"
+        }
       ]
+    } as const satisfies RenderSnapshot;
+    const departed = {
+      ...initial,
+      tick: 3
     } as const satisfies RenderSnapshot;
     const container = document.createElement("div");
     document.body.append(container);
@@ -1755,6 +1769,16 @@ describe("authoritative web worker", () => {
     );
     expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens).toBe(0);
     expect(window.__DWARVEN_DEPTHS_RENDERER__?.entityObjects).toBe(6);
+    render(departed);
+    await vi.waitFor(() =>
+      expect(document.querySelector(".combat-feedback")).toHaveTextContent(
+        "1 combatant departed"
+      )
+    );
+    await vi.waitFor(() =>
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1)
+    );
+    expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens).toBe(0);
     render(initial);
     await vi.waitFor(() =>
       expect(document.querySelector(".combat-feedback")).toBeNull()
