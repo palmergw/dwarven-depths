@@ -21,6 +21,7 @@ const sidecarUrl = new URL(
 const temporaryVideoDirectory = fileURLToPath(
   new URL("../.ddh/shuttergate-video/", import.meta.url)
 );
+const rawVideoPath = `${temporaryVideoDirectory}/shuttergate-${motionId}-raw.webm`;
 
 await mkdir(outputDirectory, { recursive: true });
 await rm(temporaryVideoDirectory, { force: true, recursive: true });
@@ -108,7 +109,26 @@ try {
     () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick
   );
   await page.close();
-  await video.saveAs(fileURLToPath(videoUrl));
+  await video.saveAs(rawVideoPath);
+  await execFile("ffmpeg", [
+    "-y",
+    "-loglevel",
+    "error",
+    "-ss",
+    "2",
+    "-i",
+    rawVideoPath,
+    "-t",
+    "7",
+    "-c:v",
+    "libvpx-vp9",
+    "-b:v",
+    "0",
+    "-crf",
+    "32",
+    "-an",
+    fileURLToPath(videoUrl)
+  ]);
   const videoBytes = await readFile(videoUrl);
   const videoSha256 = createHash("sha256").update(videoBytes).digest("hex");
   const evidence = {
@@ -119,7 +139,7 @@ try {
     video: `shuttergate-${motionId}-clip.webm`,
     videoSha256,
     motion: motionId,
-    approximateDurationSeconds: 8.4,
+    approximateDurationSeconds: 7,
     startingTick,
     endingTick,
     interactions: [
