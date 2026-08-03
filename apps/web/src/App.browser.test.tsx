@@ -10,6 +10,7 @@ import {
   buildInterpolationOrigins,
   comparePresentationPrimitives,
   decodeBattlefieldDepthAsset,
+  deriveCombatPresentationState,
   selectCombatPoseAsset
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
@@ -1662,6 +1663,39 @@ describe("authoritative web worker", () => {
         entity.id
       )
     ).toBe("warden-source");
+    const damaged = {
+      ...snapshot,
+      entities: [
+        {
+          ...entity,
+          currentHealth: 7,
+          statuses: [
+            {
+              id: "status.stagger.fixture",
+              appliedAtTick: 4,
+              expiresAtTick: 8,
+              magnitude: 1
+            }
+          ]
+        }
+      ]
+    } as const satisfies RenderSnapshot;
+    const previous = {
+      ...snapshot,
+      tick: 3,
+      previousTick: 2,
+      entities: [{ ...entity, currentHealth: 10 }]
+    } as const satisfies RenderSnapshot;
+    expect(
+      deriveCombatPresentationState(damaged, previous, entity.id)
+    ).toMatchObject({ healthRatio: 0.7, damaged: true, status: true });
+    expect(
+      deriveCombatPresentationState(
+        damaged,
+        { ...previous, scenarioId: "scenario.stale" },
+        entity.id
+      )?.damaged
+    ).toBe(false);
   });
 
   it("rejects malformed depth assets without exposing partial scene data", () => {
@@ -1720,7 +1754,7 @@ describe("authoritative web worker", () => {
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.updateCount).toBeGreaterThan(0)
     );
     expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens).toBe(0);
-    expect(window.__DWARVEN_DEPTHS_RENDERER__?.entityObjects).toBe(5);
+    expect(window.__DWARVEN_DEPTHS_RENDERER__?.entityObjects).toBe(6);
     render(initial);
     await vi.waitFor(() =>
       expect(document.querySelector(".combat-feedback")).toBeNull()
@@ -1800,19 +1834,19 @@ describe("authoritative web worker", () => {
       );
       expect(document.querySelector(".battlefield-canvas canvas")).toBe(canvas);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.entityObjects).toBe(
-        cycle % 2 === 0 ? 5 : 3
+        cycle % 2 === 0 ? 6 : 3
       );
-      expect(window.__DWARVEN_DEPTHS_RENDERER__?.staticObjects).toBe(5);
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.staticObjects).toBe(7);
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.pooledEffects
       ).toBeLessThanOrEqual(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
-        cycle % 2 === 0 ? 6 : 5
+        cycle % 2 === 0 ? 8 : 6
       );
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects
-      ).toBeLessThanOrEqual(12);
+      ).toBeLessThanOrEqual(14);
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens
       ).toBeLessThanOrEqual(1);
