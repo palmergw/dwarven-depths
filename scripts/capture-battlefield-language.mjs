@@ -120,10 +120,18 @@ try {
       desktop,
       "quiet-paused-reduced-motion",
       () =>
-        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick === 1 &&
-        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "running"
+        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "running" &&
+        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.totalCount > 1
     )
   );
+  await desktop.getByRole("button", { name: "Resume combat" }).click();
+  await desktop.waitForFunction(
+    () =>
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
+        (entity) => entity.faction === "dwarf" && entity.targetEntityId !== null
+      ) === true
+  );
+  await desktop.getByRole("button", { name: "Pause combat" }).click();
   await desktop.getByRole("button", { name: "Shield Slam" }).click();
   await desktop.getByRole("button", { name: "Resume combat" }).click();
   await desktop.waitForFunction(
@@ -197,6 +205,54 @@ try {
         ) === true
     )
   );
+  await desktop.getByRole("button", { name: "Resume combat" }).click();
+  await desktop.waitForFunction(
+    () =>
+      (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.encounter
+        .livingHostileCount ?? 0) > 1
+  );
+  await desktop.getByRole("button", { name: "Pause combat" }).click();
+  captures.push(
+    await capture(
+      desktop,
+      "dense-wave-reduced-motion",
+      () =>
+        (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.encounter
+          .livingHostileCount ?? 0) > 1
+    )
+  );
+  await desktop.getByRole("button", { name: "Resume combat" }).click();
+  await desktop.waitForFunction(
+    () =>
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
+        (entity) => entity.elite === true
+      ) === true
+  );
+  await desktop.getByRole("button", { name: "Pause combat" }).click();
+  captures.push(
+    await capture(
+      desktop,
+      "elite-entrance-reduced-motion",
+      () =>
+        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
+          (entity) => entity.elite === true
+        ) === true
+    )
+  );
+  await desktop.getByRole("button", { name: "Resume combat" }).click();
+  await desktop.waitForFunction(
+    () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "terminal",
+    undefined,
+    { timeout: 60_000 }
+  );
+  captures.push(
+    await capture(
+      desktop,
+      "terminal-defeat-reduced-motion",
+      () =>
+        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "terminal"
+    )
+  );
   await desktop.close();
 
   const mobile = await startClient(browser, { width: 390, height: 844 }, true);
@@ -205,8 +261,8 @@ try {
       mobile,
       "quiet-paused-mobile-reduced-motion",
       () =>
-        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick === 1 &&
-        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "running"
+        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "running" &&
+        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.totalCount > 1
     )
   );
   await mobile.close();
@@ -227,13 +283,16 @@ const manifest = {
     phase: capture.truth.snapshot.phase,
     entityCount: capture.truth.registry.totalCount
   })),
-  exclusions: {
-    denseWave:
-      "The approved terminating web encounter fixture contains exactly one authoritative hostile.",
-    bossOrElite:
-      "The approved terminating web encounter fixture contains one basic hostile and no boss or elite.",
-    terminal:
-      "Terminal capture is deferred until the bounded web encounter can be driven without introducing nonauthoritative state."
+  encounter: {
+    denseWaveCaptured: captures.some(
+      ({ id }) => id === "dense-wave-reduced-motion"
+    ),
+    eliteCaptured: captures.some(
+      ({ id }) => id === "elite-entrance-reduced-motion"
+    ),
+    terminalCaptured: captures.some(
+      ({ id }) => id === "terminal-defeat-reduced-motion"
+    )
   }
 };
 await writeFile(
