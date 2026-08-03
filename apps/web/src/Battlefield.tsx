@@ -69,6 +69,18 @@ const raiderUrl = new URL(
   "../../../assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
   import.meta.url
 ).href;
+const wardenShieldSlamUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/entities/iron-warden-shield-slam.png",
+  import.meta.url
+).href;
+const raiderAttackUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/entities/mine-raider-attack.png",
+  import.meta.url
+).href;
+const warmLightOverlayUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/lighting/warm-light-overlay.png",
+  import.meta.url
+).href;
 const staticSceneDepthUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.bin",
   import.meta.url
@@ -81,6 +93,9 @@ const battlefieldAssetUrls: Readonly<Record<string, string>> = {
   "entrance-route-rear": entranceRouteRearUrl,
   "warden-source": wardenUrl,
   "raider-source": raiderUrl,
+  "warden-shield-slam-source": wardenShieldSlamUrl,
+  "raider-attack-source": raiderAttackUrl,
+  "warm-light-overlay": warmLightOverlayUrl,
   "static-scene-depth": staticSceneDepthUrl
 };
 
@@ -342,6 +357,36 @@ export function buildInterpolationOrigins(
       entity
     ])
   );
+}
+
+export function selectCombatPoseAsset(
+  snapshot: RenderSnapshot,
+  entityId: string
+):
+  | "warden-source"
+  | "warden-shield-slam-source"
+  | "raider-source"
+  | "raider-attack-source" {
+  const faction = snapshot.entities.find(({ id }) => id === entityId)?.faction;
+  if (snapshot.schemaVersion === 1)
+    return faction === "dwarf" ? "warden-source" : "raider-source";
+  const entity = snapshot.entities.find(({ id }) => id === entityId);
+  if (entity === undefined) return "raider-source";
+  const dwarf = entity.faction === "dwarf";
+  const activePose =
+    entity.action.phase === "windup" ||
+    entity.action.phase === "committed" ||
+    entity.action.phase === "impact";
+  if (
+    dwarf &&
+    entity.action.kind === "ability" &&
+    entity.action.abilityId === "ability.iron_warden.shield_slam" &&
+    activePose
+  )
+    return "warden-shield-slam-source";
+  if (!dwarf && entity.action.kind === "basic_attack" && activePose)
+    return "raider-attack-source";
+  return dwarf ? "warden-source" : "raider-source";
 }
 
 export function decodeBattlefieldDepthAsset(
@@ -964,6 +1009,7 @@ class PersistentBattlefieldScene {
   >;
   readonly entities = new Map<string, PersistentEntityObjects>();
   readonly effects: Phaser.GameObjects.Graphics[] = [];
+  readonly lighting: Phaser.GameObjects.Image;
   focus: Phaser.GameObjects.Graphics | undefined;
   updateCount = 0;
   activeEffects = 0;
@@ -988,6 +1034,12 @@ class PersistentBattlefieldScene {
     this.layers.terrain.add(
       scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground")
     );
+    this.lighting = scene.add.image(
+      WIDTH / 2,
+      HEIGHT / 2,
+      "warm-light-overlay"
+    );
+    this.layers.lighting.add(this.lighting);
   }
 
   private acquireEffect(index: number): Phaser.GameObjects.Graphics {
@@ -1084,16 +1136,21 @@ class PersistentBattlefieldScene {
         this.entities.delete(id);
       }
 
-    const wardenTexture = normalizeAlphaTexture(
-      this.scene,
-      "warden-source",
-      "warden-runtime"
+    const poseTextures = new Map(
+      (
+        [
+          ["warden-source", "warden-runtime"],
+          ["warden-shield-slam-source", "warden-shield-slam-runtime"],
+          ["raider-source", "raider-runtime"],
+          ["raider-attack-source", "raider-attack-runtime"]
+        ] as const
+      ).map(([source, runtime]) => [
+        source,
+        normalizeAlphaTexture(this.scene, source, runtime)
+      ])
     );
-    const raiderTexture = normalizeAlphaTexture(
-      this.scene,
-      "raider-source",
-      "raider-runtime"
-    );
+    const wardenTexture = poseTextures.get("warden-source") ?? "warden-source";
+    const raiderTexture = poseTextures.get("raider-source") ?? "raider-source";
     for (const entity of orderedEntities) {
       const existing = this.entities.get(entity.id);
       const ring = addDepthTestedRing(
@@ -1105,10 +1162,11 @@ class PersistentBattlefieldScene {
       if (ring === undefined) continue;
       if (existing === undefined) this.layers["world-rings"].add(ring);
       const dwarf = entity.faction === "dwarf";
+      const poseKey = selectCombatPoseAsset(snapshot, entity.id);
       const subject = addDepthTestedBillboard(
         this.scene,
         entity,
-        dwarf ? wardenTexture : raiderTexture,
+        poseTextures.get(poseKey) ?? poseKey,
         dwarf ? 112 : 80,
         dwarf ? 72 : 60,
         dwarf ? 56 : 40,
@@ -1208,6 +1266,7 @@ class PersistentBattlefieldScene {
     }
     if (this.focus?.visible === true)
       this.scene.children.bringToTop(this.focus);
+    this.scene.children.bringToTop(this.lighting);
 
     if (typeof window !== "undefined") {
       window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ = buildTruthScreenSidecar(
@@ -1239,7 +1298,7 @@ class PersistentBattlefieldScene {
         this.entities.size * 2 + (this.focus === undefined ? 0 : 1),
       pooledEffects: this.effects.length,
       activeEffects: this.activeEffects,
-      staticObjects: 4,
+      staticObjects: 5,
       sceneObjects: this.scene.children.length,
       runtimeTextures: Object.keys(this.scene.textures.list).filter(
         (key) => key.endsWith("-runtime") || key.startsWith("subject-depth-")

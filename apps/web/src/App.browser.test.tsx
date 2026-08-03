@@ -9,7 +9,8 @@ import {
   buildDepartureFeedbackPrimitives,
   buildInterpolationOrigins,
   comparePresentationPrimitives,
-  decodeBattlefieldDepthAsset
+  decodeBattlefieldDepthAsset,
+  selectCombatPoseAsset
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { deriveCombatFeedback } from "./combat-feedback.js";
@@ -1588,6 +1589,81 @@ describe("authoritative web worker", () => {
     );
   });
 
+  it("binds authored combat poses to authoritative snapshot-v2 action phases", () => {
+    const entity = {
+      id: "entity.dwarf.warden",
+      nodeId: "node.shuttergate_gate",
+      faction: "dwarf",
+      visualId: "visual.warden",
+      archetype: "character",
+      position: { nodeId: "node.shuttergate_gate", x: 0, y: 0 },
+      previousPosition: null,
+      currentHealth: 10,
+      maximumHealth: 10,
+      facing: "east",
+      action: {
+        kind: "ability",
+        phase: "impact",
+        abilityId: "ability.iron_warden.shield_slam"
+      },
+      targetEntityId: null,
+      statuses: [],
+      transition: "active",
+      elite: false,
+      boss: false
+    } as const;
+    const snapshot = {
+      schemaVersion: 2,
+      scenarioId: "scenario.combat-pose",
+      levelId: "level.shuttergate",
+      mapId: "map.shuttergate_hall",
+      tick: 4,
+      previousTick: 3,
+      phase: "running",
+      nodes: [{ id: "node.shuttergate_gate", x: 0, y: 0 }],
+      connections: [],
+      entities: [entity],
+      entityTransitions: [],
+      encounter: {
+        startedWaveIds: [],
+        activeWaveId: null,
+        pendingSpawnCount: 0,
+        livingHostileCount: 0,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    expect(selectCombatPoseAsset(snapshot, entity.id)).toBe(
+      "warden-shield-slam-source"
+    );
+    expect(
+      selectCombatPoseAsset(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...entity,
+              faction: "enemy",
+              archetype: "basic",
+              action: { kind: "basic_attack", phase: "windup", abilityId: null }
+            }
+          ]
+        },
+        entity.id
+      )
+    ).toBe("raider-attack-source");
+    expect(
+      selectCombatPoseAsset(
+        {
+          ...snapshot,
+          entities: [
+            { ...entity, action: { ...entity.action, phase: "recovery" } }
+          ]
+        },
+        entity.id
+      )
+    ).toBe("warden-source");
+  });
+
   it("rejects malformed depth assets without exposing partial scene data", () => {
     expect(decodeBattlefieldDepthAsset(undefined)).toBeUndefined();
     expect(decodeBattlefieldDepthAsset(new ArrayBuffer(8))).toBeUndefined();
@@ -1726,13 +1802,13 @@ describe("authoritative web worker", () => {
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.entityObjects).toBe(
         cycle % 2 === 0 ? 5 : 3
       );
-      expect(window.__DWARVEN_DEPTHS_RENDERER__?.staticObjects).toBe(4);
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.staticObjects).toBe(5);
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.pooledEffects
       ).toBeLessThanOrEqual(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
-        cycle % 2 === 0 ? 4 : 3
+        cycle % 2 === 0 ? 6 : 5
       );
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects

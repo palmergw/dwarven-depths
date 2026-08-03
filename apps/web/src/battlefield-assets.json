@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "manifest.web.shuttergate_battlefield",
-  "budgetBytes": 4194304,
-  "totalBytes": 3975799,
+  "budgetBytes": 4718592,
+  "totalBytes": 4226533,
   "layerOrder": [
     "terrain",
     "ground-foreground",
@@ -69,6 +69,30 @@
       "path": "assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
       "bytes": 5628,
       "sha256": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83"
+    },
+    {
+      "key": "raider-attack-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/production-scene/exports/entities/mine-raider-attack.png",
+      "bytes": 3107,
+      "sha256": "406330aa7f1331d0d1c6e0120352f210a7055cc847a66693b9fab0cc8bde5c1b"
+    },
+    {
+      "key": "warden-shield-slam-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/production-scene/exports/entities/iron-warden-shield-slam.png",
+      "bytes": 11217,
+      "sha256": "153dc9095ee96907c600377bac6cb7155cc97ac62d0a4b7e7ed7889ac3e0faf2"
+    },
+    {
+      "key": "warm-light-overlay",
+      "kind": "image",
+      "layer": "lighting",
+      "path": "assets/game-art/production-scene/exports/lighting/warm-light-overlay.png",
+      "bytes": 236410,
+      "sha256": "d506b19d36d32ae5a55f2d76a24c5306042a3a6f6e44b043b9a9386ec7a8f0af"
     },
     {
       "key": "static-scene-depth",
