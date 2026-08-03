@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "id": "shield-slam-impact-reduced-motion",
+  "sourceHead": "8eb8e0bb7175243e47f5efd35a190045f91568ee",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "screenshot": "shield-slam-impact-reduced-motion.png",
+  "screenshotSha256": "1c6696be00c0688b00ce83d947c50917a3f1452d81672cccdca8fc75db196b5b",
+  "viewport": [1440, 900],
+  "truth": {
+    "schemaVersion": 1,
+    "captureReady": true,
+    "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+    "viewport": [1440, 900],
+    "frame": [1280, 720],
+    "snapshot": {
+      "levelId": "level.shuttergate_hall",
+      "mapId": "map.shuttergate_hall",
+      "tick": 8,
+      "phase": "running"
+    },
+    "registry": {
+      "dwarfCount": 1,
+      "hostileCount": 1,
+      "totalCount": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "faction": "dwarf",
+          "nodeId": "node.shuttergate_north_guard",
+          "visualId": "character.iron_warden",
+          "archetype": "character",
+          "currentHealth": 240,
+          "maximumHealth": 240,
+          "action": {
+            "kind": "ability",
+            "phase": "impact",
+            "abilityId": "ability.iron_warden.shield_slam"
+          },
+          "targetEntityId": "entity.enemy.shield_slam_target",
+          "statusIds": [],
+          "transition": "active",
+          "elite": false,
+          "boss": false,
+          "x": 605,
+          "y": 320,
+          "nominalHeight": 56,
+          "canvasBounds": [549, 254, 112, 72],
+          "alphaBounds": [563, 264, 84, 56],
+          "nonzeroAlphaPixels": 3113,
+          "fullAlphaPixels": 2820,
+          "partialAlphaPixels": 293,
+          "intersectsUnobscuredWorldViewport": true
+        },
+        {
+          "id": "entity.enemy.shield_slam_target",
+          "faction": "enemy",
+          "nodeId": "node.shuttergate_gate",
+          "visualId": "enemy.goblin_cutter",
+          "archetype": "basic",
+          "currentHealth": 50,
+          "maximumHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle",
+            "abilityId": null
+          },
+          "targetEntityId": "entity.dwarf.warden",
+          "statusIds": [],
+          "transition": "active",
+          "elite": false,
+          "boss": false,
+          "x": 1110,
+          "y": 253,
+          "nominalHeight": 44,
+          "canvasBounds": [1070, 199, 80, 60],
+          "alphaBounds": [1084, 209, 52, 44],
+          "nonzeroAlphaPixels": 1341,
+          "fullAlphaPixels": 1135,
+          "partialAlphaPixels": 206,
+          "intersectsUnobscuredWorldViewport": true
+        }
+      ]
+    },
+    "occlusion": {
+      "artifactId": "authored-entrance-depth",
+      "layerOrder": [
+        "complete-static-scene-color",
+        "depth-tested-world-rings",
+        "depth-tested-world-effects",
+        "depth-tested-world-subjects",
+        "depth-tested-world-focus",
+        "hud"
+      ],
+      "clips": ["world-ring", "world-effect", "world-subject", "world-focus"],
+      "exempts": ["hud"],
+      "witness": {
+        "entityId": "entity.enemy.shield_slam_target",
+        "subjectAlphaPixels": 1341,
+        "subjectPixelsOverRearArtifact": 5,
+        "subjectPixelsOverGroundArtifact": 110,
+        "subjectPixelsBehindForegroundArtifact": 66,
+        "worldRingPixelsBehindForegroundArtifact": 243,
+        "transientEffectPixelsBehindForegroundArtifact": 536
+      },
+      "depthResolution": {
+        "intent": "rear-visible-and-foreground-occluded",
+        "actualAnchor": [1110, 253],
+        "rearOverlapPixels": 5,
+        "subjectGroundOverlapPixels": 110,
+        "foregroundOcclusionPixels": 66,
+        "worldRingOcclusionPixels": 243,
+        "transientEffectOcclusionPixels": 536
+      }
+    },
+    "alignment": {
+      "snapshotCount": 2,
+      "registryCount": 2,
+      "exactlyOneWardenAndOneHostile": true,
+      "valid": true
+    }
+  },
+  "renderer": {
+    "schemaVersion": 1,
+    "updateCount": 8,
+    "entityObjects": 6,
+    "pooledEffects": 0,
+    "activeEffects": 0,
+    "staticObjects": 7,
+    "sceneObjects": 14,
+    "runtimeTextures": 9,
+    "activeTweens": 0,
+    "timerEvents": 0,
+    "loaderListeners": 1,
+    "camera": {
+      "frame": [1280, 720],
+      "scaleMode": "fit",
+      "autoCenter": "both"
+    },
+    "layerOrder": [
+      "terrain",
+      "ground-foreground",
+      "world-rings",
+      "world-effects",
+      "world-entities",
+      "world-focus",
+      "lighting",
+      "screen-overlay"
+    ]
+  },
+  "controls": {
+    "pause": "Resume combat",
+    "shieldSlamDisabled": true
+  }
+}
