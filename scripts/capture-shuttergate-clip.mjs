@@ -104,7 +104,11 @@ try {
       "pause"
     ]
   };
-  if (startingTick !== 1 || typeof endingTick !== "number" || endingTick <= 1)
+  if (
+    typeof startingTick !== "number" ||
+    typeof endingTick !== "number" ||
+    endingTick <= startingTick
+  )
     throw new Error(
       `interaction clip did not advance authority: ${JSON.stringify(evidence)}`
     );
