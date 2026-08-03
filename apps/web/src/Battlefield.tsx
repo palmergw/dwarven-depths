@@ -1440,6 +1440,8 @@ class PersistentBattlefieldScene {
     for (const id of abilityImpactIds) {
       const entity = orderedEntities.find((candidate) => candidate.id === id);
       if (entity?.cameraDepth === undefined) continue;
+      const effectX = entity.x - 34;
+      const effectY = entity.y - 12;
       const texture = createDepthClippedPresentationTexture(
         this.scene,
         "shield-slam-impact",
@@ -1451,29 +1453,27 @@ class PersistentBattlefieldScene {
           cameraDepth: entity.cameraDepth,
           cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
           depthEdgeGuardPixels: 1,
-          frameLeft: Math.round(entity.x) - 70,
-          frameTop: Math.round(entity.y) - 76,
+          frameLeft: Math.round(effectX) - 70,
+          frameTop: Math.round(effectY) - 76,
           pivotY: 76
         },
         this.staticDepth
       );
       const effect =
         this.abilityEffects.get(id) ??
-        this.scene.add
-          .image(entity.x, entity.y, texture)
-          .setOrigin(0.5, 76 / 96);
+        this.scene.add.image(effectX, effectY, texture).setOrigin(0.5, 76 / 96);
       effect
         .setTexture(texture)
-        .setPosition(entity.x, entity.y)
-        .setAlpha(1)
-        .setScale(1);
+        .setPosition(effectX, effectY)
+        .setAlpha(0.82)
+        .setScale(0.78);
       this.abilityEffects.set(id, effect);
       this.layers["world-effects"].add(effect);
       if (!reduceMotion && impactKey !== this.lastAbilityEffectTick)
         this.scene.tweens.add({
           targets: effect,
           alpha: 0.35,
-          scale: 1.12,
+          scale: 0.9,
           duration: 180,
           yoyo: true
         });
