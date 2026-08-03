@@ -19,5 +19,5 @@
     { "path": "../../packages/runtime" },
     { "path": "../../packages/save" }
   ],
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["src/**/*.json", "src/**/*.ts", "src/**/*.tsx"]
 }

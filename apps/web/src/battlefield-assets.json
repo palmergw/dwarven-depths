@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "id": "manifest.web.shuttergate_battlefield",
+  "budgetBytes": 4194304,
+  "totalBytes": 3975799,
+  "layerOrder": [
+    "terrain",
+    "ground-foreground",
+    "world-rings",
+    "world-effects",
+    "world-entities",
+    "world-focus",
+    "lighting",
+    "screen-overlay"
+  ],
+  "assets": [
+    {
+      "key": "environment-base",
+      "kind": "image",
+      "layer": "terrain",
+      "path": "assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
+      "bytes": 1735208,
+      "sha256": "7cd37eb83a5cfb12567b8db0d59db2c80b63fdad036bb8bf540c22f5bef79b69"
+    },
+    {
+      "key": "entrance-route-rear",
+      "kind": "image",
+      "layer": "terrain",
+      "path": "assets/game-art/layered-map-poc/blender/outputs/entrance-route-rear.png",
+      "bytes": 110891,
+      "sha256": "35dd8c5b5df1b4df0290c5b0e826084a0937992f89e4e72cbcea5f8c962ee24b"
+    },
+    {
+      "key": "entrance-shell",
+      "kind": "image",
+      "layer": "terrain",
+      "path": "assets/game-art/layered-map-poc/blender/outputs/entrance-shell.png",
+      "bytes": 77280,
+      "sha256": "f53b2912a61ba1c03841d768c270263afc6abf2bfca6025face4b84916880baf"
+    },
+    {
+      "key": "entrance-route-ground-foreground",
+      "kind": "image",
+      "layer": "ground-foreground",
+      "path": "assets/game-art/layered-map-poc/blender/outputs/entrance-route-ground-foreground.png",
+      "bytes": 17443,
+      "sha256": "dba694a66f32dab4e7d57e3bf8f3a14821b3f8097a93c407705cd8233206baa8"
+    },
+    {
+      "key": "entrance-route-foreground",
+      "kind": "image",
+      "layer": "terrain",
+      "path": "assets/game-art/layered-map-poc/blender/outputs/entrance-route-foreground.png",
+      "bytes": 177619,
+      "sha256": "3bf32536b020eb8d7c9e64df6d5ed75a34be01053027b3ac93ada7b9944d3c76"
+    },
+    {
+      "key": "warden-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/production-scene/exports/entities/iron-warden-idle.png",
+      "bytes": 8514,
+      "sha256": "a10be62e061241683ba598ed4d9032880704a5f0c24bf38f9eff0a9bd138af4a"
+    },
+    {
+      "key": "raider-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
+      "bytes": 5628,
+      "sha256": "ecbec3b23d4ed1559262672a1c228767e8b33f31a0a8addbc7ec129d9f947c83"
+    },
+    {
+      "key": "static-scene-depth",
+      "kind": "binary",
+      "layer": "terrain",
+      "path": "assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.bin",
+      "bytes": 1843216,
+      "sha256": "71887686980068411caffb558e6e38caa93ea33d28ded110cb639d13cdf2901a"
+    }
+  ],
+  "provenance": {
+    "license": "MIT",
+    "licensePath": "LICENSE",
+    "environmentSource": "assets/game-art/layered-map-poc/blender/layered-shuttergate.blend",
+    "environmentBuild": "assets/game-art/layered-map-poc/blender/build_scene.py",
+    "entityManifest": "assets/game-art/production-scene/metadata/layer-manifest.json",
+    "entityProvenance": "assets/game-art/production-scene/metadata/provenance.json"
+  }
+}

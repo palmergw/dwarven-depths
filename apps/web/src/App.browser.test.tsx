@@ -1573,6 +1573,72 @@ describe("authoritative web worker", () => {
     expect(document.querySelector(".combat-feedback")).toBeNull();
   });
 
+  it("updates a persistent Phaser scene without growing entity objects", async () => {
+    const initial = {
+      schemaVersion: 1,
+      levelId: "level.shuttergate",
+      mapId: "map.shuttergate_hall",
+      tick: 1,
+      phase: "running",
+      nodes: [{ id: "node.shuttergate_gate", x: 0, y: 0 }],
+      connections: [],
+      entities: [
+        {
+          id: "entity.dwarf.warden",
+          nodeId: "node.shuttergate_gate",
+          faction: "dwarf"
+        }
+      ]
+    } as const satisfies RenderSnapshot;
+    const crowded = {
+      ...initial,
+      tick: 2,
+      entities: [
+        ...initial.entities,
+        {
+          id: "entity.enemy.raider",
+          nodeId: "node.shuttergate_gate",
+          faction: "enemy" as const
+        }
+      ]
+    } as const satisfies RenderSnapshot;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    const render = (renderSnapshot: RenderSnapshot): void =>
+      root?.render(
+        <Battlefield
+          snapshot={renderSnapshot}
+          reduceMotion={true}
+          soundEnabled={false}
+        />
+      );
+
+    render(initial);
+    await vi.waitFor(
+      () => expect(window.__DWARVEN_DEPTHS_RENDERER__?.entityObjects).toBe(3),
+      { timeout: 10_000 }
+    );
+    const canvas = document.querySelector(".battlefield-canvas canvas");
+    expect(canvas).toBeInstanceOf(HTMLCanvasElement);
+
+    for (let cycle = 0; cycle < 10; cycle += 1) {
+      const before = window.__DWARVEN_DEPTHS_RENDERER__?.updateCount ?? 0;
+      render(cycle % 2 === 0 ? crowded : initial);
+      await vi.waitFor(() =>
+        expect(window.__DWARVEN_DEPTHS_RENDERER__?.updateCount).toBeGreaterThan(
+          before
+        )
+      );
+      expect(document.querySelector(".battlefield-canvas canvas")).toBe(canvas);
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.entityObjects).toBe(
+        cycle % 2 === 0 ? 5 : 3
+      );
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.staticObjects).toBe(4);
+      expect(window.__DWARVEN_DEPTHS_RENDERER__?.pooledEffects).toBe(0);
+    }
+  });
+
   it("preserves the protocol-v3 combat-control message sequence", async () => {
     const worker = new Worker(
       new URL("./simulation.worker.ts", import.meta.url),
