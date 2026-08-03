@@ -85,6 +85,21 @@ async function waitForAutomaticPause(page) {
   });
 }
 
+async function waitForStableTruth(page, id) {
+  let previous = await page.evaluate(
+    () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__
+  );
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await page.waitForTimeout(50);
+    const current = await page.evaluate(
+      () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__
+    );
+    if (JSON.stringify(current) === JSON.stringify(previous)) return current;
+    previous = current;
+  }
+  throw new Error(`battlefield state did not settle before capture: ${id}`);
+}
+
 async function capture(page, id, expected) {
   const screenshotUrl = new URL(`${id}.png`, outputDirectory);
   const sidecarUrl = new URL(`${id}.json`, outputDirectory);
@@ -93,7 +108,7 @@ async function capture(page, id, expected) {
     rm(sidecarUrl, { force: true })
   ]);
   await page.waitForFunction(expected);
-  await page.waitForTimeout(80);
+  const stableTruth = await waitForStableTruth(page, id);
   const before = await page.evaluate(() => ({
     viewport: [window.innerWidth, window.innerHeight],
     truth: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__,
@@ -112,6 +127,7 @@ async function capture(page, id, expected) {
     }
   }));
   if (
+    JSON.stringify(before.truth) !== JSON.stringify(stableTruth) ||
     before.truth?.captureReady !== true ||
     before.truth.fixtureId !== fixtureId ||
     before.truth.registry.entities.some(
