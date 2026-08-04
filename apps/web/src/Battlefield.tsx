@@ -69,6 +69,30 @@ const raiderUrl = new URL(
   "../../../assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
   import.meta.url
 ).href;
+const wardenShieldSlamUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/entities/iron-warden-shield-slam.png",
+  import.meta.url
+).href;
+const raiderAttackUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/entities/mine-raider-attack.png",
+  import.meta.url
+).href;
+const warmLightOverlayUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/lighting/warm-light-overlay.png",
+  import.meta.url
+).href;
+const hostileFactionRingUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/effects/hostile-faction-ring.png",
+  import.meta.url
+).href;
+const shieldSlamImpactUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/effects/shield-slam-impact.png",
+  import.meta.url
+).href;
+const wardenSelectionRingUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/effects/warden-selection-ring.png",
+  import.meta.url
+).href;
 const staticSceneDepthUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.bin",
   import.meta.url
@@ -81,6 +105,12 @@ const battlefieldAssetUrls: Readonly<Record<string, string>> = {
   "entrance-route-rear": entranceRouteRearUrl,
   "warden-source": wardenUrl,
   "raider-source": raiderUrl,
+  "warden-shield-slam-source": wardenShieldSlamUrl,
+  "raider-attack-source": raiderAttackUrl,
+  "warm-light-overlay": warmLightOverlayUrl,
+  "hostile-faction-ring": hostileFactionRingUrl,
+  "shield-slam-impact": shieldSlamImpactUrl,
+  "warden-selection-ring": wardenSelectionRingUrl,
   "static-scene-depth": staticSceneDepthUrl
 };
 
@@ -129,6 +159,7 @@ interface TextureAlphaMetrics {
 interface TruthVisualMetrics {
   readonly dwarf: TextureAlphaMetrics;
   readonly enemy: TextureAlphaMetrics;
+  readonly entities: ReadonlyMap<string, TextureAlphaMetrics>;
   readonly groundForeground: TextureAlphaMetrics;
   readonly foreground: TextureAlphaMetrics;
   readonly rear: TextureAlphaMetrics;
@@ -138,7 +169,7 @@ export interface TruthScreenSidecar {
   readonly schemaVersion: 1;
   readonly captureReady: boolean;
   readonly fixtureId: string;
-  readonly viewport: readonly [1440, 900];
+  readonly viewport: readonly [number, number];
   readonly frame: readonly [1280, 720];
   readonly snapshot: {
     readonly levelId: string;
@@ -154,6 +185,20 @@ export interface TruthScreenSidecar {
       readonly id: string;
       readonly faction: RenderEntity["faction"];
       readonly nodeId: string;
+      readonly visualId: string | null;
+      readonly archetype: string | null;
+      readonly currentHealth: number | null;
+      readonly maximumHealth: number | null;
+      readonly action: {
+        readonly kind: string;
+        readonly phase: string;
+        readonly abilityId: string | null;
+      } | null;
+      readonly targetEntityId: string | null;
+      readonly statusIds: readonly string[];
+      readonly transition: string | null;
+      readonly elite: boolean;
+      readonly boss: boolean;
       readonly x: number;
       readonly y: number;
       readonly nominalHeight: number;
@@ -197,7 +242,10 @@ export interface TruthScreenSidecar {
   readonly alignment: {
     readonly snapshotCount: number;
     readonly registryCount: number;
-    readonly exactlyOneWardenAndOneHostile: boolean;
+    readonly renderedCount: number;
+    readonly registryEntitiesMatch: boolean;
+    readonly renderedEntitiesMatch: boolean;
+    readonly authoritativeEntitiesMatch: boolean;
     readonly valid: boolean;
   };
 }
@@ -344,6 +392,76 @@ export function buildInterpolationOrigins(
   );
 }
 
+export function selectCombatPoseAsset(
+  snapshot: RenderSnapshot,
+  entityId: string
+):
+  | "warden-source"
+  | "warden-shield-slam-source"
+  | "raider-source"
+  | "raider-attack-source" {
+  const faction = snapshot.entities.find(({ id }) => id === entityId)?.faction;
+  if (snapshot.schemaVersion === 1)
+    return faction === "dwarf" ? "warden-source" : "raider-source";
+  const entity = snapshot.entities.find(({ id }) => id === entityId);
+  if (entity === undefined) return "raider-source";
+  const dwarf = entity.faction === "dwarf";
+  const activePose =
+    entity.action.phase === "windup" ||
+    entity.action.phase === "committed" ||
+    entity.action.phase === "impact";
+  if (
+    dwarf &&
+    entity.action.kind === "ability" &&
+    entity.action.abilityId === "ability.iron_warden.shield_slam" &&
+    activePose
+  )
+    return "warden-shield-slam-source";
+  if (!dwarf && entity.action.kind === "basic_attack" && activePose)
+    return "raider-attack-source";
+  return dwarf ? "warden-source" : "raider-source";
+}
+
+export interface CombatPresentationState {
+  readonly healthRatio: number;
+  readonly damaged: boolean;
+  readonly status: boolean;
+  readonly elite: boolean;
+  readonly boss: boolean;
+  readonly shieldSlamImpact: boolean;
+}
+
+export function deriveCombatPresentationState(
+  snapshot: RenderSnapshot,
+  previousSnapshot: RenderSnapshot | undefined,
+  entityId: string
+): CombatPresentationState | undefined {
+  if (snapshot.schemaVersion !== 2) return undefined;
+  const entity = snapshot.entities.find(({ id }) => id === entityId);
+  if (entity === undefined) return undefined;
+  const previous =
+    previousSnapshot?.schemaVersion === 2 &&
+    previousSnapshot.scenarioId === snapshot.scenarioId &&
+    previousSnapshot.tick === snapshot.previousTick
+      ? previousSnapshot.entities.find(({ id }) => id === entityId)
+      : undefined;
+  return {
+    healthRatio:
+      entity.maximumHealth === 0
+        ? 0
+        : entity.currentHealth / entity.maximumHealth,
+    damaged:
+      previous !== undefined && entity.currentHealth < previous.currentHealth,
+    status: entity.statuses.length > 0,
+    elite: entity.elite,
+    boss: entity.boss,
+    shieldSlamImpact:
+      entity.action.kind === "ability" &&
+      entity.action.abilityId === "ability.iron_warden.shield_slam" &&
+      entity.action.phase === "impact"
+  };
+}
+
 export function decodeBattlefieldDepthAsset(
   value: unknown
 ): StaticSceneDepth | undefined {
@@ -368,12 +486,63 @@ export function buildDepartureFeedbackPrimitives(
   );
 }
 
+export function buildTruthScreenAlignment(
+  snapshot: RenderSnapshot,
+  registryEntities: readonly Pick<RenderEntity, "id" | "faction">[],
+  renderedEntities: readonly Pick<RenderEntity, "id" | "faction">[]
+): TruthScreenSidecar["alignment"] {
+  const canonicalIdentity = ({
+    id,
+    faction
+  }: Pick<RenderEntity, "id" | "faction">) => `${id}\u0000${faction}`;
+  const snapshotCombatants = snapshot.entities
+    .filter(({ faction }) => faction === "dwarf" || faction === "enemy")
+    .map(canonicalIdentity)
+    .sort(compareRenderIds);
+  const registryCombatants = registryEntities
+    .filter(({ faction }) => faction === "dwarf" || faction === "enemy")
+    .map(canonicalIdentity)
+    .sort(compareRenderIds);
+  const renderedCombatants = renderedEntities
+    .filter(({ faction }) => faction === "dwarf" || faction === "enemy")
+    .map(canonicalIdentity)
+    .sort(compareRenderIds);
+  const registryEntitiesMatch =
+    snapshotCombatants.length === registryCombatants.length &&
+    snapshotCombatants.every(
+      (identity, index) => identity === registryCombatants[index]
+    );
+  const renderedEntitiesMatch =
+    snapshotCombatants.length === renderedCombatants.length &&
+    snapshotCombatants.every(
+      (identity, index) => identity === renderedCombatants[index]
+    );
+  const authoritativeEntitiesMatch =
+    registryEntitiesMatch && renderedEntitiesMatch;
+  return {
+    snapshotCount: snapshotCombatants.length,
+    registryCount: registryCombatants.length,
+    renderedCount: renderedCombatants.length,
+    registryEntitiesMatch,
+    renderedEntitiesMatch,
+    authoritativeEntitiesMatch,
+    valid: authoritativeEntitiesMatch
+  };
+}
+
 export function buildTruthScreenSidecar(
   snapshot: RenderSnapshot,
   primitives: BattlefieldPrimitives,
-  visualMetrics: TruthVisualMetrics
+  visualMetrics: TruthVisualMetrics,
+  viewport: readonly [number, number],
+  renderedEntities: readonly Pick<RenderEntity, "id" | "faction">[]
 ): TruthScreenSidecar {
   const byId = new Map(snapshot.entities.map((entity) => [entity.id, entity]));
+  const v2ById = new Map(
+    snapshot.schemaVersion === 2
+      ? snapshot.entities.map((entity) => [entity.id, entity])
+      : []
+  );
   const entities = primitives.entities.flatMap((primitive) => {
     const entity = byId.get(primitive.id);
     if (
@@ -381,7 +550,9 @@ export function buildTruthScreenSidecar(
       (entity.faction !== "dwarf" && entity.faction !== "enemy")
     )
       return [];
-    const source = visualMetrics[entity.faction];
+    const source =
+      visualMetrics.entities.get(entity.id) ?? visualMetrics[entity.faction];
+    const v2 = v2ById.get(entity.id);
     const pivotX = Math.round(source.width / 2);
     const pivotY = entity.faction === "dwarf" ? 66 : 54;
     const canvasLeft = Math.round(primitive.x - pivotX);
@@ -397,6 +568,16 @@ export function buildTruthScreenSidecar(
         id: entity.id,
         faction: entity.faction,
         nodeId: entity.nodeId,
+        visualId: v2?.visualId ?? null,
+        archetype: v2?.archetype ?? null,
+        currentHealth: v2?.currentHealth ?? null,
+        maximumHealth: v2?.maximumHealth ?? null,
+        action: v2?.action ?? null,
+        targetEntityId: v2?.targetEntityId ?? null,
+        statusIds: v2?.statuses.map(({ id }) => id) ?? [],
+        transition: v2?.transition ?? null,
+        elite: v2?.elite ?? false,
+        boss: v2?.boss ?? false,
         x: Math.round(primitive.x),
         y: Math.round(primitive.y),
         nominalHeight: entity.faction === "dwarf" ? 56 : 44,
@@ -425,20 +606,20 @@ export function buildTruthScreenSidecar(
   const hostileCount = entities.filter(
     ({ faction }) => faction === "enemy"
   ).length;
-  const exactlyOneWardenAndOneHostile = dwarfCount === 1 && hostileCount === 1;
   const hostile = entities.find(({ faction }) => faction === "enemy");
+  const hostileSource =
+    (hostile === undefined
+      ? undefined
+      : visualMetrics.entities.get(hostile.id)) ?? visualMetrics.enemy;
   const countEnemyArtifactOverlap = (
     artifact: TextureAlphaMetrics,
     canvasLeft: number,
     canvasTop: number
   ): number => {
     let overlap = 0;
-    for (let y = 0; y < visualMetrics.enemy.height; y += 1) {
-      for (let x = 0; x < visualMetrics.enemy.width; x += 1) {
-        if (
-          (visualMetrics.enemy.alpha[y * visualMetrics.enemy.width + x] ??
-            0) === 0
-        )
+    for (let y = 0; y < hostileSource.height; y += 1) {
+      for (let x = 0; x < hostileSource.width; x += 1) {
+        if ((hostileSource.alpha[y * hostileSource.width + x] ?? 0) === 0)
           continue;
         const worldX = canvasLeft + x;
         const worldY = canvasTop + y;
@@ -538,11 +719,16 @@ export function buildTruthScreenSidecar(
       23
     );
   }
+  const alignment = buildTruthScreenAlignment(
+    snapshot,
+    entities,
+    renderedEntities
+  );
   return {
     schemaVersion: 1,
-    captureReady: true,
+    captureReady: alignment.valid,
     fixtureId: FIXTURE_ID,
-    viewport: [1440, 900],
+    viewport,
     frame: [WIDTH, HEIGHT],
     snapshot: {
       levelId: snapshot.levelId,
@@ -588,25 +774,7 @@ export function buildTruthScreenSidecar(
         transientEffectOcclusionPixels
       }
     },
-    alignment: {
-      snapshotCount: snapshot.entities.length,
-      registryCount: entities.length,
-      exactlyOneWardenAndOneHostile,
-      valid:
-        snapshot.entities.length === entities.length &&
-        exactlyOneWardenAndOneHostile &&
-        entities.every(
-          (entity) =>
-            entity.nonzeroAlphaPixels > 0 &&
-            entity.fullAlphaPixels * 5 >= entity.nonzeroAlphaPixels * 4 &&
-            entity.intersectsUnobscuredWorldViewport
-        ) &&
-        rearOverlapPixels > 0 &&
-        subjectGroundOverlapPixels > 0 &&
-        foregroundOcclusionPixels > 0 &&
-        worldRingOcclusionPixels > 0 &&
-        transientEffectOcclusionPixels > 0
-    }
+    alignment
   };
 }
 
@@ -775,64 +943,140 @@ function addDepthTestedRing(
   scene: Phaser.Scene,
   entity: RenderPrimitive,
   staticDepth: StaticSceneDepth,
-  existing?: Phaser.GameObjects.Graphics
-): Phaser.GameObjects.Graphics | undefined {
+  presentation: CombatPresentationState | undefined,
+  existing?: Phaser.GameObjects.Image
+): Phaser.GameObjects.Image | undefined {
   if (entity.faction === undefined) return undefined;
   const dwarf = entity.faction === "dwarf";
-  const ellipseWidth = dwarf ? 72 : 58;
-  const ellipseHeight = dwarf ? 26 : 20;
-  const width = 80;
-  const height = 40;
+  const sourceKey = dwarf ? "warden-selection-ring" : "hostile-faction-ring";
+  const width = dwarf ? 94 : 78;
+  const height = dwarf ? 42 : 36;
   const pivotX = width / 2;
-  const centerYOffset = dwarf ? -2 : -1;
   const pivotY = height / 2;
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
-  const ring = existing ?? scene.add.graphics();
-  ring.setPosition(0, 0);
-  ring.clearMask(true);
-  ring.clear();
-  ring.fillStyle(dwarf ? 0x65b9df : 0xa92720, dwarf ? 0.32 : 0.3);
-  ring.fillEllipse(
-    entity.x,
-    entity.y + centerYOffset,
-    ellipseWidth,
-    ellipseHeight
+  const texture =
+    entity.cameraDepth === undefined
+      ? sourceKey
+      : createDepthClippedPresentationTexture(
+          scene,
+          sourceKey,
+          `ring-depth-${entity.id}`,
+          width,
+          height,
+          {
+            kind: "ground-plane",
+            cameraDepth: entity.cameraDepth,
+            cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
+            cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
+            depthEdgeGuardPixels: 0,
+            frameLeft,
+            frameTop,
+            pivotX,
+            pivotY
+          },
+          staticDepth
+        );
+  const ring = existing ?? scene.add.image(entity.x, entity.y, texture);
+  ring
+    .setTexture(texture)
+    .setPosition(entity.x, entity.y)
+    .setOrigin(0.5)
+    .setScale(
+      presentation?.boss === true
+        ? 1.18
+        : presentation?.elite === true
+          ? 1.08
+          : 1
+    )
+    .setTint(
+      presentation?.boss === true
+        ? 0xe7a2ff
+        : presentation?.elite === true
+          ? 0xffd45c
+          : 0xffffff
+    );
+  return ring;
+}
+
+function updateEntitySignal(
+  scene: Phaser.Scene,
+  signal: Phaser.GameObjects.Graphics,
+  entity: RenderPrimitive,
+  presentation: CombatPresentationState | undefined,
+  staticDepth: StaticSceneDepth
+): void {
+  signal.clearMask(true);
+  signal.clear();
+  signal.setPosition(0, 0);
+  if (presentation === undefined) return;
+  const dwarf = entity.faction === "dwarf";
+  const width = dwarf ? 46 : 38;
+  const top = entity.y - (dwarf ? 72 : 60);
+  signal.fillStyle(0x090705, 0.9);
+  signal.fillRect(entity.x - width / 2 - 1, top - 1, width + 2, 6);
+  signal.fillStyle(
+    presentation.healthRatio > 0.5
+      ? 0x69b96b
+      : presentation.healthRatio > 0.25
+        ? 0xe0a84c
+        : 0xd85a4f,
+    1
   );
-  ring.lineStyle(3, dwarf ? 0xaee9ff : 0xff725f, dwarf ? 0.9 : 0.95);
-  ring.strokeEllipse(
-    entity.x,
-    entity.y + centerYOffset,
-    ellipseWidth,
-    ellipseHeight
+  signal.fillRect(
+    entity.x - width / 2,
+    top,
+    Math.round(width * presentation.healthRatio),
+    4
   );
+  if (presentation.damaged) {
+    signal.fillStyle(0xff695e, 1);
+    signal.fillTriangle(
+      entity.x - 5,
+      top - 8,
+      entity.x + 5,
+      top - 8,
+      entity.x,
+      top - 2
+    );
+  }
+  if (presentation.status) {
+    signal.lineStyle(2, 0x73d7ef, 1);
+    const centerX = entity.x + width / 2 + 7;
+    const centerY = top + 2;
+    signal.lineBetween(centerX, centerY - 5, centerX + 5, centerY);
+    signal.lineBetween(centerX + 5, centerY, centerX, centerY + 5);
+    signal.lineBetween(centerX, centerY + 5, centerX - 5, centerY);
+    signal.lineBetween(centerX - 5, centerY, centerX, centerY - 5);
+  }
+  if (presentation.elite || presentation.boss) {
+    signal.lineStyle(2, presentation.boss ? 0xe7a2ff : 0xffd45c, 1);
+    signal.strokeCircle(entity.x, top - 5, presentation.boss ? 8 : 5);
+  }
   if (entity.cameraDepth !== undefined)
-    ring.setMask(
+    signal.setMask(
       createDepthVisibilityMask(
         scene,
-        width,
-        height,
+        100,
+        90,
         {
-          kind: "ground-plane",
+          kind: "upright-billboard",
           cameraDepth: entity.cameraDepth,
-          cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
-          cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
-          depthEdgeGuardPixels: 0,
-          frameLeft,
-          frameTop,
-          pivotX,
-          pivotY
+          cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+          depthEdgeGuardPixels: 1,
+          frameLeft: Math.round(entity.x) - 50,
+          frameTop: Math.round(entity.y) - 82,
+          pivotY: 82
         },
         staticDepth
       )
     );
-  return ring;
 }
 
 function addDepthTestedEffect(
   scene: Phaser.Scene,
   entity: RenderPrimitive,
-  feedback: CombatFeedback,
+  kind: "arrival" | "departure",
   staticDepth: StaticSceneDepth,
   existing?: Phaser.GameObjects.Graphics
 ): Phaser.GameObjects.Graphics | undefined {
@@ -847,8 +1091,34 @@ function addDepthTestedEffect(
   effect.clearMask(true);
   effect.clear();
   effect.setAlpha(1);
-  effect.lineStyle(4, feedback.terminal ? 0xf4ead5 : 0xf0c66f, 0.95);
-  effect.strokeEllipse(entity.x, entity.y - 12, 88, 50);
+  if (kind === "arrival") {
+    effect.lineStyle(3, 0x73d7ef, 0.95);
+    effect.strokeEllipse(entity.x, entity.y - 10, 82, 44);
+    effect.lineBetween(entity.x - 12, entity.y - 2, entity.x, entity.y - 12);
+    effect.lineBetween(entity.x, entity.y - 12, entity.x + 12, entity.y - 2);
+    effect.lineBetween(entity.x - 9, entity.y + 6, entity.x, entity.y - 2);
+    effect.lineBetween(entity.x, entity.y - 2, entity.x + 9, entity.y + 6);
+  } else {
+    effect.lineStyle(4, 0xff695e, 0.95);
+    effect.beginPath();
+    effect.arc(entity.x, entity.y - 12, 38, 0.2, 1.2);
+    effect.arc(entity.x, entity.y - 12, 38, 1.9, 2.9);
+    effect.arc(entity.x, entity.y - 12, 38, 3.3, 4.3);
+    effect.arc(entity.x, entity.y - 12, 38, 5, 6);
+    effect.strokePath();
+    effect.lineBetween(
+      entity.x - 10,
+      entity.y - 22,
+      entity.x + 10,
+      entity.y - 2
+    );
+    effect.lineBetween(
+      entity.x + 10,
+      entity.y - 22,
+      entity.x - 10,
+      entity.y - 2
+    );
+  }
   effect.setMask(
     createDepthVisibilityMask(
       scene,
@@ -869,44 +1139,6 @@ function addDepthTestedEffect(
   return effect;
 }
 
-function addDepthTestedFocus(
-  scene: Phaser.Scene,
-  entity: RenderPrimitive,
-  staticDepth: StaticSceneDepth,
-  existing?: Phaser.GameObjects.Graphics
-): Phaser.GameObjects.Graphics {
-  const width = 84;
-  const height = 80;
-  const pivotX = width / 2;
-  const pivotY = 74;
-  const frameLeft = Math.round(entity.x) - pivotX;
-  const frameTop = Math.round(entity.y) - pivotY;
-  const focus = existing ?? scene.add.graphics();
-  focus.clearMask(true);
-  focus.clear();
-  focus.lineStyle(2, 0xf3d78f, 0.9);
-  focus.strokeRoundedRect(entity.x - 40, entity.y - 72, 80, 78, 10);
-  if (entity.cameraDepth !== undefined)
-    focus.setMask(
-      createDepthVisibilityMask(
-        scene,
-        width,
-        height,
-        {
-          kind: "upright-billboard",
-          cameraDepth: entity.cameraDepth,
-          cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
-          depthEdgeGuardPixels: 1,
-          frameLeft,
-          frameTop,
-          pivotY
-        },
-        staticDepth
-      )
-    );
-  return focus;
-}
-
 function addDepthTestedBillboard(
   scene: Phaser.Scene,
   entity: RenderPrimitive,
@@ -920,10 +1152,13 @@ function addDepthTestedBillboard(
 ): Phaser.GameObjects.Image {
   if (entity.cameraDepth === undefined) {
     const image = existing ?? scene.add.image(entity.x, entity.y, sourceKey);
-    return image
+    image
       .setTexture(sourceKey)
       .setPosition(entity.x, entity.y)
       .setOrigin(pivotX / width, pivotY / height);
+    image.setData("renderEntityId", entity.id);
+    image.setData("renderSourceKey", sourceKey);
+    return image;
   }
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
@@ -946,15 +1181,40 @@ function addDepthTestedBillboard(
     staticDepth
   );
   const image = existing ?? scene.add.image(entity.x, entity.y, texture);
-  return image
+  image
     .setTexture(texture)
     .setPosition(entity.x, entity.y)
     .setOrigin(pivotX / width, pivotY / height);
+  image.setData("renderEntityId", entity.id);
+  image.setData("renderSourceKey", sourceKey);
+  return image;
+}
+
+export function renderedFactionForSourceKey(
+  sourceKey: unknown
+): RenderEntity["faction"] | undefined {
+  if (typeof sourceKey !== "string") return undefined;
+  if (
+    sourceKey === "warden-source" ||
+    sourceKey === "warden-runtime" ||
+    sourceKey === "warden-shield-slam-source" ||
+    sourceKey === "warden-shield-slam-runtime"
+  )
+    return "dwarf";
+  if (
+    sourceKey === "raider-source" ||
+    sourceKey === "raider-runtime" ||
+    sourceKey === "raider-attack-source" ||
+    sourceKey === "raider-attack-runtime"
+  )
+    return "enemy";
+  return undefined;
 }
 
 interface PersistentEntityObjects {
-  readonly ring: Phaser.GameObjects.Graphics;
+  readonly ring: Phaser.GameObjects.Image;
   readonly subject: Phaser.GameObjects.Image;
+  readonly signal: Phaser.GameObjects.Graphics;
 }
 
 class PersistentBattlefieldScene {
@@ -964,10 +1224,14 @@ class PersistentBattlefieldScene {
   >;
   readonly entities = new Map<string, PersistentEntityObjects>();
   readonly effects: Phaser.GameObjects.Graphics[] = [];
-  focus: Phaser.GameObjects.Graphics | undefined;
+  readonly abilityEffects = new Map<string, Phaser.GameObjects.Image>();
+  readonly lighting: Phaser.GameObjects.Image;
+  readonly terminalFrame: Phaser.GameObjects.Graphics;
+  readonly terminalText: Phaser.GameObjects.Text;
   updateCount = 0;
   activeEffects = 0;
   lastInterpolatedTick: string | undefined;
+  lastAbilityEffectTick: string | undefined;
 
   constructor(
     readonly scene: Phaser.Scene,
@@ -988,6 +1252,29 @@ class PersistentBattlefieldScene {
     this.layers.terrain.add(
       scene.add.image(WIDTH / 2, HEIGHT / 2, "entrance-route-foreground")
     );
+    this.lighting = scene.add.image(
+      WIDTH / 2,
+      HEIGHT / 2,
+      "warm-light-overlay"
+    );
+    this.layers.lighting.add(this.lighting);
+    this.terminalFrame = scene.add.graphics().setVisible(false);
+    this.terminalFrame.fillStyle(0x090705, 0.88);
+    this.terminalFrame.fillRoundedRect(390, 292, 500, 136, 10);
+    this.terminalFrame.lineStyle(3, 0xd6a64f, 1);
+    this.terminalFrame.strokeRoundedRect(390, 292, 500, 136, 10);
+    this.terminalText = scene.add
+      .text(WIDTH / 2, HEIGHT / 2, "", {
+        color: "#f0c66f",
+        fontFamily: "Georgia, serif",
+        fontSize: "30px",
+        fontStyle: "bold",
+        align: "center"
+      })
+      .setOrigin(0.5)
+      .setVisible(false);
+    this.layers["screen-overlay"].add(this.terminalFrame);
+    this.layers["screen-overlay"].add(this.terminalText);
   }
 
   private acquireEffect(index: number): Phaser.GameObjects.Graphics {
@@ -1007,20 +1294,28 @@ class PersistentBattlefieldScene {
     const offsetX = origin.x - destination.x;
     const offsetY = origin.y - destination.y;
     if (offsetX === 0 && offsetY === 0) return;
-    objects.ring.setPosition(offsetX, offsetY);
+    objects.ring.setPosition(origin.x, origin.y);
     objects.subject.setPosition(origin.x, origin.y);
-    const ringMask = objects.ring.mask?.geometryMask;
-    ringMask?.setPosition(offsetX, offsetY);
+    objects.signal.setPosition(offsetX, offsetY);
+    const signalMask = objects.signal.mask?.geometryMask;
+    signalMask?.setPosition(offsetX, offsetY);
     this.scene.tweens.add({
       targets: objects.ring,
+      x: destination.x,
+      y: destination.y,
+      duration: INTERPOLATION_DURATION_MS,
+      ease: "Sine.Out"
+    });
+    this.scene.tweens.add({
+      targets: objects.signal,
       x: 0,
       y: 0,
       duration: INTERPOLATION_DURATION_MS,
       ease: "Sine.Out"
     });
-    if (ringMask !== undefined)
+    if (signalMask !== undefined)
       this.scene.tweens.add({
-        targets: ringMask,
+        targets: signalMask,
         x: 0,
         y: 0,
         duration: INTERPOLATION_DURATION_MS,
@@ -1061,9 +1356,11 @@ class PersistentBattlefieldScene {
       interpolationTick !== undefined &&
       interpolationTick !== this.lastInterpolatedTick;
     this.scene.tweens.killTweensOf(
-      [...this.entities.values()].flatMap(({ ring, subject }) => {
-        const mask = ring.mask?.geometryMask;
-        return mask === undefined ? [ring, subject] : [ring, subject, mask];
+      [...this.entities.values()].flatMap(({ ring, signal, subject }) => {
+        const signalMask = signal.mask?.geometryMask;
+        return signalMask === undefined
+          ? [ring, signal, subject]
+          : [ring, signal, signalMask, subject];
       })
     );
     const orderedEntities = [...primitives.entities].sort(
@@ -1074,41 +1371,54 @@ class PersistentBattlefieldScene {
       if (!liveIds.has(id)) {
         this.layers["world-rings"].delete(objects.ring);
         this.layers["world-entities"].delete(objects.subject);
-        objects.ring.clearMask(true);
         objects.ring.destroy();
+        objects.signal.clearMask(true);
+        objects.signal.destroy();
         objects.subject.setTexture("warden-runtime");
         objects.subject.destroy();
-        const textureKey = `subject-depth-${id}`;
-        if (this.scene.textures.exists(textureKey))
-          this.scene.textures.remove(textureKey);
+        for (const textureKey of [`ring-depth-${id}`, `subject-depth-${id}`])
+          if (this.scene.textures.exists(textureKey))
+            this.scene.textures.remove(textureKey);
         this.entities.delete(id);
       }
 
-    const wardenTexture = normalizeAlphaTexture(
-      this.scene,
-      "warden-source",
-      "warden-runtime"
+    const poseTextures = new Map(
+      (
+        [
+          ["warden-source", "warden-runtime"],
+          ["warden-shield-slam-source", "warden-shield-slam-runtime"],
+          ["raider-source", "raider-runtime"],
+          ["raider-attack-source", "raider-attack-runtime"]
+        ] as const
+      ).map(([source, runtime]) => [
+        source,
+        normalizeAlphaTexture(this.scene, source, runtime)
+      ])
     );
-    const raiderTexture = normalizeAlphaTexture(
-      this.scene,
-      "raider-source",
-      "raider-runtime"
-    );
+    const wardenTexture = poseTextures.get("warden-source") ?? "warden-source";
+    const raiderTexture = poseTextures.get("raider-source") ?? "raider-source";
     for (const entity of orderedEntities) {
       const existing = this.entities.get(entity.id);
+      const presentation = deriveCombatPresentationState(
+        snapshot,
+        previousSnapshot,
+        entity.id
+      );
       const ring = addDepthTestedRing(
         this.scene,
         entity,
         this.staticDepth,
+        presentation,
         existing?.ring
       );
       if (ring === undefined) continue;
       if (existing === undefined) this.layers["world-rings"].add(ring);
       const dwarf = entity.faction === "dwarf";
+      const poseKey = selectCombatPoseAsset(snapshot, entity.id);
       const subject = addDepthTestedBillboard(
         this.scene,
         entity,
-        dwarf ? wardenTexture : raiderTexture,
+        poseTextures.get(poseKey) ?? poseKey,
         dwarf ? 112 : 80,
         dwarf ? 72 : 60,
         dwarf ? 56 : 40,
@@ -1118,9 +1428,19 @@ class PersistentBattlefieldScene {
       );
       if (existing === undefined) {
         this.layers["world-entities"].add(subject);
-        this.entities.set(entity.id, { ring, subject });
+        const signal = this.scene.add.graphics();
+        this.layers["world-effects"].add(signal);
+        this.entities.set(entity.id, { ring, subject, signal });
       }
       const objects = this.entities.get(entity.id);
+      if (objects !== undefined)
+        updateEntitySignal(
+          this.scene,
+          objects.signal,
+          entity,
+          presentation,
+          this.staticDepth
+        );
       const snapshotEntity =
         snapshot.schemaVersion === 2
           ? snapshot.entities.find(({ id }) => id === entity.id)
@@ -1139,20 +1459,26 @@ class PersistentBattlefieldScene {
 
     this.scene.tweens.killTweensOf(this.effects);
     this.activeEffects = 0;
-    if (feedback !== undefined && !reduceMotion) {
+    if (feedback !== undefined) {
       const arrivalIds = new Set(feedback.arrivals.map(({ id }) => id));
       const effectEntities = [
-        ...orderedEntities.filter(({ id }) => arrivalIds.has(id)),
+        ...orderedEntities
+          .filter(({ id }) => arrivalIds.has(id))
+          .map((entity) => ({ entity, kind: "arrival" as const })),
         ...(previousSnapshot === undefined
           ? []
-          : buildDepartureFeedbackPrimitives(previousSnapshot, feedback))
-      ].sort(comparePresentationPrimitives);
-      for (const entity of effectEntities) {
+          : buildDepartureFeedbackPrimitives(previousSnapshot, feedback).map(
+              (entity) => ({ entity, kind: "departure" as const })
+            ))
+      ].sort((left, right) =>
+        comparePresentationPrimitives(left.entity, right.entity)
+      );
+      for (const { entity, kind } of effectEntities) {
         if (this.activeEffects >= MAX_POOLED_EFFECTS) continue;
         const effect = addDepthTestedEffect(
           this.scene,
           entity,
-          feedback,
+          kind,
           this.staticDepth,
           this.acquireEffect(this.activeEffects)
         );
@@ -1171,7 +1497,7 @@ class PersistentBattlefieldScene {
       this.effects[index]?.setVisible(false);
     }
     const active = this.effects.slice(0, this.activeEffects);
-    if (active.length > 0 && evidenceEffectAlpha === undefined)
+    if (active.length > 0 && !reduceMotion && evidenceEffectAlpha === undefined)
       this.scene.tweens.add({
         targets: active,
         alpha: 0.15,
@@ -1179,22 +1505,91 @@ class PersistentBattlefieldScene {
         yoyo: true,
         repeat: 1
       });
+    else if (active.length > 0 && evidenceEffectAlpha === undefined)
+      for (const effect of active) effect.setAlpha(1);
     else if (evidenceEffectAlpha !== undefined)
       for (const effect of active) effect.setAlpha(evidenceEffectAlpha);
 
-    const selectedWarden = primitives.entities.find(
-      ({ faction }) => faction === "dwarf"
-    );
-    if (selectedWarden === undefined) this.focus?.setVisible(false);
-    else {
-      this.focus = addDepthTestedFocus(
+    const abilityImpactIds =
+      snapshot.schemaVersion === 2
+        ? snapshot.entities.flatMap((entity) => {
+            const state = deriveCombatPresentationState(
+              snapshot,
+              previousSnapshot,
+              entity.id
+            );
+            if (state?.shieldSlamImpact !== true) return [];
+            return [entity.targetEntityId ?? entity.id];
+          })
+        : [];
+    const impactKey =
+      snapshot.schemaVersion === 2
+        ? `${snapshot.scenarioId}:${snapshot.tick}:${abilityImpactIds.join(",")}`
+        : undefined;
+    for (const [id, effect] of this.abilityEffects)
+      if (!abilityImpactIds.includes(id)) {
+        effect.destroy();
+        this.abilityEffects.delete(id);
+        const textureKey = `ability-effect-depth-${id}`;
+        if (this.scene.textures.exists(textureKey))
+          this.scene.textures.remove(textureKey);
+      }
+    for (const id of abilityImpactIds) {
+      const entity = orderedEntities.find((candidate) => candidate.id === id);
+      if (entity?.cameraDepth === undefined) continue;
+      const effectX = entity.x - 34;
+      const effectY = entity.y - 12;
+      const texture = createDepthClippedPresentationTexture(
         this.scene,
-        selectedWarden,
-        this.staticDepth,
-        this.focus
-      ).setVisible(true);
-      this.layers["world-focus"].add(this.focus);
+        "shield-slam-impact",
+        `ability-effect-depth-${id}`,
+        140,
+        96,
+        {
+          kind: "upright-billboard",
+          cameraDepth: entity.cameraDepth,
+          cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+          depthEdgeGuardPixels: 1,
+          frameLeft: Math.round(effectX) - 70,
+          frameTop: Math.round(effectY) - 76,
+          pivotY: 76
+        },
+        this.staticDepth
+      );
+      const effect =
+        this.abilityEffects.get(id) ??
+        this.scene.add.image(effectX, effectY, texture).setOrigin(0.5, 76 / 96);
+      effect
+        .setTexture(texture)
+        .setPosition(effectX, effectY)
+        .setAlpha(0.82)
+        .setScale(0.78);
+      this.abilityEffects.set(id, effect);
+      this.layers["world-effects"].add(effect);
+      if (!reduceMotion && impactKey !== this.lastAbilityEffectTick)
+        this.scene.tweens.add({
+          targets: effect,
+          alpha: 0.35,
+          scale: 0.9,
+          duration: 180,
+          yoyo: true
+        });
     }
+    this.lastAbilityEffectTick = impactKey;
+
+    const terminalResult =
+      snapshot.schemaVersion === 2 ? snapshot.encounter.terminalResult : null;
+    const terminal = snapshot.phase === "terminal";
+    this.terminalFrame.setVisible(terminal);
+    this.terminalText
+      .setText(
+        terminalResult === "victory"
+          ? "VICTORY\nSHUTTERGATE HOLDS"
+          : terminalResult === "defeat"
+            ? "DEFEAT\nTHE GATE HAS FALLEN"
+            : "COMBAT RESOLVED"
+      )
+      .setVisible(terminal);
 
     for (const entity of orderedEntities) {
       const objects = this.entities.get(entity.id);
@@ -1206,8 +1601,16 @@ class PersistentBattlefieldScene {
       if (objects !== undefined)
         this.scene.children.bringToTop(objects.subject);
     }
-    if (this.focus?.visible === true)
-      this.scene.children.bringToTop(this.focus);
+    this.scene.children.bringToTop(this.lighting);
+    for (const effect of active) this.scene.children.bringToTop(effect);
+    for (const effect of this.abilityEffects.values())
+      this.scene.children.bringToTop(effect);
+    for (const objects of this.entities.values())
+      this.scene.children.bringToTop(objects.signal);
+    if (terminal) {
+      this.scene.children.bringToTop(this.terminalFrame);
+      this.scene.children.bringToTop(this.terminalText);
+    }
 
     if (typeof window !== "undefined") {
       window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ = buildTruthScreenSidecar(
@@ -1216,6 +1619,16 @@ class PersistentBattlefieldScene {
         {
           dwarf: measureTextureAlpha(this.scene, wardenTexture),
           enemy: measureTextureAlpha(this.scene, raiderTexture),
+          entities: new Map(
+            snapshot.entities.map((entity) => [
+              entity.id,
+              measureTextureAlpha(
+                this.scene,
+                poseTextures.get(selectCombatPoseAsset(snapshot, entity.id)) ??
+                  selectCombatPoseAsset(snapshot, entity.id)
+              )
+            ])
+          ),
           groundForeground: measureTextureAlpha(
             this.scene,
             "entrance-route-ground-foreground"
@@ -1225,7 +1638,24 @@ class PersistentBattlefieldScene {
             "entrance-route-foreground"
           ),
           rear: measureTextureAlpha(this.scene, "entrance-route-rear")
-        }
+        },
+        [window.innerWidth, window.innerHeight],
+        [...this.layers["world-entities"]].map((subject, index) => {
+          if (!(subject instanceof Phaser.GameObjects.Image))
+            return {
+              id: `invalid.rendered-subject.${index}`,
+              faction: "enemy" as const
+            };
+          const id = subject.getData("renderEntityId");
+          const faction = renderedFactionForSourceKey(
+            subject.getData("renderSourceKey")
+          );
+          return {
+            id:
+              typeof id === "string" ? id : `invalid.rendered-subject.${index}`,
+            faction: faction ?? "enemy"
+          };
+        })
       );
       window.__DWARVEN_DEPTHS_RENDERER__ = this.diagnostics();
     }
@@ -1235,14 +1665,17 @@ class PersistentBattlefieldScene {
     return {
       schemaVersion: 1,
       updateCount: this.updateCount,
-      entityObjects:
-        this.entities.size * 2 + (this.focus === undefined ? 0 : 1),
+      entityObjects: this.entities.size * 3,
       pooledEffects: this.effects.length,
       activeEffects: this.activeEffects,
-      staticObjects: 4,
+      staticObjects: 7,
       sceneObjects: this.scene.children.length,
       runtimeTextures: Object.keys(this.scene.textures.list).filter(
-        (key) => key.endsWith("-runtime") || key.startsWith("subject-depth-")
+        (key) =>
+          key.endsWith("-runtime") ||
+          key.startsWith("subject-depth-") ||
+          key.startsWith("ring-depth-") ||
+          key.startsWith("ability-effect-depth-")
       ).length,
       activeTweens: this.scene.tweens
         .getTweens()
@@ -1261,14 +1694,13 @@ class PersistentBattlefieldScene {
   destroy(): void {
     this.scene.tweens.killTweensOf(this.effects);
     for (const objects of this.entities.values()) {
-      if (objects.ring.mask !== null)
-        this.scene.tweens.killTweensOf(objects.ring.mask.geometryMask);
       this.scene.tweens.killTweensOf([objects.ring, objects.subject]);
-      objects.ring.clearMask(true);
+      objects.signal.clearMask(true);
       objects.subject.setTexture("warden-runtime");
     }
     for (const effect of this.effects) effect.clearMask(true);
-    this.focus?.clearMask(true);
+    for (const effect of this.abilityEffects.values()) effect.destroy();
+    this.abilityEffects.clear();
     this.entities.clear();
     this.effects.length = 0;
     for (const layer of Object.values(this.layers)) layer.clear();

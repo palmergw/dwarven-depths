@@ -3267,10 +3267,103 @@ queued-spawns
       error: {
         type: "input",
         message:
-          "client evidence verification currently supports only scenario.conformance.shield_slam"
+          "client evidence verification supports only the approved Shield Slam and Shuttergate web scenarios"
       }
     });
   });
+
+  it("runs and verifies terminating Shuttergate client evidence", async () => {
+    const contentPath = resolve("content/fixtures/phase-3-shuttergate.json");
+    const scenarioPath = resolve(
+      "scenarios/conformance/shuttergate-web-truth.json"
+    );
+    const content = await compileContent(
+      JSON.parse(readFileSync(contentPath, "utf8"))
+    );
+    const scenario = compileScenario(
+      JSON.parse(readFileSync(scenarioPath, "utf8")),
+      content
+    );
+    const result = await runScenario(scenario, content);
+    const evidencePath = temporaryFile("shuttergate-client-evidence.json", {
+      schemaVersion: 2,
+      replay: createReplayDefinition(result, scenario, content)
+    });
+
+    const verified = runCli(
+      "replay",
+      "--client-evidence",
+      evidencePath,
+      "--content",
+      contentPath,
+      "--scenario",
+      scenarioPath,
+      "--verify"
+    );
+    expect(verified.status).toBe(0);
+    expect(JSON.parse(verified.stdout)).toMatchObject({
+      ok: true,
+      verified: true,
+      source: "client-evidence",
+      scenarioId: "scenario.conformance.shuttergate_web_truth",
+      terminalResult: "defeat",
+      terminalTick: result.terminalTick,
+      finalStateChecksum: result.finalStateChecksum,
+      eventStreamChecksum: result.eventStreamChecksum
+    });
+
+    const modifiedScenarioPath = temporaryFile("modified-shuttergate.json", {
+      ...JSON.parse(readFileSync(scenarioPath, "utf8")),
+      seed: "2"
+    });
+    const rejected = runCli(
+      "replay",
+      "--client-evidence",
+      evidencePath,
+      "--content",
+      contentPath,
+      "--scenario",
+      modifiedScenarioPath,
+      "--verify"
+    );
+    expect(rejected.status).toBe(2);
+    expect(JSON.parse(rejected.stderr)).toMatchObject({
+      error: {
+        type: "input",
+        message:
+          "client evidence scenario does not match the canonical approved web fixture"
+      }
+    });
+
+    const modifiedContent = JSON.parse(readFileSync(contentPath, "utf8"));
+    const goblinCutter = modifiedContent.definitions.find(
+      (definition: { readonly id?: unknown }) =>
+        definition.id === "enemy.goblin_cutter"
+    );
+    goblinCutter.maximumHealth = 51;
+    const modifiedContentPath = temporaryFile(
+      "modified-shuttergate-content.json",
+      modifiedContent
+    );
+    const contentRejected = runCli(
+      "replay",
+      "--client-evidence",
+      evidencePath,
+      "--content",
+      modifiedContentPath,
+      "--scenario",
+      scenarioPath,
+      "--verify"
+    );
+    expect(contentRejected.status).toBe(2);
+    expect(JSON.parse(contentRejected.stderr)).toMatchObject({
+      error: {
+        type: "input",
+        message:
+          "client evidence content does not match the canonical approved web fixture"
+      }
+    });
+  }, 20_000);
 
   it("verifies authoritative Shield Slam client evidence", async () => {
     const { contentPath, scenarioPath, evidence } =

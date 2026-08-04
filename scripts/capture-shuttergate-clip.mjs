@@ -1,25 +1,27 @@
 import { execFile as execFileCallback } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { chromium } from "playwright";
 
 const execFile = promisify(execFileCallback);
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 const baseUrl = process.env.DD_WEB_URL ?? "http://127.0.0.1:5173";
-const outputDirectory = new URL(
-  "../docs/visual-evidence/running-client/",
-  import.meta.url
-);
-const videoUrl = new URL("shuttergate-interaction-clip.webm", outputDirectory);
+const outputDirectory = process.env.DD_CLIP_OUTPUT_DIRECTORY
+  ? pathToFileURL(`${process.env.DD_CLIP_OUTPUT_DIRECTORY.replace(/\/$/, "")}/`)
+  : new URL("../docs/visual-evidence/running-client/", import.meta.url);
+const reducedMotion = process.env.DD_CLIP_REDUCED_MOTION !== "false";
+const motionId = reducedMotion ? "reduced-motion" : "normal-motion";
+const videoUrl = new URL(`shuttergate-${motionId}-clip.webm`, outputDirectory);
 const sidecarUrl = new URL(
-  "shuttergate-interaction-clip.json",
+  `shuttergate-${motionId}-clip.json`,
   outputDirectory
 );
 const temporaryVideoDirectory = fileURLToPath(
   new URL("../.ddh/shuttergate-video/", import.meta.url)
 );
+const rawVideoPath = `${temporaryVideoDirectory}/shuttergate-${motionId}-raw.webm`;
 
 await mkdir(outputDirectory, { recursive: true });
 await rm(temporaryVideoDirectory, { force: true, recursive: true });
@@ -33,11 +35,41 @@ const { stdout } = await execFile("git", ["rev-parse", "HEAD"], {
 });
 const sourceHead = stdout.trim();
 
+async function resumeAndObserveTick(page, startingTick) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await page.getByRole("button", { name: "Resume combat" }).click();
+    try {
+      await page.waitForFunction(
+        (tick) =>
+          (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick ?? -1) > tick,
+        startingTick,
+        { timeout: 5_000 }
+      );
+      return;
+    } catch (error) {
+      if (attempt > 0) {
+        const diagnostic = await page.evaluate(() => ({
+          snapshot: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot,
+          buttons: [...document.querySelectorAll("button")].map((button) =>
+            button.getAttribute("aria-label")
+          )
+        }));
+        throw new Error(
+          `combat did not resume for clip: ${JSON.stringify(diagnostic)}`,
+          { cause: error }
+        );
+      }
+      const pause = page.getByRole("button", { name: "Pause combat" });
+      if (await pause.isVisible()) await pause.click();
+    }
+  }
+}
+
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
   viewport: { width: 1440, height: 900 },
   deviceScaleFactor: 1,
-  reducedMotion: "reduce",
+  reducedMotion: reducedMotion ? "reduce" : "no-preference",
   recordVideo: {
     dir: temporaryVideoDirectory,
     size: { width: 1440, height: 900 }
@@ -50,9 +82,14 @@ try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Begin preparation" }).click();
   await page.getByRole("button", { name: "Confirm preparation" }).click();
-  await page.waitForFunction(
-    () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.alignment.valid === true
-  );
+  await page.waitForFunction((expectedFixture) => {
+    const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+    return (
+      truth?.captureReady === true &&
+      truth.fixtureId === expectedFixture &&
+      truth.snapshot.tick === 2
+    );
+  }, "scenarios/conformance/shuttergate-web-truth.json");
   const startingTick = await page.evaluate(
     () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick
   );
@@ -63,16 +100,8 @@ try {
   await page.waitForTimeout(500);
   await page.getByRole("button", { name: "Nearest", exact: true }).click();
   await page.waitForTimeout(900);
-  await page.getByRole("button", { name: "Shield Slam" }).click();
-  await page.getByText("Activation queued").waitFor();
-  await page.waitForTimeout(1100);
-  await page.getByRole("button", { name: "Resume combat" }).click();
-  await page.waitForFunction(
-    (tick) =>
-      (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick ?? -1) > tick,
-    startingTick
-  );
-  await page.waitForTimeout(1800);
+  await resumeAndObserveTick(page, startingTick);
+  await page.waitForTimeout(2900);
   await page.getByRole("button", { name: "Pause combat" }).click();
   await page.getByRole("button", { name: "Resume combat" }).waitFor();
   await page.waitForTimeout(1000);
@@ -80,7 +109,26 @@ try {
     () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick
   );
   await page.close();
-  await video.saveAs(fileURLToPath(videoUrl));
+  await video.saveAs(rawVideoPath);
+  await execFile("ffmpeg", [
+    "-y",
+    "-loglevel",
+    "error",
+    "-ss",
+    "2",
+    "-i",
+    rawVideoPath,
+    "-t",
+    "7",
+    "-c:v",
+    "libvpx-vp9",
+    "-b:v",
+    "0",
+    "-crf",
+    "32",
+    "-an",
+    fileURLToPath(videoUrl)
+  ]);
   const videoBytes = await readFile(videoUrl);
   const videoSha256 = createHash("sha256").update(videoBytes).digest("hex");
   const evidence = {
@@ -88,29 +136,28 @@ try {
     sourceHead,
     fixtureId: "scenarios/conformance/shuttergate-web-truth.json",
     viewport: [1440, 900],
-    video: "shuttergate-interaction-clip.webm",
+    video: `shuttergate-${motionId}-clip.webm`,
     videoSha256,
-    approximateDurationSeconds: 8.4,
+    motion: motionId,
+    approximateDurationSeconds: 7,
     startingTick,
     endingTick,
     interactions: [
       "target-policy-nearest",
-      "shield-slam-queued",
       "resume",
       "authoritative-tick-advanced",
       "pause"
     ]
   };
-  if (startingTick !== 1 || typeof endingTick !== "number" || endingTick <= 1)
+  if (
+    typeof startingTick !== "number" ||
+    typeof endingTick !== "number" ||
+    endingTick <= startingTick
+  )
     throw new Error(
       `interaction clip did not advance authority: ${JSON.stringify(evidence)}`
     );
   await writeFile(sidecarUrl, `${JSON.stringify(evidence, null, 2)}\n`);
-  await execFile(
-    "pnpm",
-    ["exec", "biome", "format", "--write", fileURLToPath(sidecarUrl)],
-    { cwd: repositoryRoot }
-  );
   process.stdout.write(`${JSON.stringify({ ok: true, ...evidence })}\n`);
 } finally {
   await context.close();

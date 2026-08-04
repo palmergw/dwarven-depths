@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "8eb8e0bb7175243e47f5efd35a190045f91568ee",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [1440, 900],
+  "video": "shuttergate-reduced-motion-clip.webm",
+  "videoSha256": "1952b8c1a1e7cdd350ca592105cb9bb31a79a732c43939449495f4c1103a435b",
+  "motion": "reduced-motion",
+  "approximateDurationSeconds": 8.4,
+  "startingTick": 1,
+  "endingTick": 20,
+  "interactions": [
+    "target-policy-nearest",
+    "shield-slam-queued",
+    "resume",
+    "authoritative-tick-advanced",
+    "pause"
+  ]
+}

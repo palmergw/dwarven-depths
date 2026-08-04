@@ -10,7 +10,7 @@ import type {
 import { createShieldSlamWebPreparationState } from "@dwarven-depths/runtime";
 import { describe, expect, it } from "vitest";
 import contentFixture from "../../../content/fixtures/phase-3-shuttergate.json";
-import scenarioFixture from "../../../scenarios/conformance/shuttergate-web-truth.json";
+import scenarioFixture from "../../../scenarios/conformance/shield-slam.json";
 import { createPresentationSnapshot } from "./presentation-snapshot.js";
 import { parseRenderSnapshot } from "./render-snapshot.js";
 

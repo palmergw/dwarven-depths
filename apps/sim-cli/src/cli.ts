@@ -92,6 +92,15 @@ const maximumArtifactBytes = 4 * 1024 * 1024;
 const maximumBundleBytes = 16 * 1024 * 1024;
 const maximumNdjsonRecords = 100_000;
 const shuttergateCampaignScenarioId = "campaign_scenario.shuttergate.v1";
+const approvedWebScenarioHashes: Readonly<Record<string, string>> =
+  Object.freeze({
+    "scenario.conformance.shield_slam":
+      "f0f83bfd05e3464e6424d4d641fda15944cea98a67106ae6cf1861f08abea201",
+    "scenario.conformance.shuttergate_web_truth":
+      "d91c9184224e26ca7502a691163fa8851536fb40b995e14de88b327fe96c5154"
+  });
+const approvedWebContentManifestHash =
+  "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d";
 const sweepControllers = Object.freeze({
   "controller.target.nearest.v1": "nearest",
   "controller.target.lowest_health.v1": "lowest_health",
@@ -3638,9 +3647,19 @@ async function replay(args: ParsedArgs): Promise<void> {
       await readJson(requiredFlag(args, "scenario")),
       content
     );
-    if (authoredScenario.id !== "scenario.conformance.shield_slam")
+    const approvedScenarioHash = approvedWebScenarioHashes[authoredScenario.id];
+    if (approvedScenarioHash === undefined)
       throw new CliInputError(
-        "client evidence verification currently supports only scenario.conformance.shield_slam"
+        "client evidence verification supports only the approved Shield Slam and Shuttergate web scenarios"
+      );
+    if (content.manifestHash !== approvedWebContentManifestHash)
+      throw new CliInputError(
+        "client evidence content does not match the canonical approved web fixture"
+      );
+    const authoredScenarioHash = await canonicalHash(authoredScenario);
+    if (authoredScenarioHash !== approvedScenarioHash)
+      throw new CliInputError(
+        "client evidence scenario does not match the canonical approved web fixture"
       );
     const scenario = compileScenario(
       {

@@ -147,9 +147,14 @@ export function createPresentationSnapshot(
       previousById.get(entry.combatant.entityId)?.position ?? null;
     const moved =
       previousPosition !== null && previousPosition.nodeId !== position.nodeId;
-    const targetEntityId = entry.combatant.actionState.currentTargetEntityId;
+    const authoritativeTargetEntityId =
+      entry.combatant.actionState.currentTargetEntityId;
     const targetNodeId =
-      targetEntityId === null ? undefined : occupancy.get(targetEntityId);
+      authoritativeTargetEntityId === null
+        ? undefined
+        : occupancy.get(authoritativeTargetEntityId);
+    const targetEntityId =
+      targetNodeId === undefined ? null : authoritativeTargetEntityId;
     const targetPosition =
       targetNodeId === undefined
         ? undefined

@@ -21,7 +21,7 @@ import {
   type RenderSnapshotV2
 } from "./render-snapshot.js";
 
-async function fixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
+async function buildFixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
   const content = await compileContent(
     contentFixture as unknown as ContentBundle
   );
@@ -37,10 +37,11 @@ async function fixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
   const snapshots: RenderSnapshotV2[] = [
     createPresentationSnapshot(content, scenario, host.state, "preparation")
   ];
+  let shieldSlamCommitted = false;
   host.scheduleCommand({ atTick: 0, type: "confirmPreparation" });
   for (
     let index = 0;
-    index < 80 && host.state.phase !== "TERMINAL";
+    index < scenario.maximumTicks && host.state.phase !== "TERMINAL";
     index += 1
   ) {
     const step = host.step();
@@ -54,15 +55,30 @@ async function fixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
         previous
       )
     );
-    if (step.state.tick === 1)
+    shieldSlamCommitted ||= (step.state.committedAbilities?.length ?? 0) > 0;
+    if (
+      !shieldSlamCommitted &&
+      step.state.tick % 5 === 0 &&
+      step.state.battlefield?.dwarfCombatants.some(
+        (dwarf) => dwarf.actionState.currentTargetEntityId !== null
+      )
+    ) {
       host.scheduleCommand({
-        atTick: 1,
+        atTick: step.state.tick,
         type: "activateAbility",
         dwarfEntityId: "entity.dwarf.warden" as never,
         abilityId: "ability.iron_warden.shield_slam" as never
       });
+    }
   }
   return snapshots;
+}
+
+let fixtureSnapshotsPromise: Promise<readonly RenderSnapshotV2[]> | undefined;
+
+function fixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
+  fixtureSnapshotsPromise ??= buildFixtureSnapshots();
+  return fixtureSnapshotsPromise;
 }
 
 describe("presentation snapshot v2", () => {
@@ -71,10 +87,14 @@ describe("presentation snapshot v2", () => {
     for (const snapshot of snapshots)
       expect(parseRenderSnapshot(snapshot)).toEqual(snapshot);
 
-    const running = snapshots.find((snapshot) => snapshot.phase === "running");
+    const running = snapshots.find(
+      (snapshot) =>
+        snapshot.phase === "running" &&
+        snapshot.encounter.livingHostileCount > 0
+    );
     expect(running?.entities.map((entity) => entity.id)).toEqual([
       "entity.dwarf.warden",
-      "entity.enemy.shield_slam_target"
+      "entity.enemy.shuttergate_001"
     ]);
     expect(running?.entities[0]).toMatchObject({
       visualId: "character.iron_warden",
@@ -84,7 +104,7 @@ describe("presentation snapshot v2", () => {
       transition: "active"
     });
     expect(running?.encounter).toMatchObject({
-      activeWaveId: null,
+      activeWaveId: "wave.shuttergate_1",
       livingHostileCount: 1
     });
     expect(running?.entities[0]?.position).toEqual(
@@ -115,7 +135,23 @@ describe("presentation snapshot v2", () => {
         )
       )
     ).toBe(true);
-  });
+    expect(
+      snapshots.some((snapshot) =>
+        snapshot.entities.some((entity) => entity.elite)
+      )
+    ).toBe(true);
+    expect(snapshots.at(-1)).toMatchObject({
+      phase: "terminal",
+      encounter: {
+        terminalResult: "defeat",
+        startedWaveIds: [
+          "wave.shuttergate_1",
+          "wave.shuttergate_2",
+          "wave.shuttergate_3"
+        ]
+      }
+    });
+  }, 15_000);
 
   it("derives movement, ability, status, wave, and death presentation without mutating authority", async () => {
     const content = await compileContent(
@@ -125,7 +161,19 @@ describe("presentation snapshot v2", () => {
       scenarioFixture as unknown as ScenarioDefinition,
       content
     );
-    const preparation = createShieldSlamWebPreparationState(content, scenario);
+    const host = createLiveScenarioHost(
+      scenario,
+      content,
+      createShieldSlamWebPreparationState(content, scenario)
+    );
+    host.scheduleCommand({ atTick: 0, type: "confirmPreparation" });
+    while (
+      !host.state.battlefield?.enemyCombatants.some(
+        (enemy) => enemy.lifecycleState === "active"
+      )
+    )
+      host.step();
+    const preparation = host.state;
     const battlefield = preparation.battlefield;
     if (battlefield === undefined)
       throw new Error("missing prepared battlefield");
@@ -133,18 +181,17 @@ describe("presentation snapshot v2", () => {
     const initial = createPresentationSnapshot(
       content,
       scenario,
-      preparation,
+      { ...preparation, tick: preparation.tick - 1 },
       "preparation"
     );
     const activeState: SimulationState = {
       ...preparation,
-      tick: 1,
       phase: "COMBAT_RUNNING",
       battlefield: {
         ...battlefield,
         startedWaveIds: ["wave.shuttergate_1" as never],
         occupancy: battlefield.occupancy.map((occupant) =>
-          occupant.entityId === "entity.enemy.shield_slam_target"
+          occupant.entityId === "entity.enemy.shuttergate_001"
             ? { ...occupant, nodeId: "node.shuttergate_west_hall" as never }
             : occupant
         )
@@ -153,8 +200,8 @@ describe("presentation snapshot v2", () => {
         {
           schemaVersion: 1,
           statusId: "status.stagger.fixture" as never,
-          ownerEntityId: "entity.enemy.shield_slam_target" as never,
-          appliedAtTick: 1,
+          ownerEntityId: "entity.enemy.shuttergate_001" as never,
+          appliedAtTick: preparation.tick,
           expiresAtTick: 10,
           magnitude: 1
         }
@@ -165,8 +212,8 @@ describe("presentation snapshot v2", () => {
           abilityId: "ability.iron_warden.shield_slam" as never,
           sourceEntityId: "entity.dwarf.warden" as never,
           commitmentSequence: 0,
-          committedAtTick: 1,
-          impactAtTick: 2,
+          committedAtTick: preparation.tick,
+          impactAtTick: preparation.tick + 1,
           sourceX: 0,
           sourceY: 0,
           aimDeltaX: 1,
@@ -227,11 +274,11 @@ describe("presentation snapshot v2", () => {
       throw new Error("missing active battlefield");
     const destroyedState: SimulationState = {
       ...activeState,
-      tick: 2,
+      tick: activeState.tick + 1,
       battlefield: {
         ...activeBattlefield,
         occupancy: activeBattlefield.occupancy.filter(
-          (occupant) => occupant.entityId !== "entity.enemy.shield_slam_target"
+          (occupant) => occupant.entityId !== "entity.enemy.shuttergate_001"
         ),
         enemyCombatants: activeBattlefield.enemyCombatants.map((enemy) => ({
           ...enemy,
@@ -250,12 +297,12 @@ describe("presentation snapshot v2", () => {
       active
     );
     expect(destroyed.entityTransitions).toContainEqual({
-      entityId: "entity.enemy.shield_slam_target",
+      entityId: "entity.enemy.shuttergate_001",
       kind: "destroyed",
-      atTick: 2
+      atTick: activeState.tick + 1
     });
     expect(deriveCombatFeedback(active, destroyed)?.departures).toEqual([
-      expect.objectContaining({ id: "entity.enemy.shield_slam_target" })
+      expect.objectContaining({ id: "entity.enemy.shuttergate_001" })
     ]);
     expect(
       deriveCombatFeedback(active, { ...destroyed, previousTick: 0 })
@@ -268,7 +315,9 @@ describe("presentation snapshot v2", () => {
 
   it("keeps v1 readable and rejects noncanonical, extended, unbounded, or cross-tick v2 data", async () => {
     const snapshots = await fixtureSnapshots();
-    const snapshot = snapshots.at(1);
+    const snapshot = snapshots.find(
+      (candidate) => candidate.entities.length > 1
+    );
     if (snapshot === undefined) throw new Error("missing running snapshot");
     const legacy = {
       schemaVersion: 1,

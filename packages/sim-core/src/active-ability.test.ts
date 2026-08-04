@@ -37,6 +37,7 @@ function command(sequence = 0, atTick = 0): CommandEnvelope {
 
 function battlefield(options?: {
   readonly downed?: boolean;
+  readonly dwarfWindupCommitAtTick?: number;
   readonly target?: boolean;
   readonly windupCommitAtTick?: number;
   readonly enemyHealth?: number;
@@ -81,7 +82,22 @@ function battlefield(options?: {
         actionState: {
           schemaVersion: 1,
           currentTargetEntityId: target ? ("entity.enemy.a" as never) : null,
-          activeBasicAttack: null,
+          activeBasicAttack:
+            options?.dwarfWindupCommitAtTick === undefined
+              ? null
+              : {
+                  schemaVersion: 1,
+                  attackId: "attack.instance.dwarf_warden" as never,
+                  sourceEntityId: "entity.dwarf.warden" as never,
+                  targetEntityId: "entity.enemy.a" as never,
+                  startedAtTick: 0,
+                  commitAtTick: options.dwarfWindupCommitAtTick,
+                  impactAtTick: options.dwarfWindupCommitAtTick + 1,
+                  cooldownDurationTicks: 20,
+                  damage: character.basicAttack.damage,
+                  range: character.basicAttack.range,
+                  targetIsValid: true
+                },
           cooldownCompleteAtTick: null
         }
       }
@@ -92,12 +108,14 @@ function battlefield(options?: {
         entityId: entityId as never,
         enemyDefinitionId: enemy.id,
         classification: enemy.classification,
-        currentHealth: options?.enemyHealth ?? enemy.maximumHealth,
+        currentHealth:
+          target === false ? 0 : (options?.enemyHealth ?? enemy.maximumHealth),
         maximumHealth: enemy.maximumHealth,
         armor: enemy.armor,
         movementIntervalTicks: enemy.movementIntervalTicks,
         admittedAtTick: 0,
-        lifecycleState: "active" as const,
+        lifecycleState:
+          target === false ? ("destroyed" as const) : ("active" as const),
         basicAttack: enemy.basicAttack,
         actionState: {
           schemaVersion: 1,
@@ -320,6 +338,24 @@ describe("Shield Slam active ability", () => {
       "cooldown_active",
       "committed_action_conflict"
     ]);
+  });
+
+  it("lets Shield Slam supersede an uncommitted dwarf basic-attack windup", () => {
+    const result = resolveActiveAbilityTick(
+      request(2, battlefield({ dwarfWindupCommitAtTick: 3 }), {
+        commands: [command(0, 2)]
+      }),
+      content
+    );
+
+    expect(result.activations[0]).toMatchObject({
+      status: "accepted",
+      reason: "ability_committed",
+      cooldownCompleteAtTick: 92
+    });
+    expect(
+      result.battlefield.dwarfCombatants[0]?.actionState.activeBasicAttack
+    ).toBeNull();
   });
 
   it("orders all inclusive qualifying targets, interrupts only uncommitted attacks, and staggers survivors", () => {

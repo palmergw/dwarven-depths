@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "8eb8e0bb7175243e47f5efd35a190045f91568ee",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "captures": [
+    {
+      "id": "quiet-paused-reduced-motion",
+      "screenshot": "quiet-paused-reduced-motion.png",
+      "screenshotSha256": "3bc98e92bed6211c6994a5e68404b4e71d87220fdbaca7ae2b50ab2fdcf0cc69",
+      "viewport": [1440, 900],
+      "tick": 1,
+      "phase": "running",
+      "entityCount": 2
+    },
+    {
+      "id": "shield-slam-committed-reduced-motion",
+      "screenshot": "shield-slam-committed-reduced-motion.png",
+      "screenshotSha256": "60664f730c68be46e8f7dd211e78879aa12fe8755d631af66d9d2af9ddcdac0f",
+      "viewport": [1440, 900],
+      "tick": 2,
+      "phase": "running",
+      "entityCount": 2
+    },
+    {
+      "id": "shield-slam-impact-reduced-motion",
+      "screenshot": "shield-slam-impact-reduced-motion.png",
+      "screenshotSha256": "1c6696be00c0688b00ce83d947c50917a3f1452d81672cccdca8fc75db196b5b",
+      "viewport": [1440, 900],
+      "tick": 8,
+      "phase": "running",
+      "entityCount": 2
+    },
+    {
+      "id": "damage-stagger-reduced-motion",
+      "screenshot": "damage-stagger-reduced-motion.png",
+      "screenshotSha256": "42de4722bc5f5c971123cf67d9c85e9e0f751d90f7a56a1e38209201cd52bb88",
+      "viewport": [1440, 900],
+      "tick": 9,
+      "phase": "running",
+      "entityCount": 2
+    },
+    {
+      "id": "quiet-paused-mobile-reduced-motion",
+      "screenshot": "quiet-paused-mobile-reduced-motion.png",
+      "screenshotSha256": "1460e993d975e006ee26c740a1cd48731ac620c95a7dcbf5062305672688f028",
+      "viewport": [390, 844],
+      "tick": 1,
+      "phase": "running",
+      "entityCount": 2
+    }
+  ],
+  "exclusions": {
+    "denseWave": "The approved terminating web encounter fixture contains exactly one authoritative hostile.",
+    "bossOrElite": "The approved terminating web encounter fixture contains one basic hostile and no boss or elite.",
+    "terminal": "Terminal capture is deferred until the bounded web encounter can be driven without introducing nonauthoritative state."
+  }
+}
