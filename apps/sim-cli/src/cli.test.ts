@@ -3267,10 +3267,51 @@ queued-spawns
       error: {
         type: "input",
         message:
-          "client evidence verification currently supports only scenario.conformance.shield_slam"
+          "client evidence verification supports only the approved Shield Slam and Shuttergate web scenarios"
       }
     });
   });
+
+  it("runs and verifies terminating Shuttergate client evidence", async () => {
+    const contentPath = resolve("content/fixtures/phase-3-shuttergate.json");
+    const scenarioPath = resolve(
+      "scenarios/conformance/shuttergate-web-truth.json"
+    );
+    const content = await compileContent(
+      JSON.parse(readFileSync(contentPath, "utf8"))
+    );
+    const scenario = compileScenario(
+      JSON.parse(readFileSync(scenarioPath, "utf8")),
+      content
+    );
+    const result = await runScenario(scenario, content);
+    const evidencePath = temporaryFile("shuttergate-client-evidence.json", {
+      schemaVersion: 2,
+      replay: createReplayDefinition(result, scenario, content)
+    });
+
+    const verified = runCli(
+      "replay",
+      "--client-evidence",
+      evidencePath,
+      "--content",
+      contentPath,
+      "--scenario",
+      scenarioPath,
+      "--verify"
+    );
+    expect(verified.status).toBe(0);
+    expect(JSON.parse(verified.stdout)).toMatchObject({
+      ok: true,
+      verified: true,
+      source: "client-evidence",
+      scenarioId: "scenario.conformance.shuttergate_web_truth",
+      terminalResult: "defeat",
+      terminalTick: result.terminalTick,
+      finalStateChecksum: result.finalStateChecksum,
+      eventStreamChecksum: result.eventStreamChecksum
+    });
+  }, 20_000);
 
   it("verifies authoritative Shield Slam client evidence", async () => {
     const { contentPath, scenarioPath, evidence } =

@@ -3638,9 +3638,12 @@ async function replay(args: ParsedArgs): Promise<void> {
       await readJson(requiredFlag(args, "scenario")),
       content
     );
-    if (authoredScenario.id !== "scenario.conformance.shield_slam")
+    if (
+      authoredScenario.id !== "scenario.conformance.shield_slam" &&
+      authoredScenario.id !== "scenario.conformance.shuttergate_web_truth"
+    )
       throw new CliInputError(
-        "client evidence verification currently supports only scenario.conformance.shield_slam"
+        "client evidence verification supports only the approved Shield Slam and Shuttergate web scenarios"
       );
     const scenario = compileScenario(
       {
