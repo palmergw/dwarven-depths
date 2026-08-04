@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "damage-stagger-reduced-motion",
-  "sourceHead": "1bd57d5c27235f370fc14138f3af41f801addc0a",
+  "sourceHead": "12c4e1dd6cb9680cf986462733c95192f9605454",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "damage-stagger-reduced-motion.png",
   "screenshotSha256": "e9bed2580608d9451d8a602cb2051cfa63acbd67006e21da098b66892163fc7b",

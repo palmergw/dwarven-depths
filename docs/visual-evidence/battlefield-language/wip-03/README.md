@@ -2,12 +2,12 @@
 
 Status: **PRODUCT-OWNER VISUAL APPROVED**. Direct approval is recorded on issue #273 and draft PR #296; technical exact-head gates still apply.
 
-Runtime source head: `1bd57d5c27235f370fc14138f3af41f801addc0a`
+Runtime and capture source head: `12c4e1dd6cb9680cf986462733c95192f9605454`
 Fixture: `scenarios/conformance/shuttergate-web-truth.json`
 
 This packet is generated from the actual running client. It binds quiet setup, dense combat, authoritative Shield Slam phases, damage/stagger and elite state, terminal defeat, mobile fit, and normal/reduced encounter motion to one runtime source head and fixture.
 
-The seven approved PNGs are byte-identical to the product-owner-approved WIP 03 images at `ada2fb5c10c01d1c3bbde2d4d1a62095f5259810`. Their sidecars and both clips were recaptured from the runtime source head above after the alignment validator was corrected to bind snapshot, registry, and rendered-scene combatant identities at variable authoritative counts.
+The seven approved PNGs are byte-identical to the product-owner-approved WIP 03 images at `ada2fb5c10c01d1c3bbde2d4d1a62095f5259810`. Their sidecars and both clips were recaptured from the immutable runtime and capture source head above after all runtime, scenario, replay-verification, and capture-integrity corrections. The capture flow pins the approved combat ticks and binds snapshot, registry, and rendered-scene combatant identities at variable authoritative counts.
 
 ## Captures
 
