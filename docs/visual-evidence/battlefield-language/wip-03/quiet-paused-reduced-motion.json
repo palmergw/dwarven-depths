@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "quiet-paused-reduced-motion",
-  "sourceHead": "e3fa8cd9dcb32dd26a17ff7c7f2fc975e20bb79c",
+  "sourceHead": "1bd57d5c27235f370fc14138f3af41f801addc0a",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "quiet-paused-reduced-motion.png",
   "screenshotSha256": "4ac6bc6fe0c8395f706d6ef87748df52260e32ed0a2887abde467855094df978",

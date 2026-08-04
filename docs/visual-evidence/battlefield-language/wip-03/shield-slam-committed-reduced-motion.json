@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "shield-slam-committed-reduced-motion",
-  "sourceHead": "e3fa8cd9dcb32dd26a17ff7c7f2fc975e20bb79c",
+  "sourceHead": "1bd57d5c27235f370fc14138f3af41f801addc0a",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "shield-slam-committed-reduced-motion.png",
   "screenshotSha256": "61a08db27776ec01b13fd56564f4c7e677e737fac0a446bf089b20dbf754b4d9",

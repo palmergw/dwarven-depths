@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "terminal-defeat-reduced-motion",
-  "sourceHead": "e3fa8cd9dcb32dd26a17ff7c7f2fc975e20bb79c",
+  "sourceHead": "1bd57d5c27235f370fc14138f3af41f801addc0a",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "terminal-defeat-reduced-motion.png",
   "screenshotSha256": "f8f1d56b46cc0d9d1e6dd7832c15a6961b520fb75d617708acacd239d1b2e004",
