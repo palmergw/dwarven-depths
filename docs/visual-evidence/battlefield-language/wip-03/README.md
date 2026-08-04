@@ -2,7 +2,7 @@
 
 Status: **PRODUCT-OWNER VISUAL APPROVED**. Direct approval is recorded on issue #273 and draft PR #296; technical exact-head gates still apply.
 
-Runtime and capture source head: `12c4e1dd6cb9680cf986462733c95192f9605454`
+Runtime and capture source head: `c236c193946fe9f3fd697e8408d5becc21d4f8da`
 Fixture: `scenarios/conformance/shuttergate-web-truth.json`
 
 This packet is generated from the actual running client. It binds quiet setup, dense combat, authoritative Shield Slam phases, damage/stagger and elite state, terminal defeat, mobile fit, and normal/reduced encounter motion to one runtime source head and fixture.
