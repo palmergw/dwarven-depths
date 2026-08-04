@@ -719,9 +719,14 @@ export function buildTruthScreenSidecar(
       23
     );
   }
+  const alignment = buildTruthScreenAlignment(
+    snapshot,
+    entities,
+    renderedEntities
+  );
   return {
     schemaVersion: 1,
-    captureReady: true,
+    captureReady: alignment.valid,
     fixtureId: FIXTURE_ID,
     viewport,
     frame: [WIDTH, HEIGHT],
@@ -769,7 +774,7 @@ export function buildTruthScreenSidecar(
         transientEffectOcclusionPixels
       }
     },
-    alignment: buildTruthScreenAlignment(snapshot, entities, renderedEntities)
+    alignment
   };
 }
 

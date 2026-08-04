@@ -144,6 +144,7 @@ async function capture(page, id, expected) {
   if (
     JSON.stringify(before.truth) !== JSON.stringify(stableTruth) ||
     before.truth?.captureReady !== true ||
+    before.truth.alignment.valid !== true ||
     before.truth.fixtureId !== fixtureId ||
     JSON.stringify(before.truth.viewport) !== JSON.stringify(before.viewport) ||
     before.truth.registry.entities.some(
