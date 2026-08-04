@@ -55,11 +55,25 @@ async function startClient(browser, viewport, reducedMotion) {
 
 async function armAutomaticPause(page, state) {
   await page.evaluate((expectedState) => {
+    const approvedCaptureTicks = {
+      dense: 1801,
+      "ability-ready": 1825,
+      committed: 1826,
+      impact: 1832,
+      "damage-status": 1833
+    };
     window.__DD_CAPTURE_PAUSE_INTERVAL__ = window.setInterval(() => {
       const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+      if ((truth?.snapshot.tick ?? -1) < approvedCaptureTicks[expectedState]) return;
       let matched;
       if (expectedState === "dense") {
         matched = (truth?.registry.hostileCount ?? 0) > 1;
+      } else if (expectedState === "ability-ready") {
+        matched =
+          truth?.registry.entities.some(
+            (entity) =>
+              entity.faction === "dwarf" && entity.targetEntityId !== null
+          ) === true;
       } else if (expectedState === "damage-status") {
         matched =
           truth?.registry.entities.some(
@@ -205,14 +219,9 @@ try {
         (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.hostileCount ?? 0) > 1
     )
   );
+  await armAutomaticPause(desktop, "ability-ready");
   await desktop.getByRole("button", { name: "Resume combat" }).click();
-  await desktop.waitForFunction(
-    () =>
-      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
-        (entity) => entity.faction === "dwarf" && entity.targetEntityId !== null
-      ) === true
-  );
-  await desktop.getByRole("button", { name: "Pause combat" }).click();
+  await waitForAutomaticPause(desktop);
   await desktop.getByRole("button", { name: "Shield Slam" }).click();
   await armAutomaticPause(desktop, "committed");
   await desktop.getByRole("button", { name: "Resume combat" }).click();
