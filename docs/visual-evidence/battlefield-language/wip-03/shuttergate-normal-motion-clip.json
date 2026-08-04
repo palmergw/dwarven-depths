@@ -2,10 +2,7 @@
   "schemaVersion": 1,
   "sourceHead": "1bd57d5c27235f370fc14138f3af41f801addc0a",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-  "viewport": [
-    1440,
-    900
-  ],
+  "viewport": [1440, 900],
   "video": "shuttergate-normal-motion-clip.webm",
   "videoSha256": "2c62b56717fa9e35742481ddebf97c1320c220e157c6c17bb01ad2e0b1b80d95",
   "motion": "normal-motion",
