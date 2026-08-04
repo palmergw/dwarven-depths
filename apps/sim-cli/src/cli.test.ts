@@ -3334,6 +3334,35 @@ queued-spawns
           "client evidence scenario does not match the canonical approved web fixture"
       }
     });
+
+    const modifiedContent = JSON.parse(readFileSync(contentPath, "utf8"));
+    const goblinCutter = modifiedContent.definitions.find(
+      (definition: { readonly id?: unknown }) =>
+        definition.id === "enemy.goblin_cutter"
+    );
+    goblinCutter.maximumHealth = 51;
+    const modifiedContentPath = temporaryFile(
+      "modified-shuttergate-content.json",
+      modifiedContent
+    );
+    const contentRejected = runCli(
+      "replay",
+      "--client-evidence",
+      evidencePath,
+      "--content",
+      modifiedContentPath,
+      "--scenario",
+      scenarioPath,
+      "--verify"
+    );
+    expect(contentRejected.status).toBe(2);
+    expect(JSON.parse(contentRejected.stderr)).toMatchObject({
+      error: {
+        type: "input",
+        message:
+          "client evidence content does not match the canonical approved web fixture"
+      }
+    });
   }, 20_000);
 
   it("verifies authoritative Shield Slam client evidence", async () => {

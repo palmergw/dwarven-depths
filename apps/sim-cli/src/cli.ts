@@ -99,6 +99,8 @@ const approvedWebScenarioHashes: Readonly<Record<string, string>> =
     "scenario.conformance.shuttergate_web_truth":
       "d91c9184224e26ca7502a691163fa8851536fb40b995e14de88b327fe96c5154"
   });
+const approvedWebContentManifestHash =
+  "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d";
 const sweepControllers = Object.freeze({
   "controller.target.nearest.v1": "nearest",
   "controller.target.lowest_health.v1": "lowest_health",
@@ -3649,6 +3651,10 @@ async function replay(args: ParsedArgs): Promise<void> {
     if (approvedScenarioHash === undefined)
       throw new CliInputError(
         "client evidence verification supports only the approved Shield Slam and Shuttergate web scenarios"
+      );
+    if (content.manifestHash !== approvedWebContentManifestHash)
+      throw new CliInputError(
+        "client evidence content does not match the canonical approved web fixture"
       );
     const authoredScenarioHash = await canonicalHash(authoredScenario);
     if (authoredScenarioHash !== approvedScenarioHash)
