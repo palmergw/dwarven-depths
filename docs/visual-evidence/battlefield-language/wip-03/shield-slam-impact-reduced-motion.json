@@ -1,17 +1,26 @@
 {
   "schemaVersion": 1,
   "id": "shield-slam-impact-reduced-motion",
-  "sourceHead": "be10d201d0b9c8608320361ec3e65e9eaa31e611",
+  "sourceHead": "c09038f0b478477b0c126116bb3b1d0959d7eba9",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "shield-slam-impact-reduced-motion.png",
   "screenshotSha256": "b8c8d8a5db2587400759d6298a8f84379b3f2850ecb70feb8213a92da71310d1",
-  "viewport": [1440, 900],
+  "viewport": [
+    1440,
+    900
+  ],
   "truth": {
     "schemaVersion": 1,
     "captureReady": true,
     "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-    "viewport": [1440, 900],
-    "frame": [1280, 720],
+    "viewport": [
+      1440,
+      900
+    ],
+    "frame": [
+      1280,
+      720
+    ],
     "snapshot": {
       "levelId": "level.shuttergate_hall",
       "mapId": "map.shuttergate_hall",
@@ -44,8 +53,18 @@
           "x": 605,
           "y": 320,
           "nominalHeight": 56,
-          "canvasBounds": [549, 254, 112, 72],
-          "alphaBounds": [563, 264, 84, 56],
+          "canvasBounds": [
+            549,
+            254,
+            112,
+            72
+          ],
+          "alphaBounds": [
+            563,
+            264,
+            84,
+            56
+          ],
           "nonzeroAlphaPixels": 3113,
           "fullAlphaPixels": 2820,
           "partialAlphaPixels": 293,
@@ -72,8 +91,18 @@
           "x": 838,
           "y": 330,
           "nominalHeight": 44,
-          "canvasBounds": [798, 276, 80, 60],
-          "alphaBounds": [812, 286, 52, 44],
+          "canvasBounds": [
+            798,
+            276,
+            80,
+            60
+          ],
+          "alphaBounds": [
+            812,
+            286,
+            52,
+            44
+          ],
           "nonzeroAlphaPixels": 1341,
           "fullAlphaPixels": 1135,
           "partialAlphaPixels": 206,
@@ -100,8 +129,18 @@
           "x": 1110,
           "y": 253,
           "nominalHeight": 44,
-          "canvasBounds": [1070, 199, 80, 60],
-          "alphaBounds": [1084, 209, 52, 44],
+          "canvasBounds": [
+            1070,
+            199,
+            80,
+            60
+          ],
+          "alphaBounds": [
+            1084,
+            209,
+            52,
+            44
+          ],
           "nonzeroAlphaPixels": 1341,
           "fullAlphaPixels": 1135,
           "partialAlphaPixels": 206,
@@ -119,8 +158,15 @@
         "depth-tested-world-focus",
         "hud"
       ],
-      "clips": ["world-ring", "world-effect", "world-subject", "world-focus"],
-      "exempts": ["hud"],
+      "clips": [
+        "world-ring",
+        "world-effect",
+        "world-subject",
+        "world-focus"
+      ],
+      "exempts": [
+        "hud"
+      ],
       "witness": {
         "entityId": "entity.enemy.shuttergate_006",
         "subjectAlphaPixels": 1341,
@@ -132,7 +178,10 @@
       },
       "depthResolution": {
         "intent": "rear-visible-and-foreground-occluded",
-        "actualAnchor": [838, 330],
+        "actualAnchor": [
+          838,
+          330
+        ],
         "rearOverlapPixels": 0,
         "subjectGroundOverlapPixels": 0,
         "foregroundOcclusionPixels": 0,
@@ -143,8 +192,11 @@
     "alignment": {
       "snapshotCount": 3,
       "registryCount": 3,
-      "exactlyOneWardenAndOneHostile": false,
-      "valid": false
+      "renderedCount": 3,
+      "registryEntitiesMatch": true,
+      "renderedEntitiesMatch": true,
+      "authoritativeEntitiesMatch": true,
+      "valid": true
     }
   },
   "renderer": {
@@ -160,7 +212,10 @@
     "timerEvents": 0,
     "loaderListeners": 1,
     "camera": {
-      "frame": [1280, 720],
+      "frame": [
+        1280,
+        720
+      ],
       "scaleMode": "fit",
       "autoCenter": "both"
     },
