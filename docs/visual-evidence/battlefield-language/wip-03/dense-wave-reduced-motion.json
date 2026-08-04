@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "dense-wave-reduced-motion",
-  "sourceHead": "c09038f0b478477b0c126116bb3b1d0959d7eba9",
+  "sourceHead": "e3fa8cd9dcb32dd26a17ff7c7f2fc975e20bb79c",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "dense-wave-reduced-motion.png",
   "screenshotSha256": "241ed73d303ecd20ebbe2ee582a0f0b1c1b459680ebffd200b53734b2d9feefe",
