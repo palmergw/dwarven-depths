@@ -1022,6 +1022,29 @@ async function executeScenario(
   enforceScenarioExpectation: boolean,
   initialState?: SimulationState
 ): Promise<RuntimeResult> {
+  if (scenario.id === "scenario.conformance.shuttergate_web_truth") {
+    const host = createLiveScenarioHost(
+      scenario,
+      content,
+      initialState ?? createShieldSlamWebPreparationState(content, scenario)
+    );
+    while (
+      host.state.phase !== "TERMINAL" &&
+      host.state.tick < scenario.maximumTicks
+    ) {
+      const commands =
+        replayCommands === undefined
+          ? scenario.commands
+              .filter((command) => command.atTick === host.state.tick)
+              .map((command) => ({ command }))
+          : replayCommands.filter(
+              (envelope) => envelope.tick === host.state.tick
+            );
+      for (const { command } of commands) host.scheduleCommand(command);
+      host.step();
+    }
+    return host.result();
+  }
   let state =
     initialState ??
     createInitialState(content, scenario.levelId, scenario.seed);

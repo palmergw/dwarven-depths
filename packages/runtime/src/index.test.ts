@@ -11,6 +11,9 @@ import contentInput from "../../../content/fixtures/empty-content.json" with {
 import nonterminatingContentInput from "../../../content/fixtures/nonterminating-content.json" with {
   type: "json"
 };
+import shuttergateContentInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
+  type: "json"
+};
 import scenarioInput from "../../../scenarios/conformance/empty-level.json" with {
   type: "json"
 };
@@ -20,11 +23,15 @@ import replayInput from "../../../scenarios/conformance/empty-level.replay.json"
 import nonterminatingScenarioInput from "../../../scenarios/conformance/nonterminating.json" with {
   type: "json"
 };
+import shuttergateScenarioInput from "../../../scenarios/conformance/shuttergate-web-truth.json" with {
+  type: "json"
+};
 import {
   compareRunEvidence,
   createLifecycleDiagnostics,
   createLiveScenarioHost,
   createReplayDefinition,
+  createShieldSlamWebPreparationState,
   createTimelineRecords,
   type ReplayDivergenceError,
   type RuntimeSafetyStopError,
@@ -311,6 +318,41 @@ describe("shared runtime", () => {
       )
     ).resolves.toEqual(result);
   });
+
+  it("replays the terminating Shuttergate live authority without hidden initial state", async () => {
+    const content = await compileContent(shuttergateContentInput);
+    const scenario = compileScenario(shuttergateScenarioInput, content);
+    const host = createLiveScenarioHost(
+      scenario,
+      content,
+      createShieldSlamWebPreparationState(content, scenario)
+    );
+    let shieldSlamCommitted = false;
+    host.scheduleCommand({ atTick: 0, type: "confirmPreparation" });
+    while (host.state.phase !== "TERMINAL") {
+      const step = host.step();
+      shieldSlamCommitted ||= (step.state.committedAbilities?.length ?? 0) > 0;
+      if (
+        !shieldSlamCommitted &&
+        step.state.tick % 5 === 0 &&
+        step.state.battlefield?.dwarfCombatants.some(
+          (dwarf) => dwarf.actionState.currentTargetEntityId !== null
+        )
+      )
+        host.scheduleCommand({
+          atTick: step.state.tick,
+          type: "activateAbility",
+          dwarfEntityId: "entity.dwarf.warden" as never,
+          abilityId: "ability.iron_warden.shield_slam" as never
+        });
+    }
+
+    const liveResult = await host.result();
+    const replay = createReplayDefinition(liveResult, host.scenario, content);
+    await expect(verifyReplay(replay, host.scenario, content)).resolves.toEqual(
+      liveResult
+    );
+  }, 15_000);
 
   it("creates and verifies replay evidence with stable divergence codes", async () => {
     const content = await compileContent(contentInput);
