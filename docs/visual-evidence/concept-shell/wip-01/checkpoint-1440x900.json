@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "issue": 274,
+  "status": "early-wip-not-approval-candidate",
+  "runtimeSourceHead": "d39a15a11724ad9d13138af68808d3c6c79a5b3c",
+  "route": "/",
+  "state": "checkpoint",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 1
+  },
+  "settings": {
+    "contrast": "standard",
+    "motion": "device",
+    "sound": "off",
+    "textScale": "default"
+  },
+  "capture": {
+    "browser": "chromium",
+    "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
+    "animations": "disabled",
+    "waitCondition": "networkidle-and-checkpoint-hero-visible"
+  },
+  "screenshot": {
+    "path": "docs/visual-evidence/concept-shell/wip-01/checkpoint-1440x900.png",
+    "sha256": "bf02c632513424e8382928243ca9622f89bb2be4c858df9c91ba8684f5e0f992",
+    "width": 1440,
+    "height": 900
+  },
+  "art": {
+    "checkpointBackdrop": "assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
+    "newGeneratedAssets": []
+  },
+  "integrity": {
+    "playerStableIdsVisible": false,
+    "developerInspectionCollapsed": true,
+    "primaryActionVisible": true,
+    "primaryAction": "Begin preparation"
+  },
+  "remainingIssueScope": [
+    "roster-and-forge-production-treatment",
+    "settings-and-pause-treatment",
+    "preparation-results-and-recovery-treatment",
+    "desktop-and-mobile-state-evidence",
+    "product-owner-visual-approval"
+  ]
+}
