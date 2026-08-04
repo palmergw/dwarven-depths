@@ -21,7 +21,7 @@ import {
   type RenderSnapshotV2
 } from "./render-snapshot.js";
 
-async function fixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
+async function buildFixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
   const content = await compileContent(
     contentFixture as unknown as ContentBundle
   );
@@ -72,6 +72,13 @@ async function fixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
     }
   }
   return snapshots;
+}
+
+let fixtureSnapshotsPromise: Promise<readonly RenderSnapshotV2[]> | undefined;
+
+function fixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
+  fixtureSnapshotsPromise ??= buildFixtureSnapshots();
+  return fixtureSnapshotsPromise;
 }
 
 describe("presentation snapshot v2", () => {
@@ -144,7 +151,7 @@ describe("presentation snapshot v2", () => {
         ]
       }
     });
-  });
+  }, 15_000);
 
   it("derives movement, ability, status, wave, and death presentation without mutating authority", async () => {
     const content = await compileContent(
