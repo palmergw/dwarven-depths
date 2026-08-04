@@ -64,7 +64,8 @@ async function armAutomaticPause(page, state) {
     };
     window.__DD_CAPTURE_PAUSE_INTERVAL__ = window.setInterval(() => {
       const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
-      if ((truth?.snapshot.tick ?? -1) < approvedCaptureTicks[expectedState]) return;
+      if ((truth?.snapshot.tick ?? -1) < approvedCaptureTicks[expectedState])
+        return;
       let matched;
       if (expectedState === "dense") {
         matched = (truth?.registry.hostileCount ?? 0) > 1;
