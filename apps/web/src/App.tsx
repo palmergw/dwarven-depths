@@ -38,6 +38,11 @@ import {
 import type { RenderSnapshot } from "./render-snapshot.js";
 import { downloadRunEvidence } from "./run-evidence.js";
 
+const checkpointBackdropUrl = new URL(
+  "../../../assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
+  import.meta.url
+).href;
+
 type ViewState =
   | { readonly phase: "checkpoint" }
   | {
@@ -215,7 +220,28 @@ function describePrerequisites(
 ): string {
   return prerequisiteNodeIds.length === 0
     ? "none."
-    : `${prerequisiteNodeIds.join(", ")}.`;
+    : `${prerequisiteNodeIds.map(playerFacingName).join(", ")}.`;
+}
+
+function playerFacingName(id: StableId): string {
+  switch (id) {
+    case "character.iron_warden":
+      return "Iron Warden";
+    case "item.powder_cask":
+      return "Powder Cask";
+    case "upgrade.ability.shield_slam":
+      return "Shield Slam Training";
+    case "upgrade.item.powder_cask":
+      return "Powder Cask Reinforcement";
+    case "skill.iron_warden.disciplined_slam":
+      return "Disciplined Slam";
+    case "skill.iron_warden.long_reach":
+      return "Long Reach";
+    case "skill.iron_warden.stone_guard":
+      return "Stone Guard";
+    default:
+      return "Locked company training";
+  }
 }
 
 function upgradePurchaseState(
@@ -237,7 +263,7 @@ function upgradePurchaseState(
       : profile.unlockedItemIds;
   let unavailableReason: string | undefined;
   if (!ownerIds.includes(definition.ownerId))
-    unavailableReason = `Requires unlocked owner ${definition.ownerId}.`;
+    unavailableReason = `Requires ${playerFacingName(definition.ownerId)}.`;
   else if (nextCost === undefined) unavailableReason = "Maximum rank owned.";
   else {
     const missingPrerequisite = definition.prerequisiteUpgradeIds.find(
@@ -247,7 +273,7 @@ function upgradePurchaseState(
         )
     );
     if (missingPrerequisite !== undefined)
-      unavailableReason = `Requires ${missingPrerequisite}.`;
+      unavailableReason = `Requires ${playerFacingName(missingPrerequisite)}.`;
     else if (profile.forgeOre < nextCost)
       unavailableReason = `Requires ${nextCost} Forge Ore.`;
   }
@@ -485,7 +511,7 @@ export function App({
       setCheckpointProfile({ status: "ready", profile });
       setUpgradePurchaseStatus({
         kind: "success",
-        message: `${upgradeId} rank purchased. ${profile.forgeOre} Forge Ore remains.`
+        message: `${playerFacingName(upgradeId)} rank purchased. ${profile.forgeOre} Forge Ore remains.`
       });
     } catch (error) {
       if (isCheckpointProfileSaveConflict(error)) {
@@ -636,7 +662,7 @@ export function App({
       setCheckpointProfile({ status: "ready", profile });
       setUpgradePurchaseStatus({
         kind: "success",
-        message: `${nodeId} selected for Iron Warden.`
+        message: `${playerFacingName(nodeId)} selected for Iron Warden.`
       });
     } catch (error) {
       if (isCheckpointProfileSaveConflict(error)) {
@@ -993,15 +1019,33 @@ export function App({
       data-text-scale={textScale}
       data-view-phase={view.phase}
     >
-      <p className="eyebrow">Authoritative checkpoint</p>
-      <h1 id="app-heading">Dwarven Depths</h1>
+      <header className="game-masthead">
+        <p className="eyebrow">The Company Muster</p>
+        <h1 id="app-heading">Dwarven Depths</h1>
+        <p className="masthead-subtitle">
+          Hold the ancient roads below the mountain.
+        </p>
+      </header>
       <section className="panel" aria-labelledby="run-heading">
-        <h2 id="run-heading">Shuttergate Tutorial Run</h2>
-        <RunJourneyGuide phase={view.phase} />
+        <h2 id="run-heading">Shuttergate Hall</h2>
+        <details className="inspection-surface">
+          <summary>Developer inspection</summary>
+          <RunJourneyGuide phase={view.phase} />
+          {view.phase === "preparation" && (
+            <p className="inspection-metadata">Level ID: {view.levelId}</p>
+          )}
+        </details>
         {view.phase === "checkpoint" &&
           !settingsOpen &&
           !upgradeInventoryOpen && (
             <>
+              <div
+                className="checkpoint-hero"
+                style={{ backgroundImage: `url(${checkpointBackdropUrl})` }}
+                aria-hidden="true"
+              >
+                <span>Shuttergate Hall</span>
+              </div>
               <dl
                 className="checkpoint-context"
                 aria-label="Current checkpoint"
@@ -1019,7 +1063,7 @@ export function App({
                 className="profile-summary"
                 aria-labelledby="profile-summary-heading"
               >
-                <h3 id="profile-summary-heading">Company progression</h3>
+                <h3 id="profile-summary-heading">Company roster</h3>
                 {checkpointProfile.status === "loading" && (
                   <p>Loading local progression…</p>
                 )}
@@ -1029,8 +1073,10 @@ export function App({
                 {checkpointProfile.status === "ready" && (
                   <dl>
                     <div className="profile-summary-row">
-                      <dt>Profile status</dt>
-                      <dd className="profile-summary-value">Ready</dd>
+                      <dt>Iron Warden</dt>
+                      <dd className="profile-summary-value">
+                        Ready for muster
+                      </dd>
                     </div>
                     <div className="profile-summary-row">
                       <dt>Forge Ore</dt>
@@ -1107,8 +1153,8 @@ export function App({
         {view.phase === "preparation" && (
           <dl className="preparation-summary" aria-label="Preparation summary">
             <div>
-              <dt>Authoritative level</dt>
-              <dd>{view.levelId}</dd>
+              <dt>Defence</dt>
+              <dd>Shuttergate Hall</dd>
             </div>
             <div>
               <dt>Company roster</dt>
@@ -1261,7 +1307,7 @@ export function App({
                 ref={upgradeInventoryHeadingRef}
                 tabIndex={-1}
               >
-                Upgrade inventory
+                Ancestral Forge
               </h3>
               <p>Available Forge Ore: {checkpointProfile.profile.forgeOre}</p>
               {checkpointProfile.profile.purchasedUpgrades.length === 0 ? (
@@ -1271,9 +1317,7 @@ export function App({
                   {checkpointProfile.profile.purchasedUpgrades.map(
                     (upgrade) => (
                       <div key={upgrade.upgradeId}>
-                        <dt>
-                          <code>{upgrade.upgradeId}</code>
-                        </dt>
+                        <dt>{playerFacingName(upgrade.upgradeId)}</dt>
                         <dd>
                           Rank {upgrade.rank}; {upgrade.forgeOreSpent} Forge Ore
                           spent
@@ -1299,7 +1343,7 @@ export function App({
                   return (
                     <section key={definition.upgradeId}>
                       <h5 id={headingId} tabIndex={-1}>
-                        <code>{definition.upgradeId}</code>
+                        {playerFacingName(definition.upgradeId)}
                       </h5>
                       <p>
                         Rank {state.currentRank} of{" "}
@@ -1390,8 +1434,8 @@ export function App({
                               id={`${selection.nodeId.replaceAll(".", "-")}-selected-heading`}
                               tabIndex={-1}
                             >
-                              <code>{selection.nodeId}</code> selected at level{" "}
-                              {selection.spentSkillPointLevel}.
+                              {playerFacingName(selection.nodeId)} selected at
+                              level {selection.spentSkillPointLevel}.
                             </h5>{" "}
                             <p>
                               Effects:{" "}
@@ -1451,7 +1495,7 @@ export function App({
                                 {upgradePurchaseStatus.kind === "pending" &&
                                 upgradePurchaseStatus.upgradeId === nodeId
                                   ? "Saving skill selection…"
-                                  : `Select ${nodeId}`}
+                                  : `Select ${playerFacingName(nodeId)}`}
                               </button>
                             </section>
                           );
@@ -1663,43 +1707,51 @@ export function App({
                 ? "Victory results"
                 : "Defeat results"}
             </h3>
-            <dl className="evidence">
-              <div>
-                <dt>Terminal result</dt>
-                <dd>{view.result.terminalResult}</dd>
-              </div>
-              <div>
-                <dt>Terminal tick</dt>
-                <dd>{view.result.terminalTick}</dd>
-              </div>
-              <div>
-                <dt>Final state checksum</dt>
-                <dd>
-                  <code>{view.result.finalStateChecksum}</code>
-                </dd>
-              </div>
-              <div>
-                <dt>Event checksum</dt>
-                <dd>
-                  <code>{view.result.eventStreamChecksum}</code>
-                </dd>
-              </div>
-              <div>
-                <dt>Replay commands</dt>
-                <dd>{view.result.commands.length}</dd>
-              </div>
-            </dl>
+            <p className="result-message">
+              {view.result.terminalResult === "victory"
+                ? "Shuttergate stands. The company returns to the forge."
+                : "Shuttergate has fallen. Rally the company and return stronger."}
+            </p>
             <div className="result-actions">
+              <button type="button" onClick={returnToCheckpoint}>
+                Return to checkpoint
+              </button>
+            </div>
+            <details className="inspection-surface result-inspection">
+              <summary>Developer inspection</summary>
+              <dl className="evidence">
+                <div>
+                  <dt>Terminal result</dt>
+                  <dd>{view.result.terminalResult}</dd>
+                </div>
+                <div>
+                  <dt>Terminal tick</dt>
+                  <dd>{view.result.terminalTick}</dd>
+                </div>
+                <div>
+                  <dt>Final state checksum</dt>
+                  <dd>
+                    <code>{view.result.finalStateChecksum}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Event checksum</dt>
+                  <dd>
+                    <code>{view.result.eventStreamChecksum}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Replay commands</dt>
+                  <dd>{view.result.commands.length}</dd>
+                </div>
+              </dl>
               <button
                 type="button"
                 onClick={() => void downloadRunEvidence(view.result)}
               >
                 Download run evidence
               </button>
-              <button type="button" onClick={returnToCheckpoint}>
-                Return to checkpoint
-              </button>
-            </div>
+            </details>
           </section>
         )}
         {view.phase === "failure" && (

@@ -454,6 +454,13 @@ describe("run journey guidance", () => {
     window.localStorage.setItem(motionPreferenceStorageKey, "reduce");
     renderApp();
 
+    const inspectionSummary = await vi.waitFor(() => {
+      const candidate = document.querySelector("summary");
+      expect(candidate).toBeInstanceOf(HTMLElement);
+      return candidate as HTMLElement;
+    });
+    await userEvent.click(inspectionSummary);
+
     const steps = await vi.waitFor(() => {
       const candidates = Array.from(
         document.querySelectorAll<HTMLElement>(".run-journey-step")
@@ -2395,6 +2402,9 @@ describe("authoritative web worker", () => {
     createObjectUrl.mockClear();
     revokeObjectUrl.mockClear();
     blobs.length = 0;
+    await userEvent.click(
+      document.querySelector(".result-inspection summary") as HTMLElement
+    );
     const downloadButton = await buttonWithText("Download run evidence");
     downloadButton.focus();
     await userEvent.keyboard("{Enter}");
@@ -2447,6 +2457,9 @@ describe("authoritative web worker", () => {
     );
     expect(document.body.textContent).not.toContain("Download run evidence");
     await completeAppAttempt();
+    await userEvent.click(
+      document.querySelector(".result-inspection summary") as HTMLElement
+    );
     await userEvent.click(await buttonWithText("Download run evidence"));
     await vi.waitFor(() => expect(blobs).toHaveLength(2));
     expect(await blobs[1]?.text()).toBe(firstBytes);
@@ -2495,7 +2508,7 @@ describe("authoritative web worker", () => {
       '[aria-label="Preparation summary"]'
     );
     expect(preparationSummary?.textContent).toContain(
-      "Authoritative levellevel.shuttergate_hall"
+      "DefenceShuttergate Hall"
     );
     expect(preparationSummary?.textContent).toContain("Company roster1 dwarf");
     expect(preparationSummary?.textContent).toContain("Placement points2");

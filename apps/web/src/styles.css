@@ -11,7 +11,9 @@ body {
   margin: 0;
   min-width: 20rem;
   min-height: 100vh;
-  background: radial-gradient(circle at top, #3c3022, #17130f 55%);
+  background:
+    radial-gradient(circle at 50% -10%, #5b4328 0, transparent 42%),
+    repeating-linear-gradient(90deg, #0000 0 31px, #0c09072b 32px), #130f0c;
 }
 @supports (min-height: 100dvh) {
   body {
@@ -19,7 +21,7 @@ body {
   }
 }
 main {
-  width: min(50rem, calc(100% - 2rem));
+  width: min(68rem, calc(100% - 2rem));
   margin: 0 auto;
   padding: max(10vh, env(safe-area-inset-top))
     max(0px, env(safe-area-inset-right)) max(4rem, env(safe-area-inset-bottom))
@@ -38,22 +40,125 @@ main[data-text-scale="extra-large"] {
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
+.game-masthead {
+  position: relative;
+  padding: 1.5rem 1rem 1.25rem;
+  border: 1px solid #6d5538;
+  border-bottom: 0;
+  background:
+    linear-gradient(90deg, #080706e8, #1d1712cc 50%, #080706e8),
+    repeating-linear-gradient(90deg, #32271c 0 2px, #17110d 2px 8px);
+  box-shadow: 0 1.5rem 4rem #0009;
+  text-align: center;
+}
+.game-masthead::before,
+.game-masthead::after {
+  position: absolute;
+  top: 0.7rem;
+  bottom: 0.7rem;
+  width: 0.6rem;
+  border: 1px solid #a87331;
+  background: #17110d;
+  content: "";
+}
+.game-masthead::before {
+  left: 0.7rem;
+}
+.game-masthead::after {
+  right: 0.7rem;
+}
 h1 {
-  margin: 0.25rem 0 2rem;
+  margin: 0.25rem 0 0;
   font-family: Georgia, serif;
   font-size: clamp(2.5em, 9vw, 5em);
   line-height: 0.95;
 }
+.masthead-subtitle {
+  margin: 0.7rem 0 0;
+  color: #cbb991;
+  font-family: Georgia, serif;
+  letter-spacing: 0.04em;
+}
 .panel {
   padding: clamp(1.25rem, 4vw, 2.25rem);
   border: 1px solid #80683f;
-  border-radius: 0.75rem;
-  background: rgba(20, 17, 13, 0.88);
+  border-radius: 0 0 0.35rem 0.35rem;
+  background: linear-gradient(145deg, #211911f5, #0c0a08fa), #14110d;
   box-shadow: 0 1.5rem 4rem #0008;
 }
 h2 {
   margin-top: 0;
   font-size: 1.25em;
+}
+.panel > h2 {
+  margin: -0.3rem 0 1.25rem;
+  color: #e8bd6b;
+  font-family: Georgia, serif;
+  font-size: clamp(1.35em, 3vw, 2em);
+  letter-spacing: 0.09em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.checkpoint-hero {
+  position: relative;
+  min-height: clamp(14rem, 42vw, 25rem);
+  overflow: hidden;
+  border: 3px solid #4a3929;
+  background-position: center;
+  background-size: cover;
+  box-shadow:
+    inset 0 0 0 1px #b47a36,
+    inset 0 -7rem 8rem #080604e8,
+    0 1.5rem 3rem #0008;
+}
+.checkpoint-hero::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #08060466, transparent 35% 65%, #08060466);
+  content: "";
+}
+.checkpoint-hero span {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 2rem 1rem 1rem;
+  color: #f1c875;
+  font-family: Georgia, serif;
+  font-size: clamp(1.25rem, 4vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-shadow: 0 3px 4px #000;
+  text-transform: uppercase;
+}
+.inspection-surface {
+  margin: 1rem 0;
+  border-top: 1px solid #4e4232;
+  color: #b9aa8d;
+  font-size: 0.86em;
+}
+.inspection-surface > summary {
+  width: fit-content;
+  padding: 0.7rem 0;
+  color: #ad9d80;
+  cursor: pointer;
+}
+.inspection-surface[open] {
+  padding-bottom: 0.75rem;
+}
+.inspection-metadata {
+  overflow-wrap: anywhere;
+}
+.result-inspection {
+  margin-top: 1.5rem;
+}
+.result-message {
+  max-width: 42rem;
+  color: #e6d2a6;
+  font-family: Georgia, serif;
+  font-size: 1.15em;
 }
 .run-journey {
   margin: 1.25rem 0;
@@ -362,6 +467,9 @@ main[data-contrast-preference="high"] code {
   color: #fff;
 }
 main[data-contrast-preference="high"] .panel,
+main[data-contrast-preference="high"] .game-masthead,
+main[data-contrast-preference="high"] .checkpoint-hero,
+main[data-contrast-preference="high"] .inspection-surface,
 main[data-contrast-preference="high"] .battlefield-canvas,
 main[data-contrast-preference="high"] .run-journey,
 main[data-contrast-preference="high"] .run-journey-step,
@@ -436,10 +544,9 @@ main[data-view-phase="running"] {
   place-items: center;
   background: radial-gradient(circle at 50% 45%, #291f15, #080604 70%);
 }
-main[data-view-phase="running"] > .eyebrow,
-main[data-view-phase="running"] > h1,
+main[data-view-phase="running"] > .game-masthead,
 main[data-view-phase="running"] .panel > h2,
-main[data-view-phase="running"] .run-journey,
+main[data-view-phase="running"] .inspection-surface,
 main[data-view-phase="running"] .status {
   display: none;
 }
