@@ -12,6 +12,7 @@ import {
   comparePresentationPrimitives,
   decodeBattlefieldDepthAsset,
   deriveCombatPresentationState,
+  renderedFactionForSourceKey,
   selectCombatPoseAsset
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
@@ -1762,6 +1763,23 @@ describe("authoritative web worker", () => {
       authoritativeEntitiesMatch: false,
       valid: false
     });
+    expect(
+      buildTruthScreenAlignment(snapshot, registry, [
+        ...snapshot.entities,
+        snapshot.entities[0]
+      ])
+    ).toMatchObject({ renderedCount: 4, valid: false });
+    expect(
+      buildTruthScreenAlignment(snapshot, registry, [
+        { ...snapshot.entities[0], faction: "enemy" },
+        ...snapshot.entities.slice(1)
+      ])
+    ).toMatchObject({ renderedEntitiesMatch: false, valid: false });
+    expect(renderedFactionForSourceKey("warden-shield-slam-runtime")).toBe(
+      "dwarf"
+    );
+    expect(renderedFactionForSourceKey("raider-attack-runtime")).toBe("enemy");
+    expect(renderedFactionForSourceKey("subject-depth-forged")).toBeUndefined();
   });
 
   it("rejects malformed depth assets without exposing partial scene data", () => {

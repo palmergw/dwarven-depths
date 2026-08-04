@@ -1152,10 +1152,13 @@ function addDepthTestedBillboard(
 ): Phaser.GameObjects.Image {
   if (entity.cameraDepth === undefined) {
     const image = existing ?? scene.add.image(entity.x, entity.y, sourceKey);
-    return image
+    image
       .setTexture(sourceKey)
       .setPosition(entity.x, entity.y)
       .setOrigin(pivotX / width, pivotY / height);
+    image.setData("renderEntityId", entity.id);
+    image.setData("renderSourceKey", sourceKey);
+    return image;
   }
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
@@ -1178,10 +1181,34 @@ function addDepthTestedBillboard(
     staticDepth
   );
   const image = existing ?? scene.add.image(entity.x, entity.y, texture);
-  return image
+  image
     .setTexture(texture)
     .setPosition(entity.x, entity.y)
     .setOrigin(pivotX / width, pivotY / height);
+  image.setData("renderEntityId", entity.id);
+  image.setData("renderSourceKey", sourceKey);
+  return image;
+}
+
+export function renderedFactionForSourceKey(
+  sourceKey: unknown
+): RenderEntity["faction"] | undefined {
+  if (typeof sourceKey !== "string") return undefined;
+  if (
+    sourceKey === "warden-source" ||
+    sourceKey === "warden-runtime" ||
+    sourceKey === "warden-shield-slam-source" ||
+    sourceKey === "warden-shield-slam-runtime"
+  )
+    return "dwarf";
+  if (
+    sourceKey === "raider-source" ||
+    sourceKey === "raider-runtime" ||
+    sourceKey === "raider-attack-source" ||
+    sourceKey === "raider-attack-runtime"
+  )
+    return "enemy";
+  return undefined;
 }
 
 interface PersistentEntityObjects {
@@ -1613,11 +1640,21 @@ class PersistentBattlefieldScene {
           rear: measureTextureAlpha(this.scene, "entrance-route-rear")
         },
         [window.innerWidth, window.innerHeight],
-        [...this.entities.keys()].flatMap((id) => {
-          const entity = snapshot.entities.find(
-            (candidate) => candidate.id === id
+        [...this.layers["world-entities"]].map((subject, index) => {
+          if (!(subject instanceof Phaser.GameObjects.Image))
+            return {
+              id: `invalid.rendered-subject.${index}`,
+              faction: "enemy" as const
+            };
+          const id = subject.getData("renderEntityId");
+          const faction = renderedFactionForSourceKey(
+            subject.getData("renderSourceKey")
           );
-          return entity === undefined ? [] : [entity];
+          return {
+            id:
+              typeof id === "string" ? id : `invalid.rendered-subject.${index}`,
+            faction: faction ?? "enemy"
+          };
         })
       );
       window.__DWARVEN_DEPTHS_RENDERER__ = this.diagnostics();
