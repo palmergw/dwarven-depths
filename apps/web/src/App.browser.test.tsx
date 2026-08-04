@@ -1729,24 +1729,39 @@ describe("authoritative web worker", () => {
     } as const satisfies RenderSnapshot;
     const registry = [...snapshot.entities].reverse();
 
-    expect(buildTruthScreenAlignment(snapshot, registry)).toEqual({
+    expect(
+      buildTruthScreenAlignment(snapshot, registry, snapshot.entities)
+    ).toEqual({
       snapshotCount: 3,
       registryCount: 3,
+      renderedCount: 3,
+      registryEntitiesMatch: true,
+      renderedEntitiesMatch: true,
       authoritativeEntitiesMatch: true,
       valid: true
     });
-    expect(buildTruthScreenAlignment(snapshot, registry.slice(1))).toEqual({
+    expect(
+      buildTruthScreenAlignment(snapshot, registry.slice(1), snapshot.entities)
+    ).toEqual({
       snapshotCount: 3,
       registryCount: 2,
+      renderedCount: 3,
+      registryEntitiesMatch: false,
+      renderedEntitiesMatch: true,
       authoritativeEntitiesMatch: false,
       valid: false
     });
     expect(
-      buildTruthScreenAlignment(snapshot, [
-        ...registry.slice(0, 2),
+      buildTruthScreenAlignment(snapshot, registry, [
+        ...snapshot.entities.slice(0, 2),
         { id: "entity.enemy.substituted", faction: "enemy" }
       ])
-    ).toMatchObject({ authoritativeEntitiesMatch: false, valid: false });
+    ).toMatchObject({
+      registryEntitiesMatch: true,
+      renderedEntitiesMatch: false,
+      authoritativeEntitiesMatch: false,
+      valid: false
+    });
   });
 
   it("rejects malformed depth assets without exposing partial scene data", () => {

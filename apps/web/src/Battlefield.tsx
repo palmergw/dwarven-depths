@@ -242,6 +242,9 @@ export interface TruthScreenSidecar {
   readonly alignment: {
     readonly snapshotCount: number;
     readonly registryCount: number;
+    readonly renderedCount: number;
+    readonly registryEntitiesMatch: boolean;
+    readonly renderedEntitiesMatch: boolean;
     readonly authoritativeEntitiesMatch: boolean;
     readonly valid: boolean;
   };
@@ -485,7 +488,8 @@ export function buildDepartureFeedbackPrimitives(
 
 export function buildTruthScreenAlignment(
   snapshot: RenderSnapshot,
-  registryEntities: readonly Pick<RenderEntity, "id" | "faction">[]
+  registryEntities: readonly Pick<RenderEntity, "id" | "faction">[],
+  renderedEntities: readonly Pick<RenderEntity, "id" | "faction">[]
 ): TruthScreenSidecar["alignment"] {
   const canonicalIdentity = ({
     id,
@@ -499,14 +503,28 @@ export function buildTruthScreenAlignment(
     .filter(({ faction }) => faction === "dwarf" || faction === "enemy")
     .map(canonicalIdentity)
     .sort(compareRenderIds);
-  const authoritativeEntitiesMatch =
+  const renderedCombatants = renderedEntities
+    .filter(({ faction }) => faction === "dwarf" || faction === "enemy")
+    .map(canonicalIdentity)
+    .sort(compareRenderIds);
+  const registryEntitiesMatch =
     snapshotCombatants.length === registryCombatants.length &&
     snapshotCombatants.every(
       (identity, index) => identity === registryCombatants[index]
     );
+  const renderedEntitiesMatch =
+    snapshotCombatants.length === renderedCombatants.length &&
+    snapshotCombatants.every(
+      (identity, index) => identity === renderedCombatants[index]
+    );
+  const authoritativeEntitiesMatch =
+    registryEntitiesMatch && renderedEntitiesMatch;
   return {
     snapshotCount: snapshotCombatants.length,
     registryCount: registryCombatants.length,
+    renderedCount: renderedCombatants.length,
+    registryEntitiesMatch,
+    renderedEntitiesMatch,
     authoritativeEntitiesMatch,
     valid: authoritativeEntitiesMatch
   };
@@ -516,7 +534,8 @@ export function buildTruthScreenSidecar(
   snapshot: RenderSnapshot,
   primitives: BattlefieldPrimitives,
   visualMetrics: TruthVisualMetrics,
-  viewport: readonly [number, number]
+  viewport: readonly [number, number],
+  renderedEntities: readonly Pick<RenderEntity, "id" | "faction">[]
 ): TruthScreenSidecar {
   const byId = new Map(snapshot.entities.map((entity) => [entity.id, entity]));
   const v2ById = new Map(
@@ -750,7 +769,7 @@ export function buildTruthScreenSidecar(
         transientEffectOcclusionPixels
       }
     },
-    alignment: buildTruthScreenAlignment(snapshot, entities)
+    alignment: buildTruthScreenAlignment(snapshot, entities, renderedEntities)
   };
 }
 
@@ -1588,7 +1607,13 @@ class PersistentBattlefieldScene {
           ),
           rear: measureTextureAlpha(this.scene, "entrance-route-rear")
         },
-        [window.innerWidth, window.innerHeight]
+        [window.innerWidth, window.innerHeight],
+        [...this.entities.keys()].flatMap((id) => {
+          const entity = snapshot.entities.find(
+            (candidate) => candidate.id === id
+          );
+          return entity === undefined ? [] : [entity];
+        })
       );
       window.__DWARVEN_DEPTHS_RENDERER__ = this.diagnostics();
     }
