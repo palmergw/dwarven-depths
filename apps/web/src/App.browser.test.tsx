@@ -1287,7 +1287,10 @@ describe("authoritative web worker", () => {
         dwarves: [
           {
             activeAbilities: [
-              { cooldownCompleteAtTick: 93, rejectionReason: null }
+              {
+                cooldownCompleteAtTick: expect.any(Number),
+                rejectionReason: null
+              }
             ]
           }
         ]

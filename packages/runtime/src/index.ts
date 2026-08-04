@@ -19,16 +19,15 @@ import {
   type SimulationState,
   type TimelineRecord
 } from "@dwarven-depths/contracts";
-import { createInitialProfile } from "@dwarven-depths/progression";
 import {
   type BattlefieldDwarfDeploymentAuthority,
   createBattlefieldDwarfDeploymentAuthority,
   createInitialState,
   deployBattlefieldDwarves,
+  resolveAuthoritativeCombatTick,
   stateChecksum,
   stepSimulation
 } from "@dwarven-depths/sim-core";
-import { resolveAuthoritativeCombatCheckpoint } from "./authoritative-combat-checkpoint.js";
 
 export {
   type AuthoritativeCombatCheckpointRequest,
@@ -914,29 +913,23 @@ export class LiveScenarioHost {
           requestedPolicy: this.#targetPolicies.get(dwarf.entityId) ?? "nearest"
         })
       );
-    const checkpoint = resolveAuthoritativeCombatCheckpoint(
+    const combat = resolveAuthoritativeCombatTick(
       {
         schemaVersion: 1,
         state: combatState,
-        dwarfActionEntries: actionEntries,
-        profile: createInitialProfile("character.iron_warden" as never),
-        rewards: [
-          Object.freeze({
-            schemaVersion: 1 as const,
-            rewardId: "reward.boss.gatebreaker_captain" as never,
-            bossEntityId: "entity.enemy.shuttergate_010" as never,
-            characterUnlockId: "character.deep_ranger" as never,
-            forgeOre: 20
-          })
-        ]
+        dwarfActionEntries: actionEntries
       },
       this.#content,
       this.#dwarfAuthority
     );
-    const terminalResult = checkpoint.terminalEvaluation.terminalResult;
+    const terminalResult = combat.state.battlefield?.dwarfCombatants.some(
+      (dwarf) => dwarf.lifecycleState === "active"
+    )
+      ? undefined
+      : "defeat";
     return Object.freeze({
       state: Object.freeze({
-        ...checkpoint.combat.state,
+        ...combat.state,
         tick: previousState.tick + 1,
         ...(abilityStep.state.activeCooldowns === undefined
           ? {}
@@ -951,10 +944,7 @@ export class LiveScenarioHost {
           ? {}
           : { phase: "TERMINAL" as const, terminalResult })
       }),
-      events: Object.freeze([
-        ...abilityStep.events,
-        ...checkpoint.combat.events
-      ])
+      events: Object.freeze([...abilityStep.events, ...combat.events])
     });
   }
 
