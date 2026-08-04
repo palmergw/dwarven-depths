@@ -8,6 +8,7 @@ import {
   buildBattlefieldPrimitives,
   buildDepartureFeedbackPrimitives,
   buildInterpolationOrigins,
+  buildTruthScreenAlignment,
   comparePresentationPrimitives,
   decodeBattlefieldDepthAsset,
   deriveCombatPresentationState,
@@ -1697,6 +1698,55 @@ describe("authoritative web worker", () => {
         entity.id
       )?.damaged
     ).toBe(false);
+  });
+
+  it("aligns variable authoritative combatant counts by stable identity", () => {
+    const snapshot = {
+      schemaVersion: 1,
+      levelId: "level.shuttergate",
+      mapId: "map.shuttergate_hall",
+      tick: 1801,
+      phase: "running",
+      nodes: [],
+      connections: [],
+      entities: [
+        {
+          id: "entity.dwarf.warden",
+          nodeId: "node.shuttergate_north_guard",
+          faction: "dwarf"
+        },
+        {
+          id: "entity.enemy.shuttergate_006",
+          nodeId: "node.shuttergate_east_hall",
+          faction: "enemy"
+        },
+        {
+          id: "entity.enemy.shuttergate_007",
+          nodeId: "node.shuttergate_west_entry",
+          faction: "enemy"
+        }
+      ]
+    } as const satisfies RenderSnapshot;
+    const registry = [...snapshot.entities].reverse();
+
+    expect(buildTruthScreenAlignment(snapshot, registry)).toEqual({
+      snapshotCount: 3,
+      registryCount: 3,
+      authoritativeEntitiesMatch: true,
+      valid: true
+    });
+    expect(buildTruthScreenAlignment(snapshot, registry.slice(1))).toEqual({
+      snapshotCount: 3,
+      registryCount: 2,
+      authoritativeEntitiesMatch: false,
+      valid: false
+    });
+    expect(
+      buildTruthScreenAlignment(snapshot, [
+        ...registry.slice(0, 2),
+        { id: "entity.enemy.substituted", faction: "enemy" }
+      ])
+    ).toMatchObject({ authoritativeEntitiesMatch: false, valid: false });
   });
 
   it("rejects malformed depth assets without exposing partial scene data", () => {

@@ -242,7 +242,7 @@ export interface TruthScreenSidecar {
   readonly alignment: {
     readonly snapshotCount: number;
     readonly registryCount: number;
-    readonly exactlyOneWardenAndOneHostile: boolean;
+    readonly authoritativeEntitiesMatch: boolean;
     readonly valid: boolean;
   };
 }
@@ -483,6 +483,35 @@ export function buildDepartureFeedbackPrimitives(
   );
 }
 
+export function buildTruthScreenAlignment(
+  snapshot: RenderSnapshot,
+  registryEntities: readonly Pick<RenderEntity, "id" | "faction">[]
+): TruthScreenSidecar["alignment"] {
+  const canonicalIdentity = ({
+    id,
+    faction
+  }: Pick<RenderEntity, "id" | "faction">) => `${id}\u0000${faction}`;
+  const snapshotCombatants = snapshot.entities
+    .filter(({ faction }) => faction === "dwarf" || faction === "enemy")
+    .map(canonicalIdentity)
+    .sort(compareRenderIds);
+  const registryCombatants = registryEntities
+    .filter(({ faction }) => faction === "dwarf" || faction === "enemy")
+    .map(canonicalIdentity)
+    .sort(compareRenderIds);
+  const authoritativeEntitiesMatch =
+    snapshotCombatants.length === registryCombatants.length &&
+    snapshotCombatants.every(
+      (identity, index) => identity === registryCombatants[index]
+    );
+  return {
+    snapshotCount: snapshotCombatants.length,
+    registryCount: registryCombatants.length,
+    authoritativeEntitiesMatch,
+    valid: authoritativeEntitiesMatch
+  };
+}
+
 export function buildTruthScreenSidecar(
   snapshot: RenderSnapshot,
   primitives: BattlefieldPrimitives,
@@ -558,7 +587,6 @@ export function buildTruthScreenSidecar(
   const hostileCount = entities.filter(
     ({ faction }) => faction === "enemy"
   ).length;
-  const exactlyOneWardenAndOneHostile = dwarfCount === 1 && hostileCount === 1;
   const hostile = entities.find(({ faction }) => faction === "enemy");
   const hostileSource =
     (hostile === undefined
@@ -722,25 +750,7 @@ export function buildTruthScreenSidecar(
         transientEffectOcclusionPixels
       }
     },
-    alignment: {
-      snapshotCount: snapshot.entities.length,
-      registryCount: entities.length,
-      exactlyOneWardenAndOneHostile,
-      valid:
-        snapshot.entities.length === entities.length &&
-        exactlyOneWardenAndOneHostile &&
-        entities.every(
-          (entity) =>
-            entity.nonzeroAlphaPixels > 0 &&
-            entity.fullAlphaPixels * 5 >= entity.nonzeroAlphaPixels * 4 &&
-            entity.intersectsUnobscuredWorldViewport
-        ) &&
-        rearOverlapPixels > 0 &&
-        subjectGroundOverlapPixels > 0 &&
-        foregroundOcclusionPixels > 0 &&
-        worldRingOcclusionPixels > 0 &&
-        transientEffectOcclusionPixels > 0
-    }
+    alignment: buildTruthScreenAlignment(snapshot, entities)
   };
 }
 
