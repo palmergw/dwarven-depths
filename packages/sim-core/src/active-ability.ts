@@ -104,7 +104,8 @@ function freezeEnemy(
   enemy: BattlefieldEnemyCombatant,
   currentHealth: number,
   activeBasicAttack: BattlefieldEnemyCombatant["actionState"]["activeBasicAttack"],
-  staggerExpiresAtTick: number
+  staggerExpiresAtTick: number,
+  preserveAuthoredCadence: boolean
 ): BattlefieldEnemyCombatant {
   const suppressUncommittedWork =
     activeBasicAttack === null ||
@@ -123,13 +124,16 @@ function freezeEnemy(
     basicAttack: Object.freeze({ ...enemy.basicAttack }),
     actionState: Object.freeze({
       ...enemy.actionState,
-      nextMovementAtTick:
-        enemy.admittedAtTick +
-        movementIntervalsSinceAdmission * enemy.movementIntervalTicks,
+      nextMovementAtTick: preserveAuthoredCadence
+        ? enemy.admittedAtTick +
+          movementIntervalsSinceAdmission * enemy.movementIntervalTicks
+        : minimumMovementTick,
       cooldownCompleteAtTick: suppressUncommittedWork
         ? Math.max(
             enemy.actionState.cooldownCompleteAtTick ?? 0,
-            enemy.admittedAtTick + enemy.basicAttack.cooldownTicks,
+            ...(preserveAuthoredCadence
+              ? [enemy.admittedAtTick + enemy.basicAttack.cooldownTicks]
+              : []),
             staggerExpiresAtTick
           )
         : enemy.actionState.cooldownCompleteAtTick,
@@ -439,7 +443,8 @@ export function resolveActiveAbilityTick(
         enemy,
         Math.max(0, enemy.currentHealth - ability.damage),
         interrupt ? null : windup,
-        request.currentTick + ability.staggerTicks
+        request.currentTick + ability.staggerTicks,
+        authority !== undefined
       );
     });
     const livingTargets = enemyCombatants.filter(

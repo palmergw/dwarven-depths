@@ -517,11 +517,86 @@ export function createShieldSlamWebPreparationState(
   scenario: ScenarioDefinition
 ): SimulationState {
   const character = content.characters.get("character.iron_warden" as never);
+  const enemy = content.enemies.get("enemy.goblin_cutter" as never);
   const level = content.levels.get(scenario.levelId);
-  if (character === undefined || level?.mapId === undefined)
+  if (
+    character === undefined ||
+    enemy === undefined ||
+    level?.mapId === undefined
+  )
     throw new Error(
       "The Shield Slam web scenario is missing authored content."
     );
+  if (scenario.id === "scenario.conformance.shield_slam")
+    return Object.freeze({
+      schemaVersion: 1,
+      contentVersion: content.bundle.contentVersion,
+      tick: 0,
+      seed: scenario.seed,
+      rngState: 1,
+      levelId: scenario.levelId,
+      phase: "PREPARATION",
+      eventSequence: 0,
+      battlefield: Object.freeze({
+        schemaVersion: 1,
+        mapId: level.mapId,
+        startedWaveIds: Object.freeze([]),
+        firedSpawnIds: Object.freeze([]),
+        pendingSpawns: Object.freeze([]),
+        enemyAdmissions: Object.freeze([]),
+        occupancy: Object.freeze([
+          Object.freeze({
+            entityId: "entity.dwarf.warden" as never,
+            nodeId: "node.shuttergate_north_guard" as never
+          }),
+          Object.freeze({
+            entityId: "entity.enemy.shield_slam_target" as never,
+            nodeId: "node.shuttergate_gate" as never
+          })
+        ]),
+        pendingCommittedAttacks: Object.freeze([]),
+        dwarfCombatants: Object.freeze([
+          Object.freeze({
+            schemaVersion: 1,
+            entityId: "entity.dwarf.warden" as never,
+            characterDefinitionId: character.id,
+            placementPointId: "placement.shuttergate_north_guard" as never,
+            currentHealth: character.maximumHealth,
+            maximumHealth: character.maximumHealth,
+            lifecycleState: "active" as const,
+            basicAttack: character.basicAttack,
+            actionState: Object.freeze({
+              schemaVersion: 1,
+              currentTargetEntityId: "entity.enemy.shield_slam_target" as never,
+              activeBasicAttack: null,
+              cooldownCompleteAtTick: null
+            })
+          })
+        ]),
+        enemyCombatants: Object.freeze([
+          Object.freeze({
+            schemaVersion: 1,
+            entityId: "entity.enemy.shield_slam_target" as never,
+            enemyDefinitionId: enemy.id,
+            classification: enemy.classification,
+            currentHealth: enemy.maximumHealth,
+            maximumHealth: enemy.maximumHealth,
+            armor: enemy.armor,
+            movementIntervalTicks: enemy.movementIntervalTicks,
+            admittedAtTick: 0,
+            lifecycleState: "active" as const,
+            basicAttack: enemy.basicAttack,
+            actionState: Object.freeze({
+              schemaVersion: 1,
+              nextMovementAtTick: 0,
+              currentTargetEntityId: "entity.dwarf.warden" as never,
+              activeBasicAttack: null,
+              cooldownCompleteAtTick: null
+            })
+          })
+        ])
+      })
+    });
   const initial = createInitialState(content, scenario.levelId, scenario.seed);
   if (initial.battlefield === undefined)
     throw new Error("The Shield Slam web scenario has no battlefield state.");
@@ -653,7 +728,10 @@ export class LiveScenarioHost {
       throw new RangeError(
         "live scenario deployment requires canonical battlefield state"
       );
+    const usesShuttergateEncounterAuthority =
+      scenario.id === "scenario.conformance.shuttergate_web_truth";
     const dwarfAuthority =
+      !usesShuttergateEncounterAuthority ||
       initialState?.battlefield === undefined ||
       canonicalInitialState.battlefield === undefined
         ? undefined
@@ -672,7 +750,8 @@ export class LiveScenarioHost {
         ? canonicalInitialState
         : Object.freeze({
             ...initialState,
-            ...(dwarfAuthority === undefined ||
+            ...(!usesShuttergateEncounterAuthority ||
+            dwarfAuthority === undefined ||
             canonicalInitialState.battlefield === undefined
               ? {}
               : {
@@ -765,6 +844,7 @@ export class LiveScenarioHost {
     );
     const result =
       this.#usesShieldSlamWebAuthority &&
+      this.#scenario.id === "scenario.conformance.shuttergate_web_truth" &&
       previousState.phase === "COMBAT_RUNNING" &&
       this.#dwarfAuthority !== undefined
         ? this.#resolveShuttergateCombatStep(previousState, stepped)
