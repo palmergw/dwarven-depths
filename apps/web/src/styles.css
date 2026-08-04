@@ -23,8 +23,8 @@ body {
 main {
   width: min(68rem, calc(100% - 2rem));
   margin: 0 auto;
-  padding: max(10vh, env(safe-area-inset-top))
-    max(0px, env(safe-area-inset-right)) max(4rem, env(safe-area-inset-bottom))
+  padding: max(3vh, env(safe-area-inset-top))
+    max(0px, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom))
     max(0px, env(safe-area-inset-left));
 }
 main[data-text-scale="large"] {
@@ -42,7 +42,7 @@ main[data-text-scale="extra-large"] {
 }
 .game-masthead {
   position: relative;
-  padding: 1.5rem 1rem 1.25rem;
+  padding: 1rem;
   border: 1px solid #6d5538;
   border-bottom: 0;
   background:
@@ -101,7 +101,7 @@ h2 {
 }
 .checkpoint-hero {
   position: relative;
-  min-height: clamp(14rem, 42vw, 25rem);
+  min-height: clamp(12rem, 28vw, 19rem);
   overflow: hidden;
   border: 3px solid #4a3929;
   background-position: center;
@@ -279,6 +279,10 @@ button:focus-visible {
     inset 0 0 0 1px #6c3b0d,
     0 0 1.4rem #cf84203d;
   font-size: 1.08em;
+}
+.checkpoint-actions-primary {
+  margin: 0 0 1rem;
+  justify-content: center;
 }
 .checkpoint-actions button:not(.primary-action) {
   border-color: #80683f;

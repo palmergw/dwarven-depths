@@ -1039,6 +1039,36 @@ export function App({
           !settingsOpen &&
           !upgradeInventoryOpen && (
             <>
+              <div className="checkpoint-actions checkpoint-actions-primary">
+                <button
+                  className="primary-action"
+                  type="button"
+                  onClick={startPreparation}
+                >
+                  Begin preparation
+                </button>
+                <button
+                  type="button"
+                  ref={settingsButtonRef}
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  Settings
+                </button>
+                {checkpointProfile.status === "ready" && (
+                  <button
+                    type="button"
+                    ref={upgradeInventoryButtonRef}
+                    onClick={() => {
+                      setUpgradePurchaseStatus({ kind: "idle" });
+                      setRecycleConfirmationOpen(false);
+                      setSkillRecycleConfirmationOpen(false);
+                      setUpgradeInventoryOpen(true);
+                    }}
+                  >
+                    Upgrade inventory
+                  </button>
+                )}
+              </div>
               <div
                 className="checkpoint-hero"
                 style={{ backgroundImage: `url(${checkpointBackdropUrl})` }}
@@ -1656,40 +1686,7 @@ export function App({
               </button>
             </section>
           )}
-        {view.phase === "checkpoint" &&
-          !settingsOpen &&
-          !upgradeInventoryOpen && (
-            <div className="checkpoint-actions">
-              <button
-                className="primary-action"
-                type="button"
-                onClick={startPreparation}
-              >
-                Begin preparation
-              </button>
-              <button
-                type="button"
-                ref={settingsButtonRef}
-                onClick={() => setSettingsOpen(true)}
-              >
-                Settings
-              </button>
-              {checkpointProfile.status === "ready" && (
-                <button
-                  type="button"
-                  ref={upgradeInventoryButtonRef}
-                  onClick={() => {
-                    setUpgradePurchaseStatus({ kind: "idle" });
-                    setRecycleConfirmationOpen(false);
-                    setSkillRecycleConfirmationOpen(false);
-                    setUpgradeInventoryOpen(true);
-                  }}
-                >
-                  Upgrade inventory
-                </button>
-              )}
-            </div>
-          )}
+
         {view.phase === "preparation" && (
           <button type="button" onClick={confirmPreparation}>
             Confirm preparation
