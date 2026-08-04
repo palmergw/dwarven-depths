@@ -1660,7 +1660,11 @@ export function App({
           !settingsOpen &&
           !upgradeInventoryOpen && (
             <div className="checkpoint-actions">
-              <button type="button" onClick={startPreparation}>
+              <button
+                className="primary-action"
+                type="button"
+                onClick={startPreparation}
+              >
                 Begin preparation
               </button>
               <button
