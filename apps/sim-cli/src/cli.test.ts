@@ -3311,6 +3311,29 @@ queued-spawns
       finalStateChecksum: result.finalStateChecksum,
       eventStreamChecksum: result.eventStreamChecksum
     });
+
+    const modifiedScenarioPath = temporaryFile("modified-shuttergate.json", {
+      ...JSON.parse(readFileSync(scenarioPath, "utf8")),
+      seed: "2"
+    });
+    const rejected = runCli(
+      "replay",
+      "--client-evidence",
+      evidencePath,
+      "--content",
+      contentPath,
+      "--scenario",
+      modifiedScenarioPath,
+      "--verify"
+    );
+    expect(rejected.status).toBe(2);
+    expect(JSON.parse(rejected.stderr)).toMatchObject({
+      error: {
+        type: "input",
+        message:
+          "client evidence scenario does not match the canonical approved web fixture"
+      }
+    });
   }, 20_000);
 
   it("verifies authoritative Shield Slam client evidence", async () => {
