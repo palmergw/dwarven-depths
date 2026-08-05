@@ -143,6 +143,11 @@ try {
       await page
         .locator(`main[data-shell-view="${expectedShellView}"]`)
         .waitFor({ timeout: capture === "result" ? 125_000 : 20_000 });
+      await page.evaluate(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      });
       await page.waitForTimeout(250);
 
       const state = await page.evaluate(() => {
