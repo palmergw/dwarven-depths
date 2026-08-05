@@ -447,35 +447,20 @@ describe("run journey guidance", () => {
     ).not.toHaveTextContent("download");
   });
 
-  it("reflows enlarged high-contrast guidance at 320 pixels", async () => {
+  it("keeps diagnostics out of the enlarged high-contrast player frame at 320 pixels", async () => {
     await page.viewport(320, 720);
     window.localStorage.setItem(textScaleStorageKey, "extra-large");
     window.localStorage.setItem(contrastPreferenceStorageKey, "high");
     window.localStorage.setItem(motionPreferenceStorageKey, "reduce");
     renderApp();
 
-    const inspectionSummary = await vi.waitFor(() => {
-      const candidate = document.querySelector("summary");
-      expect(candidate).toBeInstanceOf(HTMLElement);
-      return candidate as HTMLElement;
+    const inspection = await vi.waitFor(() => {
+      const candidate = document.querySelector(".inspection-surface");
+      expect(candidate).toBeInstanceOf(HTMLDetailsElement);
+      return candidate as HTMLDetailsElement;
     });
-    await userEvent.click(inspectionSummary);
-
-    const steps = await vi.waitFor(() => {
-      const candidates = Array.from(
-        document.querySelectorAll<HTMLElement>(".run-journey-step")
-      );
-      expect(candidates).toHaveLength(4);
-      return candidates;
-    });
-    expect(steps[1]?.getBoundingClientRect().left).toBe(
-      steps[0]?.getBoundingClientRect().left
-    );
-    expect(steps[1]?.getBoundingClientRect().top).toBeGreaterThan(
-      steps[0]?.getBoundingClientRect().bottom ?? 0
-    );
-    const journey = document.querySelector<HTMLElement>(".run-journey");
-    expect(journey?.scrollWidth).toBeLessThanOrEqual(journey?.clientWidth ?? 0);
+    expect(inspection).toHaveAttribute("hidden");
+    expect(inspection.getBoundingClientRect().width).toBe(0);
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
       window.innerWidth
     );
@@ -2490,7 +2475,12 @@ describe("authoritative web worker", () => {
         "Local progression storage is unavailable"
       );
     });
-    expect(document.body.textContent).toContain("Current levelThe Shuttergate");
+    expect(
+      document.querySelector(".checkpoint-command")?.textContent
+    ).toContain("Shuttergate HallThe road is clear. Muster the company.");
+    expect(document.querySelector(".inspection-surface")).toHaveAttribute(
+      "hidden"
+    );
     expect(document.querySelector("figcaption")).toBeNull();
     const beginButton = document.querySelector("button");
     if (beginButton === null) throw new Error("expected checkpoint button");

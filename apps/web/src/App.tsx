@@ -42,6 +42,10 @@ const checkpointBackdropUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
   import.meta.url
 ).href;
+const ironWardenPortraitUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/hud/warden-portrait.png",
+  import.meta.url
+).href;
 
 type ViewState =
   | { readonly phase: "checkpoint" }
@@ -1028,7 +1032,7 @@ export function App({
       </header>
       <section className="panel" aria-labelledby="run-heading">
         <h2 id="run-heading">Shuttergate Hall</h2>
-        <details className="inspection-surface">
+        <details className="inspection-surface" hidden>
           <summary>Developer inspection</summary>
           <RunJourneyGuide phase={view.phase} />
           {view.phase === "preparation" && (
@@ -1039,7 +1043,17 @@ export function App({
           !settingsOpen &&
           !upgradeInventoryOpen && (
             <>
-              <div className="checkpoint-actions checkpoint-actions-primary">
+              <div
+                className="checkpoint-backdrop"
+                style={{ backgroundImage: `url(${checkpointBackdropUrl})` }}
+                aria-hidden="true"
+              />
+              <div className="checkpoint-command">
+                <p className="checkpoint-kicker">Company Muster</p>
+                <h3>Shuttergate Hall</h3>
+                <p className="checkpoint-readiness">
+                  The road is clear. Muster the company.
+                </p>
                 <button
                   className="primary-action"
                   type="button"
@@ -1047,13 +1061,12 @@ export function App({
                 >
                   Begin preparation
                 </button>
-                <button
-                  type="button"
-                  ref={settingsButtonRef}
-                  onClick={() => setSettingsOpen(true)}
-                >
-                  Settings
-                </button>
+              </div>
+              <nav className="checkpoint-menu" aria-label="Company checkpoint">
+                <div className="checkpoint-menu-current" aria-current="page">
+                  <span>Company</span>
+                  <small>Muster ready</small>
+                </div>
                 {checkpointProfile.status === "ready" && (
                   <button
                     type="button"
@@ -1068,27 +1081,14 @@ export function App({
                     Upgrade inventory
                   </button>
                 )}
-              </div>
-              <div
-                className="checkpoint-hero"
-                style={{ backgroundImage: `url(${checkpointBackdropUrl})` }}
-                aria-hidden="true"
-              >
-                <span>Shuttergate Hall</span>
-              </div>
-              <dl
-                className="checkpoint-context"
-                aria-label="Current checkpoint"
-              >
-                <div>
-                  <dt>Current level</dt>
-                  <dd>The Shuttergate</dd>
-                </div>
-                <div>
-                  <dt>Next step</dt>
-                  <dd>Prepare the company</dd>
-                </div>
-              </dl>
+                <button
+                  type="button"
+                  ref={settingsButtonRef}
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  Settings
+                </button>
+              </nav>
               <section
                 className="profile-summary"
                 aria-labelledby="profile-summary-heading"
@@ -1101,26 +1101,32 @@ export function App({
                   <p>{checkpointProfile.message}</p>
                 )}
                 {checkpointProfile.status === "ready" && (
-                  <dl>
-                    <div className="profile-summary-row">
-                      <dt>Iron Warden</dt>
-                      <dd className="profile-summary-value">
-                        Ready for muster
-                      </dd>
+                  <>
+                    <div className="warden-portrait">
+                      <img src={ironWardenPortraitUrl} alt="" />
+                      <div>
+                        <strong>Iron Warden</strong>
+                        <span>Ready</span>
+                      </div>
                     </div>
-                    <div className="profile-summary-row">
-                      <dt>Forge Ore</dt>
-                      <dd className="profile-summary-value">
-                        {checkpointProfile.profile.forgeOre}
-                      </dd>
-                    </div>
-                    <div className="profile-summary-row">
-                      <dt>Unlocked dwarves</dt>
-                      <dd className="profile-summary-value">
-                        {checkpointProfile.profile.unlockedCharacterIds.length}
-                      </dd>
-                    </div>
-                  </dl>
+                    <dl>
+                      <div className="profile-summary-row">
+                        <dt>Forge Ore</dt>
+                        <dd className="profile-summary-value">
+                          {checkpointProfile.profile.forgeOre}
+                        </dd>
+                      </div>
+                      <div className="profile-summary-row">
+                        <dt>Company strength</dt>
+                        <dd className="profile-summary-value">
+                          {
+                            checkpointProfile.profile.unlockedCharacterIds
+                              .length
+                          }
+                        </dd>
+                      </div>
+                    </dl>
+                  </>
                 )}
               </section>
             </>
