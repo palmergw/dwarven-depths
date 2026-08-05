@@ -626,7 +626,7 @@ main[data-view-phase="checkpoint"] .panel > h2 {
   z-index: 2;
   bottom: 5.5%;
   left: 50%;
-  width: min(31rem, 42%);
+  width: min(38rem, 50%);
   text-align: center;
   transform: translateX(-50%);
 }
@@ -699,6 +699,17 @@ main[data-view-phase="checkpoint"] .panel > h2 {
   color: #f1c875;
   font-family: Georgia, serif;
   font-size: 1.05em;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.checkpoint-menu button:first-of-type {
+  font-size: 0;
+}
+.checkpoint-menu button:first-of-type::before {
+  color: #f1c875;
+  content: "Forge";
+  font-family: Georgia, serif;
+  font-size: 1rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
