@@ -828,8 +828,11 @@ main[data-view-phase="checkpoint"] .upgrades {
     0 1.5rem 4rem #000d;
 }
 main[data-view-phase="checkpoint"] .settings {
+  top: 10%;
   right: 12%;
+  bottom: 3%;
   left: 42%;
+  padding: clamp(1.2rem, 2vw, 1.75rem);
 }
 main[data-view-phase="checkpoint"] .settings h3,
 main[data-view-phase="checkpoint"] .upgrades h3 {
