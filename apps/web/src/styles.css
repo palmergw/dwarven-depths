@@ -864,6 +864,20 @@ main[data-view-phase="checkpoint"] .upgrades h4 {
   font-family: Georgia, serif;
   letter-spacing: 0.05em;
 }
+main[data-view-phase="checkpoint"][data-contrast-preference="high"]
+  :is(.settings, .upgrades) {
+  border-color: #fff;
+  background: #000;
+  box-shadow: none;
+  color: #fff;
+}
+main[data-view-phase="checkpoint"][data-contrast-preference="high"]
+  .settings
+  select {
+  border-color: #fff;
+  background: #000;
+  color: #fff;
+}
 body:has(
   main[data-view-phase="preparation"],
   main[data-view-phase="result"],
