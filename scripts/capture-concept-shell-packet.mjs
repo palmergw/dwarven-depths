@@ -147,8 +147,10 @@ try {
         if (document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
         }
+        const scrollingPanel = document.querySelector(".settings, .upgrades");
+        if (scrollingPanel instanceof HTMLElement) scrollingPanel.scrollTop = 0;
       });
-      await page.waitForTimeout(250);
+      await page.waitForTimeout(1_000);
 
       const state = await page.evaluate(() => {
         const visible = (element) => {
