@@ -1,0 +1,204 @@
+import { execFile as execFileCallback } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { promisify } from "node:util";
+import { chromium } from "playwright";
+
+const execFile = promisify(execFileCallback);
+const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
+const baseUrl = process.env.DD_WEB_URL ?? "http://127.0.0.1:4173";
+const outputDirectory = process.env.DD_SHELL_PACKET_OUTPUT_DIRECTORY
+  ? pathToFileURL(
+      `${process.env.DD_SHELL_PACKET_OUTPUT_DIRECTORY.replace(/\/$/, "")}/`
+    )
+  : new URL("../docs/visual-evidence/concept-shell/wip-03/", import.meta.url);
+const { stdout } = await execFile("git", ["rev-parse", "HEAD"], {
+  cwd: repositoryRoot
+});
+const sourceHead = stdout.trim();
+const viewports = {
+  desktop: { width: 1440, height: 900 },
+  mobile: { width: 390, height: 844 }
+};
+const captures = [
+  "checkpoint",
+  "settings",
+  "forge",
+  "preparation",
+  "result",
+  "failure"
+];
+
+await mkdir(outputDirectory, { recursive: true });
+await Promise.all([
+  ...Object.keys(viewports).flatMap((viewportName) =>
+    captures.map((capture) =>
+      rm(new URL(`${viewportName}-${capture}.png`, outputDirectory), {
+        force: true
+      })
+    )
+  ),
+  rm(new URL("packet.json", outputDirectory), { force: true })
+]);
+
+const browser = await chromium.launch({ headless: true });
+const evidence = [];
+try {
+  for (const [viewportName, viewport] of Object.entries(viewports)) {
+    for (const capture of captures) {
+      const context = await browser.newContext({
+        viewport,
+        deviceScaleFactor: 1,
+        reducedMotion: "reduce"
+      });
+      const page = await context.newPage();
+      if (capture === "failure") {
+        await page.route("**/assets/simulation.worker-*.js", (route) =>
+          route.abort("failed")
+        );
+      }
+      await page.goto(baseUrl, { waitUntil: "networkidle" });
+      await page.waitForFunction(() => {
+        const roster = document.querySelector(".profile-summary");
+        return (
+          roster?.textContent?.includes("Loading local progression") ===
+            false &&
+          Array.from(document.images).every((image) => image.complete)
+        );
+      });
+
+      if (capture === "settings") {
+        await page.getByRole("button", { name: "Settings" }).click();
+      } else if (capture === "forge") {
+        await page.getByRole("button", { name: /Upgrade inventory/ }).click();
+      } else if (capture === "preparation") {
+        await page.getByRole("button", { name: "Begin preparation" }).click();
+      } else if (capture === "failure") {
+        await page.getByRole("button", { name: "Begin preparation" }).click();
+      } else if (capture === "result") {
+        await page.getByRole("button", { name: "Begin preparation" }).click();
+        await page.getByRole("button", { name: "Confirm preparation" }).click();
+        const resume = page.getByRole("button", { name: "Resume combat" });
+        await resume.waitFor({ timeout: 20_000 });
+        await resume.click();
+        const deadline = Date.now() + 120_000;
+        while (
+          (await page.locator('main[data-shell-view="result"]').count()) ===
+            0 &&
+          Date.now() < deadline
+        ) {
+          const ability = page.getByRole("button", { name: "Shield Slam" });
+          if ((await ability.count()) > 0 && (await ability.isEnabled())) {
+            await ability.click();
+          }
+          await page.waitForTimeout(500);
+        }
+      }
+
+      const expectedShellView =
+        capture === "failure"
+          ? "failure"
+          : capture === "result"
+            ? "result"
+            : capture;
+      await page
+        .locator(`main[data-shell-view="${expectedShellView}"]`)
+        .waitFor({ timeout: capture === "result" ? 125_000 : 20_000 });
+      await page.waitForTimeout(250);
+
+      const state = await page.evaluate(() => {
+        const visible = (element) => {
+          if (!(element instanceof HTMLElement)) return false;
+          const style = getComputedStyle(element);
+          const bounds = element.getBoundingClientRect();
+          return (
+            !element.hidden &&
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            bounds.width > 0 &&
+            bounds.height > 0
+          );
+        };
+        const main = document.querySelector("main");
+        const visibleText = document.body.innerText
+          .replaceAll(/\s+/g, " ")
+          .trim();
+        return {
+          viewport: [window.innerWidth, window.innerHeight],
+          phase: main?.dataset.viewPhase,
+          shellView: main?.dataset.shellView,
+          mainCount: document.querySelectorAll("main").length,
+          visibleInspectionCount: Array.from(
+            document.querySelectorAll(".inspection-surface")
+          ).filter(visible).length,
+          stableIdVisible:
+            /(?:character|level|map|upgrade|ability)\.[a-z0-9_.-]+/.test(
+              visibleText
+            ),
+          bodyScroll: [document.body.scrollWidth, document.body.scrollHeight],
+          panelScroll: [
+            document.querySelector(".panel")?.scrollWidth,
+            document.querySelector(".panel")?.scrollHeight
+          ],
+          visibleButtonNames: Array.from(document.querySelectorAll("button"))
+            .filter(visible)
+            .map((button) => button.textContent?.replaceAll(/\s+/g, " ").trim())
+        };
+      });
+      if (
+        JSON.stringify(state.viewport) !==
+          JSON.stringify([viewport.width, viewport.height]) ||
+        state.shellView !== expectedShellView ||
+        state.mainCount !== 1 ||
+        state.visibleInspectionCount !== 0 ||
+        state.stableIdVisible ||
+        state.bodyScroll[0] > viewport.width ||
+        state.bodyScroll[1] > viewport.height
+      ) {
+        throw new Error(
+          `invalid ${viewportName} ${capture} capture state: ${JSON.stringify(state)}`
+        );
+      }
+
+      const filename = `${viewportName}-${capture}.png`;
+      const screenshotUrl = new URL(filename, outputDirectory);
+      await page.screenshot({
+        path: fileURLToPath(screenshotUrl),
+        fullPage: false,
+        animations: "disabled"
+      });
+      const screenshotBytes = await readFile(screenshotUrl);
+      evidence.push({
+        viewportName,
+        capture,
+        screenshot: filename,
+        screenshotSha256: createHash("sha256")
+          .update(screenshotBytes)
+          .digest("hex"),
+        state
+      });
+      await context.close();
+    }
+  }
+} finally {
+  await browser.close();
+}
+
+const manifest = {
+  schemaVersion: 1,
+  sourceHead,
+  capture: {
+    browser: "chromium",
+    browserImage: "mcr.microsoft.com/playwright:v1.61.1-noble",
+    deviceScaleFactor: 1,
+    reducedMotion: true,
+    waitCondition: "networkidle-profile-ready-images-complete"
+  },
+  evidence
+};
+await writeFile(
+  new URL("packet.json", outputDirectory),
+  `${JSON.stringify(manifest, null, 2)}\n`
+);
+process.stdout.write(`${JSON.stringify(manifest, null, 2)}\n`);
