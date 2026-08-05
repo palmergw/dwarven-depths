@@ -1013,6 +1013,16 @@ export function App({
           tree: ironWardenSkillTree
         })
       : undefined;
+  const shellView =
+    view.phase === "checkpoint"
+      ? settingsOpen
+        ? "settings"
+        : upgradeInventoryOpen
+          ? "forge"
+          : "checkpoint"
+      : view.phase;
+  const inspectionEnabled =
+    new URLSearchParams(window.location.search).get("inspection") === "1";
 
   return (
     <main
@@ -1022,6 +1032,7 @@ export function App({
       data-sound-preference={soundPreference}
       data-text-scale={textScale}
       data-view-phase={view.phase}
+      data-shell-view={shellView}
     >
       <header className="game-masthead">
         <p className="eyebrow">The Company Muster</p>
@@ -1032,22 +1043,24 @@ export function App({
       </header>
       <section className="panel" aria-labelledby="run-heading">
         <h2 id="run-heading">Shuttergate Hall</h2>
-        <details className="inspection-surface" hidden>
+        <details className="inspection-surface" hidden={!inspectionEnabled}>
           <summary>Developer inspection</summary>
           <RunJourneyGuide phase={view.phase} />
           {view.phase === "preparation" && (
             <p className="inspection-metadata">Level ID: {view.levelId}</p>
           )}
         </details>
+        {(view.phase === "checkpoint" || view.phase === "failure") && (
+          <div
+            className="checkpoint-backdrop"
+            style={{ backgroundImage: `url(${checkpointBackdropUrl})` }}
+            aria-hidden="true"
+          />
+        )}
         {view.phase === "checkpoint" &&
           !settingsOpen &&
           !upgradeInventoryOpen && (
             <>
-              <div
-                className="checkpoint-backdrop"
-                style={{ backgroundImage: `url(${checkpointBackdropUrl})` }}
-                aria-hidden="true"
-              />
               <div className="checkpoint-command">
                 <p className="checkpoint-kicker">Company Muster</p>
                 <h3>Shuttergate Hall</h3>
@@ -1694,7 +1707,11 @@ export function App({
           )}
 
         {view.phase === "preparation" && (
-          <button type="button" onClick={confirmPreparation}>
+          <button
+            className="preparation-confirm primary-action"
+            type="button"
+            onClick={confirmPreparation}
+          >
             Confirm preparation
           </button>
         )}
@@ -1724,7 +1741,10 @@ export function App({
                 Return to checkpoint
               </button>
             </div>
-            <details className="inspection-surface result-inspection">
+            <details
+              className="inspection-surface result-inspection"
+              hidden={!inspectionEnabled}
+            >
               <summary>Developer inspection</summary>
               <dl className="evidence">
                 <div>

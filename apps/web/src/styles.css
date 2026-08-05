@@ -804,6 +804,258 @@ main[data-view-phase="checkpoint"][data-contrast-preference="high"] > .panel {
   border-color: #fff;
   background: #000;
 }
+main[data-view-phase="checkpoint"] .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+main[data-view-phase="checkpoint"] .settings,
+main[data-view-phase="checkpoint"] .upgrades {
+  position: absolute;
+  z-index: 3;
+  inset: 12% 7% 7%;
+  margin: 0;
+  overflow: auto;
+  border: 1px solid #a8793f;
+  border-radius: 0.15rem;
+  padding: clamp(1.2rem, 3vw, 2.4rem);
+  background: linear-gradient(135deg, #17100cf5, #090705f2);
+  box-shadow:
+    inset 0 0 0 2px #21150d,
+    0 1.5rem 4rem #000d;
+}
+main[data-view-phase="checkpoint"] .settings {
+  right: 12%;
+  left: 42%;
+}
+main[data-view-phase="checkpoint"] .settings h3,
+main[data-view-phase="checkpoint"] .upgrades h3 {
+  margin: 0 0 1.25rem;
+  color: #f2c76c;
+  font-family: Georgia, serif;
+  font-size: clamp(1.45rem, 3vw, 2.3rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+main[data-view-phase="checkpoint"] .settings select {
+  width: 100%;
+  border-radius: 0.1rem;
+  background: #0c0907;
+}
+main[data-view-phase="checkpoint"] .settings > button,
+main[data-view-phase="checkpoint"] .upgrades > button:last-child {
+  margin-top: 1rem;
+}
+main[data-view-phase="checkpoint"] .upgrade-catalog {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+main[data-view-phase="checkpoint"] .upgrade-catalog section {
+  border-color: #62472d;
+  background: #0b0806b8;
+}
+main[data-view-phase="checkpoint"] .upgrades h4 {
+  color: #d9ad60;
+  font-family: Georgia, serif;
+  letter-spacing: 0.05em;
+}
+body:has(
+  main[data-view-phase="preparation"],
+  main[data-view-phase="result"],
+  main[data-view-phase="failure"]
+) {
+  min-height: 100vh;
+  overflow: hidden;
+  background: #080604;
+}
+main:is(
+  [data-view-phase="preparation"],
+  [data-view-phase="result"],
+  [data-view-phase="failure"]
+) {
+  display: grid;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  place-items: center;
+  background: radial-gradient(circle at 50% 48%, #342619, #070504 74%);
+}
+main:is(
+    [data-view-phase="preparation"],
+    [data-view-phase="result"],
+    [data-view-phase="failure"]
+  )
+  > .game-masthead {
+  position: absolute;
+  z-index: 5;
+  top: max(2rem, env(safe-area-inset-top));
+  left: max(calc((100vw - min(80rem, calc(100vw - 2rem))) / 2 + 2.25rem), 2rem);
+  width: auto;
+  padding: 0.7rem 1.7rem 0.8rem;
+  border: 1px solid #9b6b32;
+  background: linear-gradient(100deg, #100c09f2, #2a1c10e8 65%, #100b08d9);
+  box-shadow:
+    inset 0 0 0 2px #1a1009,
+    0 0.75rem 2rem #000a;
+}
+main:is(
+    [data-view-phase="preparation"],
+    [data-view-phase="result"],
+    [data-view-phase="failure"]
+  )
+  .game-masthead
+  :is(.eyebrow, .masthead-subtitle) {
+  display: none;
+}
+main:is(
+    [data-view-phase="preparation"],
+    [data-view-phase="result"],
+    [data-view-phase="failure"]
+  )
+  .game-masthead
+  h1 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2.5vw, 2.15rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+main:is(
+    [data-view-phase="preparation"],
+    [data-view-phase="result"],
+    [data-view-phase="failure"]
+  )
+  > .panel {
+  position: relative;
+  width: min(80rem, calc(100vw - 2rem));
+  aspect-ratio: 16 / 9;
+  max-height: calc(100vh - 2rem);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #8e7043;
+  border-radius: 0.55rem;
+  background: #080604;
+  box-shadow:
+    0 2rem 7rem #000,
+    0 0 0 1px #21170e;
+}
+main:is(
+    [data-view-phase="preparation"],
+    [data-view-phase="result"],
+    [data-view-phase="failure"]
+  )
+  .panel
+  > h2,
+main:is(
+    [data-view-phase="preparation"],
+    [data-view-phase="result"],
+    [data-view-phase="failure"]
+  )
+  .status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+main:is([data-view-phase="preparation"], [data-view-phase="result"])
+  .battlefield {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+main:is([data-view-phase="preparation"], [data-view-phase="result"])
+  .battlefield-canvas {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+main[data-view-phase="preparation"] .battlefield::after,
+main[data-view-phase="result"] .battlefield::after {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, #080604c9 0, transparent 48% 68%, #080604b8),
+    linear-gradient(0deg, #080604d9, transparent 44%);
+  content: "";
+  pointer-events: none;
+}
+main[data-view-phase="preparation"] .preparation-summary {
+  position: absolute;
+  z-index: 2;
+  top: 20%;
+  right: 5%;
+  width: min(23rem, 35%);
+  margin: 0;
+  padding: 1.25rem;
+  border: 1px solid #8b6236;
+  background: #100b08e8;
+  box-shadow: 0 1rem 3rem #000c;
+}
+main[data-view-phase="preparation"] .preparation-summary::before {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #efc46c;
+  content: "PREPARE THE COMPANY";
+  font-family: Georgia, serif;
+  font-size: 1.25rem;
+  letter-spacing: 0.1em;
+}
+.preparation-confirm {
+  position: absolute;
+  z-index: 3;
+  right: 5%;
+  bottom: 10%;
+  width: min(23rem, 35%);
+  border-radius: 0.15rem;
+  background: linear-gradient(#d99a3a, #8f4e11);
+  font-family: Georgia, serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+main[data-view-phase="result"] > .panel > .combat-hud {
+  display: none;
+}
+main[data-view-phase="result"] .results,
+main[data-view-phase="failure"] .results {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  width: min(38rem, calc(100% - 3rem));
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid #a8793f;
+  background: linear-gradient(135deg, #17100cf5, #090705f2);
+  box-shadow:
+    inset 0 0 0 2px #21150d,
+    0 1.5rem 5rem #000;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+main[data-view-phase="failure"] .checkpoint-backdrop {
+  filter: grayscale(0.45) brightness(0.55);
+}
+main[data-view-phase="result"] .results h3,
+main[data-view-phase="failure"] .results h3 {
+  margin: 0 0 0.8rem;
+  color: #f2c76c;
+  font-family: Georgia, serif;
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+main[data-view-phase="result"] .result-message {
+  margin-right: auto;
+  margin-left: auto;
+}
+main[data-view-phase="result"] .result-actions,
+main[data-view-phase="failure"] .result-actions {
+  justify-content: center;
+}
 @media (max-width: 32rem) {
   main[data-view-phase="checkpoint"] > .panel {
     width: 100vw;
@@ -833,6 +1085,47 @@ main[data-view-phase="checkpoint"][data-contrast-preference="high"] > .panel {
     top: 7rem;
     right: 0.75rem;
     width: 9.5rem;
+  }
+  main[data-view-phase="checkpoint"] .settings,
+  main[data-view-phase="checkpoint"] .upgrades {
+    inset: 6rem 0.75rem 0.75rem;
+    padding: 1rem;
+  }
+  main[data-view-phase="checkpoint"] .upgrade-catalog {
+    grid-template-columns: 1fr;
+  }
+  main:is(
+      [data-view-phase="preparation"],
+      [data-view-phase="result"],
+      [data-view-phase="failure"]
+    )
+    > .panel {
+    width: 100vw;
+    height: 100vh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+  main:is(
+      [data-view-phase="preparation"],
+      [data-view-phase="result"],
+      [data-view-phase="failure"]
+    )
+    > .game-masthead {
+    top: max(0.75rem, env(safe-area-inset-top));
+    left: 0.75rem;
+  }
+  main[data-view-phase="preparation"] .preparation-summary {
+    top: 7rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+  }
+  .preparation-confirm {
+    right: 0.75rem;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    left: 0.75rem;
+    width: auto;
   }
   .warden-portrait {
     display: block;

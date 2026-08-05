@@ -2347,6 +2347,7 @@ describe("authoritative web worker", () => {
   });
 
   it("downloads byte-identical versioned run evidence with keyboard input", async () => {
+    window.history.replaceState(null, "", "/?inspection=1");
     const workers: ControlledResultWorker[] = [];
     const createWorker = (): Worker => {
       const worker = new ControlledResultWorker();
