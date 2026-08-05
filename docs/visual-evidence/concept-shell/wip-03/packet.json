@@ -1,0 +1,357 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "ab4040ba29ee6e10e6eb00ab43a16891191a34e8",
+  "capture": {
+    "browser": "chromium",
+    "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
+    "deviceScaleFactor": 1,
+    "reducedMotion": true,
+    "waitCondition": "networkidle-profile-ready-images-complete"
+  },
+  "evidence": [
+    {
+      "viewportName": "desktop",
+      "capture": "checkpoint",
+      "screenshot": "desktop-checkpoint.png",
+      "screenshotSha256": "439f7582538c5c8dd5f6921241e7e105d6af769a168b2de586c1fea17fe1c143",
+      "state": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "checkpoint",
+        "shellView": "checkpoint",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Begin preparation",
+          "Upgrade inventory",
+          "Settings"
+        ]
+      }
+    },
+    {
+      "viewportName": "desktop",
+      "capture": "settings",
+      "screenshot": "desktop-settings.png",
+      "screenshotSha256": "d245767c7f1339c0dbdbba78f2034f336f3f16d3ef660ab643f851d400083970",
+      "state": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "checkpoint",
+        "shellView": "settings",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Close settings"
+        ]
+      }
+    },
+    {
+      "viewportName": "desktop",
+      "capture": "forge",
+      "screenshot": "desktop-forge.png",
+      "screenshotSha256": "839dfc1837a6acbb7d717c6e4dd6e0a0b9ab4b05cb407c312fde690f8a25ef49",
+      "state": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "checkpoint",
+        "shellView": "forge",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Purchase rank 1 for 10 Forge Ore",
+          "Purchase rank 1 for 15 Forge Ore",
+          "Close upgrade inventory"
+        ]
+      }
+    },
+    {
+      "viewportName": "desktop",
+      "capture": "preparation",
+      "screenshot": "desktop-preparation.png",
+      "screenshotSha256": "38c9d80ebf604d8358adf6ee4caa94b39f144dd744739a80dd3034ba0eafef70",
+      "state": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "preparation",
+        "shellView": "preparation",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          727
+        ],
+        "visibleButtonNames": [
+          "Confirm preparation"
+        ]
+      }
+    },
+    {
+      "viewportName": "desktop",
+      "capture": "result",
+      "screenshot": "desktop-result.png",
+      "screenshotSha256": "730aca5c1bfd24a45e61227dcfcc3372f2da886ba32a3fe31ad20ea0e4eea2ef",
+      "state": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "result",
+        "shellView": "result",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Return to checkpoint"
+        ]
+      }
+    },
+    {
+      "viewportName": "desktop",
+      "capture": "failure",
+      "screenshot": "desktop-failure.png",
+      "screenshotSha256": "fcb0b2e22d8b545277a6fdcf302cc9b741fc879a325f678eda2995180936e550",
+      "state": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "failure",
+        "shellView": "failure",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Return to checkpoint"
+        ]
+      }
+    },
+    {
+      "viewportName": "mobile",
+      "capture": "checkpoint",
+      "screenshot": "mobile-checkpoint.png",
+      "screenshotSha256": "2254ebf19b5947437b53b6806df1fedd22db7540f8b78022b89ba0118d61483b",
+      "state": {
+        "viewport": [
+          390,
+          844
+        ],
+        "phase": "checkpoint",
+        "shellView": "checkpoint",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          390,
+          844
+        ],
+        "panelScroll": [
+          390,
+          844
+        ],
+        "visibleButtonNames": [
+          "Begin preparation",
+          "Upgrade inventory",
+          "Settings"
+        ]
+      }
+    },
+    {
+      "viewportName": "mobile",
+      "capture": "settings",
+      "screenshot": "mobile-settings.png",
+      "screenshotSha256": "54995c05603ef16d6fdc2ae086c1a4c043faf116e6e5d3cead4c8ca2b526ce1f",
+      "state": {
+        "viewport": [
+          390,
+          844
+        ],
+        "phase": "checkpoint",
+        "shellView": "settings",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          390,
+          844
+        ],
+        "panelScroll": [
+          390,
+          844
+        ],
+        "visibleButtonNames": [
+          "Close settings"
+        ]
+      }
+    },
+    {
+      "viewportName": "mobile",
+      "capture": "forge",
+      "screenshot": "mobile-forge.png",
+      "screenshotSha256": "bf02691d5e411cf2fa47961c7300e6927ef02dcc89185943bfa4f2378e302dfb",
+      "state": {
+        "viewport": [
+          390,
+          844
+        ],
+        "phase": "checkpoint",
+        "shellView": "forge",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          390,
+          844
+        ],
+        "panelScroll": [
+          390,
+          844
+        ],
+        "visibleButtonNames": [
+          "Purchase rank 1 for 10 Forge Ore",
+          "Purchase rank 1 for 15 Forge Ore",
+          "Close upgrade inventory"
+        ]
+      }
+    },
+    {
+      "viewportName": "mobile",
+      "capture": "preparation",
+      "screenshot": "mobile-preparation.png",
+      "screenshotSha256": "35d6225f189aabd39d50e65d1e7120299525208d2ec8988d60de198fa9edfc5d",
+      "state": {
+        "viewport": [
+          390,
+          844
+        ],
+        "phase": "preparation",
+        "shellView": "preparation",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          390,
+          844
+        ],
+        "panelScroll": [
+          390,
+          853
+        ],
+        "visibleButtonNames": [
+          "Confirm preparation"
+        ]
+      }
+    },
+    {
+      "viewportName": "mobile",
+      "capture": "result",
+      "screenshot": "mobile-result.png",
+      "screenshotSha256": "dd8ce7b8921c322daa771cbb0f152194248dd6b34f8b023c04106e902cecf548",
+      "state": {
+        "viewport": [
+          390,
+          844
+        ],
+        "phase": "result",
+        "shellView": "result",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          390,
+          844
+        ],
+        "panelScroll": [
+          390,
+          844
+        ],
+        "visibleButtonNames": [
+          "Return to checkpoint"
+        ]
+      }
+    },
+    {
+      "viewportName": "mobile",
+      "capture": "failure",
+      "screenshot": "mobile-failure.png",
+      "screenshotSha256": "55acc631ce48b33791ac524049b339ebfee6d5dc52e73d736d5a70020eb7b38a",
+      "state": {
+        "viewport": [
+          390,
+          844
+        ],
+        "phase": "failure",
+        "shellView": "failure",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          390,
+          844
+        ],
+        "panelScroll": [
+          390,
+          844
+        ],
+        "visibleButtonNames": [
+          "Return to checkpoint"
+        ]
+      }
+    }
+  ]
+}
