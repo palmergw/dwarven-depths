@@ -1050,7 +1050,9 @@ export function App({
             <p className="inspection-metadata">Level ID: {view.levelId}</p>
           )}
         </details>
-        {(view.phase === "checkpoint" || view.phase === "failure") && (
+        {(view.phase === "checkpoint" ||
+          view.phase === "result" ||
+          view.phase === "failure") && (
           <div
             className="checkpoint-backdrop"
             style={{ backgroundImage: `url(${checkpointBackdropUrl})` }}

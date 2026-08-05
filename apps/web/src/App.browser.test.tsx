@@ -50,6 +50,7 @@ afterEach(async () => {
   window.localStorage.removeItem(textScaleStorageKey);
   window.localStorage.removeItem(contrastPreferenceStorageKey);
   window.localStorage.removeItem(soundPreferenceStorageKey);
+  window.history.replaceState(null, "", "/");
   vi.restoreAllMocks();
   await page.viewport(1280, 720);
 });

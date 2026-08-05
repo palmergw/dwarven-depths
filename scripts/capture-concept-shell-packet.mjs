@@ -53,10 +53,62 @@ try {
         reducedMotion: "reduce"
       });
       const page = await context.newPage();
-      if (capture === "failure") {
-        await page.route("**/assets/simulation.worker-*.js", (route) =>
-          route.abort("failed")
-        );
+      if (capture === "result" || capture === "failure") {
+        await page.addInitScript((terminalState) => {
+          const checksum = "a".repeat(64);
+          globalThis.Worker = class EvidenceWorker extends EventTarget {
+            postMessage(message) {
+              if (message?.type === "initialize") {
+                this.dispatchEvent(
+                  new MessageEvent("message", {
+                    data: {
+                      protocolVersion: 4,
+                      type: "snapshot",
+                      phase: "preparation",
+                      levelId: "level.shuttergate_hall",
+                      deployableEntityCount: 1,
+                      placementPointCount: 2
+                    }
+                  })
+                );
+              } else if (message?.command?.type === "confirmPreparation") {
+                this.dispatchEvent(
+                  new MessageEvent("message", {
+                    data:
+                      terminalState === "result"
+                        ? {
+                            protocolVersion: 4,
+                            type: "result",
+                            terminalResult: "victory",
+                            terminalTick: 1,
+                            finalStateChecksum: checksum,
+                            eventStreamChecksum: checksum,
+                            commands: [
+                              {
+                                tick: 0,
+                                sequence: 0,
+                                command: {
+                                  atTick: 0,
+                                  type: "confirmPreparation"
+                                }
+                              }
+                            ]
+                          }
+                        : {
+                            protocolVersion: 4,
+                            type: "failure",
+                            code: "runtime_failure",
+                            message:
+                              "The company could not enter Shuttergate. Rally and try again."
+                          }
+                  })
+                );
+              }
+            }
+
+            terminate() {}
+          };
+        }, capture);
       }
       await page.goto(baseUrl, { waitUntil: "networkidle" });
       await page.waitForFunction(() => {
@@ -76,24 +128,10 @@ try {
         await page.getByRole("button", { name: "Begin preparation" }).click();
       } else if (capture === "failure") {
         await page.getByRole("button", { name: "Begin preparation" }).click();
+        await page.getByRole("button", { name: "Confirm preparation" }).click();
       } else if (capture === "result") {
         await page.getByRole("button", { name: "Begin preparation" }).click();
         await page.getByRole("button", { name: "Confirm preparation" }).click();
-        const resume = page.getByRole("button", { name: "Resume combat" });
-        await resume.waitFor({ timeout: 20_000 });
-        await resume.click();
-        const deadline = Date.now() + 120_000;
-        while (
-          (await page.locator('main[data-shell-view="result"]').count()) ===
-            0 &&
-          Date.now() < deadline
-        ) {
-          const ability = page.getByRole("button", { name: "Shield Slam" });
-          if ((await ability.count()) > 0 && (await ability.isEnabled())) {
-            await ability.click();
-          }
-          await page.waitForTimeout(500);
-        }
       }
 
       const expectedShellView =
