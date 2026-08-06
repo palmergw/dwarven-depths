@@ -276,6 +276,43 @@ async function openPage(browser, viewport, preferences = {}) {
   return { context, page, errors };
 }
 
+async function armAutomaticPause(page, stateName) {
+  await page.evaluate((expectedState) => {
+    const captureTicks = {
+      "ability-ready": 1825,
+      impact: 1832
+    };
+    window.__DD_CAPTURE_PAUSE_INTERVAL__ = window.setInterval(() => {
+      const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+      if ((truth?.snapshot.tick ?? -1) < captureTicks[expectedState]) return;
+      const matched =
+        expectedState === "ability-ready"
+          ? truth?.registry.entities.some(
+              (entity) =>
+                entity.faction === "dwarf" && entity.targetEntityId !== null
+            ) === true
+          : truth?.registry.entities.some(
+              (entity) =>
+                entity.action?.abilityId ===
+                  "ability.iron_warden.shield_slam" &&
+                entity.action.phase === "impact"
+            ) === true;
+      if (!matched) return;
+      const pause = Array.from(document.querySelectorAll("button")).find(
+        (button) => button.getAttribute("aria-label") === "Pause combat"
+      );
+      pause?.click();
+      window.clearInterval(window.__DD_CAPTURE_PAUSE_INTERVAL__);
+    }, 1);
+  }, stateName);
+}
+
+async function waitForAutomaticPause(page) {
+  await page
+    .getByRole("button", { name: "Resume combat" })
+    .waitFor({ timeout: 60_000 });
+}
+
 const browser = await chromium.launch({ headless: true });
 const evidence = [];
 try {
@@ -357,15 +394,17 @@ try {
       );
       await page.getByRole("button", { name: "Pause combat" }).click();
       evidence.push(await capture(page, viewportName, "dense-combat", errors));
+      await page
+        .getByRole("button", { name: "Open Iron Warden targeting" })
+        .click();
+      await page.getByRole("button", { name: "Nearest", exact: true }).click();
+      await armAutomaticPause(page, "ability-ready");
       await page.getByRole("button", { name: "Resume combat" }).click();
+      await waitForAutomaticPause(page);
       await page.getByRole("button", { name: "Shield Slam" }).click();
-      await page.waitForFunction(
-        () =>
-          window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
-            (entity) => entity.action === "ability"
-          ) === true
-      );
-      await page.getByRole("button", { name: "Pause combat" }).click();
+      await armAutomaticPause(page, "impact");
+      await page.getByRole("button", { name: "Resume combat" }).click();
+      await waitForAutomaticPause(page);
       evidence.push(
         await capture(page, viewportName, "ability-impact", errors)
       );
