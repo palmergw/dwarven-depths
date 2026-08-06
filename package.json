@@ -25,6 +25,7 @@
     "test:web-offline": "node scripts/test-web-offline.mjs",
     "capture:shuttergate-truth": "node scripts/capture-shuttergate-truth.mjs",
     "capture:shuttergate-clip": "node scripts/capture-shuttergate-clip.mjs",
+    "capture:responsive-matrix": "node scripts/capture-responsive-matrix.mjs",
     "capture:shuttergate-comparison": "uv run --with-requirements assets/game-art/layered-map-poc/requirements.lock python3 scripts/build_shuttergate_comparison.py",
     "test:shuttergate-alpha-integrity": "node scripts/test-shuttergate-alpha-integrity.mjs",
     "sim": "pnpm build && node apps/sim-cli/dist/cli.js",
