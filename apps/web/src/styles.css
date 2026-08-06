@@ -334,6 +334,7 @@ button:focus-visible {
 }
 .settings select {
   width: min(100%, 24rem);
+  min-height: 44px;
   margin-top: 0.5rem;
   padding: 0.65rem;
   border: 1px solid #f0c66f;
