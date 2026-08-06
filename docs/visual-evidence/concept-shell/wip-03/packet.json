@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+  "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
   "capture": {
     "browser": "chromium",
     "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
@@ -15,7 +15,7 @@
       "screenshot": "desktop-checkpoint.png",
       "screenshotSha256": "439f7582538c5c8dd5f6921241e7e105d6af769a168b2de586c1fea17fe1c143",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -47,7 +47,7 @@
       "screenshot": "desktop-settings.png",
       "screenshotSha256": "de64360c07e7a318cdf725b53132068adf066c62220f424418e30c79853cab6f",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -75,9 +75,9 @@
       "viewportName": "desktop",
       "capture": "forge",
       "screenshot": "desktop-forge.png",
-      "screenshotSha256": "508d368f0612244ebb488dec9eca2923ccac35615182a3b48afff71cf9919d0b",
+      "screenshotSha256": "9c1cefb1a20bbd75f9ebbdaa4cdf1010e1da0453677034430f7542d3caa916c8",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -109,7 +109,7 @@
       "screenshot": "desktop-preparation.png",
       "screenshotSha256": "38c9d80ebf604d8358adf6ee4caa94b39f144dd744739a80dd3034ba0eafef70",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -139,7 +139,7 @@
       "screenshot": "desktop-result.png",
       "screenshotSha256": "730aca5c1bfd24a45e61227dcfcc3372f2da886ba32a3fe31ad20ea0e4eea2ef",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -169,7 +169,7 @@
       "screenshot": "desktop-failure.png",
       "screenshotSha256": "2b788617ef523516b3fd7199df157419a3d6a11a641e7ec914fee661e9fb0abd",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -199,7 +199,7 @@
       "screenshot": "mobile-checkpoint.png",
       "screenshotSha256": "2254ebf19b5947437b53b6806df1fedd22db7540f8b78022b89ba0118d61483b",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           390,
@@ -231,7 +231,7 @@
       "screenshot": "mobile-settings.png",
       "screenshotSha256": "570c03563692c945c0df31a783e4a7031232e3525428976097e70abae5b9c753",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           390,
@@ -261,7 +261,7 @@
       "screenshot": "mobile-forge.png",
       "screenshotSha256": "411ef1224df563c1b369d10710d125f5cce4681c1160eb7a78eec1438e51ece5",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           390,
@@ -293,7 +293,7 @@
       "screenshot": "mobile-preparation.png",
       "screenshotSha256": "35d6225f189aabd39d50e65d1e7120299525208d2ec8988d60de198fa9edfc5d",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           390,
@@ -323,7 +323,7 @@
       "screenshot": "mobile-result.png",
       "screenshotSha256": "dd8ce7b8921c322daa771cbb0f152194248dd6b34f8b023c04106e902cecf548",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           390,
@@ -353,7 +353,7 @@
       "screenshot": "mobile-failure.png",
       "screenshotSha256": "ed17c6f10ea9b30441f403a4530273527dd3d6dec7fd324d8146815cd3b2e91d",
       "state": {
-        "sourceHead": "06268673c41f3a43631481b95584490b125d5404",
+        "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
         "viewport": [
           390,
