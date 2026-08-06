@@ -101,7 +101,7 @@ describe("checkpoint profile loading", () => {
     await expect(loadCheckpointProfile(store)).resolves.toEqual({
       status: "unavailable",
       message:
-        "Local progression storage is unavailable. You can still run the conformance level."
+        "Local progression storage is unavailable. You can still enter Shuttergate."
     });
   });
 });

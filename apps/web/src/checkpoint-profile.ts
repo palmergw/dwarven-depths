@@ -84,7 +84,7 @@ export async function loadCheckpointProfile(
       status: "unavailable",
       message: corrupt
         ? "Progression save is corrupt and was preserved without changes."
-        : "Local progression storage is unavailable. You can still run the conformance level."
+        : "Local progression storage is unavailable. You can still enter Shuttergate."
     };
   } finally {
     if (closeAfterLoad) {

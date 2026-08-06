@@ -2467,9 +2467,13 @@ describe("authoritative web worker", () => {
     root.render(
       <StrictMode>
         <App
-          createProfileStore={() => {
-            throw new DOMException("blocked", "SecurityError");
-          }}
+          createProfileStore={() => ({
+            load: async () => {
+              throw new DOMException("blocked", "SecurityError");
+            },
+            write: vi.fn(),
+            close: async () => undefined
+          })}
         />
       </StrictMode>
     );
