@@ -166,16 +166,23 @@ async function capture(page, viewportName, stateName, errors) {
         .filter(visible)
         .map((element) => {
           const bounds = element.getBoundingClientRect();
+          const scrollContainer = element.closest(".settings, .upgrades");
+          const horizontallyContained =
+            bounds.left >= -0.5 && bounds.right <= window.innerWidth + 0.5;
+          const scrollReachable =
+            scrollContainer instanceof HTMLElement &&
+            scrollContainer.scrollHeight > scrollContainer.clientHeight &&
+            horizontallyContained;
           return {
             name:
               element.getAttribute("aria-label") ??
               element.textContent?.replaceAll(/\s+/g, " ").trim(),
             bounds: [bounds.left, bounds.top, bounds.width, bounds.height],
             contained:
-              bounds.left >= -0.5 &&
+              horizontallyContained &&
               bounds.top >= -0.5 &&
-              bounds.right <= window.innerWidth + 0.5 &&
               bounds.bottom <= window.innerHeight + 0.5,
+            scrollReachable,
             touchSized: !mobile || (bounds.width >= 44 && bounds.height >= 44)
           };
         });
@@ -225,7 +232,10 @@ async function capture(page, viewportName, stateName, errors) {
     state.bodyScroll[1] > state.viewport[1] ||
     state.visibleInspectionCount !== 0 ||
     state.stableIdVisible ||
-    state.targets.some((target) => !target.contained || !target.touchSized) ||
+    state.targets.some(
+      (target) =>
+        (!target.contained && !target.scrollReachable) || !target.touchSized
+    ) ||
     errors.length > 0
   ) {
     throw new Error(
