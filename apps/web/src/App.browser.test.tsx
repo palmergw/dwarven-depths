@@ -572,6 +572,53 @@ describe("run journey guidance", () => {
     expect(settingsBounds?.left).toBe(0);
     expect(settingsBounds?.right).toBe(390);
     expect(settingsBounds?.bottom).toBeCloseTo(844, 0);
+
+    await userEvent.click(await buttonWithText("Close settings"));
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    const preparationBattlefield = await vi.waitFor(() => {
+      const candidate = document.querySelector(".battlefield");
+      expect(candidate).toBeInstanceOf(HTMLElement);
+      return candidate as HTMLElement;
+    });
+    const preparationCanvas = document.querySelector(".battlefield-canvas");
+    expect(preparationCanvas).toBeInstanceOf(HTMLElement);
+    expect(
+      preparationBattlefield.getBoundingClientRect().height
+    ).toBeGreaterThan(844 * 0.6);
+    expect(preparationCanvas?.getBoundingClientRect().width).toBeGreaterThan(
+      390 * 2
+    );
+
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    const combatDeck = await vi.waitFor(() => {
+      const candidate = document.querySelector(".combat-bottom-overlay");
+      expect(candidate).toBeInstanceOf(HTMLElement);
+      return candidate as HTMLElement;
+    });
+    const combatBattlefield = document.querySelector(
+      ".active-combat-screen .battlefield"
+    );
+    const combatCanvas = document.querySelector(
+      ".active-combat-screen .battlefield-canvas"
+    );
+    expect(combatBattlefield?.getBoundingClientRect().height).toBeGreaterThan(
+      844 * 0.68
+    );
+    expect(combatCanvas?.getBoundingClientRect().width).toBeGreaterThan(
+      390 * 2
+    );
+    expect(combatDeck.getBoundingClientRect().top).toBeCloseTo(
+      combatBattlefield?.getBoundingClientRect().bottom ?? 0,
+      0
+    );
+    for (const target of document.querySelectorAll<HTMLElement>(
+      ".active-combat-screen button"
+    )) {
+      const bounds = target.getBoundingClientRect();
+      if (bounds.width === 0 || bounds.height === 0) continue;
+      expect(bounds.width).toBeGreaterThanOrEqual(44);
+      expect(bounds.height).toBeGreaterThanOrEqual(44);
+    }
   });
 });
 
