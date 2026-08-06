@@ -1369,6 +1369,18 @@ export function App({
               >
                 Ancestral Forge
               </h3>
+              <button
+                className="primary-action forge-return"
+                type="button"
+                onClick={() => {
+                  setUpgradePurchaseStatus({ kind: "idle" });
+                  setRecycleConfirmationOpen(false);
+                  setSkillRecycleConfirmationOpen(false);
+                  setUpgradeInventoryOpen(false);
+                }}
+              >
+                Close upgrade inventory
+              </button>
               <p>Available Forge Ore: {checkpointProfile.profile.forgeOre}</p>
               {checkpointProfile.profile.purchasedUpgrades.length === 0 ? (
                 <p>No upgrades purchased.</p>
@@ -1703,18 +1715,6 @@ export function App({
                     {upgradePurchaseStatus.message}
                   </p>
                 )}
-              <button
-                className="primary-action"
-                type="button"
-                onClick={() => {
-                  setUpgradePurchaseStatus({ kind: "idle" });
-                  setRecycleConfirmationOpen(false);
-                  setSkillRecycleConfirmationOpen(false);
-                  setUpgradeInventoryOpen(false);
-                }}
-              >
-                Close upgrade inventory
-              </button>
             </section>
           )}
 

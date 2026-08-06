@@ -848,8 +848,7 @@ main[data-view-phase="checkpoint"] .settings select {
   border-radius: 0.1rem;
   background: #0c0907;
 }
-main[data-view-phase="checkpoint"] .settings > button,
-main[data-view-phase="checkpoint"] .upgrades > button:last-child {
+main[data-view-phase="checkpoint"] .settings > button {
   margin-top: 1rem;
 }
 main[data-view-phase="checkpoint"] .upgrade-catalog button {
@@ -864,6 +863,9 @@ main[data-view-phase="checkpoint"] .upgrades > .primary-action {
     inset 0 0 0 1px #6c3b0d,
     0 0 1.4rem #cf84203d;
   font-weight: 800;
+}
+main[data-view-phase="checkpoint"] .forge-return {
+  margin-bottom: 0.75rem;
 }
 main[data-view-phase="checkpoint"] .upgrade-catalog {
   grid-template-columns: repeat(2, minmax(0, 1fr));
