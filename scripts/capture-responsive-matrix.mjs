@@ -470,9 +470,12 @@ const manifest = {
   },
   evidence
 };
-await writeFile(
-  new URL("manifest.json", outputDirectory),
-  `${JSON.stringify(manifest, null, 2)}\n`
+const manifestUrl = new URL("manifest.json", outputDirectory);
+await writeFile(manifestUrl, `${JSON.stringify(manifest, null, 2)}\n`);
+await execFile(
+  fileURLToPath(new URL("../node_modules/.bin/biome", import.meta.url)),
+  ["format", "--write", fileURLToPath(manifestUrl)],
+  { cwd: repositoryRoot }
 );
 process.stdout.write(
   `captured ${evidence.length} responsive states for ${sourceHead}\n`

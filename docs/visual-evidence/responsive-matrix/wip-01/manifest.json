@@ -6,13 +6,7 @@
     "browser": "chromium",
     "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
     "deviceScaleFactor": 1,
-    "viewportOrder": [
-      "desktop",
-      "laptop",
-      "tablet",
-      "compact",
-      "mobile"
-    ],
+    "viewportOrder": ["desktop", "laptop", "tablet", "compact", "mobile"],
     "stateOrder": [
       "checkpoint",
       "forge",
@@ -39,10 +33,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -54,45 +45,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              576,
-              717.328125,
-              288,
-              52.1875
-            ],
+            "bounds": [576, 717.328125, 288, 52.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              125.71875,
-              637.171875,
-              256,
-              57.59375
-            ],
+            "bounds": [125.71875, 637.171875, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              125.71875,
-              701.15625,
-              256,
-              57.59375
-            ],
+            "bounds": [125.71875, 701.15625, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -109,10 +82,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "checkpoint",
         "shellView": "forge",
         "settings": {
@@ -124,21 +94,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Close upgrade inventory",
-            "bounds": [
-              209.84375,
-              279.546875,
-              206.609375,
-              50.59375
-            ],
+            "bounds": [209.84375, 279.546875, 206.609375, 50.59375],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
@@ -155,10 +117,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "checkpoint",
         "shellView": "settings",
         "settings": {
@@ -170,69 +129,41 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Use device settingReduce motionAllow motion",
-            "bounds": [
-              646.75,
-              326.796875,
-              529.890625,
-              44.78125
-            ],
+            "bounds": [646.75, 326.796875, 529.890625, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "DefaultLargeExtra large",
-            "bounds": [
-              646.75,
-              416.578125,
-              529.890625,
-              44.78125
-            ],
+            "bounds": [646.75, 416.578125, 529.890625, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "StandardHigh contrast",
-            "bounds": [
-              646.75,
-              506.359375,
-              529.890625,
-              44.78125
-            ],
+            "bounds": [646.75, 506.359375, 529.890625, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "OffOn",
-            "bounds": [
-              646.75,
-              596.140625,
-              529.890625,
-              44.78125
-            ],
+            "bounds": [646.75, 596.140625, 529.890625, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "Close settings",
-            "bounds": [
-              646.75,
-              730.921875,
-              139.203125,
-              50.59375
-            ],
+            "bounds": [646.75, 730.921875, 139.203125, 50.59375],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
@@ -249,10 +180,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "preparation",
         "shellView": "preparation",
         "settings": {
@@ -264,21 +192,13 @@
         "tick": 0,
         "entityCount": 1,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Confirm preparation",
-            "bounds": [
-              927.109375,
-              689.609375,
-              368,
-              47.59375
-            ],
+            "bounds": [927.109375, 689.609375, 368, 47.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -295,10 +215,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "result",
         "shellView": "result",
         "settings": {
@@ -310,21 +227,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Return to checkpoint",
-            "bounds": [
-              628.03125,
-              512.59375,
-              183.921875,
-              50.59375
-            ],
+            "bounds": [628.03125, 512.59375, 183.921875, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -341,10 +250,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "failure",
         "shellView": "failure",
         "settings": {
@@ -356,21 +262,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Return to checkpoint",
-            "bounds": [
-              628.03125,
-              491.203125,
-              183.921875,
-              50.59375
-            ],
+            "bounds": [628.03125, 491.203125, 183.921875, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -387,10 +285,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -402,45 +297,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              576,
-              717.328125,
-              288,
-              52.1875
-            ],
+            "bounds": [576, 717.328125, 288, 52.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              125.71875,
-              637.171875,
-              256,
-              57.59375
-            ],
+            "bounds": [125.71875, 637.171875, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              125.71875,
-              701.15625,
-              256,
-              57.59375
-            ],
+            "bounds": [125.71875, 701.15625, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -457,10 +334,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -472,45 +346,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              562.265625,
-              712.328125,
-              315.46875,
-              57.1875
-            ],
+            "bounds": [562.265625, 712.328125, 315.46875, 57.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              125.71875,
-              637.171875,
-              256,
-              57.59375
-            ],
+            "bounds": [125.71875, 637.171875, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              125.71875,
-              701.15625,
-              256,
-              57.59375
-            ],
+            "bounds": [125.71875, 701.15625, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -527,10 +383,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -542,45 +395,27 @@
         "tick": 2,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              98.609375,
-              719.796875,
-              76,
-              76
-            ],
+            "bounds": [98.609375, 719.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              324.59375,
-              719.796875,
-              76,
-              76
-            ],
+            "bounds": [324.59375, 719.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              1269.109375,
-              721.21875,
-              72,
-              72
-            ],
+            "bounds": [1269.109375, 721.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -597,10 +432,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -612,45 +444,27 @@
         "tick": 22,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              98.609375,
-              719.796875,
-              76,
-              76
-            ],
+            "bounds": [98.609375, 719.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              324.59375,
-              719.796875,
-              76,
-              76
-            ],
+            "bounds": [324.59375, 719.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              1269.109375,
-              721.21875,
-              72,
-              72
-            ],
+            "bounds": [1269.109375, 721.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -667,10 +481,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -682,45 +493,27 @@
         "tick": 1805,
         "entityCount": 3,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              98.609375,
-              719.796875,
-              76,
-              76
-            ],
+            "bounds": [98.609375, 719.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              324.59375,
-              719.796875,
-              76,
-              76
-            ],
+            "bounds": [324.59375, 719.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              1269.109375,
-              721.21875,
-              72,
-              72
-            ],
+            "bounds": [1269.109375, 721.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -737,10 +530,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -752,33 +542,20 @@
         "tick": 1825,
         "entityCount": 3,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              98.609375,
-              719.796875,
-              76,
-              76
-            ],
+            "bounds": [98.609375, 719.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              1269.109375,
-              721.21875,
-              72,
-              72
-            ],
+            "bounds": [1269.109375, 721.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -795,10 +572,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -810,45 +584,27 @@
         "tick": 2,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1440,
-          900
-        ],
+        "bodyScroll": [1440, 900],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              98.609375,
-              719.796875,
-              76,
-              76
-            ],
+            "bounds": [98.609375, 719.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              324.59375,
-              719.796875,
-              76,
-              76
-            ],
+            "bounds": [324.59375, 719.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              1269.109375,
-              721.21875,
-              72,
-              72
-            ],
+            "bounds": [1269.109375, 721.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -865,10 +621,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -880,45 +633,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              496,
-              659.3125,
-              288,
-              52.1875
-            ],
+            "bounds": [496, 659.3125, 288, 52.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              60.609375,
-              579.421875,
-              256,
-              57.59375
-            ],
+            "bounds": [60.609375, 579.421875, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              60.609375,
-              643.40625,
-              256,
-              57.59375
-            ],
+            "bounds": [60.609375, 643.40625, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -935,10 +670,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "checkpoint",
         "shellView": "forge",
         "settings": {
@@ -950,21 +682,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Close upgrade inventory",
-            "bounds": [
-              143.609375,
-              236.390625,
-              206.609375,
-              50.59375
-            ],
+            "bounds": [143.609375, 236.390625, 206.609375, 50.59375],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
@@ -981,10 +705,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "checkpoint",
         "shellView": "settings",
         "settings": {
@@ -996,69 +717,41 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Use device settingReduce motionAllow motion",
-            "bounds": [
-              566.90625,
-              281.59375,
-              519.984375,
-              44.78125
-            ],
+            "bounds": [566.90625, 281.59375, 519.984375, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "DefaultLargeExtra large",
-            "bounds": [
-              566.90625,
-              371.375,
-              519.984375,
-              44.78125
-            ],
+            "bounds": [566.90625, 371.375, 519.984375, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "StandardHigh contrast",
-            "bounds": [
-              566.90625,
-              461.15625,
-              519.984375,
-              44.78125
-            ],
+            "bounds": [566.90625, 461.15625, 519.984375, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "OffOn",
-            "bounds": [
-              566.90625,
-              550.9375,
-              519.984375,
-              44.78125
-            ],
+            "bounds": [566.90625, 550.9375, 519.984375, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "Close settings",
-            "bounds": [
-              566.90625,
-              685.71875,
-              139.203125,
-              50.59375
-            ],
+            "bounds": [566.90625, 685.71875, 139.203125, 50.59375],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
@@ -1075,10 +768,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "preparation",
         "shellView": "preparation",
         "settings": {
@@ -1090,21 +780,13 @@
         "tick": 0,
         "entityCount": 1,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Confirm preparation",
-            "bounds": [
-              832.703125,
-              632.40625,
-              368,
-              47.59375
-            ],
+            "bounds": [832.703125, 632.40625, 368, 47.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1121,10 +803,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "result",
         "shellView": "result",
         "settings": {
@@ -1136,21 +815,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Return to checkpoint",
-            "bounds": [
-              548.03125,
-              462.59375,
-              183.921875,
-              50.59375
-            ],
+            "bounds": [548.03125, 462.59375, 183.921875, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1167,10 +838,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "failure",
         "shellView": "failure",
         "settings": {
@@ -1182,21 +850,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Return to checkpoint",
-            "bounds": [
-              548.03125,
-              441.203125,
-              183.921875,
-              50.59375
-            ],
+            "bounds": [548.03125, 441.203125, 183.921875, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1213,10 +873,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -1228,45 +885,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              496,
-              659.3125,
-              288,
-              52.1875
-            ],
+            "bounds": [496, 659.3125, 288, 52.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              60.609375,
-              579.421875,
-              256,
-              57.59375
-            ],
+            "bounds": [60.609375, 579.421875, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              60.609375,
-              643.40625,
-              256,
-              57.59375
-            ],
+            "bounds": [60.609375, 643.40625, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1283,10 +922,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -1298,45 +934,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              482.265625,
-              654.3125,
-              315.46875,
-              57.1875
-            ],
+            "bounds": [482.265625, 654.3125, 315.46875, 57.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              60.609375,
-              579.421875,
-              256,
-              57.59375
-            ],
+            "bounds": [60.609375, 579.421875, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              60.609375,
-              643.40625,
-              256,
-              57.59375
-            ],
+            "bounds": [60.609375, 643.40625, 256, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1353,10 +971,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -1368,45 +983,27 @@
         "tick": 2,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              34.1875,
-              669.796875,
-              76,
-              76
-            ],
+            "bounds": [34.1875, 669.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              260.171875,
-              669.796875,
-              76,
-              76
-            ],
+            "bounds": [260.171875, 669.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              1173.5625,
-              671.21875,
-              72,
-              72
-            ],
+            "bounds": [1173.5625, 671.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1423,10 +1020,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -1438,45 +1032,27 @@
         "tick": 22,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              34.1875,
-              669.796875,
-              76,
-              76
-            ],
+            "bounds": [34.1875, 669.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              260.171875,
-              669.796875,
-              76,
-              76
-            ],
+            "bounds": [260.171875, 669.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              1173.5625,
-              671.21875,
-              72,
-              72
-            ],
+            "bounds": [1173.5625, 671.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1493,10 +1069,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -1508,45 +1081,27 @@
         "tick": 1804,
         "entityCount": 3,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              34.1875,
-              669.796875,
-              76,
-              76
-            ],
+            "bounds": [34.1875, 669.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              260.171875,
-              669.796875,
-              76,
-              76
-            ],
+            "bounds": [260.171875, 669.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              1173.5625,
-              671.21875,
-              72,
-              72
-            ],
+            "bounds": [1173.5625, 671.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1563,10 +1118,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -1578,33 +1130,20 @@
         "tick": 1825,
         "entityCount": 3,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              34.1875,
-              669.796875,
-              76,
-              76
-            ],
+            "bounds": [34.1875, 669.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              1173.5625,
-              671.21875,
-              72,
-              72
-            ],
+            "bounds": [1173.5625, 671.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1621,10 +1160,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1280,
-          800
-        ],
+        "viewport": [1280, 800],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -1636,45 +1172,27 @@
         "tick": 2,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1280,
-          800
-        ],
+        "bodyScroll": [1280, 800],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              34.1875,
-              669.796875,
-              76,
-              76
-            ],
+            "bounds": [34.1875, 669.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              260.171875,
-              669.796875,
-              76,
-              76
-            ],
+            "bounds": [260.171875, 669.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              1173.5625,
-              671.21875,
-              72,
-              72
-            ],
+            "bounds": [1173.5625, 671.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1691,10 +1209,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -1706,45 +1221,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              368,
-              579.234375,
-              288,
-              52.1875
-            ],
+            "bounds": [368, 579.234375, 288, 52.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              51.640625,
-              501.515625,
-              217.796875,
-              57.59375
-            ],
+            "bounds": [51.640625, 501.515625, 217.796875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              51.640625,
-              565.5,
-              217.796875,
-              57.59375
-            ],
+            "bounds": [51.640625, 565.5, 217.796875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1761,10 +1258,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "checkpoint",
         "shellView": "forge",
         "settings": {
@@ -1776,21 +1270,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Close upgrade inventory",
-            "bounds": [
-              118.015625,
-              259.4375,
-              206.609375,
-              50.59375
-            ],
+            "bounds": [118.015625, 259.4375, 206.609375, 50.59375],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
@@ -1807,10 +1293,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "checkpoint",
         "shellView": "settings",
         "settings": {
@@ -1822,69 +1305,41 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Use device settingReduce motionAllow motion",
-            "bounds": [
-              454.265625,
-              302.0625,
-              412.46875,
-              44.78125
-            ],
+            "bounds": [454.265625, 302.0625, 412.46875, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "DefaultLargeExtra large",
-            "bounds": [
-              454.265625,
-              391.84375,
-              412.46875,
-              44.78125
-            ],
+            "bounds": [454.265625, 391.84375, 412.46875, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "StandardHigh contrast",
-            "bounds": [
-              454.265625,
-              481.625,
-              412.46875,
-              44.78125
-            ],
+            "bounds": [454.265625, 481.625, 412.46875, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "OffOn",
-            "bounds": [
-              454.265625,
-              571.40625,
-              412.46875,
-              44.78125
-            ],
+            "bounds": [454.265625, 571.40625, 412.46875, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "Close settings",
-            "bounds": [
-              454.265625,
-              727.1875,
-              139.203125,
-              50.59375
-            ],
+            "bounds": [454.265625, 727.1875, 139.203125, 50.59375],
             "contained": false,
             "scrollReachable": true,
             "touchSized": true
@@ -1901,10 +1356,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "preparation",
         "shellView": "preparation",
         "settings": {
@@ -1916,21 +1368,13 @@
         "tick": 0,
         "entityCount": 1,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Confirm preparation",
-            "bounds": [
-              611,
-              558.8125,
-              346.5,
-              47.59375
-            ],
+            "bounds": [611, 558.8125, 346.5, 47.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1947,10 +1391,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "result",
         "shellView": "result",
         "settings": {
@@ -1962,21 +1403,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Return to checkpoint",
-            "bounds": [
-              420.03125,
-              411.59375,
-              183.921875,
-              50.59375
-            ],
+            "bounds": [420.03125, 411.59375, 183.921875, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -1993,10 +1426,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "failure",
         "shellView": "failure",
         "settings": {
@@ -2008,21 +1438,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Return to checkpoint",
-            "bounds": [
-              420.03125,
-              409.203125,
-              183.921875,
-              50.59375
-            ],
+            "bounds": [420.03125, 409.203125, 183.921875, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2039,10 +1461,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -2054,45 +1473,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              368,
-              579.234375,
-              288,
-              52.1875
-            ],
+            "bounds": [368, 579.234375, 288, 52.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              51.640625,
-              501.515625,
-              217.796875,
-              57.59375
-            ],
+            "bounds": [51.640625, 501.515625, 217.796875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              51.640625,
-              565.5,
-              217.796875,
-              57.59375
-            ],
+            "bounds": [51.640625, 565.5, 217.796875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2109,10 +1510,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -2124,45 +1522,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              354.265625,
-              574.234375,
-              315.46875,
-              57.1875
-            ],
+            "bounds": [354.265625, 574.234375, 315.46875, 57.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              51.640625,
-              501.515625,
-              217.796875,
-              57.59375
-            ],
+            "bounds": [51.640625, 501.515625, 217.796875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              51.640625,
-              565.5,
-              217.796875,
-              57.59375
-            ],
+            "bounds": [51.640625, 565.5, 217.796875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2179,10 +1559,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -2194,45 +1571,27 @@
         "tick": 2,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              30.859375,
-              653.796875,
-              76,
-              76
-            ],
+            "bounds": [30.859375, 653.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              256.84375,
-              653.796875,
-              76,
-              76
-            ],
+            "bounds": [256.84375, 653.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              921.140625,
-              655.21875,
-              72,
-              72
-            ],
+            "bounds": [921.140625, 655.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2249,10 +1608,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -2264,45 +1620,27 @@
         "tick": 22,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              30.859375,
-              653.796875,
-              76,
-              76
-            ],
+            "bounds": [30.859375, 653.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              256.84375,
-              653.796875,
-              76,
-              76
-            ],
+            "bounds": [256.84375, 653.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              921.140625,
-              655.21875,
-              72,
-              72
-            ],
+            "bounds": [921.140625, 655.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2319,10 +1657,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -2334,45 +1669,27 @@
         "tick": 1804,
         "entityCount": 3,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              30.859375,
-              653.796875,
-              76,
-              76
-            ],
+            "bounds": [30.859375, 653.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              256.84375,
-              653.796875,
-              76,
-              76
-            ],
+            "bounds": [256.84375, 653.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              921.140625,
-              655.21875,
-              72,
-              72
-            ],
+            "bounds": [921.140625, 655.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2389,10 +1706,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -2404,33 +1718,20 @@
         "tick": 1825,
         "entityCount": 3,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              30.859375,
-              653.796875,
-              76,
-              76
-            ],
+            "bounds": [30.859375, 653.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              921.140625,
-              655.21875,
-              72,
-              72
-            ],
+            "bounds": [921.140625, 655.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2447,10 +1748,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          1024,
-          768
-        ],
+        "viewport": [1024, 768],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -2462,45 +1760,27 @@
         "tick": 2,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          1024,
-          768
-        ],
+        "bodyScroll": [1024, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              30.859375,
-              653.796875,
-              76,
-              76
-            ],
+            "bounds": [30.859375, 653.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              256.84375,
-              653.796875,
-              76,
-              76
-            ],
+            "bounds": [256.84375, 653.796875, 76, 76],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              921.140625,
-              655.21875,
-              72,
-              72
-            ],
+            "bounds": [921.140625, 655.21875, 72, 72],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2517,10 +1797,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -2532,45 +1809,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              240,
-              515.15625,
-              288,
-              52.1875
-            ],
+            "bounds": [240, 515.15625, 288, 52.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              42.6875,
-              439.59375,
-              161.46875,
-              57.59375
-            ],
+            "bounds": [42.6875, 439.59375, 161.46875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              42.6875,
-              503.578125,
-              161.46875,
-              57.59375
-            ],
+            "bounds": [42.6875, 503.578125, 161.46875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2587,10 +1846,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "checkpoint",
         "shellView": "forge",
         "settings": {
@@ -2602,21 +1858,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Close upgrade inventory",
-            "bounds": [
-              92.40625,
-              298.46875,
-              206.609375,
-              50.59375
-            ],
+            "bounds": [92.40625, 298.46875, 206.609375, 50.59375],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
@@ -2633,10 +1881,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "checkpoint",
         "shellView": "settings",
         "settings": {
@@ -2648,69 +1893,41 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Use device settingReduce motionAllow motion",
-            "bounds": [
-              345.453125,
-              342.375,
-              297.28125,
-              44.78125
-            ],
+            "bounds": [345.453125, 342.375, 297.28125, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "DefaultLargeExtra large",
-            "bounds": [
-              345.453125,
-              432.15625,
-              297.28125,
-              44.78125
-            ],
+            "bounds": [345.453125, 432.15625, 297.28125, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "StandardHigh contrast",
-            "bounds": [
-              345.453125,
-              521.9375,
-              297.28125,
-              44.78125
-            ],
+            "bounds": [345.453125, 521.9375, 297.28125, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "OffOn",
-            "bounds": [
-              345.453125,
-              611.71875,
-              297.28125,
-              44.78125
-            ],
+            "bounds": [345.453125, 611.71875, 297.28125, 44.78125],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
           },
           {
             "name": "Close settings",
-            "bounds": [
-              345.453125,
-              767.5,
-              139.203125,
-              50.59375
-            ],
+            "bounds": [345.453125, 767.5, 139.203125, 50.59375],
             "contained": false,
             "scrollReachable": true,
             "touchSized": true
@@ -2727,10 +1944,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "preparation",
         "shellView": "preparation",
         "settings": {
@@ -2742,21 +1956,13 @@
         "tick": 0,
         "entityCount": 1,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Confirm preparation",
-            "bounds": [
-              457.421875,
-              501.21875,
-              256.890625,
-              47.59375
-            ],
+            "bounds": [457.421875, 501.21875, 256.890625, 47.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2773,10 +1979,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "result",
         "shellView": "result",
         "settings": {
@@ -2788,21 +1991,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Return to checkpoint",
-            "bounds": [
-              292.03125,
-              405.09375,
-              183.921875,
-              50.59375
-            ],
+            "bounds": [292.03125, 405.09375, 183.921875, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2819,10 +2014,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "failure",
         "shellView": "failure",
         "settings": {
@@ -2834,21 +2026,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Return to checkpoint",
-            "bounds": [
-              292.03125,
-              402.703125,
-              183.921875,
-              50.59375
-            ],
+            "bounds": [292.03125, 402.703125, 183.921875, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2865,10 +2049,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -2880,45 +2061,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              240,
-              515.15625,
-              288,
-              52.1875
-            ],
+            "bounds": [240, 515.15625, 288, 52.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              42.6875,
-              439.59375,
-              161.46875,
-              57.59375
-            ],
+            "bounds": [42.6875, 439.59375, 161.46875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              42.6875,
-              503.578125,
-              161.46875,
-              57.59375
-            ],
+            "bounds": [42.6875, 503.578125, 161.46875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -2935,10 +2098,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -2950,45 +2110,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              226.265625,
-              510.15625,
-              315.46875,
-              57.1875
-            ],
+            "bounds": [226.265625, 510.15625, 315.46875, 57.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              42.6875,
-              439.59375,
-              161.46875,
-              57.59375
-            ],
+            "bounds": [42.6875, 439.59375, 161.46875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              42.6875,
-              503.578125,
-              161.46875,
-              57.59375
-            ],
+            "bounds": [42.6875, 503.578125, 161.46875, 57.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3005,10 +2147,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -3020,45 +2159,27 @@
         "tick": 2,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              27.53125,
-              528.34375,
-              58,
-              58
-            ],
+            "bounds": [27.53125, 528.34375, 58, 58],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              102.328125,
-              528.34375,
-              58,
-              58
-            ],
+            "bounds": [102.328125, 528.34375, 58, 58],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              684.734375,
-              529.25,
-              56,
-              56
-            ],
+            "bounds": [684.734375, 529.25, 56, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3075,10 +2196,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -3090,45 +2208,27 @@
         "tick": 22,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              27.53125,
-              528.34375,
-              58,
-              58
-            ],
+            "bounds": [27.53125, 528.34375, 58, 58],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              102.328125,
-              528.34375,
-              58,
-              58
-            ],
+            "bounds": [102.328125, 528.34375, 58, 58],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              684.734375,
-              529.25,
-              56,
-              56
-            ],
+            "bounds": [684.734375, 529.25, 56, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3145,10 +2245,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -3160,45 +2257,27 @@
         "tick": 1804,
         "entityCount": 3,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              27.53125,
-              528.34375,
-              58,
-              58
-            ],
+            "bounds": [27.53125, 528.34375, 58, 58],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              102.328125,
-              528.34375,
-              58,
-              58
-            ],
+            "bounds": [102.328125, 528.34375, 58, 58],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              684.734375,
-              529.25,
-              56,
-              56
-            ],
+            "bounds": [684.734375, 529.25, 56, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3215,10 +2294,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -3230,33 +2306,20 @@
         "tick": 1825,
         "entityCount": 3,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              27.53125,
-              528.34375,
-              58,
-              58
-            ],
+            "bounds": [27.53125, 528.34375, 58, 58],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              684.734375,
-              529.25,
-              56,
-              56
-            ],
+            "bounds": [684.734375, 529.25, 56, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3273,10 +2336,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          768,
-          768
-        ],
+        "viewport": [768, 768],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -3288,45 +2348,27 @@
         "tick": 2,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          768,
-          768
-        ],
+        "bodyScroll": [768, 768],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              27.53125,
-              528.34375,
-              58,
-              58
-            ],
+            "bounds": [27.53125, 528.34375, 58, 58],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              102.328125,
-              528.34375,
-              58,
-              58
-            ],
+            "bounds": [102.328125, 528.34375, 58, 58],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              684.734375,
-              529.25,
-              56,
-              56
-            ],
+            "bounds": [684.734375, 529.25, 56, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3343,10 +2385,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -3358,45 +2397,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              12,
-              478.046875,
-              366,
-              52.1875
-            ],
+            "bounds": [12, 478.046875, 366, 52.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              130,
-              788,
-              130,
-              56
-            ],
+            "bounds": [130, 788, 130, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              260,
-              788,
-              130,
-              56
-            ],
+            "bounds": [260, 788, 130, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3413,10 +2434,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "checkpoint",
         "shellView": "forge",
         "settings": {
@@ -3428,21 +2446,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Close upgrade inventory",
-            "bounds": [
-              16,
-              131,
-              358,
-              50.59375
-            ],
+            "bounds": [16, 131, 358, 50.59375],
             "contained": true,
             "scrollReachable": true,
             "touchSized": true
@@ -3459,10 +2469,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "checkpoint",
         "shellView": "settings",
         "settings": {
@@ -3474,69 +2481,41 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Use device settingReduce motionAllow motion",
-            "bounds": [
-              16,
-              160,
-              358,
-              44.78125
-            ],
+            "bounds": [16, 160, 358, 44.78125],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "DefaultLargeExtra large",
-            "bounds": [
-              16,
-              249.78125,
-              358,
-              44.78125
-            ],
+            "bounds": [16, 249.78125, 358, 44.78125],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "StandardHigh contrast",
-            "bounds": [
-              16,
-              339.5625,
-              358,
-              44.78125
-            ],
+            "bounds": [16, 339.5625, 358, 44.78125],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "OffOn",
-            "bounds": [
-              16,
-              429.34375,
-              358,
-              44.78125
-            ],
+            "bounds": [16, 429.34375, 358, 44.78125],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Close settings",
-            "bounds": [
-              16,
-              585.125,
-              358,
-              50.59375
-            ],
+            "bounds": [16, 585.125, 358, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3553,10 +2532,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "preparation",
         "shellView": "preparation",
         "settings": {
@@ -3568,21 +2544,13 @@
         "tick": 0,
         "entityCount": 1,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Confirm preparation",
-            "bounds": [
-              16,
-              776,
-              358,
-              56
-            ],
+            "bounds": [16, 776, 358, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3599,10 +2567,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "result",
         "shellView": "result",
         "settings": {
@@ -3614,21 +2579,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Return to checkpoint",
-            "bounds": [
-              103.03125,
-              769.40625,
-              183.921875,
-              50.59375
-            ],
+            "bounds": [103.03125, 769.40625, 183.921875, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3645,10 +2602,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "failure",
         "shellView": "failure",
         "settings": {
@@ -3660,21 +2614,13 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Return to checkpoint",
-            "bounds": [
-              103.03125,
-              769.40625,
-              183.921875,
-              50.59375
-            ],
+            "bounds": [103.03125, 769.40625, 183.921875, 50.59375],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3691,10 +2637,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -3706,45 +2649,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              12,
-              478.046875,
-              366,
-              52.1875
-            ],
+            "bounds": [12, 478.046875, 366, 52.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              130,
-              788,
-              130,
-              56
-            ],
+            "bounds": [130, 788, 130, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              260,
-              788,
-              130,
-              56
-            ],
+            "bounds": [260, 788, 130, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3761,10 +2686,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "settings": {
@@ -3776,45 +2698,27 @@
         "tick": null,
         "entityCount": null,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Begin preparation",
-            "bounds": [
-              12,
-              485.046875,
-              366,
-              57.1875
-            ],
+            "bounds": [12, 485.046875, 366, 57.1875],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Upgrade inventory",
-            "bounds": [
-              130,
-              788,
-              130,
-              56
-            ],
+            "bounds": [130, 788, 130, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Settings",
-            "bounds": [
-              260,
-              788,
-              130,
-              56
-            ],
+            "bounds": [260, 788, 130, 56],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3831,10 +2735,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -3846,45 +2747,27 @@
         "tick": 2,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              13,
-              647.796875,
-              68,
-              68
-            ],
+            "bounds": [13, 647.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              95.390625,
-              647.796875,
-              68,
-              68
-            ],
+            "bounds": [95.390625, 647.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              310,
-              622.796875,
-              68,
-              68
-            ],
+            "bounds": [310, 622.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3901,10 +2784,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -3916,45 +2796,27 @@
         "tick": 22,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              13,
-              647.796875,
-              68,
-              68
-            ],
+            "bounds": [13, 647.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              95.390625,
-              647.796875,
-              68,
-              68
-            ],
+            "bounds": [95.390625, 647.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              310,
-              622.796875,
-              68,
-              68
-            ],
+            "bounds": [310, 622.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -3971,10 +2833,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -3986,45 +2845,27 @@
         "tick": 1804,
         "entityCount": 3,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              13,
-              647.796875,
-              68,
-              68
-            ],
+            "bounds": [13, 647.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              95.390625,
-              647.796875,
-              68,
-              68
-            ],
+            "bounds": [95.390625, 647.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              310,
-              622.796875,
-              68,
-              68
-            ],
+            "bounds": [310, 622.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -4041,10 +2882,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -4056,33 +2894,20 @@
         "tick": 1825,
         "entityCount": 3,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              13,
-              647.796875,
-              68,
-              68
-            ],
+            "bounds": [13, 647.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              310,
-              622.796875,
-              68,
-              68
-            ],
+            "bounds": [310, 622.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
@@ -4099,10 +2924,7 @@
         "sourceHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
         "sourceClean": true,
         "expectedHead": "ae0c87a89e92afb0b753fa73780be20f79624f32",
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "running",
         "shellView": "running",
         "settings": {
@@ -4114,45 +2936,27 @@
         "tick": 2,
         "entityCount": 2,
         "expectedFixture": "scenarios/conformance/shuttergate-web-truth.json",
-        "bodyScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
         "targets": [
           {
             "name": "Open Iron Warden targeting",
-            "bounds": [
-              13,
-              647.796875,
-              68,
-              68
-            ],
+            "bounds": [13, 647.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Shield Slam",
-            "bounds": [
-              95.390625,
-              647.796875,
-              68,
-              68
-            ],
+            "bounds": [95.390625, 647.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
           },
           {
             "name": "Resume combat",
-            "bounds": [
-              310,
-              622.796875,
-              68,
-              68
-            ],
+            "bounds": [310, 622.796875, 68, 68],
             "contained": true,
             "scrollReachable": false,
             "touchSized": true
