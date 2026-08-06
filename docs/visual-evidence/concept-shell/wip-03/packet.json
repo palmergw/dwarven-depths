@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceHead": "43511a17db2b66c3b1e514ba1abba1f95ec886ea",
+  "sourceHead": "b2036f03104a88eab78e6e2a8a73db0e26bb658a",
   "capture": {
     "browser": "chromium",
     "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
@@ -43,7 +43,7 @@
       "viewportName": "desktop",
       "capture": "settings",
       "screenshot": "desktop-settings.png",
-      "screenshotSha256": "c34eefdab62831cfc512f285b600af77498a2dd59adb29f8144135bde98a62db",
+      "screenshotSha256": "de98c35557ca7ea911150387aff36a51b138ea6c57e314b6c040317f55838125",
       "state": {
         "viewport": [
           1440,
@@ -215,7 +215,7 @@
       "viewportName": "mobile",
       "capture": "settings",
       "screenshot": "mobile-settings.png",
-      "screenshotSha256": "0177dfc6c0d9a5944335de45ef6104dbc3ba4a9cf5aacf65add627e5da0e3fd8",
+      "screenshotSha256": "05c79f45fc5c326f59f2a15565fd0b8cf3186b0a4f48b6fcf7bc1d26b6b5e694",
       "state": {
         "viewport": [
           390,
