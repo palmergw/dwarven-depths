@@ -114,10 +114,10 @@ describe("checkpoint upgrade inventory", () => {
       "Available Forge Ore: 19"
     );
     expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "upgrade.ability.shield_slamRank 2; 11 Forge Ore spent"
+      "Shield Slam TrainingRank 2; 11 Forge Ore spent"
     );
     expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "upgrade.item.powder_caskRank 1; 7 Forge Ore spent"
+      "Powder Cask ReinforcementRank 1; 7 Forge Ore spent"
     );
 
     await page.viewport(320, 720);

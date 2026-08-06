@@ -121,7 +121,7 @@ describe("Capacitor mobile package contract", () => {
     ).toThrow(/viewport-fit/);
     expect(() =>
       validate({
-        webStyles: webStyles.replace("env(safe-area-inset-top)", "0px")
+        webStyles: webStyles.replaceAll("env(safe-area-inset-top)", "0px")
       })
     ).toThrow(/safe-area/);
     expect(() =>

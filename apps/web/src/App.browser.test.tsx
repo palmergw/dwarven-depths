@@ -50,6 +50,7 @@ afterEach(async () => {
   window.localStorage.removeItem(textScaleStorageKey);
   window.localStorage.removeItem(contrastPreferenceStorageKey);
   window.localStorage.removeItem(soundPreferenceStorageKey);
+  window.history.replaceState(null, "", "/");
   vi.restoreAllMocks();
   await page.viewport(1280, 720);
 });
@@ -109,7 +110,7 @@ class ControlledResultWorker {
       candidate.command?.type === "confirmPreparation"
     ) {
       this.emit({
-        protocolVersion: 4,
+        protocolVersion: 3,
         type: "render_snapshot",
         snapshot: {
           schemaVersion: 1,
@@ -152,13 +153,20 @@ class ControlledResultWorker {
 
 class ControlledFailureWorker {
   readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
+  readonly errorListeners = new Set<(event: ErrorEvent) => void>();
   terminated = false;
+  throwOnConfirm = false;
 
   addEventListener(
     type: string,
-    listener: (event: MessageEvent<unknown>) => void
+    listener:
+      | ((event: MessageEvent<unknown>) => void)
+      | ((event: ErrorEvent) => void)
   ): void {
-    if (type === "message") this.listeners.add(listener);
+    if (type === "message")
+      this.listeners.add(listener as (event: MessageEvent<unknown>) => void);
+    if (type === "error")
+      this.errorListeners.add(listener as (event: ErrorEvent) => void);
   }
 
   postMessage(message: unknown): void {
@@ -177,11 +185,13 @@ class ControlledFailureWorker {
         placementPointCount: 2
       });
     } else if (candidate.command?.type === "confirmPreparation") {
+      if (this.throwOnConfirm) throw new Error("confirmation transport failed");
       this.emit({
         protocolVersion: 4,
         type: "failure",
         code: "runtime_failure",
-        message: "The authoritative run reached its fixed tick budget."
+        message:
+          "level.shuttergate_hall reached internal entity character.iron_warden"
       });
     }
   }
@@ -189,6 +199,11 @@ class ControlledFailureWorker {
   emit(message: unknown): void {
     const event = new MessageEvent("message", { data: message });
     for (const listener of this.listeners) listener(event);
+  }
+
+  emitError(message: string): void {
+    const event = new ErrorEvent("error", { message });
+    for (const listener of this.errorListeners) listener(event);
   }
 
   terminate(): void {
@@ -389,6 +404,12 @@ describe("run journey guidance", () => {
 
     await userEvent.click(await buttonWithText("Confirm preparation"));
     await buttonWithText("Pause combat");
+    expect(document.querySelector(".status")?.textContent).toContain(
+      "Combat is underway"
+    );
+    expect(document.querySelector(".status")?.textContent).not.toContain(
+      "worker"
+    );
     expect(journeyStepStates()).toEqual([
       "complete",
       "complete",
@@ -447,28 +468,20 @@ describe("run journey guidance", () => {
     ).not.toHaveTextContent("download");
   });
 
-  it("reflows enlarged high-contrast guidance at 320 pixels", async () => {
+  it("keeps diagnostics out of the enlarged high-contrast player frame at 320 pixels", async () => {
     await page.viewport(320, 720);
     window.localStorage.setItem(textScaleStorageKey, "extra-large");
     window.localStorage.setItem(contrastPreferenceStorageKey, "high");
     window.localStorage.setItem(motionPreferenceStorageKey, "reduce");
     renderApp();
 
-    const steps = await vi.waitFor(() => {
-      const candidates = Array.from(
-        document.querySelectorAll<HTMLElement>(".run-journey-step")
-      );
-      expect(candidates).toHaveLength(4);
-      return candidates;
+    const inspection = await vi.waitFor(() => {
+      const candidate = document.querySelector(".inspection-surface");
+      expect(candidate).toBeInstanceOf(HTMLDetailsElement);
+      return candidate as HTMLDetailsElement;
     });
-    expect(steps[1]?.getBoundingClientRect().left).toBe(
-      steps[0]?.getBoundingClientRect().left
-    );
-    expect(steps[1]?.getBoundingClientRect().top).toBeGreaterThan(
-      steps[0]?.getBoundingClientRect().bottom ?? 0
-    );
-    const journey = document.querySelector<HTMLElement>(".run-journey");
-    expect(journey?.scrollWidth).toBeLessThanOrEqual(journey?.clientWidth ?? 0);
+    expect(inspection).toHaveAttribute("hidden");
+    expect(inspection.getBoundingClientRect().width).toBe(0);
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
       window.innerWidth
     );
@@ -540,6 +553,7 @@ describe("presentation settings", () => {
     const dialog = heading.closest('[role="dialog"]');
     expect(dialog).toBeInstanceOf(HTMLElement);
     expect(dialog?.getAttribute("aria-modal")).toBe("true");
+    expect(dialog?.textContent).not.toContain("authoritative simulation");
 
     await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
     expect(await buttonWithText("Close settings")).toHaveFocus();
@@ -2323,8 +2337,10 @@ describe("authoritative web worker", () => {
     });
     expect(document.activeElement).toBe(firstFailureHeading);
     expect(document.body.textContent).toContain(
-      "The authoritative run reached its fixed tick budget."
+      "The expedition could not continue. Return to the checkpoint and try again."
     );
+    expect(document.body.textContent).not.toContain("level.shuttergate_hall");
+    expect(document.body.textContent).not.toContain("character.iron_warden");
     const keyboardReturn = await buttonWithText("Return to checkpoint");
     keyboardReturn.focus();
     await userEvent.keyboard("{Enter}");
@@ -2354,7 +2370,109 @@ describe("authoritative web worker", () => {
     expect(workers[1]?.terminated).toBe(true);
   });
 
+  it("recovers from startup and transport failures without implementation language", async () => {
+    const workers: ControlledFailureWorker[] = [];
+    let creationAttempts = 0;
+    const createWorker = (): Worker => {
+      creationAttempts += 1;
+      if (creationAttempts === 1)
+        throw new DOMException("worker construction blocked", "SecurityError");
+      const worker = new ControlledFailureWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={createWorker} />);
+
+    const expectPlayerFacingFailure = async (): Promise<void> => {
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain(
+          "The expedition could not continue. Return to the checkpoint and try again."
+        )
+      );
+      const playerText = document.body.textContent?.toLowerCase();
+      expect(playerText).not.toContain("worker");
+      expect(playerText).not.toContain("invalid");
+      expect(playerText).not.toContain("protocol");
+    };
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await expectPlayerFacingFailure();
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    workers[0]?.emit({ unexpected: "message" });
+    await expectPlayerFacingFailure();
+    workers[0]?.emit({
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "preparation",
+      levelId: "level.shuttergate_hall",
+      deployableEntityCount: 0,
+      placementPointCount: 2
+    });
+    expect(document.querySelector("#failure-heading")).toBeInstanceOf(
+      HTMLHeadingElement
+    );
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    workers[1]?.emitError("simulation worker crashed");
+    await expectPlayerFacingFailure();
+    workers[1]?.emit({
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "preparation",
+      levelId: "level.shuttergate_hall",
+      deployableEntityCount: 0,
+      placementPointCount: 2
+    });
+    expect(document.querySelector("#failure-heading")).toBeInstanceOf(
+      HTMLHeadingElement
+    );
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    expect(creationAttempts).toBe(3);
+    expect(workers.every((worker) => worker.terminated)).toBe(true);
+  });
+
+  it("retires the worker when confirmation transport throws", async () => {
+    const worker = new ControlledFailureWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    worker.throwOnConfirm = true;
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(
+        "The expedition could not continue. Return to the checkpoint and try again."
+      )
+    );
+    expect(worker.terminated).toBe(true);
+    expect(document.body.textContent).not.toContain("transport");
+
+    worker.emit({
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "running",
+      levelId: "level.shuttergate_hall",
+      manualPaused: false
+    });
+    expect(document.querySelector("#failure-heading")).toBeInstanceOf(
+      HTMLHeadingElement
+    );
+  });
+
   it("downloads byte-identical versioned run evidence with keyboard input", async () => {
+    window.history.replaceState(null, "", "/?inspection=1");
     const workers: ControlledResultWorker[] = [];
     const createWorker = (): Worker => {
       const worker = new ControlledResultWorker();
@@ -2395,6 +2513,9 @@ describe("authoritative web worker", () => {
     createObjectUrl.mockClear();
     revokeObjectUrl.mockClear();
     blobs.length = 0;
+    await userEvent.click(
+      document.querySelector(".result-inspection summary") as HTMLElement
+    );
     const downloadButton = await buttonWithText("Download run evidence");
     downloadButton.focus();
     await userEvent.keyboard("{Enter}");
@@ -2447,6 +2568,9 @@ describe("authoritative web worker", () => {
     );
     expect(document.body.textContent).not.toContain("Download run evidence");
     await completeAppAttempt();
+    await userEvent.click(
+      document.querySelector(".result-inspection summary") as HTMLElement
+    );
     await userEvent.click(await buttonWithText("Download run evidence"));
     await vi.waitFor(() => expect(blobs).toHaveLength(2));
     expect(await blobs[1]?.text()).toBe(firstBytes);
@@ -2464,9 +2588,13 @@ describe("authoritative web worker", () => {
     root.render(
       <StrictMode>
         <App
-          createProfileStore={() => {
-            throw new DOMException("blocked", "SecurityError");
-          }}
+          createProfileStore={() => ({
+            load: async () => {
+              throw new DOMException("blocked", "SecurityError");
+            },
+            write: vi.fn(),
+            close: async () => undefined
+          })}
         />
       </StrictMode>
     );
@@ -2477,7 +2605,13 @@ describe("authoritative web worker", () => {
         "Local progression storage is unavailable"
       );
     });
-    expect(document.body.textContent).toContain("Current levelThe Shuttergate");
+    expect(document.body.textContent).not.toContain("conformance");
+    expect(
+      document.querySelector(".checkpoint-command")?.textContent
+    ).toContain("Shuttergate HallThe road is clear. Muster the company.");
+    expect(document.querySelector(".inspection-surface")).toHaveAttribute(
+      "hidden"
+    );
     expect(document.querySelector("figcaption")).toBeNull();
     const beginButton = document.querySelector("button");
     if (beginButton === null) throw new Error("expected checkpoint button");
@@ -2495,7 +2629,7 @@ describe("authoritative web worker", () => {
       '[aria-label="Preparation summary"]'
     );
     expect(preparationSummary?.textContent).toContain(
-      "Authoritative levellevel.shuttergate_hall"
+      "DefenceShuttergate Hall"
     );
     expect(preparationSummary?.textContent).toContain("Company roster1 dwarf");
     expect(preparationSummary?.textContent).toContain("Placement points2");

@@ -38,6 +38,17 @@ import {
 import type { RenderSnapshot } from "./render-snapshot.js";
 import { downloadRunEvidence } from "./run-evidence.js";
 
+const checkpointBackdropUrl = new URL(
+  "../../../assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
+  import.meta.url
+).href;
+const ironWardenPortraitUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/hud/warden-portrait.png",
+  import.meta.url
+).href;
+const expeditionFailureMessage =
+  "The expedition could not continue. Return to the checkpoint and try again.";
+
 type ViewState =
   | { readonly phase: "checkpoint" }
   | {
@@ -51,7 +62,11 @@ type ViewState =
       readonly phase: "result";
       readonly result: Extract<WorkerMessage, { type: "result" }>;
     }
-  | { readonly phase: "failure"; readonly message: string };
+  | {
+      readonly phase: "failure";
+      readonly message: string;
+      readonly inspectionMessage?: string;
+    };
 
 const runJourneySteps = [
   {
@@ -215,7 +230,28 @@ function describePrerequisites(
 ): string {
   return prerequisiteNodeIds.length === 0
     ? "none."
-    : `${prerequisiteNodeIds.join(", ")}.`;
+    : `${prerequisiteNodeIds.map(playerFacingName).join(", ")}.`;
+}
+
+function playerFacingName(id: StableId): string {
+  switch (id) {
+    case "character.iron_warden":
+      return "Iron Warden";
+    case "item.powder_cask":
+      return "Powder Cask";
+    case "upgrade.ability.shield_slam":
+      return "Shield Slam Training";
+    case "upgrade.item.powder_cask":
+      return "Powder Cask Reinforcement";
+    case "skill.iron_warden.disciplined_slam":
+      return "Disciplined Slam";
+    case "skill.iron_warden.long_reach":
+      return "Long Reach";
+    case "skill.iron_warden.stone_guard":
+      return "Stone Guard";
+    default:
+      return "Locked company training";
+  }
 }
 
 function upgradePurchaseState(
@@ -237,7 +273,7 @@ function upgradePurchaseState(
       : profile.unlockedItemIds;
   let unavailableReason: string | undefined;
   if (!ownerIds.includes(definition.ownerId))
-    unavailableReason = `Requires unlocked owner ${definition.ownerId}.`;
+    unavailableReason = `Requires ${playerFacingName(definition.ownerId)}.`;
   else if (nextCost === undefined) unavailableReason = "Maximum rank owned.";
   else {
     const missingPrerequisite = definition.prerequisiteUpgradeIds.find(
@@ -247,7 +283,7 @@ function upgradePurchaseState(
         )
     );
     if (missingPrerequisite !== undefined)
-      unavailableReason = `Requires ${missingPrerequisite}.`;
+      unavailableReason = `Requires ${playerFacingName(missingPrerequisite)}.`;
     else if (profile.forgeOre < nextCost)
       unavailableReason = `Requires ${nextCost} Forge Ore.`;
   }
@@ -390,6 +426,9 @@ export function App({
   const [deviceReducedMotion, setDeviceReducedMotion] =
     useState(readsReducedMotion);
   const workerRef = useRef<Worker | undefined>(undefined);
+  const workerFailureRef = useRef<
+    ((inspectionMessage: string) => void) | undefined
+  >(undefined);
   const profileStoreRef = useRef<CheckpointProfileStore | undefined>(undefined);
   const upgradePurchasePendingRef = useRef(false);
   const initializedRef = useRef(false);
@@ -420,10 +459,28 @@ export function App({
     setPendingAbilityKeys(new Set());
   }
 
+  const postCurrentWorkerMessage = useCallback(
+    (message: unknown, fallbackInspectionMessage: string): boolean => {
+      const worker = workerRef.current;
+      if (worker === undefined) return false;
+      try {
+        worker.postMessage(message);
+        return true;
+      } catch (error) {
+        workerFailureRef.current?.(
+          error instanceof Error ? error.message : fallbackInspectionMessage
+        );
+        return false;
+      }
+    },
+    []
+  );
+
   useEffect(
     () => () => {
       workerRef.current?.terminate();
       workerRef.current = undefined;
+      workerFailureRef.current = undefined;
     },
     []
   );
@@ -451,7 +508,7 @@ export function App({
       setCheckpointProfile({
         status: "unavailable",
         message:
-          "Local progression storage is unavailable. You can still run the conformance level."
+          "Local progression storage is unavailable. You can still enter Shuttergate."
       });
       return;
     }
@@ -485,7 +542,7 @@ export function App({
       setCheckpointProfile({ status: "ready", profile });
       setUpgradePurchaseStatus({
         kind: "success",
-        message: `${upgradeId} rank purchased. ${profile.forgeOre} Forge Ore remains.`
+        message: `${playerFacingName(upgradeId)} rank purchased. ${profile.forgeOre} Forge Ore remains.`
       });
     } catch (error) {
       if (isCheckpointProfileSaveConflict(error)) {
@@ -636,7 +693,7 @@ export function App({
       setCheckpointProfile({ status: "ready", profile });
       setUpgradePurchaseStatus({
         kind: "success",
-        message: `${nodeId} selected for Iron Warden.`
+        message: `${playerFacingName(nodeId)} selected for Iron Warden.`
       });
     } catch (error) {
       if (isCheckpointProfileSaveConflict(error)) {
@@ -669,16 +726,40 @@ export function App({
   function startPreparation(): void {
     if (initializedRef.current || view.phase !== "checkpoint") return;
     initializedRef.current = true;
-    const worker = createWorker();
+    let worker: Worker;
+    try {
+      worker = createWorker();
+    } catch (error) {
+      setView({
+        phase: "failure",
+        message: expeditionFailureMessage,
+        inspectionMessage:
+          error instanceof Error ? error.message : "Worker creation failed."
+      });
+      return;
+    }
     workerRef.current = worker;
+    const failWorker = (inspectionMessage: string): void => {
+      if (workerRef.current !== worker) return;
+      worker.terminate();
+      workerRef.current = undefined;
+      workerFailureRef.current = undefined;
+      clearPendingAbilities();
+      setPendingTargetPolicies(new Map());
+      setCombatControls(undefined);
+      setRenderSnapshot(undefined);
+      setView({
+        phase: "failure",
+        message: expeditionFailureMessage,
+        inspectionMessage
+      });
+    };
+    workerFailureRef.current = failWorker;
     worker.addEventListener("message", (event: MessageEvent<unknown>) => {
       if (workerRef.current !== worker) return;
       const message = parseWorkerMessage(event.data);
       if (message === undefined) {
-        setView({
-          phase: "failure",
-          message: "The application rejected an invalid worker response."
-        });
+        failWorker("Invalid worker response.");
       } else if (message.type === "render_snapshot") {
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "combat_controls") {
@@ -694,15 +775,18 @@ export function App({
             message.resumeRequestId !== null &&
             manualPauseRequestedRef.current === false
           ) {
-            worker.postMessage({
-              protocolVersion: WEB_PROTOCOL_VERSION,
-              type: "command",
-              requestId: crypto.randomUUID(),
-              command: {
-                type: "commitManualResume",
-                resumeRequestId: message.resumeRequestId
-              }
-            });
+            postCurrentWorkerMessage(
+              {
+                protocolVersion: WEB_PROTOCOL_VERSION,
+                type: "command",
+                requestId: crypto.randomUUID(),
+                command: {
+                  type: "commitManualResume",
+                  resumeRequestId: message.resumeRequestId
+                }
+              },
+              "Worker resume command failed."
+            );
           }
         }
         setView(
@@ -723,37 +807,40 @@ export function App({
         clearPendingAbilities();
         setView({ phase: "result", result: message });
       } else if (message.code !== "command_rejected") {
-        setView({ phase: "failure", message: message.message });
+        failWorker(message.message);
       }
     });
-    worker.addEventListener("error", () => {
-      if (workerRef.current !== worker) return;
-      setView({
-        phase: "failure",
-        message: "The simulation worker could not start."
-      });
+    worker.addEventListener("error", (event) => {
+      failWorker(event.message || "Worker error.");
     });
-    worker.postMessage({
-      protocolVersion: WEB_PROTOCOL_VERSION,
-      type: "initialize"
-    });
+    postCurrentWorkerMessage(
+      {
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "initialize"
+      },
+      "Worker initialization failed."
+    );
   }
 
   function confirmPreparation(): void {
     if (submittedRef.current || view.phase !== "preparation") return;
     submittedRef.current = true;
-    workerRef.current?.postMessage({
-      protocolVersion: WEB_PROTOCOL_VERSION,
-      type: "command",
-      requestId: crypto.randomUUID(),
-      command: { type: "confirmPreparation" }
-    });
+    postCurrentWorkerMessage(
+      {
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: crypto.randomUUID(),
+        command: { type: "confirmPreparation" }
+      },
+      "Worker confirmation command failed."
+    );
   }
 
   function returnToCheckpoint(): void {
     if (view.phase !== "result" && view.phase !== "failure") return;
     workerRef.current?.terminate();
     workerRef.current = undefined;
+    workerFailureRef.current = undefined;
     initializedRef.current = false;
     submittedRef.current = false;
     manualPauseRequestedRef.current = undefined;
@@ -772,14 +859,17 @@ export function App({
       )
         return;
       manualPauseRequestedRef.current = paused;
-      workerRef.current?.postMessage({
-        protocolVersion: WEB_PROTOCOL_VERSION,
-        type: "command",
-        requestId: crypto.randomUUID(),
-        command: { type: "setManualPause", paused }
-      });
+      postCurrentWorkerMessage(
+        {
+          protocolVersion: WEB_PROTOCOL_VERSION,
+          type: "command",
+          requestId: crypto.randomUUID(),
+          command: { type: "setManualPause", paused }
+        },
+        "Worker pause command failed."
+      );
     },
-    [view]
+    [postCurrentWorkerMessage, view]
   );
 
   const setTargetPolicy = useCallback(
@@ -795,18 +885,21 @@ export function App({
         next.set(dwarfEntityId, requestedPolicy);
         return next;
       });
-      workerRef.current?.postMessage({
-        protocolVersion: WEB_PROTOCOL_VERSION,
-        type: "command",
-        requestId: crypto.randomUUID(),
-        command: {
-          type: "setTargetPolicy",
-          dwarfEntityId,
-          requestedPolicy
-        }
-      });
+      postCurrentWorkerMessage(
+        {
+          protocolVersion: WEB_PROTOCOL_VERSION,
+          type: "command",
+          requestId: crypto.randomUUID(),
+          command: {
+            type: "setTargetPolicy",
+            dwarfEntityId,
+            requestedPolicy
+          }
+        },
+        "Worker target policy command failed."
+      );
     },
-    [combatControls, view]
+    [combatControls, postCurrentWorkerMessage, view]
   );
 
   const activateAbility = useCallback(
@@ -828,14 +921,17 @@ export function App({
       if (pendingAbilityKeysRef.current.has(pendingKey)) return;
       pendingAbilityKeysRef.current.add(pendingKey);
       setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current));
-      workerRef.current?.postMessage({
-        protocolVersion: WEB_PROTOCOL_VERSION,
-        type: "command",
-        requestId: crypto.randomUUID(),
-        command: { type: "activateAbility", dwarfEntityId, abilityId }
-      });
+      postCurrentWorkerMessage(
+        {
+          protocolVersion: WEB_PROTOCOL_VERSION,
+          type: "command",
+          requestId: crypto.randomUUID(),
+          command: { type: "activateAbility", dwarfEntityId, abilityId }
+        },
+        "Worker ability command failed."
+      );
     },
-    [combatControls, view]
+    [combatControls, postCurrentWorkerMessage, view]
   );
 
   useLayoutEffect(() => {
@@ -983,6 +1079,16 @@ export function App({
           tree: ironWardenSkillTree
         })
       : undefined;
+  const shellView =
+    view.phase === "checkpoint"
+      ? settingsOpen
+        ? "settings"
+        : upgradeInventoryOpen
+          ? "forge"
+          : "checkpoint"
+      : view.phase;
+  const inspectionEnabled =
+    new URLSearchParams(window.location.search).get("inspection") === "1";
 
   return (
     <main
@@ -992,34 +1098,83 @@ export function App({
       data-sound-preference={soundPreference}
       data-text-scale={textScale}
       data-view-phase={view.phase}
+      data-shell-view={shellView}
     >
-      <p className="eyebrow">Authoritative checkpoint</p>
-      <h1 id="app-heading">Dwarven Depths</h1>
+      <header className="game-masthead">
+        <p className="eyebrow">The Company Muster</p>
+        <h1 id="app-heading">Dwarven Depths</h1>
+        <p className="masthead-subtitle">
+          Hold the ancient roads below the mountain.
+        </p>
+      </header>
       <section className="panel" aria-labelledby="run-heading">
-        <h2 id="run-heading">Shuttergate Tutorial Run</h2>
-        <RunJourneyGuide phase={view.phase} />
+        <h2 id="run-heading">Shuttergate Hall</h2>
+        <details className="inspection-surface" hidden={!inspectionEnabled}>
+          <summary>Developer inspection</summary>
+          <RunJourneyGuide phase={view.phase} />
+          {view.phase === "preparation" && (
+            <p className="inspection-metadata">Level ID: {view.levelId}</p>
+          )}
+        </details>
+        {(view.phase === "checkpoint" ||
+          view.phase === "result" ||
+          view.phase === "failure") && (
+          <div
+            className="checkpoint-backdrop"
+            style={{ backgroundImage: `url(${checkpointBackdropUrl})` }}
+            aria-hidden="true"
+          />
+        )}
         {view.phase === "checkpoint" &&
           !settingsOpen &&
           !upgradeInventoryOpen && (
             <>
-              <dl
-                className="checkpoint-context"
-                aria-label="Current checkpoint"
-              >
-                <div>
-                  <dt>Current level</dt>
-                  <dd>The Shuttergate</dd>
+              <div className="checkpoint-command">
+                <p className="checkpoint-kicker">Company Muster</p>
+                <h3>Shuttergate Hall</h3>
+                <p className="checkpoint-readiness">
+                  The road is clear. Muster the company.
+                </p>
+                <button
+                  className="primary-action"
+                  type="button"
+                  onClick={startPreparation}
+                >
+                  Begin preparation
+                </button>
+              </div>
+              <nav className="checkpoint-menu" aria-label="Company checkpoint">
+                <div className="checkpoint-menu-current" aria-current="page">
+                  <span>Company</span>
+                  <small>Muster ready</small>
                 </div>
-                <div>
-                  <dt>Next step</dt>
-                  <dd>Prepare the company</dd>
-                </div>
-              </dl>
+                {checkpointProfile.status === "ready" && (
+                  <button
+                    type="button"
+                    ref={upgradeInventoryButtonRef}
+                    onClick={() => {
+                      setUpgradePurchaseStatus({ kind: "idle" });
+                      setRecycleConfirmationOpen(false);
+                      setSkillRecycleConfirmationOpen(false);
+                      setUpgradeInventoryOpen(true);
+                    }}
+                  >
+                    Upgrade inventory
+                  </button>
+                )}
+                <button
+                  type="button"
+                  ref={settingsButtonRef}
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  Settings
+                </button>
+              </nav>
               <section
                 className="profile-summary"
                 aria-labelledby="profile-summary-heading"
               >
-                <h3 id="profile-summary-heading">Company progression</h3>
+                <h3 id="profile-summary-heading">Company roster</h3>
                 {checkpointProfile.status === "loading" && (
                   <p>Loading local progression…</p>
                 )}
@@ -1027,24 +1182,32 @@ export function App({
                   <p>{checkpointProfile.message}</p>
                 )}
                 {checkpointProfile.status === "ready" && (
-                  <dl>
-                    <div className="profile-summary-row">
-                      <dt>Profile status</dt>
-                      <dd className="profile-summary-value">Ready</dd>
+                  <>
+                    <div className="warden-portrait">
+                      <img src={ironWardenPortraitUrl} alt="" />
+                      <div>
+                        <strong>Iron Warden</strong>
+                        <span>Ready</span>
+                      </div>
                     </div>
-                    <div className="profile-summary-row">
-                      <dt>Forge Ore</dt>
-                      <dd className="profile-summary-value">
-                        {checkpointProfile.profile.forgeOre}
-                      </dd>
-                    </div>
-                    <div className="profile-summary-row">
-                      <dt>Unlocked dwarves</dt>
-                      <dd className="profile-summary-value">
-                        {checkpointProfile.profile.unlockedCharacterIds.length}
-                      </dd>
-                    </div>
-                  </dl>
+                    <dl>
+                      <div className="profile-summary-row">
+                        <dt>Forge Ore</dt>
+                        <dd className="profile-summary-value">
+                          {checkpointProfile.profile.forgeOre}
+                        </dd>
+                      </div>
+                      <div className="profile-summary-row">
+                        <dt>Company strength</dt>
+                        <dd className="profile-summary-value">
+                          {
+                            checkpointProfile.profile.unlockedCharacterIds
+                              .length
+                          }
+                        </dd>
+                      </div>
+                    </dl>
+                  </>
                 )}
               </section>
             </>
@@ -1107,8 +1270,8 @@ export function App({
         {view.phase === "preparation" && (
           <dl className="preparation-summary" aria-label="Preparation summary">
             <div>
-              <dt>Authoritative level</dt>
-              <dd>{view.levelId}</dd>
+              <dt>Defence</dt>
+              <dd>Shuttergate Hall</dd>
             </div>
             <div>
               <dt>Company roster</dt>
@@ -1150,7 +1313,7 @@ export function App({
             <p>
               {view.manualPaused
                 ? "Combat is manually paused."
-                : "The authoritative worker is resolving the run…"}
+                : "Combat is underway…"}
             </p>
           )}
           {view.phase === "failure" && <p>Run failed: {view.message}</p>}
@@ -1233,7 +1396,7 @@ export function App({
             </select>
             <p className="settings-help">
               These preferences affect presentation only and never change the
-              authoritative simulation. Sound is off until you opt in.
+              expedition outcome. Sound is off until you opt in.
             </p>
             <button type="button" onClick={() => setSettingsOpen(false)}>
               Close settings
@@ -1261,8 +1424,20 @@ export function App({
                 ref={upgradeInventoryHeadingRef}
                 tabIndex={-1}
               >
-                Upgrade inventory
+                Ancestral Forge
               </h3>
+              <button
+                className="primary-action forge-return"
+                type="button"
+                onClick={() => {
+                  setUpgradePurchaseStatus({ kind: "idle" });
+                  setRecycleConfirmationOpen(false);
+                  setSkillRecycleConfirmationOpen(false);
+                  setUpgradeInventoryOpen(false);
+                }}
+              >
+                Close upgrade inventory
+              </button>
               <p>Available Forge Ore: {checkpointProfile.profile.forgeOre}</p>
               {checkpointProfile.profile.purchasedUpgrades.length === 0 ? (
                 <p>No upgrades purchased.</p>
@@ -1271,9 +1446,7 @@ export function App({
                   {checkpointProfile.profile.purchasedUpgrades.map(
                     (upgrade) => (
                       <div key={upgrade.upgradeId}>
-                        <dt>
-                          <code>{upgrade.upgradeId}</code>
-                        </dt>
+                        <dt>{playerFacingName(upgrade.upgradeId)}</dt>
                         <dd>
                           Rank {upgrade.rank}; {upgrade.forgeOreSpent} Forge Ore
                           spent
@@ -1299,7 +1472,7 @@ export function App({
                   return (
                     <section key={definition.upgradeId}>
                       <h5 id={headingId} tabIndex={-1}>
-                        <code>{definition.upgradeId}</code>
+                        {playerFacingName(definition.upgradeId)}
                       </h5>
                       <p>
                         Rank {state.currentRank} of{" "}
@@ -1390,8 +1563,8 @@ export function App({
                               id={`${selection.nodeId.replaceAll(".", "-")}-selected-heading`}
                               tabIndex={-1}
                             >
-                              <code>{selection.nodeId}</code> selected at level{" "}
-                              {selection.spentSkillPointLevel}.
+                              {playerFacingName(selection.nodeId)} selected at
+                              level {selection.spentSkillPointLevel}.
                             </h5>{" "}
                             <p>
                               Effects:{" "}
@@ -1451,7 +1624,7 @@ export function App({
                                 {upgradePurchaseStatus.kind === "pending" &&
                                 upgradePurchaseStatus.upgradeId === nodeId
                                   ? "Saving skill selection…"
-                                  : `Select ${nodeId}`}
+                                  : `Select ${playerFacingName(nodeId)}`}
                               </button>
                             </section>
                           );
@@ -1599,51 +1772,15 @@ export function App({
                     {upgradePurchaseStatus.message}
                   </p>
                 )}
-              <button
-                type="button"
-                onClick={() => {
-                  setUpgradePurchaseStatus({ kind: "idle" });
-                  setRecycleConfirmationOpen(false);
-                  setSkillRecycleConfirmationOpen(false);
-                  setUpgradeInventoryOpen(false);
-                }}
-              >
-                Close upgrade inventory
-              </button>
             </section>
           )}
-        {view.phase === "checkpoint" &&
-          !settingsOpen &&
-          !upgradeInventoryOpen && (
-            <div className="checkpoint-actions">
-              <button type="button" onClick={startPreparation}>
-                Begin preparation
-              </button>
-              <button
-                type="button"
-                ref={settingsButtonRef}
-                onClick={() => setSettingsOpen(true)}
-              >
-                Settings
-              </button>
-              {checkpointProfile.status === "ready" && (
-                <button
-                  type="button"
-                  ref={upgradeInventoryButtonRef}
-                  onClick={() => {
-                    setUpgradePurchaseStatus({ kind: "idle" });
-                    setRecycleConfirmationOpen(false);
-                    setSkillRecycleConfirmationOpen(false);
-                    setUpgradeInventoryOpen(true);
-                  }}
-                >
-                  Upgrade inventory
-                </button>
-              )}
-            </div>
-          )}
+
         {view.phase === "preparation" && (
-          <button type="button" onClick={confirmPreparation}>
+          <button
+            className="preparation-confirm primary-action"
+            type="button"
+            onClick={confirmPreparation}
+          >
             Confirm preparation
           </button>
         )}
@@ -1663,43 +1800,54 @@ export function App({
                 ? "Victory results"
                 : "Defeat results"}
             </h3>
-            <dl className="evidence">
-              <div>
-                <dt>Terminal result</dt>
-                <dd>{view.result.terminalResult}</dd>
-              </div>
-              <div>
-                <dt>Terminal tick</dt>
-                <dd>{view.result.terminalTick}</dd>
-              </div>
-              <div>
-                <dt>Final state checksum</dt>
-                <dd>
-                  <code>{view.result.finalStateChecksum}</code>
-                </dd>
-              </div>
-              <div>
-                <dt>Event checksum</dt>
-                <dd>
-                  <code>{view.result.eventStreamChecksum}</code>
-                </dd>
-              </div>
-              <div>
-                <dt>Replay commands</dt>
-                <dd>{view.result.commands.length}</dd>
-              </div>
-            </dl>
+            <p className="result-message">
+              {view.result.terminalResult === "victory"
+                ? "Shuttergate stands. The company returns to the forge."
+                : "Shuttergate has fallen. Rally the company and return stronger."}
+            </p>
             <div className="result-actions">
+              <button type="button" onClick={returnToCheckpoint}>
+                Return to checkpoint
+              </button>
+            </div>
+            <details
+              className="inspection-surface result-inspection"
+              hidden={!inspectionEnabled}
+            >
+              <summary>Developer inspection</summary>
+              <dl className="evidence">
+                <div>
+                  <dt>Terminal result</dt>
+                  <dd>{view.result.terminalResult}</dd>
+                </div>
+                <div>
+                  <dt>Terminal tick</dt>
+                  <dd>{view.result.terminalTick}</dd>
+                </div>
+                <div>
+                  <dt>Final state checksum</dt>
+                  <dd>
+                    <code>{view.result.finalStateChecksum}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Event checksum</dt>
+                  <dd>
+                    <code>{view.result.eventStreamChecksum}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Replay commands</dt>
+                  <dd>{view.result.commands.length}</dd>
+                </div>
+              </dl>
               <button
                 type="button"
                 onClick={() => void downloadRunEvidence(view.result)}
               >
                 Download run evidence
               </button>
-              <button type="button" onClick={returnToCheckpoint}>
-                Return to checkpoint
-              </button>
-            </div>
+            </details>
           </section>
         )}
         {view.phase === "failure" && (
@@ -1713,6 +1861,12 @@ export function App({
                 Return to checkpoint
               </button>
             </div>
+            {inspectionEnabled && view.inspectionMessage !== undefined && (
+              <details className="inspection-surface failure-inspection">
+                <summary>Developer inspection</summary>
+                <p>{view.inspectionMessage}</p>
+              </details>
+            )}
           </section>
         )}
       </section>
