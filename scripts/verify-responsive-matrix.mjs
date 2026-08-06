@@ -231,6 +231,17 @@ for (const [index, value] of manifest.evidence.entries()) {
       fail(`evidence[${index}] combat fixture/state binding mismatch`);
     }
   }
+  if (
+    entry.state === "preparation" &&
+    (observed.fixtureId !== fixtureId ||
+      observed.tick !== 0 ||
+      observed.entityCount !== 1)
+  ) {
+    fail(`evidence[${index}] preparation fixture/state binding mismatch`);
+  }
+  if (entry.state === "ability-impact" && observed.tick < 1832) {
+    fail(`evidence[${index}] ability impact precedes its bound impact tick`);
+  }
 
   if (!Array.isArray(observed.targets)) {
     fail(`evidence[${index}] targets must be an array`);

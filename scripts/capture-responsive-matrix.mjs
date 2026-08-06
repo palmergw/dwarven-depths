@@ -318,9 +318,9 @@ async function armAutomaticPause(page, stateName) {
 }
 
 async function waitForAutomaticPause(page) {
-  await page
-    .getByRole("button", { name: "Resume combat" })
-    .waitFor({ timeout: 60_000 });
+  const resume = page.getByRole("button", { name: "Resume combat" });
+  await resume.waitFor({ state: "hidden", timeout: 20_000 });
+  await resume.waitFor({ state: "visible", timeout: 60_000 });
 }
 
 const browser = await chromium.launch({ headless: true });
