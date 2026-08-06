@@ -6,34 +6,22 @@
   "capture": {
     "browser": "chromium",
     "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
-    "viewport": [
-      1440,
-      900
-    ],
+    "viewport": [1440, 900],
     "deviceScaleFactor": 1,
     "reducedMotion": true,
     "waitCondition": "networkidle-profile-ready-images-complete"
   },
   "state": {
-    "viewport": [
-      1440,
-      900
-    ],
+    "viewport": [1440, 900],
     "phase": "checkpoint",
     "mainCount": 1,
     "backdropCount": 1,
     "primaryActionCount": 1,
     "primaryAction": "Begin preparation",
-    "checkpointButtons": [
-      "Upgrade inventory",
-      "Settings"
-    ],
+    "checkpointButtons": ["Upgrade inventory", "Settings"],
     "developerInspectionVisible": false,
     "playerText": "Company MusterShuttergate HallThe road is clear. Muster the company.Begin preparation CompanyMuster readyUpgrade inventorySettings Company rosterIron WardenReadyForge Ore0Company strength1",
     "stableIdVisible": false,
-    "bodyScroll": [
-      1440,
-      900
-    ]
+    "bodyScroll": [1440, 900]
   }
 }

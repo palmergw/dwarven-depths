@@ -17,23 +17,14 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          1440,
-          900
-        ],
-        "panelScroll": [
-          1278,
-          718
-        ],
+        "bodyScroll": [1440, 900],
+        "panelScroll": [1278, 718],
         "visibleButtonNames": [
           "Begin preparation",
           "Upgrade inventory",
@@ -49,26 +40,15 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "checkpoint",
         "shellView": "settings",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          1440,
-          900
-        ],
-        "panelScroll": [
-          1278,
-          718
-        ],
-        "visibleButtonNames": [
-          "Close settings"
-        ]
+        "bodyScroll": [1440, 900],
+        "panelScroll": [1278, 718],
+        "visibleButtonNames": ["Close settings"]
       }
     },
     {
@@ -79,23 +59,14 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "checkpoint",
         "shellView": "forge",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          1440,
-          900
-        ],
-        "panelScroll": [
-          1278,
-          718
-        ],
+        "bodyScroll": [1440, 900],
+        "panelScroll": [1278, 718],
         "visibleButtonNames": [
           "Close upgrade inventory",
           "Purchase rank 1 for 10 Forge Ore",
@@ -111,26 +82,15 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "preparation",
         "shellView": "preparation",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          1440,
-          900
-        ],
-        "panelScroll": [
-          1278,
-          727
-        ],
-        "visibleButtonNames": [
-          "Confirm preparation"
-        ]
+        "bodyScroll": [1440, 900],
+        "panelScroll": [1278, 727],
+        "visibleButtonNames": ["Confirm preparation"]
       }
     },
     {
@@ -141,26 +101,15 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "result",
         "shellView": "result",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          1440,
-          900
-        ],
-        "panelScroll": [
-          1278,
-          718
-        ],
-        "visibleButtonNames": [
-          "Return to checkpoint"
-        ]
+        "bodyScroll": [1440, 900],
+        "panelScroll": [1278, 718],
+        "visibleButtonNames": ["Return to checkpoint"]
       }
     },
     {
@@ -171,26 +120,15 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "failure",
         "shellView": "failure",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          1440,
-          900
-        ],
-        "panelScroll": [
-          1278,
-          718
-        ],
-        "visibleButtonNames": [
-          "Return to checkpoint"
-        ]
+        "bodyScroll": [1440, 900],
+        "panelScroll": [1278, 718],
+        "visibleButtonNames": ["Return to checkpoint"]
       }
     },
     {
@@ -201,23 +139,14 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "checkpoint",
         "shellView": "checkpoint",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          390,
-          844
-        ],
-        "panelScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
+        "panelScroll": [390, 844],
         "visibleButtonNames": [
           "Begin preparation",
           "Upgrade inventory",
@@ -233,26 +162,15 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "checkpoint",
         "shellView": "settings",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          390,
-          844
-        ],
-        "panelScroll": [
-          390,
-          844
-        ],
-        "visibleButtonNames": [
-          "Close settings"
-        ]
+        "bodyScroll": [390, 844],
+        "panelScroll": [390, 844],
+        "visibleButtonNames": ["Close settings"]
       }
     },
     {
@@ -263,23 +181,14 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "checkpoint",
         "shellView": "forge",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          390,
-          844
-        ],
-        "panelScroll": [
-          390,
-          844
-        ],
+        "bodyScroll": [390, 844],
+        "panelScroll": [390, 844],
         "visibleButtonNames": [
           "Close upgrade inventory",
           "Purchase rank 1 for 10 Forge Ore",
@@ -295,26 +204,15 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "preparation",
         "shellView": "preparation",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          390,
-          844
-        ],
-        "panelScroll": [
-          390,
-          853
-        ],
-        "visibleButtonNames": [
-          "Confirm preparation"
-        ]
+        "bodyScroll": [390, 844],
+        "panelScroll": [390, 853],
+        "visibleButtonNames": ["Confirm preparation"]
       }
     },
     {
@@ -325,26 +223,15 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "result",
         "shellView": "result",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          390,
-          844
-        ],
-        "panelScroll": [
-          390,
-          844
-        ],
-        "visibleButtonNames": [
-          "Return to checkpoint"
-        ]
+        "bodyScroll": [390, 844],
+        "panelScroll": [390, 844],
+        "visibleButtonNames": ["Return to checkpoint"]
       }
     },
     {
@@ -355,26 +242,15 @@
       "state": {
         "sourceHead": "a374d5f90bea01eb161123e29bb3bd3fdebf09cf",
         "sourceClean": true,
-        "viewport": [
-          390,
-          844
-        ],
+        "viewport": [390, 844],
         "phase": "failure",
         "shellView": "failure",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          390,
-          844
-        ],
-        "panelScroll": [
-          390,
-          844
-        ],
-        "visibleButtonNames": [
-          "Return to checkpoint"
-        ]
+        "bodyScroll": [390, 844],
+        "panelScroll": [390, 844],
+        "visibleButtonNames": ["Return to checkpoint"]
       }
     }
   ]
