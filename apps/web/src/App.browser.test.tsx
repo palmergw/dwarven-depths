@@ -153,13 +153,19 @@ class ControlledResultWorker {
 
 class ControlledFailureWorker {
   readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
+  readonly errorListeners = new Set<(event: ErrorEvent) => void>();
   terminated = false;
 
   addEventListener(
     type: string,
-    listener: (event: MessageEvent<unknown>) => void
+    listener:
+      | ((event: MessageEvent<unknown>) => void)
+      | ((event: ErrorEvent) => void)
   ): void {
-    if (type === "message") this.listeners.add(listener);
+    if (type === "message")
+      this.listeners.add(listener as (event: MessageEvent<unknown>) => void);
+    if (type === "error")
+      this.errorListeners.add(listener as (event: ErrorEvent) => void);
   }
 
   postMessage(message: unknown): void {
@@ -191,6 +197,11 @@ class ControlledFailureWorker {
   emit(message: unknown): void {
     const event = new MessageEvent("message", { data: message });
     for (const listener of this.listeners) listener(event);
+  }
+
+  emitError(message: string): void {
+    const event = new ErrorEvent("error", { message });
+    for (const listener of this.errorListeners) listener(event);
   }
 
   terminate(): void {
@@ -2348,6 +2359,54 @@ describe("authoritative web worker", () => {
     );
     expect(workers).toHaveLength(2);
     expect(workers[1]?.terminated).toBe(true);
+  });
+
+  it("recovers from startup and transport failures without implementation language", async () => {
+    const workers: ControlledFailureWorker[] = [];
+    let creationAttempts = 0;
+    const createWorker = (): Worker => {
+      creationAttempts += 1;
+      if (creationAttempts === 1)
+        throw new DOMException("worker construction blocked", "SecurityError");
+      const worker = new ControlledFailureWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={createWorker} />);
+
+    const expectPlayerFacingFailure = async (): Promise<void> => {
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain(
+          "The expedition could not continue. Return to the checkpoint and try again."
+        )
+      );
+      const playerText = document.body.textContent?.toLowerCase();
+      expect(playerText).not.toContain("worker");
+      expect(playerText).not.toContain("invalid");
+      expect(playerText).not.toContain("protocol");
+    };
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await expectPlayerFacingFailure();
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    workers[0]?.emit({ unexpected: "message" });
+    await expectPlayerFacingFailure();
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    workers[1]?.emitError("simulation worker crashed");
+    await expectPlayerFacingFailure();
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    expect(creationAttempts).toBe(3);
+    expect(workers.every((worker) => worker.terminated)).toBe(true);
   });
 
   it("downloads byte-identical versioned run evidence with keyboard input", async () => {

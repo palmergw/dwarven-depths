@@ -46,6 +46,8 @@ const ironWardenPortraitUrl = new URL(
   "../../../assets/game-art/production-scene/exports/hud/warden-portrait.png",
   import.meta.url
 ).href;
+const expeditionFailureMessage =
+  "The expedition could not continue. Return to the checkpoint and try again.";
 
 type ViewState =
   | { readonly phase: "checkpoint" }
@@ -703,7 +705,18 @@ export function App({
   function startPreparation(): void {
     if (initializedRef.current || view.phase !== "checkpoint") return;
     initializedRef.current = true;
-    const worker = createWorker();
+    let worker: Worker;
+    try {
+      worker = createWorker();
+    } catch (error) {
+      setView({
+        phase: "failure",
+        message: expeditionFailureMessage,
+        inspectionMessage:
+          error instanceof Error ? error.message : "Worker creation failed."
+      });
+      return;
+    }
     workerRef.current = worker;
     worker.addEventListener("message", (event: MessageEvent<unknown>) => {
       if (workerRef.current !== worker) return;
@@ -711,7 +724,8 @@ export function App({
       if (message === undefined) {
         setView({
           phase: "failure",
-          message: "The application rejected an invalid worker response."
+          message: expeditionFailureMessage,
+          inspectionMessage: "Invalid worker response."
         });
       } else if (message.type === "render_snapshot") {
         setRenderSnapshot(message.snapshot);
@@ -759,23 +773,36 @@ export function App({
       } else if (message.code !== "command_rejected") {
         setView({
           phase: "failure",
-          message:
-            "The expedition could not continue. Return to the checkpoint and try again.",
+          message: expeditionFailureMessage,
           inspectionMessage: message.message
         });
       }
     });
-    worker.addEventListener("error", () => {
+    worker.addEventListener("error", (event) => {
       if (workerRef.current !== worker) return;
       setView({
         phase: "failure",
-        message: "The simulation worker could not start."
+        message: expeditionFailureMessage,
+        inspectionMessage: event.message || "Worker error."
       });
     });
-    worker.postMessage({
-      protocolVersion: WEB_PROTOCOL_VERSION,
-      type: "initialize"
-    });
+    try {
+      worker.postMessage({
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "initialize"
+      });
+    } catch (error) {
+      worker.terminate();
+      workerRef.current = undefined;
+      setView({
+        phase: "failure",
+        message: expeditionFailureMessage,
+        inspectionMessage:
+          error instanceof Error
+            ? error.message
+            : "Worker initialization failed."
+      });
+    }
   }
 
   function confirmPreparation(): void {
