@@ -93,10 +93,7 @@ try {
         document.querySelectorAll(".inspection-surface")
       ).some(visible),
       playerText,
-      stableIdVisible:
-        /(?:character|level|map|upgrade|ability)\.[a-z0-9_.-]+/.test(
-          playerText
-        ),
+      stableIdVisible: /\b[a-z][a-z0-9_-]*\.[a-z0-9_.-]+\b/.test(playerText),
       bodyScroll: [document.body.scrollWidth, document.body.scrollHeight]
     };
   });

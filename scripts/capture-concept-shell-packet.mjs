@@ -194,10 +194,9 @@ try {
           visibleInspectionCount: Array.from(
             document.querySelectorAll(".inspection-surface")
           ).filter(visible).length,
-          stableIdVisible:
-            /(?:character|level|map|upgrade|ability)\.[a-z0-9_.-]+/.test(
-              visibleText
-            ),
+          stableIdVisible: /\b[a-z][a-z0-9_-]*\.[a-z0-9_.-]+\b/.test(
+            visibleText
+          ),
           bodyScroll: [document.body.scrollWidth, document.body.scrollHeight],
           panelScroll: [
             document.querySelector(".panel")?.scrollWidth,

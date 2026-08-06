@@ -426,6 +426,9 @@ export function App({
   const [deviceReducedMotion, setDeviceReducedMotion] =
     useState(readsReducedMotion);
   const workerRef = useRef<Worker | undefined>(undefined);
+  const workerFailureRef = useRef<
+    ((inspectionMessage: string) => void) | undefined
+  >(undefined);
   const profileStoreRef = useRef<CheckpointProfileStore | undefined>(undefined);
   const upgradePurchasePendingRef = useRef(false);
   const initializedRef = useRef(false);
@@ -456,10 +459,28 @@ export function App({
     setPendingAbilityKeys(new Set());
   }
 
+  const postCurrentWorkerMessage = useCallback(
+    (message: unknown, fallbackInspectionMessage: string): boolean => {
+      const worker = workerRef.current;
+      if (worker === undefined) return false;
+      try {
+        worker.postMessage(message);
+        return true;
+      } catch (error) {
+        workerFailureRef.current?.(
+          error instanceof Error ? error.message : fallbackInspectionMessage
+        );
+        return false;
+      }
+    },
+    []
+  );
+
   useEffect(
     () => () => {
       workerRef.current?.terminate();
       workerRef.current = undefined;
+      workerFailureRef.current = undefined;
     },
     []
   );
@@ -722,6 +743,7 @@ export function App({
       if (workerRef.current !== worker) return;
       worker.terminate();
       workerRef.current = undefined;
+      workerFailureRef.current = undefined;
       clearPendingAbilities();
       setPendingTargetPolicies(new Map());
       setCombatControls(undefined);
@@ -732,6 +754,7 @@ export function App({
         inspectionMessage
       });
     };
+    workerFailureRef.current = failWorker;
     worker.addEventListener("message", (event: MessageEvent<unknown>) => {
       if (workerRef.current !== worker) return;
       const message = parseWorkerMessage(event.data);
@@ -752,15 +775,18 @@ export function App({
             message.resumeRequestId !== null &&
             manualPauseRequestedRef.current === false
           ) {
-            worker.postMessage({
-              protocolVersion: WEB_PROTOCOL_VERSION,
-              type: "command",
-              requestId: crypto.randomUUID(),
-              command: {
-                type: "commitManualResume",
-                resumeRequestId: message.resumeRequestId
-              }
-            });
+            postCurrentWorkerMessage(
+              {
+                protocolVersion: WEB_PROTOCOL_VERSION,
+                type: "command",
+                requestId: crypto.randomUUID(),
+                command: {
+                  type: "commitManualResume",
+                  resumeRequestId: message.resumeRequestId
+                }
+              },
+              "Worker resume command failed."
+            );
           }
         }
         setView(
@@ -787,33 +813,34 @@ export function App({
     worker.addEventListener("error", (event) => {
       failWorker(event.message || "Worker error.");
     });
-    try {
-      worker.postMessage({
+    postCurrentWorkerMessage(
+      {
         protocolVersion: WEB_PROTOCOL_VERSION,
         type: "initialize"
-      });
-    } catch (error) {
-      failWorker(
-        error instanceof Error ? error.message : "Worker initialization failed."
-      );
-    }
+      },
+      "Worker initialization failed."
+    );
   }
 
   function confirmPreparation(): void {
     if (submittedRef.current || view.phase !== "preparation") return;
     submittedRef.current = true;
-    workerRef.current?.postMessage({
-      protocolVersion: WEB_PROTOCOL_VERSION,
-      type: "command",
-      requestId: crypto.randomUUID(),
-      command: { type: "confirmPreparation" }
-    });
+    postCurrentWorkerMessage(
+      {
+        protocolVersion: WEB_PROTOCOL_VERSION,
+        type: "command",
+        requestId: crypto.randomUUID(),
+        command: { type: "confirmPreparation" }
+      },
+      "Worker confirmation command failed."
+    );
   }
 
   function returnToCheckpoint(): void {
     if (view.phase !== "result" && view.phase !== "failure") return;
     workerRef.current?.terminate();
     workerRef.current = undefined;
+    workerFailureRef.current = undefined;
     initializedRef.current = false;
     submittedRef.current = false;
     manualPauseRequestedRef.current = undefined;
@@ -832,14 +859,17 @@ export function App({
       )
         return;
       manualPauseRequestedRef.current = paused;
-      workerRef.current?.postMessage({
-        protocolVersion: WEB_PROTOCOL_VERSION,
-        type: "command",
-        requestId: crypto.randomUUID(),
-        command: { type: "setManualPause", paused }
-      });
+      postCurrentWorkerMessage(
+        {
+          protocolVersion: WEB_PROTOCOL_VERSION,
+          type: "command",
+          requestId: crypto.randomUUID(),
+          command: { type: "setManualPause", paused }
+        },
+        "Worker pause command failed."
+      );
     },
-    [view]
+    [postCurrentWorkerMessage, view]
   );
 
   const setTargetPolicy = useCallback(
@@ -855,18 +885,21 @@ export function App({
         next.set(dwarfEntityId, requestedPolicy);
         return next;
       });
-      workerRef.current?.postMessage({
-        protocolVersion: WEB_PROTOCOL_VERSION,
-        type: "command",
-        requestId: crypto.randomUUID(),
-        command: {
-          type: "setTargetPolicy",
-          dwarfEntityId,
-          requestedPolicy
-        }
-      });
+      postCurrentWorkerMessage(
+        {
+          protocolVersion: WEB_PROTOCOL_VERSION,
+          type: "command",
+          requestId: crypto.randomUUID(),
+          command: {
+            type: "setTargetPolicy",
+            dwarfEntityId,
+            requestedPolicy
+          }
+        },
+        "Worker target policy command failed."
+      );
     },
-    [combatControls, view]
+    [combatControls, postCurrentWorkerMessage, view]
   );
 
   const activateAbility = useCallback(
@@ -888,14 +921,17 @@ export function App({
       if (pendingAbilityKeysRef.current.has(pendingKey)) return;
       pendingAbilityKeysRef.current.add(pendingKey);
       setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current));
-      workerRef.current?.postMessage({
-        protocolVersion: WEB_PROTOCOL_VERSION,
-        type: "command",
-        requestId: crypto.randomUUID(),
-        command: { type: "activateAbility", dwarfEntityId, abilityId }
-      });
+      postCurrentWorkerMessage(
+        {
+          protocolVersion: WEB_PROTOCOL_VERSION,
+          type: "command",
+          requestId: crypto.randomUUID(),
+          command: { type: "activateAbility", dwarfEntityId, abilityId }
+        },
+        "Worker ability command failed."
+      );
     },
-    [combatControls, view]
+    [combatControls, postCurrentWorkerMessage, view]
   );
 
   useLayoutEffect(() => {

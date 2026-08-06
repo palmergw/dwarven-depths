@@ -155,6 +155,7 @@ class ControlledFailureWorker {
   readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
   readonly errorListeners = new Set<(event: ErrorEvent) => void>();
   terminated = false;
+  throwOnConfirm = false;
 
   addEventListener(
     type: string,
@@ -184,6 +185,7 @@ class ControlledFailureWorker {
         placementPointCount: 2
       });
     } else if (candidate.command?.type === "confirmPreparation") {
+      if (this.throwOnConfirm) throw new Error("confirmation transport failed");
       this.emit({
         protocolVersion: 4,
         type: "failure",
@@ -2436,6 +2438,37 @@ describe("authoritative web worker", () => {
     );
     expect(creationAttempts).toBe(3);
     expect(workers.every((worker) => worker.terminated)).toBe(true);
+  });
+
+  it("retires the worker when confirmation transport throws", async () => {
+    const worker = new ControlledFailureWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    worker.throwOnConfirm = true;
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(
+        "The expedition could not continue. Return to the checkpoint and try again."
+      )
+    );
+    expect(worker.terminated).toBe(true);
+    expect(document.body.textContent).not.toContain("transport");
+
+    worker.emit({
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "running",
+      levelId: "level.shuttergate_hall",
+      manualPaused: false
+    });
+    expect(document.querySelector("#failure-heading")).toBeInstanceOf(
+      HTMLHeadingElement
+    );
   });
 
   it("downloads byte-identical versioned run evidence with keyboard input", async () => {
