@@ -533,6 +533,46 @@ describe("run journey guidance", () => {
       )
     );
   });
+
+  it("uses a dedicated one-task mobile checkpoint composition", async () => {
+    await page.viewport(390, 844);
+    renderApp();
+
+    const begin = await buttonWithText("Begin preparation");
+    const forge = await buttonWithText("Upgrade inventory");
+    const settings = await buttonWithText("Settings");
+    const navigation = document.querySelector(".checkpoint-menu");
+    const roster = document.querySelector(".profile-summary");
+    const backdrop = document.querySelector(".checkpoint-backdrop");
+    expect(navigation).toBeInstanceOf(HTMLElement);
+    expect(roster).toBeInstanceOf(HTMLElement);
+    expect(backdrop).toBeInstanceOf(HTMLElement);
+
+    const navigationBounds = navigation?.getBoundingClientRect();
+    const rosterBounds = roster?.getBoundingClientRect();
+    const backdropBounds = backdrop?.getBoundingClientRect();
+    expect(navigationBounds?.bottom).toBeCloseTo(844, 0);
+    expect(navigationBounds?.height).toBeGreaterThanOrEqual(44);
+    expect(rosterBounds?.bottom).toBeLessThanOrEqual(
+      navigationBounds?.top ?? 0
+    );
+    expect(backdropBounds?.height).toBeGreaterThan(480);
+    expect(begin.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    for (const target of [forge, settings]) {
+      expect(target.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+      expect(target.getBoundingClientRect().width).toBeGreaterThanOrEqual(44);
+    }
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(390);
+    expect(document.documentElement.scrollHeight).toBeLessThanOrEqual(844);
+
+    await userEvent.click(settings);
+    const settingsPanel = document.querySelector(".settings");
+    await vi.waitFor(() => expect(settingsPanel).toBeVisible());
+    const settingsBounds = settingsPanel?.getBoundingClientRect();
+    expect(settingsBounds?.left).toBe(0);
+    expect(settingsBounds?.right).toBe(390);
+    expect(settingsBounds?.bottom).toBeCloseTo(844, 0);
+  });
 });
 
 describe("presentation settings", () => {
