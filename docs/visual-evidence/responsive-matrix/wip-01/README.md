@@ -1,13 +1,13 @@
 # Issue #276 responsive matrix — WIP 01
 
-Clearly labeled work in progress for product-owner review. This packet was captured from clean implementation head `ae0c87a89e92afb0b753fa73780be20f79624f32` by `scripts/capture-responsive-matrix.mjs` against the actual built client.
+Clearly labeled work in progress for product-owner review. This packet was captured from clean implementation head `ae0c87a89e92afb0b753fa73780be20f79624f32` by `scripts/capture-responsive-matrix.mjs` against the actual built client. `pnpm verify:responsive-matrix` validates the committed packet at the current publication head and rejects any product-code change between the capture source and that head.
 
 ## Packet
 
 - 65 deterministic PNGs: 13 states at 1440×900, 1280×800, 1024×768, 768×768, and 390×844.
-- `manifest.json` binds every capture to source head, fixture where applicable, viewport, presentation settings, phase, tick, entity count, control geometry, scroll reachability, browser/page-error cleanliness, and screenshot SHA-256.
+- `manifest.json` binds every capture to source head, fixture where applicable, viewport, presentation settings, phase, tick, entity count, control geometry, scroll reachability, and screenshot SHA-256. Console or page errors abort capture before the manifest can be published.
 - Combat captures use `scenarios/conformance/shuttergate-web-truth.json`; shell result and error captures use a deterministic protocol-v4 terminal worker.
-- The capture fails on stale/dirty source metadata, wrong count, viewport overflow, visible inspection or stable-ID text, unreachable controls, undersized mobile targets, unbound combat fixture/state, console errors, page errors, or checksum-generation failure.
+- Capture fails on stale/dirty source metadata, wrong count, viewport overflow, visible inspection or stable-ID text, unreachable controls, undersized mobile targets, unbound combat fixture/state, console errors, page errors, or checksum-generation failure. Publication verification additionally rejects malformed/extra manifest fields, noncanonical or duplicate entries, checksum tampering, missing source ancestry, and any post-capture product-code drift.
 
 ## Bounded comparisons
 

@@ -575,6 +575,12 @@ describe("run journey guidance", () => {
 
     await userEvent.click(await buttonWithText("Close settings"));
     await userEvent.click(await buttonWithText("Begin preparation"));
+    await vi.waitFor(() =>
+      expect(document.querySelector("main")).toHaveAttribute(
+        "data-view-phase",
+        "preparation"
+      )
+    );
     const preparationBattlefield = await vi.waitFor(() => {
       const candidate = document.querySelector(".battlefield");
       expect(candidate).toBeInstanceOf(HTMLElement);
