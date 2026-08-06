@@ -718,15 +718,25 @@ export function App({
       return;
     }
     workerRef.current = worker;
+    const failWorker = (inspectionMessage: string): void => {
+      if (workerRef.current !== worker) return;
+      worker.terminate();
+      workerRef.current = undefined;
+      clearPendingAbilities();
+      setPendingTargetPolicies(new Map());
+      setCombatControls(undefined);
+      setRenderSnapshot(undefined);
+      setView({
+        phase: "failure",
+        message: expeditionFailureMessage,
+        inspectionMessage
+      });
+    };
     worker.addEventListener("message", (event: MessageEvent<unknown>) => {
       if (workerRef.current !== worker) return;
       const message = parseWorkerMessage(event.data);
       if (message === undefined) {
-        setView({
-          phase: "failure",
-          message: expeditionFailureMessage,
-          inspectionMessage: "Invalid worker response."
-        });
+        failWorker("Invalid worker response.");
       } else if (message.type === "render_snapshot") {
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "combat_controls") {
@@ -771,20 +781,11 @@ export function App({
         clearPendingAbilities();
         setView({ phase: "result", result: message });
       } else if (message.code !== "command_rejected") {
-        setView({
-          phase: "failure",
-          message: expeditionFailureMessage,
-          inspectionMessage: message.message
-        });
+        failWorker(message.message);
       }
     });
     worker.addEventListener("error", (event) => {
-      if (workerRef.current !== worker) return;
-      setView({
-        phase: "failure",
-        message: expeditionFailureMessage,
-        inspectionMessage: event.message || "Worker error."
-      });
+      failWorker(event.message || "Worker error.");
     });
     try {
       worker.postMessage({
@@ -792,16 +793,9 @@ export function App({
         type: "initialize"
       });
     } catch (error) {
-      worker.terminate();
-      workerRef.current = undefined;
-      setView({
-        phase: "failure",
-        message: expeditionFailureMessage,
-        inspectionMessage:
-          error instanceof Error
-            ? error.message
-            : "Worker initialization failed."
-      });
+      failWorker(
+        error instanceof Error ? error.message : "Worker initialization failed."
+      );
     }
   }
 
@@ -1283,7 +1277,7 @@ export function App({
             <p>
               {view.manualPaused
                 ? "Combat is manually paused."
-                : "The authoritative worker is resolving the run…"}
+                : "Combat is underway…"}
             </p>
           )}
           {view.phase === "failure" && <p>Run failed: {view.message}</p>}
@@ -1366,7 +1360,7 @@ export function App({
             </select>
             <p className="settings-help">
               These preferences affect presentation only and never change the
-              authoritative simulation. Sound is off until you opt in.
+              expedition outcome. Sound is off until you opt in.
             </p>
             <button type="button" onClick={() => setSettingsOpen(false)}>
               Close settings

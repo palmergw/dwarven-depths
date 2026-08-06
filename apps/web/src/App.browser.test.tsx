@@ -110,7 +110,7 @@ class ControlledResultWorker {
       candidate.command?.type === "confirmPreparation"
     ) {
       this.emit({
-        protocolVersion: 4,
+        protocolVersion: 3,
         type: "render_snapshot",
         snapshot: {
           schemaVersion: 1,
@@ -402,6 +402,12 @@ describe("run journey guidance", () => {
 
     await userEvent.click(await buttonWithText("Confirm preparation"));
     await buttonWithText("Pause combat");
+    expect(document.querySelector(".status")?.textContent).toContain(
+      "Combat is underway"
+    );
+    expect(document.querySelector(".status")?.textContent).not.toContain(
+      "worker"
+    );
     expect(journeyStepStates()).toEqual([
       "complete",
       "complete",
@@ -545,6 +551,7 @@ describe("presentation settings", () => {
     const dialog = heading.closest('[role="dialog"]');
     expect(dialog).toBeInstanceOf(HTMLElement);
     expect(dialog?.getAttribute("aria-modal")).toBe("true");
+    expect(dialog?.textContent).not.toContain("authoritative simulation");
 
     await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
     expect(await buttonWithText("Close settings")).toHaveFocus();
@@ -2396,11 +2403,33 @@ describe("authoritative web worker", () => {
     await userEvent.click(await buttonWithText("Begin preparation"));
     workers[0]?.emit({ unexpected: "message" });
     await expectPlayerFacingFailure();
+    workers[0]?.emit({
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "preparation",
+      levelId: "level.shuttergate_hall",
+      deployableEntityCount: 0,
+      placementPointCount: 2
+    });
+    expect(document.querySelector("#failure-heading")).toBeInstanceOf(
+      HTMLHeadingElement
+    );
     await userEvent.click(await buttonWithText("Return to checkpoint"));
 
     await userEvent.click(await buttonWithText("Begin preparation"));
     workers[1]?.emitError("simulation worker crashed");
     await expectPlayerFacingFailure();
+    workers[1]?.emit({
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "preparation",
+      levelId: "level.shuttergate_hall",
+      deployableEntityCount: 0,
+      placementPointCount: 2
+    });
+    expect(document.querySelector("#failure-heading")).toBeInstanceOf(
+      HTMLHeadingElement
+    );
     await userEvent.click(await buttonWithText("Return to checkpoint"));
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Checkpoint ready")
