@@ -1,6 +1,6 @@
 # Issue #276 responsive matrix — WIP 01
 
-Clearly labeled work in progress for product-owner review. This packet was captured from clean implementation head `ae0c87a89e92afb0b753fa73780be20f79624f32` by `scripts/capture-responsive-matrix.mjs` against the actual built client. `pnpm verify:responsive-matrix` validates the committed packet at the current publication head and rejects any product-code change between the capture source and that head.
+Clearly labeled work in progress for product-owner review. This corrected packet was captured in the pinned Playwright container from clean implementation head `211eeab2ceb01ac7ce7080ec9cfa865d3ec499db` by `scripts/capture-responsive-matrix.mjs` against the actual built client. `pnpm verify:responsive-matrix` validates the committed packet at the current publication head and rejects any product-code change between the capture source and that head.
 
 ## Packet
 

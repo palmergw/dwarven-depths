@@ -302,15 +302,8 @@ const sourcePackage = JSON.parse(
 const publicationPackage = JSON.parse(
   await readFile(resolve(repositoryRoot, "package.json"), "utf8")
 );
-delete publicationPackage.scripts["verify:responsive-matrix"];
-publicationPackage.scripts.verify = publicationPackage.scripts.verify.replace(
-  "pnpm verify:responsive-matrix && ",
-  ""
-);
 if (JSON.stringify(publicationPackage) !== JSON.stringify(sourcePackage)) {
-  fail(
-    "package metadata changed after capture beyond the evidence verifier hook"
-  );
+  fail("package metadata changed after capture source");
 }
 
 process.stdout.write(
