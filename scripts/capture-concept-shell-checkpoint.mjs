@@ -71,6 +71,9 @@ try {
       .replaceAll(/\s+/g, " ")
       .trim();
     return {
+      sourceHead: document
+        .querySelector('meta[name="dd-source-head"]')
+        ?.getAttribute("content"),
       viewport: [window.innerWidth, window.innerHeight],
       phase: main?.dataset.viewPhase,
       mainCount: document.querySelectorAll("main").length,
@@ -96,6 +99,7 @@ try {
 
   const expectedButtons = ["Upgrade inventory", "Settings"];
   if (
+    state.sourceHead !== sourceHead ||
     JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
     state.phase !== "checkpoint" ||
     state.mainCount !== 1 ||

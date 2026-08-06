@@ -180,6 +180,9 @@ try {
           .replaceAll(/\s+/g, " ")
           .trim();
         return {
+          sourceHead: document
+            .querySelector('meta[name="dd-source-head"]')
+            ?.getAttribute("content"),
           viewport: [window.innerWidth, window.innerHeight],
           phase: main?.dataset.viewPhase,
           shellView: main?.dataset.shellView,
@@ -202,6 +205,7 @@ try {
         };
       });
       if (
+        state.sourceHead !== sourceHead ||
         JSON.stringify(state.viewport) !==
           JSON.stringify([viewport.width, viewport.height]) ||
         state.shellView !== expectedShellView ||
