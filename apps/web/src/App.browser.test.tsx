@@ -182,7 +182,8 @@ class ControlledFailureWorker {
         protocolVersion: 4,
         type: "failure",
         code: "runtime_failure",
-        message: "The authoritative run reached its fixed tick budget."
+        message:
+          "level.shuttergate_hall reached internal entity character.iron_warden"
       });
     }
   }
@@ -2316,8 +2317,10 @@ describe("authoritative web worker", () => {
     });
     expect(document.activeElement).toBe(firstFailureHeading);
     expect(document.body.textContent).toContain(
-      "The authoritative run reached its fixed tick budget."
+      "The expedition could not continue. Return to the checkpoint and try again."
     );
+    expect(document.body.textContent).not.toContain("level.shuttergate_hall");
+    expect(document.body.textContent).not.toContain("character.iron_warden");
     const keyboardReturn = await buttonWithText("Return to checkpoint");
     keyboardReturn.focus();
     await userEvent.keyboard("{Enter}");
@@ -2477,6 +2480,7 @@ describe("authoritative web worker", () => {
         "Local progression storage is unavailable"
       );
     });
+    expect(document.body.textContent).not.toContain("conformance");
     expect(
       document.querySelector(".checkpoint-command")?.textContent
     ).toContain("Shuttergate HallThe road is clear. Muster the company.");

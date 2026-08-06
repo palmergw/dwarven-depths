@@ -13,6 +13,16 @@ const outputDirectory = process.env.DD_SHELL_PACKET_OUTPUT_DIRECTORY
       `${process.env.DD_SHELL_PACKET_OUTPUT_DIRECTORY.replace(/\/$/, "")}/`
     )
   : new URL("../docs/visual-evidence/concept-shell/wip-03/", import.meta.url);
+const { stdout: trackedStatus } = await execFile(
+  "git",
+  ["status", "--porcelain=v1", "--untracked-files=no"],
+  { cwd: repositoryRoot }
+);
+if (trackedStatus.trim() !== "") {
+  throw new Error(
+    "Refusing to capture visual evidence from a worktree with tracked changes."
+  );
+}
 const { stdout } = await execFile("git", ["rev-parse", "HEAD"], {
   cwd: repositoryRoot
 });

@@ -92,6 +92,10 @@ describe("checkpoint upgrade purchasing", () => {
 
     await userEvent.click(await button("Upgrade inventory"));
     const purchase = await button("Purchase rank 2 for 25 Forge Ore");
+    expect(await button("Close upgrade inventory")).toHaveClass(
+      "primary-action"
+    );
+    expect(purchase).not.toHaveClass("primary-action");
     purchase.focus();
     await userEvent.keyboard("{Enter}");
 

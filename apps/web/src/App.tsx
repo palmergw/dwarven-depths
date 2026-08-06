@@ -60,7 +60,11 @@ type ViewState =
       readonly phase: "result";
       readonly result: Extract<WorkerMessage, { type: "result" }>;
     }
-  | { readonly phase: "failure"; readonly message: string };
+  | {
+      readonly phase: "failure";
+      readonly message: string;
+      readonly inspectionMessage?: string;
+    };
 
 const runJourneySteps = [
   {
@@ -481,7 +485,7 @@ export function App({
       setCheckpointProfile({
         status: "unavailable",
         message:
-          "Local progression storage is unavailable. You can still run the conformance level."
+          "Local progression storage is unavailable. You can still enter Shuttergate."
       });
       return;
     }
@@ -753,7 +757,12 @@ export function App({
         clearPendingAbilities();
         setView({ phase: "result", result: message });
       } else if (message.code !== "command_rejected") {
-        setView({ phase: "failure", message: message.message });
+        setView({
+          phase: "failure",
+          message:
+            "The expedition could not continue. Return to the checkpoint and try again.",
+          inspectionMessage: message.message
+        });
       }
     });
     worker.addEventListener("error", () => {
@@ -1695,6 +1704,7 @@ export function App({
                   </p>
                 )}
               <button
+                className="primary-action"
                 type="button"
                 onClick={() => {
                   setUpgradePurchaseStatus({ kind: "idle" });
@@ -1794,6 +1804,12 @@ export function App({
                 Return to checkpoint
               </button>
             </div>
+            {inspectionEnabled && view.inspectionMessage !== undefined && (
+              <details className="inspection-surface failure-inspection">
+                <summary>Developer inspection</summary>
+                <p>{view.inspectionMessage}</p>
+              </details>
+            )}
           </section>
         )}
       </section>
