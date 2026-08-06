@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceHead": "ab4040ba29ee6e10e6eb00ab43a16891191a34e8",
+  "sourceHead": "43511a17db2b66c3b1e514ba1abba1f95ec886ea",
   "capture": {
     "browser": "chromium",
     "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
@@ -13,7 +13,7 @@
       "viewportName": "desktop",
       "capture": "checkpoint",
       "screenshot": "desktop-checkpoint.png",
-      "screenshotSha256": "439f7582538c5c8dd5f6921241e7e105d6af769a168b2de586c1fea17fe1c143",
+      "screenshotSha256": "efc99aa594914d83261e8c8457240c280e84ec4201f9088eeefb7baeb8c80dec",
       "state": {
         "viewport": [
           1440,
@@ -43,7 +43,7 @@
       "viewportName": "desktop",
       "capture": "settings",
       "screenshot": "desktop-settings.png",
-      "screenshotSha256": "d245767c7f1339c0dbdbba78f2034f336f3f16d3ef660ab643f851d400083970",
+      "screenshotSha256": "c34eefdab62831cfc512f285b600af77498a2dd59adb29f8144135bde98a62db",
       "state": {
         "viewport": [
           1440,
@@ -71,7 +71,7 @@
       "viewportName": "desktop",
       "capture": "forge",
       "screenshot": "desktop-forge.png",
-      "screenshotSha256": "839dfc1837a6acbb7d717c6e4dd6e0a0b9ab4b05cb407c312fde690f8a25ef49",
+      "screenshotSha256": "279ccfee92d6b9ad86f37051ff75bd1bbcc9b585a3a4f92f85e3754ef029c6a6",
       "state": {
         "viewport": [
           1440,
@@ -91,9 +91,9 @@
           718
         ],
         "visibleButtonNames": [
+          "Close upgrade inventory",
           "Purchase rank 1 for 10 Forge Ore",
-          "Purchase rank 1 for 15 Forge Ore",
-          "Close upgrade inventory"
+          "Purchase rank 1 for 15 Forge Ore"
         ]
       }
     },
@@ -101,7 +101,7 @@
       "viewportName": "desktop",
       "capture": "preparation",
       "screenshot": "desktop-preparation.png",
-      "screenshotSha256": "38c9d80ebf604d8358adf6ee4caa94b39f144dd744739a80dd3034ba0eafef70",
+      "screenshotSha256": "b2d770607713d1ae2cb3f0ff05c1be4204c13f55420d1c0719c434f5311716e7",
       "state": {
         "viewport": [
           1440,
@@ -129,7 +129,7 @@
       "viewportName": "desktop",
       "capture": "result",
       "screenshot": "desktop-result.png",
-      "screenshotSha256": "730aca5c1bfd24a45e61227dcfcc3372f2da886ba32a3fe31ad20ea0e4eea2ef",
+      "screenshotSha256": "3cfcf727ae15dfaa75a1fd3d318be8d4df4a5093e5910a4c4bfbce3fe6d0b140",
       "state": {
         "viewport": [
           1440,
@@ -157,7 +157,7 @@
       "viewportName": "desktop",
       "capture": "failure",
       "screenshot": "desktop-failure.png",
-      "screenshotSha256": "fcb0b2e22d8b545277a6fdcf302cc9b741fc879a325f678eda2995180936e550",
+      "screenshotSha256": "b98d2139f6c18bd638e2c15d126e188b60f3a86c8911dd31a092a255fcca433a",
       "state": {
         "viewport": [
           1440,
@@ -185,7 +185,7 @@
       "viewportName": "mobile",
       "capture": "checkpoint",
       "screenshot": "mobile-checkpoint.png",
-      "screenshotSha256": "2254ebf19b5947437b53b6806df1fedd22db7540f8b78022b89ba0118d61483b",
+      "screenshotSha256": "e85d5d2557559e70bf2ab167cd7b97bb73bd0ff43535a453e90e04aee17a24f0",
       "state": {
         "viewport": [
           390,
@@ -215,7 +215,7 @@
       "viewportName": "mobile",
       "capture": "settings",
       "screenshot": "mobile-settings.png",
-      "screenshotSha256": "54995c05603ef16d6fdc2ae086c1a4c043faf116e6e5d3cead4c8ca2b526ce1f",
+      "screenshotSha256": "0177dfc6c0d9a5944335de45ef6104dbc3ba4a9cf5aacf65add627e5da0e3fd8",
       "state": {
         "viewport": [
           390,
@@ -243,7 +243,7 @@
       "viewportName": "mobile",
       "capture": "forge",
       "screenshot": "mobile-forge.png",
-      "screenshotSha256": "bf02691d5e411cf2fa47961c7300e6927ef02dcc89185943bfa4f2378e302dfb",
+      "screenshotSha256": "d80e0c0e13fb7e4e4804fa57d75596e7d7d1955f751a0c049aa7c4d17fc2ad35",
       "state": {
         "viewport": [
           390,
@@ -263,9 +263,9 @@
           844
         ],
         "visibleButtonNames": [
+          "Close upgrade inventory",
           "Purchase rank 1 for 10 Forge Ore",
-          "Purchase rank 1 for 15 Forge Ore",
-          "Close upgrade inventory"
+          "Purchase rank 1 for 15 Forge Ore"
         ]
       }
     },
@@ -273,7 +273,7 @@
       "viewportName": "mobile",
       "capture": "preparation",
       "screenshot": "mobile-preparation.png",
-      "screenshotSha256": "35d6225f189aabd39d50e65d1e7120299525208d2ec8988d60de198fa9edfc5d",
+      "screenshotSha256": "535ca1802315a9192cc8db1bf50aafe744a324610b77e6019684b36bfcb97f48",
       "state": {
         "viewport": [
           390,
@@ -301,7 +301,7 @@
       "viewportName": "mobile",
       "capture": "result",
       "screenshot": "mobile-result.png",
-      "screenshotSha256": "dd8ce7b8921c322daa771cbb0f152194248dd6b34f8b023c04106e902cecf548",
+      "screenshotSha256": "5ba3d1b1b284eb7eaf44574edeb84af03105802993c29e63440e6f84abf50a15",
       "state": {
         "viewport": [
           390,
@@ -329,7 +329,7 @@
       "viewportName": "mobile",
       "capture": "failure",
       "screenshot": "mobile-failure.png",
-      "screenshotSha256": "55acc631ce48b33791ac524049b339ebfee6d5dc52e73d736d5a70020eb7b38a",
+      "screenshotSha256": "70c66d8b145964d0ee4b7eba216223aeafde5ab4d50d4086e871287a3281d2c9",
       "state": {
         "viewport": [
           390,
