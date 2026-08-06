@@ -74,6 +74,10 @@ try {
       sourceHead: document
         .querySelector('meta[name="dd-source-head"]')
         ?.getAttribute("content"),
+      sourceClean:
+        document
+          .querySelector('meta[name="dd-source-clean"]')
+          ?.getAttribute("content") === "true",
       viewport: [window.innerWidth, window.innerHeight],
       phase: main?.dataset.viewPhase,
       mainCount: document.querySelectorAll("main").length,
@@ -100,6 +104,7 @@ try {
   const expectedButtons = ["Upgrade inventory", "Settings"];
   if (
     state.sourceHead !== sourceHead ||
+    !state.sourceClean ||
     JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
     state.phase !== "checkpoint" ||
     state.mainCount !== 1 ||

@@ -183,6 +183,10 @@ try {
           sourceHead: document
             .querySelector('meta[name="dd-source-head"]')
             ?.getAttribute("content"),
+          sourceClean:
+            document
+              .querySelector('meta[name="dd-source-clean"]')
+              ?.getAttribute("content") === "true",
           viewport: [window.innerWidth, window.innerHeight],
           phase: main?.dataset.viewPhase,
           shellView: main?.dataset.shellView,
@@ -206,6 +210,7 @@ try {
       });
       if (
         state.sourceHead !== sourceHead ||
+        !state.sourceClean ||
         JSON.stringify(state.viewport) !==
           JSON.stringify([viewport.width, viewport.height]) ||
         state.shellView !== expectedShellView ||

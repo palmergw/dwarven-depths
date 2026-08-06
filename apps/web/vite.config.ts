@@ -8,6 +8,11 @@ const sourceHead = execFileSync("git", ["rev-parse", "HEAD"], {
   cwd: repositoryRoot,
   encoding: "utf8"
 }).trim();
+const sourceClean =
+  execFileSync("git", ["status", "--porcelain=v1", "--untracked-files=no"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).trim() === "";
 
 export default defineConfig({
   plugins: [
@@ -19,6 +24,14 @@ export default defineConfig({
           {
             tag: "meta",
             attrs: { name: "dd-source-head", content: sourceHead },
+            injectTo: "head"
+          },
+          {
+            tag: "meta",
+            attrs: {
+              name: "dd-source-clean",
+              content: String(sourceClean)
+            },
             injectTo: "head"
           }
         ];
