@@ -47,6 +47,7 @@ jobs:
       HOME: /root
     steps:
       - uses: actions/checkout@v7
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm test:browser
