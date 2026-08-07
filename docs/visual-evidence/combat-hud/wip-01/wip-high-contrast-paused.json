@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-high-contrast-paused",
   "label": "WIP #275 — wip-high-contrast-paused",
-  "sourceHead": "181ca5993eff5e8cd5d1f9156b6a94d697427c92",
+  "sourceHead": "df918bbc0e78172e0eeacea32a3a626d42230db3",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-high-contrast-paused.png",
-  "screenshotSha256": "c006b4b86ecb23eeeed3ca4dea488dfc77b332a2b4c3e3ea8090039741a00585",
+  "screenshotSha256": "4188015f63d073289c8eeb094b28b701a356ee0fdc5409b8a3b3143ccefde346",
   "viewport": [
     1440,
     900

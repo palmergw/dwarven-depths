@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "wip-default-paused",
   "label": "WIP #275 — wip-default-paused",
-  "sourceHead": "181ca5993eff5e8cd5d1f9156b6a94d697427c92",
+  "sourceHead": "df918bbc0e78172e0eeacea32a3a626d42230db3",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-default-paused.png",
   "screenshotSha256": "def716fffdcb55cf4e36cb00931bc7a6aca28506858d8ab46d05f30dd98aaf23",
