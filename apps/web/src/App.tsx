@@ -435,11 +435,20 @@ export function App({
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
   const latestCombatControlsTickRef = useRef(-1);
-  const pendingAbilityKeysRef = useRef(new Map<string, string>());
+  const pendingAbilityKeysRef = useRef(
+    new Map<
+      string,
+      { readonly requestId: string; readonly submittedAtTick: number }
+    >()
+  );
   const pendingTargetPoliciesRef = useRef(
     new Map<
       string,
-      { readonly policy: TargetPolicy; readonly requestId: string }
+      {
+        readonly policy: TargetPolicy;
+        readonly requestId: string;
+        readonly submittedAtTick: number;
+      }
     >()
   );
   const resultHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -786,8 +795,11 @@ export function App({
           const acknowledgedRequestIds = new Set(
             message.acknowledgedRequestIds
           );
-          for (const [key, requestId] of pendingAbilityKeysRef.current) {
-            if (acknowledgedRequestIds.has(requestId))
+          for (const [key, pending] of pendingAbilityKeysRef.current) {
+            if (
+              acknowledgedRequestIds.has(pending.requestId) &&
+              pending.submittedAtTick < message.authoritativeTick
+            )
               pendingAbilityKeysRef.current.delete(key);
           }
           setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
@@ -795,7 +807,10 @@ export function App({
             dwarfEntityId,
             pending
           ] of pendingTargetPoliciesRef.current) {
-            if (acknowledgedRequestIds.has(pending.requestId))
+            if (
+              acknowledgedRequestIds.has(pending.requestId) &&
+              pending.submittedAtTick < message.authoritativeTick
+            )
               pendingTargetPoliciesRef.current.delete(dwarfEntityId);
           }
           setPendingTargetPolicies(
@@ -935,7 +950,8 @@ export function App({
       const requestId = crypto.randomUUID();
       nextPendingTargetPolicies.set(dwarfEntityId, {
         policy: requestedPolicy,
-        requestId
+        requestId,
+        submittedAtTick: latestCombatControlsTickRef.current
       });
       pendingTargetPoliciesRef.current = nextPendingTargetPolicies;
       setPendingTargetPolicies(
@@ -981,7 +997,10 @@ export function App({
       const pendingKey = `${dwarfEntityId}\u0000${abilityId}`;
       if (pendingAbilityKeysRef.current.has(pendingKey)) return;
       const requestId = crypto.randomUUID();
-      pendingAbilityKeysRef.current.set(pendingKey, requestId);
+      pendingAbilityKeysRef.current.set(pendingKey, {
+        requestId,
+        submittedAtTick: latestCombatControlsTickRef.current
+      });
       setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
       postCurrentWorkerMessage(
         {

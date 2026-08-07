@@ -1147,6 +1147,8 @@ describe("semantic combat controls", () => {
     const acknowledgedRequestId = worker.lastTargetPolicyRequestId;
     if (acknowledgedRequestId === undefined)
       throw new Error("expected target-policy request ID");
+    worker.emitControls(10, [acknowledgedRequestId]);
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(true));
     worker.emitControls(11, [acknowledgedRequestId]);
     await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(false));
     await userEvent.click(targetingTrigger);
