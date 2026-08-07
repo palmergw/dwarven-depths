@@ -164,7 +164,9 @@ async function capture(page, id, expected) {
     state.rendererError !== null ||
     /(?:entity|ability|status|wave)\.[a-z0-9_.]+/i.test(state.playerText)
   )
-    throw new Error(`invalid combat HUD capture state: ${id}`);
+    throw new Error(
+      `invalid combat HUD capture state: ${id}: ${JSON.stringify(state)}`
+    );
 
   const screenshotUrl = new URL(`${id}.png`, outputDirectory);
   const sidecarUrl = new URL(`${id}.json`, outputDirectory);
