@@ -148,7 +148,11 @@ async function capture(page, id, expected) {
     playerText: document.querySelector("main")?.textContent ?? "",
     rendererError: document
       .querySelector(".battlefield-canvas")
-      ?.getAttribute("data-renderer-error")
+      ?.getAttribute("data-renderer-error"),
+    hudBackground: (() => {
+      const hud = document.querySelector(".active-combat-screen .combat-hud");
+      return hud === null ? null : getComputedStyle(hud).backgroundColor;
+    })()
   }));
   if (
     JSON.stringify(state.truth) !== JSON.stringify(truth) ||
@@ -157,6 +161,7 @@ async function capture(page, id, expected) {
     state.truth.alignment.valid !== true ||
     JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
     state.rendererError !== null ||
+    (state.phase === "running" && state.hudBackground !== "rgba(0, 0, 0, 0)") ||
     /\b(?:entity|ability|status|wave)\.[a-z0-9_]+(?:\.[a-z0-9_]+)*\b/.test(
       state.playerText
     )

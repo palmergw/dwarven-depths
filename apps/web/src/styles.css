@@ -496,8 +496,6 @@ main[data-contrast-preference="high"] .run-journey,
 main[data-contrast-preference="high"] .run-journey-step,
 main[data-contrast-preference="high"] .settings,
 main[data-contrast-preference="high"] .upgrades,
-main[data-contrast-preference="high"] .combat-hud,
-main[data-contrast-preference="high"] .combat-controls,
 main[data-contrast-preference="high"] .combat-controls fieldset {
   border-color: #fff;
   background: #000;
