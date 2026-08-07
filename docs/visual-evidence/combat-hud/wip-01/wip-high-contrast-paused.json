@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-high-contrast-paused",
   "label": "WIP #275 — wip-high-contrast-paused",
-  "sourceHead": "ecbdf482dbd48575a807ffb03110a2844c41566a",
+  "sourceHead": "5cb50f57ac8938a340701d1ff183025054fd3907",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-high-contrast-paused.png",
-  "screenshotSha256": "6f316dadcfdd80f32c74db19f687882dff0f2ff37ecea522183fbfb49a888246",
+  "screenshotSha256": "a1f776f22420817f958766856f222c025bc3002efcee8656c89c7455af17a654",
   "viewport": [
     1440,
     900
@@ -178,5 +178,17 @@
     "control": "Resume combat",
     "banner": "Combat pausedPress Escape or resume when ready"
   },
+  "speedControls": [
+    {
+      "label": "1× combat speed",
+      "pressed": "true",
+      "disabled": true
+    },
+    {
+      "label": "2× combat speed",
+      "pressed": "false",
+      "disabled": false
+    }
+  ],
   "targetMenuOpen": "false"
 }

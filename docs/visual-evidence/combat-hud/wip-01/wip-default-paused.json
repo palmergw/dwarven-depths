@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-default-paused",
   "label": "WIP #275 — wip-default-paused",
-  "sourceHead": "ecbdf482dbd48575a807ffb03110a2844c41566a",
+  "sourceHead": "5cb50f57ac8938a340701d1ff183025054fd3907",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-default-paused.png",
-  "screenshotSha256": "faf650cf61a01b290d5ff1f13c30367499871069268091d193df6936e5f245e5",
+  "screenshotSha256": "784e94504829ff65afcf177cfdd84b95ea7e691e92113a3f4ff41389ba6b6be5",
   "viewport": [
     1440,
     900
@@ -178,5 +178,17 @@
     "control": "Resume combat",
     "banner": "Combat pausedPress Escape or resume when ready"
   },
+  "speedControls": [
+    {
+      "label": "1× combat speed",
+      "pressed": "true",
+      "disabled": true
+    },
+    {
+      "label": "2× combat speed",
+      "pressed": "false",
+      "disabled": false
+    }
+  ],
   "targetMenuOpen": "false"
 }

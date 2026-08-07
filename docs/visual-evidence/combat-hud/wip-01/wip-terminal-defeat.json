@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "wip-terminal-defeat",
   "label": "WIP #275 — wip-terminal-defeat",
-  "sourceHead": "ecbdf482dbd48575a807ffb03110a2844c41566a",
+  "sourceHead": "5cb50f57ac8938a340701d1ff183025054fd3907",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-terminal-defeat.png",
   "screenshotSha256": "e9835d221bf197150f487236792b4f58c2fda13f0e5c76595f8aefa6913791c4",
@@ -168,5 +168,6 @@
   "ability": {
     "disabled": null
   },
-  "pause": {}
+  "pause": {},
+  "speedControls": []
 }

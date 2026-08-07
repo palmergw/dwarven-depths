@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-wave-transition",
   "label": "WIP #275 — wip-wave-transition",
-  "sourceHead": "ecbdf482dbd48575a807ffb03110a2844c41566a",
+  "sourceHead": "5cb50f57ac8938a340701d1ff183025054fd3907",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-wave-transition.png",
-  "screenshotSha256": "e0e5bc9cc421c93fff6ac82a8776a8d7851c09c91b0f415cc1db48fd71d4edf9",
+  "screenshotSha256": "550b578b2df7e87d29040415c9f9a975029ea0db5bda013748e6160fdfaa3e24",
   "viewport": [
     1440,
     900
@@ -178,5 +178,17 @@
     "control": "Resume combat",
     "banner": "Combat pausedPress Escape or resume when ready"
   },
+  "speedControls": [
+    {
+      "label": "1× combat speed",
+      "pressed": "true",
+      "disabled": true
+    },
+    {
+      "label": "2× combat speed",
+      "pressed": "false",
+      "disabled": false
+    }
+  ],
   "targetMenuOpen": "false"
 }

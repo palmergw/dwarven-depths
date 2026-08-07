@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-ability-ready",
   "label": "WIP #275 — wip-ability-ready",
-  "sourceHead": "ecbdf482dbd48575a807ffb03110a2844c41566a",
+  "sourceHead": "5cb50f57ac8938a340701d1ff183025054fd3907",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-ability-ready.png",
-  "screenshotSha256": "fc8eb543d42967cde07f50af6d8881a455dd73882f4986bb0b82033112a37ff4",
+  "screenshotSha256": "cc562cb6ce98a5617520150456b526a8ecc5e936aea5f870507ff9d0c91d016a",
   "viewport": [
     1440,
     900
@@ -216,5 +216,17 @@
     "control": "Resume combat",
     "banner": "Combat pausedPress Escape or resume when ready"
   },
+  "speedControls": [
+    {
+      "label": "1× combat speed",
+      "pressed": "true",
+      "disabled": true
+    },
+    {
+      "label": "2× combat speed",
+      "pressed": "false",
+      "disabled": false
+    }
+  ],
   "targetMenuOpen": "false"
 }
