@@ -766,6 +766,7 @@ export function App({
       worker.terminate();
       workerRef.current = undefined;
       workerFailureRef.current = undefined;
+      latestCombatControlsTickRef.current = -1;
       clearPendingAbilities();
       clearPendingTargetPolicies();
       setCombatControls(undefined);
@@ -863,7 +864,9 @@ export function App({
               }
         );
       } else if (message.type === "result") {
+        latestCombatControlsTickRef.current = -1;
         clearPendingAbilities();
+        clearPendingTargetPolicies();
         setView({ phase: "result", result: message });
       } else if (message.code !== "command_rejected") {
         failWorker(message.message);
