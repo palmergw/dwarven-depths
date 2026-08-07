@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-wave-transition",
   "label": "WIP #275 — wip-wave-transition",
-  "sourceHead": "6d6fe8ec09e0f2adb7765082861ad1f22142b699",
+  "sourceHead": "2bde5a21645b24c244423a6a24ca2565f1f5f461",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-wave-transition.png",
-  "screenshotSha256": "59d41c8174aea0fa518344f83f14e80eec284d89026482a8d82067ce244c55be",
+  "screenshotSha256": "685c480fcf451337815c581fbfb224b2e25b3c97254da51dce2a7c2c0028d0c1",
   "viewport": [
     1440,
     900

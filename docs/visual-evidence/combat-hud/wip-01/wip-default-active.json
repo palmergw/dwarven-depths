@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "wip-default-paused",
-  "label": "WIP #275 — wip-default-paused",
+  "id": "wip-default-active",
+  "label": "WIP #275 — wip-default-active",
   "sourceHead": "2bde5a21645b24c244423a6a24ca2565f1f5f461",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-  "screenshot": "wip-default-paused.png",
-  "screenshotSha256": "def716fffdcb55cf4e36cb00931bc7a6aca28506858d8ab46d05f30dd98aaf23",
+  "screenshot": "wip-default-active.png",
+  "screenshotSha256": "25e048441530def6a1332e325d135b58bcf5939d2d91586e96cdf060705db2a8",
   "viewport": [
     1440,
     900
@@ -26,7 +26,7 @@
     "snapshot": {
       "levelId": "level.shuttergate_hall",
       "mapId": "map.shuttergate_hall",
-      "tick": 2,
+      "tick": 7,
       "phase": "running"
     },
     "registry": {
@@ -87,7 +87,7 @@
           },
           "targetEntityId": "entity.dwarf.warden",
           "statusIds": [],
-          "transition": "spawned",
+          "transition": "active",
           "elite": false,
           "boss": false,
           "x": 1054,
@@ -163,7 +163,7 @@
       "valid": true
     }
   },
-  "hud": "The ShuttergateFortressHoldingWave1Hostiles1Combat paused. Fortress holding. Wave 1. 1 hostiles active. Iron Warden health 240 of 240.",
+  "hud": "The ShuttergateFortressHoldingWave1Hostiles1Combat active. Fortress holding. Wave 1. 1 hostiles active. Iron Warden health 240 of 240.",
   "health": {
     "current": "240",
     "maximum": "240",
@@ -175,8 +175,7 @@
     "text": "Ready"
   },
   "pause": {
-    "control": "Resume combat",
-    "banner": "Combat pausedPress Escape or resume when ready"
+    "control": "Pause combat"
   },
   "targetMenuOpen": "false"
 }
