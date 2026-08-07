@@ -383,11 +383,27 @@ describe("web worker protocol", () => {
         {
           entityId: "entity.dwarf.warden",
           characterId: "character.iron_warden",
+          currentTargetPolicy: "nearest",
           supportedTargetPolicies: ["nearest", "highest_armor"]
         }
       ]
     };
     expect(parseWorkerMessage(controls)).toEqual(controls);
+    const dwarf = controls.dwarves[0];
+    if (dwarf === undefined) throw new Error("expected combat-control dwarf");
+    const { currentTargetPolicy: _currentTargetPolicy, ...unboundDwarf } =
+      dwarf;
+    expect(
+      parseWorkerMessage({ ...controls, dwarves: [unboundDwarf] })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        dwarves: [
+          { ...controls.dwarves[0], currentTargetPolicy: "lowest_health" }
+        ]
+      })
+    ).toBeUndefined();
     expect(
       parseWorkerMessage({ ...controls, authoritativeTick: -1 })
     ).toBeUndefined();

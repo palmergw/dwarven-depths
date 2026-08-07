@@ -370,7 +370,8 @@ class ControlledTargetPolicyWorker {
 
   emitControls(
     authoritativeTick: number,
-    acknowledgedRequestIds: readonly string[] = []
+    acknowledgedRequestIds: readonly string[] = [],
+    currentTargetPolicy: "nearest" | "highest_armor" = "nearest"
   ): void {
     this.emit({
       protocolVersion: 4,
@@ -382,6 +383,7 @@ class ControlledTargetPolicyWorker {
         {
           entityId: "entity.dwarf.warden",
           characterId: "character.iron_warden",
+          currentTargetPolicy,
           supportedTargetPolicies: ["nearest", "highest_armor"],
           activeAbilities: [
             {
@@ -1165,11 +1167,49 @@ describe("semantic combat controls", () => {
       throw new Error("expected target-policy request ID");
     worker.emitControls(10, [acknowledgedRequestId]);
     await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(true));
-    worker.emitControls(11, [acknowledgedRequestId]);
+    worker.emitControls(11, [acknowledgedRequestId], "highest_armor");
     await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(false));
+    expect(document.querySelector(".target-policy-label")?.textContent).toBe(
+      "Highest armor"
+    );
     await userEvent.click(targetingTrigger);
+    const selectedPolicy = document.querySelector(
+      '.target-policy-menu button[aria-pressed="true"]'
+    );
+    expect(selectedPolicy).toBeInstanceOf(HTMLButtonElement);
+    expect(selectedPolicy?.textContent).toBe("Highest armor ✓");
     await userEvent.click(await buttonWithText("Nearest"));
     expect(worker.targetPolicyCommands).toEqual(["highest_armor", "nearest"]);
+  });
+
+  it("dismisses targeting with Escape without changing pause state", async () => {
+    const worker = new ControlledTargetPolicyWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    const targetingTrigger = await vi.waitFor(() => {
+      const candidate = document.querySelector(".character-portrait-button");
+      expect(candidate).toBeInstanceOf(HTMLButtonElement);
+      return candidate as HTMLButtonElement;
+    });
+    await userEvent.click(targetingTrigger);
+    expect(document.querySelector(".target-policy-menu")).toBeVisible();
+    await userEvent.keyboard("{Escape}");
+    await vi.waitFor(() =>
+      expect(document.querySelector(".target-policy-menu")).not.toBeVisible()
+    );
+    expect(document.querySelector(".combat-pause")).toHaveAttribute(
+      "aria-label",
+      "Resume combat"
+    );
+    expect(document.querySelector(".combat-pause")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 
   it("unlocks only the control bound to a rejected command and permits retry", async () => {
@@ -1242,7 +1282,12 @@ describe("semantic combat controls", () => {
     );
 
     await userEvent.click(targetingTrigger);
-    await userEvent.click(await buttonWithText("Nearest"));
+    const currentPolicy = document.querySelector(
+      '.target-policy-menu button[aria-pressed="true"]'
+    );
+    expect(currentPolicy).toBeInstanceOf(HTMLButtonElement);
+    expect(currentPolicy?.textContent).toBe("Nearest ✓");
+    await userEvent.click(currentPolicy as HTMLButtonElement);
     await userEvent.click(shieldSlam);
     expect(worker.targetPolicyCommands).toEqual(["highest_armor", "nearest"]);
     expect(worker.abilityCommands).toEqual([

@@ -234,9 +234,53 @@ async function startAccessibilityPage(browser, preferences) {
   return page;
 }
 
+async function startFrozenActiveCombatPage(browser) {
+  const page = await browser.newPage({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+    reducedMotion: "reduce"
+  });
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "dwarven-depths.presentation.motion-preference.v1",
+      "reduce"
+    );
+  });
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Begin preparation" }).click();
+  await page.getByRole("button", { name: "Confirm preparation" }).click();
+  await page.getByRole("button", { name: "Resume combat" }).click();
+  await page.waitForFunction(
+    (expectedFixture) =>
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady === true &&
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.fixtureId === expectedFixture &&
+      document.querySelector(".combat-pause-banner") === null &&
+      document.querySelector(".combat-pause")?.getAttribute("aria-label") ===
+        "Pause combat",
+    fixtureId
+  );
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setVirtualTimePolicy", { policy: "pause" });
+  return page;
+}
+
 const browser = await chromium.launch({ headless: true });
 const captures = [];
 try {
+  const activePage = await startFrozenActiveCombatPage(browser);
+  captures.push(
+    await capture(
+      activePage,
+      "wip-default-active",
+      () =>
+        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "running" &&
+        document.querySelector(".combat-pause-banner") === null &&
+        document.querySelector(".combat-pause")?.getAttribute("aria-label") ===
+          "Pause combat"
+    )
+  );
+  await activePage.close();
+
   const page = await browser.newPage({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1,

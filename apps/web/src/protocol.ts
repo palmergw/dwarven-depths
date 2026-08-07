@@ -18,6 +18,7 @@ export type TargetPolicy = (typeof TARGET_POLICIES)[number];
 export interface CombatControlDwarf {
   readonly entityId: string;
   readonly characterId: string;
+  readonly currentTargetPolicy?: TargetPolicy;
   readonly supportedTargetPolicies: readonly TargetPolicy[];
   readonly activeAbilities?: readonly {
     readonly abilityId: string;
@@ -405,22 +406,30 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         !isRecord(dwarf) ||
         (!hasExactKeys(dwarf, [
           "characterId",
+          "currentTargetPolicy",
           "entityId",
           "supportedTargetPolicies"
         ]) &&
           !hasExactKeys(dwarf, [
             "activeAbilities",
             "characterId",
+            "currentTargetPolicy",
             "entityId",
             "supportedTargetPolicies"
           ]))
       )
         return undefined;
-      const { characterId, entityId, supportedTargetPolicies } = dwarf;
+      const {
+        characterId,
+        currentTargetPolicy,
+        entityId,
+        supportedTargetPolicies
+      } = dwarf;
       if (
         !isStableId(entityId) ||
         entityId <= previousEntityId ||
         !isStableId(characterId) ||
+        !isTargetPolicy(currentTargetPolicy) ||
         !Array.isArray(supportedTargetPolicies) ||
         supportedTargetPolicies.length === 0 ||
         !supportedTargetPolicies.every(
@@ -432,6 +441,8 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
                   TARGET_POLICIES.indexOf(policy)))
         )
       )
+        return undefined;
+      if (!supportedTargetPolicies.includes(currentTargetPolicy))
         return undefined;
       previousEntityId = entityId;
       if (dwarf.activeAbilities !== undefined) {

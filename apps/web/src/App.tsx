@@ -1075,6 +1075,8 @@ export function App({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.repeat || view.phase !== "running")
         return;
+      if (document.querySelector(".target-policy-menu:not([hidden])") !== null)
+        return;
       event.preventDefault();
       setManualPause(!(manualPauseRequestedRef.current ?? view.manualPaused));
     };

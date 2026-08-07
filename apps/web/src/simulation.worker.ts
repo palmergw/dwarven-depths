@@ -130,7 +130,8 @@ function postRunningSnapshot(): void {
 
 function authoritativeCombatControls(): readonly CombatControlDwarf[] {
   if (preparedContent === undefined || liveHost === undefined) return [];
-  return [...(liveHost.state.battlefield?.dwarfCombatants ?? [])]
+  const host = liveHost;
+  return [...(host.state.battlefield?.dwarfCombatants ?? [])]
     .sort((left, right) => compareRenderIds(left.entityId, right.entityId))
     .map((dwarf) => {
       const character = preparedContent?.characters.get(
@@ -143,6 +144,7 @@ function authoritativeCombatControls(): readonly CombatControlDwarf[] {
       return {
         entityId: dwarf.entityId,
         characterId: character.id,
+        currentTargetPolicy: host.targetPolicyForDwarf(dwarf.entityId),
         supportedTargetPolicies: TARGET_POLICIES.filter((policy) =>
           character.supportedTargetPolicies.includes(policy)
         ),

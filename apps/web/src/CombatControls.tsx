@@ -74,11 +74,14 @@ export function CombatControls({
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpenTargetingFor(undefined);
+      if (event.key !== "Escape" || openTargetingFor === undefined) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setOpenTargetingFor(undefined);
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, []);
+  }, [openTargetingFor]);
 
   return (
     <section
@@ -99,7 +102,12 @@ export function CombatControls({
             const menuId = `target-policy-menu-${index}`;
             const menuHeadingId = `${menuId}-heading`;
             const menuOpen = openTargetingFor === dwarf.entityId;
-            const selectedPolicy = pendingTargetPolicies.get(dwarf.entityId);
+            const pendingPolicy = pendingTargetPolicies.get(dwarf.entityId);
+            const currentPolicy =
+              dwarf.currentTargetPolicy ??
+              dwarf.supportedTargetPolicies[0] ??
+              "nearest";
+            const selectedPolicy = pendingPolicy ?? currentPolicy;
             return (
               <li key={dwarf.entityId}>
                 <fieldset
@@ -111,7 +119,7 @@ export function CombatControls({
                     <button
                       className="character-portrait-button"
                       type="button"
-                      disabled={selectedPolicy !== undefined}
+                      disabled={pendingPolicy !== undefined}
                       aria-label="Open Iron Warden targeting"
                       aria-expanded={menuOpen}
                       aria-controls={menuId}
@@ -132,11 +140,11 @@ export function CombatControls({
                     <div className="character-nameplate">
                       <strong>Iron Warden</strong>
                       <span className="target-policy-label">
-                        {selectedPolicy
-                          ? TARGET_POLICY_LABELS[selectedPolicy]
+                        {pendingPolicy !== undefined
+                          ? TARGET_POLICY_LABELS[pendingPolicy]
                           : rejectedTargetPolicies.has(dwarf.entityId)
                             ? "Change rejected — try again"
-                            : "Targeting"}
+                            : TARGET_POLICY_LABELS[currentPolicy]}
                       </span>
                       {selectedDwarfHealth !== undefined && (
                         <>
