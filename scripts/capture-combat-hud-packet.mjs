@@ -96,6 +96,9 @@ async function armPause(page, condition) {
 async function resumeUntilPaused(page) {
   await page.getByRole("button", { name: "Resume combat" }).click();
   await page
+    .getByRole("button", { name: "Pause combat" })
+    .waitFor({ timeout: 10_000 });
+  await page
     .getByRole("button", { name: "Resume combat" })
     .waitFor({ timeout: 90_000 });
   await page.evaluate(() =>
