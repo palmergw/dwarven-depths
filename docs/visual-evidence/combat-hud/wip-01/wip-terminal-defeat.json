@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "wip-terminal-defeat",
   "label": "WIP #275 — wip-terminal-defeat",
-  "sourceHead": "df918bbc0e78172e0eeacea32a3a626d42230db3",
+  "sourceHead": "aeccbe908c6a224dc2262cfa9c2484f70c1e8739",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-terminal-defeat.png",
   "screenshotSha256": "e9835d221bf197150f487236792b4f58c2fda13f0e5c76595f8aefa6913791c4",
