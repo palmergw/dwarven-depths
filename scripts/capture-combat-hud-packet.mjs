@@ -67,7 +67,7 @@ async function armPause(page, condition) {
           ? (truth?.snapshot.tick ?? -1) >= 900 &&
             document
               .querySelector(".hud-plaque-center dd")
-              ?.textContent?.trim() === "2 of 2"
+              ?.textContent?.trim() === "2"
           : requestedCondition === "ability-ready"
             ? (truth?.snapshot.tick ?? -1) >= 1800 &&
               warden?.targetEntityId !== null &&
@@ -274,7 +274,7 @@ try {
       "wip-wave-transition",
       () =>
         document.querySelector(".hud-plaque-center dd")?.textContent?.trim() ===
-        "2 of 2"
+        "2"
     )
   );
 

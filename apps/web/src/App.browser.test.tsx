@@ -901,11 +901,44 @@ describe("player-facing combat HUD", () => {
 
     await vi.waitFor(() =>
       expect(document.querySelector(".combat-hud")?.textContent).toContain(
-        "FortressHoldingWave1 of 1Hostiles1"
+        "FortressHoldingWave1Hostiles1"
       )
     );
     expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
-      "Combat paused. Fortress holding. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. 1 active battlefield status."
+      "Combat paused. Fortress holding. Wave 1. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. Elite enemy is staggered until tick 30."
+    );
+  });
+
+  it("announces an authoritative terminal result instead of active combat", async () => {
+    const snapshot = {
+      schemaVersion: 2,
+      scenarioId: "scenario.shuttergate",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 50,
+      previousTick: 49,
+      phase: "terminal",
+      nodes: [],
+      connections: [],
+      entities: [],
+      entityTransitions: [],
+      encounter: {
+        startedWaveIds: ["wave.shuttergate.one"],
+        activeWaveId: null,
+        pendingSpawnCount: 0,
+        livingHostileCount: 0,
+        terminalResult: "defeat"
+      }
+    } as const satisfies RenderSnapshot;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<CombatHud snapshot={snapshot} />);
+
+    await vi.waitFor(() =>
+      expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
+        "Combat ended in defeat. Fortress fallen. Wave Complete. 0 hostiles active."
+      )
     );
   });
 });
@@ -1106,6 +1139,48 @@ describe("semantic combat controls", () => {
       "unavailable"
     );
   });
+
+  it.each([
+    ["owner_downed", "Iron Warden is down"],
+    ["cooldown_active", "Recharging"],
+    ["committed_action_conflict", "Finish current action first"],
+    ["phase_unavailable", "Available during combat"],
+    ["target_or_facing_unavailable", "No valid target"],
+    ["unexpected_reason", "Ability unavailable"]
+  ])(
+    "presents the %s rejection without exposing its stable ID",
+    async (reason, label) => {
+      const container = document.createElement("div");
+      document.body.append(container);
+      root = createRoot(container);
+      root.render(
+        <CombatControls
+          dwarves={[
+            {
+              entityId: "entity.dwarf.warden",
+              characterId: "character.iron_warden",
+              supportedTargetPolicies: ["nearest"],
+              activeAbilities: [
+                {
+                  abilityId: "ability.iron_warden.shield_slam",
+                  cooldownCompleteAtTick: null,
+                  rejectionReason: reason
+                }
+              ]
+            }
+          ]}
+          onSetTargetPolicy={vi.fn()}
+        />
+      );
+
+      await vi.waitFor(() =>
+        expect(document.querySelector(".ability-state")?.textContent).toBe(
+          label
+        )
+      );
+      expect(document.body.textContent).not.toContain(reason);
+    }
+  );
 });
 
 describe("authoritative web worker", () => {

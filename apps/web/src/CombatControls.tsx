@@ -10,6 +10,23 @@ const TARGET_POLICY_LABELS: Readonly<Record<TargetPolicy, string>> = {
   boss_or_elite_first: "Boss or elite first"
 };
 
+const ABILITY_REJECTION_LABELS: Readonly<Record<string, string>> = {
+  ability_committed: "Activation committed",
+  duplicate_ability_command: "Activation already queued",
+  owner_unavailable: "Iron Warden unavailable",
+  owner_downed: "Iron Warden is down",
+  ability_unsupported: "Ability unavailable for Iron Warden",
+  phase_unavailable: "Available during combat",
+  target_or_facing_unavailable: "No valid target",
+  no_valid_target: "No valid target",
+  cooldown_active: "Recharging",
+  committed_action_conflict: "Finish current action first"
+};
+
+function abilityRejectionLabel(reason: string): string {
+  return ABILITY_REJECTION_LABELS[reason] ?? "Ability unavailable";
+}
+
 const wardenPortraitUrl = new URL(
   "../../../assets/game-art/production-scene/exports/hud/warden-portrait.png",
   import.meta.url
@@ -228,10 +245,7 @@ export function CombatControls({
                             {pending
                               ? "Activation queued"
                               : ability.rejectionReason !== null
-                                ? ability.rejectionReason ===
-                                  "phase_unavailable"
-                                  ? "Available during combat"
-                                  : "No valid target"
+                                ? abilityRejectionLabel(ability.rejectionReason)
                                 : cooldownTicks === null
                                   ? "Ready"
                                   : `Recharging · ${cooldownTicks} ticks`}

@@ -23,6 +23,7 @@ function encounterState(snapshot: RenderSnapshot): {
   readonly hostiles: number;
   readonly pending: number;
   readonly fortress: string;
+  readonly terminalResult: "victory" | "defeat" | null;
 } {
   if (snapshot.schemaVersion !== 2) {
     return {
@@ -30,7 +31,8 @@ function encounterState(snapshot: RenderSnapshot): {
       hostiles: snapshot.entities.filter((entity) => entity.faction === "enemy")
         .length,
       pending: 0,
-      fortress: snapshot.phase === "terminal" ? "Resolved" : "Holding"
+      fortress: snapshot.phase === "terminal" ? "Resolved" : "Holding",
+      terminalResult: null
     };
   }
   const activeWaveIndex =
@@ -42,7 +44,7 @@ function encounterState(snapshot: RenderSnapshot): {
   return {
     wave:
       activeWaveIndex >= 0
-        ? `${activeWaveIndex + 1} of ${snapshot.encounter.startedWaveIds.length}`
+        ? `${activeWaveIndex + 1}`
         : snapshot.encounter.terminalResult === null
           ? "Approaching"
           : "Complete",
@@ -53,8 +55,38 @@ function encounterState(snapshot: RenderSnapshot): {
         ? "Fallen"
         : snapshot.encounter.terminalResult === "victory"
           ? "Secure"
-          : "Holding"
+          : "Holding",
+    terminalResult: snapshot.encounter.terminalResult
   };
+}
+
+const STATUS_LABELS: Readonly<Record<string, string>> = {
+  "status.haste": "hastened",
+  "status.slow": "slowed",
+  "status.staggered": "staggered"
+};
+
+function combatantLabel(
+  entity: Extract<RenderSnapshot, { schemaVersion: 2 }>["entities"][number]
+): string {
+  if (entity.faction === "dwarf") return "Iron Warden";
+  if (entity.faction === "deployable") return "Fortress defense";
+  if (entity.boss) return "Boss";
+  return entity.elite ? "Elite enemy" : "Enemy";
+}
+
+function statusSummary(snapshot: RenderSnapshot): string {
+  if (snapshot.schemaVersion !== 2) return "";
+  return snapshot.entities
+    .flatMap((entity) =>
+      entity.statuses.map((status) => {
+        const effect = STATUS_LABELS[status.id];
+        return effect === undefined
+          ? `${combatantLabel(entity)} is affected by an active status.`
+          : `${combatantLabel(entity)} is ${effect} until tick ${status.expiresAtTick}.`;
+      })
+    )
+    .join(" ");
 }
 
 interface CombatHudProps {
@@ -65,13 +97,15 @@ interface CombatHudProps {
 export function CombatHud({ snapshot, manualPaused = false }: CombatHudProps) {
   const health = healthState(snapshot);
   const encounter = encounterState(snapshot);
-  const activeStatusCount =
-    snapshot.schemaVersion === 2
-      ? snapshot.entities.reduce(
-          (count, entity) => count + entity.statuses.length,
-          0
-        )
-      : 0;
+  const activeStatuses = statusSummary(snapshot);
+  const combatActivity =
+    encounter.terminalResult === null
+      ? manualPaused
+        ? "Combat paused"
+        : snapshot.phase === "terminal"
+          ? "Combat ended"
+          : "Combat active"
+      : `Combat ended in ${encounter.terminalResult}`;
 
   return (
     <section
@@ -108,16 +142,13 @@ export function CombatHud({ snapshot, manualPaused = false }: CombatHudProps) {
         </div>
       </dl>
       <p className="combat-state-summary" aria-live="polite" aria-atomic="true">
-        Combat {manualPaused ? "paused" : "active"}. Fortress{" "}
-        {encounter.fortress.toLowerCase()}.
-        {` ${encounter.hostiles} hostiles active`}
+        {combatActivity}. Fortress {encounter.fortress.toLowerCase()}. Wave{" "}
+        {encounter.wave}.{` ${encounter.hostiles} hostiles active`}
         {encounter.pending > 0 ? `, ${encounter.pending} approaching` : ""}.
         {health === null
           ? ""
           : ` Iron Warden health ${health.current} of ${health.maximum}.`}
-        {activeStatusCount > 0
-          ? ` ${activeStatusCount} active battlefield ${activeStatusCount === 1 ? "status" : "statuses"}.`
-          : ""}
+        {activeStatuses === "" ? "" : ` ${activeStatuses}`}
       </p>
     </section>
   );
