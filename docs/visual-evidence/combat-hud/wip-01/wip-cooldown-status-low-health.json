@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "id": "wip-cooldown-status-low-health",
+  "label": "WIP #275 — wip-cooldown-status-low-health",
+  "sourceHead": "761ab70cf4276f0bfe069eeb8047dde5f2d6e97a",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "screenshot": "wip-cooldown-status-low-health.png",
+  "screenshotSha256": "d5454e71543a317e46c89a7c619186bdd9969f08745080d2adc698efe1bfbe36",
+  "viewport": [
+    1440,
+    900
+  ],
+  "phase": "running",
+  "truth": {
+    "schemaVersion": 1,
+    "captureReady": true,
+    "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+    "viewport": [
+      1440,
+      900
+    ],
+    "frame": [
+      1280,
+      720
+    ],
+    "snapshot": {
+      "levelId": "level.shuttergate_hall",
+      "mapId": "map.shuttergate_hall",
+      "tick": 1830,
+      "phase": "running"
+    },
+    "registry": {
+      "dwarfCount": 1,
+      "hostileCount": 2,
+      "totalCount": 3,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "faction": "dwarf",
+          "nodeId": "node.shuttergate_north_guard",
+          "visualId": "character.iron_warden",
+          "archetype": "character",
+          "currentHealth": 9,
+          "maximumHealth": 240,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "committed",
+            "abilityId": null
+          },
+          "targetEntityId": "entity.enemy.shuttergate_007",
+          "statusIds": [],
+          "transition": "active",
+          "elite": false,
+          "boss": false,
+          "x": 605,
+          "y": 320,
+          "nominalHeight": 56,
+          "canvasBounds": [
+            549,
+            254,
+            112,
+            72
+          ],
+          "alphaBounds": [
+            573,
+            264,
+            64,
+            56
+          ],
+          "nonzeroAlphaPixels": 2354,
+          "fullAlphaPixels": 2157,
+          "partialAlphaPixels": 197,
+          "intersectsUnobscuredWorldViewport": true
+        },
+        {
+          "id": "entity.enemy.shuttergate_006",
+          "faction": "enemy",
+          "nodeId": "node.shuttergate_east_hall",
+          "visualId": "enemy.goblin_slinger",
+          "archetype": "basic",
+          "currentHealth": 38,
+          "maximumHealth": 38,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery",
+            "abilityId": null
+          },
+          "targetEntityId": "entity.dwarf.warden",
+          "statusIds": [],
+          "transition": "active",
+          "elite": false,
+          "boss": false,
+          "x": 838,
+          "y": 330,
+          "nominalHeight": 44,
+          "canvasBounds": [
+            798,
+            276,
+            80,
+            60
+          ],
+          "alphaBounds": [
+            812,
+            286,
+            52,
+            44
+          ],
+          "nonzeroAlphaPixels": 1341,
+          "fullAlphaPixels": 1135,
+          "partialAlphaPixels": 206,
+          "intersectsUnobscuredWorldViewport": true
+        },
+        {
+          "id": "entity.enemy.shuttergate_007",
+          "faction": "enemy",
+          "nodeId": "node.shuttergate_gate",
+          "visualId": "enemy.goblin_bulwark",
+          "archetype": "elite",
+          "currentHealth": 96,
+          "maximumHealth": 120,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery",
+            "abilityId": null
+          },
+          "targetEntityId": "entity.dwarf.warden",
+          "statusIds": [
+            "status.staggered"
+          ],
+          "transition": "active",
+          "elite": true,
+          "boss": false,
+          "x": 1110,
+          "y": 253,
+          "nominalHeight": 44,
+          "canvasBounds": [
+            1070,
+            199,
+            80,
+            60
+          ],
+          "alphaBounds": [
+            1084,
+            209,
+            52,
+            44
+          ],
+          "nonzeroAlphaPixels": 1341,
+          "fullAlphaPixels": 1135,
+          "partialAlphaPixels": 206,
+          "intersectsUnobscuredWorldViewport": true
+        }
+      ]
+    },
+    "occlusion": {
+      "artifactId": "authored-entrance-depth",
+      "layerOrder": [
+        "complete-static-scene-color",
+        "depth-tested-world-rings",
+        "depth-tested-world-effects",
+        "depth-tested-world-subjects",
+        "depth-tested-world-focus",
+        "hud"
+      ],
+      "clips": [
+        "world-ring",
+        "world-effect",
+        "world-subject",
+        "world-focus"
+      ],
+      "exempts": [
+        "hud"
+      ],
+      "witness": {
+        "entityId": "entity.enemy.shuttergate_006",
+        "subjectAlphaPixels": 1341,
+        "subjectPixelsOverRearArtifact": 0,
+        "subjectPixelsOverGroundArtifact": 0,
+        "subjectPixelsBehindForegroundArtifact": 0,
+        "worldRingPixelsBehindForegroundArtifact": 0,
+        "transientEffectPixelsBehindForegroundArtifact": 0
+      },
+      "depthResolution": {
+        "intent": "rear-visible-and-foreground-occluded",
+        "actualAnchor": [
+          838,
+          330
+        ],
+        "rearOverlapPixels": 0,
+        "subjectGroundOverlapPixels": 0,
+        "foregroundOcclusionPixels": 0,
+        "worldRingOcclusionPixels": 0,
+        "transientEffectOcclusionPixels": 0
+      }
+    },
+    "alignment": {
+      "snapshotCount": 3,
+      "registryCount": 3,
+      "renderedCount": 3,
+      "registryEntitiesMatch": true,
+      "renderedEntitiesMatch": true,
+      "authoritativeEntitiesMatch": true,
+      "valid": true
+    }
+  },
+  "hud": "The ShuttergateFortressHoldingWave3 of 3Hostiles2Combat paused. Fortress holding. 2 hostiles active. Iron Warden health 9 of 240. 1 active battlefield status.",
+  "health": {
+    "current": "9",
+    "maximum": "240",
+    "low": "true"
+  },
+  "ability": {
+    "disabled": true,
+    "state": "cooldown",
+    "text": "Recharging · 82 ticks"
+  },
+  "pause": {
+    "control": "Resume combat",
+    "banner": "Combat pausedPress Escape or resume when ready"
+  },
+  "targetMenuOpen": "false"
+}
