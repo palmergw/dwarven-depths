@@ -77,12 +77,7 @@ async function armPause(page, condition) {
                 truth?.registry.entities.some(
                   (entity) => entity.statusIds.length > 0
                 ) === true
-              : requestedCondition === "low-health"
-                ? warden?.currentHealth !== null &&
-                  warden?.maximumHealth !== null &&
-                  warden.currentHealth > 0 &&
-                  warden.currentHealth / warden.maximumHealth <= 0.3
-                : false;
+              : false;
       if (!matched) return;
       const pause = [...document.querySelectorAll("button")].find(
         (button) => button.getAttribute("aria-label") === "Pause combat"
@@ -263,24 +258,14 @@ try {
   captures.push(
     await capture(
       page,
-      "wip-cooldown-status",
+      "wip-cooldown-status-low-health",
       () =>
         document
           .querySelector(".ability-control")
           ?.getAttribute("data-ability-state") === "cooldown" &&
         window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
           (entity) => entity.statusIds.length > 0
-        ) === true
-    )
-  );
-
-  await armPause(page, "low-health");
-  await resumeUntilPaused(page);
-  captures.push(
-    await capture(
-      page,
-      "wip-low-health",
-      () =>
+        ) === true &&
         document
           .querySelector(".warden-health-track")
           ?.getAttribute("data-low-health") === "true"
