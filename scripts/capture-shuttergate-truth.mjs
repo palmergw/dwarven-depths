@@ -472,7 +472,7 @@ try {
     evidence.truth.registry.hostileCount !== 1 ||
     evidence.truth.alignment.valid !== true ||
     observedVisuals.valid !== true ||
-    evidence.hudCountLabels.join("|") !== "Warden 1|Hostiles 1" ||
+    evidence.hudCountLabels.join("|") !== "Fortress Holding|Hostiles 1" ||
     evidence.controls.pause !== "Resume combat" ||
     evidence.controls.shieldSlamReady !== true
   )
