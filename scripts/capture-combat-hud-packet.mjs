@@ -195,6 +195,38 @@ async function capture(page, id, expected) {
   return sidecar;
 }
 
+async function startAccessibilityPage(browser, preferences) {
+  const page = await browser.newPage({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+    reducedMotion: "reduce"
+  });
+  await page.addInitScript((requestedPreferences) => {
+    localStorage.setItem(
+      "dwarven-depths.presentation.motion-preference.v1",
+      "reduce"
+    );
+    localStorage.setItem(
+      "dwarven-depths.presentation.contrast-preference.v1",
+      requestedPreferences.contrast
+    );
+    localStorage.setItem(
+      "dwarven-depths.presentation.text-scale.v1",
+      requestedPreferences.textScale
+    );
+  }, preferences);
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Begin preparation" }).click();
+  await page.getByRole("button", { name: "Confirm preparation" }).click();
+  await page.waitForFunction(
+    (expectedFixture) =>
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady === true &&
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.fixtureId === expectedFixture,
+    fixtureId
+  );
+  return page;
+}
+
 const browser = await chromium.launch({ headless: true });
 const captures = [];
 try {
@@ -289,6 +321,37 @@ try {
     )
   );
   await page.close();
+
+  const highContrastPage = await startAccessibilityPage(browser, {
+    contrast: "high",
+    textScale: "default"
+  });
+  captures.push(
+    await capture(
+      highContrastPage,
+      "wip-high-contrast-paused",
+      () =>
+        document
+          .querySelector("main")
+          ?.getAttribute("data-contrast-preference") === "high"
+    )
+  );
+  await highContrastPage.close();
+
+  const largeTextPage = await startAccessibilityPage(browser, {
+    contrast: "standard",
+    textScale: "extra-large"
+  });
+  captures.push(
+    await capture(
+      largeTextPage,
+      "wip-large-text-paused",
+      () =>
+        document.querySelector("main")?.getAttribute("data-text-scale") ===
+        "extra-large"
+    )
+  );
+  await largeTextPage.close();
 } finally {
   await browser.close();
 }
