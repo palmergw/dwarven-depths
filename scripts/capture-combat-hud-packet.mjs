@@ -221,7 +221,9 @@ async function startAccessibilityPage(browser, preferences) {
   await page.waitForFunction(
     (expectedFixture) =>
       window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady === true &&
-      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.fixtureId === expectedFixture,
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.fixtureId === expectedFixture &&
+      (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick ?? -1) >= 2 &&
+      document.querySelector(".combat-pause-banner") !== null,
     fixtureId
   );
   return page;
