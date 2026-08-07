@@ -435,6 +435,7 @@ export function App({
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
   const pendingAbilityKeysRef = useRef(new Set<string>());
+  const pendingTargetPoliciesRef = useRef(new Map<string, TargetPolicy>());
   const resultHeadingRef = useRef<HTMLHeadingElement>(null);
   const failureHeadingRef = useRef<HTMLHeadingElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
@@ -457,6 +458,11 @@ export function App({
   function clearPendingAbilities(): void {
     pendingAbilityKeysRef.current.clear();
     setPendingAbilityKeys(new Set());
+  }
+
+  function clearPendingTargetPolicies(): void {
+    pendingTargetPoliciesRef.current.clear();
+    setPendingTargetPolicies(new Map());
   }
 
   const postCurrentWorkerMessage = useCallback(
@@ -745,7 +751,7 @@ export function App({
       workerRef.current = undefined;
       workerFailureRef.current = undefined;
       clearPendingAbilities();
-      setPendingTargetPolicies(new Map());
+      clearPendingTargetPolicies();
       setCombatControls(undefined);
       setRenderSnapshot(undefined);
       setView({
@@ -764,7 +770,7 @@ export function App({
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "combat_controls") {
         clearPendingAbilities();
-        setPendingTargetPolicies(new Map());
+        clearPendingTargetPolicies();
         setCombatControls(message);
       } else if (message.type === "snapshot") {
         if (message.phase === "running" && message.protocolVersion !== 1) {
@@ -845,7 +851,7 @@ export function App({
     submittedRef.current = false;
     manualPauseRequestedRef.current = undefined;
     clearPendingAbilities();
-    setPendingTargetPolicies(new Map());
+    clearPendingTargetPolicies();
     setCombatControls(undefined);
     setRenderSnapshot(undefined);
     setView({ phase: "checkpoint" });
@@ -879,12 +885,17 @@ export function App({
       const dwarf = combatControls.dwarves.find(
         (candidate) => candidate.entityId === dwarfEntityId
       );
-      if (!dwarf?.supportedTargetPolicies.includes(requestedPolicy)) return;
-      setPendingTargetPolicies((current) => {
-        const next = new Map(current);
-        next.set(dwarfEntityId, requestedPolicy);
-        return next;
-      });
+      if (
+        !dwarf?.supportedTargetPolicies.includes(requestedPolicy) ||
+        pendingTargetPoliciesRef.current.has(dwarfEntityId)
+      )
+        return;
+      const nextPendingTargetPolicies = new Map(
+        pendingTargetPoliciesRef.current
+      );
+      nextPendingTargetPolicies.set(dwarfEntityId, requestedPolicy);
+      pendingTargetPoliciesRef.current = nextPendingTargetPolicies;
+      setPendingTargetPolicies(nextPendingTargetPolicies);
       postCurrentWorkerMessage(
         {
           protocolVersion: WEB_PROTOCOL_VERSION,

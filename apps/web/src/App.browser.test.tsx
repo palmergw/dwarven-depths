@@ -984,6 +984,40 @@ describe("semantic combat controls", () => {
     );
   });
 
+  it("locks targeting while an authoritative policy change is pending", async () => {
+    const onSetTargetPolicy = vi.fn();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <CombatControls
+        dwarves={[
+          {
+            entityId: "entity.dwarf.warden",
+            characterId: "character.iron_warden",
+            supportedTargetPolicies: ["nearest", "highest_armor"]
+          }
+        ]}
+        pendingTargetPolicies={
+          new Map([["entity.dwarf.warden", "highest_armor"]])
+        }
+        onSetTargetPolicy={onSetTargetPolicy}
+      />
+    );
+
+    const targetingTrigger = await vi.waitFor(() => {
+      const candidate = document.querySelector(".character-portrait-button");
+      expect(candidate).toBeInstanceOf(HTMLButtonElement);
+      return candidate as HTMLButtonElement;
+    });
+    expect(targetingTrigger.disabled).toBe(true);
+    expect(document.querySelector(".target-policy-label")?.textContent).toBe(
+      "Highest armor"
+    );
+    expect(document.querySelector(".target-policy-menu")).not.toBeVisible();
+    expect(onSetTargetPolicy).not.toHaveBeenCalled();
+  });
+
   it("submits Shield Slam accessibly and presents authoritative cooldown feedback", async () => {
     const onActivateAbility = vi.fn();
     const container = document.createElement("div");

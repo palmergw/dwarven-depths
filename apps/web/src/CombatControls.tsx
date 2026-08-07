@@ -107,6 +107,7 @@ export function CombatControls({
                     <button
                       className="character-portrait-button"
                       type="button"
+                      disabled={selectedPolicy !== undefined}
                       aria-label="Open Iron Warden targeting"
                       aria-expanded={menuOpen}
                       aria-controls={menuId}
