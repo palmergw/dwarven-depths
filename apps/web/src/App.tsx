@@ -434,8 +434,14 @@ export function App({
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
-  const pendingAbilityKeysRef = useRef(new Set<string>());
-  const pendingTargetPoliciesRef = useRef(new Map<string, TargetPolicy>());
+  const latestCombatControlsTickRef = useRef(-1);
+  const pendingAbilityKeysRef = useRef(new Map<string, number>());
+  const pendingTargetPoliciesRef = useRef(
+    new Map<
+      string,
+      { readonly policy: TargetPolicy; readonly submittedAtTick: number }
+    >()
+  );
   const resultHeadingRef = useRef<HTMLHeadingElement>(null);
   const failureHeadingRef = useRef<HTMLHeadingElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
@@ -732,6 +738,7 @@ export function App({
   function startPreparation(): void {
     if (initializedRef.current || view.phase !== "checkpoint") return;
     initializedRef.current = true;
+    latestCombatControlsTickRef.current = -1;
     let worker: Worker;
     try {
       worker = createWorker();
@@ -769,8 +776,36 @@ export function App({
       } else if (message.type === "render_snapshot") {
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "combat_controls") {
-        clearPendingAbilities();
-        clearPendingTargetPolicies();
+        if (
+          message.protocolVersion === 4 &&
+          message.authoritativeTick < latestCombatControlsTickRef.current
+        )
+          return;
+        if (message.protocolVersion === 4) {
+          latestCombatControlsTickRef.current = message.authoritativeTick;
+          for (const [key, submittedAtTick] of pendingAbilityKeysRef.current) {
+            if (submittedAtTick < message.authoritativeTick)
+              pendingAbilityKeysRef.current.delete(key);
+          }
+          setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
+          for (const [
+            dwarfEntityId,
+            pending
+          ] of pendingTargetPoliciesRef.current) {
+            if (pending.submittedAtTick < message.authoritativeTick)
+              pendingTargetPoliciesRef.current.delete(dwarfEntityId);
+          }
+          setPendingTargetPolicies(
+            new Map(
+              [...pendingTargetPoliciesRef.current].map(
+                ([dwarfEntityId, pending]) => [dwarfEntityId, pending.policy]
+              )
+            )
+          );
+        } else {
+          clearPendingAbilities();
+          clearPendingTargetPolicies();
+        }
         setCombatControls(message);
       } else if (message.type === "snapshot") {
         if (message.phase === "running" && message.protocolVersion !== 1) {
@@ -850,6 +885,7 @@ export function App({
     initializedRef.current = false;
     submittedRef.current = false;
     manualPauseRequestedRef.current = undefined;
+    latestCombatControlsTickRef.current = -1;
     clearPendingAbilities();
     clearPendingTargetPolicies();
     setCombatControls(undefined);
@@ -893,9 +929,19 @@ export function App({
       const nextPendingTargetPolicies = new Map(
         pendingTargetPoliciesRef.current
       );
-      nextPendingTargetPolicies.set(dwarfEntityId, requestedPolicy);
+      nextPendingTargetPolicies.set(dwarfEntityId, {
+        policy: requestedPolicy,
+        submittedAtTick: latestCombatControlsTickRef.current
+      });
       pendingTargetPoliciesRef.current = nextPendingTargetPolicies;
-      setPendingTargetPolicies(nextPendingTargetPolicies);
+      setPendingTargetPolicies(
+        new Map(
+          [...nextPendingTargetPolicies].map(([entityId, pending]) => [
+            entityId,
+            pending.policy
+          ])
+        )
+      );
       postCurrentWorkerMessage(
         {
           protocolVersion: WEB_PROTOCOL_VERSION,
@@ -930,8 +976,11 @@ export function App({
         return;
       const pendingKey = `${dwarfEntityId}\u0000${abilityId}`;
       if (pendingAbilityKeysRef.current.has(pendingKey)) return;
-      pendingAbilityKeysRef.current.add(pendingKey);
-      setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current));
+      pendingAbilityKeysRef.current.set(
+        pendingKey,
+        latestCombatControlsTickRef.current
+      );
+      setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
       postCurrentWorkerMessage(
         {
           protocolVersion: WEB_PROTOCOL_VERSION,

@@ -376,6 +376,7 @@ describe("web worker protocol", () => {
     const controls = {
       protocolVersion: 4,
       type: "combat_controls",
+      authoritativeTick: 7,
       contentManifestHash: "a".repeat(64),
       dwarves: [
         {
@@ -386,6 +387,12 @@ describe("web worker protocol", () => {
       ]
     };
     expect(parseWorkerMessage(controls)).toEqual(controls);
+    expect(
+      parseWorkerMessage({ ...controls, authoritativeTick: -1 })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...controls, authoritativeTick: 7.5 })
+    ).toBeUndefined();
     expect(
       parseWorkerMessage({
         ...controls,

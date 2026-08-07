@@ -102,6 +102,7 @@ export type WorkerMessage =
   | {
       readonly protocolVersion: 4;
       readonly type: "combat_controls";
+      readonly authoritativeTick: number;
       readonly contentManifestHash: string;
       readonly dwarves: readonly CombatControlDwarf[];
     }
@@ -184,6 +185,7 @@ type RecordValue = {
   atTick?: unknown;
   snapshot?: unknown;
   dwarves?: unknown;
+  authoritativeTick?: unknown;
   contentManifestHash?: unknown;
   dwarfEntityId?: unknown;
   characterId?: unknown;
@@ -357,12 +359,20 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
   if (value.type === "combat_controls") {
     if (
       (value.protocolVersion !== 3 && value.protocolVersion !== 4) ||
-      !hasExactKeys(value, [
-        "contentManifestHash",
-        "dwarves",
-        "protocolVersion",
-        "type"
-      ]) ||
+      (value.protocolVersion === 3
+        ? !hasExactKeys(value, [
+            "contentManifestHash",
+            "dwarves",
+            "protocolVersion",
+            "type"
+          ])
+        : !hasExactKeys(value, [
+            "authoritativeTick",
+            "contentManifestHash",
+            "dwarves",
+            "protocolVersion",
+            "type"
+          ])) ||
       !isHash(value.contentManifestHash) ||
       !Array.isArray(value.dwarves)
     )
@@ -372,6 +382,11 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         value.dwarves.length === 0
         ? (value as WorkerMessage)
         : undefined;
+    if (
+      !Number.isSafeInteger(value.authoritativeTick) ||
+      (value.authoritativeTick as number) < 0
+    )
+      return undefined;
     let previousEntityId = "";
     for (const dwarf of value.dwarves) {
       if (

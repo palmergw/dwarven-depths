@@ -286,6 +286,100 @@ class ControlledJourneyWorker {
   }
 }
 
+class ControlledTargetPolicyWorker {
+  readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
+  readonly targetPolicyCommands: string[] = [];
+
+  addEventListener(
+    type: string,
+    listener: (event: MessageEvent<unknown>) => void
+  ): void {
+    if (type === "message") this.listeners.add(listener);
+  }
+
+  postMessage(message: unknown): void {
+    if (typeof message !== "object" || message === null) return;
+    const candidate = message as {
+      readonly type?: string;
+      readonly command?: {
+        readonly type?: string;
+        readonly requestedPolicy?: string;
+      };
+    };
+    if (candidate.type === "initialize") {
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "preparation",
+        levelId: "level.shuttergate_hall",
+        deployableEntityCount: 1,
+        placementPointCount: 2
+      });
+    } else if (candidate.command?.type === "confirmPreparation") {
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: true,
+        resumeRequestId: null
+      });
+      this.emit({
+        protocolVersion: 4,
+        type: "render_snapshot",
+        snapshot: {
+          schemaVersion: 2,
+          scenarioId: "scenario.shuttergate",
+          levelId: "level.shuttergate_hall",
+          mapId: "map.shuttergate_hall",
+          tick: 10,
+          previousTick: 9,
+          phase: "running",
+          nodes: [],
+          connections: [],
+          entities: [],
+          entityTransitions: [],
+          encounter: {
+            startedWaveIds: [],
+            activeWaveId: null,
+            pendingSpawnCount: 0,
+            livingHostileCount: 0,
+            terminalResult: null
+          }
+        }
+      });
+      this.emitControls(10);
+    } else if (
+      candidate.command?.type === "setTargetPolicy" &&
+      candidate.command.requestedPolicy !== undefined
+    ) {
+      this.targetPolicyCommands.push(candidate.command.requestedPolicy);
+    }
+  }
+
+  emitControls(authoritativeTick: number): void {
+    this.emit({
+      protocolVersion: 4,
+      type: "combat_controls",
+      authoritativeTick,
+      contentManifestHash: "a".repeat(64),
+      dwarves: [
+        {
+          entityId: "entity.dwarf.warden",
+          characterId: "character.iron_warden",
+          supportedTargetPolicies: ["nearest", "highest_armor"]
+        }
+      ]
+    });
+  }
+
+  emit(message: unknown): void {
+    const event = new MessageEvent("message", { data: message });
+    for (const listener of this.listeners) listener(event);
+  }
+
+  terminate(): void {}
+}
+
 async function buttonWithText(text: string): Promise<HTMLButtonElement> {
   return vi.waitFor(() => {
     const candidate = Array.from(document.querySelectorAll("button")).find(
@@ -1016,6 +1110,36 @@ describe("semantic combat controls", () => {
     );
     expect(document.querySelector(".target-policy-menu")).not.toBeVisible();
     expect(onSetTargetPolicy).not.toHaveBeenCalled();
+  });
+
+  it("retains the policy lock until a later authoritative projection", async () => {
+    const worker = new ControlledTargetPolicyWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    const targetingTrigger = await vi.waitFor(() => {
+      const candidate = document.querySelector(".character-portrait-button");
+      expect(candidate).toBeInstanceOf(HTMLButtonElement);
+      return candidate as HTMLButtonElement;
+    });
+    await userEvent.click(targetingTrigger);
+    await userEvent.click(await buttonWithText("Highest armor"));
+    expect(worker.targetPolicyCommands).toEqual(["highest_armor"]);
+    expect(targetingTrigger.disabled).toBe(true);
+
+    worker.emitControls(10);
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(true));
+    expect(worker.targetPolicyCommands).toEqual(["highest_armor"]);
+
+    worker.emitControls(11);
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(false));
+    await userEvent.click(targetingTrigger);
+    await userEvent.click(await buttonWithText("Nearest"));
+    expect(worker.targetPolicyCommands).toEqual(["highest_armor", "nearest"]);
   });
 
   it("submits Shield Slam accessibly and presents authoritative cooldown feedback", async () => {

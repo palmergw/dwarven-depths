@@ -188,6 +188,7 @@ function postCombatControls(): void {
     post({
       protocolVersion: 4,
       type: "combat_controls",
+      authoritativeTick: liveHost?.state.tick ?? 0,
       contentManifestHash: preparedContent.manifestHash,
       dwarves: authoritativeCombatControls()
     });
