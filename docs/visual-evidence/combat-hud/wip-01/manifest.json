@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "WIP #275 combat HUD packet",
-  "sourceHead": "2bde5a21645b24c244423a6a24ca2565f1f5f461",
+  "sourceHead": "ecbdf482dbd48575a807ffb03110a2844c41566a",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [
     1440,
@@ -17,7 +17,7 @@
       "id": "wip-default-active",
       "screenshot": "wip-default-active.png",
       "screenshotSha256": "25e048441530def6a1332e325d135b58bcf5939d2d91586e96cdf060705db2a8",
-      "tick": 7,
+      "tick": 5,
       "phase": "running",
       "abilityState": "ready",
       "health": {
@@ -29,7 +29,7 @@
     {
       "id": "wip-default-paused",
       "screenshot": "wip-default-paused.png",
-      "screenshotSha256": "def716fffdcb55cf4e36cb00931bc7a6aca28506858d8ab46d05f30dd98aaf23",
+      "screenshotSha256": "faf650cf61a01b290d5ff1f13c30367499871069268091d193df6936e5f245e5",
       "tick": 2,
       "phase": "running",
       "abilityState": "ready",
@@ -42,7 +42,7 @@
     {
       "id": "wip-wave-transition",
       "screenshot": "wip-wave-transition.png",
-      "screenshotSha256": "685c480fcf451337815c581fbfb224b2e25b3c97254da51dce2a7c2c0028d0c1",
+      "screenshotSha256": "e0e5bc9cc421c93fff6ac82a8776a8d7851c09c91b0f415cc1db48fd71d4edf9",
       "tick": 901,
       "phase": "running",
       "abilityState": "ready",
@@ -55,7 +55,7 @@
     {
       "id": "wip-ability-ready",
       "screenshot": "wip-ability-ready.png",
-      "screenshotSha256": "343893b88450f9345b7cc1938550cbaa7aee4f7ac45a1643b39edb5dcd93dc78",
+      "screenshotSha256": "fc8eb543d42967cde07f50af6d8881a455dd73882f4986bb0b82033112a37ff4",
       "tick": 1822,
       "phase": "running",
       "abilityState": "ready",
@@ -68,7 +68,7 @@
     {
       "id": "wip-cooldown-status-low-health",
       "screenshot": "wip-cooldown-status-low-health.png",
-      "screenshotSha256": "48ab53286bc2d1ca727b9f2ea6d72751a4162592bea095e483900655a21704c1",
+      "screenshotSha256": "9e103cc608b3cfd3cbab617603181900781cd0c3c9f00d8925405b1bbc755649",
       "tick": 1830,
       "phase": "running",
       "abilityState": "cooldown",
@@ -89,7 +89,7 @@
     {
       "id": "wip-high-contrast-paused",
       "screenshot": "wip-high-contrast-paused.png",
-      "screenshotSha256": "52c99c570d6c53f4a4a1dcce603a2ddc492eb73bfa2f06de5c0e828ba3ef832e",
+      "screenshotSha256": "6f316dadcfdd80f32c74db19f687882dff0f2ff37ecea522183fbfb49a888246",
       "tick": 2,
       "phase": "running",
       "abilityState": "ready",
@@ -102,7 +102,7 @@
     {
       "id": "wip-large-text-paused",
       "screenshot": "wip-large-text-paused.png",
-      "screenshotSha256": "f3c4da9e2ae7957ee60588eecbf8f5b056dd06c6c5af2be0375b06e0a33d0321",
+      "screenshotSha256": "33f97812b076814fb184a560d735b7eda41775e03c46580a4d9aafac3ca7ee7d",
       "tick": 2,
       "phase": "running",
       "abilityState": "ready",

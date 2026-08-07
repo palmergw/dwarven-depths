@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-cooldown-status-low-health",
   "label": "WIP #275 — wip-cooldown-status-low-health",
-  "sourceHead": "2bde5a21645b24c244423a6a24ca2565f1f5f461",
+  "sourceHead": "ecbdf482dbd48575a807ffb03110a2844c41566a",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-cooldown-status-low-health.png",
-  "screenshotSha256": "48ab53286bc2d1ca727b9f2ea6d72751a4162592bea095e483900655a21704c1",
+  "screenshotSha256": "9e103cc608b3cfd3cbab617603181900781cd0c3c9f00d8925405b1bbc755649",
   "viewport": [
     1440,
     900
