@@ -1331,27 +1331,10 @@ main[data-view-phase="running"] .panel {
 .active-combat-screen .combat-hud dd[data-fortress-state="fallen"] {
   color: #ffb7a0;
 }
-.warden-health {
-  position: absolute;
-  z-index: 14;
-  bottom: 2.3%;
-  left: 8.7%;
-  display: grid;
-  width: 116px;
-  grid-template-columns: 1fr auto;
-  gap: 0.18rem 0.4rem;
-  color: #f1d49a;
-  font-family: Georgia, serif;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-  text-shadow: 0 1px 2px #000;
-  text-transform: uppercase;
-}
 .warden-health-track {
   appearance: none;
-  grid-column: 1 / -1;
   width: 100%;
-  height: 8px;
+  height: 7px;
   overflow: hidden;
   border: 1px solid #c4934c;
   background: #180a08;
@@ -1364,13 +1347,12 @@ main[data-view-phase="running"] .panel {
 .warden-health-track::-moz-meter-bar {
   background: linear-gradient(90deg, #9e2c21, #d8612f);
 }
-.warden-health[data-low-health="true"] .warden-health-track {
+.warden-health-track[data-low-health="true"] {
   border-style: double;
   border-color: #fff0bd;
 }
-.warden-health[data-low-health="true"]
-  .warden-health-track::-webkit-meter-optimum-value,
-.warden-health[data-low-health="true"] .warden-health-track::-moz-meter-bar {
+.warden-health-track[data-low-health="true"]::-webkit-meter-optimum-value,
+.warden-health-track[data-low-health="true"]::-moz-meter-bar {
   background: repeating-linear-gradient(
     135deg,
     #d4442f 0 5px,
@@ -1419,6 +1401,35 @@ main[data-view-phase="running"] .panel {
 .combat-pause:focus-visible {
   border-color: #d6a759;
   color: #ffe3a0;
+}
+.combat-pause-banner {
+  position: absolute;
+  z-index: 13;
+  top: 9%;
+  left: 50%;
+  display: grid;
+  min-width: 220px;
+  padding: 0.45rem 1rem;
+  border: 2px solid #6f5438;
+  background: #090b0de8;
+  box-shadow:
+    inset 0 0 0 1px #b27a32,
+    0 0.75rem 2rem #000c;
+  color: #f2d49a;
+  font-family: Georgia, serif;
+  text-align: center;
+  text-transform: uppercase;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.combat-pause-banner strong {
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+}
+.combat-pause-banner span {
+  color: #b99b6d;
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
 }
 .combat-bottom-overlay {
   position: absolute;
@@ -1509,7 +1520,7 @@ main[data-view-phase="running"] .panel {
 .character-nameplate {
   display: grid;
   width: 126px;
-  height: 58px;
+  height: 76px;
   align-content: center;
   padding: 0.35rem 0.7rem;
   border: 2px solid #624a32;
@@ -1525,10 +1536,16 @@ main[data-view-phase="running"] .panel {
   font-size: 0.78rem;
   letter-spacing: 0.05em;
 }
-.character-nameplate span {
+.character-nameplate .target-policy-label {
   color: #b58c50;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
+}
+.character-nameplate .warden-health-value {
+  color: #f2d29a;
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+  text-align: right;
 }
 .target-policy-menu {
   position: absolute;

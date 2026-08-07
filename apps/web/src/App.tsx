@@ -1236,6 +1236,21 @@ export function App({
                 <CombatControls
                   dwarves={combatControls.dwarves}
                   currentTick={renderSnapshot.tick}
+                  selectedDwarfHealth={
+                    renderSnapshot.schemaVersion === 2
+                      ? (() => {
+                          const warden = renderSnapshot.entities.find(
+                            (entity) => entity.faction === "dwarf"
+                          );
+                          return warden === undefined
+                            ? undefined
+                            : {
+                                current: warden.currentHealth,
+                                maximum: warden.maximumHealth
+                              };
+                        })()
+                      : undefined
+                  }
                   pendingAbilityKeys={pendingAbilityKeys}
                   pendingTargetPolicies={pendingTargetPolicies}
                   onSetTargetPolicy={setTargetPolicy}
@@ -1252,6 +1267,12 @@ export function App({
             >
               <span aria-hidden="true">{view.manualPaused ? "▶" : "Ⅱ"}</span>
             </button>
+            {view.manualPaused && (
+              <div className="combat-pause-banner" role="status">
+                <strong>Combat paused</strong>
+                <span>Press Escape or resume when ready</span>
+              </div>
+            )}
           </section>
         )}
         {renderSnapshot !== undefined && view.phase !== "running" && (

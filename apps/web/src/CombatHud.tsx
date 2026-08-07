@@ -8,18 +8,13 @@ const topHudFrameUrl = new URL(
 function healthState(snapshot: RenderSnapshot): {
   readonly current: number;
   readonly maximum: number;
-  readonly percentage: number;
 } | null {
   if (snapshot.schemaVersion !== 2) return null;
   const warden = snapshot.entities.find((entity) => entity.faction === "dwarf");
   if (warden === undefined) return null;
   return {
     current: warden.currentHealth,
-    maximum: warden.maximumHealth,
-    percentage: Math.max(
-      0,
-      Math.min(100, (warden.currentHealth / warden.maximumHealth) * 100)
-    )
+    maximum: warden.maximumHealth
   };
 }
 
@@ -112,29 +107,14 @@ export function CombatHud({ snapshot, manualPaused = false }: CombatHudProps) {
           <dd>{encounter.hostiles}</dd>
         </div>
       </dl>
-      {health !== null && (
-        <div
-          className="warden-health"
-          data-low-health={health.percentage <= 30}
-        >
-          <span>Iron Warden</span>
-          <meter
-            className="warden-health-track"
-            aria-label="Iron Warden health"
-            min={0}
-            max={health.maximum}
-            value={health.current}
-          />
-          <strong>
-            {health.current} / {health.maximum}
-          </strong>
-        </div>
-      )}
       <p className="combat-state-summary" aria-live="polite" aria-atomic="true">
         Combat {manualPaused ? "paused" : "active"}. Fortress{" "}
         {encounter.fortress.toLowerCase()}.
         {` ${encounter.hostiles} hostiles active`}
         {encounter.pending > 0 ? `, ${encounter.pending} approaching` : ""}.
+        {health === null
+          ? ""
+          : ` Iron Warden health ${health.current} of ${health.maximum}.`}
         {activeStatusCount > 0
           ? ` ${activeStatusCount} active battlefield ${activeStatusCount === 1 ? "status" : "statuses"}.`
           : ""}

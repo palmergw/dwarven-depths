@@ -24,6 +24,12 @@ interface CombatControlsProps {
   readonly pendingAbilityKeys?: ReadonlySet<string>;
   readonly pendingTargetPolicies?: ReadonlyMap<string, TargetPolicy>;
   readonly currentTick?: number;
+  readonly selectedDwarfHealth?:
+    | {
+        readonly current: number;
+        readonly maximum: number;
+      }
+    | undefined;
   readonly onSetTargetPolicy: (
     dwarfEntityId: string,
     requestedPolicy: TargetPolicy
@@ -39,6 +45,7 @@ export function CombatControls({
   pendingAbilityKeys = new Set(),
   pendingTargetPolicies = new Map(),
   currentTick = 0,
+  selectedDwarfHealth,
   onSetTargetPolicy,
   onActivateAbility
 }: CombatControlsProps) {
@@ -100,13 +107,33 @@ export function CombatControls({
                         ◆
                       </span>
                     </button>
-                    <div className="character-nameplate" aria-hidden="true">
+                    <div className="character-nameplate">
                       <strong>Iron Warden</strong>
-                      <span>
+                      <span className="target-policy-label">
                         {selectedPolicy
                           ? TARGET_POLICY_LABELS[selectedPolicy]
                           : "Targeting"}
                       </span>
+                      {selectedDwarfHealth !== undefined && (
+                        <>
+                          <meter
+                            className="warden-health-track"
+                            data-low-health={
+                              selectedDwarfHealth.current /
+                                selectedDwarfHealth.maximum <=
+                              0.3
+                            }
+                            aria-label="Iron Warden health"
+                            min={0}
+                            max={selectedDwarfHealth.maximum}
+                            value={selectedDwarfHealth.current}
+                          />
+                          <span className="warden-health-value">
+                            {selectedDwarfHealth.current} /{" "}
+                            {selectedDwarfHealth.maximum}
+                          </span>
+                        </>
+                      )}
                     </div>
                     <div
                       id={menuId}

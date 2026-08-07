@@ -904,15 +904,8 @@ describe("player-facing combat HUD", () => {
         "FortressHoldingWave1 of 1Hostiles1"
       )
     );
-    const health = document.querySelector('[aria-label="Iron Warden health"]');
-    expect(health).toBeInstanceOf(HTMLMeterElement);
-    expect((health as HTMLMeterElement).value).toBe(20);
-    expect(document.querySelector(".warden-health")).toHaveAttribute(
-      "data-low-health",
-      "true"
-    );
     expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
-      "Combat paused. Fortress holding. 1 hostiles active, 2 approaching. 1 active battlefield status."
+      "Combat paused. Fortress holding. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. 1 active battlefield status."
     );
   });
 });
@@ -1052,6 +1045,7 @@ describe("semantic combat controls", () => {
     root.render(
       <CombatControls
         currentTick={15}
+        selectedDwarfHealth={{ current: 20, maximum: 100 }}
         dwarves={[
           {
             entityId: "entity.dwarf.warden",
@@ -1078,6 +1072,10 @@ describe("semantic combat controls", () => {
       "data-ability-state",
       "cooldown"
     );
+    const health = document.querySelector('[aria-label="Iron Warden health"]');
+    expect(health).toBeInstanceOf(HTMLMeterElement);
+    expect((health as HTMLMeterElement).value).toBe(20);
+    expect(health).toHaveAttribute("data-low-health", "true");
     root.render(
       <CombatControls
         currentTick={15}
