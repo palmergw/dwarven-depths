@@ -162,7 +162,9 @@ async function capture(page, id, expected) {
     state.truth.alignment.valid !== true ||
     JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
     state.rendererError !== null ||
-    /(?:entity|ability|status|wave)\.[a-z0-9_.]+/i.test(state.playerText)
+    /\b(?:entity|ability|status|wave)\.[a-z0-9_]+(?:\.[a-z0-9_]+)*\b/.test(
+      state.playerText
+    )
   )
     throw new Error(
       `invalid combat HUD capture state: ${id}: ${JSON.stringify(state)}`
