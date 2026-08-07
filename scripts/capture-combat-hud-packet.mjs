@@ -298,7 +298,9 @@ try {
   await page
     .getByRole("button", { name: "Open Iron Warden targeting" })
     .click();
-  await page.getByRole("button", { name: "Nearest", exact: true }).click();
+  await page
+    .locator('.target-policy-menu button[aria-pressed="true"]')
+    .click();
 
   captures.push(
     await capture(
