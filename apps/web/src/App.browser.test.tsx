@@ -16,6 +16,7 @@ import {
   selectCombatPoseAsset
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
+import { CombatHud } from "./CombatHud.js";
 import { deriveCombatFeedback } from "./combat-feedback.js";
 import "./styles.css";
 import {
@@ -827,6 +828,95 @@ async function runWithPresentationFrames(
   }
 }
 
+describe("player-facing combat HUD", () => {
+  it("projects health, wave, fortress, hostile, status, and pause summaries from one snapshot", async () => {
+    const snapshot = {
+      schemaVersion: 2,
+      scenarioId: "scenario.shuttergate",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 24,
+      previousTick: 23,
+      phase: "running",
+      nodes: [{ id: "node.gate", x: 0, y: 0 }],
+      connections: [],
+      entities: [
+        {
+          id: "entity.dwarf.warden",
+          nodeId: "node.gate",
+          faction: "dwarf",
+          visualId: "visual.iron_warden",
+          archetype: "character",
+          position: { nodeId: "node.gate", x: 0, y: 0 },
+          previousPosition: { nodeId: "node.gate", x: 0, y: 0 },
+          currentHealth: 20,
+          maximumHealth: 100,
+          facing: "east",
+          action: { kind: "idle", phase: "idle", abilityId: null },
+          targetEntityId: null,
+          statuses: [],
+          transition: "active",
+          elite: false,
+          boss: false
+        },
+        {
+          id: "entity.enemy.raider",
+          nodeId: "node.gate",
+          faction: "enemy",
+          visualId: "visual.mine_raider",
+          archetype: "elite",
+          position: { nodeId: "node.gate", x: 0, y: 0 },
+          previousPosition: { nodeId: "node.gate", x: 0, y: 0 },
+          currentHealth: 40,
+          maximumHealth: 60,
+          facing: "west",
+          action: { kind: "idle", phase: "idle", abilityId: null },
+          targetEntityId: "entity.dwarf.warden",
+          statuses: [
+            {
+              id: "status.staggered",
+              appliedAtTick: 20,
+              expiresAtTick: 30,
+              magnitude: 1
+            }
+          ],
+          transition: "active",
+          elite: true,
+          boss: false
+        }
+      ],
+      entityTransitions: [],
+      encounter: {
+        startedWaveIds: ["wave.shuttergate.one"],
+        activeWaveId: "wave.shuttergate.one",
+        pendingSpawnCount: 2,
+        livingHostileCount: 1,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<CombatHud snapshot={snapshot} manualPaused />);
+
+    await vi.waitFor(() =>
+      expect(document.querySelector(".combat-hud")?.textContent).toContain(
+        "FortressHoldingWave1 of 1Hostiles1"
+      )
+    );
+    const health = document.querySelector('[aria-label="Iron Warden health"]');
+    expect(health).toBeInstanceOf(HTMLMeterElement);
+    expect((health as HTMLMeterElement).value).toBe(20);
+    expect(document.querySelector(".warden-health")).toHaveAttribute(
+      "data-low-health",
+      "true"
+    );
+    expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
+      "Combat paused. Fortress holding. 1 hostiles active, 2 approaching. 1 active battlefield status."
+    );
+  });
+});
+
 describe("semantic combat controls", () => {
   it("submits an authoritative stable dwarf and target-policy pair by keyboard", async () => {
     const onSetTargetPolicy = vi.fn();
@@ -953,6 +1043,70 @@ describe("semantic combat controls", () => {
       "Activation queued"
     );
     expect(onActivateAbility).not.toHaveBeenCalled();
+  });
+
+  it("renders cooldown and rejection states with text and non-color state markers", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <CombatControls
+        currentTick={15}
+        dwarves={[
+          {
+            entityId: "entity.dwarf.warden",
+            characterId: "character.iron_warden",
+            supportedTargetPolicies: ["nearest"],
+            activeAbilities: [
+              {
+                abilityId: "ability.iron_warden.shield_slam",
+                cooldownCompleteAtTick: 25,
+                rejectionReason: null
+              }
+            ]
+          }
+        ]}
+        onSetTargetPolicy={vi.fn()}
+      />
+    );
+    await vi.waitFor(() =>
+      expect(document.querySelector(".ability-state")?.textContent).toBe(
+        "Recharging · 10 ticks"
+      )
+    );
+    expect(document.querySelector(".ability-control")).toHaveAttribute(
+      "data-ability-state",
+      "cooldown"
+    );
+    root.render(
+      <CombatControls
+        currentTick={15}
+        dwarves={[
+          {
+            entityId: "entity.dwarf.warden",
+            characterId: "character.iron_warden",
+            supportedTargetPolicies: ["nearest"],
+            activeAbilities: [
+              {
+                abilityId: "ability.iron_warden.shield_slam",
+                cooldownCompleteAtTick: null,
+                rejectionReason: "no_valid_target"
+              }
+            ]
+          }
+        ]}
+        onSetTargetPolicy={vi.fn()}
+      />
+    );
+    await vi.waitFor(() =>
+      expect(document.querySelector(".ability-state")?.textContent).toBe(
+        "No valid target"
+      )
+    );
+    expect(document.querySelector(".ability-control")).toHaveAttribute(
+      "data-ability-state",
+      "unavailable"
+    );
   });
 });
 

@@ -11,7 +11,7 @@ const TARGET_POLICY_LABELS: Readonly<Record<TargetPolicy, string>> = {
 };
 
 const wardenPortraitUrl = new URL(
-  "../../../assets/game-art/visual-direction/exports/hud/warden-portrait-frame.png",
+  "../../../assets/game-art/production-scene/exports/hud/warden-portrait.png",
   import.meta.url
 ).href;
 const shieldSlamIconUrl = new URL(
@@ -23,6 +23,7 @@ interface CombatControlsProps {
   readonly dwarves: readonly CombatControlDwarf[];
   readonly pendingAbilityKeys?: ReadonlySet<string>;
   readonly pendingTargetPolicies?: ReadonlyMap<string, TargetPolicy>;
+  readonly currentTick?: number;
   readonly onSetTargetPolicy: (
     dwarfEntityId: string,
     requestedPolicy: TargetPolicy
@@ -37,6 +38,7 @@ export function CombatControls({
   dwarves,
   pendingAbilityKeys = new Set(),
   pendingTargetPolicies = new Map(),
+  currentTick = 0,
   onSetTargetPolicy,
   onActivateAbility
 }: CombatControlsProps) {
@@ -145,10 +147,25 @@ export function CombatControls({
                         pending ||
                         ability.cooldownCompleteAtTick !== null ||
                         ability.rejectionReason !== null;
+                      const cooldownTicks =
+                        ability.cooldownCompleteAtTick === null
+                          ? null
+                          : Math.max(
+                              0,
+                              ability.cooldownCompleteAtTick - currentTick
+                            );
+                      const state = pending
+                        ? "queued"
+                        : ability.rejectionReason !== null
+                          ? "unavailable"
+                          : cooldownTicks === null
+                            ? "ready"
+                            : "cooldown";
                       return (
                         <div
                           className="ability-control"
                           key={ability.abilityId}
+                          data-ability-state={state}
                         >
                           <button
                             className="ability-slot"
@@ -162,15 +179,6 @@ export function CombatControls({
                                 ability.abilityId
                               )
                             }
-                            onKeyDown={(event) => {
-                              if (event.key !== "Enter" && event.key !== " ")
-                                return;
-                              event.preventDefault();
-                              onActivateAbility?.(
-                                dwarf.entityId,
-                                ability.abilityId
-                              );
-                            }}
                           >
                             <span className="visually-hidden">Shield Slam</span>
                             <img
@@ -193,10 +201,13 @@ export function CombatControls({
                             {pending
                               ? "Activation queued"
                               : ability.rejectionReason !== null
-                                ? "Unavailable"
-                                : ability.cooldownCompleteAtTick === null
+                                ? ability.rejectionReason ===
+                                  "phase_unavailable"
+                                  ? "Available during combat"
+                                  : "No valid target"
+                                : cooldownTicks === null
                                   ? "Ready"
-                                  : "Recharging"}
+                                  : `Recharging · ${cooldownTicks} ticks`}
                           </span>
                         </div>
                       );

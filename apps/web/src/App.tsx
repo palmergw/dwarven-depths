@@ -1235,6 +1235,7 @@ export function App({
               <div className="combat-bottom-overlay">
                 <CombatControls
                   dwarves={combatControls.dwarves}
+                  currentTick={renderSnapshot.tick}
                   pendingAbilityKeys={pendingAbilityKeys}
                   pendingTargetPolicies={pendingTargetPolicies}
                   onSetTargetPolicy={setTargetPolicy}
