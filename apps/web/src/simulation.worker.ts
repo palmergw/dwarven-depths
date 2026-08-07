@@ -424,7 +424,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       failure(
         "command_rejected",
         "The command request ID is duplicated or the session limit was reached.",
-        protocolVersion
+        protocolVersion,
+        message.requestId
       )
     );
     return;
@@ -452,7 +453,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         failure(
           "command_rejected",
           "The requested ability is stale, unavailable, unsupported, cooling down, or duplicated for this tick.",
-          protocolVersion
+          protocolVersion,
+          message.requestId
         )
       );
       return;
@@ -488,7 +490,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         failure(
           "command_rejected",
           "The requested target policy is stale, unavailable, unsupported, or duplicated for this tick.",
-          protocolVersion
+          protocolVersion,
+          message.requestId
         )
       );
       return;
@@ -515,7 +518,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         failure(
           "command_rejected",
           "The requested manual-pause state is not available.",
-          protocolVersion
+          protocolVersion,
+          message.requestId
         )
       );
       return;
@@ -539,7 +543,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         failure(
           "command_rejected",
           "The manual resume is not available for execution.",
-          protocolVersion
+          protocolVersion,
+          message.requestId
         )
       );
       return;
@@ -560,7 +565,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       failure(
         "command_rejected",
         "Preparation confirmation is not available.",
-        protocolVersion
+        protocolVersion,
+        message.requestId
       )
     );
     return;

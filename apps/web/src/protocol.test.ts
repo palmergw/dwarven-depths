@@ -431,6 +431,28 @@ describe("web worker protocol", () => {
     ).toBeUndefined();
   });
 
+  it("binds protocol 4 command rejections to one canonical request", () => {
+    const rejection = {
+      protocolVersion: 4,
+      type: "failure",
+      code: "command_rejected",
+      message: "Rejected.",
+      requestId: "request-1"
+    };
+    expect(parseWorkerMessage(rejection)).toEqual(rejection);
+    const { requestId: _requestId, ...unbound } = rejection;
+    expect(parseWorkerMessage(unbound)).toBeUndefined();
+    expect(parseWorkerMessage({ ...rejection, requestId: "" })).toBeUndefined();
+    expect(parseWorkerMessage({ ...rejection, extra: true })).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...rejection, protocolVersion: 3 })
+    ).toBeUndefined();
+    expect(parseWorkerMessage({ ...unbound, protocolVersion: 3 })).toEqual({
+      ...unbound,
+      protocolVersion: 3
+    });
+  });
+
   it("accepts only canonical, internally consistent render snapshots", () => {
     const snapshot = {
       schemaVersion: 1,

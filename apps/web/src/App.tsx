@@ -406,6 +406,12 @@ export function App({
   const [pendingTargetPolicies, setPendingTargetPolicies] = useState<
     ReadonlyMap<string, TargetPolicy>
   >(new Map());
+  const [rejectedAbilityKeys, setRejectedAbilityKeys] = useState<
+    ReadonlySet<string>
+  >(new Set());
+  const [rejectedTargetPolicies, setRejectedTargetPolicies] = useState<
+    ReadonlySet<string>
+  >(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [upgradeInventoryOpen, setUpgradeInventoryOpen] = useState(false);
   const [recycleConfirmationOpen, setRecycleConfirmationOpen] = useState(false);
@@ -478,6 +484,11 @@ export function App({
   function clearPendingTargetPolicies(): void {
     pendingTargetPoliciesRef.current.clear();
     setPendingTargetPolicies(new Map());
+  }
+
+  function clearCombatCommandRejections(): void {
+    setRejectedAbilityKeys(new Set());
+    setRejectedTargetPolicies(new Set());
   }
 
   const postCurrentWorkerMessage = useCallback(
@@ -769,6 +780,7 @@ export function App({
       latestCombatControlsTickRef.current = -1;
       clearPendingAbilities();
       clearPendingTargetPolicies();
+      clearCombatCommandRejections();
       setCombatControls(undefined);
       setRenderSnapshot(undefined);
       setView({
@@ -867,8 +879,38 @@ export function App({
         latestCombatControlsTickRef.current = -1;
         clearPendingAbilities();
         clearPendingTargetPolicies();
+        clearCombatCommandRejections();
         setView({ phase: "result", result: message });
-      } else if (message.code !== "command_rejected") {
+      } else if (message.code === "command_rejected") {
+        const requestId = message.requestId;
+        if (requestId === undefined) return;
+        for (const [key, pending] of pendingAbilityKeysRef.current) {
+          if (pending.requestId !== requestId) continue;
+          pendingAbilityKeysRef.current.delete(key);
+          setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
+          setRejectedAbilityKeys((current) => new Set(current).add(key));
+          return;
+        }
+        for (const [
+          dwarfEntityId,
+          pending
+        ] of pendingTargetPoliciesRef.current) {
+          if (pending.requestId !== requestId) continue;
+          pendingTargetPoliciesRef.current.delete(dwarfEntityId);
+          setPendingTargetPolicies(
+            new Map(
+              [...pendingTargetPoliciesRef.current].map(([entityId, value]) => [
+                entityId,
+                value.policy
+              ])
+            )
+          );
+          setRejectedTargetPolicies((current) =>
+            new Set(current).add(dwarfEntityId)
+          );
+          return;
+        }
+      } else {
         failWorker(message.message);
       }
     });
@@ -909,6 +951,7 @@ export function App({
     latestCombatControlsTickRef.current = -1;
     clearPendingAbilities();
     clearPendingTargetPolicies();
+    clearCombatCommandRejections();
     setCombatControls(undefined);
     setRenderSnapshot(undefined);
     setView({ phase: "checkpoint" });
@@ -951,6 +994,11 @@ export function App({
         pendingTargetPoliciesRef.current
       );
       const requestId = crypto.randomUUID();
+      setRejectedTargetPolicies((current) => {
+        const next = new Set(current);
+        next.delete(dwarfEntityId);
+        return next;
+      });
       nextPendingTargetPolicies.set(dwarfEntityId, {
         policy: requestedPolicy,
         requestId,
@@ -1000,6 +1048,11 @@ export function App({
       const pendingKey = `${dwarfEntityId}\u0000${abilityId}`;
       if (pendingAbilityKeysRef.current.has(pendingKey)) return;
       const requestId = crypto.randomUUID();
+      setRejectedAbilityKeys((current) => {
+        const next = new Set(current);
+        next.delete(pendingKey);
+        return next;
+      });
       pendingAbilityKeysRef.current.set(pendingKey, {
         requestId,
         submittedAtTick: latestCombatControlsTickRef.current
@@ -1337,6 +1390,8 @@ export function App({
                   }
                   pendingAbilityKeys={pendingAbilityKeys}
                   pendingTargetPolicies={pendingTargetPolicies}
+                  rejectedAbilityKeys={rejectedAbilityKeys}
+                  rejectedTargetPolicies={rejectedTargetPolicies}
                   onSetTargetPolicy={setTargetPolicy}
                   onActivateAbility={activateAbility}
                 />

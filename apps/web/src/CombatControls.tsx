@@ -40,6 +40,8 @@ interface CombatControlsProps {
   readonly dwarves: readonly CombatControlDwarf[];
   readonly pendingAbilityKeys?: ReadonlySet<string>;
   readonly pendingTargetPolicies?: ReadonlyMap<string, TargetPolicy>;
+  readonly rejectedAbilityKeys?: ReadonlySet<string>;
+  readonly rejectedTargetPolicies?: ReadonlySet<string>;
   readonly currentTick?: number;
   readonly selectedDwarfHealth?:
     | {
@@ -61,6 +63,8 @@ export function CombatControls({
   dwarves,
   pendingAbilityKeys = new Set(),
   pendingTargetPolicies = new Map(),
+  rejectedAbilityKeys = new Set(),
+  rejectedTargetPolicies = new Set(),
   currentTick = 0,
   selectedDwarfHealth,
   onSetTargetPolicy,
@@ -130,7 +134,9 @@ export function CombatControls({
                       <span className="target-policy-label">
                         {selectedPolicy
                           ? TARGET_POLICY_LABELS[selectedPolicy]
-                          : "Targeting"}
+                          : rejectedTargetPolicies.has(dwarf.entityId)
+                            ? "Change rejected — try again"
+                            : "Targeting"}
                       </span>
                       {selectedDwarfHealth !== undefined && (
                         <>
@@ -188,6 +194,9 @@ export function CombatControls({
                       const pending = pendingAbilityKeys.has(
                         `${dwarf.entityId}\u0000${ability.abilityId}`
                       );
+                      const commandRejected = rejectedAbilityKeys.has(
+                        `${dwarf.entityId}\u0000${ability.abilityId}`
+                      );
                       const disabled =
                         pending ||
                         ability.cooldownCompleteAtTick !== null ||
@@ -203,9 +212,11 @@ export function CombatControls({
                         ? "queued"
                         : ability.rejectionReason !== null
                           ? "unavailable"
-                          : cooldownTicks === null
-                            ? "ready"
-                            : "cooldown";
+                          : commandRejected
+                            ? "rejected"
+                            : cooldownTicks === null
+                              ? "ready"
+                              : "cooldown";
                       return (
                         <div
                           className="ability-control"
@@ -247,9 +258,11 @@ export function CombatControls({
                               ? "Activation queued"
                               : ability.rejectionReason !== null
                                 ? abilityRejectionLabel(ability.rejectionReason)
-                                : cooldownTicks === null
-                                  ? "Ready"
-                                  : `Recharging · ${cooldownTicks} ticks`}
+                                : commandRejected
+                                  ? "Activation rejected — try again"
+                                  : cooldownTicks === null
+                                    ? "Ready"
+                                    : `Recharging · ${cooldownTicks} ticks`}
                           </span>
                         </div>
                       );

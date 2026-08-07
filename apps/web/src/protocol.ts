@@ -159,6 +159,7 @@ export type WorkerMessage =
       readonly type: "failure";
       readonly code: string;
       readonly message: string;
+      readonly requestId?: string;
     };
 
 type RecordValue = {
@@ -517,17 +518,28 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     return value as WorkerMessage;
   }
   if (value.type === "failure") {
+    const isBoundCommandRejection =
+      value.protocolVersion === 4 && value.code === "command_rejected";
     if (
-      !hasExactKeys(value, ["code", "message", "protocolVersion", "type"]) ||
+      !hasExactKeys(
+        value,
+        isBoundCommandRejection
+          ? ["code", "message", "protocolVersion", "requestId", "type"]
+          : ["code", "message", "protocolVersion", "type"]
+      ) ||
       typeof value.code !== "string" ||
-      typeof value.message !== "string"
+      typeof value.message !== "string" ||
+      (isBoundCommandRejection && !isRequestId(value.requestId))
     )
       return undefined;
     return {
       protocolVersion: value.protocolVersion as WebProtocolVersion,
       type: "failure",
       code: value.code,
-      message: value.message
+      message: value.message,
+      ...(isBoundCommandRejection
+        ? { requestId: value.requestId as string }
+        : {})
     };
   }
   if (
@@ -630,8 +642,20 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
 export function failure(
   code: string,
   message: string,
-  protocolVersion: WebProtocolVersion = WEB_PROTOCOL_VERSION
+  protocolVersion: WebProtocolVersion = WEB_PROTOCOL_VERSION,
+  requestId?: string
 ): WorkerMessage {
+  if (protocolVersion === 4 && code === "command_rejected") {
+    if (requestId === undefined)
+      throw new Error("protocol 4 command rejection requires a request ID");
+    return {
+      protocolVersion,
+      type: "failure",
+      code,
+      message,
+      requestId
+    };
+  }
   return {
     protocolVersion,
     type: "failure",

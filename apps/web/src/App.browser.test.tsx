@@ -289,7 +289,9 @@ class ControlledJourneyWorker {
 class ControlledTargetPolicyWorker {
   readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
   readonly targetPolicyCommands: string[] = [];
+  readonly abilityCommands: string[] = [];
   lastTargetPolicyRequestId: string | undefined;
+  lastAbilityRequestId: string | undefined;
 
   addEventListener(
     type: string,
@@ -306,6 +308,7 @@ class ControlledTargetPolicyWorker {
       readonly command?: {
         readonly type?: string;
         readonly requestedPolicy?: string;
+        readonly abilityId?: string;
       };
     };
     if (candidate.type === "initialize") {
@@ -356,6 +359,12 @@ class ControlledTargetPolicyWorker {
     ) {
       this.targetPolicyCommands.push(candidate.command.requestedPolicy);
       this.lastTargetPolicyRequestId = candidate.requestId;
+    } else if (
+      candidate.command?.type === "activateAbility" &&
+      candidate.command.abilityId !== undefined
+    ) {
+      this.abilityCommands.push(candidate.command.abilityId);
+      this.lastAbilityRequestId = candidate.requestId;
     }
   }
 
@@ -373,7 +382,14 @@ class ControlledTargetPolicyWorker {
         {
           entityId: "entity.dwarf.warden",
           characterId: "character.iron_warden",
-          supportedTargetPolicies: ["nearest", "highest_armor"]
+          supportedTargetPolicies: ["nearest", "highest_armor"],
+          activeAbilities: [
+            {
+              abilityId: "ability.iron_warden.shield_slam",
+              cooldownCompleteAtTick: null,
+              rejectionReason: null
+            }
+          ]
         }
       ]
     });
@@ -1154,6 +1170,91 @@ describe("semantic combat controls", () => {
     await userEvent.click(targetingTrigger);
     await userEvent.click(await buttonWithText("Nearest"));
     expect(worker.targetPolicyCommands).toEqual(["highest_armor", "nearest"]);
+  });
+
+  it("unlocks only the control bound to a rejected command and permits retry", async () => {
+    const worker = new ControlledTargetPolicyWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    const targetingTrigger = await vi.waitFor(() => {
+      const candidate = document.querySelector(".character-portrait-button");
+      expect(candidate).toBeInstanceOf(HTMLButtonElement);
+      return candidate as HTMLButtonElement;
+    });
+    const shieldSlam = await vi.waitFor(() => {
+      const candidate = document.querySelector(
+        'button[aria-label="Shield Slam"]'
+      );
+      expect(candidate).toBeInstanceOf(HTMLButtonElement);
+      return candidate as HTMLButtonElement;
+    });
+
+    await userEvent.click(targetingTrigger);
+    await userEvent.click(await buttonWithText("Highest armor"));
+    await userEvent.click(shieldSlam);
+    expect(targetingTrigger.disabled).toBe(true);
+    expect(shieldSlam.disabled).toBe(true);
+
+    worker.emit({
+      protocolVersion: 4,
+      type: "failure",
+      code: "command_rejected",
+      message: "Rejected.",
+      requestId: "unrelated-command"
+    });
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(true));
+    expect(shieldSlam.disabled).toBe(true);
+
+    const targetRequestId = worker.lastTargetPolicyRequestId;
+    if (targetRequestId === undefined)
+      throw new Error("expected target-policy request ID");
+    worker.emit({
+      protocolVersion: 4,
+      type: "failure",
+      code: "command_rejected",
+      message: "Rejected.",
+      requestId: targetRequestId
+    });
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(false));
+    expect(shieldSlam.disabled).toBe(true);
+    expect(document.querySelector(".target-policy-label")?.textContent).toBe(
+      "Change rejected — try again"
+    );
+
+    const abilityRequestId = worker.lastAbilityRequestId;
+    if (abilityRequestId === undefined)
+      throw new Error("expected ability request ID");
+    worker.emit({
+      protocolVersion: 4,
+      type: "failure",
+      code: "command_rejected",
+      message: "Rejected.",
+      requestId: abilityRequestId
+    });
+    await vi.waitFor(() => expect(shieldSlam.disabled).toBe(false));
+    expect(document.querySelector(".ability-state")?.textContent).toBe(
+      "Activation rejected — try again"
+    );
+
+    await userEvent.click(targetingTrigger);
+    await userEvent.click(await buttonWithText("Nearest"));
+    await userEvent.click(shieldSlam);
+    expect(worker.targetPolicyCommands).toEqual(["highest_armor", "nearest"]);
+    expect(worker.abilityCommands).toEqual([
+      "ability.iron_warden.shield_slam",
+      "ability.iron_warden.shield_slam"
+    ]);
+    expect(document.querySelector(".target-policy-label")?.textContent).toBe(
+      "Nearest"
+    );
+    expect(document.querySelector(".ability-state")?.textContent).toBe(
+      "Activation queued"
+    );
   });
 
   it("submits Shield Slam accessibly and presents authoritative cooldown feedback", async () => {
