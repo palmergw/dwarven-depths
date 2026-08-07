@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-default-paused",
   "label": "WIP #275 — wip-default-paused",
-  "sourceHead": "761ab70cf4276f0bfe069eeb8047dde5f2d6e97a",
+  "sourceHead": "1011b91fb1d578dbe4920f15aedda291d6e20d92",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-default-paused.png",
-  "screenshotSha256": "e5df7a9fb9873b666963047e842ccd8117deb39f02ae5696979bdc4d3171eafa",
+  "screenshotSha256": "683811bd1c9432e03bb2a44bad0d175a24033354aeb9df52e214df50cdb44978",
   "viewport": [
     1440,
     900
@@ -163,7 +163,7 @@
       "valid": true
     }
   },
-  "hud": "The ShuttergateFortressHoldingWave1 of 1Hostiles1Combat paused. Fortress holding. 1 hostiles active. Iron Warden health 240 of 240.",
+  "hud": "The ShuttergateFortressHoldingWave1Hostiles1Combat paused. Fortress holding. Wave 1. 1 hostiles active. Iron Warden health 240 of 240.",
   "health": {
     "current": "240",
     "maximum": "240",

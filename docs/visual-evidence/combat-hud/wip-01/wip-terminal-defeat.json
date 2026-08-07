@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "wip-terminal-defeat",
   "label": "WIP #275 — wip-terminal-defeat",
-  "sourceHead": "761ab70cf4276f0bfe069eeb8047dde5f2d6e97a",
+  "sourceHead": "1011b91fb1d578dbe4920f15aedda291d6e20d92",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-terminal-defeat.png",
   "screenshotSha256": "5458f10633ece86642b50f760ba648c600b6ce375f2fb240c26c7eb0cfca4b17",
@@ -163,7 +163,7 @@
       "valid": true
     }
   },
-  "hud": "The ShuttergateFortressFallenWave3 of 3Hostiles2Combat active. Fortress fallen. 2 hostiles active.",
+  "hud": "The ShuttergateFortressFallenWave3Hostiles2Combat ended in defeat. Fortress fallen. Wave 3. 2 hostiles active.",
   "health": {},
   "ability": {
     "disabled": null

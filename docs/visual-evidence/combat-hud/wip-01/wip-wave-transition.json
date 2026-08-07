@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-wave-transition",
   "label": "WIP #275 — wip-wave-transition",
-  "sourceHead": "761ab70cf4276f0bfe069eeb8047dde5f2d6e97a",
+  "sourceHead": "1011b91fb1d578dbe4920f15aedda291d6e20d92",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-wave-transition.png",
-  "screenshotSha256": "712978f190870b546d70027b4a88e46ce075de97cd2c0880f2c7b866bccf20e7",
+  "screenshotSha256": "08662bc6fffc7512ee84d85cc29208b2cbc861a5afb35e31abd93154a9ad8a01",
   "viewport": [
     1440,
     900
@@ -163,7 +163,7 @@
       "valid": true
     }
   },
-  "hud": "The ShuttergateFortressHoldingWave2 of 2Hostiles1Combat paused. Fortress holding. 1 hostiles active. Iron Warden health 150 of 240.",
+  "hud": "The ShuttergateFortressHoldingWave2Hostiles1Combat paused. Fortress holding. Wave 2. 1 hostiles active. Iron Warden health 150 of 240.",
   "health": {
     "current": "150",
     "maximum": "240",

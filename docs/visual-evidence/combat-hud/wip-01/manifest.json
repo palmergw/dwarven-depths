@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "WIP #275 combat HUD packet",
-  "sourceHead": "761ab70cf4276f0bfe069eeb8047dde5f2d6e97a",
+  "sourceHead": "1011b91fb1d578dbe4920f15aedda291d6e20d92",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [
     1440,
@@ -16,7 +16,7 @@
     {
       "id": "wip-default-paused",
       "screenshot": "wip-default-paused.png",
-      "screenshotSha256": "e5df7a9fb9873b666963047e842ccd8117deb39f02ae5696979bdc4d3171eafa",
+      "screenshotSha256": "683811bd1c9432e03bb2a44bad0d175a24033354aeb9df52e214df50cdb44978",
       "tick": 2,
       "phase": "running",
       "abilityState": "ready",
@@ -29,7 +29,7 @@
     {
       "id": "wip-wave-transition",
       "screenshot": "wip-wave-transition.png",
-      "screenshotSha256": "712978f190870b546d70027b4a88e46ce075de97cd2c0880f2c7b866bccf20e7",
+      "screenshotSha256": "08662bc6fffc7512ee84d85cc29208b2cbc861a5afb35e31abd93154a9ad8a01",
       "tick": 901,
       "phase": "running",
       "abilityState": "ready",
@@ -42,7 +42,7 @@
     {
       "id": "wip-ability-ready",
       "screenshot": "wip-ability-ready.png",
-      "screenshotSha256": "092f402e3114e341fa87b6367faa47543d4ab37db89e5e13cc6a128e481f28c1",
+      "screenshotSha256": "0677bb548b6cfd69ef81b75f87f919d245e30d24ba44f575499fcdc2650e49e2",
       "tick": 1822,
       "phase": "running",
       "abilityState": "ready",
@@ -55,7 +55,7 @@
     {
       "id": "wip-cooldown-status-low-health",
       "screenshot": "wip-cooldown-status-low-health.png",
-      "screenshotSha256": "d5454e71543a317e46c89a7c619186bdd9969f08745080d2adc698efe1bfbe36",
+      "screenshotSha256": "da0d8d065d1104c8ee87d279fee63e0a752e5e602becf8f626cd33c51d97092b",
       "tick": 1830,
       "phase": "running",
       "abilityState": "cooldown",
@@ -76,7 +76,7 @@
     {
       "id": "wip-high-contrast-paused",
       "screenshot": "wip-high-contrast-paused.png",
-      "screenshotSha256": "c7972dba5e59a02cade0f4fd16eb16cf8a08bdf6234fb4307f621675ba520656",
+      "screenshotSha256": "b79e48dccb09d8512a2145e2639376505beda2b7a18a42bd9b25d6acf24b78f0",
       "tick": 2,
       "phase": "running",
       "abilityState": "ready",
@@ -89,7 +89,7 @@
     {
       "id": "wip-large-text-paused",
       "screenshot": "wip-large-text-paused.png",
-      "screenshotSha256": "9866f10e952a419ac32d9b9af3b88cbd4299abbce4081877e02da7d235501af9",
+      "screenshotSha256": "7dd30bbca676a25b8a3c1b6ceed522eca9ebe3863e3c1b4db6265bf865e33674",
       "tick": 2,
       "phase": "running",
       "abilityState": "ready",
