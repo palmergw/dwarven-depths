@@ -31,6 +31,7 @@ import {
 } from "./checkpoint-profile.js";
 import {
   parseWorkerMessage,
+  type SimulationSpeed,
   type TargetPolicy,
   WEB_PROTOCOL_VERSION,
   type WorkerMessage
@@ -57,7 +58,11 @@ type ViewState =
       readonly deployableEntityCount: number;
       readonly placementPointCount: number;
     }
-  | { readonly phase: "running"; readonly manualPaused: boolean }
+  | {
+      readonly phase: "running";
+      readonly manualPaused: boolean;
+      readonly simulationSpeed: SimulationSpeed;
+    }
   | {
       readonly phase: "result";
       readonly result: Extract<WorkerMessage, { type: "result" }>;
@@ -872,7 +877,9 @@ export function App({
             : {
                 phase: "running",
                 manualPaused:
-                  message.protocolVersion !== 1 && message.manualPaused
+                  message.protocolVersion !== 1 && message.manualPaused,
+                simulationSpeed:
+                  message.protocolVersion === 4 ? message.simulationSpeed : 1
               }
         );
       } else if (message.type === "result") {
@@ -978,6 +985,22 @@ export function App({
     [postCurrentWorkerMessage, view]
   );
 
+  const setSimulationSpeed = useCallback(
+    (speed: SimulationSpeed): void => {
+      if (view.phase !== "running" || view.simulationSpeed === speed) return;
+      postCurrentWorkerMessage(
+        {
+          protocolVersion: WEB_PROTOCOL_VERSION,
+          type: "command",
+          requestId: crypto.randomUUID(),
+          command: { type: "setSimulationSpeed", speed }
+        },
+        "Worker combat-speed command failed."
+      );
+    },
+    [postCurrentWorkerMessage, view]
+  );
+
   const setTargetPolicy = useCallback(
     (dwarfEntityId: string, requestedPolicy: TargetPolicy): void => {
       if (view.phase !== "running" || combatControls?.protocolVersion !== 4)
@@ -1073,8 +1096,30 @@ export function App({
 
   useLayoutEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.repeat || view.phase !== "running")
+      if (event.repeat || view.phase !== "running") return;
+      if (
+        event.key === "1" &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey
+      ) {
+        const target = event.target;
+        if (
+          target instanceof HTMLElement &&
+          (target.isContentEditable ||
+            target.matches("input, select, textarea"))
+        )
+          return;
+        const dwarf = combatControls?.dwarves.find(
+          (candidate) => candidate.activeAbilities?.length
+        );
+        const ability = dwarf?.activeAbilities?.[0];
+        if (dwarf === undefined || ability === undefined) return;
+        event.preventDefault();
+        activateAbility(dwarf.entityId, ability.abilityId);
         return;
+      }
+      if (event.key !== "Escape") return;
       if (document.querySelector(".target-policy-menu:not([hidden])") !== null)
         return;
       event.preventDefault();
@@ -1097,7 +1142,7 @@ export function App({
       window.removeEventListener("pagehide", onBackground);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [view, setManualPause]);
+  }, [activateAbility, combatControls, view, setManualPause]);
 
   useLayoutEffect(() => {
     const onCheckpointEscape = (event: KeyboardEvent) => {
@@ -1408,6 +1453,21 @@ export function App({
             >
               <span aria-hidden="true">{view.manualPaused ? "▶" : "Ⅱ"}</span>
             </button>
+            <fieldset className="combat-speed">
+              <legend className="visually-hidden">Combat speed</legend>
+              {([1, 2] as const).map((speed) => (
+                <button
+                  key={speed}
+                  type="button"
+                  aria-label={`${speed}× combat speed`}
+                  aria-pressed={view.simulationSpeed === speed}
+                  disabled={view.simulationSpeed === speed}
+                  onClick={() => setSimulationSpeed(speed)}
+                >
+                  {speed}×
+                </button>
+              ))}
+            </fieldset>
             {view.manualPaused && (
               <div className="combat-pause-banner" role="status">
                 <strong>Combat paused</strong>

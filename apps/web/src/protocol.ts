@@ -14,6 +14,7 @@ export const TARGET_POLICIES = [
   "boss_or_elite_first"
 ] as const;
 export type TargetPolicy = (typeof TARGET_POLICIES)[number];
+export type SimulationSpeed = 1 | 2;
 
 export interface CombatControlDwarf {
   readonly entityId: string;
@@ -62,6 +63,10 @@ export type ClientMessage =
           }
         | { readonly type: "setManualPause"; readonly paused: boolean }
         | {
+            readonly type: "setSimulationSpeed";
+            readonly speed: SimulationSpeed;
+          }
+        | {
             readonly type: "setTargetPolicy";
             readonly dwarfEntityId: string;
             readonly requestedPolicy: TargetPolicy;
@@ -88,11 +93,19 @@ export type WorkerMessage =
       readonly phase: "running";
     }
   | {
-      readonly protocolVersion: 2 | 3 | 4;
+      readonly protocolVersion: 2 | 3;
       readonly type: "snapshot";
       readonly phase: "running";
       readonly manualPaused: boolean;
       readonly resumeRequestId: string | null;
+    }
+  | {
+      readonly protocolVersion: 4;
+      readonly type: "snapshot";
+      readonly phase: "running";
+      readonly manualPaused: boolean;
+      readonly resumeRequestId: string | null;
+      readonly simulationSpeed: SimulationSpeed;
     }
   | {
       readonly protocolVersion: 3;
@@ -171,6 +184,7 @@ type RecordValue = {
   command?: unknown;
   manualPaused?: unknown;
   paused?: unknown;
+  speed?: unknown;
   resumeRequestId?: unknown;
   phase?: unknown;
   levelId?: unknown;
@@ -299,6 +313,19 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
         type: "commitManualResume",
         resumeRequestId: value.command.resumeRequestId
       }
+    };
+  }
+  if (
+    value.protocolVersion === 4 &&
+    value.command.type === "setSimulationSpeed" &&
+    hasExactKeys(value.command, ["speed", "type"]) &&
+    (value.command.speed === 1 || value.command.speed === 2)
+  ) {
+    return {
+      protocolVersion: 4,
+      type: "command",
+      requestId: value.requestId,
+      command: { type: "setSimulationSpeed", speed: value.command.speed }
     };
   }
   if (
@@ -491,23 +518,44 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
           ? { protocolVersion: 1, type: "snapshot", phase: "running" }
           : undefined;
       }
-      return hasExactKeys(value, [
+      const keys = [
         "manualPaused",
         "phase",
         "protocolVersion",
         "resumeRequestId",
+        ...(value.protocolVersion === 4 ? ["simulationSpeed"] : []),
         "type"
-      ]) &&
-        ((value.manualPaused === true && value.resumeRequestId === null) ||
-          (value.manualPaused === false && isRequestId(value.resumeRequestId)))
-        ? {
-            protocolVersion: value.protocolVersion,
-            type: "snapshot",
-            phase: "running",
-            manualPaused: value.manualPaused,
-            resumeRequestId: value.resumeRequestId as string | null
-          }
-        : undefined;
+      ];
+      if (
+        !hasExactKeys(value, keys) ||
+        !(
+          (value.manualPaused === true && value.resumeRequestId === null) ||
+          (value.manualPaused === false &&
+            (value.resumeRequestId === null ||
+              isRequestId(value.resumeRequestId)))
+        )
+      )
+        return undefined;
+      if (value.protocolVersion === 4) {
+        const simulationSpeed = value["simulationSpeed"];
+        return simulationSpeed === 1 || simulationSpeed === 2
+          ? {
+              protocolVersion: 4,
+              type: "snapshot",
+              phase: "running",
+              manualPaused: value.manualPaused,
+              resumeRequestId: value.resumeRequestId as string | null,
+              simulationSpeed
+            }
+          : undefined;
+      }
+      return {
+        protocolVersion: value.protocolVersion,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: value.manualPaused,
+        resumeRequestId: value.resumeRequestId as string | null
+      };
     }
     if (
       value.phase !== "preparation" ||

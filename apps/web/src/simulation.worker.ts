@@ -41,6 +41,7 @@ const SIMULATION_STEP_MILLISECONDS = 16;
 let initialized = false;
 let commandAccepted = false;
 let manualPaused = false;
+let simulationSpeed: 1 | 2 = 1;
 let terminal = false;
 let resumeRequestId: string | null = null;
 let pendingExecutionRequestId: string | null = null;
@@ -115,17 +116,28 @@ function postRenderSnapshot(snapshot: RenderSnapshot): void {
 }
 
 function postRunningSnapshot(): void {
-  post(
-    protocolVersion === 1
-      ? { protocolVersion: 1, type: "snapshot", phase: "running" }
-      : {
-          protocolVersion,
-          type: "snapshot",
-          phase: "running",
-          manualPaused,
-          resumeRequestId
-        }
-  );
+  if (protocolVersion === 1) {
+    post({ protocolVersion: 1, type: "snapshot", phase: "running" });
+    return;
+  }
+  if (protocolVersion === 4) {
+    post({
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "running",
+      manualPaused,
+      resumeRequestId,
+      simulationSpeed
+    });
+    return;
+  }
+  post({
+    protocolVersion,
+    type: "snapshot",
+    phase: "running",
+    manualPaused,
+    resumeRequestId
+  });
 }
 
 function authoritativeCombatControls(): readonly CombatControlDwarf[] {
@@ -305,7 +317,7 @@ function schedulePreparedScenario(requestId: string): void {
       return;
     pendingExecutionRequestId = null;
     void executePreparedScenario();
-  }, SIMULATION_STEP_MILLISECONDS);
+  }, SIMULATION_STEP_MILLISECONDS / simulationSpeed);
 }
 
 self.addEventListener("message", async (event: MessageEvent<unknown>) => {
@@ -433,6 +445,27 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     return;
   }
   acceptedRequestIds.add(message.requestId);
+
+  if (message.command.type === "setSimulationSpeed") {
+    if (protocolVersion !== 4 || !initialized || !commandAccepted || terminal) {
+      post(
+        failure(
+          "command_rejected",
+          "The requested combat speed is not available.",
+          protocolVersion,
+          message.requestId
+        )
+      );
+      return;
+    }
+    if (message.command.speed === simulationSpeed) {
+      postRunningSnapshot();
+      return;
+    }
+    simulationSpeed = message.command.speed;
+    postRunningSnapshot();
+    return;
+  }
 
   if (message.command.type === "activateAbility") {
     const command = message.command;

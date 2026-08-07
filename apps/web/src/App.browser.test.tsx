@@ -244,7 +244,8 @@ class ControlledJourneyWorker {
         type: "snapshot",
         phase: "running",
         manualPaused: false,
-        resumeRequestId: "guided-run"
+        resumeRequestId: "guided-run",
+        simulationSpeed: 1
       });
     } else if (candidate.command?.type === "setManualPause") {
       this.emit({
@@ -253,7 +254,8 @@ class ControlledJourneyWorker {
         phase: "running",
         manualPaused: candidate.command.paused === true,
         resumeRequestId:
-          candidate.command.paused === true ? null : "guided-resume"
+          candidate.command.paused === true ? null : "guided-resume",
+        simulationSpeed: 1
       });
     }
   }
@@ -290,6 +292,7 @@ class ControlledTargetPolicyWorker {
   readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
   readonly targetPolicyCommands: string[] = [];
   readonly abilityCommands: string[] = [];
+  readonly speedCommands: number[] = [];
   lastTargetPolicyRequestId: string | undefined;
   lastAbilityRequestId: string | undefined;
 
@@ -309,6 +312,7 @@ class ControlledTargetPolicyWorker {
         readonly type?: string;
         readonly requestedPolicy?: string;
         readonly abilityId?: string;
+        readonly speed?: number;
       };
     };
     if (candidate.type === "initialize") {
@@ -326,7 +330,8 @@ class ControlledTargetPolicyWorker {
         type: "snapshot",
         phase: "running",
         manualPaused: true,
-        resumeRequestId: null
+        resumeRequestId: null,
+        simulationSpeed: 1
       });
       this.emit({
         protocolVersion: 4,
@@ -365,6 +370,19 @@ class ControlledTargetPolicyWorker {
     ) {
       this.abilityCommands.push(candidate.command.abilityId);
       this.lastAbilityRequestId = candidate.requestId;
+    } else if (
+      candidate.command?.type === "setSimulationSpeed" &&
+      candidate.command.speed !== undefined
+    ) {
+      this.speedCommands.push(candidate.command.speed);
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: true,
+        resumeRequestId: null,
+        simulationSpeed: candidate.command.speed
+      });
     }
   }
 
@@ -1212,6 +1230,39 @@ describe("semantic combat controls", () => {
     );
   });
 
+  it("submits the displayed Shield Slam shortcut and combat speed controls", async () => {
+    const worker = new ControlledTargetPolicyWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector('button[aria-label="Shield Slam"]')
+      ).toBeEnabled()
+    );
+    await userEvent.keyboard("1");
+    expect(worker.abilityCommands).toEqual(["ability.iron_warden.shield_slam"]);
+
+    const doubleSpeed = document.querySelector(
+      'button[aria-label="2× combat speed"]'
+    );
+    expect(doubleSpeed).toBeInstanceOf(HTMLButtonElement);
+    await userEvent.click(doubleSpeed as HTMLButtonElement);
+    await vi.waitFor(() => expect(doubleSpeed).toBeDisabled());
+
+    const normalSpeed = document.querySelector(
+      'button[aria-label="1× combat speed"]'
+    );
+    expect(normalSpeed).toBeInstanceOf(HTMLButtonElement);
+    (normalSpeed as HTMLButtonElement).focus();
+    await userEvent.keyboard("{Enter}");
+    expect(worker.speedCommands).toEqual([2, 1]);
+  });
+
   it("unlocks only the control bound to a rejected command and permits retry", async () => {
     const worker = new ControlledTargetPolicyWorker();
     const container = document.createElement("div");
@@ -1773,6 +1824,24 @@ describe("authoritative web worker", () => {
         command: { type: "confirmPreparation" }
       });
       await prepared;
+      const doubleSpeed = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 4 &&
+          message.simulationSpeed === 2
+      );
+      worker.postMessage({
+        protocolVersion: 4,
+        type: "command",
+        requestId: "double-speed",
+        command: { type: "setSimulationSpeed", speed: 2 }
+      });
+      await expect(doubleSpeed).resolves.toMatchObject({
+        manualPaused: true,
+        simulationSpeed: 2
+      });
       const combatTick = waitForMessage(
         worker,
         (message) =>

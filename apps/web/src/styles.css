@@ -1400,6 +1400,39 @@ main[data-view-phase="running"] .panel {
   border-color: #d6a759;
   color: #ffe3a0;
 }
+.combat-speed {
+  position: absolute;
+  z-index: 13;
+  right: calc(1.4% + 82px);
+  bottom: 2.2%;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 2px solid #6f5438;
+  background: #0b0c0de8;
+  box-shadow: inset 0 0 0 1px #b27a32;
+  pointer-events: auto;
+}
+.combat-speed button {
+  min-width: 36px;
+  min-height: 30px;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid #6f5438;
+  background: #17191a;
+  color: #d5b477;
+  font-family: Georgia, serif;
+}
+.combat-speed button:disabled {
+  border-color: #d6a759;
+  background: #332514;
+  color: #ffe3a0;
+  opacity: 1;
+}
+.combat-speed button:not(:disabled):hover,
+.combat-speed button:not(:disabled):focus-visible {
+  border-color: #d6a759;
+  color: #ffe3a0;
+}
 .combat-pause-banner {
   position: absolute;
   z-index: 13;

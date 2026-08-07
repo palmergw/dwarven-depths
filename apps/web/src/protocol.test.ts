@@ -61,6 +61,31 @@ describe("web worker protocol", () => {
       })
     ).toBeUndefined();
     expect(
+      parseClientMessage({
+        protocolVersion: 4,
+        type: "command",
+        requestId: "speed-2",
+        command: { type: "setSimulationSpeed", speed: 2 }
+      })
+    ).toEqual({
+      protocolVersion: 4,
+      type: "command",
+      requestId: "speed-2",
+      command: { type: "setSimulationSpeed", speed: 2 }
+    });
+    for (const command of [
+      { type: "setSimulationSpeed", speed: 3 },
+      { type: "setSimulationSpeed", speed: 2, extra: true }
+    ])
+      expect(
+        parseClientMessage({
+          protocolVersion: 4,
+          type: "command",
+          requestId: "bad-speed",
+          command
+        })
+      ).toBeUndefined();
+    expect(
       parseClientMessage({ protocolVersion: 5, type: "initialize" })
     ).toBeUndefined();
     expect(
@@ -334,6 +359,31 @@ describe("web worker protocol", () => {
         type: "snapshot",
         phase: "running"
       })
+    ).toBeUndefined();
+    const speedSnapshot = {
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "running",
+      manualPaused: true,
+      resumeRequestId: null,
+      simulationSpeed: 2
+    };
+    expect(parseWorkerMessage(speedSnapshot)).toEqual(speedSnapshot);
+    expect(
+      parseWorkerMessage({
+        ...speedSnapshot,
+        manualPaused: false,
+        resumeRequestId: null
+      })
+    ).toBeDefined();
+    expect(
+      parseWorkerMessage({ ...speedSnapshot, simulationSpeed: 3 })
+    ).toBeUndefined();
+    const { simulationSpeed: _simulationSpeed, ...missingSpeed } =
+      speedSnapshot;
+    expect(parseWorkerMessage(missingSpeed)).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...speedSnapshot, unexpected: true })
     ).toBeUndefined();
   });
 

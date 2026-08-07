@@ -142,6 +142,13 @@ async function capture(page, id, expected) {
         ?.textContent?.replace(/\s+/g, " ")
         .trim()
     },
+    speedControls: [...document.querySelectorAll(".combat-speed button")].map(
+      (button) => ({
+        label: button.getAttribute("aria-label"),
+        pressed: button.getAttribute("aria-pressed"),
+        disabled: button.disabled
+      })
+    ),
     targetMenuOpen: document
       .querySelector(".character-portrait-button")
       ?.getAttribute("aria-expanded"),
@@ -161,6 +168,15 @@ async function capture(page, id, expected) {
     state.truth.alignment.valid !== true ||
     JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
     state.rendererError !== null ||
+    JSON.stringify(state.speedControls) !==
+      JSON.stringify(
+        state.phase === "running"
+          ? [
+              { label: "1× combat speed", pressed: "true", disabled: true },
+              { label: "2× combat speed", pressed: "false", disabled: false }
+            ]
+          : []
+      ) ||
     (state.phase === "running" && state.hudBackground !== "rgba(0, 0, 0, 0)") ||
     /\b(?:entity|ability|status|wave)\.[a-z0-9_]+(?:\.[a-z0-9_]+)*\b/.test(
       state.playerText
@@ -194,6 +210,7 @@ async function capture(page, id, expected) {
     health: state.health,
     ability: state.ability,
     pause: state.pause,
+    speedControls: state.speedControls,
     targetMenuOpen: state.targetMenuOpen
   };
   await writeFile(sidecarUrl, `${JSON.stringify(sidecar, null, 2)}\n`);
