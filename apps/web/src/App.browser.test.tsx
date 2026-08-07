@@ -289,6 +289,7 @@ class ControlledJourneyWorker {
 class ControlledTargetPolicyWorker {
   readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
   readonly targetPolicyCommands: string[] = [];
+  lastTargetPolicyRequestId: string | undefined;
 
   addEventListener(
     type: string,
@@ -301,6 +302,7 @@ class ControlledTargetPolicyWorker {
     if (typeof message !== "object" || message === null) return;
     const candidate = message as {
       readonly type?: string;
+      readonly requestId?: string;
       readonly command?: {
         readonly type?: string;
         readonly requestedPolicy?: string;
@@ -353,13 +355,18 @@ class ControlledTargetPolicyWorker {
       candidate.command.requestedPolicy !== undefined
     ) {
       this.targetPolicyCommands.push(candidate.command.requestedPolicy);
+      this.lastTargetPolicyRequestId = candidate.requestId;
     }
   }
 
-  emitControls(authoritativeTick: number): void {
+  emitControls(
+    authoritativeTick: number,
+    acknowledgedRequestIds: readonly string[] = []
+  ): void {
     this.emit({
       protocolVersion: 4,
       type: "combat_controls",
+      acknowledgedRequestIds,
       authoritativeTick,
       contentManifestHash: "a".repeat(64),
       dwarves: [
@@ -1112,7 +1119,7 @@ describe("semantic combat controls", () => {
     expect(onSetTargetPolicy).not.toHaveBeenCalled();
   });
 
-  it("retains the policy lock until a later authoritative projection", async () => {
+  it("retains the policy lock until an acknowledged authoritative projection", async () => {
     const worker = new ControlledTargetPolicyWorker();
     const container = document.createElement("div");
     document.body.append(container);
@@ -1136,6 +1143,11 @@ describe("semantic combat controls", () => {
     expect(worker.targetPolicyCommands).toEqual(["highest_armor"]);
 
     worker.emitControls(11);
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(true));
+    const acknowledgedRequestId = worker.lastTargetPolicyRequestId;
+    if (acknowledgedRequestId === undefined)
+      throw new Error("expected target-policy request ID");
+    worker.emitControls(11, [acknowledgedRequestId]);
     await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(false));
     await userEvent.click(targetingTrigger);
     await userEvent.click(await buttonWithText("Nearest"));

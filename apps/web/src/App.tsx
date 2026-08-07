@@ -435,11 +435,11 @@ export function App({
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
   const latestCombatControlsTickRef = useRef(-1);
-  const pendingAbilityKeysRef = useRef(new Map<string, number>());
+  const pendingAbilityKeysRef = useRef(new Map<string, string>());
   const pendingTargetPoliciesRef = useRef(
     new Map<
       string,
-      { readonly policy: TargetPolicy; readonly submittedAtTick: number }
+      { readonly policy: TargetPolicy; readonly requestId: string }
     >()
   );
   const resultHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -783,8 +783,11 @@ export function App({
           return;
         if (message.protocolVersion === 4) {
           latestCombatControlsTickRef.current = message.authoritativeTick;
-          for (const [key, submittedAtTick] of pendingAbilityKeysRef.current) {
-            if (submittedAtTick < message.authoritativeTick)
+          const acknowledgedRequestIds = new Set(
+            message.acknowledgedRequestIds
+          );
+          for (const [key, requestId] of pendingAbilityKeysRef.current) {
+            if (acknowledgedRequestIds.has(requestId))
               pendingAbilityKeysRef.current.delete(key);
           }
           setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
@@ -792,7 +795,7 @@ export function App({
             dwarfEntityId,
             pending
           ] of pendingTargetPoliciesRef.current) {
-            if (pending.submittedAtTick < message.authoritativeTick)
+            if (acknowledgedRequestIds.has(pending.requestId))
               pendingTargetPoliciesRef.current.delete(dwarfEntityId);
           }
           setPendingTargetPolicies(
@@ -929,9 +932,10 @@ export function App({
       const nextPendingTargetPolicies = new Map(
         pendingTargetPoliciesRef.current
       );
+      const requestId = crypto.randomUUID();
       nextPendingTargetPolicies.set(dwarfEntityId, {
         policy: requestedPolicy,
-        submittedAtTick: latestCombatControlsTickRef.current
+        requestId
       });
       pendingTargetPoliciesRef.current = nextPendingTargetPolicies;
       setPendingTargetPolicies(
@@ -946,7 +950,7 @@ export function App({
         {
           protocolVersion: WEB_PROTOCOL_VERSION,
           type: "command",
-          requestId: crypto.randomUUID(),
+          requestId,
           command: {
             type: "setTargetPolicy",
             dwarfEntityId,
@@ -976,16 +980,14 @@ export function App({
         return;
       const pendingKey = `${dwarfEntityId}\u0000${abilityId}`;
       if (pendingAbilityKeysRef.current.has(pendingKey)) return;
-      pendingAbilityKeysRef.current.set(
-        pendingKey,
-        latestCombatControlsTickRef.current
-      );
+      const requestId = crypto.randomUUID();
+      pendingAbilityKeysRef.current.set(pendingKey, requestId);
       setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
       postCurrentWorkerMessage(
         {
           protocolVersion: WEB_PROTOCOL_VERSION,
           type: "command",
-          requestId: crypto.randomUUID(),
+          requestId,
           command: { type: "activateAbility", dwarfEntityId, abilityId }
         },
         "Worker ability command failed."

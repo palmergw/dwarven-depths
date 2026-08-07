@@ -47,6 +47,7 @@ let pendingExecutionRequestId: string | null = null;
 const acceptedRequestIds = new Set<string>();
 const scheduledTargetPolicies = new Set<string>();
 const scheduledAbilities = new Set<string>();
+const pendingCombatControlRequestIds = new Set<string>();
 const abilityRejections = new Map<string, string>();
 let protocolVersion: 1 | 2 | 3 | 4 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
@@ -172,7 +173,9 @@ function authoritativeCombatControls(): readonly CombatControlDwarf[] {
     });
 }
 
-function postCombatControls(): void {
+function postCombatControls(
+  acknowledgedRequestIds: readonly string[] = []
+): void {
   if (protocolVersion === 3) {
     if (preparedContent?.manifestHash !== EMPTY_CONTENT_MANIFEST_HASH)
       throw new Error(
@@ -188,6 +191,7 @@ function postCombatControls(): void {
     post({
       protocolVersion: 4,
       type: "combat_controls",
+      acknowledgedRequestIds,
       authoritativeTick: liveHost?.state.tick ?? 0,
       contentManifestHash: preparedContent.manifestHash,
       dwarves: authoritativeCombatControls()
@@ -234,7 +238,10 @@ async function executePreparedScenario(): Promise<void> {
             step.state.battlefield
           )
     );
-    if (protocolVersion === 4) postCombatControls();
+    if (protocolVersion === 4) {
+      postCombatControls([...pendingCombatControlRequestIds].sort());
+      pendingCombatControlRequestIds.clear();
+    }
     if (step.state.phase !== "TERMINAL") {
       schedulePreparedScenario("live-host");
       return;
@@ -457,6 +464,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       abilityId: command.abilityId as never
     });
     scheduledAbilities.add(commandKey);
+    pendingCombatControlRequestIds.add(message.requestId);
     return;
   }
 
@@ -492,6 +500,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       requestedPolicy: command.requestedPolicy
     });
     scheduledTargetPolicies.add(commandKey);
+    pendingCombatControlRequestIds.add(message.requestId);
     return;
   }
 

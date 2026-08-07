@@ -102,6 +102,7 @@ export type WorkerMessage =
   | {
       readonly protocolVersion: 4;
       readonly type: "combat_controls";
+      readonly acknowledgedRequestIds: readonly string[];
       readonly authoritativeTick: number;
       readonly contentManifestHash: string;
       readonly dwarves: readonly CombatControlDwarf[];
@@ -185,6 +186,7 @@ type RecordValue = {
   atTick?: unknown;
   snapshot?: unknown;
   dwarves?: unknown;
+  acknowledgedRequestIds?: unknown;
   authoritativeTick?: unknown;
   contentManifestHash?: unknown;
   dwarfEntityId?: unknown;
@@ -367,6 +369,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
             "type"
           ])
         : !hasExactKeys(value, [
+            "acknowledgedRequestIds",
             "authoritativeTick",
             "contentManifestHash",
             "dwarves",
@@ -384,7 +387,15 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         : undefined;
     if (
       !Number.isSafeInteger(value.authoritativeTick) ||
-      (value.authoritativeTick as number) < 0
+      (value.authoritativeTick as number) < 0 ||
+      !Array.isArray(value.acknowledgedRequestIds) ||
+      !value.acknowledgedRequestIds.every(
+        (requestId, index, requestIds) =>
+          isRequestId(requestId) &&
+          (index === 0 ||
+            (typeof requestIds[index - 1] === "string" &&
+              requestIds[index - 1] < requestId))
+      )
     )
       return undefined;
     let previousEntityId = "";

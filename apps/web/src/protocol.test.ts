@@ -376,6 +376,7 @@ describe("web worker protocol", () => {
     const controls = {
       protocolVersion: 4,
       type: "combat_controls",
+      acknowledgedRequestIds: ["ability-1", "policy-1"],
       authoritativeTick: 7,
       contentManifestHash: "a".repeat(64),
       dwarves: [
@@ -392,6 +393,18 @@ describe("web worker protocol", () => {
     ).toBeUndefined();
     expect(
       parseWorkerMessage({ ...controls, authoritativeTick: 7.5 })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        acknowledgedRequestIds: ["policy-1", "ability-1"]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        acknowledgedRequestIds: ["policy-1", "policy-1"]
+      })
     ).toBeUndefined();
     expect(
       parseWorkerMessage({
