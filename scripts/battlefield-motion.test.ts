@@ -142,5 +142,44 @@ describe("running-client battlefield motion evidence", () => {
         }))
       )
     ).toThrow("lifecycle transition");
+
+    const disappearance = validSamples();
+    disappearance[2] = {
+      ...disappearance[2],
+      entities: disappearance[2].entities.filter(
+        (candidate) => !candidate.id.startsWith("entity.enemy.")
+      )
+    };
+    expect(() => validateBattlefieldMotionSamples(disappearance)).toThrow(
+      "disappeared before a lifecycle transition"
+    );
+  });
+
+  it("binds lifecycle state and transition tick to the sample sequence", () => {
+    const futureTransition = validSamples();
+    futureTransition[8] = {
+      ...futureTransition[8],
+      entities: futureTransition[8].entities.map((candidate) =>
+        candidate.id.startsWith("entity.enemy.")
+          ? { ...candidate, transitionTick: futureTransition[8].tick + 1_000 }
+          : candidate
+      )
+    };
+    expect(() => validateBattlefieldMotionSamples(futureTransition)).toThrow(
+      "transition tick is not authoritative"
+    );
+
+    const activeTransition = validSamples();
+    activeTransition[3] = {
+      ...activeTransition[3],
+      entities: activeTransition[3].entities.map((candidate) =>
+        candidate.id.startsWith("entity.enemy.")
+          ? { ...candidate, transitionTick: activeTransition[3].tick }
+          : candidate
+      )
+    };
+    expect(() => validateBattlefieldMotionSamples(activeTransition)).toThrow(
+      "active hostile must not declare a transition tick"
+    );
   });
 });

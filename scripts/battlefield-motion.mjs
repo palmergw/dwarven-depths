@@ -111,6 +111,47 @@ export function validateBattlefieldMotionSamples(samples) {
   if (departures.length < 4)
     throw new Error("hostile lifecycle transition is not retained long enough");
 
+  let seenTrackedEntity = false;
+  let seenRemoval = false;
+  let lastActiveTick = -1;
+  let departureKind;
+  let departureTransitionTick;
+  for (const { sample, entity } of tracked) {
+    if (entity === undefined) {
+      if (!seenTrackedEntity) continue;
+      if (departureTransitionTick === undefined)
+        throw new Error("hostile disappeared before a lifecycle transition");
+      seenRemoval = true;
+      continue;
+    }
+    if (seenRemoval) throw new Error("hostile reappeared after removal");
+    seenTrackedEntity = true;
+    if (entity.lifecycle === "active") {
+      if (entity.transitionTick !== null)
+        throw new Error("active hostile must not declare a transition tick");
+      if (departureTransitionTick !== undefined)
+        throw new Error(
+          "hostile returned to active after a lifecycle transition"
+        );
+      lastActiveTick = sample.tick;
+      continue;
+    }
+    if (
+      entity.transitionTick === null ||
+      entity.transitionTick > sample.tick ||
+      entity.transitionTick <= lastActiveTick
+    )
+      throw new Error("hostile lifecycle transition tick is not authoritative");
+    if (departureTransitionTick === undefined) {
+      departureKind = entity.lifecycle;
+      departureTransitionTick = entity.transitionTick;
+    } else if (
+      entity.lifecycle !== departureKind ||
+      entity.transitionTick !== departureTransitionTick
+    )
+      throw new Error("hostile lifecycle transition changed during retention");
+  }
+
   let previousRouteIndex = -1;
   let previousVisible;
   let maximumScreenStep = 0;
