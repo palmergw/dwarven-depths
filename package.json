@@ -21,6 +21,7 @@
     "check:desktop-package": "node scripts/check-desktop-package.mjs",
     "check:mobile-package": "node scripts/check-mobile-package.mjs",
     "build:desktop:docker": "./scripts/build-desktop-docker.sh",
+    "capture:desktop:docker": "DD_CAPTURE_DESKTOP_EVIDENCE=1 ./scripts/build-desktop-docker.sh",
     "build:mobile:docker": "./scripts/build-mobile-docker.sh",
     "test:web-offline": "node scripts/test-web-offline.mjs",
     "capture:shuttergate-truth": "node scripts/capture-shuttergate-truth.mjs",
