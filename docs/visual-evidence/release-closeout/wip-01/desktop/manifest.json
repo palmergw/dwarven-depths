@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "3d7d2c09434bcdbc09c7d77b4c572af12f7e40f3",
+  "capture": {
+    "target": "tauri-linux-evaluation",
+    "driver": "tauri-driver/WebKitWebDriver",
+    "viewport": [
+      1440,
+      900
+    ],
+    "binary": "dwarven-depths-desktop",
+    "binarySha256": "7966981b93be7014f90e911c1b73900b378996f3c131c2bfae6b976383b58870"
+  },
+  "smoke": {
+    "ok": true,
+    "mainLandmark": true,
+    "heading": "DWARVEN DEPTHS",
+    "checkpointAction": "BEGIN PREPARATION",
+    "workerBackedPreparation": "CONFIRM PREPARATION",
+    "backgroundPause": true,
+    "backgroundPauseTrigger": "webdriver-focus"
+  },
+  "evidence": [
+    {
+      "id": "desktop-checkpoint",
+      "screenshot": "desktop-checkpoint.png",
+      "screenshotSha256": "f128641a6be24c4798738b4db90c2288ea3b55cdf826c34aa953ca7e975cfdc7",
+      "state": {
+        "sourceClean": true,
+        "locationProtocol": "tauri:",
+        "stableIdVisible": false,
+        "shellView": "checkpoint",
+        "battlefieldResources": [],
+        "viewport": [
+          1440,
+          900
+        ],
+        "rendererError": null,
+        "phase": "checkpoint",
+        "sourceHead": "3d7d2c09434bcdbc09c7d77b4c572af12f7e40f3",
+        "rendererErrorAssets": null,
+        "truthReady": false,
+        "mainCount": 1
+      }
+    },
+    {
+      "id": "desktop-preparation",
+      "screenshot": "desktop-preparation.png",
+      "screenshotSha256": "9691ef80bbaae6a7036cd930f0f3424cac7d8bc90ccc3b4d84093437432bd88e",
+      "state": {
+        "sourceClean": true,
+        "locationProtocol": "tauri:",
+        "stableIdVisible": false,
+        "shellView": "preparation",
+        "battlefieldResources": [],
+        "viewport": [
+          1440,
+          900
+        ],
+        "rendererError": null,
+        "phase": "preparation",
+        "sourceHead": "3d7d2c09434bcdbc09c7d77b4c572af12f7e40f3",
+        "rendererErrorAssets": null,
+        "truthReady": true,
+        "mainCount": 1
+      }
+    }
+  ]
+}
