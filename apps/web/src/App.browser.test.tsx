@@ -2097,30 +2097,30 @@ describe("authoritative web worker", () => {
       {
         id: "unit.1",
         faction: "dwarf",
-        x: 1072,
-        y: 234,
-        cameraDepth: 68.67968530950729
+        x: 625,
+        y: 304,
+        cameraDepth: 64.22694384082301
       },
       {
         id: "unit.2",
         faction: "enemy",
-        x: 1110,
-        y: 234,
-        cameraDepth: 68.67968524685904
+        x: 663,
+        y: 304,
+        cameraDepth: 64.22694377817474
       },
       {
         id: "unit.3",
         faction: "dwarf",
-        x: 1148,
-        y: 234,
-        cameraDepth: 68.67968518421078
+        x: 701,
+        y: 304,
+        cameraDepth: 64.22694371552649
       },
       {
         id: "unit.4",
         faction: "enemy",
-        x: 1072,
-        y: 272,
-        cameraDepth: 66.25091102821374
+        x: 625,
+        y: 342,
+        cameraDepth: 61.79816955952944
       }
     ];
     expect(buildBattlefieldPrimitives(snapshot).entities).toEqual(expected);
@@ -2139,9 +2139,9 @@ describe("authoritative web worker", () => {
       {
         id: "unit.1",
         faction: "dwarf",
-        x: 1110,
-        y: 253,
-        cameraDepth: 67.46529810621226
+        x: 663,
+        y: 323,
+        cameraDepth: 63.012556637527965
       }
     ]);
   });
@@ -2162,7 +2162,7 @@ describe("authoritative web worker", () => {
     ).toEqual([primitives[1], primitives[2], primitives[0]]);
   });
 
-  it("derives snapshot-v2 interpolation and cancels it under reduced motion", async () => {
+  it("derives snapshot-v2 interpolation and settles at the authoritative pivot", async () => {
     const snapshot = {
       schemaVersion: 2,
       scenarioId: "scenario.interpolation",
@@ -2227,10 +2227,12 @@ describe("authoritative web worker", () => {
       );
     render(false);
     await vi.waitFor(
-      () =>
-        expect(
-          window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens
-        ).toBeGreaterThan(0),
+      () => {
+        const rendered = window.__DWARVEN_DEPTHS_RENDERER__?.entities.find(
+          ({ id }) => id === "entity.dwarf.warden"
+        );
+        expect(rendered?.screenPosition).toEqual([current?.x, current?.y]);
+      },
       { timeout: 10_000 }
     );
     render(true);

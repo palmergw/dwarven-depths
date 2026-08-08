@@ -4,6 +4,10 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { chromium } from "playwright";
+import {
+  validateBattlefieldMotionEvidence,
+  validateBattlefieldMotionSamples
+} from "./battlefield-motion.mjs";
 
 const execFile = promisify(execFileCallback);
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -22,6 +26,8 @@ const temporaryVideoDirectory = fileURLToPath(
   new URL("../.ddh/shuttergate-video/", import.meta.url)
 );
 const rawVideoPath = `${temporaryVideoDirectory}/shuttergate-${motionId}-raw.webm`;
+const videoTrimStartMilliseconds = 2_000;
+const sampleIntervalMilliseconds = 40;
 
 await mkdir(outputDirectory, { recursive: true });
 await rm(temporaryVideoDirectory, { force: true, recursive: true });
@@ -75,9 +81,12 @@ const context = await browser.newContext({
     size: { width: 1440, height: 900 }
   }
 });
+const recordingStartedAt = performance.now();
 const page = await context.newPage();
 const video = page.video();
 if (video === null) throw new Error("Playwright video recording unavailable");
+let sampleMotion = false;
+let sampleLoop = Promise.resolve();
 try {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Begin preparation" }).click();
@@ -93,12 +102,39 @@ try {
   const startingTick = await page.evaluate(
     () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick
   );
+  const motionSamples = [];
+  sampleMotion = true;
+  sampleLoop = (async () => {
+    while (sampleMotion) {
+      const diagnostics = await page.evaluate(
+        () => window.__DWARVEN_DEPTHS_RENDERER__
+      );
+      const videoTimeMilliseconds = Math.round(
+        performance.now() - recordingStartedAt - videoTrimStartMilliseconds
+      );
+      if (
+        videoTimeMilliseconds >= 0 &&
+        diagnostics?.snapshotTick !== null &&
+        diagnostics?.snapshotTick !== undefined
+      )
+        motionSamples.push({
+          videoTimeMilliseconds,
+          tick: diagnostics.snapshotTick,
+          entities: diagnostics.entities
+        });
+      await new Promise((resolve) =>
+        setTimeout(resolve, sampleIntervalMilliseconds)
+      );
+    }
+  })();
   await page.waitForTimeout(1200);
   await page
     .getByRole("button", { name: "Open Iron Warden targeting" })
     .click();
   await page.waitForTimeout(500);
-  await page.getByRole("button", { name: "Nearest", exact: true }).click();
+  await page
+    .locator(".target-policy-menu button", { hasText: "Nearest" })
+    .click();
   await page.waitForTimeout(900);
   await resumeAndObserveTick(page, startingTick);
   await page.waitForTimeout(2900);
@@ -108,6 +144,8 @@ try {
   const endingTick = await page.evaluate(
     () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick
   );
+  sampleMotion = false;
+  await sampleLoop;
   await page.close();
   await video.saveAs(rawVideoPath);
   await execFile("ffmpeg", [
@@ -115,7 +153,7 @@ try {
     "-loglevel",
     "error",
     "-ss",
-    "2",
+    String(videoTrimStartMilliseconds / 1_000),
     "-i",
     rawVideoPath,
     "-t",
@@ -131,6 +169,7 @@ try {
   ]);
   const videoBytes = await readFile(videoUrl);
   const videoSha256 = createHash("sha256").update(videoBytes).digest("hex");
+  const motionValidation = validateBattlefieldMotionSamples(motionSamples);
   const evidence = {
     schemaVersion: 1,
     sourceHead,
@@ -140,8 +179,12 @@ try {
     videoSha256,
     motion: motionId,
     approximateDurationSeconds: 7,
+    videoTrimStartMilliseconds,
+    sampleIntervalMilliseconds,
     startingTick,
     endingTick,
+    motionValidation,
+    samples: motionSamples,
     interactions: [
       "target-policy-nearest",
       "resume",
@@ -157,9 +200,36 @@ try {
     throw new Error(
       `interaction clip did not advance authority: ${JSON.stringify(evidence)}`
     );
+  const transitionTicks = Object.fromEntries(
+    [
+      ...new Map(
+        motionSamples.flatMap((sample) =>
+          sample.entities
+            .filter(({ lifecycle }) => lifecycle !== "active")
+            .map(({ id, transitionTick }) => [id, transitionTick])
+        )
+      )
+    ].sort(([left], [right]) => left.localeCompare(right))
+  );
+  validateBattlefieldMotionEvidence(evidence, videoBytes, {
+    sourceHead,
+    transitionTicks
+  });
   await writeFile(sidecarUrl, `${JSON.stringify(evidence, null, 2)}\n`);
-  process.stdout.write(`${JSON.stringify({ ok: true, ...evidence })}\n`);
+  process.stdout.write(
+    `${JSON.stringify({
+      ok: true,
+      sourceHead,
+      video: evidence.video,
+      videoSha256,
+      startingTick,
+      endingTick,
+      motionValidation
+    })}\n`
+  );
 } finally {
+  sampleMotion = false;
+  await sampleLoop.catch(() => undefined);
   await context.close();
   await browser.close();
   await rm(temporaryVideoDirectory, { force: true, recursive: true });

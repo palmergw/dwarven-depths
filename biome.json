@@ -9,7 +9,8 @@
       "!apps/mobile/android",
       "!reports",
       "!.ddh",
-      "!assets/game-art/layered-map-poc/metadata"
+      "!assets/game-art/layered-map-poc/metadata",
+      "!docs/visual-evidence/release-closeout"
     ]
   },
   "formatter": {

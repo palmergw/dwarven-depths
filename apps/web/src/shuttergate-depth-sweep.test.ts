@@ -300,27 +300,27 @@ describe("Shuttergate route-wide depth sweep", () => {
         },
         {
           "id": "node.shuttergate_gate/effect",
-          "occluded": 1998,
+          "occluded": 1600,
         },
         {
           "id": "node.shuttergate_gate/focus",
-          "occluded": 2610,
+          "occluded": 336,
         },
         {
           "id": "node.shuttergate_gate/raider",
-          "occluded": 480,
+          "occluded": 320,
         },
         {
           "id": "node.shuttergate_gate/raider-ring",
-          "occluded": 1196,
+          "occluded": 216,
         },
         {
           "id": "node.shuttergate_gate/warden",
-          "occluded": 3643,
+          "occluded": 448,
         },
         {
           "id": "node.shuttergate_gate/warden-ring",
-          "occluded": 1803,
+          "occluded": 151,
         },
         {
           "id": "node.shuttergate_keep/effect",

@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "73083342c3dbda7eba843e790c9ef1028f6f2699",
+  "capture": {
+    "browser": "chromium",
+    "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
+    "deviceScaleFactor": 1,
+    "reducedMotion": true,
+    "waitCondition": "networkidle-profile-ready-images-complete"
+  },
+  "evidence": [
+    {
+      "viewportName": "desktop",
+      "capture": "checkpoint",
+      "screenshot": "desktop-checkpoint.png",
+      "screenshotSha256": "439f7582538c5c8dd5f6921241e7e105d6af769a168b2de586c1fea17fe1c143",
+      "state": {
+        "sourceHead": "73083342c3dbda7eba843e790c9ef1028f6f2699",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "checkpoint",
+        "shellView": "checkpoint",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Begin preparation",
+          "Upgrade inventory",
+          "Settings"
+        ]
+      }
+    },
+    {
+      "viewportName": "desktop",
+      "capture": "settings",
+      "screenshot": "desktop-settings.png",
+      "screenshotSha256": "dc0f372ec32c7db23bfb5cfe016c3e22252cd754b996f2932020727c8157fbd3",
+      "state": {
+        "sourceHead": "73083342c3dbda7eba843e790c9ef1028f6f2699",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "checkpoint",
+        "shellView": "settings",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Close settings"
+        ]
+      }
+    },
+    {
+      "viewportName": "desktop",
+      "capture": "forge",
+      "screenshot": "desktop-forge.png",
+      "screenshotSha256": "9c1cefb1a20bbd75f9ebbdaa4cdf1010e1da0453677034430f7542d3caa916c8",
+      "state": {
+        "sourceHead": "73083342c3dbda7eba843e790c9ef1028f6f2699",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "checkpoint",
+        "shellView": "forge",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Close upgrade inventory",
+          "Purchase rank 1 for 10 Forge Ore",
+          "Purchase rank 1 for 15 Forge Ore"
+        ]
+      }
+    },
+    {
+      "viewportName": "desktop",
+      "capture": "preparation",
+      "screenshot": "desktop-preparation.png",
+      "screenshotSha256": "38c9d80ebf604d8358adf6ee4caa94b39f144dd744739a80dd3034ba0eafef70",
+      "state": {
+        "sourceHead": "73083342c3dbda7eba843e790c9ef1028f6f2699",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "preparation",
+        "shellView": "preparation",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          727
+        ],
+        "visibleButtonNames": [
+          "Confirm preparation"
+        ]
+      }
+    },
+    {
+      "viewportName": "desktop",
+      "capture": "result",
+      "screenshot": "desktop-result.png",
+      "screenshotSha256": "d76eec8de63b6a851b0f6de277f38c52413ce2c392ff5bdc3c6f459abb2d6955",
+      "state": {
+        "sourceHead": "73083342c3dbda7eba843e790c9ef1028f6f2699",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "result",
+        "shellView": "result",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Return to checkpoint"
+        ]
+      }
+    },
+    {
+      "viewportName": "desktop",
+      "capture": "failure",
+      "screenshot": "desktop-failure.png",
+      "screenshotSha256": "9a90d1927523ebd8c2fb1eed611f75dae5484059fc913b026f160ab34ced5fa3",
+      "state": {
+        "sourceHead": "73083342c3dbda7eba843e790c9ef1028f6f2699",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "failure",
+        "shellView": "failure",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Return to checkpoint"
+        ]
+      }
+    }
+  ]
+}

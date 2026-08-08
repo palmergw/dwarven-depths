@@ -12,20 +12,28 @@ import {
   shuttergateOccupancyWorldPoint
 } from "./shuttergate-spatial.js";
 
-const EXPECTED_LEGACY_PIVOTS = {
+const EXPECTED_PRESENTATION_PIVOTS = {
   "node.shuttergate_west_entry": { x: 1054, y: 302 },
   "node.shuttergate_west_hall": { x: 838, y: 330 },
   "node.shuttergate_east_entry": { x: 1054, y: 302 },
   "node.shuttergate_east_hall": { x: 838, y: 330 },
-  "node.shuttergate_gate": { x: 1110, y: 253 },
+  "node.shuttergate_gate": { x: 663, y: 323 },
   "node.shuttergate_north_guard": { x: 605, y: 320 },
   "node.shuttergate_keep": { x: 432, y: 402 },
   "node.shuttergate_keep_guard": { x: 364, y: 476 }
 } as const;
 
 describe("Shuttergate shared-scene projection", () => {
-  it("mechanically reproduces every approved runtime pivot", () => {
-    expect(SHUTTERGATE_NODE_POSITIONS).toEqual(EXPECTED_LEGACY_PIVOTS);
+  it("mechanically reproduces every route-correct runtime pivot", () => {
+    expect(SHUTTERGATE_NODE_POSITIONS).toEqual(EXPECTED_PRESENTATION_PIVOTS);
+    expect(
+      [
+        "node.shuttergate_west_entry",
+        "node.shuttergate_west_hall",
+        "node.shuttergate_gate",
+        "node.shuttergate_north_guard"
+      ].map((nodeId) => SHUTTERGATE_NODE_POSITIONS[nodeId]?.x)
+    ).toEqual([1054, 838, 663, 605]);
   });
 
   it("agrees with Blender's unrounded exported projection", () => {
@@ -84,7 +92,9 @@ describe("Shuttergate shared-scene projection", () => {
   it("projects same-node occupancy from anchor-local ground offsets", () => {
     for (const [nodeId, anchor] of Object.entries(SHUTTERGATE_WORLD_ANCHORS)) {
       const pivot =
-        EXPECTED_LEGACY_PIVOTS[nodeId as keyof typeof EXPECTED_LEGACY_PIVOTS];
+        EXPECTED_PRESENTATION_PIVOTS[
+          nodeId as keyof typeof EXPECTED_PRESENTATION_PIVOTS
+        ];
       expect(
         quantizeShuttergatePivot(projectShuttergateOccupancyPoint(nodeId, 0, 0))
       ).toEqual(pivot);

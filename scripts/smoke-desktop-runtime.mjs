@@ -1,11 +1,18 @@
 import { spawn } from "node:child_process";
-import { access } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { basename, resolve } from "node:path";
 
 const binary = process.argv[2];
 if (binary === undefined) {
-  throw new Error("usage: smoke-desktop-runtime.mjs <desktop-binary>");
+  throw new Error(
+    "usage: smoke-desktop-runtime.mjs <desktop-binary> [evidence-directory]"
+  );
 }
 await access(binary);
+const evidenceDirectory =
+  process.argv[3] === undefined ? undefined : resolve(process.argv[3]);
+const canonicalViewport = { width: 1440, height: 900 };
 
 const driver = spawn(
   "tauri-driver",
@@ -28,16 +35,116 @@ function progress(step) {
 }
 
 async function request(path, init = {}) {
+  const { timeout = 2_000, ...requestInit } = init;
   const response = await fetch(`${endpoint}${path}`, {
-    ...init,
-    signal: AbortSignal.timeout(2_000),
-    headers: { "content-type": "application/json", ...init.headers }
+    ...requestInit,
+    signal: AbortSignal.timeout(timeout),
+    headers: { "content-type": "application/json", ...requestInit.headers }
   });
   const body = await response.json();
   if (!response.ok || body.value?.error) {
     throw new Error(`WebDriver ${path} failed: ${JSON.stringify(body)}`);
   }
   return body.value;
+}
+
+async function evaluate(script) {
+  return request(`/session/${sessionId}/execute/sync`, {
+    method: "POST",
+    body: JSON.stringify({ script, args: [] })
+  });
+}
+
+async function setCanonicalViewport() {
+  let outerWidth = canonicalViewport.width;
+  let outerHeight = canonicalViewport.height;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    await request(`/session/${sessionId}/window/rect`, {
+      method: "POST",
+      body: JSON.stringify({
+        width: outerWidth,
+        height: outerHeight,
+        x: 0,
+        y: 0
+      })
+    });
+    const viewport = await evaluate(
+      "return { width: window.innerWidth, height: window.innerHeight };"
+    );
+    if (
+      viewport.width === canonicalViewport.width &&
+      viewport.height === canonicalViewport.height
+    ) {
+      return viewport;
+    }
+    outerWidth += canonicalViewport.width - viewport.width;
+    outerHeight += canonicalViewport.height - viewport.height;
+  }
+  throw new Error(
+    `desktop viewport did not reach 1440x900: ${JSON.stringify(
+      await evaluate(
+        "return { width: window.innerWidth, height: window.innerHeight };"
+      )
+    )}`
+  );
+}
+
+async function captureEvidence(id, expectedShellView) {
+  if (evidenceDirectory === undefined) return undefined;
+  const state = await evaluate(`
+    const main = document.querySelector("main");
+    const visibleText = document.body.innerText.replace(/\\s+/g, " ").trim();
+    return {
+      sourceHead: document.querySelector('meta[name="dd-source-head"]')?.content ?? null,
+      sourceClean: document.querySelector('meta[name="dd-source-clean"]')?.content === "true",
+      viewport: [window.innerWidth, window.innerHeight],
+      phase: main?.dataset.viewPhase ?? null,
+      shellView: main?.dataset.shellView ?? null,
+      mainCount: document.querySelectorAll("main").length,
+      stableIdVisible: /\\b[a-z][a-z0-9_-]*\\.[a-z0-9_.-]+\\b/.test(visibleText),
+      rendererError: document.querySelector(".battlefield-canvas")?.dataset.rendererError ?? null,
+      rendererErrorAssets: document.querySelector(".battlefield-canvas")?.dataset.rendererErrorAssets ?? null,
+      truthReady: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady ?? false,
+      locationProtocol: window.location.protocol,
+      battlefieldResources: performance.getEntriesByType("resource")
+        .map((entry) => entry.name)
+        .filter((name) => /(?:environment-base|static-scene-depth|iron-warden-idle)/.test(name))
+    };
+  `);
+  if (
+    state.sourceHead === null ||
+    state.sourceClean !== true ||
+    JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
+    state.shellView !== expectedShellView ||
+    state.mainCount !== 1 ||
+    state.stableIdVisible ||
+    (id === "desktop-preparation" &&
+      (state.rendererError !== null || state.truthReady !== true))
+  ) {
+    throw new Error(
+      `invalid packaged desktop capture ${id}: ${JSON.stringify(state)}`
+    );
+  }
+  const screenshot = Buffer.from(
+    await request(`/session/${sessionId}/screenshot`, { timeout: 20_000 }),
+    "base64"
+  );
+  if (
+    screenshot.length < 24 ||
+    screenshot.subarray(1, 4).toString("ascii") !== "PNG" ||
+    screenshot.readUInt32BE(16) !== canonicalViewport.width ||
+    screenshot.readUInt32BE(20) !== canonicalViewport.height
+  ) {
+    throw new Error(`packaged desktop screenshot ${id} is not a 1440x900 PNG`);
+  }
+  const filename = `${id}.png`;
+  await writeFile(resolve(evidenceDirectory, filename), screenshot);
+  return {
+    id,
+    screenshot: filename,
+    screenshotSha256: createHash("sha256").update(screenshot).digest("hex"),
+    state
+  };
 }
 
 async function waitForDriver() {
@@ -89,7 +196,13 @@ async function waitForText(selector, expected) {
       const text = await request(
         `/session/${sessionId}/element/${element}/text`
       );
-      if (text.includes(expected)) return { element, text };
+      if (
+        text
+          .toLocaleLowerCase("en-US")
+          .includes(expected.toLocaleLowerCase("en-US"))
+      ) {
+        return { element, text };
+      }
     } catch {
       // The worker-backed view can replace the checkpoint DOM between requests.
     }
@@ -110,14 +223,19 @@ async function waitForButton(text) {
 }
 
 async function waitForCombatControl() {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+  for (let attempt = 0; attempt < 300; attempt += 1) {
     try {
-      const element = await findButtonByText("combat");
-      const text = await request(
-        `/session/${sessionId}/element/${element}/text`
+      const element = await find(
+        'button[aria-label="Pause combat"], button[aria-label="Resume combat"]'
       );
-      if (text === "Pause combat" || text === "Resume combat") {
-        return { element, text };
+      const label = await request(
+        `/session/${sessionId}/element/${element}/attribute/aria-label`
+      );
+      if (label === "Pause combat" || label === "Resume combat") {
+        return {
+          element,
+          text: label
+        };
       }
     } catch {
       // The worker can replace preparation with the running view between calls.
@@ -140,6 +258,12 @@ try {
   });
   sessionId = session.sessionId;
   progress("session ready");
+  await setCanonicalViewport();
+  progress("canonical 1440x900 viewport ready");
+  if (evidenceDirectory !== undefined) {
+    await rm(evidenceDirectory, { recursive: true, force: true });
+    await mkdir(evidenceDirectory, { recursive: true });
+  }
 
   const main = await waitForElement("main");
   const heading = await waitForElement("main h1");
@@ -148,19 +272,29 @@ try {
     request(`/session/${sessionId}/element/${heading}/text`),
     request(`/session/${sessionId}/element/${checkpointAction}/text`)
   ]);
-  if (!headingText.includes("Dwarven Depths")) {
+  if (!headingText.toLocaleLowerCase("en-US").includes("dwarven depths")) {
     throw new Error(`unexpected desktop heading: ${headingText}`);
   }
-  if (!checkpointText.includes("Begin preparation")) {
+  if (
+    !checkpointText.toLocaleLowerCase("en-US").includes("begin preparation")
+  ) {
     throw new Error(`checkpoint action not ready: ${checkpointText}`);
   }
   progress("checkpoint ready");
+  const checkpointEvidence = await captureEvidence(
+    "desktop-checkpoint",
+    "checkpoint"
+  );
   await request(`/session/${sessionId}/element/${checkpointAction}/click`, {
     method: "POST",
     body: "{}"
   });
   const preparation = await waitForText("main button", "Confirm preparation");
   progress("worker preparation ready");
+  const preparationEvidence = await captureEvidence(
+    "desktop-preparation",
+    "preparation"
+  );
   await request(`/session/${sessionId}/element/${preparation.element}/click`, {
     method: "POST",
     body: "{}"
@@ -177,20 +311,50 @@ try {
             method: "POST",
             body: "{}"
           });
-          return waitForButton("Resume combat");
+          const resumedControl = await waitForCombatControl();
+          if (resumedControl.text !== "Resume combat") {
+            throw new Error("background pause did not expose Resume combat");
+          }
+          return resumedControl.element;
         })();
   progress("background pause observed");
-  process.stdout.write(
-    `${JSON.stringify({
-      ok: true,
-      mainLandmark: main !== undefined,
-      heading: headingText,
-      checkpointAction: checkpointText,
-      workerBackedPreparation: preparation.text,
-      backgroundPause: resumeAction !== undefined,
-      backgroundPauseTrigger
-    })}\n`
-  );
+  const result = {
+    ok: true,
+    mainLandmark: main !== undefined,
+    heading: headingText,
+    checkpointAction: checkpointText,
+    workerBackedPreparation: preparation.text,
+    backgroundPause: resumeAction !== undefined,
+    backgroundPauseTrigger
+  };
+  if (
+    evidenceDirectory !== undefined &&
+    checkpointEvidence !== undefined &&
+    preparationEvidence !== undefined
+  ) {
+    const binaryBytes = await readFile(binary);
+    await writeFile(
+      resolve(evidenceDirectory, "manifest.json"),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          sourceHead: checkpointEvidence.state.sourceHead,
+          capture: {
+            target: "tauri-linux-evaluation",
+            driver: "tauri-driver/WebKitWebDriver",
+            viewport: [canonicalViewport.width, canonicalViewport.height],
+            binary: basename(binary),
+            binarySha256: createHash("sha256").update(binaryBytes).digest("hex")
+          },
+          smoke: result,
+          evidence: [checkpointEvidence, preparationEvidence]
+        },
+        null,
+        2
+      )}\n`
+    );
+  }
+  process.stdout.write(`${JSON.stringify(result)}\n`);
 } finally {
   if (sessionId !== undefined) {
     await request(`/session/${sessionId}`, { method: "DELETE" }).catch(

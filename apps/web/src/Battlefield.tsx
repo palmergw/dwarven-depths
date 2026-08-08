@@ -20,6 +20,7 @@ import {
 import {
   clipPresentationPixels,
   decodeStaticSceneDepth,
+  decodeStaticSceneDepthPixels,
   type PresentationDepthModel,
   type StaticSceneDepth,
   type StaticSceneDepthContract
@@ -36,7 +37,9 @@ import {
 const WIDTH = 1280;
 const HEIGHT = 720;
 const PADDING = 96;
-const INTERPOLATION_DURATION_MS = 180;
+const INTERPOLATION_SPEED_PIXELS_PER_MILLISECOND = 0.9;
+const DEPARTURE_DURATION_MS = 720;
+const DAMAGE_SIGNAL_DURATION_MS = 280;
 const MAX_POOLED_EFFECTS = 64;
 const FIXTURE_ID = "scenarios/conformance/shuttergate-web-truth.json";
 const textureAlphaMetricsCache = new Map<string, TextureAlphaMetrics>();
@@ -94,7 +97,7 @@ const wardenSelectionRingUrl = new URL(
   import.meta.url
 ).href;
 const staticSceneDepthUrl = new URL(
-  "../../../assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.bin",
+  "../../../assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.png",
   import.meta.url
 ).href;
 const battlefieldAssetUrls: Readonly<Record<string, string>> = {
@@ -259,6 +262,7 @@ declare global {
 
 export interface BattlefieldRendererDiagnostics {
   readonly schemaVersion: 1;
+  readonly snapshotTick: number | null;
   readonly updateCount: number;
   readonly entityObjects: number;
   readonly pooledEffects: number;
@@ -269,6 +273,20 @@ export interface BattlefieldRendererDiagnostics {
   readonly activeTweens: number;
   readonly timerEvents: number;
   readonly loaderListeners: number;
+  readonly entities: readonly {
+    readonly id: string;
+    readonly nodeId: string;
+    readonly worldPosition: readonly [number, number];
+    readonly screenPosition: readonly [number, number];
+    readonly currentHealth: number;
+    readonly action: {
+      readonly kind: string;
+      readonly phase: string;
+    };
+    readonly lifecycle: "active" | "downed" | "destroyed";
+    readonly transitionTick: number | null;
+    readonly alpha: number;
+  }[];
   readonly camera: {
     readonly frame: readonly [1280, 720];
     readonly scaleMode: "fit";
@@ -469,6 +487,31 @@ export function decodeBattlefieldDepthAsset(
   try {
     return decodeStaticSceneDepth(
       value,
+      SHUTTERGATE_SPATIAL_CONTRACT.staticDepth as unknown as StaticSceneDepthContract
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+function decodeBattlefieldDepthTexture(
+  scene: Phaser.Scene
+): StaticSceneDepth | undefined {
+  try {
+    const source = scene.textures
+      .get("static-scene-depth")
+      .getSourceImage() as unknown;
+    if (!(source instanceof HTMLImageElement)) return undefined;
+    const canvas = document.createElement("canvas");
+    canvas.width = source.naturalWidth;
+    canvas.height = source.naturalHeight;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (context === null) return undefined;
+    context.drawImage(source, 0, 0);
+    return decodeStaticSceneDepthPixels(
+      context.getImageData(0, 0, canvas.width, canvas.height).data,
+      canvas.width,
+      canvas.height,
       SHUTTERGATE_SPATIAL_CONTRACT.staticDepth as unknown as StaticSceneDepthContract
     );
   } catch {
@@ -1215,6 +1258,23 @@ interface PersistentEntityObjects {
   readonly ring: Phaser.GameObjects.Image;
   readonly subject: Phaser.GameObjects.Image;
   readonly signal: Phaser.GameObjects.Graphics;
+  damagedUntil: number;
+  targetX: number;
+  targetY: number;
+}
+
+type RenderEntityV2 = Extract<
+  RenderSnapshot,
+  { readonly schemaVersion: 2 }
+>["entities"][number];
+
+interface DepartingEntityObjects {
+  readonly entity: RenderEntityV2;
+  readonly objects: PersistentEntityObjects;
+  readonly kind: "downed" | "destroyed";
+  readonly transitionTick: number;
+  readonly startedAt: number;
+  readonly originY: number;
 }
 
 class PersistentBattlefieldScene {
@@ -1223,6 +1283,7 @@ class PersistentBattlefieldScene {
     Set<Phaser.GameObjects.GameObject>
   >;
   readonly entities = new Map<string, PersistentEntityObjects>();
+  readonly departures = new Map<string, DepartingEntityObjects>();
   readonly effects: Phaser.GameObjects.Graphics[] = [];
   readonly abilityEffects = new Map<string, Phaser.GameObjects.Image>();
   readonly lighting: Phaser.GameObjects.Image;
@@ -1232,6 +1293,7 @@ class PersistentBattlefieldScene {
   activeEffects = 0;
   lastInterpolatedTick: string | undefined;
   lastAbilityEffectTick: string | undefined;
+  lastSnapshot: RenderSnapshot | undefined;
 
   constructor(
     readonly scene: Phaser.Scene,
@@ -1293,41 +1355,73 @@ class PersistentBattlefieldScene {
   ): void {
     const offsetX = origin.x - destination.x;
     const offsetY = origin.y - destination.y;
-    if (offsetX === 0 && offsetY === 0) return;
+    objects.targetX = destination.x;
+    objects.targetY = destination.y;
     objects.ring.setPosition(origin.x, origin.y);
     objects.subject.setPosition(origin.x, origin.y);
     objects.signal.setPosition(offsetX, offsetY);
     const signalMask = objects.signal.mask?.geometryMask;
     signalMask?.setPosition(offsetX, offsetY);
-    this.scene.tweens.add({
-      targets: objects.ring,
-      x: destination.x,
-      y: destination.y,
-      duration: INTERPOLATION_DURATION_MS,
-      ease: "Sine.Out"
-    });
-    this.scene.tweens.add({
-      targets: objects.signal,
-      x: 0,
-      y: 0,
-      duration: INTERPOLATION_DURATION_MS,
-      ease: "Sine.Out"
-    });
-    if (signalMask !== undefined)
-      this.scene.tweens.add({
-        targets: signalMask,
-        x: 0,
-        y: 0,
-        duration: INTERPOLATION_DURATION_MS,
-        ease: "Sine.Out"
-      });
-    this.scene.tweens.add({
-      targets: objects.subject,
-      x: destination.x,
-      y: destination.y,
-      duration: INTERPOLATION_DURATION_MS,
-      ease: "Sine.Out"
-    });
+  }
+
+  updateMotion(deltaMilliseconds: number): void {
+    const maximumStep =
+      Math.max(0, deltaMilliseconds) *
+      INTERPOLATION_SPEED_PIXELS_PER_MILLISECOND;
+    for (const objects of this.entities.values()) {
+      const deltaX = objects.targetX - objects.subject.x;
+      const deltaY = objects.targetY - objects.subject.y;
+      const distance = Math.hypot(deltaX, deltaY);
+      const ratio = distance === 0 ? 1 : Math.min(1, maximumStep / distance);
+      const x = objects.subject.x + deltaX * ratio;
+      const y = objects.subject.y + deltaY * ratio;
+      objects.subject.setPosition(x, y);
+      objects.ring.setPosition(x, y);
+      const offsetX = x - objects.targetX;
+      const offsetY = y - objects.targetY;
+      objects.signal.setPosition(offsetX, offsetY);
+      objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
+    }
+  }
+
+  private destroyEntityObjects(
+    id: string,
+    objects: PersistentEntityObjects
+  ): void {
+    this.layers["world-rings"].delete(objects.ring);
+    this.layers["world-entities"].delete(objects.subject);
+    this.layers["world-effects"].delete(objects.signal);
+    objects.ring.destroy();
+    objects.signal.clearMask(true);
+    objects.signal.destroy();
+    objects.subject.setTexture("warden-runtime");
+    objects.subject.destroy();
+    for (const textureKey of [`ring-depth-${id}`, `subject-depth-${id}`])
+      if (this.scene.textures.exists(textureKey))
+        this.scene.textures.remove(textureKey);
+  }
+
+  updateDepartures(): void {
+    for (const [id, departure] of this.departures) {
+      const progress = Math.min(
+        1,
+        Math.max(
+          0,
+          (this.scene.time.now - departure.startedAt) / DEPARTURE_DURATION_MS
+        )
+      );
+      const { ring, signal, subject } = departure.objects;
+      ring.setAlpha(1 - progress);
+      signal.setAlpha(1 - progress * 0.7);
+      subject
+        .setAlpha(1 - progress * 0.85)
+        .setAngle(-68 * progress)
+        .setY(departure.originY + 22 * progress)
+        .setTint(0xff5c4d);
+      if (progress < 1) continue;
+      this.destroyEntityObjects(id, departure.objects);
+      this.departures.delete(id);
+    }
   }
 
   update(
@@ -1345,6 +1439,8 @@ class PersistentBattlefieldScene {
     )
       throw new Error("invalid evidence effect alpha");
     this.updateCount += 1;
+    this.lastSnapshot = snapshot;
+    this.updateDepartures();
     const primitives = buildBattlefieldPrimitives(snapshot);
     const interpolationOrigins = buildInterpolationOrigins(snapshot);
     const interpolationTick =
@@ -1367,19 +1463,40 @@ class PersistentBattlefieldScene {
       comparePresentationPrimitives
     );
     const liveIds = new Set(orderedEntities.map(({ id }) => id));
+    const departureIds = new Set(
+      feedback?.departures.map(({ id }) => id) ?? []
+    );
     for (const [id, objects] of this.entities)
       if (!liveIds.has(id)) {
-        this.layers["world-rings"].delete(objects.ring);
-        this.layers["world-entities"].delete(objects.subject);
-        objects.ring.destroy();
-        objects.signal.clearMask(true);
-        objects.signal.destroy();
-        objects.subject.setTexture("warden-runtime");
-        objects.subject.destroy();
-        for (const textureKey of [`ring-depth-${id}`, `subject-depth-${id}`])
-          if (this.scene.textures.exists(textureKey))
-            this.scene.textures.remove(textureKey);
         this.entities.delete(id);
+        const previousEntity =
+          previousSnapshot?.schemaVersion === 2
+            ? previousSnapshot.entities.find((entity) => entity.id === id)
+            : undefined;
+        const transition =
+          snapshot.schemaVersion === 2
+            ? snapshot.entityTransitions.find(
+                (candidate) =>
+                  candidate.entityId === id &&
+                  (candidate.kind === "downed" ||
+                    candidate.kind === "destroyed")
+              )
+            : undefined;
+        if (
+          !reduceMotion &&
+          departureIds.has(id) &&
+          previousEntity !== undefined &&
+          transition !== undefined
+        )
+          this.departures.set(id, {
+            entity: previousEntity,
+            objects,
+            kind: transition.kind === "downed" ? "downed" : "destroyed",
+            transitionTick: transition.atTick,
+            startedAt: this.scene.time.now,
+            originY: objects.subject.y
+          });
+        else this.destroyEntityObjects(id, objects);
       }
 
     const poseTextures = new Map(
@@ -1399,6 +1516,10 @@ class PersistentBattlefieldScene {
     const raiderTexture = poseTextures.get("raider-source") ?? "raider-source";
     for (const entity of orderedEntities) {
       const existing = this.entities.get(entity.id);
+      const displayedOrigin =
+        existing === undefined
+          ? undefined
+          : { id: entity.id, x: existing.subject.x, y: existing.subject.y };
       const presentation = deriveCombatPresentationState(
         snapshot,
         previousSnapshot,
@@ -1426,14 +1547,23 @@ class PersistentBattlefieldScene {
         this.staticDepth,
         existing?.subject
       );
+      ring.setAlpha(1).setAngle(0);
+      subject.setAlpha(1).setAngle(0).clearTint();
       if (existing === undefined) {
         this.layers["world-entities"].add(subject);
         const signal = this.scene.add.graphics();
         this.layers["world-effects"].add(signal);
-        this.entities.set(entity.id, { ring, subject, signal });
+        this.entities.set(entity.id, {
+          ring,
+          subject,
+          signal,
+          damagedUntil: 0,
+          targetX: entity.x,
+          targetY: entity.y
+        });
       }
       const objects = this.entities.get(entity.id);
-      if (objects !== undefined)
+      if (objects !== undefined) {
         updateEntitySignal(
           this.scene,
           objects.signal,
@@ -1441,18 +1571,28 @@ class PersistentBattlefieldScene {
           presentation,
           this.staticDepth
         );
+        if (presentation?.damaged === true)
+          objects.damagedUntil =
+            this.scene.time.now + DAMAGE_SIGNAL_DURATION_MS;
+        if (objects.damagedUntil > this.scene.time.now)
+          objects.subject.setTint(0xff5c4d);
+      }
       const snapshotEntity =
         snapshot.schemaVersion === 2
           ? snapshot.entities.find(({ id }) => id === entity.id)
           : undefined;
-      const origin = interpolationOrigins.get(entity.id);
+      const origin = displayedOrigin ?? interpolationOrigins.get(entity.id);
       if (
         interpolate &&
         objects !== undefined &&
-        snapshotEntity?.transition === "moving" &&
+        snapshotEntity !== undefined &&
         origin !== undefined
       )
         this.interpolateEntity(objects, origin, entity);
+      else if (objects !== undefined) {
+        objects.targetX = entity.x;
+        objects.targetY = entity.y;
+      }
     }
     if (interpolationTick !== undefined)
       this.lastInterpolatedTick = interpolationTick;
@@ -1576,6 +1716,7 @@ class PersistentBattlefieldScene {
         });
     }
     this.lastAbilityEffectTick = impactKey;
+    this.updateDepartures();
 
     const terminalResult =
       snapshot.schemaVersion === 2 ? snapshot.encounter.terminalResult : null;
@@ -1607,6 +1748,10 @@ class PersistentBattlefieldScene {
       this.scene.children.bringToTop(effect);
     for (const objects of this.entities.values())
       this.scene.children.bringToTop(objects.signal);
+    for (const { objects } of this.departures.values()) {
+      this.scene.children.bringToTop(objects.subject);
+      this.scene.children.bringToTop(objects.signal);
+    }
     if (terminal) {
       this.scene.children.bringToTop(this.terminalFrame);
       this.scene.children.bringToTop(this.terminalText);
@@ -1640,7 +1785,7 @@ class PersistentBattlefieldScene {
           rear: measureTextureAlpha(this.scene, "entrance-route-rear")
         },
         [window.innerWidth, window.innerHeight],
-        [...this.layers["world-entities"]].map((subject, index) => {
+        [...this.entities.values()].map(({ subject }, index) => {
           if (!(subject instanceof Phaser.GameObjects.Image))
             return {
               id: `invalid.rendered-subject.${index}`,
@@ -1662,8 +1807,48 @@ class PersistentBattlefieldScene {
   }
 
   diagnostics(): BattlefieldRendererDiagnostics {
+    const activeEntities =
+      this.lastSnapshot?.schemaVersion === 2
+        ? this.lastSnapshot.entities.flatMap((entity) => {
+            const objects = this.entities.get(entity.id);
+            if (objects === undefined) return [];
+            return [
+              {
+                id: entity.id,
+                nodeId: entity.nodeId,
+                worldPosition: [entity.position.x, entity.position.y] as const,
+                screenPosition: [objects.subject.x, objects.subject.y] as const,
+                currentHealth: entity.currentHealth,
+                action: {
+                  kind: entity.action.kind,
+                  phase: entity.action.phase
+                },
+                lifecycle: "active" as const,
+                transitionTick: null,
+                alpha: objects.subject.alpha
+              }
+            ];
+          })
+        : [];
+    const departingEntities = [...this.departures.values()].map(
+      ({ entity, kind, objects, transitionTick }) => ({
+        id: entity.id,
+        nodeId: entity.nodeId,
+        worldPosition: [entity.position.x, entity.position.y] as const,
+        screenPosition: [objects.subject.x, objects.subject.y] as const,
+        currentHealth: entity.currentHealth,
+        action: {
+          kind: entity.action.kind,
+          phase: entity.action.phase
+        },
+        lifecycle: kind,
+        transitionTick,
+        alpha: objects.subject.alpha
+      })
+    );
     return {
       schemaVersion: 1,
+      snapshotTick: this.lastSnapshot?.tick ?? null,
       updateCount: this.updateCount,
       entityObjects: this.entities.size * 3,
       pooledEffects: this.effects.length,
@@ -1682,6 +1867,9 @@ class PersistentBattlefieldScene {
         .filter((tween) => tween.isPlaying()).length,
       timerEvents: 0,
       loaderListeners: this.scene.load.listenerCount("loaderror"),
+      entities: [...activeEntities, ...departingEntities].sort((left, right) =>
+        compareRenderIds(left.id, right.id)
+      ),
       camera: {
         frame: [WIDTH, HEIGHT],
         scaleMode: "fit",
@@ -1698,10 +1886,13 @@ class PersistentBattlefieldScene {
       objects.signal.clearMask(true);
       objects.subject.setTexture("warden-runtime");
     }
+    for (const [id, departure] of this.departures)
+      this.destroyEntityObjects(id, departure.objects);
     for (const effect of this.effects) effect.clearMask(true);
     for (const effect of this.abilityEffects.values()) effect.destroy();
     this.abilityEffects.clear();
     this.entities.clear();
+    this.departures.clear();
     this.effects.length = 0;
     for (const layer of Object.values(this.layers)) layer.clear();
   }
@@ -1739,6 +1930,7 @@ function createBattlefieldRenderer(
     backgroundColor: "#080604",
     banner: false,
     audio: { noAudio: true },
+    loader: { imageLoadType: "HTMLImageElement" },
     render: { antialias: true, pixelArt: false },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: {
@@ -1759,6 +1951,10 @@ function createBattlefieldRenderer(
       create(this: Phaser.Scene) {
         if (loadErrors.size > 0) {
           parent.setAttribute("data-renderer-error", "asset-load-failed");
+          parent.setAttribute(
+            "data-renderer-error-assets",
+            [...loadErrors].sort().join(",")
+          );
           this.add
             .text(WIDTH / 2, HEIGHT / 2, "Battlefield assets failed to load.", {
               color: "#f4d7bd",
@@ -1768,10 +1964,7 @@ function createBattlefieldRenderer(
             .setOrigin(0.5);
           return;
         }
-        const depthBuffer = this.cache.binary.get(
-          "static-scene-depth"
-        ) as unknown;
-        const staticDepth = decodeBattlefieldDepthAsset(depthBuffer);
+        const staticDepth = decodeBattlefieldDepthTexture(this);
         if (staticDepth === undefined) {
           parent.setAttribute("data-renderer-error", "invalid-depth-asset");
           this.add
@@ -1791,6 +1984,12 @@ function createBattlefieldRenderer(
           undefined,
           evidenceEffectAlpha
         );
+      },
+      update(_time: number, delta: number) {
+        persistentScene?.updateMotion(delta);
+        persistentScene?.updateDepartures();
+        if (typeof window !== "undefined" && persistentScene !== undefined)
+          window.__DWARVEN_DEPTHS_RENDERER__ = persistentScene.diagnostics();
       }
     }
   });
@@ -1820,6 +2019,7 @@ function createBattlefieldRenderer(
       game.destroy(true);
       parent.replaceChildren();
       parent.removeAttribute("data-renderer-error");
+      parent.removeAttribute("data-renderer-error-assets");
       if (typeof window !== "undefined") {
         delete window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
         delete window.__DWARVEN_DEPTHS_RENDERER__;
