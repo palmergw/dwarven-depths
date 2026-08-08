@@ -256,7 +256,7 @@ try {
     request(`/session/${sessionId}/element/${heading}/text`),
     request(`/session/${sessionId}/element/${checkpointAction}/text`)
   ]);
-  if (!headingText.includes("Dwarven Depths")) {
+  if (!headingText.toLocaleLowerCase("en-US").includes("dwarven depths")) {
     throw new Error(`unexpected desktop heading: ${headingText}`);
   }
   if (!checkpointText.includes("Begin preparation")) {
