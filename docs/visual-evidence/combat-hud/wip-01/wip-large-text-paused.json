@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-large-text-paused",
   "label": "WIP #275 — wip-large-text-paused",
-  "sourceHead": "8714104c26f27dc172b94013d8e3dfa67b2f0dc6",
+  "sourceHead": "93313ec65282c18d42f120ac8c8a5233d00cc7dd",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-large-text-paused.png",
-  "screenshotSha256": "2a9c4913fe65ac2a851b675a359d66b1a9ec035600e826aa82e2beca84dce6c1",
+  "screenshotSha256": "044692e07dc8b4cf440a9ad55ae7ef339b9dfb187db021a7b6d692beb628c047",
   "viewport": [1440, 900],
   "phase": "running",
   "truth": {

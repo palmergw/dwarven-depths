@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "wip-ability-ready",
   "label": "WIP #275 — wip-ability-ready",
-  "sourceHead": "8714104c26f27dc172b94013d8e3dfa67b2f0dc6",
+  "sourceHead": "93313ec65282c18d42f120ac8c8a5233d00cc7dd",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-ability-ready.png",
   "screenshotSha256": "7c31fd67c145dde6fc659d904443d2a1567166b18b59f10e45e30788d519ca17",
