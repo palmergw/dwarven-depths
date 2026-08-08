@@ -101,7 +101,14 @@ async function captureEvidence(id, expectedShellView) {
       phase: main?.dataset.viewPhase ?? null,
       shellView: main?.dataset.shellView ?? null,
       mainCount: document.querySelectorAll("main").length,
-      stableIdVisible: /\\b[a-z][a-z0-9_-]*\\.[a-z0-9_.-]+\\b/.test(visibleText)
+      stableIdVisible: /\\b[a-z][a-z0-9_-]*\\.[a-z0-9_.-]+\\b/.test(visibleText),
+      rendererError: document.querySelector(".battlefield-canvas")?.dataset.rendererError ?? null,
+      rendererErrorAssets: document.querySelector(".battlefield-canvas")?.dataset.rendererErrorAssets ?? null,
+      truthReady: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady ?? false,
+      locationProtocol: window.location.protocol,
+      battlefieldResources: performance.getEntriesByType("resource")
+        .map((entry) => entry.name)
+        .filter((name) => /(?:environment-base|static-scene-depth|iron-warden-idle)/.test(name))
     };
   `);
   if (
@@ -110,7 +117,9 @@ async function captureEvidence(id, expectedShellView) {
     JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
     state.shellView !== expectedShellView ||
     state.mainCount !== 1 ||
-    state.stableIdVisible
+    state.stableIdVisible ||
+    (id === "desktop-preparation" &&
+      (state.rendererError !== null || state.truthReady !== true))
   ) {
     throw new Error(
       `invalid packaged desktop capture ${id}: ${JSON.stringify(state)}`

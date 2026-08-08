@@ -1759,6 +1759,10 @@ function createBattlefieldRenderer(
       create(this: Phaser.Scene) {
         if (loadErrors.size > 0) {
           parent.setAttribute("data-renderer-error", "asset-load-failed");
+          parent.setAttribute(
+            "data-renderer-error-assets",
+            [...loadErrors].sort().join(",")
+          );
           this.add
             .text(WIDTH / 2, HEIGHT / 2, "Battlefield assets failed to load.", {
               color: "#f4d7bd",
@@ -1820,6 +1824,7 @@ function createBattlefieldRenderer(
       game.destroy(true);
       parent.replaceChildren();
       parent.removeAttribute("data-renderer-error");
+      parent.removeAttribute("data-renderer-error-assets");
       if (typeof window !== "undefined") {
         delete window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
         delete window.__DWARVEN_DEPTHS_RENDERER__;
