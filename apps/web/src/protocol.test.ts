@@ -360,6 +360,15 @@ describe("web worker protocol", () => {
         phase: "running"
       })
     ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        protocolVersion: 2,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: false,
+        resumeRequestId: null
+      })
+    ).toBeUndefined();
     const speedSnapshot = {
       protocolVersion: 4,
       type: "snapshot",

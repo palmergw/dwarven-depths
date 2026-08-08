@@ -445,8 +445,20 @@ const manifest = {
     health: capture.health
   }))
 };
-await writeFile(
-  new URL("manifest.json", outputDirectory),
-  `${JSON.stringify(manifest, null, 2)}\n`
+const manifestUrl = new URL("manifest.json", outputDirectory);
+await writeFile(manifestUrl, `${JSON.stringify(manifest, null, 2)}\n`);
+await execFile(
+  "pnpm",
+  [
+    "exec",
+    "biome",
+    "format",
+    "--write",
+    fileURLToPath(manifestUrl),
+    ...captures.map(({ id }) =>
+      fileURLToPath(new URL(`${id}.json`, outputDirectory))
+    )
+  ],
+  { cwd: repositoryRoot }
 );
 process.stdout.write(`${JSON.stringify({ ok: true, ...manifest })}\n`);

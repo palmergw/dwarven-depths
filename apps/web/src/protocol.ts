@@ -531,8 +531,8 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         !(
           (value.manualPaused === true && value.resumeRequestId === null) ||
           (value.manualPaused === false &&
-            (value.resumeRequestId === null ||
-              isRequestId(value.resumeRequestId)))
+            (isRequestId(value.resumeRequestId) ||
+              (value.protocolVersion === 4 && value.resumeRequestId === null)))
         )
       )
         return undefined;

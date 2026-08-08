@@ -3,10 +3,7 @@
   "label": "WIP #275 combat HUD packet",
   "sourceHead": "8714104c26f27dc172b94013d8e3dfa67b2f0dc6",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-  "viewport": [
-    1440,
-    900
-  ],
+  "viewport": [1440, 900],
   "settings": {
     "reducedMotion": true,
     "contrast": "standard",

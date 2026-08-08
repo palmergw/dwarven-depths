@@ -6,23 +6,14 @@
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-terminal-defeat.png",
   "screenshotSha256": "e9835d221bf197150f487236792b4f58c2fda13f0e5c76595f8aefa6913791c4",
-  "viewport": [
-    1440,
-    900
-  ],
+  "viewport": [1440, 900],
   "phase": "result",
   "truth": {
     "schemaVersion": 1,
     "captureReady": true,
     "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-    "viewport": [
-      1440,
-      900
-    ],
-    "frame": [
-      1280,
-      720
-    ],
+    "viewport": [1440, 900],
+    "frame": [1280, 720],
     "snapshot": {
       "levelId": "level.shuttergate_hall",
       "mapId": "map.shuttergate_hall",
@@ -55,18 +46,8 @@
           "x": 838,
           "y": 330,
           "nominalHeight": 44,
-          "canvasBounds": [
-            798,
-            276,
-            80,
-            60
-          ],
-          "alphaBounds": [
-            825,
-            286,
-            26,
-            44
-          ],
+          "canvasBounds": [798, 276, 80, 60],
+          "alphaBounds": [825, 286, 26, 44],
           "nonzeroAlphaPixels": 705,
           "fullAlphaPixels": 550,
           "partialAlphaPixels": 155,
@@ -93,18 +74,8 @@
           "x": 1110,
           "y": 253,
           "nominalHeight": 44,
-          "canvasBounds": [
-            1070,
-            199,
-            80,
-            60
-          ],
-          "alphaBounds": [
-            1084,
-            209,
-            52,
-            44
-          ],
+          "canvasBounds": [1070, 199, 80, 60],
+          "alphaBounds": [1084, 209, 52, 44],
           "nonzeroAlphaPixels": 1341,
           "fullAlphaPixels": 1135,
           "partialAlphaPixels": 206,
@@ -122,15 +93,8 @@
         "depth-tested-world-focus",
         "hud"
       ],
-      "clips": [
-        "world-ring",
-        "world-effect",
-        "world-subject",
-        "world-focus"
-      ],
-      "exempts": [
-        "hud"
-      ],
+      "clips": ["world-ring", "world-effect", "world-subject", "world-focus"],
+      "exempts": ["hud"],
       "witness": {
         "entityId": "entity.enemy.shuttergate_006",
         "subjectAlphaPixels": 1341,
@@ -142,10 +106,7 @@
       },
       "depthResolution": {
         "intent": "rear-visible-and-foreground-occluded",
-        "actualAnchor": [
-          838,
-          330
-        ],
+        "actualAnchor": [838, 330],
         "rearOverlapPixels": 0,
         "subjectGroundOverlapPixels": 0,
         "foregroundOcclusionPixels": 0,
