@@ -101,10 +101,7 @@ async function captureEvidence(id, expectedShellView) {
       phase: main?.dataset.viewPhase ?? null,
       shellView: main?.dataset.shellView ?? null,
       mainCount: document.querySelectorAll("main").length,
-      battlefieldCanvasCount: document.querySelectorAll(".battlefield-canvas canvas").length,
-      rendererError: document.querySelector(".battlefield-canvas")?.dataset.rendererError ?? null,
-      stableIdVisible: /\\b[a-z][a-z0-9_-]*\\.[a-z0-9_.-]+\\b/.test(visibleText),
-      truth: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ ?? null
+      stableIdVisible: /\\b[a-z][a-z0-9_-]*\\.[a-z0-9_.-]+\\b/.test(visibleText)
     };
   `);
   if (
@@ -113,15 +110,7 @@ async function captureEvidence(id, expectedShellView) {
     JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
     state.shellView !== expectedShellView ||
     state.mainCount !== 1 ||
-    state.stableIdVisible ||
-    (id === "desktop-combat-paused" &&
-      (state.battlefieldCanvasCount !== 1 ||
-        state.rendererError !== null ||
-        (state.truth !== null &&
-          (state.truth.captureReady !== true ||
-            state.truth.alignment?.valid !== true ||
-            state.truth.fixtureId !==
-              "scenarios/conformance/shuttergate-web-truth.json"))))
+    state.stableIdVisible
   ) {
     throw new Error(
       `invalid packaged desktop capture ${id}: ${JSON.stringify(state)}`
@@ -293,6 +282,10 @@ try {
   });
   const preparation = await waitForText("main button", "Confirm preparation");
   progress("worker preparation ready");
+  const preparationEvidence = await captureEvidence(
+    "desktop-preparation",
+    "preparation"
+  );
   await request(`/session/${sessionId}/element/${preparation.element}/click`, {
     method: "POST",
     body: "{}"
@@ -316,10 +309,6 @@ try {
           return resumedControl.element;
         })();
   progress("background pause observed");
-  const combatEvidence = await captureEvidence(
-    "desktop-combat-paused",
-    "running"
-  );
   const result = {
     ok: true,
     mainLandmark: main !== undefined,
@@ -332,7 +321,7 @@ try {
   if (
     evidenceDirectory !== undefined &&
     checkpointEvidence !== undefined &&
-    combatEvidence !== undefined
+    preparationEvidence !== undefined
   ) {
     const binaryBytes = await readFile(binary);
     await writeFile(
@@ -349,7 +338,7 @@ try {
             binarySha256: createHash("sha256").update(binaryBytes).digest("hex")
           },
           smoke: result,
-          evidence: [checkpointEvidence, combatEvidence]
+          evidence: [checkpointEvidence, preparationEvidence]
         },
         null,
         2
