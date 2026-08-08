@@ -28,8 +28,7 @@ const { stdout } = await execFile("git", ["rev-parse", "HEAD"], {
 });
 const sourceHead = stdout.trim();
 const viewports = {
-  desktop: { width: 1440, height: 900 },
-  mobile: { width: 390, height: 844 }
+  desktop: { width: 1440, height: 900 }
 };
 const captures = [
   "checkpoint",
