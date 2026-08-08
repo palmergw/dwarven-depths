@@ -98,7 +98,9 @@ try {
     .getByRole("button", { name: "Open Iron Warden targeting" })
     .click();
   await page.waitForTimeout(500);
-  await page.getByRole("button", { name: "Nearest", exact: true }).click();
+  await page
+    .locator(".target-policy-menu button", { hasText: "Nearest" })
+    .click();
   await page.waitForTimeout(900);
   await resumeAndObserveTick(page, startingTick);
   await page.waitForTimeout(2900);
