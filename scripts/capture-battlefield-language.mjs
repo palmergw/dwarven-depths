@@ -49,7 +49,9 @@ async function startClient(browser, viewport, reducedMotion) {
   await page
     .getByRole("button", { name: "Open Iron Warden targeting" })
     .click();
-  await page.getByRole("button", { name: "Nearest", exact: true }).click();
+  await page
+    .locator(".target-policy-menu button", { hasText: "Nearest" })
+    .click();
   return page;
 }
 
@@ -287,18 +289,6 @@ try {
     )
   );
   await desktop.close();
-
-  const mobile = await startClient(browser, { width: 390, height: 844 }, true);
-  captures.push(
-    await capture(
-      mobile,
-      "quiet-paused-mobile-reduced-motion",
-      () =>
-        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "running" &&
-        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.totalCount > 1
-    )
-  );
-  await mobile.close();
 } finally {
   await browser.close();
 }
