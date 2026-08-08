@@ -1842,6 +1842,21 @@ describe("authoritative web worker", () => {
         manualPaused: true,
         simulationSpeed: 2
       });
+      const repeatedSpeed = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 4 &&
+          message.simulationSpeed === 2
+      );
+      worker.postMessage({
+        protocolVersion: 4,
+        type: "command",
+        requestId: "double-speed-again",
+        command: { type: "setSimulationSpeed", speed: 2 }
+      });
+      await expect(repeatedSpeed).resolves.toBeDefined();
       const combatTick = waitForMessage(
         worker,
         (message) =>
