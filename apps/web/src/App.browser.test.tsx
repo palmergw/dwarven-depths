@@ -3312,12 +3312,12 @@ describe("authoritative web worker", () => {
     if (!(targeting instanceof HTMLButtonElement))
       throw new Error("expected Iron Warden targeting trigger");
     await userEvent.click(targeting);
-    const nearest = Array.from(document.querySelectorAll("button")).find(
-      (candidate) => candidate.textContent === "Nearest"
+    const highestArmor = Array.from(document.querySelectorAll("button")).find(
+      (candidate) => candidate.textContent === "Highest armor"
     );
-    if (!(nearest instanceof HTMLButtonElement))
-      throw new Error("expected Nearest target-policy button");
-    await userEvent.click(nearest);
+    if (!(highestArmor instanceof HTMLButtonElement))
+      throw new Error("expected Highest armor target-policy button");
+    await userEvent.click(highestArmor);
     await new Promise((resolve) => window.setTimeout(resolve, 100));
     expect(shieldSlam.disabled).toBe(true);
     expect(combatControls?.textContent).toContain("Activation queued");
