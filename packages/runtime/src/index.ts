@@ -774,6 +774,10 @@ export class LiveScenarioHost {
     return this.#effectiveScenario;
   }
 
+  targetPolicyForDwarf(dwarfEntityId: string): DwarfTargetPolicy {
+    return this.#targetPolicies.get(dwarfEntityId) ?? "nearest";
+  }
+
   scheduleCommand(command: CommandEnvelope["command"]): CommandEnvelope {
     if (this.#failed)
       throw new RangeError(

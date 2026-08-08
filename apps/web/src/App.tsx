@@ -31,6 +31,7 @@ import {
 } from "./checkpoint-profile.js";
 import {
   parseWorkerMessage,
+  type SimulationSpeed,
   type TargetPolicy,
   WEB_PROTOCOL_VERSION,
   type WorkerMessage
@@ -57,7 +58,11 @@ type ViewState =
       readonly deployableEntityCount: number;
       readonly placementPointCount: number;
     }
-  | { readonly phase: "running"; readonly manualPaused: boolean }
+  | {
+      readonly phase: "running";
+      readonly manualPaused: boolean;
+      readonly simulationSpeed: SimulationSpeed;
+    }
   | {
       readonly phase: "result";
       readonly result: Extract<WorkerMessage, { type: "result" }>;
@@ -406,6 +411,12 @@ export function App({
   const [pendingTargetPolicies, setPendingTargetPolicies] = useState<
     ReadonlyMap<string, TargetPolicy>
   >(new Map());
+  const [rejectedAbilityKeys, setRejectedAbilityKeys] = useState<
+    ReadonlySet<string>
+  >(new Set());
+  const [rejectedTargetPolicies, setRejectedTargetPolicies] = useState<
+    ReadonlySet<string>
+  >(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [upgradeInventoryOpen, setUpgradeInventoryOpen] = useState(false);
   const [recycleConfirmationOpen, setRecycleConfirmationOpen] = useState(false);
@@ -434,7 +445,23 @@ export function App({
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
-  const pendingAbilityKeysRef = useRef(new Set<string>());
+  const latestCombatControlsTickRef = useRef(-1);
+  const pendingAbilityKeysRef = useRef(
+    new Map<
+      string,
+      { readonly requestId: string; readonly submittedAtTick: number }
+    >()
+  );
+  const pendingTargetPoliciesRef = useRef(
+    new Map<
+      string,
+      {
+        readonly policy: TargetPolicy;
+        readonly requestId: string;
+        readonly submittedAtTick: number;
+      }
+    >()
+  );
   const resultHeadingRef = useRef<HTMLHeadingElement>(null);
   const failureHeadingRef = useRef<HTMLHeadingElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
@@ -457,6 +484,16 @@ export function App({
   function clearPendingAbilities(): void {
     pendingAbilityKeysRef.current.clear();
     setPendingAbilityKeys(new Set());
+  }
+
+  function clearPendingTargetPolicies(): void {
+    pendingTargetPoliciesRef.current.clear();
+    setPendingTargetPolicies(new Map());
+  }
+
+  function clearCombatCommandRejections(): void {
+    setRejectedAbilityKeys(new Set());
+    setRejectedTargetPolicies(new Set());
   }
 
   const postCurrentWorkerMessage = useCallback(
@@ -726,6 +763,7 @@ export function App({
   function startPreparation(): void {
     if (initializedRef.current || view.phase !== "checkpoint") return;
     initializedRef.current = true;
+    latestCombatControlsTickRef.current = -1;
     let worker: Worker;
     try {
       worker = createWorker();
@@ -744,8 +782,10 @@ export function App({
       worker.terminate();
       workerRef.current = undefined;
       workerFailureRef.current = undefined;
+      latestCombatControlsTickRef.current = -1;
       clearPendingAbilities();
-      setPendingTargetPolicies(new Map());
+      clearPendingTargetPolicies();
+      clearCombatCommandRejections();
       setCombatControls(undefined);
       setRenderSnapshot(undefined);
       setView({
@@ -763,8 +803,45 @@ export function App({
       } else if (message.type === "render_snapshot") {
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "combat_controls") {
-        clearPendingAbilities();
-        setPendingTargetPolicies(new Map());
+        if (
+          message.protocolVersion === 4 &&
+          message.authoritativeTick < latestCombatControlsTickRef.current
+        )
+          return;
+        if (message.protocolVersion === 4) {
+          latestCombatControlsTickRef.current = message.authoritativeTick;
+          const acknowledgedRequestIds = new Set(
+            message.acknowledgedRequestIds
+          );
+          for (const [key, pending] of pendingAbilityKeysRef.current) {
+            if (
+              acknowledgedRequestIds.has(pending.requestId) &&
+              pending.submittedAtTick < message.authoritativeTick
+            )
+              pendingAbilityKeysRef.current.delete(key);
+          }
+          setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
+          for (const [
+            dwarfEntityId,
+            pending
+          ] of pendingTargetPoliciesRef.current) {
+            if (
+              acknowledgedRequestIds.has(pending.requestId) &&
+              pending.submittedAtTick < message.authoritativeTick
+            )
+              pendingTargetPoliciesRef.current.delete(dwarfEntityId);
+          }
+          setPendingTargetPolicies(
+            new Map(
+              [...pendingTargetPoliciesRef.current].map(
+                ([dwarfEntityId, pending]) => [dwarfEntityId, pending.policy]
+              )
+            )
+          );
+        } else {
+          clearPendingAbilities();
+          clearPendingTargetPolicies();
+        }
         setCombatControls(message);
       } else if (message.type === "snapshot") {
         if (message.phase === "running" && message.protocolVersion !== 1) {
@@ -800,13 +877,47 @@ export function App({
             : {
                 phase: "running",
                 manualPaused:
-                  message.protocolVersion !== 1 && message.manualPaused
+                  message.protocolVersion !== 1 && message.manualPaused,
+                simulationSpeed:
+                  message.protocolVersion === 4 ? message.simulationSpeed : 1
               }
         );
       } else if (message.type === "result") {
+        latestCombatControlsTickRef.current = -1;
         clearPendingAbilities();
+        clearPendingTargetPolicies();
+        clearCombatCommandRejections();
         setView({ phase: "result", result: message });
-      } else if (message.code !== "command_rejected") {
+      } else if (message.code === "command_rejected") {
+        const requestId = message.requestId;
+        if (requestId === undefined) return;
+        for (const [key, pending] of pendingAbilityKeysRef.current) {
+          if (pending.requestId !== requestId) continue;
+          pendingAbilityKeysRef.current.delete(key);
+          setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
+          setRejectedAbilityKeys((current) => new Set(current).add(key));
+          return;
+        }
+        for (const [
+          dwarfEntityId,
+          pending
+        ] of pendingTargetPoliciesRef.current) {
+          if (pending.requestId !== requestId) continue;
+          pendingTargetPoliciesRef.current.delete(dwarfEntityId);
+          setPendingTargetPolicies(
+            new Map(
+              [...pendingTargetPoliciesRef.current].map(([entityId, value]) => [
+                entityId,
+                value.policy
+              ])
+            )
+          );
+          setRejectedTargetPolicies((current) =>
+            new Set(current).add(dwarfEntityId)
+          );
+          return;
+        }
+      } else {
         failWorker(message.message);
       }
     });
@@ -844,8 +955,10 @@ export function App({
     initializedRef.current = false;
     submittedRef.current = false;
     manualPauseRequestedRef.current = undefined;
+    latestCombatControlsTickRef.current = -1;
     clearPendingAbilities();
-    setPendingTargetPolicies(new Map());
+    clearPendingTargetPolicies();
+    clearCombatCommandRejections();
     setCombatControls(undefined);
     setRenderSnapshot(undefined);
     setView({ phase: "checkpoint" });
@@ -872,6 +985,22 @@ export function App({
     [postCurrentWorkerMessage, view]
   );
 
+  const setSimulationSpeed = useCallback(
+    (speed: SimulationSpeed): void => {
+      if (view.phase !== "running" || view.simulationSpeed === speed) return;
+      postCurrentWorkerMessage(
+        {
+          protocolVersion: WEB_PROTOCOL_VERSION,
+          type: "command",
+          requestId: crypto.randomUUID(),
+          command: { type: "setSimulationSpeed", speed }
+        },
+        "Worker combat-speed command failed."
+      );
+    },
+    [postCurrentWorkerMessage, view]
+  );
+
   const setTargetPolicy = useCallback(
     (dwarfEntityId: string, requestedPolicy: TargetPolicy): void => {
       if (view.phase !== "running" || combatControls?.protocolVersion !== 4)
@@ -879,17 +1008,39 @@ export function App({
       const dwarf = combatControls.dwarves.find(
         (candidate) => candidate.entityId === dwarfEntityId
       );
-      if (!dwarf?.supportedTargetPolicies.includes(requestedPolicy)) return;
-      setPendingTargetPolicies((current) => {
-        const next = new Map(current);
-        next.set(dwarfEntityId, requestedPolicy);
+      if (
+        !dwarf?.supportedTargetPolicies.includes(requestedPolicy) ||
+        pendingTargetPoliciesRef.current.has(dwarfEntityId)
+      )
+        return;
+      const nextPendingTargetPolicies = new Map(
+        pendingTargetPoliciesRef.current
+      );
+      const requestId = crypto.randomUUID();
+      setRejectedTargetPolicies((current) => {
+        const next = new Set(current);
+        next.delete(dwarfEntityId);
         return next;
       });
+      nextPendingTargetPolicies.set(dwarfEntityId, {
+        policy: requestedPolicy,
+        requestId,
+        submittedAtTick: latestCombatControlsTickRef.current
+      });
+      pendingTargetPoliciesRef.current = nextPendingTargetPolicies;
+      setPendingTargetPolicies(
+        new Map(
+          [...nextPendingTargetPolicies].map(([entityId, pending]) => [
+            entityId,
+            pending.policy
+          ])
+        )
+      );
       postCurrentWorkerMessage(
         {
           protocolVersion: WEB_PROTOCOL_VERSION,
           type: "command",
-          requestId: crypto.randomUUID(),
+          requestId,
           command: {
             type: "setTargetPolicy",
             dwarfEntityId,
@@ -919,13 +1070,22 @@ export function App({
         return;
       const pendingKey = `${dwarfEntityId}\u0000${abilityId}`;
       if (pendingAbilityKeysRef.current.has(pendingKey)) return;
-      pendingAbilityKeysRef.current.add(pendingKey);
-      setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current));
+      const requestId = crypto.randomUUID();
+      setRejectedAbilityKeys((current) => {
+        const next = new Set(current);
+        next.delete(pendingKey);
+        return next;
+      });
+      pendingAbilityKeysRef.current.set(pendingKey, {
+        requestId,
+        submittedAtTick: latestCombatControlsTickRef.current
+      });
+      setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
       postCurrentWorkerMessage(
         {
           protocolVersion: WEB_PROTOCOL_VERSION,
           type: "command",
-          requestId: crypto.randomUUID(),
+          requestId,
           command: { type: "activateAbility", dwarfEntityId, abilityId }
         },
         "Worker ability command failed."
@@ -936,7 +1096,31 @@ export function App({
 
   useLayoutEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.repeat || view.phase !== "running")
+      if (event.repeat || view.phase !== "running") return;
+      if (
+        event.key === "1" &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey
+      ) {
+        const target = event.target;
+        if (
+          target instanceof HTMLElement &&
+          (target.isContentEditable ||
+            target.matches("input, select, textarea"))
+        )
+          return;
+        const dwarf = combatControls?.dwarves.find(
+          (candidate) => candidate.activeAbilities?.length
+        );
+        const ability = dwarf?.activeAbilities?.[0];
+        if (dwarf === undefined || ability === undefined) return;
+        event.preventDefault();
+        activateAbility(dwarf.entityId, ability.abilityId);
+        return;
+      }
+      if (event.key !== "Escape") return;
+      if (document.querySelector(".target-policy-menu:not([hidden])") !== null)
         return;
       event.preventDefault();
       setManualPause(!(manualPauseRequestedRef.current ?? view.manualPaused));
@@ -958,7 +1142,7 @@ export function App({
       window.removeEventListener("pagehide", onBackground);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [view, setManualPause]);
+  }, [activateAbility, combatControls, view, setManualPause]);
 
   useLayoutEffect(() => {
     const onCheckpointEscape = (event: KeyboardEvent) => {
@@ -1235,8 +1419,26 @@ export function App({
               <div className="combat-bottom-overlay">
                 <CombatControls
                   dwarves={combatControls.dwarves}
+                  currentTick={renderSnapshot.tick}
+                  selectedDwarfHealth={
+                    renderSnapshot.schemaVersion === 2
+                      ? (() => {
+                          const warden = renderSnapshot.entities.find(
+                            (entity) => entity.faction === "dwarf"
+                          );
+                          return warden === undefined
+                            ? undefined
+                            : {
+                                current: warden.currentHealth,
+                                maximum: warden.maximumHealth
+                              };
+                        })()
+                      : undefined
+                  }
                   pendingAbilityKeys={pendingAbilityKeys}
                   pendingTargetPolicies={pendingTargetPolicies}
+                  rejectedAbilityKeys={rejectedAbilityKeys}
+                  rejectedTargetPolicies={rejectedTargetPolicies}
                   onSetTargetPolicy={setTargetPolicy}
                   onActivateAbility={activateAbility}
                 />
@@ -1251,6 +1453,27 @@ export function App({
             >
               <span aria-hidden="true">{view.manualPaused ? "▶" : "Ⅱ"}</span>
             </button>
+            <fieldset className="combat-speed">
+              <legend className="visually-hidden">Combat speed</legend>
+              {([1, 2] as const).map((speed) => (
+                <button
+                  key={speed}
+                  type="button"
+                  aria-label={`${speed}× combat speed`}
+                  aria-pressed={view.simulationSpeed === speed}
+                  disabled={view.simulationSpeed === speed}
+                  onClick={() => setSimulationSpeed(speed)}
+                >
+                  {speed}×
+                </button>
+              ))}
+            </fieldset>
+            {view.manualPaused && (
+              <div className="combat-pause-banner" role="status">
+                <strong>Combat paused</strong>
+                <span>Press Escape or resume when ready</span>
+              </div>
+            )}
           </section>
         )}
         {renderSnapshot !== undefined && view.phase !== "running" && (

@@ -14,10 +14,12 @@ export const TARGET_POLICIES = [
   "boss_or_elite_first"
 ] as const;
 export type TargetPolicy = (typeof TARGET_POLICIES)[number];
+export type SimulationSpeed = 1 | 2;
 
 export interface CombatControlDwarf {
   readonly entityId: string;
   readonly characterId: string;
+  readonly currentTargetPolicy?: TargetPolicy;
   readonly supportedTargetPolicies: readonly TargetPolicy[];
   readonly activeAbilities?: readonly {
     readonly abilityId: string;
@@ -61,6 +63,10 @@ export type ClientMessage =
           }
         | { readonly type: "setManualPause"; readonly paused: boolean }
         | {
+            readonly type: "setSimulationSpeed";
+            readonly speed: SimulationSpeed;
+          }
+        | {
             readonly type: "setTargetPolicy";
             readonly dwarfEntityId: string;
             readonly requestedPolicy: TargetPolicy;
@@ -87,11 +93,19 @@ export type WorkerMessage =
       readonly phase: "running";
     }
   | {
-      readonly protocolVersion: 2 | 3 | 4;
+      readonly protocolVersion: 2 | 3;
       readonly type: "snapshot";
       readonly phase: "running";
       readonly manualPaused: boolean;
       readonly resumeRequestId: string | null;
+    }
+  | {
+      readonly protocolVersion: 4;
+      readonly type: "snapshot";
+      readonly phase: "running";
+      readonly manualPaused: boolean;
+      readonly resumeRequestId: string | null;
+      readonly simulationSpeed: SimulationSpeed;
     }
   | {
       readonly protocolVersion: 3;
@@ -102,6 +116,8 @@ export type WorkerMessage =
   | {
       readonly protocolVersion: 4;
       readonly type: "combat_controls";
+      readonly acknowledgedRequestIds: readonly string[];
+      readonly authoritativeTick: number;
       readonly contentManifestHash: string;
       readonly dwarves: readonly CombatControlDwarf[];
     }
@@ -157,6 +173,7 @@ export type WorkerMessage =
       readonly type: "failure";
       readonly code: string;
       readonly message: string;
+      readonly requestId?: string;
     };
 
 type RecordValue = {
@@ -167,6 +184,7 @@ type RecordValue = {
   command?: unknown;
   manualPaused?: unknown;
   paused?: unknown;
+  speed?: unknown;
   resumeRequestId?: unknown;
   phase?: unknown;
   levelId?: unknown;
@@ -184,6 +202,8 @@ type RecordValue = {
   atTick?: unknown;
   snapshot?: unknown;
   dwarves?: unknown;
+  acknowledgedRequestIds?: unknown;
+  authoritativeTick?: unknown;
   contentManifestHash?: unknown;
   dwarfEntityId?: unknown;
   characterId?: unknown;
@@ -297,6 +317,19 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
   }
   if (
     value.protocolVersion === 4 &&
+    value.command.type === "setSimulationSpeed" &&
+    hasExactKeys(value.command, ["speed", "type"]) &&
+    (value.command.speed === 1 || value.command.speed === 2)
+  ) {
+    return {
+      protocolVersion: 4,
+      type: "command",
+      requestId: value.requestId,
+      command: { type: "setSimulationSpeed", speed: value.command.speed }
+    };
+  }
+  if (
+    value.protocolVersion === 4 &&
     value.command.type === "setTargetPolicy" &&
     hasExactKeys(value.command, ["dwarfEntityId", "requestedPolicy", "type"]) &&
     isStableId(value.command.dwarfEntityId) &&
@@ -357,12 +390,21 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
   if (value.type === "combat_controls") {
     if (
       (value.protocolVersion !== 3 && value.protocolVersion !== 4) ||
-      !hasExactKeys(value, [
-        "contentManifestHash",
-        "dwarves",
-        "protocolVersion",
-        "type"
-      ]) ||
+      (value.protocolVersion === 3
+        ? !hasExactKeys(value, [
+            "contentManifestHash",
+            "dwarves",
+            "protocolVersion",
+            "type"
+          ])
+        : !hasExactKeys(value, [
+            "acknowledgedRequestIds",
+            "authoritativeTick",
+            "contentManifestHash",
+            "dwarves",
+            "protocolVersion",
+            "type"
+          ])) ||
       !isHash(value.contentManifestHash) ||
       !Array.isArray(value.dwarves)
     )
@@ -372,28 +414,49 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
         value.dwarves.length === 0
         ? (value as WorkerMessage)
         : undefined;
+    if (
+      !Number.isSafeInteger(value.authoritativeTick) ||
+      (value.authoritativeTick as number) < 0 ||
+      !Array.isArray(value.acknowledgedRequestIds) ||
+      !value.acknowledgedRequestIds.every(
+        (requestId, index, requestIds) =>
+          isRequestId(requestId) &&
+          (index === 0 ||
+            (typeof requestIds[index - 1] === "string" &&
+              requestIds[index - 1] < requestId))
+      )
+    )
+      return undefined;
     let previousEntityId = "";
     for (const dwarf of value.dwarves) {
       if (
         !isRecord(dwarf) ||
         (!hasExactKeys(dwarf, [
           "characterId",
+          "currentTargetPolicy",
           "entityId",
           "supportedTargetPolicies"
         ]) &&
           !hasExactKeys(dwarf, [
             "activeAbilities",
             "characterId",
+            "currentTargetPolicy",
             "entityId",
             "supportedTargetPolicies"
           ]))
       )
         return undefined;
-      const { characterId, entityId, supportedTargetPolicies } = dwarf;
+      const {
+        characterId,
+        currentTargetPolicy,
+        entityId,
+        supportedTargetPolicies
+      } = dwarf;
       if (
         !isStableId(entityId) ||
         entityId <= previousEntityId ||
         !isStableId(characterId) ||
+        !isTargetPolicy(currentTargetPolicy) ||
         !Array.isArray(supportedTargetPolicies) ||
         supportedTargetPolicies.length === 0 ||
         !supportedTargetPolicies.every(
@@ -405,6 +468,8 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
                   TARGET_POLICIES.indexOf(policy)))
         )
       )
+        return undefined;
+      if (!supportedTargetPolicies.includes(currentTargetPolicy))
         return undefined;
       previousEntityId = entityId;
       if (dwarf.activeAbilities !== undefined) {
@@ -453,23 +518,44 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
           ? { protocolVersion: 1, type: "snapshot", phase: "running" }
           : undefined;
       }
-      return hasExactKeys(value, [
+      const keys = [
         "manualPaused",
         "phase",
         "protocolVersion",
         "resumeRequestId",
+        ...(value.protocolVersion === 4 ? ["simulationSpeed"] : []),
         "type"
-      ]) &&
-        ((value.manualPaused === true && value.resumeRequestId === null) ||
-          (value.manualPaused === false && isRequestId(value.resumeRequestId)))
-        ? {
-            protocolVersion: value.protocolVersion,
-            type: "snapshot",
-            phase: "running",
-            manualPaused: value.manualPaused,
-            resumeRequestId: value.resumeRequestId as string | null
-          }
-        : undefined;
+      ];
+      if (
+        !hasExactKeys(value, keys) ||
+        !(
+          (value.manualPaused === true && value.resumeRequestId === null) ||
+          (value.manualPaused === false &&
+            (isRequestId(value.resumeRequestId) ||
+              (value.protocolVersion === 4 && value.resumeRequestId === null)))
+        )
+      )
+        return undefined;
+      if (value.protocolVersion === 4) {
+        const simulationSpeed = value["simulationSpeed"];
+        return simulationSpeed === 1 || simulationSpeed === 2
+          ? {
+              protocolVersion: 4,
+              type: "snapshot",
+              phase: "running",
+              manualPaused: value.manualPaused,
+              resumeRequestId: value.resumeRequestId as string | null,
+              simulationSpeed
+            }
+          : undefined;
+      }
+      return {
+        protocolVersion: value.protocolVersion,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: value.manualPaused,
+        resumeRequestId: value.resumeRequestId as string | null
+      };
     }
     if (
       value.phase !== "preparation" ||
@@ -491,17 +577,28 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     return value as WorkerMessage;
   }
   if (value.type === "failure") {
+    const isBoundCommandRejection =
+      value.protocolVersion === 4 && value.code === "command_rejected";
     if (
-      !hasExactKeys(value, ["code", "message", "protocolVersion", "type"]) ||
+      !hasExactKeys(
+        value,
+        isBoundCommandRejection
+          ? ["code", "message", "protocolVersion", "requestId", "type"]
+          : ["code", "message", "protocolVersion", "type"]
+      ) ||
       typeof value.code !== "string" ||
-      typeof value.message !== "string"
+      typeof value.message !== "string" ||
+      (isBoundCommandRejection && !isRequestId(value.requestId))
     )
       return undefined;
     return {
       protocolVersion: value.protocolVersion as WebProtocolVersion,
       type: "failure",
       code: value.code,
-      message: value.message
+      message: value.message,
+      ...(isBoundCommandRejection
+        ? { requestId: value.requestId as string }
+        : {})
     };
   }
   if (
@@ -604,8 +701,20 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
 export function failure(
   code: string,
   message: string,
-  protocolVersion: WebProtocolVersion = WEB_PROTOCOL_VERSION
+  protocolVersion: WebProtocolVersion = WEB_PROTOCOL_VERSION,
+  requestId?: string
 ): WorkerMessage {
+  if (protocolVersion === 4 && code === "command_rejected") {
+    if (requestId === undefined)
+      throw new Error("protocol 4 command rejection requires a request ID");
+    return {
+      protocolVersion,
+      type: "failure",
+      code,
+      message,
+      requestId
+    };
+  }
   return {
     protocolVersion,
     type: "failure",

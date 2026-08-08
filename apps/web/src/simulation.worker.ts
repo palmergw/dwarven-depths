@@ -41,12 +41,14 @@ const SIMULATION_STEP_MILLISECONDS = 16;
 let initialized = false;
 let commandAccepted = false;
 let manualPaused = false;
+let simulationSpeed: 1 | 2 = 1;
 let terminal = false;
 let resumeRequestId: string | null = null;
 let pendingExecutionRequestId: string | null = null;
 const acceptedRequestIds = new Set<string>();
 const scheduledTargetPolicies = new Set<string>();
 const scheduledAbilities = new Set<string>();
+const pendingCombatControlRequestIds = new Set<string>();
 const abilityRejections = new Map<string, string>();
 let protocolVersion: 1 | 2 | 3 | 4 = WEB_PROTOCOL_VERSION;
 let preparedContent: CompiledContent | undefined;
@@ -114,22 +116,34 @@ function postRenderSnapshot(snapshot: RenderSnapshot): void {
 }
 
 function postRunningSnapshot(): void {
-  post(
-    protocolVersion === 1
-      ? { protocolVersion: 1, type: "snapshot", phase: "running" }
-      : {
-          protocolVersion,
-          type: "snapshot",
-          phase: "running",
-          manualPaused,
-          resumeRequestId
-        }
-  );
+  if (protocolVersion === 1) {
+    post({ protocolVersion: 1, type: "snapshot", phase: "running" });
+    return;
+  }
+  if (protocolVersion === 4) {
+    post({
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "running",
+      manualPaused,
+      resumeRequestId,
+      simulationSpeed
+    });
+    return;
+  }
+  post({
+    protocolVersion,
+    type: "snapshot",
+    phase: "running",
+    manualPaused,
+    resumeRequestId
+  });
 }
 
 function authoritativeCombatControls(): readonly CombatControlDwarf[] {
   if (preparedContent === undefined || liveHost === undefined) return [];
-  return [...(liveHost.state.battlefield?.dwarfCombatants ?? [])]
+  const host = liveHost;
+  return [...(host.state.battlefield?.dwarfCombatants ?? [])]
     .sort((left, right) => compareRenderIds(left.entityId, right.entityId))
     .map((dwarf) => {
       const character = preparedContent?.characters.get(
@@ -142,6 +156,7 @@ function authoritativeCombatControls(): readonly CombatControlDwarf[] {
       return {
         entityId: dwarf.entityId,
         characterId: character.id,
+        currentTargetPolicy: host.targetPolicyForDwarf(dwarf.entityId),
         supportedTargetPolicies: TARGET_POLICIES.filter((policy) =>
           character.supportedTargetPolicies.includes(policy)
         ),
@@ -172,7 +187,9 @@ function authoritativeCombatControls(): readonly CombatControlDwarf[] {
     });
 }
 
-function postCombatControls(): void {
+function postCombatControls(
+  acknowledgedRequestIds: readonly string[] = []
+): void {
   if (protocolVersion === 3) {
     if (preparedContent?.manifestHash !== EMPTY_CONTENT_MANIFEST_HASH)
       throw new Error(
@@ -188,6 +205,8 @@ function postCombatControls(): void {
     post({
       protocolVersion: 4,
       type: "combat_controls",
+      acknowledgedRequestIds,
+      authoritativeTick: liveHost?.state.tick ?? 0,
       contentManifestHash: preparedContent.manifestHash,
       dwarves: authoritativeCombatControls()
     });
@@ -233,7 +252,10 @@ async function executePreparedScenario(): Promise<void> {
             step.state.battlefield
           )
     );
-    if (protocolVersion === 4) postCombatControls();
+    if (protocolVersion === 4) {
+      postCombatControls([...pendingCombatControlRequestIds].sort());
+      pendingCombatControlRequestIds.clear();
+    }
     if (step.state.phase !== "TERMINAL") {
       schedulePreparedScenario("live-host");
       return;
@@ -295,7 +317,7 @@ function schedulePreparedScenario(requestId: string): void {
       return;
     pendingExecutionRequestId = null;
     void executePreparedScenario();
-  }, SIMULATION_STEP_MILLISECONDS);
+  }, SIMULATION_STEP_MILLISECONDS / simulationSpeed);
 }
 
 self.addEventListener("message", async (event: MessageEvent<unknown>) => {
@@ -416,12 +438,34 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       failure(
         "command_rejected",
         "The command request ID is duplicated or the session limit was reached.",
-        protocolVersion
+        protocolVersion,
+        message.requestId
       )
     );
     return;
   }
   acceptedRequestIds.add(message.requestId);
+
+  if (message.command.type === "setSimulationSpeed") {
+    if (protocolVersion !== 4 || !initialized || !commandAccepted || terminal) {
+      post(
+        failure(
+          "command_rejected",
+          "The requested combat speed is not available.",
+          protocolVersion,
+          message.requestId
+        )
+      );
+      return;
+    }
+    if (message.command.speed === simulationSpeed) {
+      postRunningSnapshot();
+      return;
+    }
+    simulationSpeed = message.command.speed;
+    postRunningSnapshot();
+    return;
+  }
 
   if (message.command.type === "activateAbility") {
     const command = message.command;
@@ -444,7 +488,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         failure(
           "command_rejected",
           "The requested ability is stale, unavailable, unsupported, cooling down, or duplicated for this tick.",
-          protocolVersion
+          protocolVersion,
+          message.requestId
         )
       );
       return;
@@ -456,6 +501,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       abilityId: command.abilityId as never
     });
     scheduledAbilities.add(commandKey);
+    pendingCombatControlRequestIds.add(message.requestId);
     return;
   }
 
@@ -479,7 +525,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         failure(
           "command_rejected",
           "The requested target policy is stale, unavailable, unsupported, or duplicated for this tick.",
-          protocolVersion
+          protocolVersion,
+          message.requestId
         )
       );
       return;
@@ -491,6 +538,7 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       requestedPolicy: command.requestedPolicy
     });
     scheduledTargetPolicies.add(commandKey);
+    pendingCombatControlRequestIds.add(message.requestId);
     return;
   }
 
@@ -505,7 +553,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         failure(
           "command_rejected",
           "The requested manual-pause state is not available.",
-          protocolVersion
+          protocolVersion,
+          message.requestId
         )
       );
       return;
@@ -529,7 +578,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         failure(
           "command_rejected",
           "The manual resume is not available for execution.",
-          protocolVersion
+          protocolVersion,
+          message.requestId
         )
       );
       return;
@@ -550,7 +600,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
       failure(
         "command_rejected",
         "Preparation confirmation is not available.",
-        protocolVersion
+        protocolVersion,
+        message.requestId
       )
     );
     return;

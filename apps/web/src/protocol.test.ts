@@ -61,6 +61,31 @@ describe("web worker protocol", () => {
       })
     ).toBeUndefined();
     expect(
+      parseClientMessage({
+        protocolVersion: 4,
+        type: "command",
+        requestId: "speed-2",
+        command: { type: "setSimulationSpeed", speed: 2 }
+      })
+    ).toEqual({
+      protocolVersion: 4,
+      type: "command",
+      requestId: "speed-2",
+      command: { type: "setSimulationSpeed", speed: 2 }
+    });
+    for (const command of [
+      { type: "setSimulationSpeed", speed: 3 },
+      { type: "setSimulationSpeed", speed: 2, extra: true }
+    ])
+      expect(
+        parseClientMessage({
+          protocolVersion: 4,
+          type: "command",
+          requestId: "bad-speed",
+          command
+        })
+      ).toBeUndefined();
+    expect(
       parseClientMessage({ protocolVersion: 5, type: "initialize" })
     ).toBeUndefined();
     expect(
@@ -335,6 +360,40 @@ describe("web worker protocol", () => {
         phase: "running"
       })
     ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        protocolVersion: 2,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: false,
+        resumeRequestId: null
+      })
+    ).toBeUndefined();
+    const speedSnapshot = {
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "running",
+      manualPaused: true,
+      resumeRequestId: null,
+      simulationSpeed: 2
+    };
+    expect(parseWorkerMessage(speedSnapshot)).toEqual(speedSnapshot);
+    expect(
+      parseWorkerMessage({
+        ...speedSnapshot,
+        manualPaused: false,
+        resumeRequestId: null
+      })
+    ).toBeDefined();
+    expect(
+      parseWorkerMessage({ ...speedSnapshot, simulationSpeed: 3 })
+    ).toBeUndefined();
+    const { simulationSpeed: _simulationSpeed, ...missingSpeed } =
+      speedSnapshot;
+    expect(parseWorkerMessage(missingSpeed)).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...speedSnapshot, unexpected: true })
+    ).toBeUndefined();
   });
 
   it("accepts only the empty manifest-bound combat-control availability", () => {
@@ -376,16 +435,52 @@ describe("web worker protocol", () => {
     const controls = {
       protocolVersion: 4,
       type: "combat_controls",
+      acknowledgedRequestIds: ["ability-1", "policy-1"],
+      authoritativeTick: 7,
       contentManifestHash: "a".repeat(64),
       dwarves: [
         {
           entityId: "entity.dwarf.warden",
           characterId: "character.iron_warden",
+          currentTargetPolicy: "nearest",
           supportedTargetPolicies: ["nearest", "highest_armor"]
         }
       ]
     };
     expect(parseWorkerMessage(controls)).toEqual(controls);
+    const dwarf = controls.dwarves[0];
+    if (dwarf === undefined) throw new Error("expected combat-control dwarf");
+    const { currentTargetPolicy: _currentTargetPolicy, ...unboundDwarf } =
+      dwarf;
+    expect(
+      parseWorkerMessage({ ...controls, dwarves: [unboundDwarf] })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        dwarves: [
+          { ...controls.dwarves[0], currentTargetPolicy: "lowest_health" }
+        ]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...controls, authoritativeTick: -1 })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...controls, authoritativeTick: 7.5 })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        acknowledgedRequestIds: ["policy-1", "ability-1"]
+      })
+    ).toBeUndefined();
+    expect(
+      parseWorkerMessage({
+        ...controls,
+        acknowledgedRequestIds: ["policy-1", "policy-1"]
+      })
+    ).toBeUndefined();
     expect(
       parseWorkerMessage({
         ...controls,
@@ -409,6 +504,28 @@ describe("web worker protocol", () => {
         dwarves: [{ ...controls.dwarves[0], foreign: true }]
       })
     ).toBeUndefined();
+  });
+
+  it("binds protocol 4 command rejections to one canonical request", () => {
+    const rejection = {
+      protocolVersion: 4,
+      type: "failure",
+      code: "command_rejected",
+      message: "Rejected.",
+      requestId: "request-1"
+    };
+    expect(parseWorkerMessage(rejection)).toEqual(rejection);
+    const { requestId: _requestId, ...unbound } = rejection;
+    expect(parseWorkerMessage(unbound)).toBeUndefined();
+    expect(parseWorkerMessage({ ...rejection, requestId: "" })).toBeUndefined();
+    expect(parseWorkerMessage({ ...rejection, extra: true })).toBeUndefined();
+    expect(
+      parseWorkerMessage({ ...rejection, protocolVersion: 3 })
+    ).toBeUndefined();
+    expect(parseWorkerMessage({ ...unbound, protocolVersion: 3 })).toEqual({
+      ...unbound,
+      protocolVersion: 3
+    });
   });
 
   it("accepts only canonical, internally consistent render snapshots", () => {

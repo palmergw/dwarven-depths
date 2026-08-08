@@ -16,6 +16,7 @@ import {
   selectCombatPoseAsset
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
+import { CombatHud } from "./CombatHud.js";
 import { deriveCombatFeedback } from "./combat-feedback.js";
 import "./styles.css";
 import {
@@ -243,7 +244,8 @@ class ControlledJourneyWorker {
         type: "snapshot",
         phase: "running",
         manualPaused: false,
-        resumeRequestId: "guided-run"
+        resumeRequestId: "guided-run",
+        simulationSpeed: 1
       });
     } else if (candidate.command?.type === "setManualPause") {
       this.emit({
@@ -252,7 +254,8 @@ class ControlledJourneyWorker {
         phase: "running",
         manualPaused: candidate.command.paused === true,
         resumeRequestId:
-          candidate.command.paused === true ? null : "guided-resume"
+          candidate.command.paused === true ? null : "guided-resume",
+        simulationSpeed: 1
       });
     }
   }
@@ -283,6 +286,141 @@ class ControlledJourneyWorker {
   terminate(): void {
     this.terminated = true;
   }
+}
+
+class ControlledTargetPolicyWorker {
+  readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
+  readonly targetPolicyCommands: string[] = [];
+  readonly abilityCommands: string[] = [];
+  readonly speedCommands: number[] = [];
+  lastTargetPolicyRequestId: string | undefined;
+  lastAbilityRequestId: string | undefined;
+
+  addEventListener(
+    type: string,
+    listener: (event: MessageEvent<unknown>) => void
+  ): void {
+    if (type === "message") this.listeners.add(listener);
+  }
+
+  postMessage(message: unknown): void {
+    if (typeof message !== "object" || message === null) return;
+    const candidate = message as {
+      readonly type?: string;
+      readonly requestId?: string;
+      readonly command?: {
+        readonly type?: string;
+        readonly requestedPolicy?: string;
+        readonly abilityId?: string;
+        readonly speed?: number;
+      };
+    };
+    if (candidate.type === "initialize") {
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "preparation",
+        levelId: "level.shuttergate_hall",
+        deployableEntityCount: 1,
+        placementPointCount: 2
+      });
+    } else if (candidate.command?.type === "confirmPreparation") {
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: true,
+        resumeRequestId: null,
+        simulationSpeed: 1
+      });
+      this.emit({
+        protocolVersion: 4,
+        type: "render_snapshot",
+        snapshot: {
+          schemaVersion: 2,
+          scenarioId: "scenario.shuttergate",
+          levelId: "level.shuttergate_hall",
+          mapId: "map.shuttergate_hall",
+          tick: 10,
+          previousTick: 9,
+          phase: "running",
+          nodes: [],
+          connections: [],
+          entities: [],
+          entityTransitions: [],
+          encounter: {
+            startedWaveIds: [],
+            activeWaveId: null,
+            pendingSpawnCount: 0,
+            livingHostileCount: 0,
+            terminalResult: null
+          }
+        }
+      });
+      this.emitControls(10);
+    } else if (
+      candidate.command?.type === "setTargetPolicy" &&
+      candidate.command.requestedPolicy !== undefined
+    ) {
+      this.targetPolicyCommands.push(candidate.command.requestedPolicy);
+      this.lastTargetPolicyRequestId = candidate.requestId;
+    } else if (
+      candidate.command?.type === "activateAbility" &&
+      candidate.command.abilityId !== undefined
+    ) {
+      this.abilityCommands.push(candidate.command.abilityId);
+      this.lastAbilityRequestId = candidate.requestId;
+    } else if (
+      candidate.command?.type === "setSimulationSpeed" &&
+      candidate.command.speed !== undefined
+    ) {
+      this.speedCommands.push(candidate.command.speed);
+      this.emit({
+        protocolVersion: 4,
+        type: "snapshot",
+        phase: "running",
+        manualPaused: true,
+        resumeRequestId: null,
+        simulationSpeed: candidate.command.speed
+      });
+    }
+  }
+
+  emitControls(
+    authoritativeTick: number,
+    acknowledgedRequestIds: readonly string[] = [],
+    currentTargetPolicy: "nearest" | "highest_armor" = "nearest"
+  ): void {
+    this.emit({
+      protocolVersion: 4,
+      type: "combat_controls",
+      acknowledgedRequestIds,
+      authoritativeTick,
+      contentManifestHash: "a".repeat(64),
+      dwarves: [
+        {
+          entityId: "entity.dwarf.warden",
+          characterId: "character.iron_warden",
+          currentTargetPolicy,
+          supportedTargetPolicies: ["nearest", "highest_armor"],
+          activeAbilities: [
+            {
+              abilityId: "ability.iron_warden.shield_slam",
+              cooldownCompleteAtTick: null,
+              rejectionReason: null
+            }
+          ]
+        }
+      ]
+    });
+  }
+
+  emit(message: unknown): void {
+    const event = new MessageEvent("message", { data: message });
+    for (const listener of this.listeners) listener(event);
+  }
+
+  terminate(): void {}
 }
 
 async function buttonWithText(text: string): Promise<HTMLButtonElement> {
@@ -827,6 +965,121 @@ async function runWithPresentationFrames(
   }
 }
 
+describe("player-facing combat HUD", () => {
+  it("projects health, wave, fortress, hostile, status, and pause summaries from one snapshot", async () => {
+    const snapshot = {
+      schemaVersion: 2,
+      scenarioId: "scenario.shuttergate",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 24,
+      previousTick: 23,
+      phase: "running",
+      nodes: [{ id: "node.gate", x: 0, y: 0 }],
+      connections: [],
+      entities: [
+        {
+          id: "entity.dwarf.warden",
+          nodeId: "node.gate",
+          faction: "dwarf",
+          visualId: "visual.iron_warden",
+          archetype: "character",
+          position: { nodeId: "node.gate", x: 0, y: 0 },
+          previousPosition: { nodeId: "node.gate", x: 0, y: 0 },
+          currentHealth: 20,
+          maximumHealth: 100,
+          facing: "east",
+          action: { kind: "idle", phase: "idle", abilityId: null },
+          targetEntityId: null,
+          statuses: [],
+          transition: "active",
+          elite: false,
+          boss: false
+        },
+        {
+          id: "entity.enemy.raider",
+          nodeId: "node.gate",
+          faction: "enemy",
+          visualId: "visual.mine_raider",
+          archetype: "elite",
+          position: { nodeId: "node.gate", x: 0, y: 0 },
+          previousPosition: { nodeId: "node.gate", x: 0, y: 0 },
+          currentHealth: 40,
+          maximumHealth: 60,
+          facing: "west",
+          action: { kind: "idle", phase: "idle", abilityId: null },
+          targetEntityId: "entity.dwarf.warden",
+          statuses: [
+            {
+              id: "status.staggered",
+              appliedAtTick: 20,
+              expiresAtTick: 30,
+              magnitude: 1
+            }
+          ],
+          transition: "active",
+          elite: true,
+          boss: false
+        }
+      ],
+      entityTransitions: [],
+      encounter: {
+        startedWaveIds: ["wave.shuttergate.one"],
+        activeWaveId: "wave.shuttergate.one",
+        pendingSpawnCount: 2,
+        livingHostileCount: 1,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<CombatHud snapshot={snapshot} manualPaused />);
+
+    await vi.waitFor(() =>
+      expect(document.querySelector(".combat-hud")?.textContent).toContain(
+        "FortressHoldingWave1Hostiles1"
+      )
+    );
+    expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
+      "Combat paused. Fortress holding. Wave 1. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. Elite enemy is staggered until tick 30."
+    );
+  });
+
+  it("announces an authoritative terminal result instead of active combat", async () => {
+    const snapshot = {
+      schemaVersion: 2,
+      scenarioId: "scenario.shuttergate",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 50,
+      previousTick: 49,
+      phase: "terminal",
+      nodes: [],
+      connections: [],
+      entities: [],
+      entityTransitions: [],
+      encounter: {
+        startedWaveIds: ["wave.shuttergate.one"],
+        activeWaveId: null,
+        pendingSpawnCount: 0,
+        livingHostileCount: 0,
+        terminalResult: "defeat"
+      }
+    } as const satisfies RenderSnapshot;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<CombatHud snapshot={snapshot} />);
+
+    await vi.waitFor(() =>
+      expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
+        "Combat ended in defeat. Fortress fallen. Wave Complete. 0 hostiles active."
+      )
+    );
+  });
+});
+
 describe("semantic combat controls", () => {
   it("submits an authoritative stable dwarf and target-policy pair by keyboard", async () => {
     const onSetTargetPolicy = vi.fn();
@@ -865,6 +1118,238 @@ describe("semantic combat controls", () => {
     expect(onSetTargetPolicy).toHaveBeenCalledWith(
       "entity.dwarf.warden",
       "highest_armor"
+    );
+  });
+
+  it("locks targeting while an authoritative policy change is pending", async () => {
+    const onSetTargetPolicy = vi.fn();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <CombatControls
+        dwarves={[
+          {
+            entityId: "entity.dwarf.warden",
+            characterId: "character.iron_warden",
+            supportedTargetPolicies: ["nearest", "highest_armor"]
+          }
+        ]}
+        pendingTargetPolicies={
+          new Map([["entity.dwarf.warden", "highest_armor"]])
+        }
+        onSetTargetPolicy={onSetTargetPolicy}
+      />
+    );
+
+    const targetingTrigger = await vi.waitFor(() => {
+      const candidate = document.querySelector(".character-portrait-button");
+      expect(candidate).toBeInstanceOf(HTMLButtonElement);
+      return candidate as HTMLButtonElement;
+    });
+    expect(targetingTrigger.disabled).toBe(true);
+    expect(document.querySelector(".target-policy-label")?.textContent).toBe(
+      "Highest armor"
+    );
+    expect(document.querySelector(".target-policy-menu")).not.toBeVisible();
+    expect(onSetTargetPolicy).not.toHaveBeenCalled();
+  });
+
+  it("retains the policy lock until an acknowledged authoritative projection", async () => {
+    const worker = new ControlledTargetPolicyWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    const targetingTrigger = await vi.waitFor(() => {
+      const candidate = document.querySelector(".character-portrait-button");
+      expect(candidate).toBeInstanceOf(HTMLButtonElement);
+      return candidate as HTMLButtonElement;
+    });
+    await userEvent.click(targetingTrigger);
+    await userEvent.click(await buttonWithText("Highest armor"));
+    expect(worker.targetPolicyCommands).toEqual(["highest_armor"]);
+    expect(targetingTrigger.disabled).toBe(true);
+
+    worker.emitControls(10);
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(true));
+    expect(worker.targetPolicyCommands).toEqual(["highest_armor"]);
+
+    worker.emitControls(11);
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(true));
+    const acknowledgedRequestId = worker.lastTargetPolicyRequestId;
+    if (acknowledgedRequestId === undefined)
+      throw new Error("expected target-policy request ID");
+    worker.emitControls(10, [acknowledgedRequestId]);
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(true));
+    worker.emitControls(11, [acknowledgedRequestId], "highest_armor");
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(false));
+    expect(document.querySelector(".target-policy-label")?.textContent).toBe(
+      "Highest armor"
+    );
+    await userEvent.click(targetingTrigger);
+    const selectedPolicy = document.querySelector(
+      '.target-policy-menu button[aria-pressed="true"]'
+    );
+    expect(selectedPolicy).toBeInstanceOf(HTMLButtonElement);
+    expect(selectedPolicy?.textContent).toBe("Highest armor ✓");
+    await userEvent.click(await buttonWithText("Nearest"));
+    expect(worker.targetPolicyCommands).toEqual(["highest_armor", "nearest"]);
+  });
+
+  it("dismisses targeting with Escape without changing pause state", async () => {
+    const worker = new ControlledTargetPolicyWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    const targetingTrigger = await vi.waitFor(() => {
+      const candidate = document.querySelector(".character-portrait-button");
+      expect(candidate).toBeInstanceOf(HTMLButtonElement);
+      return candidate as HTMLButtonElement;
+    });
+    await userEvent.click(targetingTrigger);
+    expect(document.querySelector(".target-policy-menu")).toBeVisible();
+    await userEvent.keyboard("{Escape}");
+    await vi.waitFor(() =>
+      expect(document.querySelector(".target-policy-menu")).not.toBeVisible()
+    );
+    expect(document.querySelector(".combat-pause")).toHaveAttribute(
+      "aria-label",
+      "Resume combat"
+    );
+    expect(document.querySelector(".combat-pause")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+  });
+
+  it("submits the displayed Shield Slam shortcut and combat speed controls", async () => {
+    const worker = new ControlledTargetPolicyWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector('button[aria-label="Shield Slam"]')
+      ).toBeEnabled()
+    );
+    await userEvent.keyboard("1");
+    expect(worker.abilityCommands).toEqual(["ability.iron_warden.shield_slam"]);
+
+    const doubleSpeed = document.querySelector(
+      'button[aria-label="2× combat speed"]'
+    );
+    expect(doubleSpeed).toBeInstanceOf(HTMLButtonElement);
+    await userEvent.click(doubleSpeed as HTMLButtonElement);
+    await vi.waitFor(() => expect(doubleSpeed).toBeDisabled());
+
+    const normalSpeed = document.querySelector(
+      'button[aria-label="1× combat speed"]'
+    );
+    expect(normalSpeed).toBeInstanceOf(HTMLButtonElement);
+    (normalSpeed as HTMLButtonElement).focus();
+    await userEvent.keyboard("{Enter}");
+    expect(worker.speedCommands).toEqual([2, 1]);
+  });
+
+  it("unlocks only the control bound to a rejected command and permits retry", async () => {
+    const worker = new ControlledTargetPolicyWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    const targetingTrigger = await vi.waitFor(() => {
+      const candidate = document.querySelector(".character-portrait-button");
+      expect(candidate).toBeInstanceOf(HTMLButtonElement);
+      return candidate as HTMLButtonElement;
+    });
+    const shieldSlam = await vi.waitFor(() => {
+      const candidate = document.querySelector(
+        'button[aria-label="Shield Slam"]'
+      );
+      expect(candidate).toBeInstanceOf(HTMLButtonElement);
+      return candidate as HTMLButtonElement;
+    });
+
+    await userEvent.click(targetingTrigger);
+    await userEvent.click(await buttonWithText("Highest armor"));
+    await userEvent.click(shieldSlam);
+    expect(targetingTrigger.disabled).toBe(true);
+    expect(shieldSlam.disabled).toBe(true);
+
+    worker.emit({
+      protocolVersion: 4,
+      type: "failure",
+      code: "command_rejected",
+      message: "Rejected.",
+      requestId: "unrelated-command"
+    });
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(true));
+    expect(shieldSlam.disabled).toBe(true);
+
+    const targetRequestId = worker.lastTargetPolicyRequestId;
+    if (targetRequestId === undefined)
+      throw new Error("expected target-policy request ID");
+    worker.emit({
+      protocolVersion: 4,
+      type: "failure",
+      code: "command_rejected",
+      message: "Rejected.",
+      requestId: targetRequestId
+    });
+    await vi.waitFor(() => expect(targetingTrigger.disabled).toBe(false));
+    expect(shieldSlam.disabled).toBe(true);
+    expect(document.querySelector(".target-policy-label")?.textContent).toBe(
+      "Change rejected — try again"
+    );
+
+    const abilityRequestId = worker.lastAbilityRequestId;
+    if (abilityRequestId === undefined)
+      throw new Error("expected ability request ID");
+    worker.emit({
+      protocolVersion: 4,
+      type: "failure",
+      code: "command_rejected",
+      message: "Rejected.",
+      requestId: abilityRequestId
+    });
+    await vi.waitFor(() => expect(shieldSlam.disabled).toBe(false));
+    expect(document.querySelector(".ability-state")?.textContent).toBe(
+      "Activation rejected — try again"
+    );
+
+    await userEvent.click(targetingTrigger);
+    const currentPolicy = document.querySelector(
+      '.target-policy-menu button[aria-pressed="true"]'
+    );
+    expect(currentPolicy).toBeInstanceOf(HTMLButtonElement);
+    expect(currentPolicy?.textContent).toBe("Nearest ✓");
+    await userEvent.click(currentPolicy as HTMLButtonElement);
+    await userEvent.click(shieldSlam);
+    expect(worker.targetPolicyCommands).toEqual(["highest_armor", "nearest"]);
+    expect(worker.abilityCommands).toEqual([
+      "ability.iron_warden.shield_slam",
+      "ability.iron_warden.shield_slam"
+    ]);
+    expect(document.querySelector(".target-policy-label")?.textContent).toBe(
+      "Nearest"
+    );
+    expect(document.querySelector(".ability-state")?.textContent).toBe(
+      "Activation queued"
     );
   });
 
@@ -954,6 +1439,117 @@ describe("semantic combat controls", () => {
     );
     expect(onActivateAbility).not.toHaveBeenCalled();
   });
+
+  it("renders cooldown and rejection states with text and non-color state markers", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <CombatControls
+        currentTick={15}
+        selectedDwarfHealth={{ current: 20, maximum: 100 }}
+        dwarves={[
+          {
+            entityId: "entity.dwarf.warden",
+            characterId: "character.iron_warden",
+            supportedTargetPolicies: ["nearest"],
+            activeAbilities: [
+              {
+                abilityId: "ability.iron_warden.shield_slam",
+                cooldownCompleteAtTick: 25,
+                rejectionReason: null
+              }
+            ]
+          }
+        ]}
+        onSetTargetPolicy={vi.fn()}
+      />
+    );
+    await vi.waitFor(() =>
+      expect(document.querySelector(".ability-state")?.textContent).toBe(
+        "Recharging · 10 ticks"
+      )
+    );
+    expect(document.querySelector(".ability-control")).toHaveAttribute(
+      "data-ability-state",
+      "cooldown"
+    );
+    const health = document.querySelector('[aria-label="Iron Warden health"]');
+    expect(health).toBeInstanceOf(HTMLMeterElement);
+    expect((health as HTMLMeterElement).value).toBe(20);
+    expect(health).toHaveAttribute("data-low-health", "true");
+    root.render(
+      <CombatControls
+        currentTick={15}
+        dwarves={[
+          {
+            entityId: "entity.dwarf.warden",
+            characterId: "character.iron_warden",
+            supportedTargetPolicies: ["nearest"],
+            activeAbilities: [
+              {
+                abilityId: "ability.iron_warden.shield_slam",
+                cooldownCompleteAtTick: null,
+                rejectionReason: "no_valid_target"
+              }
+            ]
+          }
+        ]}
+        onSetTargetPolicy={vi.fn()}
+      />
+    );
+    await vi.waitFor(() =>
+      expect(document.querySelector(".ability-state")?.textContent).toBe(
+        "No valid target"
+      )
+    );
+    expect(document.querySelector(".ability-control")).toHaveAttribute(
+      "data-ability-state",
+      "unavailable"
+    );
+  });
+
+  it.each([
+    ["owner_downed", "Iron Warden is down"],
+    ["cooldown_active", "Recharging"],
+    ["committed_action_conflict", "Finish current action first"],
+    ["phase_unavailable", "Available during combat"],
+    ["target_or_facing_unavailable", "No valid target"],
+    ["unexpected_reason", "Ability unavailable"]
+  ])(
+    "presents the %s rejection without exposing its stable ID",
+    async (reason, label) => {
+      const container = document.createElement("div");
+      document.body.append(container);
+      root = createRoot(container);
+      root.render(
+        <CombatControls
+          dwarves={[
+            {
+              entityId: "entity.dwarf.warden",
+              characterId: "character.iron_warden",
+              supportedTargetPolicies: ["nearest"],
+              activeAbilities: [
+                {
+                  abilityId: "ability.iron_warden.shield_slam",
+                  cooldownCompleteAtTick: null,
+                  rejectionReason: reason
+                }
+              ]
+            }
+          ]}
+          onSetTargetPolicy={vi.fn()}
+        />
+      );
+
+      await vi.waitFor(() =>
+        expect(document.querySelector(".ability-state")?.textContent).toBe(
+          label
+        )
+      );
+      expect(document.body.textContent).not.toContain(reason);
+    }
+  );
 });
 
 describe("authoritative web worker", () => {
@@ -1228,6 +1824,39 @@ describe("authoritative web worker", () => {
         command: { type: "confirmPreparation" }
       });
       await prepared;
+      const doubleSpeed = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 4 &&
+          message.simulationSpeed === 2
+      );
+      worker.postMessage({
+        protocolVersion: 4,
+        type: "command",
+        requestId: "double-speed",
+        command: { type: "setSimulationSpeed", speed: 2 }
+      });
+      await expect(doubleSpeed).resolves.toMatchObject({
+        manualPaused: true,
+        simulationSpeed: 2
+      });
+      const repeatedSpeed = waitForMessage(
+        worker,
+        (message) =>
+          message.type === "snapshot" &&
+          message.phase === "running" &&
+          message.protocolVersion === 4 &&
+          message.simulationSpeed === 2
+      );
+      worker.postMessage({
+        protocolVersion: 4,
+        type: "command",
+        requestId: "double-speed-again",
+        command: { type: "setSimulationSpeed", speed: 2 }
+      });
+      await expect(repeatedSpeed).resolves.toBeDefined();
       const combatTick = waitForMessage(
         worker,
         (message) =>
@@ -2683,12 +3312,12 @@ describe("authoritative web worker", () => {
     if (!(targeting instanceof HTMLButtonElement))
       throw new Error("expected Iron Warden targeting trigger");
     await userEvent.click(targeting);
-    const nearest = Array.from(document.querySelectorAll("button")).find(
-      (candidate) => candidate.textContent === "Nearest"
+    const highestArmor = Array.from(document.querySelectorAll("button")).find(
+      (candidate) => candidate.textContent === "Highest armor"
     );
-    if (!(nearest instanceof HTMLButtonElement))
-      throw new Error("expected Nearest target-policy button");
-    await userEvent.click(nearest);
+    if (!(highestArmor instanceof HTMLButtonElement))
+      throw new Error("expected Highest armor target-policy button");
+    await userEvent.click(highestArmor);
     await new Promise((resolve) => window.setTimeout(resolve, 100));
     expect(shieldSlam.disabled).toBe(true);
     expect(combatControls?.textContent).toContain("Activation queued");

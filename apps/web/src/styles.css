@@ -259,9 +259,9 @@ button:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
-.results h3:focus,
-.settings h3:focus,
-.upgrades h3:focus {
+.results h3:focus-visible,
+.settings h3:focus-visible,
+.upgrades h3:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
@@ -496,8 +496,6 @@ main[data-contrast-preference="high"] .run-journey,
 main[data-contrast-preference="high"] .run-journey-step,
 main[data-contrast-preference="high"] .settings,
 main[data-contrast-preference="high"] .upgrades,
-main[data-contrast-preference="high"] .combat-hud,
-main[data-contrast-preference="high"] .combat-controls,
 main[data-contrast-preference="high"] .combat-controls fieldset {
   border-color: #fff;
   background: #000;
@@ -1067,7 +1065,7 @@ main[data-view-phase="failure"] .results {
   width: min(38rem, calc(100% - 3rem));
   padding: clamp(1.5rem, 4vw, 3rem);
   border: 1px solid #a8793f;
-  background: linear-gradient(135deg, #17100cf5, #090705f2);
+  background: linear-gradient(135deg, #17100c, #090705);
   box-shadow:
     inset 0 0 0 2px #21150d,
     0 1.5rem 5rem #000;
@@ -1280,6 +1278,15 @@ main[data-view-phase="running"] .panel {
   display: contents;
   margin: 0;
 }
+.combat-hud-frame {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
 .active-combat-screen .combat-hud .hud-plaque {
   position: absolute;
   top: 1.55%;
@@ -1288,21 +1295,9 @@ main[data-view-phase="running"] .panel {
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
-  border: 2px solid #6b5135;
-  clip-path: polygon(
-    7px 0,
-    calc(100% - 7px) 0,
-    100% 7px,
-    100% calc(100% - 7px),
-    calc(100% - 7px) 100%,
-    7px 100%,
-    0 calc(100% - 7px),
-    0 7px
-  );
-  background: linear-gradient(180deg, #172027f2, #090d10f2);
-  box-shadow:
-    inset 0 0 0 2px #b8792f,
-    0 0.55rem 1.4rem #000b;
+  z-index: 1;
+  border: 0;
+  background: transparent;
   text-align: center;
   text-shadow: 0 2px 2px #000;
 }
@@ -1330,6 +1325,48 @@ main[data-view-phase="running"] .panel {
 .active-combat-screen .combat-hud dd {
   margin: 0;
   color: #f4dca6;
+}
+.active-combat-screen .combat-hud dd[data-fortress-state="fallen"] {
+  color: #ffb7a0;
+}
+.warden-health-track {
+  appearance: none;
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border: 1px solid #c4934c;
+  background: #180a08;
+}
+.warden-health-track::-webkit-meter-bar {
+  border: 0;
+  background: #180a08;
+}
+.warden-health-track::-webkit-meter-optimum-value,
+.warden-health-track::-moz-meter-bar {
+  background: linear-gradient(90deg, #9e2c21, #d8612f);
+}
+.warden-health-track[data-low-health="true"] {
+  border-style: double;
+  border-color: #fff0bd;
+}
+.warden-health-track[data-low-health="true"]::-webkit-meter-optimum-value,
+.warden-health-track[data-low-health="true"]::-moz-meter-bar {
+  background: repeating-linear-gradient(
+    135deg,
+    #d4442f 0 5px,
+    #731d19 5px 10px
+  );
+}
+.combat-state-summary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .combat-pause {
   position: absolute;
@@ -1362,6 +1399,68 @@ main[data-view-phase="running"] .panel {
 .combat-pause:focus-visible {
   border-color: #d6a759;
   color: #ffe3a0;
+}
+.combat-speed {
+  position: absolute;
+  z-index: 13;
+  right: calc(1.4% + 82px);
+  bottom: 2.2%;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 2px solid #6f5438;
+  background: #0b0c0de8;
+  box-shadow: inset 0 0 0 1px #b27a32;
+  pointer-events: auto;
+}
+.combat-speed button {
+  min-width: 36px;
+  min-height: 30px;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid #6f5438;
+  background: #17191a;
+  color: #d5b477;
+  font-family: Georgia, serif;
+}
+.combat-speed button:disabled {
+  border-color: #d6a759;
+  background: #332514;
+  color: #ffe3a0;
+  opacity: 1;
+}
+.combat-speed button:not(:disabled):hover,
+.combat-speed button:not(:disabled):focus-visible {
+  border-color: #d6a759;
+  color: #ffe3a0;
+}
+.combat-pause-banner {
+  position: absolute;
+  z-index: 13;
+  top: 9%;
+  left: 50%;
+  display: grid;
+  min-width: 220px;
+  padding: 0.45rem 1rem;
+  border: 2px solid #6f5438;
+  background: #090b0de8;
+  box-shadow:
+    inset 0 0 0 1px #b27a32,
+    0 0.75rem 2rem #000c;
+  color: #f2d49a;
+  font-family: Georgia, serif;
+  text-align: center;
+  text-transform: uppercase;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.combat-pause-banner strong {
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+}
+.combat-pause-banner span {
+  color: #b99b6d;
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
 }
 .combat-bottom-overlay {
   position: absolute;
@@ -1452,7 +1551,7 @@ main[data-view-phase="running"] .panel {
 .character-nameplate {
   display: grid;
   width: 126px;
-  height: 58px;
+  height: 76px;
   align-content: center;
   padding: 0.35rem 0.7rem;
   border: 2px solid #624a32;
@@ -1468,10 +1567,16 @@ main[data-view-phase="running"] .panel {
   font-size: 0.78rem;
   letter-spacing: 0.05em;
 }
-.character-nameplate span {
+.character-nameplate .target-policy-label {
   color: #b58c50;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
+}
+.character-nameplate .warden-health-value {
+  color: #f2d29a;
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+  text-align: right;
 }
 .target-policy-menu {
   position: absolute;
@@ -1540,6 +1645,21 @@ main[data-view-phase="running"] .panel {
 }
 .ability-slot:disabled img {
   filter: grayscale(0.75) brightness(0.55);
+}
+.ability-control[data-ability-state="cooldown"] .ability-slot::after,
+.ability-control[data-ability-state="unavailable"] .ability-slot::after {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 8px,
+    #05060799 8px 13px
+  );
+  content: "";
+}
+.ability-control[data-ability-state="queued"] .ability-slot {
+  border-style: double;
+  border-color: #dfb158;
 }
 .ability-slot:not(:disabled):hover,
 .ability-slot:not(:disabled):focus-visible {
