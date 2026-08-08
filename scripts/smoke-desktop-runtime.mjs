@@ -89,20 +89,8 @@ async function setCanonicalViewport() {
   );
 }
 
-async function waitForTruthScreen() {
-  for (let attempt = 0; attempt < 300; attempt += 1) {
-    const ready = await evaluate(
-      "return window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady === true;"
-    );
-    if (ready === true) return;
-    await new Promise((resolveWait) => setTimeout(resolveWait, 100));
-  }
-  throw new Error("packaged desktop truth screen did not become ready");
-}
-
 async function captureEvidence(id, expectedShellView) {
   if (evidenceDirectory === undefined) return undefined;
-  if (id === "desktop-combat-paused") await waitForTruthScreen();
   const state = await evaluate(`
     const main = document.querySelector("main");
     const visibleText = document.body.innerText.replace(/\\s+/g, " ").trim();
@@ -113,6 +101,8 @@ async function captureEvidence(id, expectedShellView) {
       phase: main?.dataset.viewPhase ?? null,
       shellView: main?.dataset.shellView ?? null,
       mainCount: document.querySelectorAll("main").length,
+      battlefieldCanvasCount: document.querySelectorAll(".battlefield-canvas canvas").length,
+      rendererError: document.querySelector(".battlefield-canvas")?.dataset.rendererError ?? null,
       stableIdVisible: /\\b[a-z][a-z0-9_-]*\\.[a-z0-9_.-]+\\b/.test(visibleText),
       truth: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ ?? null
     };
@@ -125,10 +115,13 @@ async function captureEvidence(id, expectedShellView) {
     state.mainCount !== 1 ||
     state.stableIdVisible ||
     (id === "desktop-combat-paused" &&
-      (state.truth?.captureReady !== true ||
-        state.truth?.alignment?.valid !== true ||
-        state.truth?.fixtureId !==
-          "scenarios/conformance/shuttergate-web-truth.json"))
+      (state.battlefieldCanvasCount !== 1 ||
+        state.rendererError !== null ||
+        (state.truth !== null &&
+          (state.truth.captureReady !== true ||
+            state.truth.alignment?.valid !== true ||
+            state.truth.fixtureId !==
+              "scenarios/conformance/shuttergate-web-truth.json"))))
   ) {
     throw new Error(
       `invalid packaged desktop capture ${id}: ${JSON.stringify(state)}`
