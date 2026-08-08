@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 
 const binary = process.argv[2];
@@ -258,6 +258,7 @@ try {
   await setCanonicalViewport();
   progress("canonical 1440x900 viewport ready");
   if (evidenceDirectory !== undefined) {
+    await rm(evidenceDirectory, { recursive: true, force: true });
     await mkdir(evidenceDirectory, { recursive: true });
   }
 
