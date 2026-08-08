@@ -35,10 +35,11 @@ function progress(step) {
 }
 
 async function request(path, init = {}) {
+  const { timeout = 2_000, ...requestInit } = init;
   const response = await fetch(`${endpoint}${path}`, {
-    ...init,
-    signal: AbortSignal.timeout(2_000),
-    headers: { "content-type": "application/json", ...init.headers }
+    ...requestInit,
+    signal: AbortSignal.timeout(timeout),
+    headers: { "content-type": "application/json", ...requestInit.headers }
   });
   const body = await response.json();
   if (!response.ok || body.value?.error) {
@@ -122,7 +123,7 @@ async function captureEvidence(id, expectedShellView) {
     );
   }
   const screenshot = Buffer.from(
-    await request(`/session/${sessionId}/screenshot`),
+    await request(`/session/${sessionId}/screenshot`, { timeout: 20_000 }),
     "base64"
   );
   if (
