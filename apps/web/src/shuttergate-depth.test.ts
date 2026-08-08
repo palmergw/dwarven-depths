@@ -3,6 +3,7 @@ import {
   clipPresentationPixels,
   clipUprightBillboardPixels,
   decodeStaticSceneDepth,
+  decodeStaticSceneDepthPixels,
   STATIC_DEPTH_HEADER_BYTES,
   type StaticSceneDepthContract,
   staticSceneDepthAt
@@ -64,6 +65,40 @@ describe("Shuttergate static scene depth", () => {
     expect(() => decodeStaticSceneDepth(trailing.buffer, CONTRACT)).toThrow(
       /length/
     );
+  });
+
+  it("decodes the packaged RGBA depth texture without changing depth codes", () => {
+    const depth = decodeStaticSceneDepthPixels(
+      new Uint8ClampedArray([
+        0, 0, 0, 255, 255, 127, 0, 255, 254, 255, 0, 255, 255, 255, 0, 255
+      ]),
+      2,
+      2,
+      CONTRACT
+    );
+    expect([...depth.codes]).toEqual([0, 32767, 65534, 65535]);
+    expect(staticSceneDepthAt(depth, 0, 0)).toBe(0);
+    expect(staticSceneDepthAt(depth, 0, 1)).toBe(128);
+    expect(staticSceneDepthAt(depth, 1, 1)).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it("strictly rejects malformed packaged depth textures", () => {
+    const valid = new Uint8ClampedArray([
+      0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255
+    ]);
+    expect(() => decodeStaticSceneDepthPixels(valid, 1, 4, CONTRACT)).toThrow(
+      /dimensions/
+    );
+    expect(() =>
+      decodeStaticSceneDepthPixels(valid.subarray(0, 12), 2, 2, CONTRACT)
+    ).toThrow(/dimensions/);
+    for (const channel of [2, 3]) {
+      const malformed = new Uint8ClampedArray(valid);
+      malformed[channel] = 1;
+      expect(() =>
+        decodeStaticSceneDepthPixels(malformed, 2, 2, CONTRACT)
+      ).toThrow(/pixel/);
+    }
   });
 
   it("rejects unsupported metadata instead of guessing", () => {

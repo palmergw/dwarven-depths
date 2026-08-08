@@ -20,6 +20,7 @@ import {
 import {
   clipPresentationPixels,
   decodeStaticSceneDepth,
+  decodeStaticSceneDepthPixels,
   type PresentationDepthModel,
   type StaticSceneDepth,
   type StaticSceneDepthContract
@@ -94,7 +95,7 @@ const wardenSelectionRingUrl = new URL(
   import.meta.url
 ).href;
 const staticSceneDepthUrl = new URL(
-  "../../../assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.bin",
+  "../../../assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.png",
   import.meta.url
 ).href;
 const battlefieldAssetUrls: Readonly<Record<string, string>> = {
@@ -469,6 +470,31 @@ export function decodeBattlefieldDepthAsset(
   try {
     return decodeStaticSceneDepth(
       value,
+      SHUTTERGATE_SPATIAL_CONTRACT.staticDepth as unknown as StaticSceneDepthContract
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+function decodeBattlefieldDepthTexture(
+  scene: Phaser.Scene
+): StaticSceneDepth | undefined {
+  try {
+    const source = scene.textures
+      .get("static-scene-depth")
+      .getSourceImage() as unknown;
+    if (!(source instanceof HTMLImageElement)) return undefined;
+    const canvas = document.createElement("canvas");
+    canvas.width = source.naturalWidth;
+    canvas.height = source.naturalHeight;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (context === null) return undefined;
+    context.drawImage(source, 0, 0);
+    return decodeStaticSceneDepthPixels(
+      context.getImageData(0, 0, canvas.width, canvas.height).data,
+      canvas.width,
+      canvas.height,
       SHUTTERGATE_SPATIAL_CONTRACT.staticDepth as unknown as StaticSceneDepthContract
     );
   } catch {
@@ -1773,10 +1799,7 @@ function createBattlefieldRenderer(
             .setOrigin(0.5);
           return;
         }
-        const depthBuffer = this.cache.binary.get(
-          "static-scene-depth"
-        ) as unknown;
-        const staticDepth = decodeBattlefieldDepthAsset(depthBuffer);
+        const staticDepth = decodeBattlefieldDepthTexture(this);
         if (staticDepth === undefined) {
           parent.setAttribute("data-renderer-error", "invalid-depth-asset");
           this.add

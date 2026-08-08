@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "manifest.web.shuttergate_battlefield",
   "budgetBytes": 4718592,
-  "totalBytes": 4228065,
+  "totalBytes": 2566110,
   "layerOrder": [
     "terrain",
     "ground-foreground",
@@ -120,11 +120,11 @@
     },
     {
       "key": "static-scene-depth",
-      "kind": "binary",
+      "kind": "image",
       "layer": "terrain",
-      "path": "assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.bin",
-      "bytes": 1843216,
-      "sha256": "71887686980068411caffb558e6e38caa93ea33d28ded110cb639d13cdf2901a"
+      "path": "assets/game-art/layered-map-poc/blender/outputs/static-scene-depth.png",
+      "bytes": 181261,
+      "sha256": "be77a308f10fda28c96f12182deb3f3d9b48f593f0e137f276bb818cf1ea4bd9"
     }
   ],
   "provenance": {

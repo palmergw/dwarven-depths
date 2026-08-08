@@ -108,6 +108,44 @@ export function decodeStaticSceneDepth(
   };
 }
 
+export function decodeStaticSceneDepthPixels(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  contract: StaticSceneDepthContract
+): StaticSceneDepth {
+  requireSupportedContract(contract);
+  if (
+    width !== contract.width ||
+    height !== contract.height ||
+    pixels.length !== width * height * 4
+  )
+    throw new Error(
+      "static scene depth texture dimensions do not match contract"
+    );
+  const codes = new Uint16Array(width * height);
+  for (let index = 0; index < codes.length; index += 1) {
+    const pixelIndex = index * 4;
+    const low = pixels[pixelIndex];
+    const high = pixels[pixelIndex + 1];
+    if (
+      low === undefined ||
+      high === undefined ||
+      pixels[pixelIndex + 2] !== 0 ||
+      pixels[pixelIndex + 3] !== 255
+    )
+      throw new Error("invalid static scene depth texture pixel");
+    codes[index] = low | (high << 8);
+  }
+  return {
+    width,
+    height,
+    codes,
+    cameraDepthRange: contract.cameraDepthRange,
+    noSurfaceCode: contract.noSurfaceCode
+  };
+}
+
 export function staticSceneDepthAt(
   depth: StaticSceneDepth,
   x: number,
