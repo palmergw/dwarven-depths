@@ -4,7 +4,10 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { chromium } from "playwright";
-import { validateBattlefieldMotionSamples } from "./battlefield-motion.mjs";
+import {
+  validateBattlefieldMotionEvidence,
+  validateBattlefieldMotionSamples
+} from "./battlefield-motion.mjs";
 
 const execFile = promisify(execFileCallback);
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -197,6 +200,7 @@ try {
     throw new Error(
       `interaction clip did not advance authority: ${JSON.stringify(evidence)}`
     );
+  validateBattlefieldMotionEvidence(evidence, videoBytes);
   await writeFile(sidecarUrl, `${JSON.stringify(evidence, null, 2)}\n`);
   process.stdout.write(
     `${JSON.stringify({

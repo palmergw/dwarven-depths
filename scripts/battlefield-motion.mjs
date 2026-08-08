@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 const SAMPLE_KEYS = ["entities", "tick", "videoTimeMilliseconds"];
 const ENTITY_KEYS = [
   "action",
@@ -11,6 +13,32 @@ const ENTITY_KEYS = [
   "worldPosition"
 ];
 const ACTION_KEYS = ["kind", "phase"];
+const EVIDENCE_KEYS = [
+  "approximateDurationSeconds",
+  "endingTick",
+  "fixtureId",
+  "interactions",
+  "motion",
+  "motionValidation",
+  "sampleIntervalMilliseconds",
+  "samples",
+  "schemaVersion",
+  "sourceHead",
+  "startingTick",
+  "video",
+  "videoSha256",
+  "videoTrimStartMilliseconds",
+  "viewport"
+];
+const MOTION_VALIDATION_KEYS = [
+  "activeSampleCount",
+  "attackPhases",
+  "departureSampleCount",
+  "maximumScreenStep",
+  "sampleCount",
+  "trackedEntityId",
+  "visitedRoute"
+];
 const ROUTE = [
   "node.shuttergate_west_entry",
   "node.shuttergate_west_hall",
@@ -61,6 +89,56 @@ function requireEntity(entity) {
     throw new Error("motion entity contains an invalid value");
 }
 
+function validateEntityTimeline(samples, entityId) {
+  let seenEntity = false;
+  let seenRemoval = false;
+  let lastActiveTick = -1;
+  let departureKind;
+  let departureTransitionTick;
+  for (const sample of samples) {
+    const entity = sample.entities.find(
+      (candidate) => candidate.id === entityId
+    );
+    if (entity === undefined) {
+      if (!seenEntity) continue;
+      if (departureTransitionTick === undefined)
+        throw new Error(
+          `${entityId} disappeared before a lifecycle transition`
+        );
+      seenRemoval = true;
+      continue;
+    }
+    if (seenRemoval) throw new Error(`${entityId} reappeared after removal`);
+    seenEntity = true;
+    if (entity.lifecycle === "active") {
+      if (entity.transitionTick !== null)
+        throw new Error(`${entityId} is active with a transition tick`);
+      if (departureTransitionTick !== undefined)
+        throw new Error(`${entityId} returned to active after a transition`);
+      lastActiveTick = sample.tick;
+      continue;
+    }
+    if (
+      entity.transitionTick === null ||
+      entity.transitionTick > sample.tick ||
+      entity.transitionTick <= lastActiveTick
+    )
+      throw new Error(
+        `${entityId} lifecycle transition tick is not authoritative`
+      );
+    if (departureTransitionTick === undefined) {
+      departureKind = entity.lifecycle;
+      departureTransitionTick = entity.transitionTick;
+    } else if (
+      entity.lifecycle !== departureKind ||
+      entity.transitionTick !== departureTransitionTick
+    )
+      throw new Error(
+        `${entityId} lifecycle transition changed during retention`
+      );
+  }
+}
+
 export function validateBattlefieldMotionSamples(samples) {
   if (!Array.isArray(samples) || samples.length < 12)
     throw new Error("motion evidence requires at least 12 samples");
@@ -91,9 +169,11 @@ export function validateBattlefieldMotionSamples(samples) {
     previousTick = sample.tick;
   }
 
-  const trackedId = samples
-    .flatMap((sample) => sample.entities)
-    .find((entity) => entity.id.startsWith("entity.enemy."))?.id;
+  const entityIds = [
+    ...new Set(samples.flatMap((sample) => sample.entities.map(({ id }) => id)))
+  ].sort();
+  for (const entityId of entityIds) validateEntityTimeline(samples, entityId);
+  const trackedId = entityIds.find((id) => id.startsWith("entity.enemy."));
   if (trackedId === undefined)
     throw new Error("motion evidence has no hostile actor");
 
@@ -110,47 +190,6 @@ export function validateBattlefieldMotionSamples(samples) {
     throw new Error("hostile active traversal is undersampled");
   if (departures.length < 4)
     throw new Error("hostile lifecycle transition is not retained long enough");
-
-  let seenTrackedEntity = false;
-  let seenRemoval = false;
-  let lastActiveTick = -1;
-  let departureKind;
-  let departureTransitionTick;
-  for (const { sample, entity } of tracked) {
-    if (entity === undefined) {
-      if (!seenTrackedEntity) continue;
-      if (departureTransitionTick === undefined)
-        throw new Error("hostile disappeared before a lifecycle transition");
-      seenRemoval = true;
-      continue;
-    }
-    if (seenRemoval) throw new Error("hostile reappeared after removal");
-    seenTrackedEntity = true;
-    if (entity.lifecycle === "active") {
-      if (entity.transitionTick !== null)
-        throw new Error("active hostile must not declare a transition tick");
-      if (departureTransitionTick !== undefined)
-        throw new Error(
-          "hostile returned to active after a lifecycle transition"
-        );
-      lastActiveTick = sample.tick;
-      continue;
-    }
-    if (
-      entity.transitionTick === null ||
-      entity.transitionTick > sample.tick ||
-      entity.transitionTick <= lastActiveTick
-    )
-      throw new Error("hostile lifecycle transition tick is not authoritative");
-    if (departureTransitionTick === undefined) {
-      departureKind = entity.lifecycle;
-      departureTransitionTick = entity.transitionTick;
-    } else if (
-      entity.lifecycle !== departureKind ||
-      entity.transitionTick !== departureTransitionTick
-    )
-      throw new Error("hostile lifecycle transition changed during retention");
-  }
 
   let previousRouteIndex = -1;
   let previousVisible;
@@ -234,4 +273,54 @@ export function validateBattlefieldMotionSamples(samples) {
     attackPhases: [...phases].sort(),
     maximumScreenStep
   };
+}
+
+export function validateBattlefieldMotionEvidence(evidence, videoBytes) {
+  if (!hasExactKeys(evidence, EVIDENCE_KEYS))
+    throw new Error("motion evidence must have the exact supported shape");
+  if (
+    evidence.schemaVersion !== 1 ||
+    typeof evidence.sourceHead !== "string" ||
+    !/^[0-9a-f]{40}$/.test(evidence.sourceHead) ||
+    evidence.fixtureId !== "scenarios/conformance/shuttergate-web-truth.json" ||
+    JSON.stringify(evidence.viewport) !== "[1440,900]" ||
+    (evidence.motion !== "normal-motion" &&
+      evidence.motion !== "reduced-motion") ||
+    evidence.video !== `shuttergate-${evidence.motion}-clip.webm` ||
+    typeof evidence.videoSha256 !== "string" ||
+    !/^[0-9a-f]{64}$/.test(evidence.videoSha256) ||
+    evidence.approximateDurationSeconds !== 7 ||
+    evidence.videoTrimStartMilliseconds !== 2_000 ||
+    evidence.sampleIntervalMilliseconds !== 40 ||
+    !Number.isSafeInteger(evidence.startingTick) ||
+    !Number.isSafeInteger(evidence.endingTick) ||
+    JSON.stringify(evidence.interactions) !==
+      JSON.stringify([
+        "target-policy-nearest",
+        "resume",
+        "authoritative-tick-advanced",
+        "pause"
+      ])
+  )
+    throw new Error("motion evidence contract value is invalid");
+  if (!(videoBytes instanceof Uint8Array))
+    throw new Error("motion evidence video bytes are required");
+  const videoSha256 = createHash("sha256").update(videoBytes).digest("hex");
+  if (videoSha256 !== evidence.videoSha256)
+    throw new Error("motion evidence video checksum does not match");
+  const motionValidation = validateBattlefieldMotionSamples(evidence.samples);
+  if (
+    evidence.startingTick !== evidence.samples[0]?.tick ||
+    evidence.endingTick !== evidence.samples.at(-1)?.tick
+  )
+    throw new Error("motion evidence tick bounds do not match samples");
+  if (
+    !hasExactKeys(evidence.motionValidation, MOTION_VALIDATION_KEYS) ||
+    JSON.stringify(evidence.motionValidation) !==
+      JSON.stringify(motionValidation)
+  )
+    throw new Error(
+      "motion evidence derived validation does not match samples"
+    );
+  return motionValidation;
 }

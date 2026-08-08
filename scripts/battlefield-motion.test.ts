@@ -1,5 +1,9 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
-import { validateBattlefieldMotionSamples } from "./battlefield-motion.mjs";
+import {
+  validateBattlefieldMotionEvidence,
+  validateBattlefieldMotionSamples
+} from "./battlefield-motion.mjs";
 
 const action = (kind = "idle", phase = "idle") => ({ kind, phase });
 const entity = (
@@ -153,6 +157,17 @@ describe("running-client battlefield motion evidence", () => {
     expect(() => validateBattlefieldMotionSamples(disappearance)).toThrow(
       "disappeared before a lifecycle transition"
     );
+
+    const additionalHostile = validSamples();
+    additionalHostile[0].entities.push(
+      entity("entity.enemy.zzz", "node.shuttergate_west_entry", 1080, 50)
+    );
+    additionalHostile[2].entities.push(
+      entity("entity.enemy.zzz", "node.shuttergate_west_entry", 1050, 50)
+    );
+    expect(() => validateBattlefieldMotionSamples(additionalHostile)).toThrow(
+      "entity.enemy.zzz disappeared before a lifecycle transition"
+    );
   });
 
   it("binds lifecycle state and transition tick to the sample sequence", () => {
@@ -179,7 +194,39 @@ describe("running-client battlefield motion evidence", () => {
       )
     };
     expect(() => validateBattlefieldMotionSamples(activeTransition)).toThrow(
-      "active hostile must not declare a transition tick"
+      "is active with a transition tick"
     );
+  });
+
+  it("independently verifies the committed video and sidecar derivations", async () => {
+    const directory = "docs/visual-evidence/release-closeout/wip-02/clip";
+    const evidence = JSON.parse(
+      await readFile(`${directory}/shuttergate-normal-motion-clip.json`, "utf8")
+    );
+    const videoBytes = await readFile(`${directory}/${evidence.video}`);
+    expect(
+      validateBattlefieldMotionEvidence(evidence, videoBytes)
+    ).toMatchObject(evidence.motionValidation);
+
+    for (const tampered of [
+      { ...evidence, videoSha256: "0".repeat(64) },
+      { ...evidence, endingTick: evidence.endingTick + 1 },
+      {
+        ...evidence,
+        motionValidation: {
+          ...evidence.motionValidation,
+          sampleCount: evidence.motionValidation.sampleCount - 1
+        }
+      },
+      {
+        ...evidence,
+        samples: evidence.samples.map((sample: object, index: number) =>
+          index === 0 ? { ...sample, unexpected: true } : sample
+        )
+      }
+    ])
+      expect(() =>
+        validateBattlefieldMotionEvidence(tampered, videoBytes)
+      ).toThrow();
   });
 });
