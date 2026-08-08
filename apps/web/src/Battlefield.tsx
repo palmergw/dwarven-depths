@@ -1870,7 +1870,9 @@ export function Battlefield({
     const parent = parentRef.current;
     if (parent === null) return;
     let renderer: BattlefieldRenderer | undefined;
-    const frame = requestAnimationFrame(() => {
+    let disposed = false;
+    const initialize = () => {
+      if (disposed || renderer !== undefined) return;
       renderer = createBattlefieldRenderer(
         parent,
         latestSnapshotRef.current,
@@ -1879,9 +1881,13 @@ export function Battlefield({
         latestEvidenceEffectAlphaRef.current
       );
       rendererRef.current = renderer;
-    });
+    };
+    const frame = requestAnimationFrame(initialize);
+    const fallback = window.setTimeout(initialize, 250);
     return () => {
+      disposed = true;
       cancelAnimationFrame(frame);
+      window.clearTimeout(fallback);
       renderer?.destroy();
       rendererRef.current = undefined;
     };
