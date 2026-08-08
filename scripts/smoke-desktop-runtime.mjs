@@ -89,8 +89,20 @@ async function setCanonicalViewport() {
   );
 }
 
+async function waitForTruthScreen() {
+  for (let attempt = 0; attempt < 300; attempt += 1) {
+    const ready = await evaluate(
+      "return window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady === true;"
+    );
+    if (ready === true) return;
+    await new Promise((resolveWait) => setTimeout(resolveWait, 100));
+  }
+  throw new Error("packaged desktop truth screen did not become ready");
+}
+
 async function captureEvidence(id, expectedShellView) {
   if (evidenceDirectory === undefined) return undefined;
+  if (id === "desktop-combat-paused") await waitForTruthScreen();
   const state = await evaluate(`
     const main = document.querySelector("main");
     const visibleText = document.body.innerText.replace(/\\s+/g, " ").trim();
