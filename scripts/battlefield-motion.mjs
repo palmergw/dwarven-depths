@@ -119,8 +119,9 @@ function validateEntityTimeline(samples, entityId) {
       continue;
     }
     if (
+      lastActiveTick < 0 ||
       entity.transitionTick === null ||
-      entity.transitionTick > sample.tick ||
+      entity.transitionTick >= sample.tick ||
       entity.transitionTick <= lastActiveTick
     )
       throw new Error(
@@ -275,7 +276,19 @@ export function validateBattlefieldMotionSamples(samples) {
   };
 }
 
-export function validateBattlefieldMotionEvidence(evidence, videoBytes) {
+export function validateBattlefieldMotionEvidence(
+  evidence,
+  videoBytes,
+  expected
+) {
+  if (
+    !hasExactKeys(expected, ["sourceHead", "transitionTicks"]) ||
+    typeof expected.sourceHead !== "string" ||
+    typeof expected.transitionTicks !== "object" ||
+    expected.transitionTicks === null ||
+    Array.isArray(expected.transitionTicks)
+  )
+    throw new Error("motion evidence expectations are required");
   if (!hasExactKeys(evidence, EVIDENCE_KEYS))
     throw new Error("motion evidence must have the exact supported shape");
   if (
@@ -303,12 +316,37 @@ export function validateBattlefieldMotionEvidence(evidence, videoBytes) {
       ])
   )
     throw new Error("motion evidence contract value is invalid");
+  if (evidence.sourceHead !== expected.sourceHead)
+    throw new Error("motion evidence source head does not match");
   if (!(videoBytes instanceof Uint8Array))
     throw new Error("motion evidence video bytes are required");
   const videoSha256 = createHash("sha256").update(videoBytes).digest("hex");
   if (videoSha256 !== evidence.videoSha256)
     throw new Error("motion evidence video checksum does not match");
   const motionValidation = validateBattlefieldMotionSamples(evidence.samples);
+  const transitionTicks = Object.fromEntries(
+    [
+      ...new Set(
+        evidence.samples.flatMap((sample) =>
+          sample.entities
+            .filter(({ lifecycle }) => lifecycle !== "active")
+            .map(({ id }) => id)
+        )
+      )
+    ]
+      .sort()
+      .map((id) => [
+        id,
+        evidence.samples
+          .flatMap(({ entities }) => entities)
+          .find((entity) => entity.id === id && entity.lifecycle !== "active")
+          ?.transitionTick
+      ])
+  );
+  if (
+    JSON.stringify(transitionTicks) !== JSON.stringify(expected.transitionTicks)
+  )
+    throw new Error("motion evidence transition ticks do not match");
   if (
     evidence.startingTick !== evidence.samples[0]?.tick ||
     evidence.endingTick !== evidence.samples.at(-1)?.tick

@@ -66,7 +66,7 @@ function validSamples() {
         entity(dwarfId, "node.shuttergate_gate", 605, 230),
         entity(hostileId, "node.shuttergate_gate", 663, 14, {
           lifecycle: "destroyed",
-          transitionTick: 25,
+          transitionTick: 24,
           alpha
         })
       ]
@@ -78,6 +78,11 @@ function validSamples() {
   });
   return samples;
 }
+
+const committedExpectations = {
+  sourceHead: "c097a142ffb31c8ac506d6f5213105187ff0d204",
+  transitionTicks: { "entity.enemy.shuttergate_001": 89 }
+};
 
 describe("running-client battlefield motion evidence", () => {
   it("accepts continuous route, combat, damage, and retained destruction", () => {
@@ -168,6 +173,18 @@ describe("running-client battlefield motion evidence", () => {
     expect(() => validateBattlefieldMotionSamples(additionalHostile)).toThrow(
       "entity.enemy.zzz disappeared before a lifecycle transition"
     );
+
+    const destroyedOnly = validSamples();
+    for (let index = 8; index < 12; index += 1)
+      destroyedOnly[index].entities.push(
+        entity("entity.enemy.zzz", "node.shuttergate_gate", 670, 0, {
+          lifecycle: "destroyed",
+          transitionTick: 24
+        })
+      );
+    expect(() => validateBattlefieldMotionSamples(destroyedOnly)).toThrow(
+      "entity.enemy.zzz lifecycle transition tick is not authoritative"
+    );
   });
 
   it("binds lifecycle state and transition tick to the sample sequence", () => {
@@ -205,7 +222,11 @@ describe("running-client battlefield motion evidence", () => {
     );
     const videoBytes = await readFile(`${directory}/${evidence.video}`);
     expect(
-      validateBattlefieldMotionEvidence(evidence, videoBytes)
+      validateBattlefieldMotionEvidence(
+        evidence,
+        videoBytes,
+        committedExpectations
+      )
     ).toMatchObject(evidence.motionValidation);
 
     for (const tampered of [
@@ -226,7 +247,36 @@ describe("running-client battlefield motion evidence", () => {
       }
     ])
       expect(() =>
-        validateBattlefieldMotionEvidence(tampered, videoBytes)
+        validateBattlefieldMotionEvidence(
+          tampered,
+          videoBytes,
+          committedExpectations
+        )
       ).toThrow();
+
+    expect(() =>
+      validateBattlefieldMotionEvidence(
+        { ...evidence, sourceHead: "0".repeat(40) },
+        videoBytes,
+        committedExpectations
+      )
+    ).toThrow("source head does not match");
+
+    const changedTransition = structuredClone(evidence);
+    for (const sample of changedTransition.samples)
+      sample.entities = sample.entities.map(
+        (candidate: { id: string; lifecycle: string }) =>
+          candidate.id === evidence.motionValidation.trackedEntityId &&
+          candidate.lifecycle !== "active"
+            ? { ...candidate, transitionTick: 90 }
+            : candidate
+      );
+    expect(() =>
+      validateBattlefieldMotionEvidence(
+        changedTransition,
+        videoBytes,
+        committedExpectations
+      )
+    ).toThrow();
   });
 });

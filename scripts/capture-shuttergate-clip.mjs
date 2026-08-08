@@ -200,7 +200,21 @@ try {
     throw new Error(
       `interaction clip did not advance authority: ${JSON.stringify(evidence)}`
     );
-  validateBattlefieldMotionEvidence(evidence, videoBytes);
+  const transitionTicks = Object.fromEntries(
+    [
+      ...new Map(
+        motionSamples.flatMap((sample) =>
+          sample.entities
+            .filter(({ lifecycle }) => lifecycle !== "active")
+            .map(({ id, transitionTick }) => [id, transitionTick])
+        )
+      )
+    ].sort(([left], [right]) => left.localeCompare(right))
+  );
+  validateBattlefieldMotionEvidence(evidence, videoBytes, {
+    sourceHead,
+    transitionTicks
+  });
   await writeFile(sidecarUrl, `${JSON.stringify(evidence, null, 2)}\n`);
   process.stdout.write(
     `${JSON.stringify({
