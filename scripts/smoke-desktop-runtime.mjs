@@ -220,21 +220,18 @@ async function waitForButton(text) {
 }
 
 async function waitForCombatControl() {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+  for (let attempt = 0; attempt < 300; attempt += 1) {
     try {
-      const element = await findButtonByText("combat");
-      const text = await request(
-        `/session/${sessionId}/element/${element}/text`
+      const element = await find(
+        'button[aria-label="Pause combat"], button[aria-label="Resume combat"]'
       );
-      const normalizedText = text.toLocaleLowerCase("en-US");
-      if (
-        normalizedText === "pause combat" ||
-        normalizedText === "resume combat"
-      ) {
+      const label = await request(
+        `/session/${sessionId}/element/${element}/attribute/aria-label`
+      );
+      if (label === "Pause combat" || label === "Resume combat") {
         return {
           element,
-          text:
-            normalizedText === "pause combat" ? "Pause combat" : "Resume combat"
+          text: label
         };
       }
     } catch {
@@ -306,7 +303,11 @@ try {
             method: "POST",
             body: "{}"
           });
-          return waitForButton("Resume combat");
+          const resumedControl = await waitForCombatControl();
+          if (resumedControl.text !== "Resume combat") {
+            throw new Error("background pause did not expose Resume combat");
+          }
+          return resumedControl.element;
         })();
   progress("background pause observed");
   const combatEvidence = await captureEvidence(
