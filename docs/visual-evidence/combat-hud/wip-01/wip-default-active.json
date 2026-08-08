@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "wip-default-active",
   "label": "WIP #275 — wip-default-active",
-  "sourceHead": "5cb50f57ac8938a340701d1ff183025054fd3907",
+  "sourceHead": "8714104c26f27dc172b94013d8e3dfa67b2f0dc6",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-default-active.png",
   "screenshotSha256": "70db793c843b001b72aebd0306d6fc42434d74fc114c212227f40e343d7d6b28",
@@ -26,7 +26,7 @@
     "snapshot": {
       "levelId": "level.shuttergate_hall",
       "mapId": "map.shuttergate_hall",
-      "tick": 4,
+      "tick": 7,
       "phase": "running"
     },
     "registry": {
