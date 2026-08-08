@@ -192,7 +192,13 @@ async function waitForText(selector, expected) {
       const text = await request(
         `/session/${sessionId}/element/${element}/text`
       );
-      if (text.includes(expected)) return { element, text };
+      if (
+        text
+          .toLocaleLowerCase("en-US")
+          .includes(expected.toLocaleLowerCase("en-US"))
+      ) {
+        return { element, text };
+      }
     } catch {
       // The worker-backed view can replace the checkpoint DOM between requests.
     }
@@ -219,8 +225,16 @@ async function waitForCombatControl() {
       const text = await request(
         `/session/${sessionId}/element/${element}/text`
       );
-      if (text === "Pause combat" || text === "Resume combat") {
-        return { element, text };
+      const normalizedText = text.toLocaleLowerCase("en-US");
+      if (
+        normalizedText === "pause combat" ||
+        normalizedText === "resume combat"
+      ) {
+        return {
+          element,
+          text:
+            normalizedText === "pause combat" ? "Pause combat" : "Resume combat"
+        };
       }
     } catch {
       // The worker can replace preparation with the running view between calls.
@@ -259,7 +273,9 @@ try {
   if (!headingText.toLocaleLowerCase("en-US").includes("dwarven depths")) {
     throw new Error(`unexpected desktop heading: ${headingText}`);
   }
-  if (!checkpointText.includes("Begin preparation")) {
+  if (
+    !checkpointText.toLocaleLowerCase("en-US").includes("begin preparation")
+  ) {
     throw new Error(`checkpoint action not ready: ${checkpointText}`);
   }
   progress("checkpoint ready");
