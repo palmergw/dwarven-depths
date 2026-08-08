@@ -1739,6 +1739,7 @@ function createBattlefieldRenderer(
     backgroundColor: "#080604",
     banner: false,
     audio: { noAudio: true },
+    loader: { imageLoadType: "HTMLImageElement" },
     render: { antialias: true, pixelArt: false },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: {
