@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "label": "WIP #275 combat HUD packet",
+  "sourceHead": "bfec450d0ce72bd38cc416b24243f394f3b78b7d",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [1440, 900],
+  "settings": {
+    "reducedMotion": true,
+    "contrast": "standard",
+    "textScale": "default"
+  },
+  "captures": [
+    {
+      "id": "wip-default-active",
+      "screenshot": "wip-default-active.png",
+      "screenshotSha256": "70db793c843b001b72aebd0306d6fc42434d74fc114c212227f40e343d7d6b28",
+      "tick": 2,
+      "phase": "running",
+      "abilityState": "ready",
+      "health": {
+        "current": "240",
+        "maximum": "240",
+        "low": "false"
+      }
+    },
+    {
+      "id": "wip-default-paused",
+      "screenshot": "wip-default-paused.png",
+      "screenshotSha256": "784e94504829ff65afcf177cfdd84b95ea7e691e92113a3f4ff41389ba6b6be5",
+      "tick": 2,
+      "phase": "running",
+      "abilityState": "ready",
+      "health": {
+        "current": "240",
+        "maximum": "240",
+        "low": "false"
+      }
+    },
+    {
+      "id": "wip-wave-transition",
+      "screenshot": "wip-wave-transition.png",
+      "screenshotSha256": "550b578b2df7e87d29040415c9f9a975029ea0db5bda013748e6160fdfaa3e24",
+      "tick": 901,
+      "phase": "running",
+      "abilityState": "ready",
+      "health": {
+        "current": "150",
+        "maximum": "240",
+        "low": "false"
+      }
+    },
+    {
+      "id": "wip-ability-ready",
+      "screenshot": "wip-ability-ready.png",
+      "screenshotSha256": "cc562cb6ce98a5617520150456b526a8ecc5e936aea5f870507ff9d0c91d016a",
+      "tick": 1822,
+      "phase": "running",
+      "abilityState": "ready",
+      "health": {
+        "current": "18",
+        "maximum": "240",
+        "low": "true"
+      }
+    },
+    {
+      "id": "wip-cooldown-status-low-health",
+      "screenshot": "wip-cooldown-status-low-health.png",
+      "screenshotSha256": "27881377cd505d79f4e4ff8442ed5118072c6d25192a75cc087963bf2241af68",
+      "tick": 1830,
+      "phase": "running",
+      "abilityState": "cooldown",
+      "health": {
+        "current": "9",
+        "maximum": "240",
+        "low": "true"
+      }
+    },
+    {
+      "id": "wip-terminal-defeat",
+      "screenshot": "wip-terminal-defeat.png",
+      "screenshotSha256": "e9835d221bf197150f487236792b4f58c2fda13f0e5c76595f8aefa6913791c4",
+      "tick": 1860,
+      "phase": "terminal",
+      "health": {}
+    },
+    {
+      "id": "wip-high-contrast-paused",
+      "screenshot": "wip-high-contrast-paused.png",
+      "screenshotSha256": "a1f776f22420817f958766856f222c025bc3002efcee8656c89c7455af17a654",
+      "tick": 2,
+      "phase": "running",
+      "abilityState": "ready",
+      "health": {
+        "current": "240",
+        "maximum": "240",
+        "low": "false"
+      }
+    },
+    {
+      "id": "wip-large-text-paused",
+      "screenshot": "wip-large-text-paused.png",
+      "screenshotSha256": "fc26e9de5d611e3c653b0b79a21d01e6af5fac9d3adef250f1e2e8ac458b4779",
+      "tick": 2,
+      "phase": "running",
+      "abilityState": "ready",
+      "health": {
+        "current": "240",
+        "maximum": "240",
+        "low": "false"
+      }
+    }
+  ]
+}
