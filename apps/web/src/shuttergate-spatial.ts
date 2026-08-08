@@ -148,12 +148,32 @@ export const SHUTTERGATE_WORLD_ANCHORS: Readonly<Record<string, WorldPoint>> =
     ])
   );
 
+// The simulation's gate node is the convergence immediately before the north
+// guard, not the visible entrance threshold. The original scene marker used
+// the threshold and made the west route reverse on screen just as combat began.
+// Keep that authored marker in the exported contract, but project occupants
+// through the route-correct convergence point.
+const westHall = SHUTTERGATE_WORLD_ANCHORS["node.shuttergate_west_hall"];
+const northGuard = SHUTTERGATE_WORLD_ANCHORS["node.shuttergate_north_guard"];
+if (westHall === undefined || northGuard === undefined)
+  throw new Error("missing Shuttergate route anchors");
+const SHUTTERGATE_PRESENTATION_WORLD_ANCHORS: Readonly<
+  Record<string, WorldPoint>
+> = {
+  ...SHUTTERGATE_WORLD_ANCHORS,
+  "node.shuttergate_gate": {
+    x: westHall.x + (northGuard.x - westHall.x) * 0.75,
+    y: westHall.y + (northGuard.y - westHall.y) * 0.75,
+    z: westHall.z + (northGuard.z - westHall.z) * 0.75
+  }
+};
+
 export function shuttergateOccupancyWorldPoint(
   nodeId: string,
   columnOffset: number,
   rowOffset: number
 ): WorldPoint {
-  const anchor = SHUTTERGATE_WORLD_ANCHORS[nodeId];
+  const anchor = SHUTTERGATE_PRESENTATION_WORLD_ANCHORS[nodeId];
   if (anchor === undefined)
     throw new Error(`unknown Shuttergate node: ${nodeId}`);
   if (!Number.isFinite(columnOffset) || !Number.isFinite(rowOffset))
@@ -226,10 +246,12 @@ export function projectShuttergateOccupants(
 export const SHUTTERGATE_NODE_POSITIONS: Readonly<
   Record<string, { readonly x: number; readonly y: number }>
 > = Object.fromEntries(
-  Object.entries(SHUTTERGATE_WORLD_ANCHORS).map(([nodeId, world]) => [
-    nodeId,
-    quantizeShuttergatePivot(projectShuttergateWorldPoint(world))
-  ])
+  Object.entries(SHUTTERGATE_PRESENTATION_WORLD_ANCHORS).map(
+    ([nodeId, world]) => [
+      nodeId,
+      quantizeShuttergatePivot(projectShuttergateWorldPoint(world))
+    ]
+  )
 );
 
 export const SHUTTERGATE_SPATIAL_CONTRACT = spatialContract;

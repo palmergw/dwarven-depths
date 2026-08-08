@@ -1,0 +1,146 @@
+import { describe, expect, it } from "vitest";
+import { validateBattlefieldMotionSamples } from "./battlefield-motion.mjs";
+
+const action = (kind = "idle", phase = "idle") => ({ kind, phase });
+const entity = (
+  id: string,
+  nodeId: string,
+  screenX: number,
+  health: number,
+  options: {
+    readonly action?: { readonly kind: string; readonly phase: string };
+    readonly lifecycle?: "active" | "downed" | "destroyed";
+    readonly alpha?: number;
+    readonly transitionTick?: number | null;
+  } = {}
+) => ({
+  id,
+  nodeId,
+  worldPosition: nodeId.endsWith("west_entry")
+    ? ([-6, 0] as const)
+    : nodeId.endsWith("west_hall")
+      ? ([-3, 0] as const)
+      : ([0, 0] as const),
+  screenPosition: [screenX, 320] as const,
+  currentHealth: health,
+  action: options.action ?? action(),
+  lifecycle: options.lifecycle ?? ("active" as const),
+  transitionTick: options.transitionTick ?? null,
+  alpha: options.alpha ?? 1
+});
+
+function validSamples() {
+  const hostileId = "entity.enemy.shuttergate_001";
+  const dwarfId = "entity.dwarf.warden";
+  const rows = [
+    [2, "node.shuttergate_west_entry", 1054, action()],
+    [4, "node.shuttergate_west_entry", 1010, action()],
+    [7, "node.shuttergate_west_hall", 960, action()],
+    [10, "node.shuttergate_west_hall", 900, action()],
+    [13, "node.shuttergate_west_hall", 840, action()],
+    [16, "node.shuttergate_gate", 790, action("basic_attack", "windup")],
+    [19, "node.shuttergate_gate", 730, action("basic_attack", "committed")],
+    [22, "node.shuttergate_gate", 680, action("basic_attack", "recovery")]
+  ] as const;
+  const samples: {
+    videoTimeMilliseconds: number;
+    tick: number;
+    entities: ReturnType<typeof entity>[];
+  }[] = rows.map(([tick, nodeId, x, hostileAction], index) => ({
+    videoTimeMilliseconds: index * 50,
+    tick,
+    entities: [
+      entity(dwarfId, "node.shuttergate_gate", 605, index < 7 ? 240 : 230),
+      entity(hostileId, nodeId, x, 50, { action: hostileAction })
+    ]
+  }));
+  for (const [index, alpha] of [1, 0.78, 0.48, 0.18].entries())
+    samples.push({
+      videoTimeMilliseconds: (rows.length + index) * 50,
+      tick: 25 + index * 3,
+      entities: [
+        entity(dwarfId, "node.shuttergate_gate", 605, 230),
+        entity(hostileId, "node.shuttergate_gate", 663, 14, {
+          lifecycle: "destroyed",
+          transitionTick: 25,
+          alpha
+        })
+      ]
+    });
+  samples.push({
+    videoTimeMilliseconds: 600,
+    tick: 37,
+    entities: [entity(dwarfId, "node.shuttergate_gate", 605, 230)]
+  });
+  return samples;
+}
+
+describe("running-client battlefield motion evidence", () => {
+  it("accepts continuous route, combat, damage, and retained destruction", () => {
+    expect(validateBattlefieldMotionSamples(validSamples())).toMatchObject({
+      trackedEntityId: "entity.enemy.shuttergate_001",
+      visitedRoute: [
+        "node.shuttergate_west_entry",
+        "node.shuttergate_west_hall",
+        "node.shuttergate_gate"
+      ],
+      departureSampleCount: 4
+    });
+  });
+
+  it("strictly rejects extra properties and noncanonical entity order", () => {
+    expect(() =>
+      validateBattlefieldMotionSamples([
+        { ...validSamples()[0], extra: true },
+        ...validSamples().slice(1)
+      ])
+    ).toThrow("exact supported shape");
+    const samples = validSamples();
+    samples[0] = {
+      ...samples[0],
+      entities: [...samples[0].entities].reverse()
+    };
+    expect(() => validateBattlefieldMotionSamples(samples)).toThrow(
+      "canonical unique ID ordering"
+    );
+  });
+
+  it("rejects jumps, backward traversal, and unexplained removal", () => {
+    const jump = validSamples();
+    jump[3] = {
+      ...jump[3],
+      entities: jump[3].entities.map((candidate) =>
+        candidate.id.startsWith("entity.enemy.")
+          ? { ...candidate, screenPosition: [700, 320] as const }
+          : candidate
+      )
+    };
+    expect(() => validateBattlefieldMotionSamples(jump)).toThrow(
+      "continuous motion bound"
+    );
+
+    const backward = validSamples();
+    backward[6] = {
+      ...backward[6],
+      entities: backward[6].entities.map((candidate) =>
+        candidate.id.startsWith("entity.enemy.")
+          ? { ...candidate, nodeId: "node.shuttergate_west_hall" }
+          : candidate
+      )
+    };
+    expect(() => validateBattlefieldMotionSamples(backward)).toThrow(
+      "moved backward"
+    );
+
+    expect(() =>
+      validateBattlefieldMotionSamples(
+        validSamples().map((sample) => ({
+          ...sample,
+          entities: sample.entities.filter(
+            (candidate) => candidate.lifecycle === "active"
+          )
+        }))
+      )
+    ).toThrow("lifecycle transition");
+  });
+});
