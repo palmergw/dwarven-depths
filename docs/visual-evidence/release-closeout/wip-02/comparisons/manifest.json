@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "0068f744cdd716f6116b6533b9d323aaaa9dfb40",
+  "currentEvidenceHead": "bfec450d0ce72bd38cc416b24243f394f3b78b7d",
+  "previousApprovedEvidenceHead": "93313ec65282c18d42f120ac8c8a5233d00cc7dd",
+  "inputs": {
+    "concept": {
+      "path": "assets/concept-art/dwarven-depths-gameplay-mockup.png",
+      "sha256": "7b35bf139017bf833c8d0c9288fa05f702b5e6c971f48d66dd40931d1c31e9c1"
+    },
+    "previousApproved": {
+      "path": "docs/visual-evidence/combat-hud/wip-01/wip-default-active.png",
+      "sha256": "9bc52d7727f3b983948960f7783d8f05fec73d3a50e9853c0b1f1a5c1d26946d"
+    },
+    "current": {
+      "path": "docs/visual-evidence/release-closeout/wip-02/combat/wip-default-active.png",
+      "sha256": "70db793c843b001b72aebd0306d6fc42434d74fc114c212227f40e343d7d6b28"
+    }
+  },
+  "comparisons": [
+    {
+      "path": "docs/visual-evidence/release-closeout/wip-02/comparisons/concept-vs-current.png",
+      "sha256": "744705864daa4c25bfc6fffb5770608bc146f134108956f5669774fe3f07b518"
+    },
+    {
+      "path": "docs/visual-evidence/release-closeout/wip-02/comparisons/previous-approved-vs-current.png",
+      "sha256": "c9149aee09dbdb6f8828ca75710de9a9234471f6e0364b3fdb4d21143db4f35d"
+    }
+  ],
+  "previousToCurrentPixelDifference": {
+    "method": "RGBA pixel comparison at 1440x900",
+    "changedPixels": 33,
+    "maximumChannelDelta": 3
+  },
+  "compositionMethod": "whole-image contain; no crop, trace, or runtime reuse"
+}
