@@ -378,6 +378,9 @@ class ControlledFailureWorker {
 class ControlledJourneyWorker {
   readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
   terminated = false;
+  runConfiguration:
+    | { readonly attemptId: string; readonly profile: ProfileState }
+    | undefined;
 
   addEventListener(
     type: string,
@@ -391,8 +394,13 @@ class ControlledJourneyWorker {
     const candidate = message as {
       readonly type?: string;
       readonly command?: { readonly type?: string; readonly paused?: boolean };
+      readonly runConfiguration?: {
+        readonly attemptId: string;
+        readonly profile: ProfileState;
+      };
     };
     if (candidate.type === "initialize") {
+      this.runConfiguration = candidate.runConfiguration;
       this.emit({
         protocolVersion: 4,
         type: "snapshot",
@@ -424,6 +432,11 @@ class ControlledJourneyWorker {
   }
 
   finish(): void {
+    const runConfiguration = this.runConfiguration;
+    if (runConfiguration === undefined)
+      throw new Error("journey worker was not initialized");
+    const rewardId = `reward.${runConfiguration.attemptId}`;
+    const forgeOreAwarded = 8;
     this.emit({
       protocolVersion: 4,
       type: "result",
@@ -431,6 +444,21 @@ class ControlledJourneyWorker {
       terminalTick: 1,
       finalStateChecksum: expected.finalStateChecksum,
       eventStreamChecksum: expected.eventStreamChecksum,
+      campaign: {
+        schemaVersion: 1,
+        attemptId: runConfiguration.attemptId,
+        rewardId,
+        forgeOreAwarded,
+        profile: {
+          ...runConfiguration.profile,
+          revision: runConfiguration.profile.revision + 1,
+          forgeOre: runConfiguration.profile.forgeOre + forgeOreAwarded,
+          claimedRewardIds: [
+            ...runConfiguration.profile.claimedRewardIds,
+            rewardId
+          ]
+        }
+      },
       commands: [
         {
           tick: 0,
