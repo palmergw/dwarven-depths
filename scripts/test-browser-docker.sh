@@ -13,10 +13,7 @@ fi
 if (( $# > 0 )); then
   printf -v TEST_ARGUMENTS ' %q' "$@"
 fi
-
-for BROWSER in chromium firefox webkit; do
-  TEST_COMMAND+=" && ./node_modules/.bin/vitest run --config vitest.browser.config.ts --browser=$BROWSER${TEST_ARGUMENTS:-}"
-done
+TEST_COMMAND+=" && ./scripts/test-browser-sequential.sh${TEST_ARGUMENTS:-}"
 
 if (( $# == 0 )); then
   TEST_COMMAND+=' && node scripts/test-web-offline.mjs'

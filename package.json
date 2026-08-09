@@ -12,7 +12,7 @@
     "typecheck": "tsc -b --pretty false",
     "test": "pnpm build && vitest run",
     "test:built": "vitest run",
-    "test:browser": "pnpm build && vitest run --config vitest.browser.config.ts",
+    "test:browser": "pnpm build && ./scripts/test-browser-sequential.sh",
     "test:browser:docker": "./scripts/test-browser-docker.sh",
     "lint": "biome check .",
     "format:check": "biome format .",
