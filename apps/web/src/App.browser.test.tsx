@@ -2243,7 +2243,8 @@ describe("authoritative web worker", () => {
       );
       worker.postMessage({
         protocolVersion: WEB_PROTOCOL_VERSION,
-        type: "initialize"
+        type: "initialize",
+        runConfiguration: freshWorkerRunConfiguration()
       });
       await preparation;
       const paused = waitForMessage(
