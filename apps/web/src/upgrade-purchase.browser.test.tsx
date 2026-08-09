@@ -128,7 +128,7 @@ describe("checkpoint upgrade purchasing", () => {
     const purchase = await button("Purchase rank 1 for 10 Forge Ore");
     expect(purchase).toHaveAccessibleDescription(
       expect.stringContaining(
-        "Rank 1 effects: +20 maximum health; +2 attack damage."
+        "Rank 1 effects: +760 maximum health; +2 attack damage; +4 attack range."
       )
     );
     purchase.focus();
@@ -157,7 +157,7 @@ describe("checkpoint upgrade purchasing", () => {
       }
     ]);
     expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "Rank 1: +20 maximum health; +2 attack damage."
+      "Rank 1: +760 maximum health; +2 attack damage; +4 attack range."
     );
     expect(
       await button("Purchase rank 2 for 25 Forge Ore")

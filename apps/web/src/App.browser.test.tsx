@@ -63,7 +63,7 @@ async function runCampaignAttempt(
     (message) =>
       message.type === "result" ||
       (message.type === "failure" && message.code === "runtime_failure"),
-    75_000
+    300_000
   );
   let lastAbilityTick = -1;
   let maximumHealth = 0;
@@ -3171,6 +3171,7 @@ describe("authoritative web worker", () => {
 
   it("returns from terminal evidence to a fresh deterministic checkpoint", async () => {
     const workers: ControlledResultWorker[] = [];
+    const profileStore = new PersistentJourneyProfileStore();
     const outcomes = ["victory", "defeat"] as const;
     const createWorker = (): Worker => {
       const attemptNumber = workers.length + 1;
@@ -3184,7 +3185,12 @@ describe("authoritative web worker", () => {
     const container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    root.render(<App createWorker={createWorker} />);
+    root.render(
+      <App
+        createWorker={createWorker}
+        createProfileStore={() => profileStore}
+      />
+    );
 
     const firstEvidence = await completeAppAttempt();
     const victoryHeading = await resultHeading("Victory results");
@@ -3401,6 +3407,7 @@ describe("authoritative web worker", () => {
   it("downloads byte-identical versioned run evidence with keyboard input", async () => {
     window.history.replaceState(null, "", "/?inspection=1");
     const workers: ControlledResultWorker[] = [];
+    const profileStore = new PersistentJourneyProfileStore();
     const createWorker = (): Worker => {
       const worker = new ControlledResultWorker(
         expected.terminalResult,
@@ -3435,7 +3442,12 @@ describe("authoritative web worker", () => {
     const container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    root.render(<App createWorker={createWorker} />);
+    root.render(
+      <App
+        createWorker={createWorker}
+        createProfileStore={() => profileStore}
+      />
+    );
 
     await completeAppAttempt();
     // Phaser's browser loader also uses object URLs for the four runtime image

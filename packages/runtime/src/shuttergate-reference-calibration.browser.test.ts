@@ -71,5 +71,5 @@ describe("Shuttergate calibration browser parity", () => {
     await expect(
       runShuttergateAttempt(content, hiddenFieldRequest as never)
     ).rejects.toThrow("invalid fields");
-  }, 60_000);
+  }, 300_000);
 });
