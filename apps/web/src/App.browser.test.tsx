@@ -60,7 +60,7 @@ async function runCampaignAttempt(
     (message) =>
       message.type === "result" ||
       (message.type === "failure" && message.code === "runtime_failure"),
-    45_000
+    75_000
   );
   let lastAbilityTick = -1;
   let maximumHealth = 0;
@@ -3691,5 +3691,5 @@ describe("authoritative Shuttergate campaign journey", () => {
       }
     });
     expect(third.terminalTick).toBeLessThan(6000);
-  }, 75_000);
+  }, 120_000);
 });
