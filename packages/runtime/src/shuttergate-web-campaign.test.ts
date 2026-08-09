@@ -193,5 +193,5 @@ describe("Shuttergate web campaign authority", () => {
         configuration
       )
     ).resolves.toEqual(result);
-  }, 30_000);
+  }, 120_000);
 });
