@@ -245,10 +245,23 @@ function isRecord(value: unknown): value is RecordValue {
 }
 
 function hasExactKeys(value: RecordValue, keys: readonly string[]): boolean {
-  const actual = Object.keys(value).sort();
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  const ownKeys = Reflect.ownKeys(value);
+  if (ownKeys.some((key) => typeof key !== "string")) return false;
+  const actual = (ownKeys as string[]).sort();
+  const expected = [...keys].sort();
   return (
     actual.length === keys.length &&
-    actual.every((key, index) => key === [...keys].sort()[index])
+    actual.every((key, index) => {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      return (
+        key === expected[index] &&
+        descriptor !== undefined &&
+        descriptor.enumerable &&
+        "value" in descriptor
+      );
+    })
   );
 }
 
