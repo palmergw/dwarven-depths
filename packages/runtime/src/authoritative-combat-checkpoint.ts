@@ -18,7 +18,10 @@ import {
   resolveAuthoritativeCombatTick
 } from "@dwarven-depths/sim-core";
 import { resolveBossRewardCheckpoint } from "./boss-reward-checkpoint.js";
-import type { TerminalEvaluationResult } from "./terminal-evaluation.js";
+import type {
+  TerminalEvaluationRequest,
+  TerminalEvaluationResult
+} from "./terminal-evaluation.js";
 
 export interface AuthoritativeCombatCheckpointRequest {
   readonly schemaVersion: 1;
@@ -118,6 +121,27 @@ function waveScheduleFromBattlefield(
     startedWaveIds: battlefield.startedWaveIds,
     firedSpawnIds: battlefield.firedSpawnIds,
     pendingSpawns: battlefield.pendingSpawns
+  });
+}
+
+/** Derives phase-13 input directly from authoritative battlefield state. */
+export function createBattlefieldTerminalEvaluationRequest(
+  state: SimulationState,
+  content: CompiledContent
+): TerminalEvaluationRequest {
+  const battlefield = state.battlefield;
+  if (battlefield === undefined)
+    throw new Error("terminal evaluation requires battlefield state");
+  return Object.freeze({
+    schemaVersion: 1,
+    waveSchedule: waveScheduleFromBattlefield(state, content),
+    livingDwarfIds: battlefield.dwarfCombatants
+      .filter((combatant) => combatant.lifecycleState === "active")
+      .map((combatant) => combatant.entityId),
+    livingHostileEnemyIds: battlefield.enemyCombatants
+      .filter((combatant) => combatant.lifecycleState === "active")
+      .map((combatant) => combatant.entityId),
+    livingHostileDeployableIds: []
   });
 }
 
@@ -225,6 +249,10 @@ export function resolveAuthoritativeCombatCheckpoint(
         bossEntityId: combatant.entityId
       })
     );
+  const terminalEvaluation = createBattlefieldTerminalEvaluationRequest(
+    combat.state,
+    content
+  );
   const checkpoint = resolveBossRewardCheckpoint({
     schemaVersion: 1,
     bossRewards: {
@@ -233,17 +261,7 @@ export function resolveAuthoritativeCombatCheckpoint(
       bossDeaths: Object.freeze(bossDeaths),
       rewards
     },
-    terminalEvaluation: {
-      schemaVersion: 1,
-      waveSchedule: waveScheduleFromBattlefield(combat.state, content),
-      livingDwarfIds: battlefield.dwarfCombatants
-        .filter((combatant) => combatant.lifecycleState === "active")
-        .map((combatant) => combatant.entityId),
-      livingHostileEnemyIds: battlefield.enemyCombatants
-        .filter((combatant) => combatant.lifecycleState === "active")
-        .map((combatant) => combatant.entityId),
-      livingHostileDeployableIds: []
-    }
+    terminalEvaluation
   });
   return Object.freeze({
     schemaVersion: 1,

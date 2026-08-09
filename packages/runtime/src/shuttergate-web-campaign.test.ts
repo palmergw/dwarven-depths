@@ -1,0 +1,93 @@
+import {
+  compileContent,
+  compileScenario
+} from "@dwarven-depths/content-runtime";
+import {
+  createInitialProfile,
+  purchasedUpgradeCatalog,
+  purchaseUpgradeRank
+} from "@dwarven-depths/progression";
+import { describe, expect, it } from "vitest";
+import contentFixture from "../../../content/fixtures/phase-3-shuttergate.json" with {
+  type: "json"
+};
+import scenarioFixture from "../../../scenarios/conformance/shuttergate-web-truth.json" with {
+  type: "json"
+};
+import {
+  createShuttergateWebPreparationState,
+  resolveShuttergateWebAttemptReward
+} from "./shuttergate-web-campaign.js";
+
+function purchasedProfile() {
+  const initial = createInitialProfile("character.iron_warden" as never);
+  return purchaseUpgradeRank({
+    schemaVersion: 1,
+    profile: { ...initial, forgeOre: 16 },
+    catalog: purchasedUpgradeCatalog,
+    upgradeId: "upgrade.ability.shield_slam" as never
+  }).profile;
+}
+
+describe("Shuttergate web campaign authority", () => {
+  it("binds a purchased profile into an immutable deployed run", async () => {
+    const content = await compileContent(contentFixture);
+    const scenario = compileScenario(scenarioFixture, content);
+    const state = createShuttergateWebPreparationState(content, scenario, {
+      schemaVersion: 1,
+      attemptId: "attempt.shuttergate.web_000003" as never,
+      seed: "3",
+      placementPointId: "placement.shuttergate_north_guard" as never,
+      profile: purchasedProfile()
+    });
+    expect(state.seed).toBe("3");
+    expect(state.battlefield?.dwarfCombatants[0]).toMatchObject({
+      maximumHealth: 1000,
+      basicAttack: { damage: 20, range: 6 }
+    });
+    expect(Object.isFrozen(state)).toBe(true);
+  });
+
+  it("rejects extra configuration fields and terminal mismatches", async () => {
+    const content = await compileContent(contentFixture);
+    const scenario = compileScenario(scenarioFixture, content);
+    const configuration = {
+      schemaVersion: 1 as const,
+      attemptId: "attempt.shuttergate.web_000003" as never,
+      seed: "3",
+      placementPointId: "placement.shuttergate_north_guard" as never,
+      profile: purchasedProfile()
+    };
+    expect(() =>
+      createShuttergateWebPreparationState(content, scenario, {
+        ...configuration,
+        unexpected: true
+      } as never)
+    ).toThrow("invalid shape");
+    const state = createShuttergateWebPreparationState(
+      content,
+      scenario,
+      configuration
+    );
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "defeat",
+        finalState: state
+      })
+    ).toThrow("terminal-bound");
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "victory",
+        finalState: {
+          ...state,
+          phase: "TERMINAL",
+          terminalResult: "defeat"
+        }
+      })
+    ).toThrow("terminal-bound");
+  });
+});

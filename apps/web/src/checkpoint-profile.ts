@@ -1,7 +1,8 @@
-import type { StableId } from "@dwarven-depths/contracts";
+import { canonicalStringify, type StableId } from "@dwarven-depths/contracts";
 import {
   createInitialProfile,
   ironWardenSkillTree,
+  normalizeProfileState,
   type ProfileState,
   purchasedUpgradeCatalog,
   purchaseUpgradeRank,
@@ -226,6 +227,67 @@ export async function selectCheckpointIronWardenSkill(
     envelope
   });
   return written.profile;
+}
+
+export async function applyCheckpointAttemptResult(
+  store: CheckpointProfileStore,
+  startingProfile: ProfileState,
+  campaign: {
+    readonly schemaVersion: 1;
+    readonly attemptId: string;
+    readonly rewardId: string;
+    readonly forgeOreAwarded: number;
+    readonly profile: ProfileState;
+  },
+  now: () => number = Date.now
+): Promise<ProfileState> {
+  const profile = normalizeProfileState(campaign.profile);
+  const expectedProfile = normalizeProfileState({
+    ...startingProfile,
+    revision: startingProfile.revision + 1,
+    forgeOre: startingProfile.forgeOre + campaign.forgeOreAwarded,
+    claimedRewardIds: [
+      ...startingProfile.claimedRewardIds,
+      campaign.rewardId as StableId
+    ]
+  });
+  if (
+    campaign.schemaVersion !== 1 ||
+    !/^attempt\.shuttergate\.web_[0-9]{6}$/.test(campaign.attemptId) ||
+    campaign.rewardId !== `reward.${campaign.attemptId}` ||
+    !Number.isSafeInteger(campaign.forgeOreAwarded) ||
+    campaign.forgeOreAwarded < 0 ||
+    startingProfile.claimedRewardIds.includes(campaign.rewardId as never) ||
+    canonicalStringify(profile) !== canonicalStringify(expectedProfile)
+  )
+    throw new RangeError(
+      "authoritative attempt result contradicts the profile"
+    );
+  const envelope = await createProfileSaveEnvelope({
+    contentVersion: "content.shuttergate.level_1.v1",
+    applicationBuild: "phase-6-web",
+    writtenAtEpochMs: now(),
+    profileId,
+    profile
+  });
+  try {
+    const written = await store.write({
+      expectedRevision: startingProfile.revision,
+      envelope
+    });
+    return written.profile;
+  } catch (error) {
+    if (!isCheckpointProfileSaveConflict(error)) throw error;
+    const concurrent = await store.load(profileId);
+    if (
+      concurrent.status === "loaded" &&
+      concurrent.envelope.profile.claimedRewardIds.includes(
+        campaign.rewardId as never
+      )
+    )
+      return concurrent.envelope.profile;
+    throw error;
+  }
 }
 
 export function isCheckpointProfileSaveConflict(error: unknown): boolean {

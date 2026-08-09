@@ -40,8 +40,8 @@ export interface ShuttergateLevel1BalanceCase {
   readonly placementPointId: (typeof shuttergateLevel1PlacementPointIds)[number];
   readonly targetPolicy: (typeof shuttergateLevel1TargetPolicies)[number];
   readonly buildId: ShuttergateCalibrationBuildId;
-  readonly terminalResult: "defeat";
-  readonly terminalReason: "all_dwarves_downed";
+  readonly terminalResult: "victory" | "defeat";
+  readonly terminalReason: "victory_conditions_met" | "all_dwarves_downed";
   readonly deepestStartedWaveId: (typeof shuttergateLevel1WaveIds)[number];
   readonly ranges: {
     readonly terminalTick: IntegerRange;
@@ -102,6 +102,12 @@ function requirePositiveInteger(value: unknown, label: string): number {
   return value as number;
 }
 
+function requireNonnegativeInteger(value: unknown, label: string): number {
+  if (!Number.isSafeInteger(value) || (value as number) < 0)
+    throw new TypeError(`${label} must be a nonnegative safe integer`);
+  return value as number;
+}
+
 function requirePlainArray(value: unknown, label: string): readonly unknown[] {
   if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype)
     throw new TypeError(`${label} must be an array`);
@@ -127,8 +133,8 @@ function requirePlainArray(value: unknown, label: string): readonly unknown[] {
 
 function requireRange(value: unknown, label: string): IntegerRange {
   const record = requirePlainRecord(value, label, ["minimum", "maximum"]);
-  const minimum = requirePositiveInteger(record.minimum, `${label}.minimum`);
-  const maximum = requirePositiveInteger(record.maximum, `${label}.maximum`);
+  const minimum = requireNonnegativeInteger(record.minimum, `${label}.minimum`);
+  const maximum = requireNonnegativeInteger(record.maximum, `${label}.maximum`);
   if (minimum > maximum)
     throw new RangeError(`${label} minimum exceeds maximum`);
   return Object.freeze({ minimum, maximum });
@@ -159,10 +165,22 @@ function requireCase(
     "terminalReason",
     "terminalResult"
   ]);
-  if (record.terminalResult !== "defeat")
-    throw new RangeError(`${label} terminal result must be defeat`);
-  if (record.terminalReason !== "all_dwarves_downed")
-    throw new RangeError(`${label} terminal reason must be all_dwarves_downed`);
+  const terminalResult = requireMember(
+    record.terminalResult,
+    ["defeat", "victory"],
+    `${label} terminal result`
+  );
+  const terminalReason = requireMember(
+    record.terminalReason,
+    ["all_dwarves_downed", "victory_conditions_met"],
+    `${label} terminal reason`
+  );
+  if (
+    (terminalResult === "defeat" && terminalReason !== "all_dwarves_downed") ||
+    (terminalResult === "victory" &&
+      terminalReason !== "victory_conditions_met")
+  )
+    throw new RangeError(`${label} terminal result and reason contradict`);
   const deepestStartedWaveId = requireMember(
     record.deepestStartedWaveId,
     shuttergateLevel1WaveIds,
@@ -196,6 +214,25 @@ function requireCase(
     throw new RangeError(
       `${label} terminal tick range exceeds the safety tick limit`
     );
+  const buildId = requireMember(
+    record.buildId,
+    shuttergateCalibrationBuildIds,
+    `${label} build`
+  );
+  if (
+    (buildId === "build.profile.new_campaign.v1" &&
+      terminalResult !== "defeat") ||
+    (buildId === "build.warden.shield_slam_rank_1.v1" &&
+      terminalResult !== "victory")
+  )
+    throw new RangeError(`${label} build and terminal result contradict`);
+  if (
+    terminalResult === "victory" &&
+    (deepestStartedWaveId !== "wave.shuttergate_5" ||
+      ranges.survivingEnemies.minimum !== 0 ||
+      ranges.survivingEnemies.maximum !== 0)
+  )
+    throw new RangeError(`${label} victory evidence is incomplete`);
   return Object.freeze({
     placementPointId: requireMember(
       record.placementPointId,
@@ -207,13 +244,9 @@ function requireCase(
       shuttergateLevel1TargetPolicies,
       `${label} target policy`
     ),
-    buildId: requireMember(
-      record.buildId,
-      shuttergateCalibrationBuildIds,
-      `${label} build`
-    ),
-    terminalResult: record.terminalResult,
-    terminalReason: record.terminalReason,
+    buildId,
+    terminalResult,
+    terminalReason,
     deepestStartedWaveId,
     ranges
   });

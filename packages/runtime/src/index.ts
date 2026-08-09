@@ -28,6 +28,12 @@ import {
   stateChecksum,
   stepSimulation
 } from "@dwarven-depths/sim-core";
+import { createBattlefieldTerminalEvaluationRequest } from "./authoritative-combat-checkpoint.js";
+import {
+  createShuttergateWebPreparationAuthority,
+  type ShuttergateWebRunConfiguration
+} from "./shuttergate-web-campaign.js";
+import { evaluateTerminalState } from "./terminal-evaluation.js";
 
 export {
   type AuthoritativeCombatCheckpointRequest,
@@ -132,6 +138,12 @@ export {
   type ShuttergateReferenceCalibrationEvidence,
   shuttergateCalibrationBuildIds
 } from "./shuttergate-reference-calibration.js";
+export {
+  createShuttergateWebPreparationState,
+  resolveShuttergateWebAttemptReward,
+  type ShuttergateWebRewardResolution,
+  type ShuttergateWebRunConfiguration
+} from "./shuttergate-web-campaign.js";
 export {
   evaluateTerminalState,
   type TerminalEvaluationReason,
@@ -671,6 +683,10 @@ function finalizeShieldSlamWebStep(
   });
 }
 
+const trustedShuttergateWebConfiguration = Symbol(
+  "trusted Shuttergate web configuration"
+);
+
 /** Incremental authority for hosts that admit input between fixed steps. */
 export class LiveScenarioHost {
   readonly #scenario: ScenarioDefinition;
@@ -689,7 +705,9 @@ export class LiveScenarioHost {
   constructor(
     scenario: ScenarioDefinition,
     content: CompiledContent,
-    initialState?: SimulationState
+    initialState?: SimulationState,
+    trustedConfiguration?: symbol,
+    trustedDwarfAuthority?: BattlefieldDwarfDeploymentAuthority
   ) {
     this.#scenario = scenario;
     this.#content = content;
@@ -730,19 +748,22 @@ export class LiveScenarioHost {
     const usesShuttergateEncounterAuthority =
       scenario.id === "scenario.conformance.shuttergate_web_truth";
     const dwarfAuthority =
-      !usesShuttergateEncounterAuthority ||
-      initialState?.battlefield === undefined ||
-      canonicalInitialState.battlefield === undefined
-        ? undefined
-        : createBattlefieldDwarfDeploymentAuthority(
-            initialState.battlefield.dwarfCombatants.map((dwarf) => ({
-              entityId: dwarf.entityId,
-              characterDefinitionId: dwarf.characterDefinitionId,
-              placementPointId: dwarf.placementPointId
-            })),
-            canonicalInitialState.battlefield,
-            content
-          );
+      trustedConfiguration === trustedShuttergateWebConfiguration &&
+      trustedDwarfAuthority !== undefined
+        ? trustedDwarfAuthority
+        : !usesShuttergateEncounterAuthority ||
+            initialState?.battlefield === undefined ||
+            canonicalInitialState.battlefield === undefined
+          ? undefined
+          : createBattlefieldDwarfDeploymentAuthority(
+              initialState.battlefield.dwarfCombatants.map((dwarf) => ({
+                entityId: dwarf.entityId,
+                characterDefinitionId: dwarf.characterDefinitionId,
+                placementPointId: dwarf.placementPointId
+              })),
+              canonicalInitialState.battlefield,
+              content
+            );
     this.#dwarfAuthority = dwarfAuthority;
     this.#state =
       initialState === undefined
@@ -754,11 +775,14 @@ export class LiveScenarioHost {
             canonicalInitialState.battlefield === undefined
               ? {}
               : {
-                  battlefield: deployBattlefieldDwarves(
-                    canonicalInitialState.battlefield,
-                    dwarfAuthority,
-                    content
-                  )
+                  battlefield:
+                    trustedConfiguration === trustedShuttergateWebConfiguration
+                      ? initialState.battlefield
+                      : deployBattlefieldDwarves(
+                          canonicalInitialState.battlefield,
+                          dwarfAuthority,
+                          content
+                        )
                 })
           });
     for (const dwarf of initialState?.battlefield?.dwarfCombatants ?? [])
@@ -926,11 +950,28 @@ export class LiveScenarioHost {
       this.#content,
       this.#dwarfAuthority
     );
-    const terminalResult = combat.state.battlefield?.dwarfCombatants.some(
-      (dwarf) => dwarf.lifecycleState === "active"
-    )
-      ? undefined
-      : "defeat";
+    const terminalResult = evaluateTerminalState(
+      createBattlefieldTerminalEvaluationRequest(combat.state, this.#content)
+    ).terminalResult;
+    const terminalEvents: readonly SimulationEvent[] =
+      terminalResult === "victory"
+        ? [
+            Object.freeze({
+              id: `event.${String(combat.state.eventSequence).padStart(6, "0")}` as never,
+              tick: previousState.tick,
+              sequence: combat.state.eventSequence,
+              type: "final_cleanup.entered",
+              ruleId: "SIM-FINAL-CLEANUP-001"
+            }),
+            Object.freeze({
+              id: `event.${String(combat.state.eventSequence + 1).padStart(6, "0")}` as never,
+              tick: previousState.tick,
+              sequence: combat.state.eventSequence + 1,
+              type: "round.victory",
+              ruleId: "SIM-VICTORY-001"
+            })
+          ]
+        : [];
     return Object.freeze({
       state: Object.freeze({
         ...combat.state,
@@ -946,9 +987,17 @@ export class LiveScenarioHost {
           : { committedAbilities: abilityStep.state.committedAbilities }),
         ...(terminalResult === undefined
           ? {}
-          : { phase: "TERMINAL" as const, terminalResult })
+          : {
+              phase: "TERMINAL" as const,
+              terminalResult,
+              eventSequence: combat.state.eventSequence + terminalEvents.length
+            })
       }),
-      events: Object.freeze([...abilityStep.events, ...combat.events])
+      events: Object.freeze([
+        ...abilityStep.events,
+        ...combat.events,
+        ...terminalEvents
+      ])
     });
   }
 
@@ -980,6 +1029,26 @@ export function createLiveScenarioHost(
   initialState?: SimulationState
 ): LiveScenarioHost {
   return new LiveScenarioHost(scenario, content, initialState);
+}
+
+/** Creates a live host whose profile-derived deployment is built inside runtime authority. */
+export function createShuttergateWebLiveScenarioHost(
+  scenario: ScenarioDefinition,
+  content: CompiledContent,
+  configuration: ShuttergateWebRunConfiguration
+): LiveScenarioHost {
+  const preparation = createShuttergateWebPreparationAuthority(
+    content,
+    scenario,
+    configuration
+  );
+  return new LiveScenarioHost(
+    scenario,
+    content,
+    preparation.state,
+    trustedShuttergateWebConfiguration,
+    preparation.authority
+  );
 }
 
 async function createRuntimeResult(

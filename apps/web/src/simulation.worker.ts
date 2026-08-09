@@ -11,7 +11,10 @@ import type {
 import {
   createLiveScenarioHost,
   createShieldSlamWebPreparationState,
-  type LiveScenarioHost
+  createShuttergateWebLiveScenarioHost,
+  type LiveScenarioHost,
+  resolveShuttergateWebAttemptReward,
+  type ShuttergateWebRunConfiguration
 } from "@dwarven-depths/runtime";
 import emptyContentFixture from "../../../content/fixtures/empty-content.json";
 import shieldSlamContentFixture from "../../../content/fixtures/phase-3-shuttergate.json";
@@ -55,6 +58,7 @@ let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
 let liveHost: LiveScenarioHost | undefined;
 let previousPresentationSnapshot: RenderSnapshotV2 | undefined;
+let runConfiguration: ShuttergateWebRunConfiguration | undefined;
 
 function post(message: WorkerMessage): void {
   self.postMessage(message);
@@ -276,17 +280,27 @@ async function executePreparedScenario(): Promise<void> {
       finalStateChecksum: result.finalStateChecksum,
       eventStreamChecksum: result.eventStreamChecksum
     };
-    if (protocolVersion === 4)
+    if (protocolVersion === 4) {
+      const campaign =
+        runConfiguration === undefined
+          ? undefined
+          : resolveShuttergateWebAttemptReward({
+              schemaVersion: 1,
+              configuration: runConfiguration,
+              terminalResult: result.terminalResult,
+              finalState: result.finalState
+            });
       post({
         protocolVersion: 4,
         type: "result",
         ...terminalEvidence,
+        ...(campaign === undefined ? {} : { campaign }),
         commands: result.commands as Extract<
           WorkerMessage,
           { protocolVersion: 4; type: "result" }
         >["commands"]
       });
-    else
+    } else
       post({
         protocolVersion,
         type: "result",
@@ -346,6 +360,8 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     }
     initialized = true;
     protocolVersion = message.protocolVersion;
+    runConfiguration =
+      message.protocolVersion === 4 ? message.runConfiguration : undefined;
     try {
       const contentFixture =
         protocolVersion === 4 ? shieldSlamContentFixture : emptyContentFixture;
@@ -360,16 +376,34 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         scenarioFixture as unknown as ScenarioDefinition,
         preparedContent
       );
-      liveHost = createLiveScenarioHost(
-        preparedScenario,
-        preparedContent,
-        protocolVersion === 4
-          ? createShieldSlamWebPreparationState(
+      if (runConfiguration !== undefined) {
+        const {
+          expectedTerminalResult: _legacyExpectation,
+          ...campaignScenario
+        } = preparedScenario;
+        preparedScenario = Object.freeze({
+          ...campaignScenario,
+          seed: runConfiguration.seed,
+          maximumTicks: 6000
+        });
+      }
+      liveHost =
+        protocolVersion === 4 && runConfiguration !== undefined
+          ? createShuttergateWebLiveScenarioHost(
+              preparedScenario,
               preparedContent,
-              preparedScenario
+              runConfiguration
             )
-          : undefined
-      );
+          : createLiveScenarioHost(
+              preparedScenario,
+              preparedContent,
+              protocolVersion === 4
+                ? createShieldSlamWebPreparationState(
+                    preparedContent,
+                    preparedScenario
+                  )
+                : undefined
+            );
       previousPresentationSnapshot = undefined;
       const preparationSnapshot =
         protocolVersion === 4
@@ -403,7 +437,10 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         deployableEntityCount: preparationSnapshot.entities.filter(
           (entity) => entity.faction !== "enemy"
         ).length,
-        placementPointCount: preparedMap?.placementPoints.length ?? 0
+        placementPointCount:
+          runConfiguration === undefined
+            ? (preparedMap?.placementPoints.length ?? 0)
+            : 0
       });
     } catch (error) {
       post(

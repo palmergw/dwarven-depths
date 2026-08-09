@@ -1,3 +1,9 @@
+import {
+  createInitialProfile,
+  type ProfileState,
+  purchasedUpgradeCatalog,
+  purchaseUpgradeRank
+} from "@dwarven-depths/progression";
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -26,6 +32,138 @@ import {
   type WorkerMessage
 } from "./protocol.js";
 import type { RenderSnapshot } from "./render-snapshot.js";
+
+async function runCampaignAttempt(
+  profile: ProfileState,
+  attemptNumber: number
+): Promise<{
+  readonly result: Extract<
+    WorkerMessage,
+    { protocolVersion: 4; type: "result" }
+  >;
+  readonly maximumHealth: number;
+  readonly abilityActivations: number;
+}> {
+  const worker = new Worker(
+    new URL("./simulation.worker.ts", import.meta.url),
+    {
+      type: "module"
+    }
+  );
+  const attemptId = `attempt.shuttergate.web_${String(attemptNumber).padStart(6, "0")}`;
+  const preparation = waitForMessage(
+    worker,
+    (message) => message.type === "snapshot" && message.phase === "preparation"
+  );
+  const result = waitForMessage(
+    worker,
+    (message) =>
+      message.type === "result" ||
+      (message.type === "failure" && message.code === "runtime_failure"),
+    45_000
+  );
+  let lastAbilityTick = -1;
+  let maximumHealth = 0;
+  let abilityActivations = 0;
+  worker.addEventListener("message", (event: MessageEvent<unknown>) => {
+    const message = parseWorkerMessage(event.data);
+    if (
+      message?.type === "render_snapshot" &&
+      message.snapshot.schemaVersion === 2
+    )
+      maximumHealth = Math.max(
+        maximumHealth,
+        ...message.snapshot.entities
+          .filter((entity) => entity.faction === "dwarf")
+          .map((entity) => entity.maximumHealth)
+      );
+    if (
+      message?.type !== "combat_controls" ||
+      message.protocolVersion !== 4 ||
+      message.authoritativeTick === lastAbilityTick
+    )
+      return;
+    const dwarf = message.dwarves.find((candidate) =>
+      candidate.activeAbilities?.some(
+        (ability) =>
+          ability.abilityId === "ability.iron_warden.shield_slam" &&
+          ability.cooldownCompleteAtTick === null &&
+          ability.rejectionReason === null
+      )
+    );
+    if (dwarf === undefined) return;
+    lastAbilityTick = message.authoritativeTick;
+    abilityActivations += 1;
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "command",
+      requestId: `ability-${message.authoritativeTick}`,
+      command: {
+        type: "activateAbility",
+        dwarfEntityId: dwarf.entityId,
+        abilityId: "ability.iron_warden.shield_slam"
+      }
+    });
+  });
+  try {
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "initialize",
+      runConfiguration: {
+        schemaVersion: 1,
+        attemptId,
+        seed: String(attemptNumber),
+        placementPointId: "placement.shuttergate_north_guard",
+        profile
+      }
+    });
+    await preparation;
+    const paused = waitForMessage(
+      worker,
+      (message) =>
+        message.type === "snapshot" &&
+        message.phase === "running" &&
+        message.protocolVersion === 4 &&
+        message.manualPaused
+    );
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "command",
+      requestId: `prepare-${attemptNumber}`,
+      command: { type: "confirmPreparation" }
+    });
+    await paused;
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "command",
+      requestId: `speed-${attemptNumber}`,
+      command: { type: "setSimulationSpeed", speed: 2 }
+    });
+    const resumeRequestId = `resume-${attemptNumber}`;
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "command",
+      requestId: resumeRequestId,
+      command: { type: "setManualPause", paused: false }
+    });
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "command",
+      requestId: `commit-${attemptNumber}`,
+      command: { type: "commitManualResume", resumeRequestId }
+    });
+    const terminal = await result;
+    if (terminal.type !== "result" || terminal.protocolVersion !== 4)
+      throw new Error(
+        terminal.type === "failure"
+          ? terminal.message
+          : "expected protocol 4 result"
+      );
+    return { result: terminal, maximumHealth, abilityActivations };
+  } finally {
+    worker.terminate();
+  }
+}
 
 const expected = {
   terminalResult: "victory",
@@ -3263,7 +3401,9 @@ describe("authoritative web worker", () => {
       "DefenceShuttergate Hall"
     );
     expect(preparationSummary?.textContent).toContain("Company roster1 dwarf");
-    expect(preparationSummary?.textContent).toContain("Placement points2");
+    expect(preparationSummary?.textContent).toContain(
+      "DeploymentFixed tutorial guard post"
+    );
     const button = document.querySelector("button");
     if (button === null) throw new Error("expected preparation button");
     button.focus();
@@ -3393,4 +3533,50 @@ describe("authoritative web worker", () => {
       expect(pausedButton?.getAttribute("aria-pressed")).toBe("true")
     );
   });
+});
+
+describe("authoritative Shuttergate campaign journey", () => {
+  it("rewards fresh defeats, applies a purchased build, and reaches victory", async () => {
+    let profile = createInitialProfile("character.iron_warden" as never);
+    const firstRun = await runCampaignAttempt(profile, 1);
+    const first = firstRun.result;
+    expect(first).toMatchObject({
+      terminalResult: "defeat",
+      campaign: { forgeOreAwarded: 8 }
+    });
+    if (first.campaign === undefined) throw new Error("missing first reward");
+    profile = first.campaign.profile;
+
+    const secondRun = await runCampaignAttempt(profile, 2);
+    const second = secondRun.result;
+    expect(second.terminalResult).toBe("defeat");
+    if (second.campaign === undefined) throw new Error("missing second reward");
+    profile = purchaseUpgradeRank({
+      schemaVersion: 1,
+      profile: second.campaign.profile,
+      catalog: purchasedUpgradeCatalog,
+      upgradeId: "upgrade.ability.shield_slam" as never
+    }).profile;
+    expect(profile.purchasedUpgrades).toMatchObject([
+      { upgradeId: "upgrade.ability.shield_slam", rank: 1 }
+    ]);
+
+    const thirdRun = await runCampaignAttempt(profile, 3);
+    const third = thirdRun.result;
+    expect(thirdRun.abilityActivations).toBeGreaterThan(0);
+    expect({
+      terminalResult: third.terminalResult,
+      maximumHealth: thirdRun.maximumHealth,
+      abilityActivations: thirdRun.abilityActivations,
+      campaign: third.campaign
+    }).toMatchObject({
+      terminalResult: "victory",
+      maximumHealth: 1000,
+      abilityActivations: expect.any(Number),
+      campaign: {
+        attemptId: "attempt.shuttergate.web_000003"
+      }
+    });
+    expect(third.terminalTick).toBeLessThan(6000);
+  }, 75_000);
 });

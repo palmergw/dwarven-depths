@@ -119,6 +119,19 @@ describe("Shuttergate Level 1 balance matrix", () => {
     expect(() =>
       requireShuttergateLevel1BalanceMatrix({
         ...matrixInput,
+        cases: [
+          matrixInput.cases[0],
+          {
+            ...matrixInput.cases[1],
+            terminalReason: "all_dwarves_downed"
+          },
+          ...matrixInput.cases.slice(2)
+        ]
+      })
+    ).toThrow("terminal result and reason contradict");
+    expect(() =>
+      requireShuttergateLevel1BalanceMatrix({
+        ...matrixInput,
         cases: [...matrixInput.cases.slice(0, -1), matrixInput.cases[0]]
       })
     ).toThrow("duplicate cases");

@@ -20,9 +20,9 @@ import {
 import { ironWardenSkillTree } from "./skill-tree.fixture.js";
 
 const checksum =
-  "774434c523586726e3cd7d07339a04dbaab8541f5836a4f4f1e62790e8ffaf1f";
+  "fd7baf9c5c223913fdb4e8808e382f05dea27e8d09072ebf1d2c775c9d893697";
 const shieldPassiveEffectsIdentity =
-  '{"upgradeId":"upgrade.ability.shield_slam","kind":"ability_rank","ownerId":"character.iron_warden","passiveEffectsByRank":[[{"schemaVersion":1,"kind":"attack_damage_add","value":2},{"schemaVersion":1,"kind":"maximum_health_add","value":20}],[{"schemaVersion":1,"kind":"maximum_health_add","value":30}]]}';
+  '{"upgradeId":"upgrade.ability.shield_slam","kind":"ability_rank","ownerId":"character.iron_warden","passiveEffectsByRank":[[{"schemaVersion":1,"kind":"attack_damage_add","value":2},{"schemaVersion":1,"kind":"attack_range_add","value":4},{"schemaVersion":1,"kind":"maximum_health_add","value":760}],[{"schemaVersion":1,"kind":"maximum_health_add","value":30}]]}';
 
 function fundedProfile(forgeOre = 60) {
   return {
@@ -80,9 +80,9 @@ describe("Forge Ore purchased upgrades", () => {
       {
         schemaVersion: 1,
         characterId: "character.iron_warden",
-        maximumHealthAdd: 50,
+        maximumHealthAdd: 790,
         attackDamageAdd: 2,
-        attackRangeAdd: 0,
+        attackRangeAdd: 4,
         futureCooldownReductionTicks: 0,
         sourceUpgradeIds: ["upgrade.ability.shield_slam"]
       }

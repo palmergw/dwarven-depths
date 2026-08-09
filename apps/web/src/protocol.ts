@@ -1,3 +1,8 @@
+import {
+  normalizeProfileState,
+  type ProfileState
+} from "@dwarven-depths/progression";
+import type { ShuttergateWebRunConfiguration } from "@dwarven-depths/runtime";
 import { parseRenderSnapshot, type RenderSnapshot } from "./render-snapshot.js";
 
 export const WEB_PROTOCOL_VERSION = 4 as const;
@@ -32,7 +37,11 @@ export type ClientMessage =
   | { readonly protocolVersion: 1; readonly type: "initialize" }
   | { readonly protocolVersion: 2; readonly type: "initialize" }
   | { readonly protocolVersion: 3; readonly type: "initialize" }
-  | { readonly protocolVersion: 4; readonly type: "initialize" }
+  | {
+      readonly protocolVersion: 4;
+      readonly type: "initialize";
+      readonly runConfiguration?: ShuttergateWebRunConfiguration;
+    }
   | {
       readonly protocolVersion: 1;
       readonly type: "command";
@@ -149,6 +158,13 @@ export type WorkerMessage =
       readonly terminalTick: number;
       readonly finalStateChecksum: string;
       readonly eventStreamChecksum: string;
+      readonly campaign?: {
+        readonly schemaVersion: 1;
+        readonly attemptId: string;
+        readonly rewardId: string;
+        readonly forgeOreAwarded: number;
+        readonly profile: ProfileState;
+      };
       readonly commands: readonly {
         readonly tick: number;
         readonly sequence: number;
@@ -213,6 +229,15 @@ type RecordValue = {
   abilityId?: unknown;
   cooldownCompleteAtTick?: unknown;
   rejectionReason?: unknown;
+  runConfiguration?: unknown;
+  schemaVersion?: unknown;
+  attemptId?: unknown;
+  placementPointId?: unknown;
+  seed?: unknown;
+  rewardId?: unknown;
+  forgeOreAwarded?: unknown;
+  profile?: unknown;
+  campaign?: unknown;
 };
 
 function isRecord(value: unknown): value is RecordValue {
@@ -261,6 +286,40 @@ function isTargetPolicy(value: unknown): value is TargetPolicy {
   return TARGET_POLICIES.some((policy) => policy === value);
 }
 
+function parseRunConfiguration(
+  value: unknown
+): ShuttergateWebRunConfiguration | undefined {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "attemptId",
+      "placementPointId",
+      "profile",
+      "schemaVersion",
+      "seed"
+    ]) ||
+    value.schemaVersion !== 1 ||
+    typeof value.attemptId !== "string" ||
+    !/^attempt\.shuttergate\.web_[0-9]{6}$/.test(value.attemptId) ||
+    typeof value.seed !== "string" ||
+    !/^[1-9]\d{0,9}$/.test(value.seed) ||
+    BigInt(value.seed) > 0xffff_ffffn ||
+    value.placementPointId !== "placement.shuttergate_north_guard"
+  )
+    return undefined;
+  try {
+    return Object.freeze({
+      schemaVersion: 1,
+      attemptId: value.attemptId as never,
+      seed: value.seed,
+      placementPointId: value.placementPointId as never,
+      profile: normalizeProfileState(value.profile)
+    });
+  } catch {
+    return undefined;
+  }
+}
+
 export function parseClientMessage(value: unknown): ClientMessage | undefined {
   if (
     !isRecord(value) ||
@@ -272,6 +331,15 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
   )
     return undefined;
   if (value.type === "initialize") {
+    if (
+      value.protocolVersion === 4 &&
+      hasExactKeys(value, ["protocolVersion", "runConfiguration", "type"])
+    ) {
+      const runConfiguration = parseRunConfiguration(value.runConfiguration);
+      return runConfiguration === undefined
+        ? undefined
+        : { protocolVersion: 4, type: "initialize", runConfiguration };
+    }
     return hasExactKeys(value, ["protocolVersion", "type"])
       ? {
           protocolVersion: value.protocolVersion as WebProtocolVersion,
@@ -605,6 +673,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     value.type !== "result" ||
     !hasExactKeys(value, [
       "commands",
+      ...(value.campaign === undefined ? [] : ["campaign"]),
       "eventStreamChecksum",
       "finalStateChecksum",
       "protocolVersion",
@@ -620,6 +689,31 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     !Array.isArray(value.commands)
   )
     return undefined;
+  if (value.campaign !== undefined) {
+    if (
+      value.protocolVersion !== 4 ||
+      !isRecord(value.campaign) ||
+      !hasExactKeys(value.campaign, [
+        "attemptId",
+        "forgeOreAwarded",
+        "profile",
+        "rewardId",
+        "schemaVersion"
+      ]) ||
+      value.campaign.schemaVersion !== 1 ||
+      typeof value.campaign.attemptId !== "string" ||
+      !/^attempt\.shuttergate\.web_[0-9]{6}$/.test(value.campaign.attemptId) ||
+      value.campaign.rewardId !== `reward.${value.campaign.attemptId}` ||
+      !Number.isSafeInteger(value.campaign.forgeOreAwarded) ||
+      (value.campaign.forgeOreAwarded as number) < 0
+    )
+      return undefined;
+    try {
+      normalizeProfileState(value.campaign.profile);
+    } catch {
+      return undefined;
+    }
+  }
   const commands = value.commands;
   if (
     commands.length < 1 ||
