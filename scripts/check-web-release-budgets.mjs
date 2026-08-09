@@ -10,11 +10,12 @@ const distDirectory = resolve(root, process.argv[2] ?? "apps/web/dist/assets");
 
 const budgets = {
   mainJavaScript: 512_000,
-  // The worker owns the complete fixed-step Shuttergate combat authority. Keep
-  // that cost isolated from the renderer while preserving a bounded aggregate.
-  workerJavaScript: 65_536,
+  // The worker owns fixed-step combat plus profile-derived preparation and
+  // terminal reward authority. Keep that cost isolated from the renderer and
+  // bounded to 72 KiB compressed.
+  workerJavaScript: 73_728,
   stylesheet: 10_240,
-  total: 573_440
+  total: 589_824
 };
 const classifications = [
   ["mainJavaScript", /^index-[\w-]+\.js$/],
