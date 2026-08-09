@@ -35,6 +35,7 @@ import {
   type NavigationNodeId,
   type PlacementPointId,
   type ReplayDefinition,
+  type SimulationState,
   type TimelineRecord
 } from "@dwarven-depths/contracts";
 import {
@@ -55,6 +56,7 @@ import {
   renderBattlefieldSvg,
   renderBattlefieldText,
   renderRunExplanationMarkdown,
+  resolveShuttergateWebAttemptReward,
   restoreShuttergateCampaignArtifact,
   runScenario,
   runShuttergateCampaignTransition,
@@ -3632,19 +3634,19 @@ async function replay(args: ParsedArgs): Promise<void> {
       typeof input === "object" && input !== null && !Array.isArray(input)
         ? Object.keys(input).sort().join(",")
         : "";
-    const hasRunConfiguration =
-      inputKeys === "replay,runConfiguration,schemaVersion";
+    const hasCampaignResolution =
+      inputKeys === "campaign,replay,runConfiguration,schemaVersion";
     if (
       typeof input !== "object" ||
       input === null ||
       Array.isArray(input) ||
-      (inputKeys !== "replay,schemaVersion" && !hasRunConfiguration) ||
+      (inputKeys !== "replay,schemaVersion" && !hasCampaignResolution) ||
       !("schemaVersion" in input) ||
       input.schemaVersion !== 2 ||
       !("replay" in input)
     )
       throw new CliInputError(
-        "client run evidence must have schemaVersion 2, replay, and optional runConfiguration"
+        "client run evidence must have schemaVersion 2 and replay, with campaign and runConfiguration together"
       );
     const replayDefinition = compileReplay(input.replay);
     const content = await compileContent(
@@ -3676,8 +3678,12 @@ async function replay(args: ParsedArgs): Promise<void> {
       },
       content
     );
-    let initialState = createShieldSlamWebPreparationState(content, scenario);
-    if (hasRunConfiguration) {
+    let initialState: SimulationState | undefined =
+      createShieldSlamWebPreparationState(content, scenario);
+    let runConfiguration:
+      | Parameters<typeof createShuttergateWebPreparationState>[2]
+      | undefined;
+    if (hasCampaignResolution) {
       if (
         authoredScenario.id !== "scenario.conformance.shuttergate_web_truth" ||
         !("runConfiguration" in input)
@@ -3685,22 +3691,45 @@ async function replay(args: ParsedArgs): Promise<void> {
         throw new CliInputError(
           "client run configuration requires the Shuttergate web scenario"
         );
-      initialState = createShuttergateWebPreparationState(
+      runConfiguration = input.runConfiguration as never;
+      const configuredState = createShuttergateWebPreparationState(
         content,
         scenario,
-        input.runConfiguration as never
+        runConfiguration
       );
-      if (initialState.seed !== replayDefinition.seed)
+      if (configuredState.seed !== replayDefinition.seed)
         throw new CliInputError(
           "client run configuration seed does not match replay evidence"
         );
+      initialState = undefined;
     }
     const result = await verifyReplay(
       replayDefinition,
       scenario,
       content,
-      initialState
+      initialState,
+      runConfiguration
     );
+    if (runConfiguration !== undefined) {
+      if (!("campaign" in input))
+        throw new CliInputError(
+          "client campaign resolution is missing from run evidence"
+        );
+      const campaign = resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration: runConfiguration,
+        terminalResult: result.terminalResult,
+        finalState: result.finalState
+      });
+      const [expectedCampaignHash, actualCampaignHash] = await Promise.all([
+        canonicalHash(campaign),
+        canonicalHash(input.campaign)
+      ]);
+      if (expectedCampaignHash !== actualCampaignHash)
+        throw new CliInputError(
+          "client campaign resolution does not match replayed terminal state"
+        );
+    }
     process.stdout.write(
       `${JSON.stringify({
         ok: true,

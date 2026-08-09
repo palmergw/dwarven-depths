@@ -78,10 +78,15 @@ export async function serializeRunEvidence(
   result: RunResult,
   runConfiguration?: RunConfiguration
 ): Promise<string> {
+  const campaign = result.protocolVersion === 4 ? result.campaign : undefined;
+  if (runConfiguration !== undefined && campaign === undefined)
+    throw new TypeError(
+      "Shuttergate run evidence requires authoritative campaign resolution"
+    );
   return `${JSON.stringify(
     {
       schemaVersion: RUN_EVIDENCE_SCHEMA_VERSION,
-      ...(runConfiguration === undefined ? {} : { runConfiguration }),
+      ...(runConfiguration === undefined ? {} : { runConfiguration, campaign }),
       replay: await createRunEvidenceReplay(result, runConfiguration)
     },
     null,

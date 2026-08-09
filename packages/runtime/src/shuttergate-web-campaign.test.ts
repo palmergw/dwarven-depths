@@ -15,6 +15,11 @@ import scenarioFixture from "../../../scenarios/conformance/shuttergate-web-trut
   type: "json"
 };
 import {
+  createReplayDefinition,
+  createShuttergateWebLiveScenarioHost,
+  verifyReplay
+} from "./index.js";
+import {
   createShuttergateWebPreparationState,
   resolveShuttergateWebAttemptReward
 } from "./shuttergate-web-campaign.js";
@@ -116,4 +121,46 @@ describe("Shuttergate web campaign authority", () => {
       })
     ).toThrow("terminal-bound");
   });
+
+  it("replays purchased campaign preparation through the same authority", async () => {
+    const content = await compileContent(contentFixture);
+    const scenario = compileScenario(
+      {
+        ...scenarioFixture,
+        seed: "3",
+        maximumTicks: 6000,
+        expectedTerminalResult: undefined
+      },
+      content
+    );
+    const configuration = {
+      schemaVersion: 1 as const,
+      attemptId: "attempt.shuttergate.web_000003" as never,
+      seed: "3",
+      placementPointId: "placement.shuttergate_north_guard" as never,
+      profile: purchasedProfile()
+    };
+    const host = createShuttergateWebLiveScenarioHost(
+      scenario,
+      content,
+      configuration
+    );
+    host.scheduleCommand({ atTick: 0, type: "confirmPreparation" });
+    while (host.state.phase !== "TERMINAL") host.step();
+    const result = await host.result();
+    const replayScenario = host.scenario;
+
+    expect(
+      result.finalState.battlefield?.dwarfCombatants[0]?.maximumHealth
+    ).toBe(1000);
+    await expect(
+      verifyReplay(
+        createReplayDefinition(result, replayScenario, content),
+        replayScenario,
+        content,
+        undefined,
+        configuration
+      )
+    ).resolves.toEqual(result);
+  }, 30_000);
 });

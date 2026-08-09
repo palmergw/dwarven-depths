@@ -1093,14 +1093,34 @@ async function executeScenario(
   content: CompiledContent,
   replayCommands: readonly CommandEnvelope[] | undefined,
   enforceScenarioExpectation: boolean,
-  initialState?: SimulationState
+  initialState?: SimulationState,
+  shuttergateConfiguration?: ShuttergateWebRunConfiguration
 ): Promise<RuntimeResult> {
-  if (scenario.id === "scenario.conformance.shuttergate_web_truth") {
-    const host = createLiveScenarioHost(
-      scenario,
-      content,
-      initialState ?? createShieldSlamWebPreparationState(content, scenario)
+  if (shuttergateConfiguration !== undefined && initialState !== undefined)
+    throw new RangeError(
+      "Shuttergate replay accepts configuration or initial state, not both"
     );
+  if (
+    shuttergateConfiguration !== undefined &&
+    scenario.id !== "scenario.conformance.shuttergate_web_truth"
+  )
+    throw new RangeError(
+      "Shuttergate run configuration requires the Shuttergate web scenario"
+    );
+  if (scenario.id === "scenario.conformance.shuttergate_web_truth") {
+    const host =
+      shuttergateConfiguration === undefined
+        ? createLiveScenarioHost(
+            scenario,
+            content,
+            initialState ??
+              createShieldSlamWebPreparationState(content, scenario)
+          )
+        : createShuttergateWebLiveScenarioHost(
+            scenario,
+            content,
+            shuttergateConfiguration
+          );
     while (
       host.state.phase !== "TERMINAL" &&
       host.state.tick < scenario.maximumTicks
@@ -1233,7 +1253,8 @@ export async function verifyReplay(
   replayInput: ReplayDefinition,
   scenario: ScenarioDefinition,
   content: CompiledContent,
-  initialState?: SimulationState
+  initialState?: SimulationState,
+  shuttergateConfiguration?: ShuttergateWebRunConfiguration
 ): Promise<RuntimeResult> {
   const replay = compileReplay(replayInput);
   requireMatch(
@@ -1316,7 +1337,8 @@ export async function verifyReplay(
       content,
       replay.commands,
       false,
-      initialState
+      initialState,
+      shuttergateConfiguration
     );
   } catch (error) {
     if (

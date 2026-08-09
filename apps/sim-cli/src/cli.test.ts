@@ -24,6 +24,7 @@ import {
   createLiveScenarioHost,
   createReplayDefinition,
   createShieldSlamWebPreparationState,
+  resolveShuttergateWebAttemptReward,
   runScenario
 } from "@dwarven-depths/runtime";
 import { afterEach, describe, expect, it } from "vitest";
@@ -3311,9 +3312,16 @@ queued-spawns
         purchasedUpgrades: []
       }
     };
+    const campaign = resolveShuttergateWebAttemptReward({
+      schemaVersion: 1,
+      configuration: runConfiguration as never,
+      terminalResult: result.terminalResult,
+      finalState: result.finalState
+    });
     const evidencePath = temporaryFile("shuttergate-client-evidence.json", {
       schemaVersion: 2,
       runConfiguration,
+      campaign,
       replay: createReplayDefinition(result, scenario, content)
     });
 
@@ -3337,6 +3345,37 @@ queued-spawns
       terminalTick: result.terminalTick,
       finalStateChecksum: result.finalStateChecksum,
       eventStreamChecksum: result.eventStreamChecksum
+    });
+
+    const tamperedCampaignPath = temporaryFile(
+      "tampered-shuttergate-client-evidence.json",
+      {
+        schemaVersion: 2,
+        runConfiguration,
+        campaign: {
+          ...campaign,
+          forgeOreAwarded: campaign.forgeOreAwarded + 1
+        },
+        replay: createReplayDefinition(result, scenario, content)
+      }
+    );
+    const campaignRejected = runCli(
+      "replay",
+      "--client-evidence",
+      tamperedCampaignPath,
+      "--content",
+      contentPath,
+      "--scenario",
+      scenarioPath,
+      "--verify"
+    );
+    expect(campaignRejected.status).toBe(2);
+    expect(JSON.parse(campaignRejected.stderr)).toMatchObject({
+      error: {
+        type: "input",
+        message:
+          "client campaign resolution does not match replayed terminal state"
+      }
     });
 
     const modifiedScenarioPath = temporaryFile("modified-shuttergate.json", {

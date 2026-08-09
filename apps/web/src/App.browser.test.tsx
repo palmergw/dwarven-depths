@@ -3261,7 +3261,10 @@ describe("authoritative web worker", () => {
     window.history.replaceState(null, "", "/?inspection=1");
     const workers: ControlledResultWorker[] = [];
     const createWorker = (): Worker => {
-      const worker = new ControlledResultWorker();
+      const worker = new ControlledResultWorker(
+        expected.terminalResult,
+        "attempt.shuttergate.web_000001"
+      );
       workers.push(worker);
       return worker as unknown as Worker;
     };
@@ -3331,6 +3334,17 @@ describe("authoritative web worker", () => {
           claimedRewardIds: []
         }
       },
+      campaign: {
+        schemaVersion: 1,
+        attemptId: "attempt.shuttergate.web_000001",
+        rewardId: "reward.attempt.shuttergate.web_000001",
+        forgeOreAwarded: 8,
+        profile: {
+          revision: 1,
+          forgeOre: 8,
+          claimedRewardIds: ["reward.attempt.shuttergate.web_000001"]
+        }
+      },
       replay: {
         schemaVersion: 1,
         simulationSchemaVersion: 1,
@@ -3360,16 +3374,7 @@ describe("authoritative web worker", () => {
       }
     });
 
-    await userEvent.click(await buttonWithText("Return to checkpoint"));
-    await vi.waitFor(() =>
-      expect(document.body.textContent).toContain("Checkpoint ready")
-    );
-    expect(document.body.textContent).not.toContain("Download run evidence");
-    await completeAppAttempt();
-    await userEvent.click(
-      document.querySelector(".result-inspection summary") as HTMLElement
-    );
-    await userEvent.click(await buttonWithText("Download run evidence"));
+    await userEvent.click(downloadButton);
     await vi.waitFor(() => expect(blobs).toHaveLength(2));
     expect(await blobs[1]?.text()).toBe(firstBytes);
     expect(downloads[1]).toEqual({
