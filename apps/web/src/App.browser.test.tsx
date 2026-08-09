@@ -219,7 +219,8 @@ class ControlledResultWorker {
   terminated = false;
 
   constructor(
-    readonly terminalResult: "victory" | "defeat" = expected.terminalResult
+    readonly terminalResult: "victory" | "defeat" = expected.terminalResult,
+    readonly campaignAttemptId?: string
   ) {}
 
   addEventListener(
@@ -269,6 +270,22 @@ class ControlledResultWorker {
         terminalTick: 1,
         finalStateChecksum: expected.finalStateChecksum,
         eventStreamChecksum: expected.eventStreamChecksum,
+        ...(this.campaignAttemptId === undefined
+          ? {}
+          : {
+              campaign: {
+                schemaVersion: 1,
+                attemptId: this.campaignAttemptId,
+                rewardId: `reward.${this.campaignAttemptId}`,
+                forgeOreAwarded: 8,
+                profile: {
+                  ...createInitialProfile("character.iron_warden" as never),
+                  revision: 1,
+                  forgeOre: 8,
+                  claimedRewardIds: [`reward.${this.campaignAttemptId}`]
+                }
+              }
+            }),
         commands: [
           {
             tick: 0,
@@ -3475,6 +3492,41 @@ describe("authoritative web worker", () => {
       },
       { timeout: 10_000 }
     );
+  });
+
+  it("rejects terminal progression for a stale attempt", async () => {
+    const worker = new ControlledResultWorker(
+      "defeat",
+      "attempt.shuttergate.web_000002"
+    );
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => ({
+          load: async () => {
+            throw new DOMException("blocked", "SecurityError");
+          },
+          write: vi.fn(),
+          close: async () => undefined
+        })}
+      />
+    );
+
+    await userEvent.click(
+      page.getByRole("button", { name: "Begin preparation" })
+    );
+    await userEvent.click(
+      page.getByRole("button", { name: "Confirm preparation" })
+    );
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(
+        "expedition could not continue"
+      )
+    );
+    expect(worker.terminated).toBe(true);
   });
 
   it("pauses on focus loss or background suspension and never auto-resumes", async () => {

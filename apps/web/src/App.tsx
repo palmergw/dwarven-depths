@@ -923,6 +923,14 @@ export function App({
         const startingProfile = runStartingProfileRef.current;
         const store = profileStoreRef.current;
         if (
+          message.protocolVersion === 4 &&
+          message.campaign !== undefined &&
+          message.campaign.attemptId !== runConfiguration.attemptId
+        ) {
+          failWorker("Terminal progression did not match the active attempt.");
+          return;
+        }
+        if (
           message.protocolVersion !== 4 ||
           message.campaign === undefined ||
           startingProfile === undefined ||

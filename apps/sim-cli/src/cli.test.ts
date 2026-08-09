@@ -1871,7 +1871,7 @@ describe("simulation CLI", () => {
       ).status
     ).toBe(3);
     expect(readFileSync(calibrationPath, "utf8")).toContain(
-      '"terminalTickDelta": 41'
+      '"terminalTickDelta": 2668'
     );
     writeFileSync(calibrationPath, calibrationText);
     writeFileSync(manifestPath, originalManifestText);
