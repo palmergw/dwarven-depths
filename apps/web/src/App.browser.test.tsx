@@ -4,6 +4,8 @@ import {
   purchasedUpgradeCatalog,
   purchaseUpgradeRank
 } from "@dwarven-depths/progression";
+import type { ProfileSaveEnvelope } from "@dwarven-depths/save";
+import { IndexedDbProfileStoreError } from "@dwarven-depths/save/indexed-db";
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -432,7 +434,10 @@ class ControlledJourneyWorker {
     }
   }
 
-  finish(profileForgeOreAwarded = 8): void {
+  finish(
+    profileForgeOreAwarded = 8,
+    terminalResult: "victory" | "defeat" = expected.terminalResult
+  ): void {
     const runConfiguration = this.runConfiguration;
     if (runConfiguration === undefined)
       throw new Error("journey worker was not initialized");
@@ -441,7 +446,7 @@ class ControlledJourneyWorker {
     this.emit({
       protocolVersion: 4,
       type: "result",
-      terminalResult: expected.terminalResult,
+      terminalResult,
       terminalTick: 1,
       finalStateChecksum: expected.finalStateChecksum,
       eventStreamChecksum: expected.eventStreamChecksum,
@@ -478,6 +483,39 @@ class ControlledJourneyWorker {
   terminate(): void {
     this.terminated = true;
   }
+}
+
+class PersistentJourneyProfileStore implements CheckpointProfileStore {
+  envelope: ProfileSaveEnvelope | undefined;
+  writes = 0;
+
+  async load() {
+    return this.envelope === undefined
+      ? ({ status: "empty" } as const)
+      : ({
+          status: "loaded",
+          source: "primary",
+          envelope: this.envelope,
+          migratedFromSchemaVersion: null
+        } as const);
+  }
+
+  async write(request: {
+    readonly expectedRevision: number | null;
+    readonly envelope: unknown;
+  }): Promise<ProfileSaveEnvelope> {
+    const currentRevision = this.envelope?.profile.revision ?? null;
+    if (request.expectedRevision !== currentRevision)
+      throw new IndexedDbProfileStoreError(
+        "save_conflict",
+        "unexpected journey profile revision"
+      );
+    this.envelope = request.envelope as ProfileSaveEnvelope;
+    this.writes += 1;
+    return this.envelope;
+  }
+
+  async close(): Promise<void> {}
 }
 
 class ControlledTargetPolicyWorker {
@@ -3721,6 +3759,101 @@ describe("authoritative web worker", () => {
 });
 
 describe("authoritative Shuttergate campaign journey", () => {
+  it("persists rewards, purchases through the checkpoint, reloads, and presents victory", async () => {
+    const store = new PersistentJourneyProfileStore();
+    const workers: ControlledJourneyWorker[] = [];
+    const createWorker = (): Worker => {
+      const worker = new ControlledJourneyWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const createProfileStore = (): CheckpointProfileStore => store;
+    const container = document.createElement("div");
+    document.body.append(container);
+    const renderApp = (): void => {
+      root = createRoot(container);
+      root.render(
+        <StrictMode>
+          <App
+            createWorker={createWorker}
+            createProfileStore={createProfileStore}
+          />
+        </StrictMode>
+      );
+    };
+    const completeAttempt = async (
+      terminalResult: "victory" | "defeat"
+    ): Promise<void> => {
+      await userEvent.click(await buttonWithText("Begin preparation"));
+      await userEvent.click(await buttonWithText("Confirm preparation"));
+      await buttonWithText("Pause combat");
+      workers.at(-1)?.finish(8, terminalResult);
+      await resultHeading(
+        terminalResult === "victory" ? "Victory results" : "Defeat results"
+      );
+    };
+    const returnToCheckpoint = async (): Promise<void> => {
+      await userEvent.click(await buttonWithText("Return to checkpoint"));
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain("Checkpoint ready")
+      );
+    };
+    const reloadApp = async (): Promise<void> => {
+      root?.unmount();
+      root = undefined;
+      renderApp();
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain("Checkpoint ready")
+      );
+    };
+
+    renderApp();
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    await completeAttempt("defeat");
+    await returnToCheckpoint();
+    await reloadApp();
+    expect(document.body.textContent).toContain("Forge Ore8");
+
+    await completeAttempt("defeat");
+    await returnToCheckpoint();
+    expect(document.body.textContent).toContain("Forge Ore16");
+    await userEvent.click(await buttonWithText("Upgrade inventory"));
+    await userEvent.click(
+      await buttonWithText("Purchase rank 1 for 10 Forge Ore")
+    );
+    await vi.waitFor(() => {
+      expect(document.body.textContent).toContain("Available Forge Ore: 6");
+      expect(document.body.textContent).toContain("Shield Slam TrainingRank 1");
+    });
+    await userEvent.click(await buttonWithText("Close upgrade inventory"));
+    await reloadApp();
+    expect(document.body.textContent).toContain("Forge Ore6");
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    expect(
+      workers.at(-1)?.runConfiguration?.profile.purchasedUpgrades
+    ).toMatchObject([{ upgradeId: "upgrade.ability.shield_slam", rank: 1 }]);
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    workers.at(-1)?.finish(8, "victory");
+    await resultHeading("Victory results");
+    expect(document.body.textContent).toContain(
+      "Forge award: 8 ore. Company balance: 14 Forge Ore."
+    );
+    expect(store.envelope?.profile).toMatchObject({
+      forgeOre: 14,
+      claimedRewardIds: [
+        "reward.attempt.shuttergate.web_000001",
+        "reward.attempt.shuttergate.web_000002",
+        "reward.attempt.shuttergate.web_000003"
+      ],
+      purchasedUpgrades: [{ upgradeId: "upgrade.ability.shield_slam", rank: 1 }]
+    });
+    expect(store.writes).toBeGreaterThanOrEqual(5);
+  }, 30_000);
+
   it("rewards fresh defeats, applies a purchased build, and reaches victory", async () => {
     let profile = createInitialProfile("character.iron_warden" as never);
     const firstRun = await runCampaignAttempt(profile, 1);
