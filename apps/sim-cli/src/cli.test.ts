@@ -3472,7 +3472,7 @@ queued-spawns
         name: "unknown outer field",
         mutate: (value) => ({ ...value, unexpected: true }),
         expected:
-          "client run evidence must have exactly schemaVersion 2 and replay"
+          "client run evidence must have schemaVersion 2 and replay, with campaign and runConfiguration together"
       },
       {
         name: "malformed command envelope",

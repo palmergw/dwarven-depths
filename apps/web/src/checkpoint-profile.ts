@@ -263,31 +263,45 @@ export async function applyCheckpointAttemptResult(
     throw new RangeError(
       "authoritative attempt result contradicts the profile"
     );
-  const envelope = await createProfileSaveEnvelope({
-    contentVersion: "content.shuttergate.level_1.v1",
-    applicationBuild: "phase-6-web",
-    writtenAtEpochMs: now(),
-    profileId,
-    profile
-  });
-  try {
-    const written = await store.write({
-      expectedRevision: startingProfile.revision,
-      envelope
+  let candidate = profile;
+  let expectedRevision = startingProfile.revision;
+  let lastConflict: unknown;
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    const envelope = await createProfileSaveEnvelope({
+      contentVersion: "content.shuttergate.level_1.v1",
+      applicationBuild: "phase-6-web",
+      writtenAtEpochMs: now(),
+      profileId,
+      profile: candidate
     });
-    return written.profile;
-  } catch (error) {
-    if (!isCheckpointProfileSaveConflict(error)) throw error;
-    const concurrent = await store.load(profileId);
-    if (
-      concurrent.status === "loaded" &&
-      concurrent.envelope.profile.claimedRewardIds.includes(
-        campaign.rewardId as never
+    try {
+      const written = await store.write({ expectedRevision, envelope });
+      return written.profile;
+    } catch (error) {
+      if (!isCheckpointProfileSaveConflict(error)) throw error;
+      lastConflict = error;
+      const concurrent = await store.load(profileId);
+      if (concurrent.status !== "loaded") throw error;
+      const concurrentProfile = normalizeProfileState(
+        concurrent.envelope.profile
+      );
+      if (
+        concurrentProfile.claimedRewardIds.includes(campaign.rewardId as never)
       )
-    )
-      return concurrent.envelope.profile;
-    throw error;
+        return concurrentProfile;
+      candidate = normalizeProfileState({
+        ...concurrentProfile,
+        revision: concurrentProfile.revision + 1,
+        forgeOre: concurrentProfile.forgeOre + campaign.forgeOreAwarded,
+        claimedRewardIds: [
+          ...concurrentProfile.claimedRewardIds,
+          campaign.rewardId as StableId
+        ]
+      });
+      expectedRevision = concurrentProfile.revision;
+    }
   }
+  throw lastConflict;
 }
 
 export function isCheckpointProfileSaveConflict(error: unknown): boolean {

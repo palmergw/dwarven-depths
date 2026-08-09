@@ -926,24 +926,25 @@ export function App({
         clearCombatCommandRejections();
         const startingProfile = runStartingProfileRef.current;
         const store = profileStoreRef.current;
-        if (
-          message.protocolVersion === 4 &&
-          message.campaign !== undefined &&
-          message.campaign.attemptId !== runConfiguration.attemptId
-        ) {
-          failWorker("Terminal progression did not match the active attempt.");
-          return;
-        }
-        if (
-          message.protocolVersion !== 4 ||
-          message.campaign === undefined ||
-          startingProfile === undefined ||
-          store === undefined
-        ) {
+        if (message.protocolVersion !== 4) {
           setView({ phase: "result", result: message });
           return;
         }
         const campaign = message.campaign;
+        if (campaign === undefined) {
+          failWorker(
+            "Terminal progression was missing from the active attempt."
+          );
+          return;
+        }
+        if (campaign.attemptId !== runConfiguration.attemptId) {
+          failWorker("Terminal progression did not match the active attempt.");
+          return;
+        }
+        if (startingProfile === undefined || store === undefined) {
+          setView({ phase: "result", result: message });
+          return;
+        }
         if (appliedTerminalRewardIdsRef.current.has(campaign.rewardId)) return;
         appliedTerminalRewardIdsRef.current.add(campaign.rewardId);
         void applyCheckpointAttemptResult(store, startingProfile, campaign)

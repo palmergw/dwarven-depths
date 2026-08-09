@@ -173,4 +173,45 @@ describe("checkpoint profile loading", () => {
     ).rejects.toThrow("contradicts the profile");
     expect(store.writes).toBe(2);
   });
+
+  it("merges an authoritative reward onto a concurrent profile revision", async () => {
+    const store = new MemoryProfileStore();
+    const initial = createInitialProfile("character.iron_warden" as never);
+    await loadCheckpointProfile(store, () => 1_725_000_000_000, false);
+    if (store.envelope === undefined)
+      throw new Error("missing profile envelope");
+    const concurrent = normalizeProfileState({
+      ...initial,
+      revision: 1,
+      unlockedItemIds: ["item.powder_cask"]
+    });
+    store.envelope = { ...store.envelope, profile: concurrent };
+    const rewardId = "reward.attempt.shuttergate.web_000001";
+    const authoritative = normalizeProfileState({
+      ...initial,
+      revision: 1,
+      forgeOre: 8,
+      claimedRewardIds: [rewardId]
+    });
+
+    await expect(
+      applyCheckpointAttemptResult(
+        store,
+        initial,
+        {
+          schemaVersion: 1,
+          attemptId: "attempt.shuttergate.web_000001",
+          rewardId,
+          forgeOreAwarded: 8,
+          profile: authoritative
+        },
+        () => 1_725_000_000_001
+      )
+    ).resolves.toMatchObject({
+      revision: 2,
+      forgeOre: 8,
+      unlockedItemIds: ["item.powder_cask"],
+      claimedRewardIds: [rewardId]
+    });
+  });
 });

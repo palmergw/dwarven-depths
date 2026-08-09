@@ -263,6 +263,10 @@ class ControlledResultWorker {
           entities: []
         }
       });
+      const campaignAttemptNumber =
+        this.campaignAttemptId === undefined
+          ? 0
+          : Number(this.campaignAttemptId.slice(-6));
       this.emit({
         protocolVersion: 4,
         type: "result",
@@ -280,9 +284,13 @@ class ControlledResultWorker {
                 forgeOreAwarded: 8,
                 profile: {
                   ...createInitialProfile("character.iron_warden" as never),
-                  revision: 1,
-                  forgeOre: 8,
-                  claimedRewardIds: [`reward.${this.campaignAttemptId}`]
+                  revision: campaignAttemptNumber,
+                  forgeOre: campaignAttemptNumber * 8,
+                  claimedRewardIds: Array.from(
+                    { length: campaignAttemptNumber },
+                    (_, index) =>
+                      `reward.attempt.shuttergate.web_${String(index + 1).padStart(6, "0")}`
+                  )
                 }
               }
             }),
@@ -3036,7 +3044,11 @@ describe("authoritative web worker", () => {
     const workers: ControlledResultWorker[] = [];
     const outcomes = ["victory", "defeat"] as const;
     const createWorker = (): Worker => {
-      const worker = new ControlledResultWorker(outcomes[workers.length]);
+      const attemptNumber = workers.length + 1;
+      const worker = new ControlledResultWorker(
+        outcomes[workers.length],
+        `attempt.shuttergate.web_${String(attemptNumber).padStart(6, "0")}`
+      );
       workers.push(worker);
       return worker as unknown as Worker;
     };
@@ -3516,6 +3528,38 @@ describe("authoritative web worker", () => {
       "defeat",
       "attempt.shuttergate.web_000002"
     );
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => ({
+          load: async () => {
+            throw new DOMException("blocked", "SecurityError");
+          },
+          write: vi.fn(),
+          close: async () => undefined
+        })}
+      />
+    );
+
+    await userEvent.click(
+      page.getByRole("button", { name: "Begin preparation" })
+    );
+    await userEvent.click(
+      page.getByRole("button", { name: "Confirm preparation" })
+    );
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(
+        "expedition could not continue"
+      )
+    );
+    expect(worker.terminated).toBe(true);
+  });
+
+  it("rejects a configured terminal result without campaign progression", async () => {
+    const worker = new ControlledResultWorker("defeat");
     const container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
