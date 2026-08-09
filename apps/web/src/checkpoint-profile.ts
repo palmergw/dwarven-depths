@@ -297,15 +297,8 @@ export async function applyCheckpointAttemptResult(
       );
       if (
         concurrentProfile.claimedRewardIds.includes(campaign.rewardId as never)
-      ) {
-        if (
-          canonicalStringify(concurrentProfile) !== canonicalStringify(profile)
-        )
-          throw new RangeError(
-            "concurrent profile contradicts the authoritative attempt result"
-          );
+      )
         return concurrentProfile;
-      }
       candidate = normalizeProfileState({
         ...concurrentProfile,
         revision: concurrentProfile.revision + 1,

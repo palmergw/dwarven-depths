@@ -111,7 +111,7 @@ describe("checkpoint profile loading", () => {
     });
   });
 
-  it("persists one authoritative reward idempotently and rejects profile tampering", async () => {
+  it("persists one authoritative reward idempotently after later progression", async () => {
     const store = new MemoryProfileStore();
     const initial = createInitialProfile("character.iron_warden" as never);
     await loadCheckpointProfile(store, () => 1_725_000_000_000, false);
@@ -156,13 +156,24 @@ describe("checkpoint profile loading", () => {
 
     if (store.envelope === undefined)
       throw new Error("missing rewarded profile envelope");
+    const laterRewardId = "reward.attempt.shuttergate.web_000002";
+    const progressed = normalizeProfileState({
+      ...rewarded,
+      revision: 3,
+      forgeOre: 6,
+      claimedRewardIds: [rewardId, laterRewardId],
+      purchasedUpgrades: [
+        {
+          schemaVersion: 1,
+          upgradeId: "upgrade.ability.shield_slam",
+          rank: 1,
+          forgeOreSpent: 10
+        }
+      ]
+    });
     store.envelope = {
       ...store.envelope,
-      profile: normalizeProfileState({
-        ...rewarded,
-        revision: 2,
-        unlockedItemIds: ["item.powder_cask"]
-      })
+      profile: progressed
     };
     await expect(
       applyCheckpointAttemptResult(
@@ -171,7 +182,7 @@ describe("checkpoint profile loading", () => {
         campaign,
         () => 1_725_000_000_003
       )
-    ).rejects.toThrow("concurrent profile contradicts");
+    ).resolves.toEqual(progressed);
     expect(store.writes).toBe(2);
 
     await expect(
