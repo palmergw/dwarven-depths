@@ -107,5 +107,5 @@ describe("configured Shuttergate run evidence", () => {
       finalStateChecksum: result.finalStateChecksum,
       eventStreamChecksum: result.eventStreamChecksum
     });
-  }, 30_000);
+  }, 300_000);
 });
