@@ -69,6 +69,7 @@ type ViewState =
   | {
       readonly phase: "result";
       readonly result: Extract<WorkerMessage, { type: "result" }>;
+      readonly savedProfile?: ProfileState;
     }
   | {
       readonly phase: "failure";
@@ -960,10 +961,8 @@ export function App({
             setCheckpointProfile({ status: "ready", profile });
             setView({
               phase: "result",
-              result: {
-                ...message,
-                campaign: { ...campaign, profile }
-              }
+              result: message,
+              savedProfile: profile
             });
           })
           .catch((error) => {
@@ -2126,8 +2125,9 @@ export function App({
               view.result.campaign !== undefined && (
                 <p className="result-reward">
                   Forge award: {view.result.campaign.forgeOreAwarded} ore.
-                  Company balance: {view.result.campaign.profile.forgeOre} Forge
-                  Ore.
+                  Company balance:{" "}
+                  {(view.savedProfile ?? view.result.campaign.profile).forgeOre}{" "}
+                  Forge Ore.
                 </p>
               )}
             <div className="result-actions">

@@ -154,6 +154,26 @@ describe("checkpoint profile loading", () => {
     });
     expect(store.writes).toBe(2);
 
+    if (store.envelope === undefined)
+      throw new Error("missing rewarded profile envelope");
+    store.envelope = {
+      ...store.envelope,
+      profile: normalizeProfileState({
+        ...rewarded,
+        revision: 2,
+        unlockedItemIds: ["item.powder_cask"]
+      })
+    };
+    await expect(
+      applyCheckpointAttemptResult(
+        store,
+        initial,
+        campaign,
+        () => 1_725_000_000_003
+      )
+    ).rejects.toThrow("concurrent profile contradicts");
+    expect(store.writes).toBe(2);
+
     await expect(
       applyCheckpointAttemptResult(store, rewarded, {
         ...campaign,
