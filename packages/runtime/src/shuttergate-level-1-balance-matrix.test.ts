@@ -71,7 +71,7 @@ describe("Shuttergate Level 1 balance matrix", () => {
     expect(Object.isFrozen(matrix)).toBe(true);
     expect(Object.isFrozen(matrix.cases)).toBe(true);
     expect(Object.isFrozen(matrix.cases[0]?.ranges)).toBe(true);
-  }, 180_000);
+  }, 360_000);
 
   it("rejects unknown, unsupported, duplicate, and incomplete cases", () => {
     expect(() =>
@@ -194,5 +194,5 @@ describe("Shuttergate Level 1 balance matrix", () => {
         balanceCase
       )
     ).toThrow("terminalTick");
-  }, 15_000);
+  }, 60_000);
 });

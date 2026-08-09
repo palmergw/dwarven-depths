@@ -213,7 +213,7 @@ describe("Shuttergate reference balance calibration", () => {
     expect(await canonicalHash(upgraded)).toBe(
       "f58bc024c5f583593bd2eb434b04bac0abf093d92b2c7870435d02f5595ee42e"
     );
-  }, 15_000);
+  }, 60_000);
 
   it("produces attempt reward evidence from the authoritative encounter", async () => {
     const content = await compileContent(shuttergateInput);

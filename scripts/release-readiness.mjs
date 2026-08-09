@@ -197,8 +197,8 @@ const evidencePins = Object.freeze([
   pin(
     "Full-recycle",
     "packages/progression/src/recycle-transactions.test.ts",
-    "fde8ef18f09d63c95e111cf6b6e92d59b5b84724e8e64813ae4f01edac87a0fe",
-    "Pinned after both complete scopes conserved spend and retained declared state: fde8ef18f09d63c95e111cf6b6e92d59b5b84724e8e64813ae4f01edac87a0fe"
+    "5239eb2233653c3ec3c36cc563d42f282afbff19a37637e673c82adbc2701c10",
+    "Pinned after the calibrated Shield Slam purchase retained full-recycle conservation and declared state: 5239eb2233653c3ec3c36cc563d42f282afbff19a37637e673c82adbc2701c10"
   )
 ]);
 
