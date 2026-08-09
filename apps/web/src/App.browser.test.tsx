@@ -183,6 +183,16 @@ const contrastPreferenceStorageKey =
 const soundPreferenceStorageKey =
   "dwarven-depths.presentation.sound-preference.v1";
 
+function freshWorkerRunConfiguration() {
+  return {
+    schemaVersion: 1 as const,
+    attemptId: "attempt.shuttergate.web_000001" as never,
+    seed: "1",
+    placementPointId: "placement.shuttergate_north_guard" as never,
+    profile: createInitialProfile("character.iron_warden" as never)
+  };
+}
+
 let root: Root | undefined;
 afterEach(async () => {
   root?.unmount();
@@ -2067,7 +2077,11 @@ describe("authoritative web worker", () => {
           message.protocolVersion === 4 &&
           message.dwarves.length === 1
       );
-      worker.postMessage({ protocolVersion: 4, type: "initialize" });
+      worker.postMessage({
+        protocolVersion: 4,
+        type: "initialize",
+        runConfiguration: freshWorkerRunConfiguration()
+      });
       await expect(controls).resolves.toMatchObject({
         dwarves: [
           {
@@ -3040,7 +3054,11 @@ describe("authoritative web worker", () => {
             message.type === "snapshot" &&
             message.phase === "preparation"
         );
-        worker.postMessage({ protocolVersion: 4, type: "initialize" });
+        worker.postMessage({
+          protocolVersion: 4,
+          type: "initialize",
+          runConfiguration: freshWorkerRunConfiguration()
+        });
         await preparation;
         const paused = waitForMessage(
           worker,

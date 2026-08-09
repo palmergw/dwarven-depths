@@ -40,7 +40,7 @@ export type ClientMessage =
   | {
       readonly protocolVersion: 4;
       readonly type: "initialize";
-      readonly runConfiguration?: ShuttergateWebRunConfiguration;
+      readonly runConfiguration: ShuttergateWebRunConfiguration;
     }
   | {
       readonly protocolVersion: 1;
@@ -158,7 +158,7 @@ export type WorkerMessage =
       readonly terminalTick: number;
       readonly finalStateChecksum: string;
       readonly eventStreamChecksum: string;
-      readonly campaign?: {
+      readonly campaign: {
         readonly schemaVersion: 1;
         readonly attemptId: string;
         readonly rewardId: string;
@@ -331,10 +331,9 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
   )
     return undefined;
   if (value.type === "initialize") {
-    if (
-      value.protocolVersion === 4 &&
-      hasExactKeys(value, ["protocolVersion", "runConfiguration", "type"])
-    ) {
+    if (value.protocolVersion === 4) {
+      if (!hasExactKeys(value, ["protocolVersion", "runConfiguration", "type"]))
+        return undefined;
       const runConfiguration = parseRunConfiguration(value.runConfiguration);
       return runConfiguration === undefined
         ? undefined
@@ -342,7 +341,7 @@ export function parseClientMessage(value: unknown): ClientMessage | undefined {
     }
     return hasExactKeys(value, ["protocolVersion", "type"])
       ? {
-          protocolVersion: value.protocolVersion as WebProtocolVersion,
+          protocolVersion: value.protocolVersion as 1 | 2 | 3,
           type: "initialize"
         }
       : undefined;
@@ -673,7 +672,7 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     value.type !== "result" ||
     !hasExactKeys(value, [
       "commands",
-      ...(value.campaign === undefined ? [] : ["campaign"]),
+      ...(value.protocolVersion === 4 ? ["campaign"] : []),
       "eventStreamChecksum",
       "finalStateChecksum",
       "protocolVersion",
@@ -689,9 +688,8 @@ export function parseWorkerMessage(value: unknown): WorkerMessage | undefined {
     !Array.isArray(value.commands)
   )
     return undefined;
-  if (value.campaign !== undefined) {
+  if (value.protocolVersion === 4) {
     if (
-      value.protocolVersion !== 4 ||
       !isRecord(value.campaign) ||
       !hasExactKeys(value.campaign, [
         "attemptId",

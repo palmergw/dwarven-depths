@@ -10,7 +10,6 @@ import type {
 } from "@dwarven-depths/contracts";
 import {
   createLiveScenarioHost,
-  createShieldSlamWebPreparationState,
   createShuttergateWebLiveScenarioHost,
   createShuttergateWebScenario,
   type LiveScenarioHost,
@@ -282,20 +281,21 @@ async function executePreparedScenario(): Promise<void> {
       eventStreamChecksum: result.eventStreamChecksum
     };
     if (protocolVersion === 4) {
-      const campaign =
-        runConfiguration === undefined
-          ? undefined
-          : resolveShuttergateWebAttemptReward({
-              schemaVersion: 1,
-              configuration: runConfiguration,
-              terminalResult: result.terminalResult,
-              finalState: result.finalState
-            });
+      if (runConfiguration === undefined)
+        throw new Error(
+          "Protocol 4 terminal state requires a run configuration."
+        );
+      const campaign = resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration: runConfiguration,
+        terminalResult: result.terminalResult,
+        finalState: result.finalState
+      });
       post({
         protocolVersion: 4,
         type: "result",
         ...terminalEvidence,
-        ...(campaign === undefined ? {} : { campaign }),
+        campaign,
         commands: result.commands as Extract<
           WorkerMessage,
           { protocolVersion: 4; type: "result" }
@@ -361,8 +361,9 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     }
     initialized = true;
     protocolVersion = message.protocolVersion;
-    runConfiguration =
+    const initializationConfiguration =
       message.protocolVersion === 4 ? message.runConfiguration : undefined;
+    runConfiguration = initializationConfiguration;
     try {
       const contentFixture =
         protocolVersion === 4 ? shieldSlamContentFixture : emptyContentFixture;
@@ -377,28 +378,22 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         scenarioFixture as unknown as ScenarioDefinition,
         preparedContent
       );
-      if (runConfiguration !== undefined)
+      if (protocolVersion === 4) {
+        if (initializationConfiguration === undefined)
+          throw new Error(
+            "Protocol 4 initialization requires a run configuration."
+          );
         preparedScenario = createShuttergateWebScenario(
           preparedScenario,
-          runConfiguration
+          initializationConfiguration
         );
-      liveHost =
-        protocolVersion === 4 && runConfiguration !== undefined
-          ? createShuttergateWebLiveScenarioHost(
-              preparedScenario,
-              preparedContent,
-              runConfiguration
-            )
-          : createLiveScenarioHost(
-              preparedScenario,
-              preparedContent,
-              protocolVersion === 4
-                ? createShieldSlamWebPreparationState(
-                    preparedContent,
-                    preparedScenario
-                  )
-                : undefined
-            );
+        liveHost = createShuttergateWebLiveScenarioHost(
+          preparedScenario,
+          preparedContent,
+          initializationConfiguration
+        );
+      } else
+        liveHost = createLiveScenarioHost(preparedScenario, preparedContent);
       previousPresentationSnapshot = undefined;
       const preparationSnapshot =
         protocolVersion === 4
