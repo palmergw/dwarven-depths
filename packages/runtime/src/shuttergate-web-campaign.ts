@@ -42,6 +42,23 @@ export interface ShuttergateWebRewardResolution {
   readonly profile: ProfileState;
 }
 
+/** Derives the exact bounded scenario used by configured browser attempts. */
+export function createShuttergateWebScenario(
+  scenario: ScenarioDefinition,
+  configuration: ShuttergateWebRunConfiguration
+): ScenarioDefinition {
+  const run = requireConfiguration(configuration);
+  if (scenario.levelId !== levelId)
+    throw new RangeError("Shuttergate web run configuration has invalid level");
+  const { expectedTerminalResult: _authoredExpectation, ...campaignScenario } =
+    scenario;
+  return Object.freeze({
+    ...campaignScenario,
+    seed: run.seed,
+    maximumTicks: 6000
+  });
+}
+
 function requireConfiguration(
   value: ShuttergateWebRunConfiguration
 ): ShuttergateWebRunConfiguration {

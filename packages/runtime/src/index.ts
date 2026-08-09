@@ -140,6 +140,7 @@ export {
 } from "./shuttergate-reference-calibration.js";
 export {
   createShuttergateWebPreparationState,
+  createShuttergateWebScenario,
   resolveShuttergateWebAttemptReward,
   type ShuttergateWebRewardResolution,
   type ShuttergateWebRunConfiguration

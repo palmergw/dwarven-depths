@@ -49,6 +49,7 @@ import {
   createShuttergateCampaignAuthority,
   createShuttergateCampaignCalibrationReport,
   createShuttergateWebPreparationState,
+  createShuttergateWebScenario,
   createTimelineRecords,
   ReplayDivergenceError,
   RuntimeAssertionError,
@@ -3670,9 +3671,21 @@ async function replay(args: ParsedArgs): Promise<void> {
       throw new CliInputError(
         "client evidence scenario does not match the canonical approved web fixture"
       );
+    const configuredScenario = hasCampaignResolution
+      ? createShuttergateWebScenario(
+          authoredScenario,
+          (
+            input as unknown as {
+              readonly runConfiguration: Parameters<
+                typeof createShuttergateWebScenario
+              >[1];
+            }
+          ).runConfiguration
+        )
+      : authoredScenario;
     const scenario = compileScenario(
       {
-        ...authoredScenario,
+        ...configuredScenario,
         seed: replayDefinition.seed,
         commands: replayDefinition.commands.map(({ command }) => command)
       },

@@ -12,6 +12,7 @@ import {
   createLiveScenarioHost,
   createShieldSlamWebPreparationState,
   createShuttergateWebLiveScenarioHost,
+  createShuttergateWebScenario,
   type LiveScenarioHost,
   resolveShuttergateWebAttemptReward,
   type ShuttergateWebRunConfiguration
@@ -376,17 +377,11 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         scenarioFixture as unknown as ScenarioDefinition,
         preparedContent
       );
-      if (runConfiguration !== undefined) {
-        const {
-          expectedTerminalResult: _legacyExpectation,
-          ...campaignScenario
-        } = preparedScenario;
-        preparedScenario = Object.freeze({
-          ...campaignScenario,
-          seed: runConfiguration.seed,
-          maximumTicks: 6000
-        });
-      }
+      if (runConfiguration !== undefined)
+        preparedScenario = createShuttergateWebScenario(
+          preparedScenario,
+          runConfiguration
+        );
       liveHost =
         protocolVersion === 4 && runConfiguration !== undefined
           ? createShuttergateWebLiveScenarioHost(

@@ -24,6 +24,8 @@ import {
   createLiveScenarioHost,
   createReplayDefinition,
   createShieldSlamWebPreparationState,
+  createShuttergateWebLiveScenarioHost,
+  createShuttergateWebScenario,
   resolveShuttergateWebAttemptReward,
   runScenario
 } from "@dwarven-depths/runtime";
@@ -3281,11 +3283,10 @@ queued-spawns
     const content = await compileContent(
       JSON.parse(readFileSync(contentPath, "utf8"))
     );
-    const scenario = compileScenario(
+    const authoredScenario = compileScenario(
       JSON.parse(readFileSync(scenarioPath, "utf8")),
       content
     );
-    const result = await runScenario(scenario, content);
     const runConfiguration = {
       schemaVersion: 1,
       attemptId: "attempt.shuttergate.web_000001",
@@ -3312,6 +3313,18 @@ queued-spawns
         purchasedUpgrades: []
       }
     };
+    const scenario = createShuttergateWebScenario(
+      authoredScenario,
+      runConfiguration as never
+    );
+    const host = createShuttergateWebLiveScenarioHost(
+      scenario,
+      content,
+      runConfiguration as never
+    );
+    host.scheduleCommand({ atTick: 0, type: "confirmPreparation" });
+    while (host.state.phase !== "TERMINAL") host.step();
+    const result = await host.result();
     const campaign = resolveShuttergateWebAttemptReward({
       schemaVersion: 1,
       configuration: runConfiguration as never,

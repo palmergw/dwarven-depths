@@ -21,6 +21,7 @@ import {
 } from "./index.js";
 import {
   createShuttergateWebPreparationState,
+  createShuttergateWebScenario,
   resolveShuttergateWebAttemptReward
 } from "./shuttergate-web-campaign.js";
 
@@ -43,6 +44,22 @@ function purchasedProfile() {
 }
 
 describe("Shuttergate web campaign authority", () => {
+  it("derives one expectation-free bounded scenario for configured evidence", async () => {
+    const content = await compileContent(contentFixture);
+    const authoredScenario = compileScenario(scenarioFixture, content);
+    const scenario = createShuttergateWebScenario(authoredScenario, {
+      schemaVersion: 1,
+      attemptId: "attempt.shuttergate.web_000003" as never,
+      seed: "3",
+      placementPointId: "placement.shuttergate_north_guard" as never,
+      profile: purchasedProfile()
+    });
+
+    expect(scenario).toMatchObject({ seed: "3", maximumTicks: 6000 });
+    expect(scenario).not.toHaveProperty("expectedTerminalResult");
+    expect(Object.isFrozen(scenario)).toBe(true);
+  });
+
   it("binds a purchased profile into an immutable deployed run", async () => {
     const content = await compileContent(contentFixture);
     const scenario = compileScenario(scenarioFixture, content);
@@ -124,15 +141,6 @@ describe("Shuttergate web campaign authority", () => {
 
   it("replays purchased campaign preparation through the same authority", async () => {
     const content = await compileContent(contentFixture);
-    const scenario = compileScenario(
-      {
-        ...scenarioFixture,
-        seed: "3",
-        maximumTicks: 6000,
-        expectedTerminalResult: undefined
-      },
-      content
-    );
     const configuration = {
       schemaVersion: 1 as const,
       attemptId: "attempt.shuttergate.web_000003" as never,
@@ -140,16 +148,39 @@ describe("Shuttergate web campaign authority", () => {
       placementPointId: "placement.shuttergate_north_guard" as never,
       profile: purchasedProfile()
     };
+    const scenario = createShuttergateWebScenario(
+      compileScenario(scenarioFixture, content),
+      configuration
+    );
     const host = createShuttergateWebLiveScenarioHost(
       scenario,
       content,
       configuration
     );
     host.scheduleCommand({ atTick: 0, type: "confirmPreparation" });
-    while (host.state.phase !== "TERMINAL") host.step();
+    while (host.state.phase !== "TERMINAL") {
+      if (
+        host.state.phase === "COMBAT_RUNNING" &&
+        !host.state.activeCooldowns?.some(
+          (cooldown) =>
+            cooldown.ownerEntityId === "entity.dwarf.warden" &&
+            cooldown.cooldownId.startsWith(
+              "ability.iron_warden.shield_slam.cooldown."
+            )
+        )
+      )
+        host.scheduleCommand({
+          atTick: host.state.tick,
+          type: "activateAbility",
+          dwarfEntityId: "entity.dwarf.warden" as never,
+          abilityId: "ability.iron_warden.shield_slam" as never
+        });
+      host.step();
+    }
     const result = await host.result();
     const replayScenario = host.scenario;
 
+    expect(result.terminalResult).toBe("victory");
     expect(
       result.finalState.battlefield?.dwarfCombatants[0]?.maximumHealth
     ).toBe(1000);

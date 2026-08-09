@@ -8,6 +8,7 @@ import {
   type ReplayDefinition,
   type ScenarioDefinition
 } from "@dwarven-depths/contracts";
+import { createShuttergateWebScenario } from "@dwarven-depths/runtime";
 import shieldSlamContentFixture from "../../../content/fixtures/phase-3-shuttergate.json";
 import shieldSlamScenarioFixture from "../../../scenarios/conformance/shield-slam.json";
 import shuttergateScenarioFixture from "../../../scenarios/conformance/shuttergate-web-truth.json";
@@ -28,7 +29,7 @@ export async function createRunEvidenceReplay(
   const content = await compileContent(
     shieldSlamContentFixture as unknown as ContentBundle
   );
-  const authoredScenario = compileScenario(
+  let authoredScenario = compileScenario(
     (runConfiguration === undefined
       ? shieldSlamScenarioFixture
       : {
@@ -37,6 +38,11 @@ export async function createRunEvidenceReplay(
         }) as unknown as ScenarioDefinition,
     content
   );
+  if (runConfiguration !== undefined)
+    authoredScenario = createShuttergateWebScenario(
+      authoredScenario,
+      runConfiguration
+    );
   const scenario = compileScenario(
     {
       ...authoredScenario,
