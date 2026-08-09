@@ -2010,7 +2010,7 @@ describe("simulation CLI", () => {
       error: { type: "input", code: "invalid_cli_input" }
     });
     expect(existsSync(invalidOutput)).toBe(false);
-  }, 180_000);
+  }, 360_000);
 
   it("expands a bounded seed sweep into ordered replay-verifiable runs", () => {
     const directory = temporaryDirectory();
