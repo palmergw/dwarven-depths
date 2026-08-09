@@ -34,6 +34,14 @@ export type CheckpointProfileResult =
   | { readonly status: "ready"; readonly profile: ProfileState }
   | { readonly status: "unavailable"; readonly message: string };
 
+export interface CheckpointAttemptResult {
+  readonly schemaVersion: 1;
+  readonly attemptId: string;
+  readonly rewardId: string;
+  readonly forgeOreAwarded: number;
+  readonly profile: ProfileState;
+}
+
 export function createCheckpointProfileStore(): CheckpointProfileStore {
   return new IndexedDbProfileStore(databaseName);
 }
@@ -229,18 +237,10 @@ export async function selectCheckpointIronWardenSkill(
   return written.profile;
 }
 
-export async function applyCheckpointAttemptResult(
-  store: CheckpointProfileStore,
+export function validateCheckpointAttemptResult(
   startingProfile: ProfileState,
-  campaign: {
-    readonly schemaVersion: 1;
-    readonly attemptId: string;
-    readonly rewardId: string;
-    readonly forgeOreAwarded: number;
-    readonly profile: ProfileState;
-  },
-  now: () => number = Date.now
-): Promise<ProfileState> {
+  campaign: CheckpointAttemptResult
+): ProfileState {
   const profile = normalizeProfileState(campaign.profile);
   const expectedProfile = normalizeProfileState({
     ...startingProfile,
@@ -263,6 +263,16 @@ export async function applyCheckpointAttemptResult(
     throw new RangeError(
       "authoritative attempt result contradicts the profile"
     );
+  return profile;
+}
+
+export async function applyCheckpointAttemptResult(
+  store: CheckpointProfileStore,
+  startingProfile: ProfileState,
+  campaign: CheckpointAttemptResult,
+  now: () => number = Date.now
+): Promise<ProfileState> {
+  const profile = validateCheckpointAttemptResult(startingProfile, campaign);
   let candidate = profile;
   let expectedRevision = startingProfile.revision;
   let lastConflict: unknown;

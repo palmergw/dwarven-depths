@@ -23,6 +23,7 @@ import {
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { CombatHud } from "./CombatHud.js";
+import type { CheckpointProfileStore } from "./checkpoint-profile.js";
 import { deriveCombatFeedback } from "./combat-feedback.js";
 import "./styles.css";
 import {
@@ -431,7 +432,7 @@ class ControlledJourneyWorker {
     }
   }
 
-  finish(): void {
+  finish(profileForgeOreAwarded = 8): void {
     const runConfiguration = this.runConfiguration;
     if (runConfiguration === undefined)
       throw new Error("journey worker was not initialized");
@@ -452,7 +453,7 @@ class ControlledJourneyWorker {
         profile: {
           ...runConfiguration.profile,
           revision: runConfiguration.profile.revision + 1,
-          forgeOre: runConfiguration.profile.forgeOre + forgeOreAwarded,
+          forgeOre: runConfiguration.profile.forgeOre + profileForgeOreAwarded,
           claimedRewardIds: [
             ...runConfiguration.profile.claimedRewardIds,
             rewardId
@@ -765,6 +766,49 @@ describe("run journey guidance", () => {
     expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
       "download its authoritative run evidence"
     );
+  });
+
+  it("rejects contradictory terminal progression when profile storage is unavailable", async () => {
+    const workers: ControlledJourneyWorker[] = [];
+    const createWorker = (): Worker => {
+      const worker = new ControlledJourneyWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const createProfileStore = (): CheckpointProfileStore => ({
+      load: async () => {
+        throw new Error("IndexedDB unavailable");
+      },
+      write: async () => {
+        throw new Error("unexpected profile write");
+      },
+      close: async () => undefined
+    });
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={createWorker}
+        createProfileStore={createProfileStore}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    workers.at(-1)?.finish(9);
+
+    const failure = await vi.waitFor(() => {
+      const candidate = document.querySelector("#failure-heading");
+      expect(candidate).toBeInstanceOf(HTMLHeadingElement);
+      return candidate as HTMLHeadingElement;
+    });
+    expect(failure).toHaveTextContent("Run failed");
+    expect(failure.closest("section")).toHaveTextContent(
+      "The expedition could not continue. Return to the checkpoint and try again."
+    );
+    expect(document.querySelector("#results-heading")).toBeNull();
   });
 
   it("adapts terminal guidance to failure details", async () => {

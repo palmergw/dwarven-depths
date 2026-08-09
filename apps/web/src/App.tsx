@@ -29,7 +29,8 @@ import {
   purchaseCheckpointUpgrade,
   recycleCheckpointIronWardenSkills,
   recycleCheckpointUpgrades,
-  selectCheckpointIronWardenSkill
+  selectCheckpointIronWardenSkill,
+  validateCheckpointAttemptResult
 } from "./checkpoint-profile.js";
 import {
   parseWorkerMessage,
@@ -939,6 +940,12 @@ export function App({
         }
         if (campaign.attemptId !== runConfiguration.attemptId) {
           failWorker("Terminal progression did not match the active attempt.");
+          return;
+        }
+        try {
+          validateCheckpointAttemptResult(runConfiguration.profile, campaign);
+        } catch {
+          failWorker("Terminal progression contradicted the active attempt.");
           return;
         }
         if (startingProfile === undefined || store === undefined) {
