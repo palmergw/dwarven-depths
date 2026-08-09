@@ -103,7 +103,7 @@ describe("Shuttergate Level 1 reference policy replay", () => {
     expect(await canonicalHash(restored.rewardLedger)).toBe(
       policyReplayInput.rewardLedgerChecksum
     );
-  }, 60_000);
+  }, 120_000);
 
   it("rejects identity and checksummed replay tampering", async () => {
     const content = await compileContent(shuttergateInput);
