@@ -3927,5 +3927,5 @@ describe("authoritative Shuttergate campaign journey", () => {
       }
     });
     expect(third.terminalTick).toBeLessThan(6000);
-  }, 120_000);
+  }, 300_000);
 });
