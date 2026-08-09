@@ -92,8 +92,15 @@ describe("configured Shuttergate run evidence", () => {
       terminalResult: "victory",
       terminalTick: 4501
     });
+    const replayScenario = compileScenario(
+      {
+        ...scenario,
+        commands: replay.commands.map(({ command }) => command)
+      },
+      content
+    );
     await expect(
-      verifyReplay(replay, scenario, content, undefined, configuration)
+      verifyReplay(replay, replayScenario, content, undefined, configuration)
     ).resolves.toMatchObject({
       terminalResult: "victory",
       terminalTick: 4501,
