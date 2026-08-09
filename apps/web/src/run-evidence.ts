@@ -10,20 +10,31 @@ import {
 } from "@dwarven-depths/contracts";
 import shieldSlamContentFixture from "../../../content/fixtures/phase-3-shuttergate.json";
 import shieldSlamScenarioFixture from "../../../scenarios/conformance/shield-slam.json";
-import type { WorkerMessage } from "./protocol.js";
+import shuttergateScenarioFixture from "../../../scenarios/conformance/shuttergate-web-truth.json";
+import type { ClientMessage, WorkerMessage } from "./protocol.js";
 
 export const RUN_EVIDENCE_SCHEMA_VERSION = 2 as const;
 
 export type RunResult = Extract<WorkerMessage, { readonly type: "result" }>;
+export type RunConfiguration = Extract<
+  ClientMessage,
+  { readonly type: "initialize"; readonly protocolVersion: 4 }
+>["runConfiguration"];
 
 export async function createRunEvidenceReplay(
-  result: RunResult
+  result: RunResult,
+  runConfiguration?: RunConfiguration
 ): Promise<ReplayDefinition> {
   const content = await compileContent(
     shieldSlamContentFixture as unknown as ContentBundle
   );
   const authoredScenario = compileScenario(
-    shieldSlamScenarioFixture as unknown as ScenarioDefinition,
+    (runConfiguration === undefined
+      ? shieldSlamScenarioFixture
+      : {
+          ...shuttergateScenarioFixture,
+          seed: runConfiguration.seed
+        }) as unknown as ScenarioDefinition,
     content
   );
   const scenario = compileScenario(
@@ -63,11 +74,15 @@ export async function createRunEvidenceReplay(
   };
 }
 
-export async function serializeRunEvidence(result: RunResult): Promise<string> {
+export async function serializeRunEvidence(
+  result: RunResult,
+  runConfiguration?: RunConfiguration
+): Promise<string> {
   return `${JSON.stringify(
     {
       schemaVersion: RUN_EVIDENCE_SCHEMA_VERSION,
-      replay: await createRunEvidenceReplay(result)
+      ...(runConfiguration === undefined ? {} : { runConfiguration }),
+      replay: await createRunEvidenceReplay(result, runConfiguration)
     },
     null,
     2
@@ -78,9 +93,12 @@ export function runEvidenceFilename(result: RunResult): string {
   return `dwarven-depths-run-evidence-v2-${result.finalStateChecksum}.json`;
 }
 
-export async function downloadRunEvidence(result: RunResult): Promise<void> {
+export async function downloadRunEvidence(
+  result: RunResult,
+  runConfiguration?: RunConfiguration
+): Promise<void> {
   const url = URL.createObjectURL(
-    new Blob([await serializeRunEvidence(result)], {
+    new Blob([await serializeRunEvidence(result, runConfiguration)], {
       type: "application/json;charset=utf-8"
     })
   );

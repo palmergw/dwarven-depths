@@ -3285,8 +3285,35 @@ queued-spawns
       content
     );
     const result = await runScenario(scenario, content);
+    const runConfiguration = {
+      schemaVersion: 1,
+      attemptId: "attempt.shuttergate.web_000001",
+      seed: "1",
+      placementPointId: "placement.shuttergate_north_guard",
+      profile: {
+        schemaVersion: 1,
+        revision: 0,
+        forgeOre: 0,
+        unlockedCharacterIds: ["character.iron_warden"],
+        unlockedItemIds: [],
+        claimedRewardIds: [],
+        characterExperienceStates: [
+          {
+            schemaVersion: 1,
+            characterId: "character.iron_warden",
+            experience: 0,
+            level: 1,
+            pendingSkillPointLevels: []
+          }
+        ],
+        claimedExperienceRewardEvents: [],
+        selectedSkillNodes: [],
+        purchasedUpgrades: []
+      }
+    };
     const evidencePath = temporaryFile("shuttergate-client-evidence.json", {
       schemaVersion: 2,
+      runConfiguration,
       replay: createReplayDefinition(result, scenario, content)
     });
 

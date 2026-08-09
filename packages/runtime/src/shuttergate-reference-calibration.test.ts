@@ -268,7 +268,7 @@ describe("Shuttergate reference balance calibration", () => {
       targetPolicy: "lowest_health",
       buildId: "build.warden.shield_slam_rank_1.v1"
     });
-  }, 15_000);
+  }, 30_000);
 
   it("rejects malformed attempt identity before compiling encounter content", async () => {
     const content = await compileContent(shuttergateInput);

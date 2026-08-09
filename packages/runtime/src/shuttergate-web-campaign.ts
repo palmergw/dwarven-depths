@@ -49,7 +49,7 @@ function requireConfiguration(
     value === null ||
     typeof value !== "object" ||
     Array.isArray(value) ||
-    Object.keys(value).sort().join("\u0000") !==
+    Reflect.ownKeys(value).map(String).sort().join("\u0000") !==
       ["attemptId", "placementPointId", "profile", "schemaVersion", "seed"]
         .sort()
         .join("\u0000")
@@ -71,12 +71,36 @@ function requireConfiguration(
     throw new RangeError(
       "Shuttergate tutorial deployment must use the north guard"
     );
+  const profile = normalizeProfileState(value.profile);
+  const webRewardPrefix = "reward.attempt.shuttergate.web_";
+  const claimedAttemptNumbers = profile.claimedRewardIds
+    .filter((rewardId) => rewardId.startsWith(webRewardPrefix))
+    .map((rewardId) => Number(rewardId.slice(webRewardPrefix.length)));
+  if (
+    claimedAttemptNumbers.some(
+      (attemptNumber, index) => attemptNumber !== index + 1
+    )
+  )
+    throw new RangeError(
+      "Shuttergate web run configuration requires contiguous campaign rewards"
+    );
+  const expectedAttemptNumber = claimedAttemptNumbers.length + 1;
+  const expectedAttemptId = `attempt.shuttergate.web_${expectedAttemptNumber
+    .toString()
+    .padStart(6, "0")}`;
+  if (
+    value.attemptId !== expectedAttemptId ||
+    value.seed !== String(expectedAttemptNumber)
+  )
+    throw new RangeError(
+      "Shuttergate web run configuration attempt and seed must follow profile history"
+    );
   return Object.freeze({
     schemaVersion: 1,
     attemptId: value.attemptId,
     seed: value.seed,
     placementPointId,
-    profile: normalizeProfileState(value.profile)
+    profile
   });
 }
 

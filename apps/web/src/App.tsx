@@ -456,6 +456,9 @@ export function App({
   const [deviceReducedMotion, setDeviceReducedMotion] =
     useState(readsReducedMotion);
   const workerRef = useRef<Worker | undefined>(undefined);
+  const runConfigurationRef = useRef<
+    ReturnType<typeof createRunConfiguration> | undefined
+  >(undefined);
   const workerFailureRef = useRef<
     ((inspectionMessage: string) => void) | undefined
   >(undefined);
@@ -793,6 +796,7 @@ export function App({
         ? checkpointProfile.profile
         : createInitialProfile("character.iron_warden" as StableId);
     const runConfiguration = createRunConfiguration(startingProfile);
+    runConfigurationRef.current = runConfiguration;
     runStartingProfileRef.current =
       checkpointProfile.status === "ready" ? startingProfile : undefined;
     initializedRef.current = true;
@@ -2156,7 +2160,12 @@ export function App({
               </dl>
               <button
                 type="button"
-                onClick={() => void downloadRunEvidence(view.result)}
+                onClick={() =>
+                  void downloadRunEvidence(
+                    view.result,
+                    runConfigurationRef.current
+                  )
+                }
               >
                 Download run evidence
               </button>

@@ -3319,12 +3319,24 @@ describe("authoritative web worker", () => {
     expect(firstBytes?.endsWith("\n")).toBe(true);
     expect(JSON.parse(firstBytes ?? "")).toMatchObject({
       schemaVersion: 2,
+      runConfiguration: {
+        schemaVersion: 1,
+        attemptId: "attempt.shuttergate.web_000001",
+        seed: "1",
+        placementPointId: "placement.shuttergate_north_guard",
+        profile: {
+          schemaVersion: 1,
+          revision: 0,
+          forgeOre: 0,
+          claimedRewardIds: []
+        }
+      },
       replay: {
         schemaVersion: 1,
         simulationSchemaVersion: 1,
         contentVersion: expect.any(String),
         contentManifestHash: expect.stringMatching(/^[a-f0-9]{64}$/),
-        scenarioId: "scenario.conformance.shield_slam",
+        scenarioId: "scenario.conformance.shuttergate_web_truth",
         scenarioHash: expect.stringMatching(/^[a-f0-9]{64}$/),
         levelId: "level.shuttergate_hall",
         seed: "1",

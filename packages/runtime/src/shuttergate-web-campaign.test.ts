@@ -21,12 +21,20 @@ import {
 
 function purchasedProfile() {
   const initial = createInitialProfile("character.iron_warden" as never);
-  return purchaseUpgradeRank({
+  const purchased = purchaseUpgradeRank({
     schemaVersion: 1,
     profile: { ...initial, forgeOre: 16 },
     catalog: purchasedUpgradeCatalog,
     upgradeId: "upgrade.ability.shield_slam" as never
   }).profile;
+  return {
+    ...purchased,
+    revision: 3,
+    claimedRewardIds: [
+      "reward.attempt.shuttergate.web_000001" as never,
+      "reward.attempt.shuttergate.web_000002" as never
+    ]
+  };
 }
 
 describe("Shuttergate web campaign authority", () => {
@@ -64,6 +72,24 @@ describe("Shuttergate web campaign authority", () => {
         unexpected: true
       } as never)
     ).toThrow("invalid shape");
+    expect(() =>
+      createShuttergateWebPreparationState(content, scenario, {
+        ...configuration,
+        [Symbol("unexpected")]: true
+      } as never)
+    ).toThrow("invalid shape");
+    expect(() =>
+      createShuttergateWebPreparationState(content, scenario, {
+        ...configuration,
+        attemptId: "attempt.shuttergate.web_000004" as never
+      })
+    ).toThrow("profile history");
+    expect(() =>
+      createShuttergateWebPreparationState(content, scenario, {
+        ...configuration,
+        seed: "2"
+      })
+    ).toThrow("profile history");
     const state = createShuttergateWebPreparationState(
       content,
       scenario,

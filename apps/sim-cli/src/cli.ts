@@ -47,6 +47,7 @@ import {
   createShuttergateCampaignArtifact,
   createShuttergateCampaignAuthority,
   createShuttergateCampaignCalibrationReport,
+  createShuttergateWebPreparationState,
   createTimelineRecords,
   ReplayDivergenceError,
   RuntimeAssertionError,
@@ -3627,17 +3628,23 @@ async function replay(args: ParsedArgs): Promise<void> {
         "--client-evidence cannot be combined with --run"
       );
     const input = await readJson(clientEvidencePath);
+    const inputKeys =
+      typeof input === "object" && input !== null && !Array.isArray(input)
+        ? Object.keys(input).sort().join(",")
+        : "";
+    const hasRunConfiguration =
+      inputKeys === "replay,runConfiguration,schemaVersion";
     if (
       typeof input !== "object" ||
       input === null ||
       Array.isArray(input) ||
-      Object.keys(input).sort().join(",") !== "replay,schemaVersion" ||
+      (inputKeys !== "replay,schemaVersion" && !hasRunConfiguration) ||
       !("schemaVersion" in input) ||
       input.schemaVersion !== 2 ||
       !("replay" in input)
     )
       throw new CliInputError(
-        "client run evidence must have exactly schemaVersion 2 and replay"
+        "client run evidence must have schemaVersion 2, replay, and optional runConfiguration"
       );
     const replayDefinition = compileReplay(input.replay);
     const content = await compileContent(
@@ -3664,15 +3671,35 @@ async function replay(args: ParsedArgs): Promise<void> {
     const scenario = compileScenario(
       {
         ...authoredScenario,
+        seed: replayDefinition.seed,
         commands: replayDefinition.commands.map(({ command }) => command)
       },
       content
     );
+    let initialState = createShieldSlamWebPreparationState(content, scenario);
+    if (hasRunConfiguration) {
+      if (
+        authoredScenario.id !== "scenario.conformance.shuttergate_web_truth" ||
+        !("runConfiguration" in input)
+      )
+        throw new CliInputError(
+          "client run configuration requires the Shuttergate web scenario"
+        );
+      initialState = createShuttergateWebPreparationState(
+        content,
+        scenario,
+        input.runConfiguration as never
+      );
+      if (initialState.seed !== replayDefinition.seed)
+        throw new CliInputError(
+          "client run configuration seed does not match replay evidence"
+        );
+    }
     const result = await verifyReplay(
       replayDefinition,
       scenario,
       content,
-      createShieldSlamWebPreparationState(content, scenario)
+      initialState
     );
     process.stdout.write(
       `${JSON.stringify({
