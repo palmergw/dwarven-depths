@@ -12,11 +12,13 @@
     "typecheck": "tsc -b --pretty false",
     "test": "pnpm build && vitest run",
     "test:built": "vitest run",
+    "test:ci:fast": "vitest run scripts/check-ci-runtime-policy.test.ts packages/content-schema/src/index.test.ts packages/content-runtime/src/index.test.ts packages/sim-core/src/index.test.ts packages/runtime/src/index.test.ts packages/save/src/profile-save.test.ts packages/progression/src/index.test.ts apps/web/src/protocol.test.ts --reporter=dot",
     "test:browser": "pnpm build && ./scripts/test-browser-sequential.sh",
     "test:browser:docker": "./scripts/test-browser-docker.sh",
     "lint": "biome check .",
     "format:check": "biome format .",
     "check:artifacts": "node scripts/check-generated-artifacts.mjs",
+    "check:ci-runtime-policy": "node scripts/check-ci-runtime-policy.mjs",
     "check:web-budgets": "node scripts/check-web-release-budgets.mjs",
     "check:desktop-package": "node scripts/check-desktop-package.mjs",
     "check:mobile-package": "node scripts/check-mobile-package.mjs",
@@ -36,7 +38,9 @@
     "verify:scenario": "pnpm sim run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0",
     "verify:scenario:built": "pnpm sim:built run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0",
     "report:release-candidate": "pnpm --filter @dwarven-depths/sim-cli^... build && pnpm --filter @dwarven-depths/sim-cli build && node scripts/generate-release-candidate-reports.mjs --out .ddh/release-candidate-reports",
-    "verify": "pnpm lint && pnpm check:artifacts && pnpm check:desktop-package && pnpm check:mobile-package && pnpm typecheck && pnpm build && pnpm check:web-budgets && pnpm test:web-offline && pnpm test:built && DD_SKIP_BUILD=1 pnpm test:browser:docker && pnpm validate:built && pnpm verify:scenario:built"
+    "verify:local:checkpoint": "pnpm lint && pnpm check:ci-runtime-policy && pnpm check:artifacts && pnpm check:desktop-package && pnpm check:mobile-package && pnpm typecheck && pnpm build && pnpm check:web-budgets && pnpm test:web-offline && pnpm test:built && DD_SKIP_BUILD=1 pnpm test:browser:docker && pnpm validate:built && pnpm verify:scenario:built",
+    "verify:local:release": "pnpm verify:local:checkpoint && pnpm report:release-candidate && pnpm build:desktop:docker",
+    "verify": "pnpm verify:local:checkpoint"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.5",
