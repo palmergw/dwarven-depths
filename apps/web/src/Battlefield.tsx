@@ -1645,6 +1645,12 @@ class PersistentBattlefieldScene {
       this.destroyEntityObjects(id, departure.objects);
       this.departures.delete(id);
     }
+    if (this.departures.size === 0 && this.lastSnapshot?.phase === "terminal") {
+      this.terminalFrame.setVisible(true);
+      this.terminalText.setVisible(true);
+      this.scene.children.bringToTop(this.terminalFrame);
+      this.scene.children.bringToTop(this.terminalText);
+    }
   }
 
   update(
@@ -2057,7 +2063,8 @@ class PersistentBattlefieldScene {
     const terminalResult =
       snapshot.schemaVersion === 2 ? snapshot.encounter.terminalResult : null;
     const terminal = snapshot.phase === "terminal";
-    this.terminalFrame.setVisible(terminal);
+    const terminalVisible = terminal && this.departures.size === 0;
+    this.terminalFrame.setVisible(terminalVisible);
     this.terminalText
       .setText(
         terminalResult === "victory"
@@ -2066,7 +2073,7 @@ class PersistentBattlefieldScene {
             ? "DEFEAT\nTHE GATE HAS FALLEN"
             : "COMBAT RESOLVED"
       )
-      .setVisible(terminal);
+      .setVisible(terminalVisible);
 
     for (const entity of orderedEntities) {
       const objects = this.entities.get(entity.id);
@@ -2090,7 +2097,7 @@ class PersistentBattlefieldScene {
       this.scene.children.bringToTop(objects.subject);
       this.scene.children.bringToTop(objects.signal);
     }
-    if (terminal) {
+    if (terminalVisible) {
       this.scene.children.bringToTop(this.terminalFrame);
       this.scene.children.bringToTop(this.terminalText);
     }
