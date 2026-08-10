@@ -7,7 +7,8 @@ const repositoryRoot = resolve(fileURLToPath(new URL("../", import.meta.url)));
 export const forbiddenHostedPatterns = Object.freeze([
   {
     label: "complete verification",
-    pattern: /\b(?:pnpm|corepack\s+pnpm)\s+(?:run\s+)?verify(?:\s|$)/m
+    pattern:
+      /\b(?:pnpm|corepack\s+pnpm)\s+(?:run\s+)?verify(?::local(?::(?:checkpoint|release))?)?(?:\s|$)/im
   },
   {
     label: "browser tests",
@@ -46,20 +47,38 @@ export function inspectWorkflowText(path, text) {
     }
   }
 
-  for (const match of text.matchAll(/^\s*timeout-minutes:\s*(\d+)\s*$/gm)) {
-    const minutes = Number(match[1]);
-    if (minutes > 10) {
-      problems.push(
-        `${path}: timeout-minutes ${minutes} exceeds the 10-minute hosted-CI ceiling`
-      );
+  const lines = text.split(/\r?\n/);
+  const jobsIndex = lines.findIndex((line) => /^jobs:\s*(?:#.*)?$/.test(line));
+  if (jobsIndex >= 0) {
+    const jobStarts = [];
+    for (let index = jobsIndex + 1; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (/^\S/.test(line)) break;
+      const jobMatch = /^ {2}([a-zA-Z0-9_-]+):\s*(?:#.*)?$/.exec(line);
+      if (jobMatch) jobStarts.push({ index, name: jobMatch[1] });
     }
-  }
 
-  if (
-    /^\s*runs-on:\s*/m.test(text) &&
-    !/^\s*timeout-minutes:\s*\d+\s*$/m.test(text)
-  ) {
-    problems.push(`${path}: every hosted job must declare timeout-minutes`);
+    for (let position = 0; position < jobStarts.length; position += 1) {
+      const job = jobStarts[position];
+      const end = jobStarts[position + 1]?.index ?? lines.length;
+      const block = lines.slice(job.index + 1, end).join("\n");
+      if (!/^ {4}runs-on:\s*/m.test(block)) continue;
+      const timeoutMatch = /^ {4}timeout-minutes:\s*(\d+)\s*(?:#.*)?$/m.exec(
+        block
+      );
+      if (!timeoutMatch) {
+        problems.push(
+          `${path}: hosted job ${job.name} must declare timeout-minutes`
+        );
+        continue;
+      }
+      const minutes = Number(timeoutMatch[1]);
+      if (minutes > 10) {
+        problems.push(
+          `${path}: hosted job ${job.name} timeout-minutes ${minutes} exceeds the 10-minute hosted-CI ceiling`
+        );
+      }
+    }
   }
   return problems;
 }

@@ -11,6 +11,8 @@ describe("hosted CI runtime policy", () => {
 
   it.each([
     ["complete verification", "run: pnpm verify"],
+    ["local checkpoint", "run: pnpm verify:local:checkpoint"],
+    ["local release checkpoint", "run: pnpm run verify:local:release"],
     ["full unit suite", "run: pnpm test:built"],
     ["browser tests", "run: corepack pnpm test:browser"],
     ["release reports", "run: pnpm report:release-candidate"],
@@ -27,20 +29,22 @@ describe("hosted CI runtime policy", () => {
     ).not.toEqual([]);
   });
 
-  it("rejects missing and excessive hosted job timeouts", () => {
+  it("rejects missing and excessive hosted job timeouts per job", () => {
     expect(
       inspectWorkflowText(
         "missing.yml",
-        "jobs:\n  test:\n    runs-on: ubuntu-latest\n"
+        "jobs:\n  bounded:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n  unbounded:\n    runs-on: ubuntu-latest\n"
       )
-    ).toContain("missing.yml: every hosted job must declare timeout-minutes");
+    ).toContain(
+      "missing.yml: hosted job unbounded must declare timeout-minutes"
+    );
     expect(
       inspectWorkflowText(
         "long.yml",
         "jobs:\n  test:\n    runs-on: ubuntu-latest\n    timeout-minutes: 30\n"
       )
     ).toContain(
-      "long.yml: timeout-minutes 30 exceeds the 10-minute hosted-CI ceiling"
+      "long.yml: hosted job test timeout-minutes 30 exceeds the 10-minute hosted-CI ceiling"
     );
   });
 });
