@@ -1,4 +1,4 @@
-name: Deterministic runtime verification
+name: Fast deterministic checks
 
 on:
   pull_request:
@@ -9,10 +9,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: fast-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  node:
+  fast-checks:
     if: github.event_name == 'push' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -23,31 +28,13 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm check:ci-runtime-policy
       - run: pnpm lint
       - run: pnpm check:artifacts
       - run: pnpm typecheck
-      - run: pnpm test
+      - run: pnpm build:ci:fast
+      - run: pnpm test:ci:fast
       - run: pnpm check:web-budgets
-      - run: pnpm validate
-      - run: pnpm verify:scenario
-      - run: pnpm report:release-candidate
-      - uses: actions/upload-artifact@v7
-        with:
-          name: phase-6-release-candidate-reports
-          path: .ddh/release-candidate-reports
-          if-no-files-found: error
-
-  browser-parity:
-    if: github.event_name == 'push' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.61.1-noble
-    env:
-      HOME: /root
-    steps:
-      - uses: actions/checkout@v7
-      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - run: corepack enable
-      - run: corepack pnpm install --frozen-lockfile
-      - run: corepack pnpm test:browser
+      - run: pnpm validate:ci:fast
+      - run: pnpm verify:scenario:ci:fast

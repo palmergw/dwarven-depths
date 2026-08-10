@@ -42,9 +42,10 @@ If documents conflict, do not silently choose. Identify the conflict and preserv
 3. Draft publication and review-fix heads receive focused changed-scope tests plus lint/typecheck/build as appropriate, then use the draft-only exact-head push helper. Draft open/synchronize workflows skip runner jobs; the complete repository gate is not repeated for every review fix.
 4. Create and keep the PR draft while independent exact-head review and correction cycles run.
 5. Independent exact-head review inspects code and runs adversarial focused probes; it does not duplicate the complete suite. Review all reported blockers together and fix the coherent defect class in one batch before re-review.
-6. After the final exact draft head receives a blockers-only `No blockers` result, that same clean HEAD must pass one complete local `pnpm run verify` and remote-head read-back. Mark it ready only then; the ready transition starts authoritative PR CI, and merge requires post-merge `main` CI.
-7. Do not run another post-merge local complete suite when the merged tree is identical to the reviewed tree and CI is green.
-8. Wait for CI mechanically in one bounded command rather than spending repeated model turns polling or rerunning a known runner-only failure.
+6. After the final exact draft head receives a blockers-only `No blockers` result, that same clean HEAD must pass one complete local `pnpm verify:local:checkpoint` and remote-head read-back. Mark it ready only then. Standard PR/main CI remains a fast bounded change-detection gate; long browser, packaging, calibration, capture, and release-report suites do not run on hosted runners.
+7. Run `pnpm verify:local:release` only at an actual release/packaging boundary. Do not repeat complete local suites after every correction or after an unchanged merge.
+8. If a fast remote check times out for runner/infrastructure reasons, reproduce it locally twice on the immutable reviewed head, preserve the remote timeout URL/conclusion, and label the substitute evidence as local exact-head verification rather than claiming remote success.
+9. See `docs/verification-policy.md`; `pnpm check:ci-runtime-policy` prevents long-running commands from being added to hosted workflows.
 
 Detailed evidence belongs on the PR. Trackers #166 and #238 hold finite checklists and compact rolling status rather than duplicate CI transcripts.
 

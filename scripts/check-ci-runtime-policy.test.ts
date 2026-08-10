@@ -1,0 +1,198 @@
+import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import {
+  allowedHostedRunCommands,
+  inspectRepositoryWorkflows,
+  inspectWorkflowText
+} from "./check-ci-runtime-policy.mjs";
+
+function workflowWithStep(step: string, extraJob = "", extraWorkflow = "") {
+  return `${extraWorkflow}on:\n  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review]\n  push:\n    branches: [main]\npermissions:\n  contents: read\nconcurrency:\n  group: fast-ci-\${{ github.workflow }}-\${{ github.event.pull_request.number || github.ref }}\n  cancel-in-progress: true\njobs:\n  fast-checks:\n    if: github.event_name == 'push' || github.event.pull_request.draft == false\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n${extraJob}    steps:\n      - ${step}\n`;
+}
+
+describe("hosted CI runtime policy", () => {
+  it("accepts the checked-in fast workflow and local checkpoint scripts", async () => {
+    await expect(inspectRepositoryWorkflows()).resolves.toEqual([]);
+  });
+
+  it("rejects additional hosted workflow files repository-wide", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dd-ci-policy-"));
+    const workflows = join(root, ".github", "workflows");
+    try {
+      await mkdir(workflows, { recursive: true });
+      await copyFile("package.json", join(root, "package.json"));
+      await copyFile(".github/workflows/ci.yml", join(workflows, "ci.yml"));
+      await copyFile(
+        ".github/workflows/ci.yml",
+        join(workflows, "duplicate.yml")
+      );
+      const problems = await inspectRepositoryWorkflows(root);
+      expect(problems).toContain(
+        "repository: hosted workflow set must be exactly .github/workflows/ci.yml (found: .github/workflows/ci.yml, .github/workflows/duplicate.yml)"
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each(allowedHostedRunCommands)(
+    "allows reviewed hosted command %s",
+    (command) => {
+      const problems = inspectWorkflowText(
+        "allowed.yml",
+        workflowWithStep(`run: ${command}`)
+      );
+      expect(problems).not.toContain(
+        `allowed.yml: hosted job fast-checks step 0 uses non-allowlisted command: ${command}`
+      );
+    }
+  );
+
+  it.each([
+    "pnpm verify",
+    "pnpm verify:local:checkpoint",
+    "pnpm verify:local:release",
+    "npm run verify",
+    "yarn verify",
+    "pnpm test",
+    "pnpm test:built",
+    "pnpm --filter @dwarven-depths/runtime test",
+    "pnpm exec vitest",
+    "./node_modules/.bin/vitest",
+    "node node_modules/vitest/vitest.mjs",
+    "pnpm test:browser",
+    "pnpm exec playwright test",
+    "node node_modules/@playwright/test/cli.js test",
+    "pnpm report:release-candidate",
+    "pnpm build:desktop:docker",
+    "docker build -t game .",
+    "node scripts/capture-shuttergate-clip.mjs",
+    "pnpm hosted-gate",
+    "./.github/actions/complete-gate"
+  ])("rejects non-allowlisted hosted command %s", (command) => {
+    const problems = inspectWorkflowText(
+      "forbidden.yml",
+      workflowWithStep(`run: ${command}`)
+    );
+    expect(problems).toContain(
+      `forbidden.yml: hosted job fast-checks step 0 uses non-allowlisted command: ${command}`
+    );
+  });
+
+  it("normalizes harmless folded whitespace but does not compose split commands", () => {
+    const folded = workflowWithStep("run: >\n          pnpm\n          lint");
+    expect(inspectWorkflowText("folded.yml", folded)).not.toContain(
+      "folded.yml: hosted job fast-checks step 0 uses non-allowlisted command: pnpm lint"
+    );
+    const split = workflowWithStep(
+      `run: \${{ env.A }}\${{ env.B }} \${{ env.C }}\${{ env.D }}`,
+      "    env:\n      A: pn\n      B: pm\n      C: test\n      D: :browser\n"
+    );
+    expect(inspectWorkflowText("split.yml", split)).toContain(
+      "split.yml: hosted job fast-checks uses non-allowlisted keys: env"
+    );
+  });
+
+  it.each(["container", "defaults", "env", "services", "strategy"])(
+    "rejects job-level %s indirection/runtime configuration",
+    (key) => {
+      const value = key === "container" ? "ubuntu:latest" : "{}";
+      const workflow = workflowWithStep(
+        "run: pnpm lint",
+        `    ${key}: ${value}\n`
+      );
+      expect(inspectWorkflowText(`${key}.yml`, workflow)).toContain(
+        `${key}.yml: hosted job fast-checks uses non-allowlisted keys: ${key}`
+      );
+    }
+  );
+
+  it("pins one hosted job and one exact ordered step sequence", () => {
+    const repeated = workflowWithStep("run: pnpm build:ci:fast");
+    expect(inspectWorkflowText("repeated.yml", repeated)).toContain(
+      "repeated.yml: hosted job fast-checks must retain the exact reviewed step sequence"
+    );
+    const extraJob = `${repeated}  extra:\n    if: github.event_name == 'push' || github.event.pull_request.draft == false\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n    steps:\n      - run: pnpm lint\n`;
+    expect(inspectWorkflowText("extra.yml", extraJob)).toContain(
+      "extra.yml: hosted workflow must contain exactly the fast-checks job"
+    );
+  });
+
+  it("rejects non-blocking or altered job gates", () => {
+    const nonBlocking = workflowWithStep(
+      "run: pnpm lint",
+      "    continue-on-error: true\n"
+    );
+    expect(inspectWorkflowText("nonblocking.yml", nonBlocking)).toContain(
+      "nonblocking.yml: hosted job fast-checks uses non-allowlisted keys: continue-on-error"
+    );
+    const skipped = workflowWithStep("run: pnpm lint").replace(
+      "if: github.event_name == 'push' || github.event.pull_request.draft == false",
+      "if: false"
+    );
+    expect(inspectWorkflowText("skipped.yml", skipped)).toContain(
+      "skipped.yml: hosted job fast-checks must retain the reviewed draft-skip condition"
+    );
+  });
+
+  it("rejects workflow-level env/defaults", () => {
+    const workflow = workflowWithStep(
+      "run: pnpm lint",
+      "",
+      "env:\n  GATE: pnpm test:browser\n"
+    );
+    expect(inspectWorkflowText("workflow-env.yml", workflow)).toContain(
+      "workflow-env.yml: workflow-level env/defaults are prohibited in bounded hosted CI"
+    );
+  });
+
+  it("rejects job-level reusable and unallowlisted action workflows", () => {
+    const reusable = `concurrency:\n  group: fast-ci-\${{ github.workflow }}-\${{ github.event.pull_request.number || github.ref }}\n  cancel-in-progress: true\njobs:\n  probe:\n    uses: owner/repo/.github/workflows/full.yml@main\n`;
+    expect(inspectWorkflowText("reuse.yml", reusable)).toContain(
+      "reuse.yml: reusable workflow job probe is prohibited because its runtime cannot be bounded locally"
+    );
+    const action = workflowWithStep("uses: docker/build-push-action@v6");
+    expect(inspectWorkflowText("action.yml", action)).toContain(
+      "action.yml: hosted job fast-checks step 0 uses non-allowlisted action: docker/build-push-action@v6"
+    );
+  });
+
+  it("requires exact pinned action configuration", () => {
+    const valid = workflowWithStep(
+      "uses: pnpm/action-setup@v6\n        with:\n          version: 11.16.0\n          run_install: false"
+    );
+    expect(inspectWorkflowText("action-valid.yml", valid)).not.toContain(
+      "action-valid.yml: hosted job fast-checks step 0 changes the pinned configuration for pnpm/action-setup@v6"
+    );
+    const changed = workflowWithStep(
+      "uses: pnpm/action-setup@v6\n        with:\n          version: 11.16.0\n          run_install: true"
+    );
+    expect(inspectWorkflowText("action-changed.yml", changed)).toContain(
+      "action-changed.yml: hosted job fast-checks step 0 changes the pinned configuration for pnpm/action-setup@v6"
+    );
+  });
+
+  it("enforces bounded concurrency and per-job timeout on quoted and flow maps", () => {
+    const quoted =
+      'jobs:\n  "test":\n    runs-on: ubuntu-latest\n    steps: []\n';
+    expect(inspectWorkflowText("quoted.yml", quoted)).toContain(
+      "quoted.yml: hosted job test must declare an integer timeout-minutes"
+    );
+    const flow =
+      "jobs: { test: { runs-on: ubuntu-latest, timeout-minutes: 30, steps: [] } }";
+    expect(inspectWorkflowText("flow.yml", flow)).toContain(
+      "flow.yml: hosted job test timeout-minutes 30 exceeds the 10-minute hosted-CI ceiling"
+    );
+    expect(inspectWorkflowText("flow.yml", flow)).toContain(
+      "flow.yml: hosted workflow must retain the reviewed concurrency group and cancellation"
+    );
+  });
+
+  it("rejects invalid workflow YAML", () => {
+    expect(inspectWorkflowText("invalid.yml", "jobs: [")).toEqual([
+      expect.stringContaining("invalid.yml: invalid workflow YAML:")
+    ]);
+  });
+});
