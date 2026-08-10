@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseDocument } from "yaml";
 
 const repositoryRoot = resolve(fileURLToPath(new URL("../", import.meta.url)));
 
@@ -8,17 +9,17 @@ export const forbiddenHostedPatterns = Object.freeze([
   {
     label: "complete verification",
     pattern:
-      /\b(?:corepack\s+)?pnpm\b[^\n#]*\bverify(?::local(?::(?:checkpoint|release))?)?(?=\s|$)/im
+      /\b(?:corepack\s+)?pnpm\b[^\n#]*\bverify(?::local(?::(?:checkpoint|release))?)?(?=\s|$)/i
   },
   {
-    label: "browser tests",
+    label: "browser/offline tests",
     pattern:
-      /(?:test:browser|test-browser|playwright\s+test|playwright\/v|mcr\.microsoft\.com\/playwright)/i
+      /(?:test:browser|test-browser|test-web-offline|playwright\s+test|playwright\/v|mcr\.microsoft\.com\/playwright)/i
   },
   {
     label: "full unit/component suite",
     pattern:
-      /(?:\b(?:corepack\s+)?pnpm\b[^\n#]*\btest(?::built)?(?=\s|$)|\bvitest\s+run\b)/im
+      /(?:\b(?:corepack\s+)?pnpm\b[^\n#]*\btest(?::built)?(?=\s|$)|\bvitest\s+run\b)/i
   },
   {
     label: "release-candidate reports",
@@ -26,79 +27,87 @@ export const forbiddenHostedPatterns = Object.freeze([
   },
   {
     label: "desktop/mobile container packaging",
-    pattern: /(?:build|capture):(?:desktop|mobile):docker/i
+    pattern:
+      /(?:(?:build|capture):(?:desktop|mobile):docker|(?:^|[\s/])(?:build|capture)-(?:desktop|mobile|shuttergate)[^\s]*\.(?:sh|mjs|js)\b)/i
   },
   {
     label: "capture/evidence generation",
-    pattern: /\b(?:pnpm|corepack\s+pnpm)\s+(?:run\s+)?capture:/i
+    pattern: /\b(?:corepack\s+)?pnpm\b[^\n#]*\bcapture:/i
   },
   {
     label: "campaign or sweep simulation",
-    pattern: /\b(?:campaign|sweep)\b.*(?:--scenario|--content|--out)/i
+    pattern: /\b(?:campaign|sweep)\b/i
   }
 ]);
 
+function commandSurfaces(job) {
+  const surfaces = [];
+  if (typeof job.uses === "string") surfaces.push(job.uses);
+  const container = job.container;
+  if (typeof container === "string") surfaces.push(container);
+  else if (container && typeof container === "object") {
+    if (typeof container.image === "string") surfaces.push(container.image);
+  }
+  if (Array.isArray(job.steps)) {
+    for (const step of job.steps) {
+      if (!step || typeof step !== "object") continue;
+      if (typeof step.run === "string") surfaces.push(step.run);
+      if (typeof step.uses === "string") surfaces.push(step.uses);
+    }
+  }
+  return surfaces.map((surface) => surface.replace(/\s+/g, " ").trim());
+}
+
 export function inspectWorkflowText(path, text) {
   const problems = [];
-  for (const rule of forbiddenHostedPatterns) {
-    if (rule.pattern.test(text)) {
-      problems.push(
-        `${path}: hosted workflow contains long-running ${rule.label}`
-      );
-    }
+  const document = parseDocument(text, { uniqueKeys: true });
+  if (document.errors.length > 0) {
+    return document.errors.map(
+      (error) => `${path}: invalid workflow YAML: ${error.message}`
+    );
   }
+  const workflow = document.toJS();
+  const jobs = workflow?.jobs;
+  if (!jobs || typeof jobs !== "object" || Array.isArray(jobs)) return problems;
 
-  const lines = text.split(/\r?\n/);
-  const jobsIndex = lines.findIndex((line) => /^jobs:\s*(?:#.*)?$/.test(line));
-  if (jobsIndex >= 0) {
-    const firstJobLine = lines
-      .slice(jobsIndex + 1)
-      .find((line) => /^\s+[^\s#][^:]*:\s*(?:#.*)?$/.test(line));
-    const jobIndent = firstJobLine?.match(/^(\s+)/)?.[1];
-    const jobStarts = [];
-    if (jobIndent) {
-      const escapedIndent = jobIndent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const jobPattern = new RegExp(
-        `^${escapedIndent}([a-zA-Z0-9_-]+):\\s*(?:#.*)?$`
-      );
-      for (let index = jobsIndex + 1; index < lines.length; index += 1) {
-        const line = lines[index];
-        if (/^\S/.test(line)) break;
-        const jobMatch = jobPattern.exec(line);
-        if (jobMatch) jobStarts.push({ index, name: jobMatch[1] });
-      }
-    }
-
-    for (let position = 0; position < jobStarts.length; position += 1) {
-      const job = jobStarts[position];
-      const end = jobStarts[position + 1]?.index ?? lines.length;
-      const blockLines = lines.slice(job.index + 1, end);
-      const runsOnLine = blockLines.find((line) =>
-        /^\s+runs-on:\s*/.test(line)
-      );
-      if (!runsOnLine) continue;
-      const propertyIndent = runsOnLine.match(/^(\s+)/)?.[1] ?? "";
-      const timeoutPattern = new RegExp(
-        `^${propertyIndent.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}timeout-minutes:\\s*(\\d+)\\s*(?:#.*)?$`
-      );
-      const timeoutMatch = blockLines
-        .map((line) => timeoutPattern.exec(line))
-        .find(Boolean);
-      if (!timeoutMatch) {
+  let hostedJobCount = 0;
+  for (const [jobName, job] of Object.entries(jobs)) {
+    if (!job || typeof job !== "object" || Array.isArray(job)) continue;
+    const runsOn = job["runs-on"];
+    if (runsOn !== undefined) {
+      hostedJobCount += 1;
+      const timeout = job["timeout-minutes"];
+      if (!Number.isInteger(timeout)) {
         problems.push(
-          `${path}: hosted job ${job.name} must declare timeout-minutes`
+          `${path}: hosted job ${jobName} must declare an integer timeout-minutes`
         );
-        continue;
-      }
-      const minutes = Number(timeoutMatch[1]);
-      if (minutes > 10) {
+      } else if (timeout > 10) {
         problems.push(
-          `${path}: hosted job ${job.name} timeout-minutes ${minutes} exceeds the 10-minute hosted-CI ceiling`
+          `${path}: hosted job ${jobName} timeout-minutes ${timeout} exceeds the 10-minute hosted-CI ceiling`
         );
       }
     }
+
+    for (const surface of commandSurfaces(job)) {
+      for (const rule of forbiddenHostedPatterns) {
+        if (rule.pattern.test(surface)) {
+          problems.push(
+            `${path}: hosted job ${jobName} contains long-running ${rule.label}`
+          );
+        }
+      }
+    }
   }
-  return problems;
+
+  if (
+    hostedJobCount > 0 &&
+    workflow?.concurrency?.["cancel-in-progress"] !== true
+  ) {
+    problems.push(
+      `${path}: hosted workflows must set concurrency.cancel-in-progress to true`
+    );
+  }
+  return [...new Set(problems)];
 }
 
 async function workflowFiles(directory) {

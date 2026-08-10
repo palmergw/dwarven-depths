@@ -48,6 +48,7 @@
     "@vitest/browser-playwright": "^4.1.10",
     "playwright": "^1.61.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.0",
+    "yaml": "^2.9.0"
   }
 }
