@@ -11,6 +11,8 @@ describe("hosted CI runtime policy", () => {
 
   it.each([
     ["complete verification", "run: pnpm verify"],
+    ["npm verification bypass", "run: npm run verify"],
+    ["yarn verification bypass", "run: yarn verify"],
     ["local checkpoint", "run: pnpm verify:local:checkpoint"],
     ["local release checkpoint", "run: pnpm run verify:local:release"],
     ["full unit suite", "run: pnpm test:built"],
@@ -19,6 +21,7 @@ describe("hosted CI runtime policy", () => {
       "run: pnpm --filter @dwarven-depths/runtime test"
     ],
     ["direct Vitest suite", "run: pnpm exec vitest run"],
+    ["direct Vitest run flag", "run: pnpm exec vitest --run"],
     ["browser tests", "run: corepack pnpm test:browser"],
     ["direct Playwright suite", "run: pnpm exec playwright test"],
     ["release reports", "run: pnpm report:release-candidate"],
@@ -47,6 +50,13 @@ describe("hosted CI runtime policy", () => {
     const workflow = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n    container:\n      image: mcr.microsoft.com/playwright:v1.61.1-noble\n    steps:\n      - run: pnpm lint\n`;
     expect(inspectWorkflowText("container.yml", workflow)).toContain(
       "container.yml: hosted job test contains long-running browser/offline tests"
+    );
+  });
+
+  it("rejects job-level reusable workflows", () => {
+    const workflow = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  probe:\n    uses: owner/repo/.github/workflows/full.yml@main\n`;
+    expect(inspectWorkflowText("reuse.yml", workflow)).toContain(
+      "reuse.yml: reusable workflow job probe is prohibited because its runtime cannot be bounded locally"
     );
   });
 

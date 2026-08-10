@@ -7,6 +7,10 @@ const repositoryRoot = resolve(fileURLToPath(new URL("../", import.meta.url)));
 
 export const forbiddenHostedPatterns = Object.freeze([
   {
+    label: "non-pnpm package-manager execution",
+    pattern: /\b(?:npm|npx|yarn|bun|bunx)\b/i
+  },
+  {
     label: "complete verification",
     pattern:
       /\b(?:corepack\s+)?pnpm\b[^\n#]*\bverify(?::local(?::(?:checkpoint|release))?)?(?=\s|$)/i
@@ -19,7 +23,7 @@ export const forbiddenHostedPatterns = Object.freeze([
   {
     label: "full unit/component suite",
     pattern:
-      /(?:\b(?:corepack\s+)?pnpm\b[^\n#]*\btest(?::built)?(?=\s|$)|\bvitest\s+run\b)/i
+      /(?:\b(?:corepack\s+)?pnpm\b[^\n#]*\btest(?::built)?(?=\s|$)|\bvitest\b[^;&|\n]*(?:\brun\b|--run\b))/i
   },
   {
     label: "release-candidate reports",
@@ -70,12 +74,20 @@ export function inspectWorkflowText(path, text) {
   const jobs = workflow?.jobs;
   if (!jobs || typeof jobs !== "object" || Array.isArray(jobs)) return problems;
 
-  let hostedJobCount = 0;
+  let executionJobCount = 0;
   for (const [jobName, job] of Object.entries(jobs)) {
     if (!job || typeof job !== "object" || Array.isArray(job)) continue;
     const runsOn = job["runs-on"];
+    const reusableWorkflow = job.uses;
+    if (runsOn !== undefined || reusableWorkflow !== undefined) {
+      executionJobCount += 1;
+    }
+    if (reusableWorkflow !== undefined) {
+      problems.push(
+        `${path}: reusable workflow job ${jobName} is prohibited because its runtime cannot be bounded locally`
+      );
+    }
     if (runsOn !== undefined) {
-      hostedJobCount += 1;
       const timeout = job["timeout-minutes"];
       if (!Number.isInteger(timeout)) {
         problems.push(
@@ -100,7 +112,7 @@ export function inspectWorkflowText(path, text) {
   }
 
   if (
-    hostedJobCount > 0 &&
+    executionJobCount > 0 &&
     workflow?.concurrency?.["cancel-in-progress"] !== true
   ) {
     problems.push(
