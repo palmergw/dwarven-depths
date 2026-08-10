@@ -20,6 +20,8 @@ import {
   comparePresentationPrimitives,
   decodeBattlefieldDepthAsset,
   deriveCombatPresentationState,
+  deriveShieldSlamImpactIds,
+  deriveSlingerProjectilePaths,
   interpolationDistanceForFrame,
   renderedFactionForSourceKey,
   selectCombatPoseAsset
@@ -2664,7 +2666,7 @@ describe("authoritative web worker", () => {
         },
         entity.id
       )
-    ).toBe("warden-source");
+    ).toBe("warden-guard-source");
     const damaged = {
       ...snapshot,
       entities: [
@@ -2698,6 +2700,109 @@ describe("authoritative web worker", () => {
         entity.id
       )?.damaged
     ).toBe(false);
+    const hostile = {
+      ...entity,
+      id: "entity.enemy.alpha",
+      faction: "enemy",
+      visualId: "enemy.goblin_cutter",
+      archetype: "basic",
+      currentHealth: 7,
+      action: { kind: "idle", phase: "idle", abilityId: null }
+    } as const;
+    const elite = {
+      ...hostile,
+      id: "entity.enemy.beta",
+      visualId: "enemy.goblin_bulwark",
+      archetype: "elite",
+      currentHealth: 6,
+      elite: true
+    } as const;
+    const multiTarget = {
+      ...snapshot,
+      entities: [entity, hostile, elite]
+    } as const satisfies RenderSnapshot;
+    const multiTargetPrevious = {
+      ...previous,
+      entities: [
+        entity,
+        { ...hostile, currentHealth: 10 },
+        { ...elite, currentHealth: 10 }
+      ]
+    } as const satisfies RenderSnapshot;
+    expect(deriveShieldSlamImpactIds(multiTarget, multiTargetPrevious)).toEqual(
+      ["entity.enemy.alpha", "entity.enemy.beta"]
+    );
+    expect(
+      deriveShieldSlamImpactIds(
+        {
+          ...multiTarget,
+          entities: [entity, hostile],
+          entityTransitions: [
+            {
+              entityId: elite.id,
+              kind: "destroyed",
+              atTick: multiTarget.tick
+            }
+          ]
+        },
+        multiTargetPrevious
+      )
+    ).toEqual(["entity.enemy.alpha", "entity.enemy.beta"]);
+    const roleFacings = [
+      ["enemy.goblin_cutter", "north", "raider-north-source"],
+      ["enemy.goblin_slinger", "east", "slinger-east-source"],
+      ["enemy.goblin_bulwark", "south", "bulwark-source"],
+      ["enemy.gatebreaker_captain", "west", "captain-west-source"]
+    ] as const;
+    for (const [visualId, facing, expected] of roleFacings)
+      expect(
+        selectCombatPoseAsset(
+          {
+            ...snapshot,
+            entities: [
+              {
+                ...hostile,
+                visualId,
+                facing,
+                action: { kind: "idle", phase: "idle", abilityId: null }
+              }
+            ]
+          },
+          hostile.id
+        )
+      ).toBe(expected);
+    const slinger = {
+      ...hostile,
+      visualId: "enemy.goblin_slinger",
+      action: { kind: "basic_attack", phase: "committed", abilityId: null },
+      targetEntityId: entity.id
+    } as const;
+    const projectileSnapshot = {
+      ...snapshot,
+      entities: [entity, slinger]
+    } as const satisfies RenderSnapshot;
+    const projectilePrimitives = buildBattlefieldPrimitives(projectileSnapshot);
+    expect(
+      deriveSlingerProjectilePaths(
+        projectileSnapshot,
+        projectilePrimitives
+      ).map(({ sourceId, targetId }) => [sourceId, targetId])
+    ).toEqual([[slinger.id, entity.id]]);
+    expect(
+      deriveSlingerProjectilePaths(
+        {
+          ...projectileSnapshot,
+          entities: [
+            {
+              ...slinger,
+              action: { ...slinger.action, phase: "recovery" }
+            },
+            entity
+          ]
+        },
+        projectilePrimitives
+      )
+    ).toEqual([]);
   });
 
   it("aligns variable authoritative combatant counts by stable identity", () => {
@@ -2949,7 +3054,7 @@ describe("authoritative web worker", () => {
       ).toBeLessThanOrEqual(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
-        cycle % 2 === 0 ? 8 : 6
+        cycle % 2 === 0 ? 34 : 32
       );
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects

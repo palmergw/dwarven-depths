@@ -75,22 +75,37 @@ const entranceRouteRearUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/entrance-route-rear.png",
   import.meta.url
 ).href;
-const wardenUrl = new URL(
-  "../../../assets/game-art/production-scene/exports/entities/iron-warden-idle.png",
-  import.meta.url
-).href;
-const raiderUrl = new URL(
-  "../../../assets/game-art/production-scene/exports/entities/mine-raider-idle.png",
-  import.meta.url
-).href;
-const wardenShieldSlamUrl = new URL(
-  "../../../assets/game-art/production-scene/exports/entities/iron-warden-shield-slam.png",
-  import.meta.url
-).href;
-const raiderAttackUrl = new URL(
-  "../../../assets/game-art/production-scene/exports/entities/mine-raider-attack.png",
-  import.meta.url
-).href;
+const combatAnimationModules = import.meta.glob<string>(
+  "../../../assets/game-art/combat-animation/exports/entities/*.png",
+  { eager: true, import: "default", query: "?url" }
+);
+
+function combatAnimationAssetUrl(filename: string): string {
+  const path = `../../../assets/game-art/combat-animation/exports/entities/${filename}`;
+  const url = combatAnimationModules[path];
+  if (url === undefined)
+    throw new Error(`missing combat animation asset: ${path}`);
+  return url;
+}
+const hostileDirectionalAssetUrls = Object.fromEntries(
+  [
+    ["raider", "goblin-cutter"],
+    ["slinger", "goblin-slinger"],
+    ["bulwark", "goblin-bulwark"],
+    ["captain", "gatebreaker-captain"]
+  ].flatMap(([key, filename]) =>
+    (
+      [
+        ["north", "n"],
+        ["east", "e"],
+        ["west", "w"]
+      ] as const
+    ).map(([facing, suffix]) => [
+      `${key}-${facing}-source`,
+      combatAnimationAssetUrl(`${filename}-idle-${suffix}.png`)
+    ])
+  )
+);
 const warmLightOverlayUrl = new URL(
   "../../../assets/game-art/production-scene/exports/lighting/warm-light-overlay.png",
   import.meta.url
@@ -117,10 +132,33 @@ const battlefieldAssetUrls: Readonly<Record<string, string>> = {
   "entrance-route-ground-foreground": entranceRouteGroundForegroundUrl,
   "entrance-route-foreground": entranceRouteForegroundUrl,
   "entrance-route-rear": entranceRouteRearUrl,
-  "warden-source": wardenUrl,
-  "raider-source": raiderUrl,
-  "warden-shield-slam-source": wardenShieldSlamUrl,
-  "raider-attack-source": raiderAttackUrl,
+  "warden-source": combatAnimationAssetUrl("iron-warden-idle.png"),
+  "warden-basic-attack-source": combatAnimationAssetUrl(
+    "iron-warden-basic-attack.png"
+  ),
+  "warden-hit-source": combatAnimationAssetUrl("iron-warden-hit.png"),
+  "warden-guard-source": combatAnimationAssetUrl("iron-warden-guard.png"),
+  "warden-downed-source": combatAnimationAssetUrl("iron-warden-downed.png"),
+  "raider-source": combatAnimationAssetUrl("goblin-cutter-idle-s.png"),
+  "warden-shield-slam-source": combatAnimationAssetUrl(
+    "iron-warden-shield-slam.png"
+  ),
+  "raider-attack-source": combatAnimationAssetUrl("goblin-cutter-attack.png"),
+  "raider-downed-source": combatAnimationAssetUrl("goblin-cutter-downed.png"),
+  "slinger-source": combatAnimationAssetUrl("goblin-slinger-idle-s.png"),
+  "slinger-attack-source": combatAnimationAssetUrl("goblin-slinger-attack.png"),
+  "slinger-downed-source": combatAnimationAssetUrl("goblin-slinger-downed.png"),
+  "bulwark-source": combatAnimationAssetUrl("goblin-bulwark-idle-s.png"),
+  "bulwark-attack-source": combatAnimationAssetUrl("goblin-bulwark-attack.png"),
+  "bulwark-downed-source": combatAnimationAssetUrl("goblin-bulwark-downed.png"),
+  "captain-source": combatAnimationAssetUrl("gatebreaker-captain-idle-s.png"),
+  "captain-attack-source": combatAnimationAssetUrl(
+    "gatebreaker-captain-attack.png"
+  ),
+  "captain-downed-source": combatAnimationAssetUrl(
+    "gatebreaker-captain-downed.png"
+  ),
+  ...hostileDirectionalAssetUrls,
   "warm-light-overlay": warmLightOverlayUrl,
   "hostile-faction-ring": hostileFactionRingUrl,
   "shield-slam-impact": shieldSlamImpactUrl,
@@ -421,20 +459,67 @@ export function buildInterpolationOrigins(
   );
 }
 
+type CombatPoseAssetKey =
+  | "warden-source"
+  | "warden-basic-attack-source"
+  | "warden-shield-slam-source"
+  | "warden-hit-source"
+  | "warden-guard-source"
+  | "warden-downed-source"
+  | "raider-source"
+  | "raider-attack-source"
+  | "raider-downed-source"
+  | "slinger-source"
+  | "slinger-attack-source"
+  | "slinger-downed-source"
+  | "bulwark-source"
+  | "bulwark-attack-source"
+  | "bulwark-downed-source"
+  | "captain-source"
+  | "captain-attack-source"
+  | "captain-downed-source"
+  | `${"raider" | "slinger" | "bulwark" | "captain"}-${"north" | "east" | "west"}-source`;
+
+function hostilePosePrefix(
+  visualId: string
+): "raider" | "slinger" | "bulwark" | "captain" {
+  if (visualId === "enemy.goblin_slinger") return "slinger";
+  if (visualId === "enemy.goblin_bulwark") return "bulwark";
+  if (visualId === "enemy.gatebreaker_captain") return "captain";
+  return "raider";
+}
+
+function hostileIdlePoseAsset(
+  prefix: "raider" | "slinger" | "bulwark" | "captain",
+  facing: RenderEntityV2["facing"]
+): CombatPoseAssetKey {
+  return facing === "south" ? `${prefix}-source` : `${prefix}-${facing}-source`;
+}
+
+export function selectDownedPoseAsset(
+  entity: RenderEntityV2
+): CombatPoseAssetKey {
+  if (entity.faction === "dwarf") return "warden-downed-source";
+  return `${hostilePosePrefix(entity.visualId)}-downed-source`;
+}
+
 export function selectCombatPoseAsset(
   snapshot: RenderSnapshot,
-  entityId: string
-):
-  | "warden-source"
-  | "warden-shield-slam-source"
-  | "raider-source"
-  | "raider-attack-source" {
+  entityId: string,
+  previousSnapshot?: RenderSnapshot
+): CombatPoseAssetKey {
   const faction = snapshot.entities.find(({ id }) => id === entityId)?.faction;
   if (snapshot.schemaVersion === 1)
     return faction === "dwarf" ? "warden-source" : "raider-source";
   const entity = snapshot.entities.find(({ id }) => id === entityId);
   if (entity === undefined) return "raider-source";
   const dwarf = entity.faction === "dwarf";
+  const presentation = deriveCombatPresentationState(
+    snapshot,
+    previousSnapshot,
+    entity.id
+  );
+  if (dwarf && presentation?.damaged === true) return "warden-hit-source";
   const activePose =
     entity.action.phase === "windup" ||
     entity.action.phase === "committed" ||
@@ -446,9 +531,14 @@ export function selectCombatPoseAsset(
     activePose
   )
     return "warden-shield-slam-source";
-  if (!dwarf && entity.action.kind === "basic_attack" && activePose)
-    return "raider-attack-source";
-  return dwarf ? "warden-source" : "raider-source";
+  if (dwarf && entity.action.kind === "basic_attack" && activePose)
+    return "warden-basic-attack-source";
+  if (dwarf && entity.action.phase === "recovery") return "warden-guard-source";
+  if (dwarf) return "warden-source";
+  const prefix = hostilePosePrefix(entity.visualId);
+  return entity.action.kind === "basic_attack" && activePose
+    ? `${prefix}-attack-source`
+    : hostileIdlePoseAsset(prefix, entity.facing);
 }
 
 export interface CombatPresentationState {
@@ -489,6 +579,93 @@ export function deriveCombatPresentationState(
       entity.action.abilityId === "ability.iron_warden.shield_slam" &&
       entity.action.phase === "impact"
   };
+}
+
+export function deriveShieldSlamImpactIds(
+  snapshot: RenderSnapshot,
+  previousSnapshot: RenderSnapshot | undefined
+): readonly string[] {
+  if (snapshot.schemaVersion !== 2) return [];
+  const shieldSlam = snapshot.entities.find(
+    (entity) =>
+      entity.faction === "dwarf" &&
+      entity.action.kind === "ability" &&
+      entity.action.abilityId === "ability.iron_warden.shield_slam" &&
+      entity.action.phase === "impact"
+  );
+  if (shieldSlam === undefined) return [];
+  const damagedHostileIds = snapshot.entities
+    .filter(
+      (entity) =>
+        entity.faction === "enemy" &&
+        deriveCombatPresentationState(snapshot, previousSnapshot, entity.id)
+          ?.damaged === true
+    )
+    .map(({ id }) => id)
+    .sort(compareRenderIds);
+  const departedHostileIds =
+    previousSnapshot?.schemaVersion === 2 &&
+    previousSnapshot.scenarioId === snapshot.scenarioId &&
+    previousSnapshot.tick === snapshot.previousTick
+      ? snapshot.entityTransitions
+          .filter(
+            (transition) =>
+              transition.atTick === snapshot.tick &&
+              (transition.kind === "downed" || transition.kind === "destroyed")
+          )
+          .flatMap((transition) => {
+            const previous = previousSnapshot.entities.find(
+              ({ id }) => id === transition.entityId
+            );
+            return previous?.faction === "enemy" ? [transition.entityId] : [];
+          })
+      : [];
+  const authoritativeImpactIds = [...damagedHostileIds, ...departedHostileIds]
+    .filter((id, index, ids) => ids.indexOf(id) === index)
+    .sort(compareRenderIds);
+  if (authoritativeImpactIds.length > 0) return authoritativeImpactIds;
+  return shieldSlam.targetEntityId === null ? [] : [shieldSlam.targetEntityId];
+}
+
+export interface SlingerProjectilePath {
+  readonly sourceId: string;
+  readonly targetId: string;
+  readonly source: RenderPrimitive;
+  readonly target: RenderPrimitive;
+}
+
+export function deriveSlingerProjectilePaths(
+  snapshot: RenderSnapshot,
+  primitives: BattlefieldPrimitives
+): readonly SlingerProjectilePath[] {
+  if (snapshot.schemaVersion !== 2) return [];
+  const positions = new Map(
+    primitives.entities.map((entity) => [entity.id, entity])
+  );
+  return snapshot.entities
+    .filter(
+      (entity) =>
+        entity.visualId === "enemy.goblin_slinger" &&
+        entity.action.kind === "basic_attack" &&
+        (entity.action.phase === "committed" ||
+          entity.action.phase === "impact") &&
+        entity.targetEntityId !== null
+    )
+    .sort((left, right) => compareRenderIds(left.id, right.id))
+    .flatMap((entity) => {
+      const source = positions.get(entity.id);
+      const target = positions.get(entity.targetEntityId ?? "");
+      return source === undefined || target === undefined
+        ? []
+        : [
+            {
+              sourceId: entity.id,
+              targetId: entity.targetEntityId as string,
+              source,
+              target
+            }
+          ];
+    });
 }
 
 export function decodeBattlefieldDepthAsset(
@@ -1248,18 +1425,11 @@ export function renderedFactionForSourceKey(
   sourceKey: unknown
 ): RenderEntity["faction"] | undefined {
   if (typeof sourceKey !== "string") return undefined;
+  if (sourceKey.startsWith("warden-")) return "dwarf";
   if (
-    sourceKey === "warden-source" ||
-    sourceKey === "warden-runtime" ||
-    sourceKey === "warden-shield-slam-source" ||
-    sourceKey === "warden-shield-slam-runtime"
-  )
-    return "dwarf";
-  if (
-    sourceKey === "raider-source" ||
-    sourceKey === "raider-runtime" ||
-    sourceKey === "raider-attack-source" ||
-    sourceKey === "raider-attack-runtime"
+    ["raider-", "slinger-", "bulwark-", "captain-"].some((prefix) =>
+      sourceKey.startsWith(prefix)
+    )
   )
     return "enemy";
   return undefined;
@@ -1270,6 +1440,9 @@ interface PersistentEntityObjects {
   readonly subject: Phaser.GameObjects.Image;
   readonly signal: Phaser.GameObjects.Graphics;
   damagedUntil: number;
+  signalDamaged: boolean;
+  signalEntity: RenderPrimitive | undefined;
+  signalPresentation: CombatPresentationState | undefined;
   targetX: number;
   targetY: number;
 }
@@ -1286,6 +1459,7 @@ interface DepartingEntityObjects {
   readonly transitionTick: number;
   readonly startedAt: number;
   readonly originY: number;
+  readonly reduceMotion: boolean;
 }
 
 class PersistentBattlefieldScene {
@@ -1296,6 +1470,7 @@ class PersistentBattlefieldScene {
   readonly entities = new Map<string, PersistentEntityObjects>();
   readonly departures = new Map<string, DepartingEntityObjects>();
   readonly effects: Phaser.GameObjects.Graphics[] = [];
+  readonly projectileEffects = new Map<string, Phaser.GameObjects.Graphics>();
   readonly abilityEffects = new Map<string, Phaser.GameObjects.Image>();
   readonly lighting: Phaser.GameObjects.Image;
   readonly terminalFrame: Phaser.GameObjects.Graphics;
@@ -1393,6 +1568,24 @@ class PersistentBattlefieldScene {
       const offsetY = y - objects.targetY;
       objects.signal.setPosition(offsetX, offsetY);
       objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
+      if (
+        objects.signalDamaged &&
+        objects.damagedUntil <= this.scene.time.now &&
+        objects.signalEntity !== undefined &&
+        objects.signalPresentation !== undefined
+      ) {
+        objects.signalDamaged = false;
+        updateEntitySignal(
+          this.scene,
+          objects.signal,
+          objects.signalEntity,
+          { ...objects.signalPresentation, damaged: false },
+          this.staticDepth
+        );
+        objects.signal.setPosition(offsetX, offsetY);
+        objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
+        objects.subject.clearTint();
+      }
     }
   }
 
@@ -1423,13 +1616,31 @@ class PersistentBattlefieldScene {
         )
       );
       const { ring, signal, subject } = departure.objects;
-      ring.setAlpha(1 - progress);
-      signal.setAlpha(1 - progress * 0.7);
-      subject
-        .setAlpha(1 - progress * 0.85)
-        .setAngle(-68 * progress)
-        .setY(departure.originY + 22 * progress)
-        .setTint(0xff5c4d);
+      if (departure.reduceMotion) {
+        ring.setAlpha(0.35);
+        signal.setAlpha(0.65);
+        subject
+          .setAlpha(departure.kind === "downed" ? 0.8 : 0.45)
+          .setAngle(departure.kind === "downed" ? -82 : 24)
+          .setY(departure.originY + (departure.kind === "downed" ? 14 : 22))
+          .setTint(departure.kind === "downed" ? 0xaeb8c4 : 0xff5c4d);
+      } else if (departure.kind === "downed") {
+        ring.setAlpha(1 - progress * 0.65);
+        signal.setAlpha(1 - progress * 0.45);
+        subject
+          .setAlpha(1 - progress * 0.2)
+          .setAngle(-82 * progress)
+          .setY(departure.originY + 14 * progress)
+          .setTint(0xaeb8c4);
+      } else {
+        ring.setAlpha(1 - progress);
+        signal.setAlpha(1 - progress * 0.8);
+        subject
+          .setAlpha(1 - progress)
+          .setAngle(28 * progress)
+          .setY(departure.originY + 28 * progress)
+          .setTint(0xff5c4d);
+      }
       if (progress < 1) continue;
       this.destroyEntityObjects(id, departure.objects);
       this.departures.delete(id);
@@ -1495,33 +1706,92 @@ class PersistentBattlefieldScene {
               )
             : undefined;
         if (
-          !reduceMotion &&
           departureIds.has(id) &&
           previousEntity !== undefined &&
+          previousEntity.faction !== undefined &&
           transition !== undefined
-        )
+        ) {
+          const previousPrimitive = previousSnapshot
+            ? buildBattlefieldPrimitives(previousSnapshot).entities.find(
+                (entity) => entity.id === id
+              )
+            : undefined;
+          const downedSource =
+            previousSnapshot?.schemaVersion === 2
+              ? previousSnapshot.entities.find((entity) => entity.id === id)
+              : undefined;
+          if (previousPrimitive !== undefined && downedSource !== undefined) {
+            const downedKey = selectDownedPoseAsset(downedSource);
+            const downedTexture = normalizeAlphaTexture(
+              this.scene,
+              downedKey,
+              downedKey.replace(/-source$/, "-runtime")
+            );
+            addDepthTestedBillboard(
+              this.scene,
+              previousPrimitive,
+              downedTexture,
+              previousEntity.faction === "dwarf" ? 112 : 80,
+              previousEntity.faction === "dwarf" ? 72 : 60,
+              previousEntity.faction === "dwarf" ? 56 : 40,
+              previousEntity.faction === "dwarf" ? 66 : 54,
+              this.staticDepth,
+              objects.subject
+            );
+          }
+          objects.ring.destroy();
           this.departures.set(id, {
             entity: previousEntity,
             objects,
             kind: transition.kind === "downed" ? "downed" : "destroyed",
             transitionTick: transition.atTick,
             startedAt: this.scene.time.now,
-            originY: objects.subject.y
+            originY: objects.subject.y,
+            reduceMotion
           });
-        else this.destroyEntityObjects(id, objects);
+        } else this.destroyEntityObjects(id, objects);
       }
 
-    const poseTextures = new Map(
-      (
-        [
-          ["warden-source", "warden-runtime"],
-          ["warden-shield-slam-source", "warden-shield-slam-runtime"],
-          ["raider-source", "raider-runtime"],
-          ["raider-attack-source", "raider-attack-runtime"]
-        ] as const
-      ).map(([source, runtime]) => [
+    const poseSourceKeys: readonly CombatPoseAssetKey[] = [
+      "warden-source",
+      "warden-basic-attack-source",
+      "warden-shield-slam-source",
+      "warden-hit-source",
+      "warden-guard-source",
+      "warden-downed-source",
+      "raider-source",
+      "raider-north-source",
+      "raider-east-source",
+      "raider-west-source",
+      "raider-attack-source",
+      "raider-downed-source",
+      "slinger-source",
+      "slinger-north-source",
+      "slinger-east-source",
+      "slinger-west-source",
+      "slinger-attack-source",
+      "slinger-downed-source",
+      "bulwark-source",
+      "bulwark-north-source",
+      "bulwark-east-source",
+      "bulwark-west-source",
+      "bulwark-attack-source",
+      "bulwark-downed-source",
+      "captain-source",
+      "captain-north-source",
+      "captain-east-source",
+      "captain-west-source",
+      "captain-attack-source",
+      "captain-downed-source"
+    ];
+    const poseTextures = new Map<CombatPoseAssetKey, string>(
+      poseSourceKeys.map((source) => [
         source,
-        normalizeAlphaTexture(this.scene, source, runtime)
+        normalizeAlphaTexture(
+          this.scene,
+          source,
+          source.replace(/-source$/, "-runtime")
+        )
       ])
     );
     const wardenTexture = poseTextures.get("warden-source") ?? "warden-source";
@@ -1547,7 +1817,11 @@ class PersistentBattlefieldScene {
       if (ring === undefined) continue;
       if (existing === undefined) this.layers["world-rings"].add(ring);
       const dwarf = entity.faction === "dwarf";
-      const poseKey = selectCombatPoseAsset(snapshot, entity.id);
+      const poseKey = selectCombatPoseAsset(
+        snapshot,
+        entity.id,
+        previousSnapshot
+      );
       const subject = addDepthTestedBillboard(
         this.scene,
         entity,
@@ -1570,22 +1844,35 @@ class PersistentBattlefieldScene {
           subject,
           signal,
           damagedUntil: 0,
+          signalDamaged: false,
+          signalEntity: undefined,
+          signalPresentation: undefined,
           targetX: entity.x,
           targetY: entity.y
         });
       }
       const objects = this.entities.get(entity.id);
       if (objects !== undefined) {
+        if (presentation?.damaged === true)
+          objects.damagedUntil =
+            this.scene.time.now + DAMAGE_SIGNAL_DURATION_MS;
+        const signalPresentation =
+          presentation === undefined
+            ? undefined
+            : {
+                ...presentation,
+                damaged: objects.damagedUntil > this.scene.time.now
+              };
         updateEntitySignal(
           this.scene,
           objects.signal,
           entity,
-          presentation,
+          signalPresentation,
           this.staticDepth
         );
-        if (presentation?.damaged === true)
-          objects.damagedUntil =
-            this.scene.time.now + DAMAGE_SIGNAL_DURATION_MS;
+        objects.signalDamaged = signalPresentation?.damaged === true;
+        objects.signalEntity = entity;
+        objects.signalPresentation = signalPresentation;
         if (objects.damagedUntil > this.scene.time.now)
           objects.subject.setTint(0xff5c4d);
       }
@@ -1662,22 +1949,57 @@ class PersistentBattlefieldScene {
     else if (evidenceEffectAlpha !== undefined)
       for (const effect of active) effect.setAlpha(evidenceEffectAlpha);
 
-    const abilityImpactIds =
-      snapshot.schemaVersion === 2
-        ? snapshot.entities.flatMap((entity) => {
-            const state = deriveCombatPresentationState(
-              snapshot,
-              previousSnapshot,
-              entity.id
-            );
-            if (state?.shieldSlamImpact !== true) return [];
-            return [entity.targetEntityId ?? entity.id];
-          })
-        : [];
+    const projectilePaths = deriveSlingerProjectilePaths(snapshot, primitives);
+    const liveProjectileIds = new Set(
+      projectilePaths.map(({ sourceId }) => sourceId)
+    );
+    for (const [id, effect] of this.projectileEffects)
+      if (!liveProjectileIds.has(id)) {
+        this.layers["world-effects"].delete(effect);
+        effect.destroy();
+        this.projectileEffects.delete(id);
+      }
+    for (const path of projectilePaths) {
+      const effect =
+        this.projectileEffects.get(path.sourceId) ?? this.scene.add.graphics();
+      effect.clear();
+      effect.lineStyle(3, 0xf0aa52, 0.9);
+      effect.lineBetween(
+        path.source.x,
+        path.source.y - 28,
+        path.target.x,
+        path.target.y - 34
+      );
+      effect.fillStyle(0xffd17a, 1);
+      effect.fillCircle(
+        path.target.x,
+        path.target.y - 34,
+        reduceMotion ? 4 : 6
+      );
+      effect.lineStyle(2, 0xd8eef5, 0.95);
+      effect.strokeCircle(path.source.x, path.source.y - 28, 5);
+      effect.setAlpha(reduceMotion ? 0.82 : 1);
+      if (!this.projectileEffects.has(path.sourceId)) {
+        this.projectileEffects.set(path.sourceId, effect);
+        this.layers["world-effects"].add(effect);
+      }
+    }
+
+    const abilityImpactIds = deriveShieldSlamImpactIds(
+      snapshot,
+      previousSnapshot
+    );
     const impactKey =
       snapshot.schemaVersion === 2
         ? `${snapshot.scenarioId}:${snapshot.tick}:${abilityImpactIds.join(",")}`
         : undefined;
+    const previousPrimitivesById = new Map(
+      previousSnapshot === undefined
+        ? []
+        : buildBattlefieldPrimitives(previousSnapshot).entities.map(
+            (entity) => [entity.id, entity]
+          )
+    );
     for (const [id, effect] of this.abilityEffects)
       if (!abilityImpactIds.includes(id)) {
         effect.destroy();
@@ -1687,7 +2009,9 @@ class PersistentBattlefieldScene {
           this.scene.textures.remove(textureKey);
       }
     for (const id of abilityImpactIds) {
-      const entity = orderedEntities.find((candidate) => candidate.id === id);
+      const entity =
+        orderedEntities.find((candidate) => candidate.id === id) ??
+        previousPrimitivesById.get(id);
       if (entity?.cameraDepth === undefined) continue;
       const effectX = entity.x - 34;
       const effectY = entity.y - 12;
@@ -1749,6 +2073,8 @@ class PersistentBattlefieldScene {
       if (objects !== undefined) this.scene.children.bringToTop(objects.ring);
     }
     for (const effect of active) this.scene.children.bringToTop(effect);
+    for (const effect of this.projectileEffects.values())
+      this.scene.children.bringToTop(effect);
     for (const entity of orderedEntities) {
       const objects = this.entities.get(entity.id);
       if (objects !== undefined)
@@ -1901,6 +2227,8 @@ class PersistentBattlefieldScene {
     for (const [id, departure] of this.departures)
       this.destroyEntityObjects(id, departure.objects);
     for (const effect of this.effects) effect.clearMask(true);
+    for (const effect of this.projectileEffects.values()) effect.destroy();
+    this.projectileEffects.clear();
     for (const effect of this.abilityEffects.values()) effect.destroy();
     this.abilityEffects.clear();
     this.entities.clear();
