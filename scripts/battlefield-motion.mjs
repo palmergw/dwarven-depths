@@ -121,7 +121,7 @@ function validateEntityTimeline(samples, entityId) {
     if (
       lastActiveTick < 0 ||
       entity.transitionTick === null ||
-      entity.transitionTick >= sample.tick ||
+      entity.transitionTick > sample.tick ||
       entity.transitionTick <= lastActiveTick
     )
       throw new Error(

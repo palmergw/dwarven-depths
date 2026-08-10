@@ -66,7 +66,7 @@ function validSamples() {
         entity(dwarfId, "node.shuttergate_gate", 605, 230),
         entity(hostileId, "node.shuttergate_gate", 663, 14, {
           lifecycle: "destroyed",
-          transitionTick: 24,
+          transitionTick: 25,
           alpha
         })
       ]
