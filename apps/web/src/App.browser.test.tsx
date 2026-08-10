@@ -25,7 +25,8 @@ import {
   interpolationDistanceForFrame,
   renderedFactionForSourceKey,
   selectCombatPoseAsset,
-  selectCombatPoseTreatment
+  selectCombatPoseTreatment,
+  statusSignalKind
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { CombatHud } from "./CombatHud.js";
@@ -883,6 +884,55 @@ describe("run journey guidance", () => {
     expect(document.querySelector(".active-combat-screen")).toBeNull();
   });
 
+  it("does not strand a terminal result when battlefield assets fail to load", async () => {
+    const sourceDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLImageElement.prototype,
+      "src"
+    );
+    if (sourceDescriptor?.set === undefined)
+      throw new Error("HTMLImageElement.src setter is unavailable");
+    const setImageSource = sourceDescriptor.set;
+    let failedBattlefieldAsset = false;
+    vi.spyOn(HTMLImageElement.prototype, "src", "set").mockImplementation(
+      function (this: HTMLImageElement, value: string) {
+        if (!failedBattlefieldAsset && value.includes("environment-base")) {
+          failedBattlefieldAsset = true;
+          queueMicrotask(() => this.dispatchEvent(new Event("error")));
+          return;
+        }
+        setImageSource.call(this, value);
+      }
+    );
+    const worker = new ControlledJourneyWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => new PersistentJourneyProfileStore()}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    worker.emitTerminalSnapshot();
+    worker.finish();
+
+    await vi.waitFor(
+      () =>
+        expect(
+          document
+            .querySelector(".battlefield-canvas")
+            ?.getAttribute("data-renderer-error")
+        ).toBe("asset-load-failed"),
+      { timeout: 10_000 }
+    );
+    expect(failedBattlefieldAsset).toBe(true);
+    await resultHeading("Victory results");
+    expect(document.querySelector(".active-combat-screen")).toBeNull();
+  });
+
   it("rejects contradictory terminal progression when profile storage is unavailable", async () => {
     const workers: ControlledJourneyWorker[] = [];
     const createWorker = (): Worker => {
@@ -1365,6 +1415,12 @@ describe("player-facing combat HUD", () => {
               appliedAtTick: 20,
               expiresAtTick: 30,
               magnitude: 1
+            },
+            {
+              id: "status.slow",
+              appliedAtTick: 22,
+              expiresAtTick: 28,
+              magnitude: 1
             }
           ],
           transition: "active",
@@ -1392,7 +1448,39 @@ describe("player-facing combat HUD", () => {
       )
     );
     expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
-      "Combat paused. Fortress holding. Wave 1. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. Elite enemy is staggered until tick 30."
+      "Combat paused. Fortress holding. Wave 1. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. Elite enemy has status staggered (status.staggered), source Shield Slam, from tick 20 through tick 30. Elite enemy has status slowed (status.slow), source slowing effect, from tick 22 through tick 28."
+    );
+    expect(statusSignalKind("status.staggered")).toBe("stagger");
+    expect(statusSignalKind("status.slow")).toBe("slow");
+    expect(statusSignalKind("status.haste")).toBe("haste");
+    expect(statusSignalKind("status.unknown")).toBe("unknown");
+    root.render(
+      <CombatHud
+        snapshot={{
+          ...snapshot,
+          entities: [
+            snapshot.entities[0],
+            {
+              ...snapshot.entities[1],
+              statuses: [
+                {
+                  id: "status.unknown",
+                  appliedAtTick: 23,
+                  expiresAtTick: 29,
+                  magnitude: 1
+                }
+              ]
+            }
+          ]
+        }}
+      />
+    );
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector(".combat-state-summary")?.textContent
+      ).toContain(
+        "Elite enemy has status status.unknown (status.unknown), source unavailable in authoritative presentation state, from tick 23 through tick 29."
+      )
     );
   });
 
@@ -2678,7 +2766,34 @@ describe("authoritative web worker", () => {
         },
         entity.id
       )
-    ).toBe("raider-east-source");
+    ).toBe("raider-attack-source");
+    expect(
+      selectCombatPoseTreatment(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...entity,
+              faction: "enemy",
+              visualId: "enemy.goblin_slinger",
+              archetype: "basic",
+              facing: "north",
+              action: {
+                kind: "basic_attack",
+                phase: "committed",
+                abilityId: null
+              }
+            }
+          ]
+        },
+        entity.id
+      )
+    ).toMatchObject({
+      source: "slinger-attack-source",
+      state: "committed",
+      angle: 86,
+      flipX: false
+    });
     expect(
       selectCombatPoseAsset(
         {
@@ -2794,10 +2909,10 @@ describe("authoritative web worker", () => {
           hostile.id
         )
       ).toBe(expected);
-    const directionalAttackSources = (
+    const directionalAttackTreatments = (
       ["north", "east", "south", "west"] as const
     ).map((facing) =>
-      selectCombatPoseAsset(
+      selectCombatPoseTreatment(
         {
           ...snapshot,
           entities: [
@@ -2815,7 +2930,19 @@ describe("authoritative web worker", () => {
         hostile.id
       )
     );
-    expect(new Set(directionalAttackSources).size).toBe(4);
+    expect(directionalAttackTreatments.map(({ source }) => source)).toEqual([
+      "raider-attack-source",
+      "raider-attack-source",
+      "raider-attack-source",
+      "raider-attack-source"
+    ]);
+    expect(
+      new Set(
+        directionalAttackTreatments.map(
+          ({ angle, flipX }) => `${angle}:${String(flipX)}`
+        )
+      ).size
+    ).toBe(4);
     const attackPhaseAngles = (["windup", "committed", "impact"] as const).map(
       (phase) =>
         selectCombatPoseTreatment(
@@ -2851,7 +2978,12 @@ describe("authoritative web worker", () => {
         },
         hostile.id
       )
-    ).toMatchObject({ state: "windup", angle: 5, flipX: true });
+    ).toMatchObject({
+      source: "raider-attack-source",
+      state: "windup",
+      angle: 6,
+      flipX: false
+    });
     expect(
       selectCombatPoseTreatment(
         {
@@ -2870,7 +3002,12 @@ describe("authoritative web worker", () => {
         },
         hostile.id
       )
-    ).toMatchObject({ state: "impact", angle: 9, flipX: false });
+    ).toMatchObject({
+      source: "raider-attack-source",
+      state: "impact",
+      angle: 8,
+      flipX: true
+    });
     const slinger = {
       ...hostile,
       visualId: "enemy.goblin_slinger",

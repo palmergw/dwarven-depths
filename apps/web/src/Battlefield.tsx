@@ -537,6 +537,8 @@ export function selectCombatPoseAsset(
   if (dwarf && entity.action.phase === "recovery") return "warden-guard-source";
   if (dwarf) return "warden-source";
   const prefix = hostilePosePrefix(entity.visualId);
+  if (entity.action.kind === "basic_attack" && entity.action.phase !== "idle")
+    return `${prefix}-attack-source`;
   return hostileIdlePoseAsset(prefix, entity.facing);
 }
 
@@ -571,13 +573,21 @@ export function selectCombatPoseTreatment(
   const facingSign =
     entity.facing === "north" || entity.facing === "west" ? -1 : 1;
   const facingAngle =
-    entity.facing === "north"
-      ? -3
-      : entity.facing === "east"
-        ? 1
-        : entity.facing === "south"
-          ? 3
-          : -1;
+    source.endsWith("-attack-source") && entity.faction === "enemy"
+      ? entity.facing === "north"
+        ? 90
+        : entity.facing === "east"
+          ? 0
+          : entity.facing === "south"
+            ? -90
+            : 0
+      : entity.facing === "north"
+        ? -3
+        : entity.facing === "east"
+          ? 1
+          : entity.facing === "south"
+            ? 3
+            : -1;
   const phaseAngle =
     state === "moving"
       ? 2
@@ -596,7 +606,7 @@ export function selectCombatPoseTreatment(
     flipX:
       entity.faction === "enemy" &&
       entity.action.kind === "basic_attack" &&
-      entity.facing === "west",
+      entity.facing === "east",
     state
   };
 }
@@ -605,9 +615,19 @@ export interface CombatPresentationState {
   readonly healthRatio: number;
   readonly damaged: boolean;
   readonly status: boolean;
+  readonly statusIds: readonly string[];
   readonly elite: boolean;
   readonly boss: boolean;
   readonly shieldSlamImpact: boolean;
+}
+
+export function statusSignalKind(
+  statusId: string
+): "stagger" | "slow" | "haste" | "unknown" {
+  if (statusId.includes("stagger")) return "stagger";
+  if (statusId.includes("slow")) return "slow";
+  if (statusId.includes("haste")) return "haste";
+  return "unknown";
 }
 
 export function deriveCombatPresentationState(
@@ -632,6 +652,7 @@ export function deriveCombatPresentationState(
     damaged:
       previous !== undefined && entity.currentHealth < previous.currentHealth,
     status: entity.statuses.length > 0,
+    statusIds: entity.statuses.map(({ id }) => id),
     elite: entity.elite,
     boss: entity.boss,
     shieldSlamImpact:
@@ -1331,14 +1352,27 @@ function updateEntitySignal(
       top - 2
     );
   }
-  if (presentation.status) {
+  for (const [index, statusId] of presentation.statusIds.entries()) {
     signal.lineStyle(2, 0x73d7ef, 1);
-    const centerX = entity.x + width / 2 + 7;
+    const centerX = entity.x + width / 2 + 7 + index * 10;
     const centerY = top + 2;
-    signal.lineBetween(centerX, centerY - 5, centerX + 5, centerY);
-    signal.lineBetween(centerX + 5, centerY, centerX, centerY + 5);
-    signal.lineBetween(centerX, centerY + 5, centerX - 5, centerY);
-    signal.lineBetween(centerX - 5, centerY, centerX, centerY - 5);
+    const kind = statusSignalKind(statusId);
+    if (kind === "stagger") {
+      signal.lineBetween(centerX, centerY - 5, centerX + 5, centerY);
+      signal.lineBetween(centerX + 5, centerY, centerX, centerY + 5);
+      signal.lineBetween(centerX, centerY + 5, centerX - 5, centerY);
+      signal.lineBetween(centerX - 5, centerY, centerX, centerY - 5);
+    } else if (kind === "slow") {
+      signal.lineBetween(centerX - 4, centerY - 5, centerX + 4, centerY - 5);
+      signal.lineBetween(centerX - 4, centerY + 5, centerX + 4, centerY + 5);
+      signal.lineBetween(centerX - 4, centerY - 5, centerX + 4, centerY + 5);
+      signal.lineBetween(centerX + 4, centerY - 5, centerX - 4, centerY + 5);
+    } else if (kind === "haste") {
+      signal.lineBetween(centerX - 4, centerY - 5, centerX + 1, centerY);
+      signal.lineBetween(centerX + 1, centerY, centerX - 4, centerY + 5);
+      signal.lineBetween(centerX + 1, centerY - 5, centerX + 6, centerY);
+      signal.lineBetween(centerX + 6, centerY, centerX + 1, centerY + 5);
+    } else signal.strokeRect(centerX - 4, centerY - 4, 8, 8);
   }
   if (presentation.elite || presentation.boss) {
     signal.lineStyle(2, presentation.boss ? 0xe7a2ff : 0xffd45c, 1);
@@ -2351,7 +2385,19 @@ function createBattlefieldRenderer(
   let simulationSpeed = initialSimulationSpeed;
   let evidenceEffectAlpha = initialEvidenceEffectAlpha;
   let persistentScene: PersistentBattlefieldScene | undefined;
+  let rendererUnavailable = false;
   const loadErrors = new Set<string>();
+  const completeUnavailableTerminal = (
+    terminalSnapshot: RenderSnapshot
+  ): void => {
+    if (
+      terminalSnapshot.schemaVersion !== 2 ||
+      terminalSnapshot.phase !== "terminal"
+    )
+      return;
+    onTerminalPresentationStarted(terminalSnapshot);
+    onTerminalPresentationCompleted(terminalSnapshot);
+  };
   const game = new Phaser.Game({
     type: Phaser.CANVAS,
     width: WIDTH,
@@ -2380,6 +2426,7 @@ function createBattlefieldRenderer(
       },
       create(this: Phaser.Scene) {
         if (loadErrors.size > 0) {
+          rendererUnavailable = true;
           parent.setAttribute("data-renderer-error", "asset-load-failed");
           parent.setAttribute(
             "data-renderer-error-assets",
@@ -2392,10 +2439,12 @@ function createBattlefieldRenderer(
               fontSize: "24px"
             })
             .setOrigin(0.5);
+          completeUnavailableTerminal(snapshot);
           return;
         }
         const staticDepth = decodeBattlefieldDepthTexture(this);
         if (staticDepth === undefined) {
+          rendererUnavailable = true;
           parent.setAttribute("data-renderer-error", "invalid-depth-asset");
           this.add
             .text(WIDTH / 2, HEIGHT / 2, "Battlefield depth data is invalid.", {
@@ -2404,6 +2453,7 @@ function createBattlefieldRenderer(
               fontSize: "24px"
             })
             .setOrigin(0.5);
+          completeUnavailableTerminal(snapshot);
           return;
         }
         persistentScene = new PersistentBattlefieldScene(this, staticDepth);
@@ -2446,6 +2496,10 @@ function createBattlefieldRenderer(
       reduceMotion = nextReduceMotion;
       simulationSpeed = nextSimulationSpeed;
       evidenceEffectAlpha = nextEvidenceEffectAlpha;
+      if (rendererUnavailable) {
+        completeUnavailableTerminal(snapshot);
+        return;
+      }
       persistentScene?.update(
         snapshot,
         feedback,
