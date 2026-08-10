@@ -30,6 +30,19 @@ const allowedActionConfigurations = Object.freeze({
   }
 });
 
+const expectedHostedSteps = Object.freeze([
+  { uses: "actions/checkout@v7" },
+  {
+    uses: "pnpm/action-setup@v6",
+    with: { version: "11.16.0", run_install: false }
+  },
+  {
+    uses: "actions/setup-node@v7",
+    with: { "node-version": 22, cache: "pnpm" }
+  },
+  ...allowedHostedRunCommands.map((run) => ({ run }))
+]);
+
 export const expectedHostedPackageScripts = Object.freeze({
   "check:ci-runtime-policy": "node scripts/check-ci-runtime-policy.mjs",
   lint: "biome check .",
@@ -133,6 +146,13 @@ export function inspectWorkflowText(path, text) {
     return [`${path}: workflow must define a jobs map`];
   }
 
+  const jobNames = Object.keys(jobs);
+  if (jobNames.length !== 1 || jobNames[0] !== "fast-checks") {
+    problems.push(
+      `${path}: hosted workflow must contain exactly the fast-checks job`
+    );
+  }
+
   if (
     !sameConfiguration(workflow.on, {
       pull_request: {
@@ -203,6 +223,11 @@ export function inspectWorkflowText(path, text) {
     if (!Array.isArray(job.steps)) {
       problems.push(`${path}: hosted job ${jobName} must define a steps array`);
       continue;
+    }
+    if (!sameConfiguration(job.steps, expectedHostedSteps)) {
+      problems.push(
+        `${path}: hosted job ${jobName} must retain the exact reviewed step sequence`
+      );
     }
     job.steps.forEach((step, index) => {
       problems.push(...inspectHostedStep(path, jobName, step, index));

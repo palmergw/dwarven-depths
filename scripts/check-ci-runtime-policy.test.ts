@@ -6,7 +6,7 @@ import {
 } from "./check-ci-runtime-policy.mjs";
 
 function workflowWithStep(step: string, extraJob = "", extraWorkflow = "") {
-  return `${extraWorkflow}on:\n  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review]\n  push:\n    branches: [main]\npermissions:\n  contents: read\nconcurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  test:\n    if: github.event_name == 'push' || github.event.pull_request.draft == false\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n${extraJob}    steps:\n      - ${step}\n`;
+  return `${extraWorkflow}on:\n  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review]\n  push:\n    branches: [main]\npermissions:\n  contents: read\nconcurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  fast-checks:\n    if: github.event_name == 'push' || github.event.pull_request.draft == false\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n${extraJob}    steps:\n      - ${step}\n`;
 }
 
 describe("hosted CI runtime policy", () => {
@@ -17,9 +17,13 @@ describe("hosted CI runtime policy", () => {
   it.each(allowedHostedRunCommands)(
     "allows reviewed hosted command %s",
     (command) => {
-      expect(
-        inspectWorkflowText("allowed.yml", workflowWithStep(`run: ${command}`))
-      ).toEqual([]);
+      const problems = inspectWorkflowText(
+        "allowed.yml",
+        workflowWithStep(`run: ${command}`)
+      );
+      expect(problems).not.toContain(
+        `allowed.yml: hosted job fast-checks step 0 uses non-allowlisted command: ${command}`
+      );
     }
   );
 
@@ -50,19 +54,21 @@ describe("hosted CI runtime policy", () => {
       workflowWithStep(`run: ${command}`)
     );
     expect(problems).toContain(
-      `forbidden.yml: hosted job test step 0 uses non-allowlisted command: ${command}`
+      `forbidden.yml: hosted job fast-checks step 0 uses non-allowlisted command: ${command}`
     );
   });
 
   it("normalizes harmless folded whitespace but does not compose split commands", () => {
     const folded = workflowWithStep("run: >\n          pnpm\n          lint");
-    expect(inspectWorkflowText("folded.yml", folded)).toEqual([]);
+    expect(inspectWorkflowText("folded.yml", folded)).not.toContain(
+      "folded.yml: hosted job fast-checks step 0 uses non-allowlisted command: pnpm lint"
+    );
     const split = workflowWithStep(
       `run: \${{ env.A }}\${{ env.B }} \${{ env.C }}\${{ env.D }}`,
       "    env:\n      A: pn\n      B: pm\n      C: test\n      D: :browser\n"
     );
     expect(inspectWorkflowText("split.yml", split)).toContain(
-      "split.yml: hosted job test uses non-allowlisted keys: env"
+      "split.yml: hosted job fast-checks uses non-allowlisted keys: env"
     );
   });
 
@@ -75,10 +81,21 @@ describe("hosted CI runtime policy", () => {
         `    ${key}: ${value}\n`
       );
       expect(inspectWorkflowText(`${key}.yml`, workflow)).toContain(
-        `${key}.yml: hosted job test uses non-allowlisted keys: ${key}`
+        `${key}.yml: hosted job fast-checks uses non-allowlisted keys: ${key}`
       );
     }
   );
+
+  it("pins one hosted job and one exact ordered step sequence", () => {
+    const repeated = workflowWithStep("run: pnpm build:ci:fast");
+    expect(inspectWorkflowText("repeated.yml", repeated)).toContain(
+      "repeated.yml: hosted job fast-checks must retain the exact reviewed step sequence"
+    );
+    const extraJob = `${repeated}  extra:\n    if: github.event_name == 'push' || github.event.pull_request.draft == false\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n    steps:\n      - run: pnpm lint\n`;
+    expect(inspectWorkflowText("extra.yml", extraJob)).toContain(
+      "extra.yml: hosted workflow must contain exactly the fast-checks job"
+    );
+  });
 
   it("rejects non-blocking or altered job gates", () => {
     const nonBlocking = workflowWithStep(
@@ -86,14 +103,14 @@ describe("hosted CI runtime policy", () => {
       "    continue-on-error: true\n"
     );
     expect(inspectWorkflowText("nonblocking.yml", nonBlocking)).toContain(
-      "nonblocking.yml: hosted job test uses non-allowlisted keys: continue-on-error"
+      "nonblocking.yml: hosted job fast-checks uses non-allowlisted keys: continue-on-error"
     );
     const skipped = workflowWithStep("run: pnpm lint").replace(
       "if: github.event_name == 'push' || github.event.pull_request.draft == false",
       "if: false"
     );
     expect(inspectWorkflowText("skipped.yml", skipped)).toContain(
-      "skipped.yml: hosted job test must retain the reviewed draft-skip condition"
+      "skipped.yml: hosted job fast-checks must retain the reviewed draft-skip condition"
     );
   });
 
@@ -115,7 +132,7 @@ describe("hosted CI runtime policy", () => {
     );
     const action = workflowWithStep("uses: docker/build-push-action@v6");
     expect(inspectWorkflowText("action.yml", action)).toContain(
-      "action.yml: hosted job test step 0 uses non-allowlisted action: docker/build-push-action@v6"
+      "action.yml: hosted job fast-checks step 0 uses non-allowlisted action: docker/build-push-action@v6"
     );
   });
 
@@ -123,12 +140,14 @@ describe("hosted CI runtime policy", () => {
     const valid = workflowWithStep(
       "uses: pnpm/action-setup@v6\n        with:\n          version: 11.16.0\n          run_install: false"
     );
-    expect(inspectWorkflowText("action-valid.yml", valid)).toEqual([]);
+    expect(inspectWorkflowText("action-valid.yml", valid)).not.toContain(
+      "action-valid.yml: hosted job fast-checks step 0 changes the pinned configuration for pnpm/action-setup@v6"
+    );
     const changed = workflowWithStep(
       "uses: pnpm/action-setup@v6\n        with:\n          version: 11.16.0\n          run_install: true"
     );
     expect(inspectWorkflowText("action-changed.yml", changed)).toContain(
-      "action-changed.yml: hosted job test step 0 changes the pinned configuration for pnpm/action-setup@v6"
+      "action-changed.yml: hosted job fast-checks step 0 changes the pinned configuration for pnpm/action-setup@v6"
     );
   });
 
