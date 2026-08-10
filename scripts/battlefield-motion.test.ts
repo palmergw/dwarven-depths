@@ -100,7 +100,12 @@ describe("running-client battlefield motion evidence", () => {
   it("allows bounded route-node snaps only for reduced-motion evidence", () => {
     const reduced = validSamples().map((sample, index) => ({
       ...sample,
-      videoTimeMilliseconds: index * 10
+      videoTimeMilliseconds: index * 10,
+      entities: sample.entities.map((candidate) =>
+        candidate.lifecycle === "active"
+          ? candidate
+          : { ...candidate, alpha: 0.45 }
+      )
     }));
     expect(() => validateBattlefieldMotionSamples(reduced)).toThrow(
       "continuous motion bound"
@@ -110,6 +115,19 @@ describe("running-client battlefield motion evidence", () => {
     ).toMatchObject({
       trackedEntityId: "entity.enemy.shuttergate_001"
     });
+    const unreadableRetention = reduced.map((sample) => ({
+      ...sample,
+      entities: sample.entities.map((candidate) =>
+        candidate.lifecycle === "active"
+          ? candidate
+          : { ...candidate, alpha: 1 }
+      )
+    }));
+    expect(() =>
+      validateBattlefieldMotionSamples(unreadableRetention, {
+        reducedMotion: true
+      })
+    ).toThrow("reduced-motion lifecycle retention is not readable");
     reduced[3] = {
       ...reduced[3],
       entities: reduced[3].entities.map((candidate) =>

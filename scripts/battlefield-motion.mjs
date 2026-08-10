@@ -255,7 +255,17 @@ export function validateBattlefieldMotionSamples(
     throw new Error("hostile attack has no authoritative damage impact");
 
   const departureAlpha = departures.map(({ entity }) => entity.alpha);
-  if (Math.max(...departureAlpha) - Math.min(...departureAlpha) < 0.4)
+  if (
+    reducedMotion &&
+    departureAlpha.some((alpha) => alpha < 0.35 || alpha > 0.85)
+  )
+    throw new Error(
+      "hostile reduced-motion lifecycle retention is not readable"
+    );
+  if (
+    !reducedMotion &&
+    Math.max(...departureAlpha) - Math.min(...departureAlpha) < 0.4
+  )
     throw new Error("hostile lifecycle transition has no readable fade");
   const firstDeparture = tracked.findIndex(
     ({ entity }) =>
