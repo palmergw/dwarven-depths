@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "dense-wave-reduced-motion",
-  "sourceHead": "2636b8123467396a5f82e97733faf8997e25b2a6",
+  "sourceHead": "8d81e1fe8bb37a6319a3edda51af9d9eedecaa32",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "dense-wave-reduced-motion.png",
-  "screenshotSha256": "5b69378c0aa464f7e4ee471c10596fc1bad18f776d970265f8a208994e6bb1c9",
+  "screenshotSha256": "967ed05b74dffb1cf747750f0ffd7863217ce959c8dc2fbc2446242d80fbdf33",
   "viewport": [
     1440,
     900
@@ -98,14 +98,14 @@
             60
           ],
           "alphaBounds": [
-            818,
+            805,
             286,
-            41,
-            39
+            67,
+            44
           ],
-          "nonzeroAlphaPixels": 970,
-          "fullAlphaPixels": 785,
-          "partialAlphaPixels": 185,
+          "nonzeroAlphaPixels": 1339,
+          "fullAlphaPixels": 1060,
+          "partialAlphaPixels": 279,
           "intersectsUnobscuredWorldViewport": true
         },
         {

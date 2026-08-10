@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "shield-slam-impact-reduced-motion",
-  "sourceHead": "2636b8123467396a5f82e97733faf8997e25b2a6",
+  "sourceHead": "8d81e1fe8bb37a6319a3edda51af9d9eedecaa32",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "shield-slam-impact-reduced-motion.png",
-  "screenshotSha256": "ef03a531f403c9a580a0447a923594fbb32523d7673c513723966bc5cec8c572",
+  "screenshotSha256": "43b473e42fe6da392bcc6179316fc7e2864bfa9e57cffac4f4a97fddd123122f",
   "viewport": [
     1440,
     900
@@ -98,14 +98,14 @@
             60
           ],
           "alphaBounds": [
-            818,
+            805,
             286,
-            41,
-            39
+            67,
+            44
           ],
-          "nonzeroAlphaPixels": 970,
-          "fullAlphaPixels": 785,
-          "partialAlphaPixels": 185,
+          "nonzeroAlphaPixels": 1339,
+          "fullAlphaPixels": 1060,
+          "partialAlphaPixels": 279,
           "intersectsUnobscuredWorldViewport": true
         },
         {
@@ -136,14 +136,14 @@
             60
           ],
           "alphaBounds": [
-            641,
+            634,
             279,
-            44,
+            58,
             44
           ],
-          "nonzeroAlphaPixels": 1144,
-          "fullAlphaPixels": 989,
-          "partialAlphaPixels": 155,
+          "nonzeroAlphaPixels": 1624,
+          "fullAlphaPixels": 1387,
+          "partialAlphaPixels": 237,
           "intersectsUnobscuredWorldViewport": true
         }
       ]

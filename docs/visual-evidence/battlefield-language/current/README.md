@@ -1,10 +1,10 @@
 # Issue #273 exact-head visual review
 
-Implementation source head: `2636b8123467396a5f82e97733faf8997e25b2a6`
+Implementation source head: `8d81e1fe8bb37a6319a3edda51af9d9eedecaa32`
 
 ## Bounded product decision
 
-Approve or reject the corrected Shuttergate movement and attack treatment: four-way hostile facing is retained through attacks, and moving/windup/committed/impact/recovery have distinct directional poses in normal and reduced motion. The previously approved character art, damage/status and Shield Slam treatment, departure language, map, projection, scale, game-first frame, and HUD composition are unchanged and are not being reopened for review.
+Approve or reject only the corrected hostile attack treatment: each role now uses its authored attack silhouette during windup, commitment, impact, and recovery while retaining four-way orientation. The previously approved character art, movement cadence, damage/status and Shield Slam treatment, departure language, map, projection, scale, game-first frame, and HUD composition are unchanged and are not being reopened for review.
 
 ## Running-client evidence
 
@@ -21,8 +21,8 @@ Both sidecars bind the implementation head, fixture, viewport, video checksum, r
 
 ## Comparisons
 
-- `concept-target-vs-current-dense.png` preserves the complete fixed concept target beside the complete current 1440×900 running-client frame. SHA-256: `f55da0db5bdeedf5066b6fbb74c598c34dd38fdc44cc5a5d43d5ee3d04313609`.
-- `previous-approved-vs-current-dense.png` preserves the previous approved static Shuttergate baseline beside the current frame, demonstrating that map composition and projection did not change. SHA-256: `576cf1c0f38823851ca37d8fd7e9c4854e7dfd32eadc7aa0e63b1c2d99758c5a`.
+- `concept-target-vs-current-dense.png` preserves the complete fixed concept target beside the complete current 1440×900 running-client frame. SHA-256: `8757c049f7138bf68ee991e7c28aecfef4297873e0f9632f6808d2c5ec1749d0`.
+- `previous-approved-vs-current-dense.png` preserves the previous approved static Shuttergate baseline beside the current frame, demonstrating that map composition and projection did not change. SHA-256: `14222ce0520342824ff6d0f9719e39c8a29dc42e3bc858ed69f3d258197ac509`.
 
 ## Bounded adversarial checks
 

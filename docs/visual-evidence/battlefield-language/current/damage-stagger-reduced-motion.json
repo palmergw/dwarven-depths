@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "damage-stagger-reduced-motion",
-  "sourceHead": "2636b8123467396a5f82e97733faf8997e25b2a6",
+  "sourceHead": "8d81e1fe8bb37a6319a3edda51af9d9eedecaa32",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "damage-stagger-reduced-motion.png",
-  "screenshotSha256": "260e8423e1401c84cc8fbd5fdd5b57e9b98fd7cf2cba688ed4f7e4483a3c3e87",
+  "screenshotSha256": "e2f5880efb6c8c74898c3d6a6017d5aacb65fdb1c5f1dde9797b48caf2cd1e0a",
   "viewport": [
     1440,
     900
@@ -98,14 +98,14 @@
             60
           ],
           "alphaBounds": [
-            818,
+            805,
             286,
-            41,
-            39
+            67,
+            44
           ],
-          "nonzeroAlphaPixels": 970,
-          "fullAlphaPixels": 785,
-          "partialAlphaPixels": 185,
+          "nonzeroAlphaPixels": 1339,
+          "fullAlphaPixels": 1060,
+          "partialAlphaPixels": 279,
           "intersectsUnobscuredWorldViewport": true
         },
         {
@@ -138,14 +138,14 @@
             60
           ],
           "alphaBounds": [
-            641,
+            634,
             279,
-            44,
+            58,
             44
           ],
-          "nonzeroAlphaPixels": 1144,
-          "fullAlphaPixels": 989,
-          "partialAlphaPixels": 155,
+          "nonzeroAlphaPixels": 1624,
+          "fullAlphaPixels": 1387,
+          "partialAlphaPixels": 237,
           "intersectsUnobscuredWorldViewport": true
         }
       ]
