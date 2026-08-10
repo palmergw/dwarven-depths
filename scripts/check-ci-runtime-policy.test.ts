@@ -14,7 +14,13 @@ describe("hosted CI runtime policy", () => {
     ["local checkpoint", "run: pnpm verify:local:checkpoint"],
     ["local release checkpoint", "run: pnpm run verify:local:release"],
     ["full unit suite", "run: pnpm test:built"],
+    [
+      "option-prefixed full suite",
+      "run: pnpm --filter @dwarven-depths/runtime test"
+    ],
+    ["direct Vitest suite", "run: pnpm exec vitest run"],
     ["browser tests", "run: corepack pnpm test:browser"],
+    ["direct Playwright suite", "run: pnpm exec playwright test"],
     ["release reports", "run: pnpm report:release-candidate"],
     ["desktop packaging", "run: pnpm build:desktop:docker"],
     ["capture", "run: pnpm capture:shuttergate-clip"],
@@ -37,6 +43,14 @@ describe("hosted CI runtime policy", () => {
       )
     ).toContain(
       "missing.yml: hosted job unbounded must declare timeout-minutes"
+    );
+    expect(
+      inspectWorkflowText(
+        "wide-indent.yml",
+        "jobs:\n    slow:\n      runs-on: ubuntu-latest\n      steps:\n        - run: pnpm lint\n"
+      )
+    ).toContain(
+      "wide-indent.yml: hosted job slow must declare timeout-minutes"
     );
     expect(
       inspectWorkflowText(
