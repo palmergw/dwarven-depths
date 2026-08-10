@@ -10,8 +10,11 @@ import type {
 } from "@dwarven-depths/contracts";
 import {
   createLiveScenarioHost,
-  createShieldSlamWebPreparationState,
-  type LiveScenarioHost
+  createShuttergateWebLiveScenarioHost,
+  createShuttergateWebScenario,
+  type LiveScenarioHost,
+  resolveShuttergateWebAttemptReward,
+  type ShuttergateWebRunConfiguration
 } from "@dwarven-depths/runtime";
 import emptyContentFixture from "../../../content/fixtures/empty-content.json";
 import shieldSlamContentFixture from "../../../content/fixtures/phase-3-shuttergate.json";
@@ -55,6 +58,7 @@ let preparedContent: CompiledContent | undefined;
 let preparedScenario: ScenarioDefinition | undefined;
 let liveHost: LiveScenarioHost | undefined;
 let previousPresentationSnapshot: RenderSnapshotV2 | undefined;
+let runConfiguration: ShuttergateWebRunConfiguration | undefined;
 
 function post(message: WorkerMessage): void {
   self.postMessage(message);
@@ -276,17 +280,28 @@ async function executePreparedScenario(): Promise<void> {
       finalStateChecksum: result.finalStateChecksum,
       eventStreamChecksum: result.eventStreamChecksum
     };
-    if (protocolVersion === 4)
+    if (protocolVersion === 4) {
+      if (runConfiguration === undefined)
+        throw new Error(
+          "Protocol 4 terminal state requires a run configuration."
+        );
+      const campaign = resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration: runConfiguration,
+        terminalResult: result.terminalResult,
+        finalState: result.finalState
+      });
       post({
         protocolVersion: 4,
         type: "result",
         ...terminalEvidence,
+        campaign,
         commands: result.commands as Extract<
           WorkerMessage,
           { protocolVersion: 4; type: "result" }
         >["commands"]
       });
-    else
+    } else
       post({
         protocolVersion,
         type: "result",
@@ -346,6 +361,9 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
     }
     initialized = true;
     protocolVersion = message.protocolVersion;
+    const initializationConfiguration =
+      message.protocolVersion === 4 ? message.runConfiguration : undefined;
+    runConfiguration = initializationConfiguration;
     try {
       const contentFixture =
         protocolVersion === 4 ? shieldSlamContentFixture : emptyContentFixture;
@@ -360,16 +378,22 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         scenarioFixture as unknown as ScenarioDefinition,
         preparedContent
       );
-      liveHost = createLiveScenarioHost(
-        preparedScenario,
-        preparedContent,
-        protocolVersion === 4
-          ? createShieldSlamWebPreparationState(
-              preparedContent,
-              preparedScenario
-            )
-          : undefined
-      );
+      if (protocolVersion === 4) {
+        if (initializationConfiguration === undefined)
+          throw new Error(
+            "Protocol 4 initialization requires a run configuration."
+          );
+        preparedScenario = createShuttergateWebScenario(
+          preparedScenario,
+          initializationConfiguration
+        );
+        liveHost = createShuttergateWebLiveScenarioHost(
+          preparedScenario,
+          preparedContent,
+          initializationConfiguration
+        );
+      } else
+        liveHost = createLiveScenarioHost(preparedScenario, preparedContent);
       previousPresentationSnapshot = undefined;
       const preparationSnapshot =
         protocolVersion === 4
@@ -403,7 +427,10 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
         deployableEntityCount: preparationSnapshot.entities.filter(
           (entity) => entity.faction !== "enemy"
         ).length,
-        placementPointCount: preparedMap?.placementPoints.length ?? 0
+        placementPointCount:
+          runConfiguration === undefined
+            ? (preparedMap?.placementPoints.length ?? 0)
+            : 0
       });
     } catch (error) {
       post(

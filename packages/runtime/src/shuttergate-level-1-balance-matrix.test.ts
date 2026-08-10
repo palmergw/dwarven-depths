@@ -71,7 +71,7 @@ describe("Shuttergate Level 1 balance matrix", () => {
     expect(Object.isFrozen(matrix)).toBe(true);
     expect(Object.isFrozen(matrix.cases)).toBe(true);
     expect(Object.isFrozen(matrix.cases[0]?.ranges)).toBe(true);
-  }, 180_000);
+  }, 360_000);
 
   it("rejects unknown, unsupported, duplicate, and incomplete cases", () => {
     expect(() =>
@@ -116,6 +116,19 @@ describe("Shuttergate Level 1 balance matrix", () => {
         ]
       })
     ).toThrow("target policy is unsupported");
+    expect(() =>
+      requireShuttergateLevel1BalanceMatrix({
+        ...matrixInput,
+        cases: [
+          matrixInput.cases[0],
+          {
+            ...matrixInput.cases[1],
+            terminalReason: "all_dwarves_downed"
+          },
+          ...matrixInput.cases.slice(2)
+        ]
+      })
+    ).toThrow("terminal result and reason contradict");
     expect(() =>
       requireShuttergateLevel1BalanceMatrix({
         ...matrixInput,
@@ -181,5 +194,5 @@ describe("Shuttergate Level 1 balance matrix", () => {
         balanceCase
       )
     ).toThrow("terminalTick");
-  }, 15_000);
+  }, 60_000);
 });

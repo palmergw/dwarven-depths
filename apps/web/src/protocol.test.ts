@@ -1,3 +1,4 @@
+import { createInitialProfile } from "@dwarven-depths/progression";
 import { describe, expect, it } from "vitest";
 import {
   type ClientMessage,
@@ -7,7 +8,36 @@ import {
   type WorkerMessage
 } from "./protocol.js";
 
+function nonCanonicalRecordVariants(
+  value: Record<string, unknown>
+): readonly unknown[] {
+  const symbolExtended = { ...value };
+  Object.defineProperty(symbolExtended, Symbol("unexpected"), {
+    enumerable: true,
+    value: true
+  });
+  const hiddenExtended = { ...value };
+  Object.defineProperty(hiddenExtended, "unexpected", { value: true });
+  const accessor = { ...value };
+  const accessorKey = Object.keys(accessor)[0];
+  if (accessorKey === undefined) throw new Error("expected a populated record");
+  Object.defineProperty(accessor, accessorKey, {
+    enumerable: true,
+    get: () => value[accessorKey]
+  });
+  const inherited = Object.assign(Object.create({ inherited: true }), value);
+  return [symbolExtended, hiddenExtended, accessor, inherited];
+}
+
 describe("web worker protocol", () => {
+  const runConfiguration = {
+    schemaVersion: 1 as const,
+    attemptId: "attempt.shuttergate.web_000001" as never,
+    seed: "1",
+    placementPointId: "placement.shuttergate_north_guard" as never,
+    profile: createInitialProfile("character.iron_warden" as never)
+  };
+
   it("accepts only the versioned preparation command shape", () => {
     expect(
       parseClientMessage({ protocolVersion: 1, type: "initialize" })
@@ -88,6 +118,30 @@ describe("web worker protocol", () => {
     expect(
       parseClientMessage({ protocolVersion: 5, type: "initialize" })
     ).toBeUndefined();
+    expect(
+      parseClientMessage({ protocolVersion: 4, type: "initialize" })
+    ).toBeUndefined();
+    expect(
+      parseClientMessage({
+        protocolVersion: 4,
+        type: "initialize",
+        runConfiguration
+      })
+    ).toEqual({ protocolVersion: 4, type: "initialize", runConfiguration });
+    for (const malformed of nonCanonicalRecordVariants({
+      protocolVersion: 4,
+      type: "initialize",
+      runConfiguration
+    }))
+      expect(parseClientMessage(malformed)).toBeUndefined();
+    for (const malformed of nonCanonicalRecordVariants(runConfiguration))
+      expect(
+        parseClientMessage({
+          protocolVersion: 4,
+          type: "initialize",
+          runConfiguration: malformed
+        })
+      ).toBeUndefined();
     expect(
       parseClientMessage({
         protocolVersion: 1,
@@ -224,6 +278,13 @@ describe("web worker protocol", () => {
       terminalTick: 1,
       finalStateChecksum: "a".repeat(64),
       eventStreamChecksum: "b".repeat(64),
+      campaign: {
+        schemaVersion: 1,
+        attemptId: "attempt.shuttergate.web_000001",
+        rewardId: "reward.attempt.shuttergate.web_000001",
+        forgeOreAwarded: 8,
+        profile: createInitialProfile("character.iron_warden" as never)
+      },
       commands: [
         {
           tick: 0,
@@ -242,9 +303,17 @@ describe("web worker protocol", () => {
         }
       ]
     };
+    const { campaign: _campaign, ...unboundResult } = result;
+    expect(parseWorkerMessage(unboundResult)).toBeUndefined();
     const targetCommand = result.commands.at(1);
     if (targetCommand === undefined) throw new Error("missing target command");
     expect(parseWorkerMessage(result)).toEqual(result);
+    for (const malformed of nonCanonicalRecordVariants(result))
+      expect(parseWorkerMessage(malformed)).toBeUndefined();
+    for (const malformed of nonCanonicalRecordVariants(result.campaign))
+      expect(
+        parseWorkerMessage({ ...result, campaign: malformed })
+      ).toBeUndefined();
     expect(
       parseWorkerMessage({ ...result, commands: [targetCommand] })
     ).toBeUndefined();

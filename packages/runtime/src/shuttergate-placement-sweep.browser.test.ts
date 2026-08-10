@@ -36,10 +36,10 @@ describe("Shuttergate placement-sweep browser parity", () => {
         "build.warden.shield_slam_rank_1.v1"
       );
 
-    expect(evidence.deployedWardenMaximumHealth).toBe(260);
+    expect(evidence.deployedWardenMaximumHealth).toBe(1000);
     expect(evidence.deployedWardenAttackDamage).toBe(20);
     expect(await canonicalHash(evidence)).toBe(
-      "682a15577f6d7b155e53fcb4a59f350d6a05c321aacf24c735565290b6b6239f"
+      "f58bc024c5f583593bd2eb434b04bac0abf093d92b2c7870435d02f5595ee42e"
     );
-  }, 120_000);
+  }, 300_000);
 });

@@ -1,6 +1,7 @@
 import type { StableId } from "@dwarven-depths/contracts";
 import {
   type CharacterSkillEffect,
+  createInitialProfile,
   deriveCharacterSkillEligibility,
   ironWardenSkillTree,
   type ProfileState,
@@ -19,6 +20,7 @@ import { Battlefield } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { CombatHud } from "./CombatHud.js";
 import {
+  applyCheckpointAttemptResult,
   type CheckpointProfileResult,
   type CheckpointProfileStore,
   createCheckpointProfileStore,
@@ -27,7 +29,8 @@ import {
   purchaseCheckpointUpgrade,
   recycleCheckpointIronWardenSkills,
   recycleCheckpointUpgrades,
-  selectCheckpointIronWardenSkill
+  selectCheckpointIronWardenSkill,
+  validateCheckpointAttemptResult
 } from "./checkpoint-profile.js";
 import {
   parseWorkerMessage,
@@ -66,6 +69,7 @@ type ViewState =
   | {
       readonly phase: "result";
       readonly result: Extract<WorkerMessage, { type: "result" }>;
+      readonly savedProfile?: ProfileState;
     }
   | {
       readonly phase: "failure";
@@ -295,6 +299,23 @@ function upgradePurchaseState(
   return { currentRank, nextCost, unavailableReason };
 }
 
+function createRunConfiguration(profile: ProfileState) {
+  const completedAttempts = profile.claimedRewardIds.filter((rewardId) =>
+    /^reward\.attempt\.shuttergate\.web_[0-9]{6}$/.test(rewardId)
+  ).length;
+  const attemptNumber = completedAttempts + 1;
+  if (attemptNumber > 999_999)
+    throw new RangeError("The Shuttergate campaign attempt limit was reached.");
+  return Object.freeze({
+    schemaVersion: 1 as const,
+    attemptId:
+      `attempt.shuttergate.web_${String(attemptNumber).padStart(6, "0")}` as StableId,
+    seed: String(attemptNumber),
+    placementPointId: "placement.shuttergate_north_guard" as StableId,
+    profile
+  });
+}
+
 function isMotionPreference(value: unknown): value is MotionPreference {
   return motionPreferences.some((preference) => preference === value);
 }
@@ -437,10 +458,15 @@ export function App({
   const [deviceReducedMotion, setDeviceReducedMotion] =
     useState(readsReducedMotion);
   const workerRef = useRef<Worker | undefined>(undefined);
+  const runConfigurationRef = useRef<
+    ReturnType<typeof createRunConfiguration> | undefined
+  >(undefined);
   const workerFailureRef = useRef<
     ((inspectionMessage: string) => void) | undefined
   >(undefined);
   const profileStoreRef = useRef<CheckpointProfileStore | undefined>(undefined);
+  const runStartingProfileRef = useRef<ProfileState | undefined>(undefined);
+  const appliedTerminalRewardIdsRef = useRef(new Set<string>());
   const upgradePurchasePendingRef = useRef(false);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
@@ -761,7 +787,20 @@ export function App({
   }
 
   function startPreparation(): void {
-    if (initializedRef.current || view.phase !== "checkpoint") return;
+    if (
+      initializedRef.current ||
+      view.phase !== "checkpoint" ||
+      checkpointProfile.status === "loading"
+    )
+      return;
+    const startingProfile =
+      checkpointProfile.status === "ready"
+        ? checkpointProfile.profile
+        : createInitialProfile("character.iron_warden" as StableId);
+    const runConfiguration = createRunConfiguration(startingProfile);
+    runConfigurationRef.current = runConfiguration;
+    runStartingProfileRef.current =
+      checkpointProfile.status === "ready" ? startingProfile : undefined;
     initializedRef.current = true;
     latestCombatControlsTickRef.current = -1;
     let worker: Worker;
@@ -887,7 +926,58 @@ export function App({
         clearPendingAbilities();
         clearPendingTargetPolicies();
         clearCombatCommandRejections();
-        setView({ phase: "result", result: message });
+        const startingProfile = runStartingProfileRef.current;
+        const store = profileStoreRef.current;
+        if (message.protocolVersion !== 4) {
+          setView({ phase: "result", result: message });
+          return;
+        }
+        const campaign = message.campaign;
+        if (campaign === undefined) {
+          failWorker(
+            "Terminal progression was missing from the active attempt."
+          );
+          return;
+        }
+        if (campaign.attemptId !== runConfiguration.attemptId) {
+          failWorker("Terminal progression did not match the active attempt.");
+          return;
+        }
+        try {
+          validateCheckpointAttemptResult(runConfiguration.profile, campaign);
+        } catch {
+          failWorker("Terminal progression contradicted the active attempt.");
+          return;
+        }
+        if (startingProfile === undefined || store === undefined) {
+          setView({ phase: "result", result: message });
+          return;
+        }
+        if (appliedTerminalRewardIdsRef.current.has(campaign.rewardId)) return;
+        appliedTerminalRewardIdsRef.current.add(campaign.rewardId);
+        void applyCheckpointAttemptResult(store, startingProfile, campaign)
+          .then((profile) => {
+            if (workerRef.current !== worker) return;
+            setCheckpointProfile({ status: "ready", profile });
+            setView({
+              phase: "result",
+              result: message,
+              savedProfile: profile
+            });
+          })
+          .catch((error) => {
+            if (workerRef.current !== worker) return;
+            appliedTerminalRewardIdsRef.current.delete(campaign.rewardId);
+            setView({
+              phase: "failure",
+              message:
+                "The battle ended, but its progression was not saved. Return to the checkpoint and retry.",
+              inspectionMessage:
+                error instanceof Error
+                  ? error.message
+                  : "Progression save failed."
+            });
+          });
       } else if (message.code === "command_rejected") {
         const requestId = message.requestId;
         if (requestId === undefined) return;
@@ -927,7 +1017,8 @@ export function App({
     postCurrentWorkerMessage(
       {
         protocolVersion: WEB_PROTOCOL_VERSION,
-        type: "initialize"
+        type: "initialize",
+        runConfiguration
       },
       "Worker initialization failed."
     );
@@ -955,6 +1046,7 @@ export function App({
     initializedRef.current = false;
     submittedRef.current = false;
     manualPauseRequestedRef.current = undefined;
+    runStartingProfileRef.current = undefined;
     latestCombatControlsTickRef.current = -1;
     clearPendingAbilities();
     clearPendingTargetPolicies();
@@ -1322,6 +1414,7 @@ export function App({
                 <button
                   className="primary-action"
                   type="button"
+                  disabled={checkpointProfile.status === "loading"}
                   onClick={startPreparation}
                 >
                   Begin preparation
@@ -1507,8 +1600,8 @@ export function App({
               </dd>
             </div>
             <div>
-              <dt>Placement points</dt>
-              <dd>{view.placementPointCount}</dd>
+              <dt>Deployment</dt>
+              <dd>Fixed tutorial guard post</dd>
             </div>
           </dl>
         )}
@@ -2028,6 +2121,15 @@ export function App({
                 ? "Shuttergate stands. The company returns to the forge."
                 : "Shuttergate has fallen. Rally the company and return stronger."}
             </p>
+            {view.result.protocolVersion === 4 &&
+              view.result.campaign !== undefined && (
+                <p className="result-reward">
+                  Forge award: {view.result.campaign.forgeOreAwarded} ore.
+                  Company balance:{" "}
+                  {(view.savedProfile ?? view.result.campaign.profile).forgeOre}{" "}
+                  Forge Ore.
+                </p>
+              )}
             <div className="result-actions">
               <button type="button" onClick={returnToCheckpoint}>
                 Return to checkpoint
@@ -2066,7 +2168,12 @@ export function App({
               </dl>
               <button
                 type="button"
-                onClick={() => void downloadRunEvidence(view.result)}
+                onClick={() =>
+                  void downloadRunEvidence(
+                    view.result,
+                    runConfigurationRef.current
+                  )
+                }
               >
                 Download run evidence
               </button>

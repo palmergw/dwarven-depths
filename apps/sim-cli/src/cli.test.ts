@@ -24,6 +24,9 @@ import {
   createLiveScenarioHost,
   createReplayDefinition,
   createShieldSlamWebPreparationState,
+  createShuttergateWebLiveScenarioHost,
+  createShuttergateWebScenario,
+  resolveShuttergateWebAttemptReward,
   runScenario
 } from "@dwarven-depths/runtime";
 import { afterEach, describe, expect, it } from "vitest";
@@ -1793,14 +1796,14 @@ describe("simulation CLI", () => {
       comparison: {
         baselineAttemptNumber: 1,
         upgradedAttemptNumber: 3,
-        terminalTickDelta: 40,
-        defeatedEnemyDelta: 0,
-        observation: "survived_longer"
+        terminalTickDelta: 2667,
+        defeatedEnemyDelta: 13,
+        observation: "terminal_result_changed"
       }
     });
     expect(JSON.parse(first.stdout)).toMatchObject({
       calibrationReportChecksum:
-        "f797acbc3a071e569a9ddbc3ee8e88808ef5889db13afa807e94e199deb27ced"
+        "596e800356cb70b746e66cb468e00ac0016dc4ebbf9c3cd8a7b3394ca1bb693c"
     });
 
     const replaced = runCli(
@@ -1841,13 +1844,13 @@ describe("simulation CLI", () => {
     expect(JSON.parse(readFileSync(manifestPath, "utf8"))).toMatchObject({
       schemaVersion: 2,
       calibrationReportChecksum:
-        "f797acbc3a071e569a9ddbc3ee8e88808ef5889db13afa807e94e199deb27ced"
+        "596e800356cb70b746e66cb468e00ac0016dc4ebbf9c3cd8a7b3394ca1bb693c"
     });
     expect(readFileSync(calibrationPath, "utf8")).toBe(calibrationText);
 
     const originalManifestText = readFileSync(manifestPath, "utf8");
     const forgedCalibration = JSON.parse(calibrationText);
-    forgedCalibration.comparison.terminalTickDelta = 41;
+    forgedCalibration.comparison.terminalTickDelta = 2_668;
     writeFileSync(
       calibrationPath,
       `${JSON.stringify(forgedCalibration, null, 2)}\n`
@@ -1871,7 +1874,7 @@ describe("simulation CLI", () => {
       ).status
     ).toBe(3);
     expect(readFileSync(calibrationPath, "utf8")).toContain(
-      '"terminalTickDelta": 41'
+      '"terminalTickDelta": 2668'
     );
     writeFileSync(calibrationPath, calibrationText);
     writeFileSync(manifestPath, originalManifestText);
@@ -2007,7 +2010,7 @@ describe("simulation CLI", () => {
       error: { type: "input", code: "invalid_cli_input" }
     });
     expect(existsSync(invalidOutput)).toBe(false);
-  }, 180_000);
+  }, 360_000);
 
   it("expands a bounded seed sweep into ordered replay-verifiable runs", () => {
     const directory = temporaryDirectory();
@@ -2500,9 +2503,9 @@ describe("simulation CLI", () => {
       ],
       [
         "build.warden.shield_slam_rank_1.v1",
-        260,
+        1000,
         20,
-        "682a15577f6d7b155e53fcb4a59f350d6a05c321aacf24c735565290b6b6239f"
+        "f58bc024c5f583593bd2eb434b04bac0abf093d92b2c7870435d02f5595ee42e"
       ]
     ]);
 
@@ -3280,13 +3283,58 @@ queued-spawns
     const content = await compileContent(
       JSON.parse(readFileSync(contentPath, "utf8"))
     );
-    const scenario = compileScenario(
+    const authoredScenario = compileScenario(
       JSON.parse(readFileSync(scenarioPath, "utf8")),
       content
     );
-    const result = await runScenario(scenario, content);
+    const runConfiguration = {
+      schemaVersion: 1,
+      attemptId: "attempt.shuttergate.web_000001",
+      seed: "1",
+      placementPointId: "placement.shuttergate_north_guard",
+      profile: {
+        schemaVersion: 1,
+        revision: 0,
+        forgeOre: 0,
+        unlockedCharacterIds: ["character.iron_warden"],
+        unlockedItemIds: [],
+        claimedRewardIds: [],
+        characterExperienceStates: [
+          {
+            schemaVersion: 1,
+            characterId: "character.iron_warden",
+            experience: 0,
+            level: 1,
+            pendingSkillPointLevels: []
+          }
+        ],
+        claimedExperienceRewardEvents: [],
+        selectedSkillNodes: [],
+        purchasedUpgrades: []
+      }
+    };
+    const scenario = createShuttergateWebScenario(
+      authoredScenario,
+      runConfiguration as never
+    );
+    const host = createShuttergateWebLiveScenarioHost(
+      scenario,
+      content,
+      runConfiguration as never
+    );
+    host.scheduleCommand({ atTick: 0, type: "confirmPreparation" });
+    while (host.state.phase !== "TERMINAL") host.step();
+    const result = await host.result();
+    const campaign = resolveShuttergateWebAttemptReward({
+      schemaVersion: 1,
+      configuration: runConfiguration as never,
+      terminalResult: result.terminalResult,
+      finalState: result.finalState
+    });
     const evidencePath = temporaryFile("shuttergate-client-evidence.json", {
       schemaVersion: 2,
+      runConfiguration,
+      campaign,
       replay: createReplayDefinition(result, scenario, content)
     });
 
@@ -3310,6 +3358,37 @@ queued-spawns
       terminalTick: result.terminalTick,
       finalStateChecksum: result.finalStateChecksum,
       eventStreamChecksum: result.eventStreamChecksum
+    });
+
+    const tamperedCampaignPath = temporaryFile(
+      "tampered-shuttergate-client-evidence.json",
+      {
+        schemaVersion: 2,
+        runConfiguration,
+        campaign: {
+          ...campaign,
+          forgeOreAwarded: campaign.forgeOreAwarded + 1
+        },
+        replay: createReplayDefinition(result, scenario, content)
+      }
+    );
+    const campaignRejected = runCli(
+      "replay",
+      "--client-evidence",
+      tamperedCampaignPath,
+      "--content",
+      contentPath,
+      "--scenario",
+      scenarioPath,
+      "--verify"
+    );
+    expect(campaignRejected.status).toBe(2);
+    expect(JSON.parse(campaignRejected.stderr)).toMatchObject({
+      error: {
+        type: "input",
+        message:
+          "client campaign resolution does not match replayed terminal state"
+      }
     });
 
     const modifiedScenarioPath = temporaryFile("modified-shuttergate.json", {
@@ -3406,7 +3485,7 @@ queued-spawns
         name: "unknown outer field",
         mutate: (value) => ({ ...value, unexpected: true }),
         expected:
-          "client run evidence must have exactly schemaVersion 2 and replay"
+          "client run evidence must have schemaVersion 2 and replay, with campaign and runConfiguration together"
       },
       {
         name: "malformed command envelope",

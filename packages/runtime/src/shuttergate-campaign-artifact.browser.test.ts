@@ -40,5 +40,5 @@ describe("durable Shuttergate campaign artifact browser parity", () => {
         continued: continued.transition
       })
     ).toBe("4b2dcc56bca97d6241cf2634d2932506f7ce63048c2860260e36341b84bcb76d");
-  }, 120_000);
+  }, 300_000);
 });

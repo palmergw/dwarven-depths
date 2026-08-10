@@ -1,3 +1,11 @@
+import {
+  createInitialProfile,
+  type ProfileState,
+  purchasedUpgradeCatalog,
+  purchaseUpgradeRank
+} from "@dwarven-depths/progression";
+import type { ProfileSaveEnvelope } from "@dwarven-depths/save";
+import { IndexedDbProfileStoreError } from "@dwarven-depths/save/indexed-db";
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -17,6 +25,7 @@ import {
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { CombatHud } from "./CombatHud.js";
+import type { CheckpointProfileStore } from "./checkpoint-profile.js";
 import { deriveCombatFeedback } from "./combat-feedback.js";
 import "./styles.css";
 import {
@@ -26,6 +35,138 @@ import {
   type WorkerMessage
 } from "./protocol.js";
 import type { RenderSnapshot } from "./render-snapshot.js";
+
+async function runCampaignAttempt(
+  profile: ProfileState,
+  attemptNumber: number
+): Promise<{
+  readonly result: Extract<
+    WorkerMessage,
+    { protocolVersion: 4; type: "result" }
+  >;
+  readonly maximumHealth: number;
+  readonly abilityActivations: number;
+}> {
+  const worker = new Worker(
+    new URL("./simulation.worker.ts", import.meta.url),
+    {
+      type: "module"
+    }
+  );
+  const attemptId = `attempt.shuttergate.web_${String(attemptNumber).padStart(6, "0")}`;
+  const preparation = waitForMessage(
+    worker,
+    (message) => message.type === "snapshot" && message.phase === "preparation"
+  );
+  const result = waitForMessage(
+    worker,
+    (message) =>
+      message.type === "result" ||
+      (message.type === "failure" && message.code === "runtime_failure"),
+    300_000
+  );
+  let lastAbilityTick = -1;
+  let maximumHealth = 0;
+  let abilityActivations = 0;
+  worker.addEventListener("message", (event: MessageEvent<unknown>) => {
+    const message = parseWorkerMessage(event.data);
+    if (
+      message?.type === "render_snapshot" &&
+      message.snapshot.schemaVersion === 2
+    )
+      maximumHealth = Math.max(
+        maximumHealth,
+        ...message.snapshot.entities
+          .filter((entity) => entity.faction === "dwarf")
+          .map((entity) => entity.maximumHealth)
+      );
+    if (
+      message?.type !== "combat_controls" ||
+      message.protocolVersion !== 4 ||
+      message.authoritativeTick === lastAbilityTick
+    )
+      return;
+    const dwarf = message.dwarves.find((candidate) =>
+      candidate.activeAbilities?.some(
+        (ability) =>
+          ability.abilityId === "ability.iron_warden.shield_slam" &&
+          ability.cooldownCompleteAtTick === null &&
+          ability.rejectionReason === null
+      )
+    );
+    if (dwarf === undefined) return;
+    lastAbilityTick = message.authoritativeTick;
+    abilityActivations += 1;
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "command",
+      requestId: `ability-${message.authoritativeTick}`,
+      command: {
+        type: "activateAbility",
+        dwarfEntityId: dwarf.entityId,
+        abilityId: "ability.iron_warden.shield_slam"
+      }
+    });
+  });
+  try {
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "initialize",
+      runConfiguration: {
+        schemaVersion: 1,
+        attemptId,
+        seed: String(attemptNumber),
+        placementPointId: "placement.shuttergate_north_guard",
+        profile
+      }
+    });
+    await preparation;
+    const paused = waitForMessage(
+      worker,
+      (message) =>
+        message.type === "snapshot" &&
+        message.phase === "running" &&
+        message.protocolVersion === 4 &&
+        message.manualPaused
+    );
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "command",
+      requestId: `prepare-${attemptNumber}`,
+      command: { type: "confirmPreparation" }
+    });
+    await paused;
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "command",
+      requestId: `speed-${attemptNumber}`,
+      command: { type: "setSimulationSpeed", speed: 2 }
+    });
+    const resumeRequestId = `resume-${attemptNumber}`;
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "command",
+      requestId: resumeRequestId,
+      command: { type: "setManualPause", paused: false }
+    });
+    worker.postMessage({
+      protocolVersion: 4,
+      type: "command",
+      requestId: `commit-${attemptNumber}`,
+      command: { type: "commitManualResume", resumeRequestId }
+    });
+    const terminal = await result;
+    if (terminal.type !== "result" || terminal.protocolVersion !== 4)
+      throw new Error(
+        terminal.type === "failure"
+          ? terminal.message
+          : "expected protocol 4 result"
+      );
+    return { result: terminal, maximumHealth, abilityActivations };
+  } finally {
+    worker.terminate();
+  }
+}
 
 const expected = {
   terminalResult: "victory",
@@ -41,6 +182,16 @@ const contrastPreferenceStorageKey =
   "dwarven-depths.presentation.contrast-preference.v1";
 const soundPreferenceStorageKey =
   "dwarven-depths.presentation.sound-preference.v1";
+
+function freshWorkerRunConfiguration() {
+  return {
+    schemaVersion: 1 as const,
+    attemptId: "attempt.shuttergate.web_000001" as never,
+    seed: "1",
+    placementPointId: "placement.shuttergate_north_guard" as never,
+    profile: createInitialProfile("character.iron_warden" as never)
+  };
+}
 
 let root: Root | undefined;
 afterEach(async () => {
@@ -81,7 +232,8 @@ class ControlledResultWorker {
   terminated = false;
 
   constructor(
-    readonly terminalResult: "victory" | "defeat" = expected.terminalResult
+    readonly terminalResult: "victory" | "defeat" = expected.terminalResult,
+    readonly campaignAttemptId?: string
   ) {}
 
   addEventListener(
@@ -124,6 +276,10 @@ class ControlledResultWorker {
           entities: []
         }
       });
+      const campaignAttemptNumber =
+        this.campaignAttemptId === undefined
+          ? 0
+          : Number(this.campaignAttemptId.slice(-6));
       this.emit({
         protocolVersion: 4,
         type: "result",
@@ -131,6 +287,26 @@ class ControlledResultWorker {
         terminalTick: 1,
         finalStateChecksum: expected.finalStateChecksum,
         eventStreamChecksum: expected.eventStreamChecksum,
+        ...(this.campaignAttemptId === undefined
+          ? {}
+          : {
+              campaign: {
+                schemaVersion: 1,
+                attemptId: this.campaignAttemptId,
+                rewardId: `reward.${this.campaignAttemptId}`,
+                forgeOreAwarded: 8,
+                profile: {
+                  ...createInitialProfile("character.iron_warden" as never),
+                  revision: campaignAttemptNumber,
+                  forgeOre: campaignAttemptNumber * 8,
+                  claimedRewardIds: Array.from(
+                    { length: campaignAttemptNumber },
+                    (_, index) =>
+                      `reward.attempt.shuttergate.web_${String(index + 1).padStart(6, "0")}`
+                  )
+                }
+              }
+            }),
         commands: [
           {
             tick: 0,
@@ -215,6 +391,9 @@ class ControlledFailureWorker {
 class ControlledJourneyWorker {
   readonly listeners = new Set<(event: MessageEvent<unknown>) => void>();
   terminated = false;
+  runConfiguration:
+    | { readonly attemptId: string; readonly profile: ProfileState }
+    | undefined;
 
   addEventListener(
     type: string,
@@ -228,8 +407,13 @@ class ControlledJourneyWorker {
     const candidate = message as {
       readonly type?: string;
       readonly command?: { readonly type?: string; readonly paused?: boolean };
+      readonly runConfiguration?: {
+        readonly attemptId: string;
+        readonly profile: ProfileState;
+      };
     };
     if (candidate.type === "initialize") {
+      this.runConfiguration = candidate.runConfiguration;
       this.emit({
         protocolVersion: 4,
         type: "snapshot",
@@ -260,14 +444,37 @@ class ControlledJourneyWorker {
     }
   }
 
-  finish(): void {
+  finish(
+    profileForgeOreAwarded = 8,
+    terminalResult: "victory" | "defeat" = expected.terminalResult
+  ): void {
+    const runConfiguration = this.runConfiguration;
+    if (runConfiguration === undefined)
+      throw new Error("journey worker was not initialized");
+    const rewardId = `reward.${runConfiguration.attemptId}`;
+    const forgeOreAwarded = 8;
     this.emit({
       protocolVersion: 4,
       type: "result",
-      terminalResult: expected.terminalResult,
+      terminalResult,
       terminalTick: 1,
       finalStateChecksum: expected.finalStateChecksum,
       eventStreamChecksum: expected.eventStreamChecksum,
+      campaign: {
+        schemaVersion: 1,
+        attemptId: runConfiguration.attemptId,
+        rewardId,
+        forgeOreAwarded,
+        profile: {
+          ...runConfiguration.profile,
+          revision: runConfiguration.profile.revision + 1,
+          forgeOre: runConfiguration.profile.forgeOre + profileForgeOreAwarded,
+          claimedRewardIds: [
+            ...runConfiguration.profile.claimedRewardIds,
+            rewardId
+          ]
+        }
+      },
       commands: [
         {
           tick: 0,
@@ -286,6 +493,39 @@ class ControlledJourneyWorker {
   terminate(): void {
     this.terminated = true;
   }
+}
+
+class PersistentJourneyProfileStore implements CheckpointProfileStore {
+  envelope: ProfileSaveEnvelope | undefined;
+  writes = 0;
+
+  async load() {
+    return this.envelope === undefined
+      ? ({ status: "empty" } as const)
+      : ({
+          status: "loaded",
+          source: "primary",
+          envelope: this.envelope,
+          migratedFromSchemaVersion: null
+        } as const);
+  }
+
+  async write(request: {
+    readonly expectedRevision: number | null;
+    readonly envelope: unknown;
+  }): Promise<ProfileSaveEnvelope> {
+    const currentRevision = this.envelope?.profile.revision ?? null;
+    if (request.expectedRevision !== currentRevision)
+      throw new IndexedDbProfileStoreError(
+        "save_conflict",
+        "unexpected journey profile revision"
+      );
+    this.envelope = request.envelope as ProfileSaveEnvelope;
+    this.writes += 1;
+    return this.envelope;
+  }
+
+  async close(): Promise<void> {}
 }
 
 class ControlledTargetPolicyWorker {
@@ -574,6 +814,49 @@ describe("run journey guidance", () => {
     expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
       "download its authoritative run evidence"
     );
+  });
+
+  it("rejects contradictory terminal progression when profile storage is unavailable", async () => {
+    const workers: ControlledJourneyWorker[] = [];
+    const createWorker = (): Worker => {
+      const worker = new ControlledJourneyWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const createProfileStore = (): CheckpointProfileStore => ({
+      load: async () => {
+        throw new Error("IndexedDB unavailable");
+      },
+      write: async () => {
+        throw new Error("unexpected profile write");
+      },
+      close: async () => undefined
+    });
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={createWorker}
+        createProfileStore={createProfileStore}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    workers.at(-1)?.finish(9);
+
+    const failure = await vi.waitFor(() => {
+      const candidate = document.querySelector("#failure-heading");
+      expect(candidate).toBeInstanceOf(HTMLHeadingElement);
+      return candidate as HTMLHeadingElement;
+    });
+    expect(failure).toHaveTextContent("Run failed");
+    expect(failure.closest("section")).toHaveTextContent(
+      "The expedition could not continue. Return to the checkpoint and try again."
+    );
+    expect(document.querySelector("#results-heading")).toBeNull();
   });
 
   it("adapts terminal guidance to failure details", async () => {
@@ -1794,7 +2077,11 @@ describe("authoritative web worker", () => {
           message.protocolVersion === 4 &&
           message.dwarves.length === 1
       );
-      worker.postMessage({ protocolVersion: 4, type: "initialize" });
+      worker.postMessage({
+        protocolVersion: 4,
+        type: "initialize",
+        runConfiguration: freshWorkerRunConfiguration()
+      });
       await expect(controls).resolves.toMatchObject({
         dwarves: [
           {
@@ -1956,7 +2243,8 @@ describe("authoritative web worker", () => {
       );
       worker.postMessage({
         protocolVersion: WEB_PROTOCOL_VERSION,
-        type: "initialize"
+        type: "initialize",
+        runConfiguration: freshWorkerRunConfiguration()
       });
       await preparation;
       const paused = waitForMessage(
@@ -2767,7 +3055,11 @@ describe("authoritative web worker", () => {
             message.type === "snapshot" &&
             message.phase === "preparation"
         );
-        worker.postMessage({ protocolVersion: 4, type: "initialize" });
+        worker.postMessage({
+          protocolVersion: 4,
+          type: "initialize",
+          runConfiguration: freshWorkerRunConfiguration()
+        });
         await preparation;
         const paused = waitForMessage(
           worker,
@@ -2879,16 +3171,26 @@ describe("authoritative web worker", () => {
 
   it("returns from terminal evidence to a fresh deterministic checkpoint", async () => {
     const workers: ControlledResultWorker[] = [];
+    const profileStore = new PersistentJourneyProfileStore();
     const outcomes = ["victory", "defeat"] as const;
     const createWorker = (): Worker => {
-      const worker = new ControlledResultWorker(outcomes[workers.length]);
+      const attemptNumber = workers.length + 1;
+      const worker = new ControlledResultWorker(
+        outcomes[workers.length],
+        `attempt.shuttergate.web_${String(attemptNumber).padStart(6, "0")}`
+      );
       workers.push(worker);
       return worker as unknown as Worker;
     };
     const container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    root.render(<App createWorker={createWorker} />);
+    root.render(
+      <App
+        createWorker={createWorker}
+        createProfileStore={() => profileStore}
+      />
+    );
 
     const firstEvidence = await completeAppAttempt();
     const victoryHeading = await resultHeading("Victory results");
@@ -3105,8 +3407,12 @@ describe("authoritative web worker", () => {
   it("downloads byte-identical versioned run evidence with keyboard input", async () => {
     window.history.replaceState(null, "", "/?inspection=1");
     const workers: ControlledResultWorker[] = [];
+    const profileStore = new PersistentJourneyProfileStore();
     const createWorker = (): Worker => {
-      const worker = new ControlledResultWorker();
+      const worker = new ControlledResultWorker(
+        expected.terminalResult,
+        "attempt.shuttergate.web_000001"
+      );
       workers.push(worker);
       return worker as unknown as Worker;
     };
@@ -3136,7 +3442,12 @@ describe("authoritative web worker", () => {
     const container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    root.render(<App createWorker={createWorker} />);
+    root.render(
+      <App
+        createWorker={createWorker}
+        createProfileStore={() => profileStore}
+      />
+    );
 
     await completeAppAttempt();
     // Phaser's browser loader also uses object URLs for the four runtime image
@@ -3164,12 +3475,35 @@ describe("authoritative web worker", () => {
     expect(firstBytes?.endsWith("\n")).toBe(true);
     expect(JSON.parse(firstBytes ?? "")).toMatchObject({
       schemaVersion: 2,
+      runConfiguration: {
+        schemaVersion: 1,
+        attemptId: "attempt.shuttergate.web_000001",
+        seed: "1",
+        placementPointId: "placement.shuttergate_north_guard",
+        profile: {
+          schemaVersion: 1,
+          revision: 0,
+          forgeOre: 0,
+          claimedRewardIds: []
+        }
+      },
+      campaign: {
+        schemaVersion: 1,
+        attemptId: "attempt.shuttergate.web_000001",
+        rewardId: "reward.attempt.shuttergate.web_000001",
+        forgeOreAwarded: 8,
+        profile: {
+          revision: 1,
+          forgeOre: 8,
+          claimedRewardIds: ["reward.attempt.shuttergate.web_000001"]
+        }
+      },
       replay: {
         schemaVersion: 1,
         simulationSchemaVersion: 1,
         contentVersion: expect.any(String),
         contentManifestHash: expect.stringMatching(/^[a-f0-9]{64}$/),
-        scenarioId: "scenario.conformance.shield_slam",
+        scenarioId: "scenario.conformance.shuttergate_web_truth",
         scenarioHash: expect.stringMatching(/^[a-f0-9]{64}$/),
         levelId: "level.shuttergate_hall",
         seed: "1",
@@ -3193,16 +3527,7 @@ describe("authoritative web worker", () => {
       }
     });
 
-    await userEvent.click(await buttonWithText("Return to checkpoint"));
-    await vi.waitFor(() =>
-      expect(document.body.textContent).toContain("Checkpoint ready")
-    );
-    expect(document.body.textContent).not.toContain("Download run evidence");
-    await completeAppAttempt();
-    await userEvent.click(
-      document.querySelector(".result-inspection summary") as HTMLElement
-    );
-    await userEvent.click(await buttonWithText("Download run evidence"));
+    await userEvent.click(downloadButton);
     await vi.waitFor(() => expect(blobs).toHaveLength(2));
     expect(await blobs[1]?.text()).toBe(firstBytes);
     expect(downloads[1]).toEqual({
@@ -3263,7 +3588,9 @@ describe("authoritative web worker", () => {
       "DefenceShuttergate Hall"
     );
     expect(preparationSummary?.textContent).toContain("Company roster1 dwarf");
-    expect(preparationSummary?.textContent).toContain("Placement points2");
+    expect(preparationSummary?.textContent).toContain(
+      "DeploymentFixed tutorial guard post"
+    );
     const button = document.querySelector("button");
     if (button === null) throw new Error("expected preparation button");
     button.focus();
@@ -3337,6 +3664,73 @@ describe("authoritative web worker", () => {
     );
   });
 
+  it("rejects terminal progression for a stale attempt", async () => {
+    const worker = new ControlledResultWorker(
+      "defeat",
+      "attempt.shuttergate.web_000002"
+    );
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => ({
+          load: async () => {
+            throw new DOMException("blocked", "SecurityError");
+          },
+          write: vi.fn(),
+          close: async () => undefined
+        })}
+      />
+    );
+
+    await userEvent.click(
+      page.getByRole("button", { name: "Begin preparation" })
+    );
+    await userEvent.click(
+      page.getByRole("button", { name: "Confirm preparation" })
+    );
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(
+        "expedition could not continue"
+      )
+    );
+    expect(worker.terminated).toBe(true);
+  });
+
+  it("rejects a configured terminal result without campaign progression", async () => {
+    const worker = new ControlledResultWorker("defeat");
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => ({
+          load: async () => {
+            throw new DOMException("blocked", "SecurityError");
+          },
+          write: vi.fn(),
+          close: async () => undefined
+        })}
+      />
+    );
+
+    await userEvent.click(
+      page.getByRole("button", { name: "Begin preparation" })
+    );
+    await userEvent.click(
+      page.getByRole("button", { name: "Confirm preparation" })
+    );
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(
+        "expedition could not continue"
+      )
+    );
+    expect(worker.terminated).toBe(true);
+  });
+
   it("pauses on focus loss or background suspension and never auto-resumes", async () => {
     const container = document.createElement("div");
     document.body.append(container);
@@ -3393,4 +3787,145 @@ describe("authoritative web worker", () => {
       expect(pausedButton?.getAttribute("aria-pressed")).toBe("true")
     );
   });
+});
+
+describe("authoritative Shuttergate campaign journey", () => {
+  it("persists rewards, purchases through the checkpoint, reloads, and presents victory", async () => {
+    const store = new PersistentJourneyProfileStore();
+    const workers: ControlledJourneyWorker[] = [];
+    const createWorker = (): Worker => {
+      const worker = new ControlledJourneyWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const createProfileStore = (): CheckpointProfileStore => store;
+    const container = document.createElement("div");
+    document.body.append(container);
+    const renderApp = (): void => {
+      root = createRoot(container);
+      root.render(
+        <StrictMode>
+          <App
+            createWorker={createWorker}
+            createProfileStore={createProfileStore}
+          />
+        </StrictMode>
+      );
+    };
+    const completeAttempt = async (
+      terminalResult: "victory" | "defeat"
+    ): Promise<void> => {
+      await userEvent.click(await buttonWithText("Begin preparation"));
+      await userEvent.click(await buttonWithText("Confirm preparation"));
+      await buttonWithText("Pause combat");
+      workers.at(-1)?.finish(8, terminalResult);
+      await resultHeading(
+        terminalResult === "victory" ? "Victory results" : "Defeat results"
+      );
+    };
+    const returnToCheckpoint = async (): Promise<void> => {
+      await userEvent.click(await buttonWithText("Return to checkpoint"));
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain("Checkpoint ready")
+      );
+    };
+    const reloadApp = async (): Promise<void> => {
+      root?.unmount();
+      root = undefined;
+      renderApp();
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain("Checkpoint ready")
+      );
+    };
+
+    renderApp();
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain("Checkpoint ready")
+    );
+    await completeAttempt("defeat");
+    await returnToCheckpoint();
+    await reloadApp();
+    expect(document.body.textContent).toContain("Forge Ore8");
+
+    await completeAttempt("defeat");
+    await returnToCheckpoint();
+    expect(document.body.textContent).toContain("Forge Ore16");
+    await userEvent.click(await buttonWithText("Upgrade inventory"));
+    await userEvent.click(
+      await buttonWithText("Purchase rank 1 for 10 Forge Ore")
+    );
+    await vi.waitFor(() => {
+      expect(document.body.textContent).toContain("Available Forge Ore: 6");
+      expect(document.body.textContent).toContain("Shield Slam TrainingRank 1");
+    });
+    await userEvent.click(await buttonWithText("Close upgrade inventory"));
+    await reloadApp();
+    expect(document.body.textContent).toContain("Forge Ore6");
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    expect(
+      workers.at(-1)?.runConfiguration?.profile.purchasedUpgrades
+    ).toMatchObject([{ upgradeId: "upgrade.ability.shield_slam", rank: 1 }]);
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    workers.at(-1)?.finish(8, "victory");
+    await resultHeading("Victory results");
+    expect(document.body.textContent).toContain(
+      "Forge award: 8 ore. Company balance: 14 Forge Ore."
+    );
+    expect(store.envelope?.profile).toMatchObject({
+      forgeOre: 14,
+      claimedRewardIds: [
+        "reward.attempt.shuttergate.web_000001",
+        "reward.attempt.shuttergate.web_000002",
+        "reward.attempt.shuttergate.web_000003"
+      ],
+      purchasedUpgrades: [{ upgradeId: "upgrade.ability.shield_slam", rank: 1 }]
+    });
+    expect(store.writes).toBeGreaterThanOrEqual(5);
+  }, 30_000);
+
+  it("rewards fresh defeats, applies a purchased build, and reaches victory", async () => {
+    let profile = createInitialProfile("character.iron_warden" as never);
+    const firstRun = await runCampaignAttempt(profile, 1);
+    const first = firstRun.result;
+    expect(first).toMatchObject({
+      terminalResult: "defeat",
+      campaign: { forgeOreAwarded: 8 }
+    });
+    if (first.campaign === undefined) throw new Error("missing first reward");
+    profile = first.campaign.profile;
+
+    const secondRun = await runCampaignAttempt(profile, 2);
+    const second = secondRun.result;
+    expect(second.terminalResult).toBe("defeat");
+    if (second.campaign === undefined) throw new Error("missing second reward");
+    profile = purchaseUpgradeRank({
+      schemaVersion: 1,
+      profile: second.campaign.profile,
+      catalog: purchasedUpgradeCatalog,
+      upgradeId: "upgrade.ability.shield_slam" as never
+    }).profile;
+    expect(profile.purchasedUpgrades).toMatchObject([
+      { upgradeId: "upgrade.ability.shield_slam", rank: 1 }
+    ]);
+
+    const thirdRun = await runCampaignAttempt(profile, 3);
+    const third = thirdRun.result;
+    expect(thirdRun.abilityActivations).toBeGreaterThan(0);
+    expect({
+      terminalResult: third.terminalResult,
+      maximumHealth: thirdRun.maximumHealth,
+      abilityActivations: thirdRun.abilityActivations,
+      campaign: third.campaign
+    }).toMatchObject({
+      terminalResult: "victory",
+      maximumHealth: 1000,
+      abilityActivations: expect.any(Number),
+      campaign: {
+        attemptId: "attempt.shuttergate.web_000003"
+      }
+    });
+    expect(third.terminalTick).toBeLessThan(6000);
+  }, 300_000);
 });

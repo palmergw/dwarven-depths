@@ -12,7 +12,7 @@ import { recycleProgression } from "./recycle-transactions.js";
 import { ironWardenSkillTree } from "./skill-tree.fixture.js";
 
 const checksum =
-  "fde8ef18f09d63c95e111cf6b6e92d59b5b84724e8e64813ae4f01edac87a0fe";
+  "5239eb2233653c3ec3c36cc563d42f282afbff19a37637e673c82adbc2701c10";
 
 function characterRequest(profile = createRecyclableProfile()) {
   return {

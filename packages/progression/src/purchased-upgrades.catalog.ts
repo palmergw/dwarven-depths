@@ -16,12 +16,17 @@ export const purchasedUpgradeCatalog: PurchasedUpgradeCatalog = Object.freeze({
           Object.freeze({
             schemaVersion: 1,
             kind: "maximum_health_add",
-            value: 20
+            value: 760
           }),
           Object.freeze({
             schemaVersion: 1,
             kind: "attack_damage_add",
             value: 2
+          }),
+          Object.freeze({
+            schemaVersion: 1,
+            kind: "attack_range_add",
+            value: 4
           })
         ]),
         Object.freeze([

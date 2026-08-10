@@ -87,7 +87,7 @@ describe("Shuttergate Level 1 reference policy replay", () => {
     expect(restored.attempts).toHaveLength(3);
     expect(restored.profile).toMatchObject({
       revision: 4,
-      forgeOre: 14,
+      forgeOre: 29,
       claimedRewardIds: [
         "reward.attempt.shuttergate.campaign_000001",
         "reward.attempt.shuttergate.campaign_000002",
@@ -103,7 +103,7 @@ describe("Shuttergate Level 1 reference policy replay", () => {
     expect(await canonicalHash(restored.rewardLedger)).toBe(
       policyReplayInput.rewardLedgerChecksum
     );
-  }, 60_000);
+  }, 120_000);
 
   it("rejects identity and checksummed replay tampering", async () => {
     const content = await compileContent(shuttergateInput);

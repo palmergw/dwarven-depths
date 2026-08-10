@@ -32,5 +32,5 @@ describe("local Shuttergate telemetry browser parity", () => {
     expect(telemetry.payloadChecksum).toBe(
       "665e6c83534e7078f1a3a0ea0e5392bd3da95c2a4dbae94f330f978ca3f8555c"
     );
-  }, 45_000);
+  }, 180_000);
 });

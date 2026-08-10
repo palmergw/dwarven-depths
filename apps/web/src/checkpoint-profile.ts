@@ -1,7 +1,8 @@
-import type { StableId } from "@dwarven-depths/contracts";
+import { canonicalStringify, type StableId } from "@dwarven-depths/contracts";
 import {
   createInitialProfile,
   ironWardenSkillTree,
+  normalizeProfileState,
   type ProfileState,
   purchasedUpgradeCatalog,
   purchaseUpgradeRank,
@@ -32,6 +33,14 @@ export interface CheckpointProfileStore {
 export type CheckpointProfileResult =
   | { readonly status: "ready"; readonly profile: ProfileState }
   | { readonly status: "unavailable"; readonly message: string };
+
+export interface CheckpointAttemptResult {
+  readonly schemaVersion: 1;
+  readonly attemptId: string;
+  readonly rewardId: string;
+  readonly forgeOreAwarded: number;
+  readonly profile: ProfileState;
+}
 
 export function createCheckpointProfileStore(): CheckpointProfileStore {
   return new IndexedDbProfileStore(databaseName);
@@ -226,6 +235,83 @@ export async function selectCheckpointIronWardenSkill(
     envelope
   });
   return written.profile;
+}
+
+export function validateCheckpointAttemptResult(
+  startingProfile: ProfileState,
+  campaign: CheckpointAttemptResult
+): ProfileState {
+  const profile = normalizeProfileState(campaign.profile);
+  const expectedProfile = normalizeProfileState({
+    ...startingProfile,
+    revision: startingProfile.revision + 1,
+    forgeOre: startingProfile.forgeOre + campaign.forgeOreAwarded,
+    claimedRewardIds: [
+      ...startingProfile.claimedRewardIds,
+      campaign.rewardId as StableId
+    ]
+  });
+  if (
+    campaign.schemaVersion !== 1 ||
+    !/^attempt\.shuttergate\.web_[0-9]{6}$/.test(campaign.attemptId) ||
+    campaign.rewardId !== `reward.${campaign.attemptId}` ||
+    !Number.isSafeInteger(campaign.forgeOreAwarded) ||
+    campaign.forgeOreAwarded < 0 ||
+    startingProfile.claimedRewardIds.includes(campaign.rewardId as never) ||
+    canonicalStringify(profile) !== canonicalStringify(expectedProfile)
+  )
+    throw new RangeError(
+      "authoritative attempt result contradicts the profile"
+    );
+  return profile;
+}
+
+export async function applyCheckpointAttemptResult(
+  store: CheckpointProfileStore,
+  startingProfile: ProfileState,
+  campaign: CheckpointAttemptResult,
+  now: () => number = Date.now
+): Promise<ProfileState> {
+  const profile = validateCheckpointAttemptResult(startingProfile, campaign);
+  let candidate = profile;
+  let expectedRevision = startingProfile.revision;
+  let lastConflict: unknown;
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    const envelope = await createProfileSaveEnvelope({
+      contentVersion: "content.shuttergate.level_1.v1",
+      applicationBuild: "phase-6-web",
+      writtenAtEpochMs: now(),
+      profileId,
+      profile: candidate
+    });
+    try {
+      const written = await store.write({ expectedRevision, envelope });
+      return written.profile;
+    } catch (error) {
+      if (!isCheckpointProfileSaveConflict(error)) throw error;
+      lastConflict = error;
+      const concurrent = await store.load(profileId);
+      if (concurrent.status !== "loaded") throw error;
+      const concurrentProfile = normalizeProfileState(
+        concurrent.envelope.profile
+      );
+      if (
+        concurrentProfile.claimedRewardIds.includes(campaign.rewardId as never)
+      )
+        return concurrentProfile;
+      candidate = normalizeProfileState({
+        ...concurrentProfile,
+        revision: concurrentProfile.revision + 1,
+        forgeOre: concurrentProfile.forgeOre + campaign.forgeOreAwarded,
+        claimedRewardIds: [
+          ...concurrentProfile.claimedRewardIds,
+          campaign.rewardId as StableId
+        ]
+      });
+      expectedRevision = concurrentProfile.revision;
+    }
+  }
+  throw lastConflict;
 }
 
 export function isCheckpointProfileSaveConflict(error: unknown): boolean {

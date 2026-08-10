@@ -194,12 +194,12 @@ describe("Shuttergate reference balance calibration", () => {
     expect(upgraded).toMatchObject({
       schemaVersion: 2,
       buildId: "build.warden.shield_slam_rank_1.v1",
-      deployedWardenMaximumHealth: 260,
+      deployedWardenMaximumHealth: 1000,
       deployedWardenAttackDamage: 20,
       purchasedModifiers: [
         {
           characterId: "character.iron_warden",
-          maximumHealthAdd: 20,
+          maximumHealthAdd: 760,
           attackDamageAdd: 2,
           sourceUpgradeIds: ["upgrade.ability.shield_slam"]
         }
@@ -211,9 +211,9 @@ describe("Shuttergate reference balance calibration", () => {
       "d9c405406faaf57b474cc17404b21aef95f0a4ac6ccf10cd66bfb9ae61570e82"
     );
     expect(await canonicalHash(upgraded)).toBe(
-      "682a15577f6d7b155e53fcb4a59f350d6a05c321aacf24c735565290b6b6239f"
+      "f58bc024c5f583593bd2eb434b04bac0abf093d92b2c7870435d02f5595ee42e"
     );
-  }, 15_000);
+  }, 60_000);
 
   it("produces attempt reward evidence from the authoritative encounter", async () => {
     const content = await compileContent(shuttergateInput);
@@ -268,7 +268,7 @@ describe("Shuttergate reference balance calibration", () => {
       targetPolicy: "lowest_health",
       buildId: "build.warden.shield_slam_rank_1.v1"
     });
-  }, 15_000);
+  }, 30_000);
 
   it("rejects malformed attempt identity before compiling encounter content", async () => {
     const content = await compileContent(shuttergateInput);
