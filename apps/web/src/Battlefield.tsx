@@ -10,7 +10,7 @@ import {
   type CombatSoundPlayer,
   createCombatSoundPlayer,
   deriveCombatFeedback,
-  isCombatFeedbackProgression
+  shouldAdvanceCombatFeedbackBaseline
 } from "./combat-feedback.js";
 import {
   compareRenderIds,
@@ -42,6 +42,17 @@ const DEPARTURE_DURATION_MS = 720;
 const DAMAGE_SIGNAL_DURATION_MS = 280;
 const MAX_POOLED_EFFECTS = 64;
 const FIXTURE_ID = "scenarios/conformance/shuttergate-web-truth.json";
+
+export function interpolationDistanceForFrame(
+  deltaMilliseconds: number,
+  simulationSpeed: 1 | 2
+): number {
+  return (
+    Math.max(0, deltaMilliseconds) *
+    INTERPOLATION_SPEED_PIXELS_PER_MILLISECOND *
+    simulationSpeed
+  );
+}
 const textureAlphaMetricsCache = new Map<string, TextureAlphaMetrics>();
 
 const environmentUrl = new URL(
@@ -1364,10 +1375,11 @@ class PersistentBattlefieldScene {
     signalMask?.setPosition(offsetX, offsetY);
   }
 
-  updateMotion(deltaMilliseconds: number): void {
-    const maximumStep =
-      Math.max(0, deltaMilliseconds) *
-      INTERPOLATION_SPEED_PIXELS_PER_MILLISECOND;
+  updateMotion(deltaMilliseconds: number, simulationSpeed: 1 | 2): void {
+    const maximumStep = interpolationDistanceForFrame(
+      deltaMilliseconds,
+      simulationSpeed
+    );
     for (const objects of this.entities.values()) {
       const deltaX = objects.targetX - objects.subject.x;
       const deltaY = objects.targetY - objects.subject.y;
@@ -1903,6 +1915,7 @@ interface BattlefieldRenderer {
     snapshot: RenderSnapshot,
     feedback: CombatFeedback | undefined,
     reduceMotion: boolean,
+    simulationSpeed: 1 | 2,
     previousSnapshot: RenderSnapshot | undefined,
     evidenceEffectAlpha: number | undefined
   ): void;
@@ -1914,11 +1927,13 @@ function createBattlefieldRenderer(
   initialSnapshot: RenderSnapshot,
   initialFeedback: CombatFeedback | undefined,
   initialReduceMotion: boolean,
+  initialSimulationSpeed: 1 | 2,
   initialEvidenceEffectAlpha: number | undefined
 ): BattlefieldRenderer {
   let snapshot = initialSnapshot;
   let feedback = initialFeedback;
   let reduceMotion = initialReduceMotion;
+  let simulationSpeed = initialSimulationSpeed;
   let evidenceEffectAlpha = initialEvidenceEffectAlpha;
   let persistentScene: PersistentBattlefieldScene | undefined;
   const loadErrors = new Set<string>();
@@ -1986,7 +2001,7 @@ function createBattlefieldRenderer(
         );
       },
       update(_time: number, delta: number) {
-        persistentScene?.updateMotion(delta);
+        persistentScene?.updateMotion(delta, simulationSpeed);
         persistentScene?.updateDepartures();
         if (typeof window !== "undefined" && persistentScene !== undefined)
           window.__DWARVEN_DEPTHS_RENDERER__ = persistentScene.diagnostics();
@@ -1998,12 +2013,14 @@ function createBattlefieldRenderer(
       nextSnapshot,
       nextFeedback,
       nextReduceMotion,
+      nextSimulationSpeed,
       nextPreviousSnapshot,
       nextEvidenceEffectAlpha
     ) {
       snapshot = nextSnapshot;
       feedback = nextFeedback;
       reduceMotion = nextReduceMotion;
+      simulationSpeed = nextSimulationSpeed;
       evidenceEffectAlpha = nextEvidenceEffectAlpha;
       persistentScene?.update(
         snapshot,
@@ -2032,11 +2049,13 @@ export function Battlefield({
   snapshot,
   reduceMotion,
   soundEnabled,
+  simulationSpeed = 1,
   evidenceEffectAlpha
 }: {
   readonly snapshot: RenderSnapshot;
   readonly reduceMotion: boolean;
   readonly soundEnabled: boolean;
+  readonly simulationSpeed?: 1 | 2;
   readonly evidenceEffectAlpha?: number;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -2044,12 +2063,14 @@ export function Battlefield({
   const latestSnapshotRef = useRef(snapshot);
   const latestFeedbackRef = useRef<CombatFeedback | undefined>(undefined);
   const latestReduceMotionRef = useRef(reduceMotion);
+  const latestSimulationSpeedRef = useRef(simulationSpeed);
   const latestEvidenceEffectAlphaRef = useRef(evidenceEffectAlpha);
   const previousSnapshotRef = useRef<RenderSnapshot | undefined>(undefined);
   const soundPlayerRef = useRef<CombatSoundPlayer | undefined>(undefined);
   const [feedback, setFeedback] = useState<CombatFeedback | undefined>();
   latestSnapshotRef.current = snapshot;
   latestReduceMotionRef.current = reduceMotion;
+  latestSimulationSpeedRef.current = simulationSpeed;
   latestEvidenceEffectAlphaRef.current = evidenceEffectAlpha;
 
   useEffect(() => {
@@ -2076,6 +2097,7 @@ export function Battlefield({
         latestSnapshotRef.current,
         latestFeedbackRef.current,
         latestReduceMotionRef.current,
+        latestSimulationSpeedRef.current,
         latestEvidenceEffectAlphaRef.current
       );
       rendererRef.current = renderer;
@@ -2096,7 +2118,7 @@ export function Battlefield({
         : nextFeedback;
     if (
       previousSnapshot === undefined ||
-      isCombatFeedbackProgression(previousSnapshot, snapshot)
+      shouldAdvanceCombatFeedbackBaseline(previousSnapshot, snapshot)
     )
       previousSnapshotRef.current = snapshot;
     latestFeedbackRef.current = renderedFeedback;
@@ -2105,11 +2127,12 @@ export function Battlefield({
       snapshot,
       renderedFeedback,
       reduceMotion,
+      simulationSpeed,
       previousSnapshot,
       evidenceEffectAlpha
     );
     if (nextFeedback !== undefined) soundPlayerRef.current?.play(nextFeedback);
-  }, [evidenceEffectAlpha, reduceMotion, snapshot]);
+  }, [evidenceEffectAlpha, reduceMotion, simulationSpeed, snapshot]);
 
   return (
     <figure

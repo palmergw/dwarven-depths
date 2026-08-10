@@ -20,6 +20,7 @@ import {
   comparePresentationPrimitives,
   decodeBattlefieldDepthAsset,
   deriveCombatPresentationState,
+  interpolationDistanceForFrame,
   renderedFactionForSourceKey,
   selectCombatPoseAsset
 } from "./Battlefield.js";
@@ -485,6 +486,33 @@ class ControlledJourneyWorker {
     });
   }
 
+  emitTerminalSnapshot(terminalResult: "victory" | "defeat" = "victory"): void {
+    this.emit({
+      protocolVersion: 4,
+      type: "render_snapshot",
+      snapshot: {
+        schemaVersion: 2,
+        scenarioId: "scenario.shuttergate.terminal-presentation",
+        levelId: "level.shuttergate_hall",
+        mapId: "map.shuttergate_hall",
+        tick: 1,
+        previousTick: null,
+        phase: "terminal",
+        nodes: [],
+        connections: [],
+        entities: [],
+        entityTransitions: [],
+        encounter: {
+          startedWaveIds: [],
+          activeWaveId: null,
+          pendingSpawnCount: 0,
+          livingHostileCount: 0,
+          terminalResult
+        }
+      }
+    });
+  }
+
   emit(message: unknown): void {
     const event = new MessageEvent("message", { data: message });
     for (const listener of this.listeners) listener(event);
@@ -814,6 +842,35 @@ describe("run journey guidance", () => {
     expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
       "download its authoritative run evidence"
     );
+  });
+
+  it("keeps the terminal battlefield mounted through its departure interval", async () => {
+    const worker = new ControlledJourneyWorker();
+    const store = new PersistentJourneyProfileStore();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => store}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    worker.emitTerminalSnapshot();
+    const startedAt = Date.now();
+    worker.finish();
+
+    await vi.waitFor(() =>
+      expect(document.querySelector(".active-combat-screen")).not.toBeNull()
+    );
+    expect(document.querySelector("#results-heading")).toBeNull();
+    await resultHeading("Victory results");
+    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(650);
+    expect(document.querySelector(".active-combat-screen")).toBeNull();
   });
 
   it("rejects contradictory terminal progression when profile storage is unavailable", async () => {
@@ -2527,6 +2584,12 @@ describe("authoritative web worker", () => {
     await vi.waitFor(() =>
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeTweens).toBe(0)
     );
+  });
+
+  it("scales interpolation cadence with the authoritative speed setting", () => {
+    expect(interpolationDistanceForFrame(16, 1)).toBeCloseTo(14.4);
+    expect(interpolationDistanceForFrame(16, 2)).toBeCloseTo(28.8);
+    expect(interpolationDistanceForFrame(-1, 2)).toBe(0);
   });
 
   it("binds authored combat poses to authoritative snapshot-v2 action phases", () => {
