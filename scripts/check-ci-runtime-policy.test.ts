@@ -1,3 +1,6 @@
+import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   allowedHostedRunCommands,
@@ -6,12 +9,32 @@ import {
 } from "./check-ci-runtime-policy.mjs";
 
 function workflowWithStep(step: string, extraJob = "", extraWorkflow = "") {
-  return `${extraWorkflow}on:\n  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review]\n  push:\n    branches: [main]\npermissions:\n  contents: read\nconcurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  fast-checks:\n    if: github.event_name == 'push' || github.event.pull_request.draft == false\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n${extraJob}    steps:\n      - ${step}\n`;
+  return `${extraWorkflow}on:\n  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review]\n  push:\n    branches: [main]\npermissions:\n  contents: read\nconcurrency:\n  group: fast-ci-\${{ github.workflow }}-\${{ github.event.pull_request.number || github.ref }}\n  cancel-in-progress: true\njobs:\n  fast-checks:\n    if: github.event_name == 'push' || github.event.pull_request.draft == false\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n${extraJob}    steps:\n      - ${step}\n`;
 }
 
 describe("hosted CI runtime policy", () => {
   it("accepts the checked-in fast workflow and local checkpoint scripts", async () => {
     await expect(inspectRepositoryWorkflows()).resolves.toEqual([]);
+  });
+
+  it("rejects additional hosted workflow files repository-wide", async () => {
+    const root = await mkdtemp(join(tmpdir(), "dd-ci-policy-"));
+    const workflows = join(root, ".github", "workflows");
+    try {
+      await mkdir(workflows, { recursive: true });
+      await copyFile("package.json", join(root, "package.json"));
+      await copyFile(".github/workflows/ci.yml", join(workflows, "ci.yml"));
+      await copyFile(
+        ".github/workflows/ci.yml",
+        join(workflows, "duplicate.yml")
+      );
+      const problems = await inspectRepositoryWorkflows(root);
+      expect(problems).toContain(
+        "repository: hosted workflow set must be exactly .github/workflows/ci.yml (found: .github/workflows/ci.yml, .github/workflows/duplicate.yml)"
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   it.each(allowedHostedRunCommands)(
@@ -126,7 +149,7 @@ describe("hosted CI runtime policy", () => {
   });
 
   it("rejects job-level reusable and unallowlisted action workflows", () => {
-    const reusable = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  probe:\n    uses: owner/repo/.github/workflows/full.yml@main\n`;
+    const reusable = `concurrency:\n  group: fast-ci-\${{ github.workflow }}-\${{ github.event.pull_request.number || github.ref }}\n  cancel-in-progress: true\njobs:\n  probe:\n    uses: owner/repo/.github/workflows/full.yml@main\n`;
     expect(inspectWorkflowText("reuse.yml", reusable)).toContain(
       "reuse.yml: reusable workflow job probe is prohibited because its runtime cannot be bounded locally"
     );
@@ -163,7 +186,7 @@ describe("hosted CI runtime policy", () => {
       "flow.yml: hosted job test timeout-minutes 30 exceeds the 10-minute hosted-CI ceiling"
     );
     expect(inspectWorkflowText("flow.yml", flow)).toContain(
-      "flow.yml: hosted workflows must set concurrency.cancel-in-progress to true"
+      "flow.yml: hosted workflow must retain the reviewed concurrency group and cancellation"
     );
   });
 

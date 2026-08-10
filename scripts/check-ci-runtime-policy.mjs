@@ -62,6 +62,11 @@ export const expectedHostedPackageScripts = Object.freeze({
 export const expectedFastTestScript =
   expectedHostedPackageScripts["test:ci:fast"];
 
+const expectedConcurrencyGroup = [
+  "fast-ci-$",
+  "{{ github.workflow }}-$",
+  "{{ github.event.pull_request.number || github.ref }}"
+].join("");
 const expectedLocalCheckpointScript =
   "pnpm lint && pnpm check:ci-runtime-policy && pnpm check:artifacts && pnpm check:desktop-package && pnpm check:mobile-package && pnpm typecheck && pnpm build && pnpm check:web-budgets && pnpm test:web-offline && pnpm test:built && DD_SKIP_BUILD=1 pnpm test:browser:docker && pnpm validate:built && pnpm verify:scenario:built";
 const expectedLocalReleaseScript =
@@ -175,9 +180,14 @@ export function inspectWorkflowText(path, text) {
       `${path}: workflow-level env/defaults are prohibited in bounded hosted CI`
     );
   }
-  if (workflow?.concurrency?.["cancel-in-progress"] !== true) {
+  if (
+    !sameConfiguration(workflow.concurrency, {
+      group: expectedConcurrencyGroup,
+      "cancel-in-progress": true
+    })
+  ) {
     problems.push(
-      `${path}: hosted workflows must set concurrency.cancel-in-progress to true`
+      `${path}: hosted workflow must retain the reviewed concurrency group and cancellation`
     );
   }
 
@@ -250,7 +260,17 @@ async function workflowFiles(directory) {
 export async function inspectRepositoryWorkflows(root = repositoryRoot) {
   const directory = join(root, ".github", "workflows");
   const problems = [];
-  for (const path of await workflowFiles(directory)) {
+  const files = await workflowFiles(directory);
+  const relativeFiles = files.map((path) => relative(root, path));
+  if (
+    relativeFiles.length !== 1 ||
+    relativeFiles[0] !== ".github/workflows/ci.yml"
+  ) {
+    problems.push(
+      `repository: hosted workflow set must be exactly .github/workflows/ci.yml (found: ${relativeFiles.join(", ") || "none"})`
+    );
+  }
+  for (const path of files) {
     const text = await readFile(path, "utf8");
     problems.push(...inspectWorkflowText(relative(root, path), text));
   }
