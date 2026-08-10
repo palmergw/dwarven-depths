@@ -23,7 +23,7 @@ export const forbiddenHostedPatterns = Object.freeze([
   {
     label: "full unit/component suite",
     pattern:
-      /(?:\b(?:corepack\s+)?pnpm\b[^\n#]*\btest(?::built)?(?=\s|$)|\bvitest\b[^;&|\n]*(?:\brun\b|--run\b))/i
+      /(?:\b(?:corepack\s+)?pnpm\b[^\n#]*\btest(?::built)?(?=\s|$)|\bvitest(?:\.mjs)?\b)/i
   },
   {
     label: "release-candidate reports",
@@ -44,22 +44,15 @@ export const forbiddenHostedPatterns = Object.freeze([
   }
 ]);
 
-function commandSurfaces(job) {
-  const surfaces = [];
-  if (typeof job.uses === "string") surfaces.push(job.uses);
-  const container = job.container;
-  if (typeof container === "string") surfaces.push(container);
-  else if (container && typeof container === "object") {
-    if (typeof container.image === "string") surfaces.push(container.image);
+function scalarSurfaces(value, surfaces = []) {
+  if (typeof value === "string") {
+    surfaces.push(value.replace(/\s+/g, " ").trim());
+  } else if (Array.isArray(value)) {
+    for (const item of value) scalarSurfaces(item, surfaces);
+  } else if (value && typeof value === "object") {
+    for (const item of Object.values(value)) scalarSurfaces(item, surfaces);
   }
-  if (Array.isArray(job.steps)) {
-    for (const step of job.steps) {
-      if (!step || typeof step !== "object") continue;
-      if (typeof step.run === "string") surfaces.push(step.run);
-      if (typeof step.uses === "string") surfaces.push(step.uses);
-    }
-  }
-  return surfaces.map((surface) => surface.replace(/\s+/g, " ").trim());
+  return surfaces;
 }
 
 export function inspectWorkflowText(path, text) {
@@ -100,7 +93,7 @@ export function inspectWorkflowText(path, text) {
       }
     }
 
-    for (const surface of commandSurfaces(job)) {
+    for (const surface of scalarSurfaces(job)) {
       for (const rule of forbiddenHostedPatterns) {
         if (rule.pattern.test(surface)) {
           problems.push(

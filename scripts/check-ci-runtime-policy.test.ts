@@ -21,6 +21,9 @@ describe("hosted CI runtime policy", () => {
       "run: pnpm --filter @dwarven-depths/runtime test"
     ],
     ["direct Vitest suite", "run: pnpm exec vitest run"],
+    ["implicit Vitest CI suite", "run: pnpm exec vitest"],
+    ["Vitest binary suite", "run: ./node_modules/.bin/vitest"],
+    ["Vitest module suite", "run: node node_modules/vitest/vitest.mjs"],
     ["direct Vitest run flag", "run: pnpm exec vitest --run"],
     ["browser tests", "run: corepack pnpm test:browser"],
     ["direct Playwright suite", "run: pnpm exec playwright test"],
@@ -57,6 +60,17 @@ describe("hosted CI runtime policy", () => {
     const workflow = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  probe:\n    uses: owner/repo/.github/workflows/full.yml@main\n`;
     expect(inspectWorkflowText("reuse.yml", workflow)).toContain(
       "reuse.yml: reusable workflow job probe is prohibited because its runtime cannot be bounded locally"
+    );
+  });
+
+  it("rejects long commands hidden in matrix or environment scalars", () => {
+    const workflow = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  probe:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n    strategy:\n      matrix:\n        command: ["pnpm test:browser"]\n    env:\n      RELEASE_GATE: pnpm verify:local:release\n    steps:\n      - run: \${{ matrix.command }}\n`;
+    const problems = inspectWorkflowText("indirect.yml", workflow);
+    expect(problems).toContain(
+      "indirect.yml: hosted job probe contains long-running browser/offline tests"
+    );
+    expect(problems).toContain(
+      "indirect.yml: hosted job probe contains long-running complete verification"
     );
   });
 
