@@ -18,7 +18,7 @@ export const forbiddenHostedPatterns = Object.freeze([
   {
     label: "browser/offline tests",
     pattern:
-      /(?:test:browser|test-browser|test-web-offline|playwright\s+test|playwright\/v|mcr\.microsoft\.com\/playwright)/i
+      /(?:test:browser|test-browser|test-web-offline|playwright(?:\s+test|\/v|[^\s]*\/cli\.js)|@playwright\/test|mcr\.microsoft\.com\/playwright)/i
   },
   {
     label: "full unit/component suite",
@@ -33,6 +33,10 @@ export const forbiddenHostedPatterns = Object.freeze([
     label: "desktop/mobile container packaging",
     pattern:
       /(?:(?:build|capture):(?:desktop|mobile):docker|(?:^|[\s/])(?:build|capture)-(?:desktop|mobile|shuttergate)[^\s]*\.(?:sh|mjs|js)\b)/i
+  },
+  {
+    label: "direct container execution",
+    pattern: /\b(?:docker|podman|nerdctl|buildah)\s+(?:build|run|compose)\b/i
   },
   {
     label: "capture/evidence generation",
@@ -66,6 +70,16 @@ export function inspectWorkflowText(path, text) {
   const workflow = document.toJS();
   const jobs = workflow?.jobs;
   if (!jobs || typeof jobs !== "object" || Array.isArray(jobs)) return problems;
+
+  const workflowScope = { ...workflow };
+  delete workflowScope.jobs;
+  for (const surface of scalarSurfaces(workflowScope)) {
+    for (const rule of forbiddenHostedPatterns) {
+      if (rule.pattern.test(surface)) {
+        problems.push(`${path}: workflow contains long-running ${rule.label}`);
+      }
+    }
+  }
 
   let executionJobCount = 0;
   for (const [jobName, job] of Object.entries(jobs)) {

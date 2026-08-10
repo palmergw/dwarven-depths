@@ -27,6 +27,11 @@ describe("hosted CI runtime policy", () => {
     ["direct Vitest run flag", "run: pnpm exec vitest --run"],
     ["browser tests", "run: corepack pnpm test:browser"],
     ["direct Playwright suite", "run: pnpm exec playwright test"],
+    [
+      "direct Playwright CLI module",
+      "run: node node_modules/@playwright/test/cli.js test"
+    ],
+    ["direct Docker packaging", "run: docker build -t game ."],
     ["release reports", "run: pnpm report:release-candidate"],
     ["desktop packaging", "run: pnpm build:desktop:docker"],
     ["capture", "run: pnpm capture:shuttergate-clip"]
@@ -60,6 +65,13 @@ describe("hosted CI runtime policy", () => {
     const workflow = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  probe:\n    uses: owner/repo/.github/workflows/full.yml@main\n`;
     expect(inspectWorkflowText("reuse.yml", workflow)).toContain(
       "reuse.yml: reusable workflow job probe is prohibited because its runtime cannot be bounded locally"
+    );
+  });
+
+  it("rejects long commands hidden in workflow-level scalars", () => {
+    const workflow = `env:\n  GATE: pnpm test:browser\nconcurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  probe:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n    steps:\n      - run: \${{ env.GATE }}\n`;
+    expect(inspectWorkflowText("workflow-env.yml", workflow)).toContain(
+      "workflow-env.yml: workflow contains long-running browser/offline tests"
     );
   });
 
