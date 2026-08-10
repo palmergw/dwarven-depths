@@ -30,6 +30,43 @@ describe("Shuttergate battlefield asset manifest", () => {
     expect(BATTLEFIELD_ASSET_MANIFEST.assets.map(({ key }) => key)).toEqual(
       BATTLEFIELD_RUNTIME_ASSET_KEYS
     );
+
+    const productionManifest = JSON.parse(
+      readFileSync(BATTLEFIELD_ASSET_MANIFEST.provenance.entityManifest, "utf8")
+    ) as {
+      readonly files: readonly {
+        readonly path: string;
+        readonly sha256: string;
+      }[];
+    };
+    const combatManifest = JSON.parse(
+      readFileSync(
+        BATTLEFIELD_ASSET_MANIFEST.provenance.combatAnimationManifest,
+        "utf8"
+      )
+    ) as {
+      readonly files: readonly {
+        readonly path: string;
+        readonly sha256: string;
+      }[];
+    };
+    const authoredFiles = new Map(
+      [...productionManifest.files, ...combatManifest.files].map((file) => [
+        file.path,
+        file.sha256
+      ])
+    );
+    for (const asset of BATTLEFIELD_ASSET_MANIFEST.assets.filter(
+      ({ path }) =>
+        path.includes("/production-scene/") ||
+        path.includes("/combat-animation/")
+    ))
+      expect(authoredFiles.get(asset.path), asset.path).toBe(asset.sha256);
+    expect(
+      statSync(
+        BATTLEFIELD_ASSET_MANIFEST.provenance.combatAnimationProvenance
+      ).isFile()
+    ).toBe(true);
   });
 
   it("rejects unknown keys, duplicate asset IDs, noncanonical layers, and budget drift", () => {
@@ -55,6 +92,15 @@ describe("Shuttergate battlefield asset manifest", () => {
       parseBattlefieldAssetManifest({
         ...rawManifest,
         budgetBytes: rawManifest.totalBytes - 1
+      })
+    ).toBeUndefined();
+    expect(
+      parseBattlefieldAssetManifest({
+        ...rawManifest,
+        provenance: {
+          ...rawManifest.provenance,
+          combatAnimationManifest: rawManifest.provenance.entityManifest
+        }
       })
     ).toBeUndefined();
   });

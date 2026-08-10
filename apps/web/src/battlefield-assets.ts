@@ -33,6 +33,8 @@ export interface BattlefieldAssetManifest {
     readonly environmentBuild: string;
     readonly entityManifest: string;
     readonly entityProvenance: string;
+    readonly combatAnimationManifest: string;
+    readonly combatAnimationProvenance: string;
   };
 }
 
@@ -94,6 +96,8 @@ export function parseBattlefieldAssetManifest(
     rawAssets.length === 0 ||
     !isRecord(rawProvenance) ||
     !hasExactKeys(rawProvenance, [
+      "combatAnimationManifest",
+      "combatAnimationProvenance",
       "entityManifest",
       "entityProvenance",
       "environmentBuild",
@@ -140,21 +144,21 @@ export function parseBattlefieldAssetManifest(
   if (totalBytes !== declaredTotalBytes || totalBytes > (budgetBytes as number))
     return undefined;
 
-  for (const key of [
-    "environmentSource",
-    "environmentBuild",
-    "entityManifest",
-    "entityProvenance"
-  ] as const)
-    if (
-      typeof rawProvenance[key] !== "string" ||
-      !(rawProvenance[key] as string).startsWith(
-        key.startsWith("entity")
-          ? "assets/game-art/production-scene/"
-          : "assets/game-art/layered-map-poc/blender/"
-      )
-    )
-      return undefined;
+  const expectedProvenance = {
+    environmentSource:
+      "assets/game-art/layered-map-poc/blender/layered-shuttergate.blend",
+    environmentBuild: "assets/game-art/layered-map-poc/blender/build_scene.py",
+    entityManifest:
+      "assets/game-art/production-scene/metadata/layer-manifest.json",
+    entityProvenance:
+      "assets/game-art/production-scene/metadata/provenance.json",
+    combatAnimationManifest:
+      "assets/game-art/combat-animation/metadata/manifest.json",
+    combatAnimationProvenance:
+      "assets/game-art/combat-animation/generation-log.md"
+  } as const;
+  for (const [key, expected] of Object.entries(expectedProvenance))
+    if (rawProvenance[key] !== expected) return undefined;
 
   return value as unknown as BattlefieldAssetManifest;
 }
