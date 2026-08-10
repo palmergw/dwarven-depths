@@ -1,134 +1,139 @@
 import { describe, expect, it } from "vitest";
 import {
+  allowedHostedRunCommands,
   inspectRepositoryWorkflows,
   inspectWorkflowText
 } from "./check-ci-runtime-policy.mjs";
 
+function workflowWithStep(step: string, extraJob = "", extraWorkflow = "") {
+  return `${extraWorkflow}concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n${extraJob}    steps:\n      - ${step}\n`;
+}
+
 describe("hosted CI runtime policy", () => {
-  it("accepts the checked-in fast workflows", async () => {
+  it("accepts the checked-in fast workflow and local checkpoint scripts", async () => {
     await expect(inspectRepositoryWorkflows()).resolves.toEqual([]);
   });
 
-  it.each([
-    ["complete verification", "run: pnpm verify"],
-    ["npm verification bypass", "run: npm run verify"],
-    ["yarn verification bypass", "run: yarn verify"],
-    ["local checkpoint", "run: pnpm verify:local:checkpoint"],
-    ["local release checkpoint", "run: pnpm run verify:local:release"],
-    ["full unit suite", "run: pnpm test:built"],
-    [
-      "option-prefixed full suite",
-      "run: pnpm --filter @dwarven-depths/runtime test"
-    ],
-    ["direct Vitest suite", "run: pnpm exec vitest run"],
-    ["implicit Vitest CI suite", "run: pnpm exec vitest"],
-    ["Vitest binary suite", "run: ./node_modules/.bin/vitest"],
-    ["Vitest module suite", "run: node node_modules/vitest/vitest.mjs"],
-    ["direct Vitest run flag", "run: pnpm exec vitest --run"],
-    ["browser tests", "run: corepack pnpm test:browser"],
-    ["direct Playwright suite", "run: pnpm exec playwright test"],
-    [
-      "direct Playwright CLI module",
-      "run: node node_modules/@playwright/test/cli.js test"
-    ],
-    ["direct Docker packaging", "run: docker build -t game ."],
-    ["release reports", "run: pnpm report:release-candidate"],
-    ["desktop packaging", "run: pnpm build:desktop:docker"],
-    ["capture", "run: pnpm capture:shuttergate-clip"]
-  ])("rejects hosted %s", (_label, command) => {
-    const workflow = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n    steps:\n      - ${command}\n`;
-    expect(
-      inspectWorkflowText(".github/workflows/test.yml", workflow)
-    ).not.toEqual([]);
-  });
+  it.each(allowedHostedRunCommands)(
+    "allows reviewed hosted command %s",
+    (command) => {
+      expect(
+        inspectWorkflowText("allowed.yml", workflowWithStep(`run: ${command}`))
+      ).toEqual([]);
+    }
+  );
 
   it.each([
-    [
-      "folded complete verification",
-      "run: >\n          pnpm\n          verify"
-    ],
-    ["direct desktop packaging", "run: ./scripts/build-desktop-docker.sh"],
-    ["direct capture", "run: node scripts/capture-shuttergate-clip.mjs"]
-  ])("rejects parsed YAML %s", (_label, command) => {
-    const workflow = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n    steps:\n      - ${command}\n`;
-    expect(inspectWorkflowText("parsed.yml", workflow)).not.toEqual([]);
-  });
-
-  it("rejects a Playwright job container", () => {
-    const workflow = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n    container:\n      image: mcr.microsoft.com/playwright:v1.61.1-noble\n    steps:\n      - run: pnpm lint\n`;
-    expect(inspectWorkflowText("container.yml", workflow)).toContain(
-      "container.yml: hosted job test contains long-running browser/offline tests"
+    "pnpm verify",
+    "pnpm verify:local:checkpoint",
+    "pnpm verify:local:release",
+    "npm run verify",
+    "yarn verify",
+    "pnpm test",
+    "pnpm test:built",
+    "pnpm --filter @dwarven-depths/runtime test",
+    "pnpm exec vitest",
+    "./node_modules/.bin/vitest",
+    "node node_modules/vitest/vitest.mjs",
+    "pnpm test:browser",
+    "pnpm exec playwright test",
+    "node node_modules/@playwright/test/cli.js test",
+    "pnpm report:release-candidate",
+    "pnpm build:desktop:docker",
+    "docker build -t game .",
+    "node scripts/capture-shuttergate-clip.mjs",
+    "pnpm hosted-gate",
+    "./.github/actions/complete-gate"
+  ])("rejects non-allowlisted hosted command %s", (command) => {
+    const problems = inspectWorkflowText(
+      "forbidden.yml",
+      workflowWithStep(`run: ${command}`)
+    );
+    expect(problems).toContain(
+      `forbidden.yml: hosted job test step 0 uses non-allowlisted command: ${command}`
     );
   });
 
-  it("rejects job-level reusable workflows", () => {
-    const workflow = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  probe:\n    uses: owner/repo/.github/workflows/full.yml@main\n`;
-    expect(inspectWorkflowText("reuse.yml", workflow)).toContain(
+  it("normalizes harmless folded whitespace but does not compose split commands", () => {
+    const folded = workflowWithStep("run: >\n          pnpm\n          lint");
+    expect(inspectWorkflowText("folded.yml", folded)).toEqual([]);
+    const split = workflowWithStep(
+      `run: \${{ env.A }}\${{ env.B }} \${{ env.C }}\${{ env.D }}`,
+      "    env:\n      A: pn\n      B: pm\n      C: test\n      D: :browser\n"
+    );
+    expect(inspectWorkflowText("split.yml", split)).toContain(
+      "split.yml: hosted job test uses prohibited indirection/runtime keys: env"
+    );
+  });
+
+  it.each(["container", "defaults", "env", "services", "strategy"])(
+    "rejects job-level %s indirection/runtime configuration",
+    (key) => {
+      const value = key === "container" ? "ubuntu:latest" : "{}";
+      const workflow = workflowWithStep(
+        "run: pnpm lint",
+        `    ${key}: ${value}\n`
+      );
+      expect(inspectWorkflowText(`${key}.yml`, workflow)).toContain(
+        `${key}.yml: hosted job test uses prohibited indirection/runtime keys: ${key}`
+      );
+    }
+  );
+
+  it("rejects workflow-level env/defaults", () => {
+    const workflow = workflowWithStep(
+      "run: pnpm lint",
+      "",
+      "env:\n  GATE: pnpm test:browser\n"
+    );
+    expect(inspectWorkflowText("workflow-env.yml", workflow)).toContain(
+      "workflow-env.yml: workflow-level env/defaults are prohibited in bounded hosted CI"
+    );
+  });
+
+  it("rejects job-level reusable and unallowlisted action workflows", () => {
+    const reusable = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  probe:\n    uses: owner/repo/.github/workflows/full.yml@main\n`;
+    expect(inspectWorkflowText("reuse.yml", reusable)).toContain(
       "reuse.yml: reusable workflow job probe is prohibited because its runtime cannot be bounded locally"
     );
-  });
-
-  it("rejects long commands hidden in workflow-level scalars", () => {
-    const workflow = `env:\n  GATE: pnpm test:browser\nconcurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  probe:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n    steps:\n      - run: \${{ env.GATE }}\n`;
-    expect(inspectWorkflowText("workflow-env.yml", workflow)).toContain(
-      "workflow-env.yml: workflow contains long-running browser/offline tests"
+    const action = workflowWithStep("uses: docker/build-push-action@v6");
+    expect(inspectWorkflowText("action.yml", action)).toContain(
+      "action.yml: hosted job test step 0 uses non-allowlisted action: docker/build-push-action@v6"
     );
   });
 
-  it("rejects long commands hidden in matrix or environment scalars", () => {
-    const workflow = `concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  probe:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n    strategy:\n      matrix:\n        command: ["pnpm test:browser"]\n    env:\n      RELEASE_GATE: pnpm verify:local:release\n    steps:\n      - run: \${{ matrix.command }}\n`;
-    const problems = inspectWorkflowText("indirect.yml", workflow);
-    expect(problems).toContain(
-      "indirect.yml: hosted job probe contains long-running browser/offline tests"
+  it("requires exact pinned action configuration", () => {
+    const valid = workflowWithStep(
+      "uses: pnpm/action-setup@v6\n        with:\n          version: 11.16.0\n          run_install: false"
     );
-    expect(problems).toContain(
-      "indirect.yml: hosted job probe contains long-running complete verification"
+    expect(inspectWorkflowText("action-valid.yml", valid)).toEqual([]);
+    const changed = workflowWithStep(
+      "uses: pnpm/action-setup@v6\n        with:\n          version: 11.16.0\n          run_install: true"
+    );
+    expect(inspectWorkflowText("action-changed.yml", changed)).toContain(
+      "action-changed.yml: hosted job test step 0 changes the pinned configuration for pnpm/action-setup@v6"
     );
   });
 
-  it("handles quoted and flow-style job maps", () => {
-    expect(
-      inspectWorkflowText(
-        "quoted.yml",
-        'jobs:\n  "test":\n    runs-on: ubuntu-latest\n'
-      )
-    ).toContain(
+  it("enforces bounded concurrency and per-job timeout on quoted and flow maps", () => {
+    const quoted =
+      'jobs:\n  "test":\n    runs-on: ubuntu-latest\n    steps: []\n';
+    expect(inspectWorkflowText("quoted.yml", quoted)).toContain(
       "quoted.yml: hosted job test must declare an integer timeout-minutes"
     );
-    expect(
-      inspectWorkflowText(
-        "flow.yml",
-        "jobs: { test: { runs-on: ubuntu-latest, steps: [{ run: pnpm lint }] } }"
-      )
-    ).toContain(
-      "flow.yml: hosted job test must declare an integer timeout-minutes"
+    const flow =
+      "jobs: { test: { runs-on: ubuntu-latest, timeout-minutes: 30, steps: [] } }";
+    expect(inspectWorkflowText("flow.yml", flow)).toContain(
+      "flow.yml: hosted job test timeout-minutes 30 exceeds the 10-minute hosted-CI ceiling"
+    );
+    expect(inspectWorkflowText("flow.yml", flow)).toContain(
+      "flow.yml: hosted workflows must set concurrency.cancel-in-progress to true"
     );
   });
 
-  it("rejects missing and excessive hosted job timeouts per job", () => {
-    expect(
-      inspectWorkflowText(
-        "missing.yml",
-        "jobs:\n  bounded:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n  unbounded:\n    runs-on: ubuntu-latest\n"
-      )
-    ).toContain(
-      "missing.yml: hosted job unbounded must declare an integer timeout-minutes"
-    );
-    expect(
-      inspectWorkflowText(
-        "wide-indent.yml",
-        "jobs:\n    slow:\n      runs-on: ubuntu-latest\n      steps:\n        - run: pnpm lint\n"
-      )
-    ).toContain(
-      "wide-indent.yml: hosted job slow must declare an integer timeout-minutes"
-    );
-    expect(
-      inspectWorkflowText(
-        "long.yml",
-        "jobs:\n  test:\n    runs-on: ubuntu-latest\n    timeout-minutes: 30\n"
-      )
-    ).toContain(
-      "long.yml: hosted job test timeout-minutes 30 exceeds the 10-minute hosted-CI ceiling"
-    );
+  it("rejects invalid workflow YAML", () => {
+    expect(inspectWorkflowText("invalid.yml", "jobs: [")).toEqual([
+      expect.stringContaining("invalid.yml: invalid workflow YAML:")
+    ]);
   });
 });

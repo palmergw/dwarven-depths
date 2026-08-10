@@ -5,62 +5,103 @@ import { parseDocument } from "yaml";
 
 const repositoryRoot = resolve(fileURLToPath(new URL("../", import.meta.url)));
 
-export const forbiddenHostedPatterns = Object.freeze([
-  {
-    label: "non-pnpm package-manager execution",
-    pattern: /\b(?:npm|npx|yarn|bun|bunx)\b/i
-  },
-  {
-    label: "complete verification",
-    pattern:
-      /\b(?:corepack\s+)?pnpm\b[^\n#]*\bverify(?::local(?::(?:checkpoint|release))?)?(?=\s|$)/i
-  },
-  {
-    label: "browser/offline tests",
-    pattern:
-      /(?:test:browser|test-browser|test-web-offline|playwright(?:\s+test|\/v|[^\s]*\/cli\.js)|@playwright\/test|mcr\.microsoft\.com\/playwright)/i
-  },
-  {
-    label: "full unit/component suite",
-    pattern:
-      /(?:\b(?:corepack\s+)?pnpm\b[^\n#]*\btest(?::built)?(?=\s|$)|\bvitest(?:\.mjs)?\b)/i
-  },
-  {
-    label: "release-candidate reports",
-    pattern: /(?:report:release-candidate|generate-release-candidate-reports)/i
-  },
-  {
-    label: "desktop/mobile container packaging",
-    pattern:
-      /(?:(?:build|capture):(?:desktop|mobile):docker|(?:^|[\s/])(?:build|capture)-(?:desktop|mobile|shuttergate)[^\s]*\.(?:sh|mjs|js)\b)/i
-  },
-  {
-    label: "direct container execution",
-    pattern: /\b(?:docker|podman|nerdctl|buildah)\s+(?:build|run|compose)\b/i
-  },
-  {
-    label: "capture/evidence generation",
-    pattern: /\b(?:corepack\s+)?pnpm\b[^\n#]*\bcapture:/i
-  },
-  {
-    label: "campaign or sweep simulation",
-    pattern: /\b(?:campaign|sweep)\b/i
-  }
+export const allowedHostedRunCommands = Object.freeze([
+  "pnpm install --frozen-lockfile",
+  "pnpm check:ci-runtime-policy",
+  "pnpm lint",
+  "pnpm check:artifacts",
+  "pnpm typecheck",
+  "pnpm build",
+  "pnpm test:ci:fast",
+  "pnpm check:web-budgets",
+  "pnpm validate:built",
+  "pnpm verify:scenario:built"
 ]);
 
-function scalarSurfaces(value, surfaces = []) {
-  if (typeof value === "string") {
-    surfaces.push(value.replace(/\s+/g, " ").trim());
-  } else if (Array.isArray(value)) {
-    for (const item of value) scalarSurfaces(item, surfaces);
-  } else if (value && typeof value === "object") {
-    for (const item of Object.values(value)) scalarSurfaces(item, surfaces);
+const allowedActionConfigurations = Object.freeze({
+  "actions/checkout@v7": {},
+  "pnpm/action-setup@v6": {
+    version: "11.16.0",
+    run_install: false
+  },
+  "actions/setup-node@v7": {
+    "node-version": 22,
+    cache: "pnpm"
   }
-  return surfaces;
+});
+
+export const expectedHostedPackageScripts = Object.freeze({
+  "check:ci-runtime-policy": "node scripts/check-ci-runtime-policy.mjs",
+  lint: "biome check .",
+  "check:artifacts": "node scripts/check-generated-artifacts.mjs",
+  typecheck: "tsc -b --pretty false",
+  build: "pnpm -r --workspace-concurrency=1 build",
+  "test:ci:fast":
+    "vitest run scripts/check-ci-runtime-policy.test.ts packages/content-schema/src/index.test.ts packages/content-runtime/src/index.test.ts packages/sim-core/src/index.test.ts packages/runtime/src/index.test.ts packages/save/src/profile-save.test.ts packages/progression/src/index.test.ts apps/web/src/protocol.test.ts --reporter=dot",
+  "check:web-budgets": "node scripts/check-web-release-budgets.mjs",
+  "validate:built":
+    "pnpm sim:built validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
+  "verify:scenario:built":
+    "pnpm sim:built run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0"
+});
+
+export const expectedFastTestScript =
+  expectedHostedPackageScripts["test:ci:fast"];
+
+function sameConfiguration(actual, expected) {
+  const actualEntries = Object.entries(actual ?? {}).sort(([left], [right]) =>
+    left.localeCompare(right)
+  );
+  const expectedEntries = Object.entries(expected).sort(([left], [right]) =>
+    left.localeCompare(right)
+  );
+  return JSON.stringify(actualEntries) === JSON.stringify(expectedEntries);
+}
+
+function inspectHostedStep(path, jobName, step, index) {
+  const problems = [];
+  if (!step || typeof step !== "object" || Array.isArray(step)) {
+    return [`${path}: hosted job ${jobName} step ${index} must be a map`];
+  }
+  const keys = Object.keys(step);
+  if (typeof step.run === "string") {
+    if (keys.some((key) => !["name", "run"].includes(key))) {
+      problems.push(
+        `${path}: hosted job ${jobName} step ${index} has non-allowlisted run configuration`
+      );
+    }
+    const command = step.run.replace(/\s+/g, " ").trim();
+    if (!allowedHostedRunCommands.includes(command)) {
+      problems.push(
+        `${path}: hosted job ${jobName} step ${index} uses non-allowlisted command: ${command}`
+      );
+    }
+    return problems;
+  }
+  if (typeof step.uses === "string") {
+    if (keys.some((key) => !["name", "uses", "with"].includes(key))) {
+      problems.push(
+        `${path}: hosted job ${jobName} step ${index} has non-allowlisted action configuration`
+      );
+    }
+    const expected = allowedActionConfigurations[step.uses];
+    if (!expected) {
+      problems.push(
+        `${path}: hosted job ${jobName} step ${index} uses non-allowlisted action: ${step.uses}`
+      );
+    } else if (!sameConfiguration(step.with, expected)) {
+      problems.push(
+        `${path}: hosted job ${jobName} step ${index} changes the pinned configuration for ${step.uses}`
+      );
+    }
+    return problems;
+  }
+  return [
+    `${path}: hosted job ${jobName} step ${index} must use an allowlisted action or command`
+  ];
 }
 
 export function inspectWorkflowText(path, text) {
-  const problems = [];
   const document = parseDocument(text, { uniqueKeys: true });
   if (document.errors.length > 0) {
     return document.errors.map(
@@ -68,63 +109,68 @@ export function inspectWorkflowText(path, text) {
     );
   }
   const workflow = document.toJS();
+  const problems = [];
   const jobs = workflow?.jobs;
-  if (!jobs || typeof jobs !== "object" || Array.isArray(jobs)) return problems;
-
-  const workflowScope = { ...workflow };
-  delete workflowScope.jobs;
-  for (const surface of scalarSurfaces(workflowScope)) {
-    for (const rule of forbiddenHostedPatterns) {
-      if (rule.pattern.test(surface)) {
-        problems.push(`${path}: workflow contains long-running ${rule.label}`);
-      }
-    }
+  if (!jobs || typeof jobs !== "object" || Array.isArray(jobs)) {
+    return [`${path}: workflow must define a jobs map`];
   }
 
-  let executionJobCount = 0;
-  for (const [jobName, job] of Object.entries(jobs)) {
-    if (!job || typeof job !== "object" || Array.isArray(job)) continue;
-    const runsOn = job["runs-on"];
-    const reusableWorkflow = job.uses;
-    if (runsOn !== undefined || reusableWorkflow !== undefined) {
-      executionJobCount += 1;
-    }
-    if (reusableWorkflow !== undefined) {
-      problems.push(
-        `${path}: reusable workflow job ${jobName} is prohibited because its runtime cannot be bounded locally`
-      );
-    }
-    if (runsOn !== undefined) {
-      const timeout = job["timeout-minutes"];
-      if (!Number.isInteger(timeout)) {
-        problems.push(
-          `${path}: hosted job ${jobName} must declare an integer timeout-minutes`
-        );
-      } else if (timeout > 10) {
-        problems.push(
-          `${path}: hosted job ${jobName} timeout-minutes ${timeout} exceeds the 10-minute hosted-CI ceiling`
-        );
-      }
-    }
-
-    for (const surface of scalarSurfaces(job)) {
-      for (const rule of forbiddenHostedPatterns) {
-        if (rule.pattern.test(surface)) {
-          problems.push(
-            `${path}: hosted job ${jobName} contains long-running ${rule.label}`
-          );
-        }
-      }
-    }
+  if (workflow.env !== undefined || workflow.defaults !== undefined) {
+    problems.push(
+      `${path}: workflow-level env/defaults are prohibited in bounded hosted CI`
+    );
   }
-
-  if (
-    executionJobCount > 0 &&
-    workflow?.concurrency?.["cancel-in-progress"] !== true
-  ) {
+  if (workflow?.concurrency?.["cancel-in-progress"] !== true) {
     problems.push(
       `${path}: hosted workflows must set concurrency.cancel-in-progress to true`
     );
+  }
+
+  for (const [jobName, job] of Object.entries(jobs)) {
+    if (!job || typeof job !== "object" || Array.isArray(job)) {
+      problems.push(`${path}: job ${jobName} must be a map`);
+      continue;
+    }
+    if (job.uses !== undefined) {
+      problems.push(
+        `${path}: reusable workflow job ${jobName} is prohibited because its runtime cannot be bounded locally`
+      );
+      continue;
+    }
+    const prohibitedJobKeys = [
+      "container",
+      "defaults",
+      "env",
+      "services",
+      "strategy"
+    ].filter((key) => job[key] !== undefined);
+    if (prohibitedJobKeys.length > 0) {
+      problems.push(
+        `${path}: hosted job ${jobName} uses prohibited indirection/runtime keys: ${prohibitedJobKeys.join(", ")}`
+      );
+    }
+    if (job["runs-on"] !== "ubuntu-latest") {
+      problems.push(
+        `${path}: hosted job ${jobName} must run on ubuntu-latest without a container`
+      );
+    }
+    const timeout = job["timeout-minutes"];
+    if (!Number.isInteger(timeout)) {
+      problems.push(
+        `${path}: hosted job ${jobName} must declare an integer timeout-minutes`
+      );
+    } else if (timeout > 10) {
+      problems.push(
+        `${path}: hosted job ${jobName} timeout-minutes ${timeout} exceeds the 10-minute hosted-CI ceiling`
+      );
+    }
+    if (!Array.isArray(job.steps)) {
+      problems.push(`${path}: hosted job ${jobName} must define a steps array`);
+      continue;
+    }
+    job.steps.forEach((step, index) => {
+      problems.push(...inspectHostedStep(path, jobName, step, index));
+    });
   }
   return [...new Set(problems)];
 }
@@ -146,6 +192,45 @@ export async function inspectRepositoryWorkflows(root = repositoryRoot) {
   for (const path of await workflowFiles(directory)) {
     const text = await readFile(path, "utf8");
     problems.push(...inspectWorkflowText(relative(root, path), text));
+  }
+
+  const packageJson = JSON.parse(
+    await readFile(join(root, "package.json"), "utf8")
+  );
+  const scripts = packageJson.scripts ?? {};
+  for (const [name, expected] of Object.entries(expectedHostedPackageScripts)) {
+    if (scripts[name] !== expected) {
+      problems.push(
+        `package.json: ${name} must remain the reviewed bounded hosted implementation`
+      );
+    }
+  }
+  if (scripts.verify !== "pnpm verify:local:checkpoint") {
+    problems.push(
+      "package.json: verify must delegate to verify:local:checkpoint"
+    );
+  }
+  for (const required of [
+    "pnpm test:web-offline",
+    "pnpm test:built",
+    "pnpm test:browser:docker"
+  ]) {
+    if (!scripts["verify:local:checkpoint"]?.includes(required)) {
+      problems.push(
+        `package.json: verify:local:checkpoint must include ${required}`
+      );
+    }
+  }
+  for (const required of [
+    "pnpm verify:local:checkpoint",
+    "pnpm report:release-candidate",
+    "pnpm build:desktop:docker"
+  ]) {
+    if (!scripts["verify:local:release"]?.includes(required)) {
+      problems.push(
+        `package.json: verify:local:release must include ${required}`
+      );
+    }
   }
   return problems;
 }
