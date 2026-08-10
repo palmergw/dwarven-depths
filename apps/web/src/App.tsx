@@ -473,6 +473,15 @@ export function App({
   const terminalPresentationDeadlineRef = useRef(0);
   const terminalPresentationTimerRef = useRef<number | undefined>(undefined);
   const terminalResultPendingRef = useRef(false);
+  const terminalPresentationExpectedRef = useRef(false);
+  const terminalPresentationCompleteRef = useRef(false);
+  const pendingTerminalViewRef = useRef<ViewState | undefined>(undefined);
+  const terminalPresentationStartedRef = useRef<
+    ((snapshot: RenderSnapshot) => void) | undefined
+  >(undefined);
+  const terminalPresentationCompletedRef = useRef<
+    ((snapshot: RenderSnapshot) => void) | undefined
+  >(undefined);
   const upgradePurchasePendingRef = useRef(false);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
@@ -552,6 +561,8 @@ export function App({
       workerRef.current?.terminate();
       workerRef.current = undefined;
       workerFailureRef.current = undefined;
+      terminalPresentationStartedRef.current = undefined;
+      terminalPresentationCompletedRef.current = undefined;
     },
     []
   );
@@ -812,6 +823,9 @@ export function App({
     latestRenderSnapshotRef.current = undefined;
     terminalPresentationDeadlineRef.current = 0;
     terminalResultPendingRef.current = false;
+    terminalPresentationExpectedRef.current = false;
+    terminalPresentationCompleteRef.current = false;
+    pendingTerminalViewRef.current = undefined;
     if (terminalPresentationTimerRef.current !== undefined) {
       window.clearTimeout(terminalPresentationTimerRef.current);
       terminalPresentationTimerRef.current = undefined;
@@ -833,14 +847,21 @@ export function App({
     workerRef.current = worker;
     const beginTerminalPresentation = (): void => {
       const latestSnapshot = latestRenderSnapshotRef.current;
-      terminalPresentationDeadlineRef.current =
+      terminalPresentationExpectedRef.current =
         latestSnapshot?.schemaVersion === 2 &&
-        latestSnapshot.phase === "terminal"
-          ? Date.now() + TERMINAL_PRESENTATION_DURATION_MS
-          : 0;
+        latestSnapshot.phase === "terminal";
       terminalResultPendingRef.current = true;
     };
     const presentAfterTerminal = (nextView: ViewState): void => {
+      if (
+        terminalPresentationExpectedRef.current &&
+        (terminalPresentationDeadlineRef.current === 0 ||
+          !terminalPresentationCompleteRef.current)
+      ) {
+        pendingTerminalViewRef.current = nextView;
+        return;
+      }
+      pendingTerminalViewRef.current = undefined;
       const delay = Math.max(
         0,
         terminalPresentationDeadlineRef.current - Date.now()
@@ -851,8 +872,40 @@ export function App({
       }
       terminalPresentationTimerRef.current = window.setTimeout(() => {
         terminalPresentationTimerRef.current = undefined;
-        if (workerRef.current === worker) setView(nextView);
+        if (
+          workerRef.current === worker &&
+          (!terminalPresentationExpectedRef.current ||
+            terminalPresentationCompleteRef.current)
+        )
+          setView(nextView);
+        else pendingTerminalViewRef.current = nextView;
       }, delay);
+    };
+    terminalPresentationStartedRef.current = (snapshot): void => {
+      if (
+        workerRef.current !== worker ||
+        snapshot !== latestRenderSnapshotRef.current ||
+        snapshot.schemaVersion !== 2 ||
+        snapshot.phase !== "terminal" ||
+        terminalPresentationDeadlineRef.current !== 0
+      )
+        return;
+      terminalPresentationDeadlineRef.current =
+        Date.now() + TERMINAL_PRESENTATION_DURATION_MS;
+      const pendingView = pendingTerminalViewRef.current;
+      if (pendingView !== undefined) presentAfterTerminal(pendingView);
+    };
+    terminalPresentationCompletedRef.current = (snapshot): void => {
+      if (
+        workerRef.current !== worker ||
+        snapshot !== latestRenderSnapshotRef.current ||
+        snapshot.schemaVersion !== 2 ||
+        snapshot.phase !== "terminal"
+      )
+        return;
+      terminalPresentationCompleteRef.current = true;
+      const pendingView = pendingTerminalViewRef.current;
+      if (pendingView !== undefined) presentAfterTerminal(pendingView);
     };
     const failWorker = (inspectionMessage: string): void => {
       if (workerRef.current !== worker) return;
@@ -1552,6 +1605,12 @@ export function App({
                 (motionPreference === "device" && deviceReducedMotion)
               }
               soundEnabled={soundPreference === "on"}
+              onTerminalPresentationStarted={(snapshot) =>
+                terminalPresentationStartedRef.current?.(snapshot)
+              }
+              onTerminalPresentationCompleted={(snapshot) =>
+                terminalPresentationCompletedRef.current?.(snapshot)
+              }
             />
             <div className="combat-top-overlay">
               <CombatHud

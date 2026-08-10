@@ -24,7 +24,8 @@ import {
   deriveSlingerProjectilePaths,
   interpolationDistanceForFrame,
   renderedFactionForSourceKey,
-  selectCombatPoseAsset
+  selectCombatPoseAsset,
+  selectCombatPoseTreatment
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { CombatHud } from "./CombatHud.js";
@@ -863,13 +864,20 @@ describe("run journey guidance", () => {
     await userEvent.click(await buttonWithText("Confirm preparation"));
     await buttonWithText("Pause combat");
     worker.emitTerminalSnapshot();
-    const startedAt = Date.now();
     worker.finish();
 
     await vi.waitFor(() =>
       expect(document.querySelector(".active-combat-screen")).not.toBeNull()
     );
     expect(document.querySelector("#results-heading")).toBeNull();
+    await vi.waitFor(
+      () =>
+        expect(window.__DWARVEN_DEPTHS_RENDERER__?.snapshotPhase).toBe(
+          "terminal"
+        ),
+      { timeout: 10_000 }
+    );
+    const startedAt = Date.now();
     await resultHeading("Victory results");
     expect(Date.now() - startedAt).toBeGreaterThanOrEqual(650);
     expect(document.querySelector(".active-combat-screen")).toBeNull();
@@ -2641,6 +2649,21 @@ describe("authoritative web worker", () => {
       "warden-shield-slam-source"
     );
     expect(
+      selectCombatPoseTreatment(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...entity,
+              action: { kind: "moving", phase: "idle", abilityId: null },
+              transition: "moving"
+            }
+          ]
+        },
+        entity.id
+      )
+    ).toMatchObject({ state: "moving", angle: 3 });
+    expect(
       selectCombatPoseAsset(
         {
           ...snapshot,
@@ -2655,7 +2678,7 @@ describe("authoritative web worker", () => {
         },
         entity.id
       )
-    ).toBe("raider-attack-source");
+    ).toBe("raider-east-source");
     expect(
       selectCombatPoseAsset(
         {
@@ -2771,6 +2794,83 @@ describe("authoritative web worker", () => {
           hostile.id
         )
       ).toBe(expected);
+    const directionalAttackSources = (
+      ["north", "east", "south", "west"] as const
+    ).map((facing) =>
+      selectCombatPoseAsset(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...hostile,
+              facing,
+              action: {
+                kind: "basic_attack",
+                phase: "committed",
+                abilityId: null
+              }
+            }
+          ]
+        },
+        hostile.id
+      )
+    );
+    expect(new Set(directionalAttackSources).size).toBe(4);
+    const attackPhaseAngles = (["windup", "committed", "impact"] as const).map(
+      (phase) =>
+        selectCombatPoseTreatment(
+          {
+            ...snapshot,
+            entities: [
+              {
+                ...hostile,
+                facing: "east",
+                action: { kind: "basic_attack", phase, abilityId: null }
+              }
+            ]
+          },
+          hostile.id
+        ).angle
+    );
+    expect(new Set(attackPhaseAngles).size).toBe(3);
+    expect(
+      selectCombatPoseTreatment(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...hostile,
+              facing: "west",
+              action: {
+                kind: "basic_attack",
+                phase: "windup",
+                abilityId: null
+              }
+            }
+          ]
+        },
+        hostile.id
+      )
+    ).toMatchObject({ state: "windup", angle: 5, flipX: true });
+    expect(
+      selectCombatPoseTreatment(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...hostile,
+              facing: "east",
+              action: {
+                kind: "basic_attack",
+                phase: "impact",
+                abilityId: null
+              }
+            }
+          ]
+        },
+        hostile.id
+      )
+    ).toMatchObject({ state: "impact", angle: 9, flipX: false });
     const slinger = {
       ...hostile,
       visualId: "enemy.goblin_slinger",

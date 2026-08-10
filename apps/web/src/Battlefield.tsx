@@ -312,6 +312,7 @@ declare global {
 export interface BattlefieldRendererDiagnostics {
   readonly schemaVersion: 1;
   readonly snapshotTick: number | null;
+  readonly snapshotPhase: RenderSnapshot["phase"] | null;
   readonly updateCount: number;
   readonly entityObjects: number;
   readonly pooledEffects: number;
@@ -536,9 +537,68 @@ export function selectCombatPoseAsset(
   if (dwarf && entity.action.phase === "recovery") return "warden-guard-source";
   if (dwarf) return "warden-source";
   const prefix = hostilePosePrefix(entity.visualId);
-  return entity.action.kind === "basic_attack" && activePose
-    ? `${prefix}-attack-source`
-    : hostileIdlePoseAsset(prefix, entity.facing);
+  return hostileIdlePoseAsset(prefix, entity.facing);
+}
+
+export interface CombatPoseTreatment {
+  readonly source: CombatPoseAssetKey;
+  readonly angle: number;
+  readonly flipX: boolean;
+  readonly state:
+    | "idle"
+    | "moving"
+    | "windup"
+    | "committed"
+    | "impact"
+    | "recovery";
+}
+
+export function selectCombatPoseTreatment(
+  snapshot: RenderSnapshot,
+  entityId: string,
+  previousSnapshot?: RenderSnapshot
+): CombatPoseTreatment {
+  const source = selectCombatPoseAsset(snapshot, entityId, previousSnapshot);
+  if (snapshot.schemaVersion !== 2)
+    return { source, angle: 0, flipX: false, state: "idle" };
+  const entity = snapshot.entities.find(({ id }) => id === entityId);
+  if (entity === undefined)
+    return { source, angle: 0, flipX: false, state: "idle" };
+  const state =
+    entity.action.kind === "moving" || entity.transition === "moving"
+      ? "moving"
+      : entity.action.phase;
+  const facingSign =
+    entity.facing === "north" || entity.facing === "west" ? -1 : 1;
+  const facingAngle =
+    entity.facing === "north"
+      ? -3
+      : entity.facing === "east"
+        ? 1
+        : entity.facing === "south"
+          ? 3
+          : -1;
+  const phaseAngle =
+    state === "moving"
+      ? 2
+      : state === "windup"
+        ? -6
+        : state === "committed"
+          ? 4
+          : state === "impact"
+            ? 8
+            : state === "recovery"
+              ? -2
+              : 0;
+  return {
+    source,
+    angle: state === "idle" ? 0 : phaseAngle * facingSign + facingAngle,
+    flipX:
+      entity.faction === "enemy" &&
+      entity.action.kind === "basic_attack" &&
+      entity.facing === "west",
+    state
+  };
 }
 
 export interface CombatPresentationState {
@@ -1653,6 +1713,14 @@ class PersistentBattlefieldScene {
     }
   }
 
+  terminalPresentationComplete(): boolean {
+    return (
+      this.lastSnapshot?.phase === "terminal" &&
+      this.departures.size === 0 &&
+      this.terminalFrame.visible
+    );
+  }
+
   update(
     snapshot: RenderSnapshot,
     feedback: CombatFeedback | undefined,
@@ -1839,8 +1907,17 @@ class PersistentBattlefieldScene {
         this.staticDepth,
         existing?.subject
       );
+      const poseTreatment = selectCombatPoseTreatment(
+        snapshot,
+        entity.id,
+        previousSnapshot
+      );
       ring.setAlpha(1).setAngle(0);
-      subject.setAlpha(1).setAngle(0).clearTint();
+      subject
+        .setAlpha(1)
+        .setAngle(poseTreatment.angle)
+        .setFlipX(poseTreatment.flipX)
+        .clearTint();
       if (existing === undefined) {
         this.layers["world-entities"].add(subject);
         const signal = this.scene.add.graphics();
@@ -2194,6 +2271,7 @@ class PersistentBattlefieldScene {
     return {
       schemaVersion: 1,
       snapshotTick: this.lastSnapshot?.tick ?? null,
+      snapshotPhase: this.lastSnapshot?.phase ?? null,
       updateCount: this.updateCount,
       entityObjects: this.entities.size * 3,
       pooledEffects: this.effects.length,
@@ -2263,7 +2341,9 @@ function createBattlefieldRenderer(
   initialFeedback: CombatFeedback | undefined,
   initialReduceMotion: boolean,
   initialSimulationSpeed: 1 | 2,
-  initialEvidenceEffectAlpha: number | undefined
+  initialEvidenceEffectAlpha: number | undefined,
+  onTerminalPresentationStarted: (snapshot: RenderSnapshot) => void,
+  onTerminalPresentationCompleted: (snapshot: RenderSnapshot) => void
 ): BattlefieldRenderer {
   let snapshot = initialSnapshot;
   let feedback = initialFeedback;
@@ -2334,10 +2414,19 @@ function createBattlefieldRenderer(
           undefined,
           evidenceEffectAlpha
         );
+        if (snapshot.schemaVersion === 2 && snapshot.phase === "terminal")
+          onTerminalPresentationStarted(snapshot);
+        if (persistentScene.terminalPresentationComplete())
+          onTerminalPresentationCompleted(snapshot);
       },
       update(_time: number, delta: number) {
         persistentScene?.updateMotion(delta, simulationSpeed);
         persistentScene?.updateDepartures();
+        if (
+          persistentScene?.terminalPresentationComplete() === true &&
+          snapshot.schemaVersion === 2
+        )
+          onTerminalPresentationCompleted(snapshot);
         if (typeof window !== "undefined" && persistentScene !== undefined)
           window.__DWARVEN_DEPTHS_RENDERER__ = persistentScene.diagnostics();
       }
@@ -2364,6 +2453,14 @@ function createBattlefieldRenderer(
         nextPreviousSnapshot,
         evidenceEffectAlpha
       );
+      if (
+        persistentScene !== undefined &&
+        snapshot.schemaVersion === 2 &&
+        snapshot.phase === "terminal"
+      )
+        onTerminalPresentationStarted(snapshot);
+      if (persistentScene?.terminalPresentationComplete() === true)
+        onTerminalPresentationCompleted(snapshot);
     },
     destroy() {
       persistentScene?.destroy();
@@ -2385,13 +2482,17 @@ export function Battlefield({
   reduceMotion,
   soundEnabled,
   simulationSpeed = 1,
-  evidenceEffectAlpha
+  evidenceEffectAlpha,
+  onTerminalPresentationStarted = () => undefined,
+  onTerminalPresentationCompleted = () => undefined
 }: {
   readonly snapshot: RenderSnapshot;
   readonly reduceMotion: boolean;
   readonly soundEnabled: boolean;
   readonly simulationSpeed?: 1 | 2;
   readonly evidenceEffectAlpha?: number;
+  readonly onTerminalPresentationStarted?: (snapshot: RenderSnapshot) => void;
+  readonly onTerminalPresentationCompleted?: (snapshot: RenderSnapshot) => void;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<BattlefieldRenderer | undefined>(undefined);
@@ -2400,6 +2501,12 @@ export function Battlefield({
   const latestReduceMotionRef = useRef(reduceMotion);
   const latestSimulationSpeedRef = useRef(simulationSpeed);
   const latestEvidenceEffectAlphaRef = useRef(evidenceEffectAlpha);
+  const latestTerminalPresentationStartedRef = useRef(
+    onTerminalPresentationStarted
+  );
+  const latestTerminalPresentationCompletedRef = useRef(
+    onTerminalPresentationCompleted
+  );
   const previousSnapshotRef = useRef<RenderSnapshot | undefined>(undefined);
   const soundPlayerRef = useRef<CombatSoundPlayer | undefined>(undefined);
   const [feedback, setFeedback] = useState<CombatFeedback | undefined>();
@@ -2407,6 +2514,9 @@ export function Battlefield({
   latestReduceMotionRef.current = reduceMotion;
   latestSimulationSpeedRef.current = simulationSpeed;
   latestEvidenceEffectAlphaRef.current = evidenceEffectAlpha;
+  latestTerminalPresentationStartedRef.current = onTerminalPresentationStarted;
+  latestTerminalPresentationCompletedRef.current =
+    onTerminalPresentationCompleted;
 
   useEffect(() => {
     if (!soundEnabled) {
@@ -2433,7 +2543,11 @@ export function Battlefield({
         latestFeedbackRef.current,
         latestReduceMotionRef.current,
         latestSimulationSpeedRef.current,
-        latestEvidenceEffectAlphaRef.current
+        latestEvidenceEffectAlphaRef.current,
+        (terminalSnapshot) =>
+          latestTerminalPresentationStartedRef.current(terminalSnapshot),
+        (terminalSnapshot) =>
+          latestTerminalPresentationCompletedRef.current(terminalSnapshot)
       );
       rendererRef.current = renderer;
     });
