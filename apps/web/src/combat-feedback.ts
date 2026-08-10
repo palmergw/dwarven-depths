@@ -31,12 +31,47 @@ export function isCombatFeedbackProgression(
   );
 }
 
+export function shouldAdvanceCombatFeedbackBaseline(
+  previous: RenderSnapshot,
+  current: RenderSnapshot
+): boolean {
+  if (isCombatFeedbackProgression(previous, current)) return true;
+  return (
+    previous.schemaVersion === 2 &&
+    current.schemaVersion === 2 &&
+    previous.levelId === current.levelId &&
+    previous.mapId === current.mapId &&
+    previous.scenarioId === current.scenarioId &&
+    current.tick > previous.tick &&
+    current.previousTick !== null &&
+    current.previousTick > previous.tick
+  );
+}
+
 export function deriveCombatFeedback(
   previous: RenderSnapshot | undefined,
   current: RenderSnapshot
 ): CombatFeedback | undefined {
-  if (previous === undefined || !isCombatFeedbackProgression(previous, current))
-    return undefined;
+  if (previous === undefined) {
+    if (current.schemaVersion !== 2) return undefined;
+    const arrivals = current.entities
+      .filter((entity) =>
+        current.entityTransitions.some(
+          (transition) =>
+            transition.entityId === entity.id && transition.kind === "spawned"
+        )
+      )
+      .sort(byId);
+    if (arrivals.length === 0) return undefined;
+    return {
+      tick: current.tick,
+      arrivals,
+      departures: [],
+      terminal: false,
+      summary: `Combat update at tick ${current.tick}: ${arrivals.length} ${arrivals.length === 1 ? "combatant arrived" : "combatants arrived"}.`
+    };
+  }
+  if (!isCombatFeedbackProgression(previous, current)) return undefined;
 
   const previousById = new Map(
     previous.entities.map((entity) => [entity.id, entity])

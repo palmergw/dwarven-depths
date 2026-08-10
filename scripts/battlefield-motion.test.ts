@@ -66,7 +66,7 @@ function validSamples() {
         entity(dwarfId, "node.shuttergate_gate", 605, 230),
         entity(hostileId, "node.shuttergate_gate", 663, 14, {
           lifecycle: "destroyed",
-          transitionTick: 24,
+          transitionTick: 25,
           alpha
         })
       ]
@@ -95,6 +95,50 @@ describe("running-client battlefield motion evidence", () => {
       ],
       departureSampleCount: 4
     });
+  });
+
+  it("allows bounded route-node snaps only for reduced-motion evidence", () => {
+    const reduced = validSamples().map((sample, index) => ({
+      ...sample,
+      videoTimeMilliseconds: index * 10,
+      entities: sample.entities.map((candidate) =>
+        candidate.lifecycle === "active"
+          ? candidate
+          : { ...candidate, alpha: 0.45 }
+      )
+    }));
+    expect(() => validateBattlefieldMotionSamples(reduced)).toThrow(
+      "continuous motion bound"
+    );
+    expect(
+      validateBattlefieldMotionSamples(reduced, { reducedMotion: true })
+    ).toMatchObject({
+      trackedEntityId: "entity.enemy.shuttergate_001"
+    });
+    const unreadableRetention = reduced.map((sample) => ({
+      ...sample,
+      entities: sample.entities.map((candidate) =>
+        candidate.lifecycle === "active"
+          ? candidate
+          : { ...candidate, alpha: 1 }
+      )
+    }));
+    expect(() =>
+      validateBattlefieldMotionSamples(unreadableRetention, {
+        reducedMotion: true
+      })
+    ).toThrow("reduced-motion lifecycle retention is not readable");
+    reduced[3] = {
+      ...reduced[3],
+      entities: reduced[3].entities.map((candidate) =>
+        candidate.id.startsWith("entity.enemy.")
+          ? { ...candidate, screenPosition: [500, 320] as const }
+          : candidate
+      )
+    };
+    expect(() =>
+      validateBattlefieldMotionSamples(reduced, { reducedMotion: true })
+    ).toThrow("continuous motion bound");
   });
 
   it("strictly rejects extra properties and noncanonical entity order", () => {

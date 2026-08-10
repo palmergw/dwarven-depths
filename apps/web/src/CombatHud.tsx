@@ -60,11 +60,27 @@ function encounterState(snapshot: RenderSnapshot): {
   };
 }
 
-const STATUS_LABELS: Readonly<Record<string, string>> = {
-  "status.haste": "hastened",
-  "status.slow": "slowed",
-  "status.staggered": "staggered"
+const STATUS_DETAILS: Readonly<
+  Record<string, { readonly effect: string; readonly source: string }>
+> = {
+  "status.haste": { effect: "hastened", source: "haste effect" },
+  "status.slow": { effect: "slowed", source: "slowing effect" },
+  "status.staggered": { effect: "staggered", source: "Shield Slam" }
 };
+
+function statusDetails(statusId: string): {
+  readonly effect: string;
+  readonly source: string;
+} {
+  if (statusId.includes("stagger"))
+    return { effect: "staggered", source: "Shield Slam" };
+  return (
+    STATUS_DETAILS[statusId] ?? {
+      effect: statusId,
+      source: "unavailable in authoritative presentation state"
+    }
+  );
+}
 
 function combatantLabel(
   entity: Extract<RenderSnapshot, { schemaVersion: 2 }>["entities"][number]
@@ -80,10 +96,8 @@ function statusSummary(snapshot: RenderSnapshot): string {
   return snapshot.entities
     .flatMap((entity) =>
       entity.statuses.map((status) => {
-        const effect = STATUS_LABELS[status.id];
-        return effect === undefined
-          ? `${combatantLabel(entity)} is affected by an active status.`
-          : `${combatantLabel(entity)} is ${effect} until tick ${status.expiresAtTick}.`;
+        const details = statusDetails(status.id);
+        return `${combatantLabel(entity)} has status ${details.effect} (${status.id}), source ${details.source}, from tick ${status.appliedAtTick} through tick ${status.expiresAtTick}.`;
       })
     )
     .join(" ");

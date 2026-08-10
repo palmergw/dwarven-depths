@@ -20,8 +20,13 @@ import {
   comparePresentationPrimitives,
   decodeBattlefieldDepthAsset,
   deriveCombatPresentationState,
+  deriveShieldSlamImpactIds,
+  deriveSlingerProjectilePaths,
+  interpolationDistanceForFrame,
   renderedFactionForSourceKey,
-  selectCombatPoseAsset
+  selectCombatPoseAsset,
+  selectCombatPoseTreatment,
+  statusSignalKind
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
 import { CombatHud } from "./CombatHud.js";
@@ -485,6 +490,33 @@ class ControlledJourneyWorker {
     });
   }
 
+  emitTerminalSnapshot(terminalResult: "victory" | "defeat" = "victory"): void {
+    this.emit({
+      protocolVersion: 4,
+      type: "render_snapshot",
+      snapshot: {
+        schemaVersion: 2,
+        scenarioId: "scenario.shuttergate.terminal-presentation",
+        levelId: "level.shuttergate_hall",
+        mapId: "map.shuttergate_hall",
+        tick: 1,
+        previousTick: null,
+        phase: "terminal",
+        nodes: [],
+        connections: [],
+        entities: [],
+        entityTransitions: [],
+        encounter: {
+          startedWaveIds: [],
+          activeWaveId: null,
+          pendingSpawnCount: 0,
+          livingHostileCount: 0,
+          terminalResult
+        }
+      }
+    });
+  }
+
   emit(message: unknown): void {
     const event = new MessageEvent("message", { data: message });
     for (const listener of this.listeners) listener(event);
@@ -814,6 +846,91 @@ describe("run journey guidance", () => {
     expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
       "download its authoritative run evidence"
     );
+  });
+
+  it("keeps the terminal battlefield mounted through its departure interval", async () => {
+    const worker = new ControlledJourneyWorker();
+    const store = new PersistentJourneyProfileStore();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => store}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    const terminalSnapshotEmittedAt = Date.now();
+    worker.emitTerminalSnapshot();
+    worker.finish();
+
+    await vi.waitFor(() =>
+      expect(document.querySelector(".active-combat-screen")).not.toBeNull()
+    );
+    expect(document.querySelector("#results-heading")).toBeNull();
+    await vi.waitFor(
+      () =>
+        expect(window.__DWARVEN_DEPTHS_RENDERER__?.snapshotPhase).toBe(
+          "terminal"
+        ),
+      { timeout: 10_000 }
+    );
+    await resultHeading("Victory results");
+    expect(Date.now() - terminalSnapshotEmittedAt).toBeGreaterThanOrEqual(650);
+    expect(document.querySelector(".active-combat-screen")).toBeNull();
+  });
+
+  it("does not strand a terminal result when battlefield assets fail to load", async () => {
+    const sourceDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLImageElement.prototype,
+      "src"
+    );
+    if (sourceDescriptor?.set === undefined)
+      throw new Error("HTMLImageElement.src setter is unavailable");
+    const setImageSource = sourceDescriptor.set;
+    let failedBattlefieldAsset = false;
+    vi.spyOn(HTMLImageElement.prototype, "src", "set").mockImplementation(
+      function (this: HTMLImageElement, value: string) {
+        if (!failedBattlefieldAsset && value.includes("environment-base")) {
+          failedBattlefieldAsset = true;
+          queueMicrotask(() => this.dispatchEvent(new Event("error")));
+          return;
+        }
+        setImageSource.call(this, value);
+      }
+    );
+    const worker = new ControlledJourneyWorker();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => new PersistentJourneyProfileStore()}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    worker.emitTerminalSnapshot();
+    worker.finish();
+
+    await vi.waitFor(
+      () =>
+        expect(
+          document
+            .querySelector(".battlefield-canvas")
+            ?.getAttribute("data-renderer-error")
+        ).toBe("asset-load-failed"),
+      { timeout: 10_000 }
+    );
+    expect(failedBattlefieldAsset).toBe(true);
+    await resultHeading("Victory results");
+    expect(document.querySelector(".active-combat-screen")).toBeNull();
   });
 
   it("rejects contradictory terminal progression when profile storage is unavailable", async () => {
@@ -1298,6 +1415,12 @@ describe("player-facing combat HUD", () => {
               appliedAtTick: 20,
               expiresAtTick: 30,
               magnitude: 1
+            },
+            {
+              id: "status.slow",
+              appliedAtTick: 22,
+              expiresAtTick: 28,
+              magnitude: 1
             }
           ],
           transition: "active",
@@ -1325,7 +1448,39 @@ describe("player-facing combat HUD", () => {
       )
     );
     expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
-      "Combat paused. Fortress holding. Wave 1. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. Elite enemy is staggered until tick 30."
+      "Combat paused. Fortress holding. Wave 1. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. Elite enemy has status staggered (status.staggered), source Shield Slam, from tick 20 through tick 30. Elite enemy has status slowed (status.slow), source slowing effect, from tick 22 through tick 28."
+    );
+    expect(statusSignalKind("status.staggered")).toBe("stagger");
+    expect(statusSignalKind("status.slow")).toBe("slow");
+    expect(statusSignalKind("status.haste")).toBe("haste");
+    expect(statusSignalKind("status.unknown")).toBe("unknown");
+    root.render(
+      <CombatHud
+        snapshot={{
+          ...snapshot,
+          entities: [
+            snapshot.entities[0],
+            {
+              ...snapshot.entities[1],
+              statuses: [
+                {
+                  id: "status.unknown",
+                  appliedAtTick: 23,
+                  expiresAtTick: 29,
+                  magnitude: 1
+                }
+              ]
+            }
+          ]
+        }}
+      />
+    );
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector(".combat-state-summary")?.textContent
+      ).toContain(
+        "Elite enemy has status status.unknown (status.unknown), source unavailable in authoritative presentation state, from tick 23 through tick 29."
+      )
     );
   });
 
@@ -2529,6 +2684,12 @@ describe("authoritative web worker", () => {
     );
   });
 
+  it("scales interpolation cadence with the authoritative speed setting", () => {
+    expect(interpolationDistanceForFrame(16, 1)).toBeCloseTo(14.4);
+    expect(interpolationDistanceForFrame(16, 2)).toBeCloseTo(28.8);
+    expect(interpolationDistanceForFrame(-1, 2)).toBe(0);
+  });
+
   it("binds authored combat poses to authoritative snapshot-v2 action phases", () => {
     const entity = {
       id: "entity.dwarf.warden",
@@ -2576,6 +2737,21 @@ describe("authoritative web worker", () => {
       "warden-shield-slam-source"
     );
     expect(
+      selectCombatPoseTreatment(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...entity,
+              action: { kind: "moving", phase: "idle", abilityId: null },
+              transition: "moving"
+            }
+          ]
+        },
+        entity.id
+      )
+    ).toMatchObject({ state: "moving", angle: 3 });
+    expect(
       selectCombatPoseAsset(
         {
           ...snapshot,
@@ -2592,6 +2768,33 @@ describe("authoritative web worker", () => {
       )
     ).toBe("raider-attack-source");
     expect(
+      selectCombatPoseTreatment(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...entity,
+              faction: "enemy",
+              visualId: "enemy.goblin_slinger",
+              archetype: "basic",
+              facing: "north",
+              action: {
+                kind: "basic_attack",
+                phase: "committed",
+                abilityId: null
+              }
+            }
+          ]
+        },
+        entity.id
+      )
+    ).toMatchObject({
+      source: "slinger-attack-source",
+      state: "committed",
+      angle: 86,
+      flipX: false
+    });
+    expect(
       selectCombatPoseAsset(
         {
           ...snapshot,
@@ -2601,7 +2804,7 @@ describe("authoritative web worker", () => {
         },
         entity.id
       )
-    ).toBe("warden-source");
+    ).toBe("warden-guard-source");
     const damaged = {
       ...snapshot,
       entities: [
@@ -2635,6 +2838,208 @@ describe("authoritative web worker", () => {
         entity.id
       )?.damaged
     ).toBe(false);
+    const hostile = {
+      ...entity,
+      id: "entity.enemy.alpha",
+      faction: "enemy",
+      visualId: "enemy.goblin_cutter",
+      archetype: "basic",
+      currentHealth: 7,
+      action: { kind: "idle", phase: "idle", abilityId: null }
+    } as const;
+    const elite = {
+      ...hostile,
+      id: "entity.enemy.beta",
+      visualId: "enemy.goblin_bulwark",
+      archetype: "elite",
+      currentHealth: 6,
+      elite: true
+    } as const;
+    const multiTarget = {
+      ...snapshot,
+      entities: [entity, hostile, elite]
+    } as const satisfies RenderSnapshot;
+    const multiTargetPrevious = {
+      ...previous,
+      entities: [
+        entity,
+        { ...hostile, currentHealth: 10 },
+        { ...elite, currentHealth: 10 }
+      ]
+    } as const satisfies RenderSnapshot;
+    expect(deriveShieldSlamImpactIds(multiTarget, multiTargetPrevious)).toEqual(
+      ["entity.enemy.alpha", "entity.enemy.beta"]
+    );
+    expect(
+      deriveShieldSlamImpactIds(
+        {
+          ...multiTarget,
+          entities: [entity, hostile],
+          entityTransitions: [
+            {
+              entityId: elite.id,
+              kind: "destroyed",
+              atTick: multiTarget.tick
+            }
+          ]
+        },
+        multiTargetPrevious
+      )
+    ).toEqual(["entity.enemy.alpha", "entity.enemy.beta"]);
+    const roleFacings = [
+      ["enemy.goblin_cutter", "north", "raider-north-source"],
+      ["enemy.goblin_slinger", "east", "slinger-east-source"],
+      ["enemy.goblin_bulwark", "south", "bulwark-source"],
+      ["enemy.gatebreaker_captain", "west", "captain-west-source"]
+    ] as const;
+    for (const [visualId, facing, expected] of roleFacings)
+      expect(
+        selectCombatPoseAsset(
+          {
+            ...snapshot,
+            entities: [
+              {
+                ...hostile,
+                visualId,
+                facing,
+                action: { kind: "idle", phase: "idle", abilityId: null }
+              }
+            ]
+          },
+          hostile.id
+        )
+      ).toBe(expected);
+    const directionalAttackTreatments = (
+      ["north", "east", "south", "west"] as const
+    ).map((facing) =>
+      selectCombatPoseTreatment(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...hostile,
+              facing,
+              action: {
+                kind: "basic_attack",
+                phase: "committed",
+                abilityId: null
+              }
+            }
+          ]
+        },
+        hostile.id
+      )
+    );
+    expect(directionalAttackTreatments.map(({ source }) => source)).toEqual([
+      "raider-attack-source",
+      "raider-attack-source",
+      "raider-attack-source",
+      "raider-attack-source"
+    ]);
+    expect(
+      new Set(
+        directionalAttackTreatments.map(
+          ({ angle, flipX }) => `${angle}:${String(flipX)}`
+        )
+      ).size
+    ).toBe(4);
+    const attackPhaseAngles = (["windup", "committed", "impact"] as const).map(
+      (phase) =>
+        selectCombatPoseTreatment(
+          {
+            ...snapshot,
+            entities: [
+              {
+                ...hostile,
+                facing: "east",
+                action: { kind: "basic_attack", phase, abilityId: null }
+              }
+            ]
+          },
+          hostile.id
+        ).angle
+    );
+    expect(new Set(attackPhaseAngles).size).toBe(3);
+    expect(
+      selectCombatPoseTreatment(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...hostile,
+              facing: "west",
+              action: {
+                kind: "basic_attack",
+                phase: "windup",
+                abilityId: null
+              }
+            }
+          ]
+        },
+        hostile.id
+      )
+    ).toMatchObject({
+      source: "raider-attack-source",
+      state: "windup",
+      angle: 6,
+      flipX: false
+    });
+    expect(
+      selectCombatPoseTreatment(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...hostile,
+              facing: "east",
+              action: {
+                kind: "basic_attack",
+                phase: "impact",
+                abilityId: null
+              }
+            }
+          ]
+        },
+        hostile.id
+      )
+    ).toMatchObject({
+      source: "raider-attack-source",
+      state: "impact",
+      angle: 8,
+      flipX: true
+    });
+    const slinger = {
+      ...hostile,
+      visualId: "enemy.goblin_slinger",
+      action: { kind: "basic_attack", phase: "committed", abilityId: null },
+      targetEntityId: entity.id
+    } as const;
+    const projectileSnapshot = {
+      ...snapshot,
+      entities: [entity, slinger]
+    } as const satisfies RenderSnapshot;
+    const projectilePrimitives = buildBattlefieldPrimitives(projectileSnapshot);
+    expect(
+      deriveSlingerProjectilePaths(
+        projectileSnapshot,
+        projectilePrimitives
+      ).map(({ sourceId, targetId }) => [sourceId, targetId])
+    ).toEqual([[slinger.id, entity.id]]);
+    expect(
+      deriveSlingerProjectilePaths(
+        {
+          ...projectileSnapshot,
+          entities: [
+            {
+              ...slinger,
+              action: { ...slinger.action, phase: "recovery" }
+            },
+            entity
+          ]
+        },
+        projectilePrimitives
+      )
+    ).toEqual([]);
   });
 
   it("aligns variable authoritative combatant counts by stable identity", () => {
@@ -2886,7 +3291,7 @@ describe("authoritative web worker", () => {
       ).toBeLessThanOrEqual(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
-        cycle % 2 === 0 ? 8 : 6
+        cycle % 2 === 0 ? 34 : 32
       );
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects

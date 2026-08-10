@@ -10,6 +10,9 @@
       "!reports",
       "!.ddh",
       "!assets/game-art/layered-map-poc/metadata",
+      "!docs/visual-evidence/battlefield-language/current",
+      "!docs/visual-evidence/running-client/shuttergate-normal-motion-clip.json",
+      "!docs/visual-evidence/running-client/shuttergate-reduced-motion-clip.json",
       "!docs/visual-evidence/release-closeout"
     ]
   },

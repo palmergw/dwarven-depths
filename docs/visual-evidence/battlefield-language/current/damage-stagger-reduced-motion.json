@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "id": "damage-stagger-reduced-motion",
+  "sourceHead": "8d81e1fe8bb37a6319a3edda51af9d9eedecaa32",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "screenshot": "damage-stagger-reduced-motion.png",
+  "screenshotSha256": "e2f5880efb6c8c74898c3d6a6017d5aacb65fdb1c5f1dde9797b48caf2cd1e0a",
+  "viewport": [
+    1440,
+    900
+  ],
+  "truth": {
+    "schemaVersion": 1,
+    "captureReady": true,
+    "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+    "viewport": [
+      1440,
+      900
+    ],
+    "frame": [
+      1280,
+      720
+    ],
+    "snapshot": {
+      "levelId": "level.shuttergate_hall",
+      "mapId": "map.shuttergate_hall",
+      "tick": 1833,
+      "phase": "running"
+    },
+    "registry": {
+      "dwarfCount": 1,
+      "hostileCount": 2,
+      "totalCount": 3,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "faction": "dwarf",
+          "nodeId": "node.shuttergate_north_guard",
+          "visualId": "character.iron_warden",
+          "archetype": "character",
+          "currentHealth": 9,
+          "maximumHealth": 240,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "committed",
+            "abilityId": null
+          },
+          "targetEntityId": "entity.enemy.shuttergate_007",
+          "statusIds": [],
+          "transition": "active",
+          "elite": false,
+          "boss": false,
+          "x": 605,
+          "y": 320,
+          "nominalHeight": 56,
+          "canvasBounds": [
+            549,
+            254,
+            112,
+            72
+          ],
+          "alphaBounds": [
+            580,
+            264,
+            50,
+            56
+          ],
+          "nonzeroAlphaPixels": 1714,
+          "fullAlphaPixels": 1384,
+          "partialAlphaPixels": 330,
+          "intersectsUnobscuredWorldViewport": true
+        },
+        {
+          "id": "entity.enemy.shuttergate_006",
+          "faction": "enemy",
+          "nodeId": "node.shuttergate_east_hall",
+          "visualId": "enemy.goblin_slinger",
+          "archetype": "basic",
+          "currentHealth": 38,
+          "maximumHealth": 38,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery",
+            "abilityId": null
+          },
+          "targetEntityId": "entity.dwarf.warden",
+          "statusIds": [],
+          "transition": "active",
+          "elite": false,
+          "boss": false,
+          "x": 838,
+          "y": 330,
+          "nominalHeight": 44,
+          "canvasBounds": [
+            798,
+            276,
+            80,
+            60
+          ],
+          "alphaBounds": [
+            805,
+            286,
+            67,
+            44
+          ],
+          "nonzeroAlphaPixels": 1339,
+          "fullAlphaPixels": 1060,
+          "partialAlphaPixels": 279,
+          "intersectsUnobscuredWorldViewport": true
+        },
+        {
+          "id": "entity.enemy.shuttergate_007",
+          "faction": "enemy",
+          "nodeId": "node.shuttergate_gate",
+          "visualId": "enemy.goblin_bulwark",
+          "archetype": "elite",
+          "currentHealth": 96,
+          "maximumHealth": 120,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery",
+            "abilityId": null
+          },
+          "targetEntityId": "entity.dwarf.warden",
+          "statusIds": [
+            "status.staggered"
+          ],
+          "transition": "active",
+          "elite": true,
+          "boss": false,
+          "x": 663,
+          "y": 323,
+          "nominalHeight": 44,
+          "canvasBounds": [
+            623,
+            269,
+            80,
+            60
+          ],
+          "alphaBounds": [
+            634,
+            279,
+            58,
+            44
+          ],
+          "nonzeroAlphaPixels": 1624,
+          "fullAlphaPixels": 1387,
+          "partialAlphaPixels": 237,
+          "intersectsUnobscuredWorldViewport": true
+        }
+      ]
+    },
+    "occlusion": {
+      "artifactId": "authored-entrance-depth",
+      "layerOrder": [
+        "complete-static-scene-color",
+        "depth-tested-world-rings",
+        "depth-tested-world-effects",
+        "depth-tested-world-subjects",
+        "depth-tested-world-focus",
+        "hud"
+      ],
+      "clips": [
+        "world-ring",
+        "world-effect",
+        "world-subject",
+        "world-focus"
+      ],
+      "exempts": [
+        "hud"
+      ],
+      "witness": {
+        "entityId": "entity.enemy.shuttergate_006",
+        "subjectAlphaPixels": 1025,
+        "subjectPixelsOverRearArtifact": 0,
+        "subjectPixelsOverGroundArtifact": 0,
+        "subjectPixelsBehindForegroundArtifact": 0,
+        "worldRingPixelsBehindForegroundArtifact": 0,
+        "transientEffectPixelsBehindForegroundArtifact": 0
+      },
+      "depthResolution": {
+        "intent": "rear-visible-and-foreground-occluded",
+        "actualAnchor": [
+          838,
+          330
+        ],
+        "rearOverlapPixels": 0,
+        "subjectGroundOverlapPixels": 0,
+        "foregroundOcclusionPixels": 0,
+        "worldRingOcclusionPixels": 0,
+        "transientEffectOcclusionPixels": 0
+      }
+    },
+    "alignment": {
+      "snapshotCount": 3,
+      "registryCount": 3,
+      "renderedCount": 3,
+      "registryEntitiesMatch": true,
+      "renderedEntitiesMatch": true,
+      "authoritativeEntitiesMatch": true,
+      "valid": true
+    }
+  },
+  "renderer": {
+    "schemaVersion": 1,
+    "snapshotTick": 1833,
+    "snapshotPhase": "running",
+    "updateCount": 1832,
+    "entityObjects": 9,
+    "pooledEffects": 1,
+    "activeEffects": 0,
+    "staticObjects": 7,
+    "sceneObjects": 17,
+    "runtimeTextures": 36,
+    "activeTweens": 0,
+    "timerEvents": 0,
+    "loaderListeners": 1,
+    "entities": [
+      {
+        "id": "entity.dwarf.warden",
+        "nodeId": "node.shuttergate_north_guard",
+        "worldPosition": [
+          0,
+          -1
+        ],
+        "screenPosition": [
+          605,
+          320
+        ],
+        "currentHealth": 9,
+        "action": {
+          "kind": "basic_attack",
+          "phase": "committed"
+        },
+        "lifecycle": "active",
+        "transitionTick": null,
+        "alpha": 1
+      },
+      {
+        "id": "entity.enemy.shuttergate_006",
+        "nodeId": "node.shuttergate_east_hall",
+        "worldPosition": [
+          0,
+          3
+        ],
+        "screenPosition": [
+          838,
+          330
+        ],
+        "currentHealth": 38,
+        "action": {
+          "kind": "basic_attack",
+          "phase": "recovery"
+        },
+        "lifecycle": "active",
+        "transitionTick": null,
+        "alpha": 1
+      },
+      {
+        "id": "entity.enemy.shuttergate_007",
+        "nodeId": "node.shuttergate_gate",
+        "worldPosition": [
+          0,
+          0
+        ],
+        "screenPosition": [
+          663,
+          323
+        ],
+        "currentHealth": 96,
+        "action": {
+          "kind": "basic_attack",
+          "phase": "recovery"
+        },
+        "lifecycle": "active",
+        "transitionTick": null,
+        "alpha": 1
+      }
+    ],
+    "camera": {
+      "frame": [
+        1280,
+        720
+      ],
+      "scaleMode": "fit",
+      "autoCenter": "both"
+    },
+    "layerOrder": [
+      "terrain",
+      "ground-foreground",
+      "world-rings",
+      "world-effects",
+      "world-entities",
+      "world-focus",
+      "lighting",
+      "screen-overlay"
+    ]
+  },
+  "controls": {
+    "pause": "Resume combat",
+    "shieldSlamDisabled": true
+  }
+}

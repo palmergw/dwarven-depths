@@ -42,6 +42,8 @@ import {
 import type { RenderSnapshot } from "./render-snapshot.js";
 import { downloadRunEvidence } from "./run-evidence.js";
 
+const TERMINAL_PRESENTATION_DURATION_MS = 720;
+
 const checkpointBackdropUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
   import.meta.url
@@ -467,6 +469,19 @@ export function App({
   const profileStoreRef = useRef<CheckpointProfileStore | undefined>(undefined);
   const runStartingProfileRef = useRef<ProfileState | undefined>(undefined);
   const appliedTerminalRewardIdsRef = useRef(new Set<string>());
+  const latestRenderSnapshotRef = useRef<RenderSnapshot | undefined>(undefined);
+  const terminalPresentationDeadlineRef = useRef(0);
+  const terminalPresentationTimerRef = useRef<number | undefined>(undefined);
+  const terminalResultPendingRef = useRef(false);
+  const terminalPresentationExpectedRef = useRef(false);
+  const terminalPresentationCompleteRef = useRef(false);
+  const pendingTerminalViewRef = useRef<ViewState | undefined>(undefined);
+  const terminalPresentationStartedRef = useRef<
+    ((snapshot: RenderSnapshot) => void) | undefined
+  >(undefined);
+  const terminalPresentationCompletedRef = useRef<
+    ((snapshot: RenderSnapshot) => void) | undefined
+  >(undefined);
   const upgradePurchasePendingRef = useRef(false);
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
@@ -541,9 +556,13 @@ export function App({
 
   useEffect(
     () => () => {
+      if (terminalPresentationTimerRef.current !== undefined)
+        window.clearTimeout(terminalPresentationTimerRef.current);
       workerRef.current?.terminate();
       workerRef.current = undefined;
       workerFailureRef.current = undefined;
+      terminalPresentationStartedRef.current = undefined;
+      terminalPresentationCompletedRef.current = undefined;
     },
     []
   );
@@ -801,6 +820,16 @@ export function App({
     runConfigurationRef.current = runConfiguration;
     runStartingProfileRef.current =
       checkpointProfile.status === "ready" ? startingProfile : undefined;
+    latestRenderSnapshotRef.current = undefined;
+    terminalPresentationDeadlineRef.current = 0;
+    terminalResultPendingRef.current = false;
+    terminalPresentationExpectedRef.current = false;
+    terminalPresentationCompleteRef.current = false;
+    pendingTerminalViewRef.current = undefined;
+    if (terminalPresentationTimerRef.current !== undefined) {
+      window.clearTimeout(terminalPresentationTimerRef.current);
+      terminalPresentationTimerRef.current = undefined;
+    }
     initializedRef.current = true;
     latestCombatControlsTickRef.current = -1;
     let worker: Worker;
@@ -816,6 +845,68 @@ export function App({
       return;
     }
     workerRef.current = worker;
+    const beginTerminalPresentation = (): void => {
+      const latestSnapshot = latestRenderSnapshotRef.current;
+      terminalPresentationExpectedRef.current =
+        latestSnapshot?.schemaVersion === 2 &&
+        latestSnapshot.phase === "terminal";
+      terminalResultPendingRef.current = true;
+    };
+    const presentAfterTerminal = (nextView: ViewState): void => {
+      if (
+        terminalPresentationExpectedRef.current &&
+        (terminalPresentationDeadlineRef.current === 0 ||
+          !terminalPresentationCompleteRef.current)
+      ) {
+        pendingTerminalViewRef.current = nextView;
+        return;
+      }
+      pendingTerminalViewRef.current = undefined;
+      const delay = Math.max(
+        0,
+        terminalPresentationDeadlineRef.current - Date.now()
+      );
+      if (delay === 0) {
+        setView(nextView);
+        return;
+      }
+      terminalPresentationTimerRef.current = window.setTimeout(() => {
+        terminalPresentationTimerRef.current = undefined;
+        if (
+          workerRef.current === worker &&
+          (!terminalPresentationExpectedRef.current ||
+            terminalPresentationCompleteRef.current)
+        )
+          setView(nextView);
+        else pendingTerminalViewRef.current = nextView;
+      }, delay);
+    };
+    terminalPresentationStartedRef.current = (snapshot): void => {
+      if (
+        workerRef.current !== worker ||
+        snapshot !== latestRenderSnapshotRef.current ||
+        snapshot.schemaVersion !== 2 ||
+        snapshot.phase !== "terminal" ||
+        terminalPresentationDeadlineRef.current !== 0
+      )
+        return;
+      terminalPresentationDeadlineRef.current =
+        Date.now() + TERMINAL_PRESENTATION_DURATION_MS;
+      const pendingView = pendingTerminalViewRef.current;
+      if (pendingView !== undefined) presentAfterTerminal(pendingView);
+    };
+    terminalPresentationCompletedRef.current = (snapshot): void => {
+      if (
+        workerRef.current !== worker ||
+        snapshot !== latestRenderSnapshotRef.current ||
+        snapshot.schemaVersion !== 2 ||
+        snapshot.phase !== "terminal"
+      )
+        return;
+      terminalPresentationCompleteRef.current = true;
+      const pendingView = pendingTerminalViewRef.current;
+      if (pendingView !== undefined) presentAfterTerminal(pendingView);
+    };
     const failWorker = (inspectionMessage: string): void => {
       if (workerRef.current !== worker) return;
       worker.terminate();
@@ -840,6 +931,7 @@ export function App({
       if (message === undefined) {
         failWorker("Invalid worker response.");
       } else if (message.type === "render_snapshot") {
+        latestRenderSnapshotRef.current = message.snapshot;
         setRenderSnapshot(message.snapshot);
       } else if (message.type === "combat_controls") {
         if (
@@ -922,6 +1014,7 @@ export function App({
               }
         );
       } else if (message.type === "result") {
+        if (terminalResultPendingRef.current) return;
         latestCombatControlsTickRef.current = -1;
         clearPendingAbilities();
         clearPendingTargetPolicies();
@@ -929,7 +1022,8 @@ export function App({
         const startingProfile = runStartingProfileRef.current;
         const store = profileStoreRef.current;
         if (message.protocolVersion !== 4) {
-          setView({ phase: "result", result: message });
+          beginTerminalPresentation();
+          presentAfterTerminal({ phase: "result", result: message });
           return;
         }
         const campaign = message.campaign;
@@ -950,16 +1044,18 @@ export function App({
           return;
         }
         if (startingProfile === undefined || store === undefined) {
-          setView({ phase: "result", result: message });
+          beginTerminalPresentation();
+          presentAfterTerminal({ phase: "result", result: message });
           return;
         }
         if (appliedTerminalRewardIdsRef.current.has(campaign.rewardId)) return;
+        beginTerminalPresentation();
         appliedTerminalRewardIdsRef.current.add(campaign.rewardId);
         void applyCheckpointAttemptResult(store, startingProfile, campaign)
           .then((profile) => {
             if (workerRef.current !== worker) return;
             setCheckpointProfile({ status: "ready", profile });
-            setView({
+            presentAfterTerminal({
               phase: "result",
               result: message,
               savedProfile: profile
@@ -968,7 +1064,7 @@ export function App({
           .catch((error) => {
             if (workerRef.current !== worker) return;
             appliedTerminalRewardIdsRef.current.delete(campaign.rewardId);
-            setView({
+            presentAfterTerminal({
               phase: "failure",
               message:
                 "The battle ended, but its progression was not saved. Return to the checkpoint and retry.",
@@ -1047,6 +1143,13 @@ export function App({
     submittedRef.current = false;
     manualPauseRequestedRef.current = undefined;
     runStartingProfileRef.current = undefined;
+    latestRenderSnapshotRef.current = undefined;
+    terminalPresentationDeadlineRef.current = 0;
+    terminalResultPendingRef.current = false;
+    if (terminalPresentationTimerRef.current !== undefined) {
+      window.clearTimeout(terminalPresentationTimerRef.current);
+      terminalPresentationTimerRef.current = undefined;
+    }
     latestCombatControlsTickRef.current = -1;
     clearPendingAbilities();
     clearPendingTargetPolicies();
@@ -1496,11 +1599,18 @@ export function App({
           >
             <Battlefield
               snapshot={renderSnapshot}
+              simulationSpeed={view.simulationSpeed}
               reduceMotion={
                 motionPreference === "reduce" ||
                 (motionPreference === "device" && deviceReducedMotion)
               }
               soundEnabled={soundPreference === "on"}
+              onTerminalPresentationStarted={(snapshot) =>
+                terminalPresentationStartedRef.current?.(snapshot)
+              }
+              onTerminalPresentationCompleted={(snapshot) =>
+                terminalPresentationCompletedRef.current?.(snapshot)
+              }
             />
             <div className="combat-top-overlay">
               <CombatHud

@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   type CombatAudioContext,
   createCombatSoundPlayer,
-  deriveCombatFeedback
+  deriveCombatFeedback,
+  shouldAdvanceCombatFeedbackBaseline
 } from "./combat-feedback.js";
 import type { RenderSnapshot } from "./render-snapshot.js";
 
@@ -79,6 +80,87 @@ describe("combat presentation feedback", () => {
         levelId: "level.foreign"
       })
     ).toBeUndefined();
+  });
+
+  it("rebases one skipped v2 snapshot so later feedback resumes", () => {
+    const base = {
+      schemaVersion: 2,
+      scenarioId: "scenario.gap",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 10,
+      previousTick: 9,
+      phase: "running",
+      nodes: [],
+      connections: [],
+      entities: [],
+      entityTransitions: [],
+      encounter: {
+        startedWaveIds: [],
+        activeWaveId: null,
+        pendingSpawnCount: 0,
+        livingHostileCount: 0,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    const skipped = { ...base, tick: 12, previousTick: 11 } as const;
+    const resumed = { ...base, tick: 13, previousTick: 12 } as const;
+    expect(deriveCombatFeedback(base, skipped)).toBeUndefined();
+    expect(shouldAdvanceCombatFeedbackBaseline(base, skipped)).toBe(true);
+    expect(shouldAdvanceCombatFeedbackBaseline(skipped, resumed)).toBe(true);
+    expect(
+      shouldAdvanceCombatFeedbackBaseline(skipped, {
+        ...resumed,
+        scenarioId: "scenario.foreign"
+      })
+    ).toBe(false);
+    expect(shouldAdvanceCombatFeedbackBaseline(resumed, skipped)).toBe(false);
+  });
+
+  it("presents authored v2 deployment arrivals on the first mounted snapshot", () => {
+    const entity = {
+      id: "entity.dwarf.warden",
+      nodeId: "node.gate",
+      faction: "dwarf",
+      visualId: "character.iron_warden",
+      archetype: "character",
+      position: { nodeId: "node.gate", x: 0, y: 0 },
+      previousPosition: null,
+      currentHealth: 10,
+      maximumHealth: 10,
+      facing: "east",
+      action: { kind: "idle", phase: "idle", abilityId: null },
+      targetEntityId: null,
+      statuses: [],
+      transition: "spawned",
+      elite: false,
+      boss: false
+    } as const;
+    const initial = {
+      schemaVersion: 2,
+      scenarioId: "scenario.deployment",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 1,
+      previousTick: null,
+      phase: "running",
+      nodes: [{ id: "node.gate", x: 0, y: 0 }],
+      connections: [],
+      entities: [entity],
+      entityTransitions: [{ entityId: entity.id, kind: "spawned", atTick: 1 }],
+      encounter: {
+        startedWaveIds: [],
+        activeWaveId: null,
+        pendingSpawnCount: 0,
+        livingHostileCount: 0,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    expect(deriveCombatFeedback(undefined, initial)).toMatchObject({
+      arrivals: [entity],
+      departures: [],
+      terminal: false
+    });
   });
 
   it("fails soft when audio creation is blocked", () => {
