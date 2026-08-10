@@ -28,13 +28,13 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm check:ci-runtime-policy
       - run: pnpm lint
       - run: pnpm check:artifacts
       - run: pnpm typecheck
-      - run: pnpm build
+      - run: pnpm build:ci:fast
       - run: pnpm test:ci:fast
       - run: pnpm check:web-budgets
-      - run: pnpm validate:built
-      - run: pnpm verify:scenario:built
+      - run: pnpm validate:ci:fast
+      - run: pnpm verify:scenario:ci:fast

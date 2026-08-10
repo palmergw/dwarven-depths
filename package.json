@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "pnpm -r --workspace-concurrency=1 build",
+    "build:ci:fast": "pnpm exec tsc -b --pretty false && pnpm --filter @dwarven-depths/web exec vite build && node scripts/build-web-pwa.mjs",
     "typecheck": "tsc -b --pretty false",
     "test": "pnpm build && vitest run",
     "test:built": "vitest run",
@@ -35,8 +36,10 @@
     "sim:built": "node apps/sim-cli/dist/cli.js",
     "validate": "pnpm sim validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
     "validate:built": "pnpm sim:built validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
+    "validate:ci:fast": "node apps/sim-cli/dist/cli.js validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
     "verify:scenario": "pnpm sim run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0",
     "verify:scenario:built": "pnpm sim:built run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0",
+    "verify:scenario:ci:fast": "node apps/sim-cli/dist/cli.js run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0",
     "report:release-candidate": "pnpm --filter @dwarven-depths/sim-cli^... build && pnpm --filter @dwarven-depths/sim-cli build && node scripts/generate-release-candidate-reports.mjs --out .ddh/release-candidate-reports",
     "verify:local:checkpoint": "pnpm lint && pnpm check:ci-runtime-policy && pnpm check:artifacts && pnpm check:desktop-package && pnpm check:mobile-package && pnpm typecheck && pnpm build && pnpm check:web-budgets && pnpm test:web-offline && pnpm test:built && DD_SKIP_BUILD=1 pnpm test:browser:docker && pnpm validate:built && pnpm verify:scenario:built",
     "verify:local:release": "pnpm verify:local:checkpoint && pnpm report:release-candidate && pnpm build:desktop:docker",

@@ -6,7 +6,7 @@ import {
 } from "./check-ci-runtime-policy.mjs";
 
 function workflowWithStep(step: string, extraJob = "", extraWorkflow = "") {
-  return `${extraWorkflow}concurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  test:\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n${extraJob}    steps:\n      - ${step}\n`;
+  return `${extraWorkflow}on:\n  pull_request:\n    types: [opened, synchronize, reopened, ready_for_review]\n  push:\n    branches: [main]\npermissions:\n  contents: read\nconcurrency:\n  group: test\n  cancel-in-progress: true\njobs:\n  test:\n    if: github.event_name == 'push' || github.event.pull_request.draft == false\n    runs-on: ubuntu-latest\n    timeout-minutes: 8\n${extraJob}    steps:\n      - ${step}\n`;
 }
 
 describe("hosted CI runtime policy", () => {
@@ -62,7 +62,7 @@ describe("hosted CI runtime policy", () => {
       "    env:\n      A: pn\n      B: pm\n      C: test\n      D: :browser\n"
     );
     expect(inspectWorkflowText("split.yml", split)).toContain(
-      "split.yml: hosted job test uses prohibited indirection/runtime keys: env"
+      "split.yml: hosted job test uses non-allowlisted keys: env"
     );
   });
 
@@ -75,10 +75,27 @@ describe("hosted CI runtime policy", () => {
         `    ${key}: ${value}\n`
       );
       expect(inspectWorkflowText(`${key}.yml`, workflow)).toContain(
-        `${key}.yml: hosted job test uses prohibited indirection/runtime keys: ${key}`
+        `${key}.yml: hosted job test uses non-allowlisted keys: ${key}`
       );
     }
   );
+
+  it("rejects non-blocking or altered job gates", () => {
+    const nonBlocking = workflowWithStep(
+      "run: pnpm lint",
+      "    continue-on-error: true\n"
+    );
+    expect(inspectWorkflowText("nonblocking.yml", nonBlocking)).toContain(
+      "nonblocking.yml: hosted job test uses non-allowlisted keys: continue-on-error"
+    );
+    const skipped = workflowWithStep("run: pnpm lint").replace(
+      "if: github.event_name == 'push' || github.event.pull_request.draft == false",
+      "if: false"
+    );
+    expect(inspectWorkflowText("skipped.yml", skipped)).toContain(
+      "skipped.yml: hosted job test must retain the reviewed draft-skip condition"
+    );
+  });
 
   it("rejects workflow-level env/defaults", () => {
     const workflow = workflowWithStep(

@@ -6,16 +6,16 @@ import { parseDocument } from "yaml";
 const repositoryRoot = resolve(fileURLToPath(new URL("../", import.meta.url)));
 
 export const allowedHostedRunCommands = Object.freeze([
-  "pnpm install --frozen-lockfile",
+  "pnpm install --frozen-lockfile --ignore-scripts",
   "pnpm check:ci-runtime-policy",
   "pnpm lint",
   "pnpm check:artifacts",
   "pnpm typecheck",
-  "pnpm build",
+  "pnpm build:ci:fast",
   "pnpm test:ci:fast",
   "pnpm check:web-budgets",
-  "pnpm validate:built",
-  "pnpm verify:scenario:built"
+  "pnpm validate:ci:fast",
+  "pnpm verify:scenario:ci:fast"
 ]);
 
 const allowedActionConfigurations = Object.freeze({
@@ -35,27 +35,45 @@ export const expectedHostedPackageScripts = Object.freeze({
   lint: "biome check .",
   "check:artifacts": "node scripts/check-generated-artifacts.mjs",
   typecheck: "tsc -b --pretty false",
-  build: "pnpm -r --workspace-concurrency=1 build",
+  "build:ci:fast":
+    "pnpm exec tsc -b --pretty false && pnpm --filter @dwarven-depths/web exec vite build && node scripts/build-web-pwa.mjs",
   "test:ci:fast":
     "vitest run scripts/check-ci-runtime-policy.test.ts packages/content-schema/src/index.test.ts packages/content-runtime/src/index.test.ts packages/sim-core/src/index.test.ts packages/runtime/src/index.test.ts packages/save/src/profile-save.test.ts packages/progression/src/index.test.ts apps/web/src/protocol.test.ts --reporter=dot",
   "check:web-budgets": "node scripts/check-web-release-budgets.mjs",
-  "validate:built":
-    "pnpm sim:built validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
-  "verify:scenario:built":
-    "pnpm sim:built run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0"
+  "validate:ci:fast":
+    "node apps/sim-cli/dist/cli.js validate --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json",
+  "verify:scenario:ci:fast":
+    "node apps/sim-cli/dist/cli.js run --content content/fixtures/empty-content.json --scenario scenarios/conformance/empty-level.json --out .ddh/verification/empty --replace true && node apps/sim-cli/dist/cli.js replay --run .ddh/verification/empty --verify && node apps/sim-cli/dist/cli.js inspect --run .ddh/verification/empty --tick 0 --before 0 --after 0"
 });
 
 export const expectedFastTestScript =
   expectedHostedPackageScripts["test:ci:fast"];
 
+const expectedLocalCheckpointScript =
+  "pnpm lint && pnpm check:ci-runtime-policy && pnpm check:artifacts && pnpm check:desktop-package && pnpm check:mobile-package && pnpm typecheck && pnpm build && pnpm check:web-budgets && pnpm test:web-offline && pnpm test:built && DD_SKIP_BUILD=1 pnpm test:browser:docker && pnpm validate:built && pnpm verify:scenario:built";
+const expectedLocalReleaseScript =
+  "pnpm verify:local:checkpoint && pnpm report:release-candidate && pnpm build:desktop:docker";
+const expectedJobCondition =
+  "github.event_name == 'push' || github.event.pull_request.draft == false";
+const allowedJobKeys = new Set(["if", "runs-on", "steps", "timeout-minutes"]);
+
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, item]) => [key, canonical(item)])
+    );
+  }
+  return value;
+}
+
 function sameConfiguration(actual, expected) {
-  const actualEntries = Object.entries(actual ?? {}).sort(([left], [right]) =>
-    left.localeCompare(right)
+  return (
+    JSON.stringify(canonical(actual ?? {})) ===
+    JSON.stringify(canonical(expected))
   );
-  const expectedEntries = Object.entries(expected).sort(([left], [right]) =>
-    left.localeCompare(right)
-  );
-  return JSON.stringify(actualEntries) === JSON.stringify(expectedEntries);
 }
 
 function inspectHostedStep(path, jobName, step, index) {
@@ -115,6 +133,23 @@ export function inspectWorkflowText(path, text) {
     return [`${path}: workflow must define a jobs map`];
   }
 
+  if (
+    !sameConfiguration(workflow.on, {
+      pull_request: {
+        types: ["opened", "synchronize", "reopened", "ready_for_review"]
+      },
+      push: { branches: ["main"] }
+    })
+  ) {
+    problems.push(
+      `${path}: hosted triggers must remain the reviewed PR/main set`
+    );
+  }
+  if (!sameConfiguration(workflow.permissions, { contents: "read" })) {
+    problems.push(
+      `${path}: hosted workflow permissions must remain contents: read`
+    );
+  }
   if (workflow.env !== undefined || workflow.defaults !== undefined) {
     problems.push(
       `${path}: workflow-level env/defaults are prohibited in bounded hosted CI`
@@ -137,16 +172,17 @@ export function inspectWorkflowText(path, text) {
       );
       continue;
     }
-    const prohibitedJobKeys = [
-      "container",
-      "defaults",
-      "env",
-      "services",
-      "strategy"
-    ].filter((key) => job[key] !== undefined);
-    if (prohibitedJobKeys.length > 0) {
+    const nonAllowlistedJobKeys = Object.keys(job).filter(
+      (key) => !allowedJobKeys.has(key)
+    );
+    if (nonAllowlistedJobKeys.length > 0) {
       problems.push(
-        `${path}: hosted job ${jobName} uses prohibited indirection/runtime keys: ${prohibitedJobKeys.join(", ")}`
+        `${path}: hosted job ${jobName} uses non-allowlisted keys: ${nonAllowlistedJobKeys.join(", ")}`
+      );
+    }
+    if (job.if !== expectedJobCondition) {
+      problems.push(
+        `${path}: hosted job ${jobName} must retain the reviewed draft-skip condition`
       );
     }
     if (job["runs-on"] !== "ubuntu-latest") {
@@ -210,27 +246,15 @@ export async function inspectRepositoryWorkflows(root = repositoryRoot) {
       "package.json: verify must delegate to verify:local:checkpoint"
     );
   }
-  for (const required of [
-    "pnpm test:web-offline",
-    "pnpm test:built",
-    "pnpm test:browser:docker"
-  ]) {
-    if (!scripts["verify:local:checkpoint"]?.includes(required)) {
-      problems.push(
-        `package.json: verify:local:checkpoint must include ${required}`
-      );
-    }
+  if (scripts["verify:local:checkpoint"] !== expectedLocalCheckpointScript) {
+    problems.push(
+      "package.json: verify:local:checkpoint must remain the reviewed complete local gate"
+    );
   }
-  for (const required of [
-    "pnpm verify:local:checkpoint",
-    "pnpm report:release-candidate",
-    "pnpm build:desktop:docker"
-  ]) {
-    if (!scripts["verify:local:release"]?.includes(required)) {
-      problems.push(
-        `package.json: verify:local:release must include ${required}`
-      );
-    }
+  if (scripts["verify:local:release"] !== expectedLocalReleaseScript) {
+    problems.push(
+      "package.json: verify:local:release must remain the reviewed release-only gate"
+    );
   }
   return problems;
 }
