@@ -169,7 +169,9 @@ try {
   ]);
   const videoBytes = await readFile(videoUrl);
   const videoSha256 = createHash("sha256").update(videoBytes).digest("hex");
-  const motionValidation = validateBattlefieldMotionSamples(motionSamples);
+  const motionValidation = validateBattlefieldMotionSamples(motionSamples, {
+    reducedMotion
+  });
   const evidence = {
     schemaVersion: 1,
     sourceHead,

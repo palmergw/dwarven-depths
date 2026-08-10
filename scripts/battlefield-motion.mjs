@@ -140,7 +140,10 @@ function validateEntityTimeline(samples, entityId) {
   }
 }
 
-export function validateBattlefieldMotionSamples(samples) {
+export function validateBattlefieldMotionSamples(
+  samples,
+  { reducedMotion = false } = {}
+) {
   if (!Array.isArray(samples) || samples.length < 12)
     throw new Error("motion evidence requires at least 12 samples");
   let previousTime = -1;
@@ -215,7 +218,10 @@ export function validateBattlefieldMotionSamples(samples) {
         entity.screenPosition[1] - previousVisible.entity.screenPosition[1]
       );
       maximumScreenStep = Math.max(maximumScreenStep, distance);
-      if (distance > Math.max(18, elapsed * 1.4))
+      const continuousMotionBound = reducedMotion
+        ? 64
+        : Math.max(18, elapsed * 1.4);
+      if (distance > continuousMotionBound)
         throw new Error(
           "hostile screen displacement exceeds continuous motion bound"
         );
@@ -323,7 +329,9 @@ export function validateBattlefieldMotionEvidence(
   const videoSha256 = createHash("sha256").update(videoBytes).digest("hex");
   if (videoSha256 !== evidence.videoSha256)
     throw new Error("motion evidence video checksum does not match");
-  const motionValidation = validateBattlefieldMotionSamples(evidence.samples);
+  const motionValidation = validateBattlefieldMotionSamples(evidence.samples, {
+    reducedMotion: evidence.motion === "reduced-motion"
+  });
   const transitionTicks = Object.fromEntries(
     [
       ...new Set(

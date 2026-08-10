@@ -97,6 +97,21 @@ describe("running-client battlefield motion evidence", () => {
     });
   });
 
+  it("allows bounded route-node snaps only for reduced-motion evidence", () => {
+    const reduced = validSamples().map((sample, index) => ({
+      ...sample,
+      videoTimeMilliseconds: index * 10
+    }));
+    expect(() => validateBattlefieldMotionSamples(reduced)).toThrow(
+      "continuous motion bound"
+    );
+    expect(
+      validateBattlefieldMotionSamples(reduced, { reducedMotion: true })
+    ).toMatchObject({
+      trackedEntityId: "entity.enemy.shuttergate_001"
+    });
+  });
+
   it("strictly rejects extra properties and noncanonical entity order", () => {
     expect(() =>
       validateBattlefieldMotionSamples([
