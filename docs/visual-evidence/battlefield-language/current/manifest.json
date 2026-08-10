@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "d3ab59767ceb443137e43431cded8fd85dc3af46",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "captures": [
+    {
+      "id": "quiet-paused-reduced-motion",
+      "screenshot": "quiet-paused-reduced-motion.png",
+      "screenshotSha256": "872c4196f3f4922d5aa823c5defbe97163c7591bcef043fad24ae524e76243ea",
+      "viewport": [
+        1440,
+        900
+      ],
+      "tick": 2,
+      "phase": "running",
+      "entityCount": 2
+    },
+    {
+      "id": "dense-wave-reduced-motion",
+      "screenshot": "dense-wave-reduced-motion.png",
+      "screenshotSha256": "8cc1f4a3b7547e8ed3f847c44865ef2186c5b5175f764c997e2399233bc90619",
+      "viewport": [
+        1440,
+        900
+      ],
+      "tick": 1801,
+      "phase": "running",
+      "entityCount": 3
+    },
+    {
+      "id": "shield-slam-committed-reduced-motion",
+      "screenshot": "shield-slam-committed-reduced-motion.png",
+      "screenshotSha256": "26470dbcddb1e49daaf78f3106d24df99352ea9f6c405a9707fe677c2f900eda",
+      "viewport": [
+        1440,
+        900
+      ],
+      "tick": 1826,
+      "phase": "running",
+      "entityCount": 3
+    },
+    {
+      "id": "shield-slam-impact-reduced-motion",
+      "screenshot": "shield-slam-impact-reduced-motion.png",
+      "screenshotSha256": "9a170f99539703de5fd88dcb753d9f6423e91b34be7e0fa852c6b88b56e22293",
+      "viewport": [
+        1440,
+        900
+      ],
+      "tick": 1832,
+      "phase": "running",
+      "entityCount": 3
+    },
+    {
+      "id": "damage-stagger-reduced-motion",
+      "screenshot": "damage-stagger-reduced-motion.png",
+      "screenshotSha256": "8ac9d5b34f14a0ea71a12b4dede45ffe7a7786193ca7d8f5c08b44e0e4dae64e",
+      "viewport": [
+        1440,
+        900
+      ],
+      "tick": 1833,
+      "phase": "running",
+      "entityCount": 3
+    },
+    {
+      "id": "terminal-defeat-reduced-motion",
+      "screenshot": "terminal-defeat-reduced-motion.png",
+      "screenshotSha256": "639989f1a2784029d9c53d5d65dde22330549c8e066cc4e65756a379c0e26671",
+      "viewport": [
+        1440,
+        900
+      ],
+      "tick": 1834,
+      "phase": "terminal",
+      "entityCount": 2
+    }
+  ],
+  "encounter": {
+    "denseWaveCaptured": true,
+    "eliteCaptured": true,
+    "terminalCaptured": true
+  }
+}

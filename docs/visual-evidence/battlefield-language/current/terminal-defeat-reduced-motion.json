@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "id": "terminal-defeat-reduced-motion",
+  "sourceHead": "d3ab59767ceb443137e43431cded8fd85dc3af46",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "screenshot": "terminal-defeat-reduced-motion.png",
+  "screenshotSha256": "639989f1a2784029d9c53d5d65dde22330549c8e066cc4e65756a379c0e26671",
+  "viewport": [
+    1440,
+    900
+  ],
+  "truth": {
+    "schemaVersion": 1,
+    "captureReady": true,
+    "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+    "viewport": [
+      1440,
+      900
+    ],
+    "frame": [
+      1280,
+      720
+    ],
+    "snapshot": {
+      "levelId": "level.shuttergate_hall",
+      "mapId": "map.shuttergate_hall",
+      "tick": 1834,
+      "phase": "terminal"
+    },
+    "registry": {
+      "dwarfCount": 0,
+      "hostileCount": 2,
+      "totalCount": 2,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_006",
+          "faction": "enemy",
+          "nodeId": "node.shuttergate_east_hall",
+          "visualId": "enemy.goblin_slinger",
+          "archetype": "basic",
+          "currentHealth": 38,
+          "maximumHealth": 38,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery",
+            "abilityId": null
+          },
+          "targetEntityId": null,
+          "statusIds": [],
+          "transition": "active",
+          "elite": false,
+          "boss": false,
+          "x": 838,
+          "y": 330,
+          "nominalHeight": 44,
+          "canvasBounds": [
+            798,
+            276,
+            80,
+            60
+          ],
+          "alphaBounds": [
+            815,
+            286,
+            47,
+            44
+          ],
+          "nonzeroAlphaPixels": 1251,
+          "fullAlphaPixels": 1016,
+          "partialAlphaPixels": 235,
+          "intersectsUnobscuredWorldViewport": true
+        },
+        {
+          "id": "entity.enemy.shuttergate_007",
+          "faction": "enemy",
+          "nodeId": "node.shuttergate_gate",
+          "visualId": "enemy.goblin_bulwark",
+          "archetype": "elite",
+          "currentHealth": 96,
+          "maximumHealth": 120,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery",
+            "abilityId": null
+          },
+          "targetEntityId": null,
+          "statusIds": [
+            "status.staggered"
+          ],
+          "transition": "active",
+          "elite": true,
+          "boss": false,
+          "x": 663,
+          "y": 323,
+          "nominalHeight": 44,
+          "canvasBounds": [
+            623,
+            269,
+            80,
+            60
+          ],
+          "alphaBounds": [
+            632,
+            279,
+            60,
+            43
+          ],
+          "nonzeroAlphaPixels": 1130,
+          "fullAlphaPixels": 965,
+          "partialAlphaPixels": 165,
+          "intersectsUnobscuredWorldViewport": true
+        }
+      ]
+    },
+    "occlusion": {
+      "artifactId": "authored-entrance-depth",
+      "layerOrder": [
+        "complete-static-scene-color",
+        "depth-tested-world-rings",
+        "depth-tested-world-effects",
+        "depth-tested-world-subjects",
+        "depth-tested-world-focus",
+        "hud"
+      ],
+      "clips": [
+        "world-ring",
+        "world-effect",
+        "world-subject",
+        "world-focus"
+      ],
+      "exempts": [
+        "hud"
+      ],
+      "witness": {
+        "entityId": "entity.enemy.shuttergate_006",
+        "subjectAlphaPixels": 1025,
+        "subjectPixelsOverRearArtifact": 0,
+        "subjectPixelsOverGroundArtifact": 0,
+        "subjectPixelsBehindForegroundArtifact": 0,
+        "worldRingPixelsBehindForegroundArtifact": 0,
+        "transientEffectPixelsBehindForegroundArtifact": 0
+      },
+      "depthResolution": {
+        "intent": "rear-visible-and-foreground-occluded",
+        "actualAnchor": [
+          838,
+          330
+        ],
+        "rearOverlapPixels": 0,
+        "subjectGroundOverlapPixels": 0,
+        "foregroundOcclusionPixels": 0,
+        "worldRingOcclusionPixels": 0,
+        "transientEffectOcclusionPixels": 0
+      }
+    },
+    "alignment": {
+      "snapshotCount": 2,
+      "registryCount": 2,
+      "renderedCount": 2,
+      "registryEntitiesMatch": true,
+      "renderedEntitiesMatch": true,
+      "authoritativeEntitiesMatch": true,
+      "valid": true
+    }
+  },
+  "renderer": {
+    "schemaVersion": 1,
+    "snapshotTick": 1834,
+    "updateCount": 1833,
+    "entityObjects": 6,
+    "pooledEffects": 1,
+    "activeEffects": 1,
+    "staticObjects": 7,
+    "sceneObjects": 16,
+    "runtimeTextures": 36,
+    "activeTweens": 0,
+    "timerEvents": 0,
+    "loaderListeners": 1,
+    "entities": [
+      {
+        "id": "entity.dwarf.warden",
+        "nodeId": "node.shuttergate_north_guard",
+        "worldPosition": [
+          0,
+          -1
+        ],
+        "screenPosition": [
+          605,
+          334
+        ],
+        "currentHealth": 9,
+        "action": {
+          "kind": "basic_attack",
+          "phase": "committed"
+        },
+        "lifecycle": "downed",
+        "transitionTick": 1834,
+        "alpha": 0.8
+      },
+      {
+        "id": "entity.enemy.shuttergate_006",
+        "nodeId": "node.shuttergate_east_hall",
+        "worldPosition": [
+          0,
+          3
+        ],
+        "screenPosition": [
+          838,
+          330
+        ],
+        "currentHealth": 38,
+        "action": {
+          "kind": "basic_attack",
+          "phase": "recovery"
+        },
+        "lifecycle": "active",
+        "transitionTick": null,
+        "alpha": 1
+      },
+      {
+        "id": "entity.enemy.shuttergate_007",
+        "nodeId": "node.shuttergate_gate",
+        "worldPosition": [
+          0,
+          0
+        ],
+        "screenPosition": [
+          663,
+          323
+        ],
+        "currentHealth": 96,
+        "action": {
+          "kind": "basic_attack",
+          "phase": "recovery"
+        },
+        "lifecycle": "active",
+        "transitionTick": null,
+        "alpha": 1
+      }
+    ],
+    "camera": {
+      "frame": [
+        1280,
+        720
+      ],
+      "scaleMode": "fit",
+      "autoCenter": "both"
+    },
+    "layerOrder": [
+      "terrain",
+      "ground-foreground",
+      "world-rings",
+      "world-effects",
+      "world-entities",
+      "world-focus",
+      "lighting",
+      "screen-overlay"
+    ]
+  },
+  "controls": {
+    "pause": "Pause combat",
+    "shieldSlamDisabled": true
+  }
+}
