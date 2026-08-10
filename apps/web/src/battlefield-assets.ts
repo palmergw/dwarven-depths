@@ -1,17 +1,13 @@
 import rawManifest from "./battlefield-assets.json";
+import {
+  BATTLEFIELD_LAYER_ORDER,
+  type BattlefieldLayerId
+} from "./battlefield-layers.js";
 
-export const BATTLEFIELD_LAYER_ORDER = [
-  "terrain",
-  "ground-foreground",
-  "world-rings",
-  "world-effects",
-  "world-entities",
-  "world-focus",
-  "lighting",
-  "screen-overlay"
-] as const;
-
-export type BattlefieldLayerId = (typeof BATTLEFIELD_LAYER_ORDER)[number];
+export {
+  BATTLEFIELD_LAYER_ORDER,
+  type BattlefieldLayerId
+} from "./battlefield-layers.js";
 export type BattlefieldAssetKind = "image" | "binary";
 
 export interface BattlefieldAsset {

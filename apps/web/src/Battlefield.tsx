@@ -1,10 +1,10 @@
 import Phaser from "phaser";
 import { useEffect, useRef, useState } from "react";
 import {
-  BATTLEFIELD_ASSET_MANIFEST,
   BATTLEFIELD_LAYER_ORDER,
+  BATTLEFIELD_RUNTIME_ASSET_KEYS,
   type BattlefieldLayerId
-} from "./battlefield-assets.js";
+} from "./battlefield-layers.js";
 import {
   type CombatFeedback,
   type CombatSoundPlayer,
@@ -2414,14 +2414,10 @@ function createBattlefieldRenderer(
         this.load.on("loaderror", (file: { readonly key: string }) => {
           loadErrors.add(file.key);
         });
-        for (const asset of BATTLEFIELD_ASSET_MANIFEST.assets) {
-          const url = battlefieldAssetUrls[asset.key];
-          if (url === undefined) {
-            loadErrors.add(asset.key);
-            continue;
-          }
-          if (asset.kind === "image") this.load.image(asset.key, url);
-          else this.load.binary(asset.key, url);
+        for (const key of BATTLEFIELD_RUNTIME_ASSET_KEYS) {
+          const url = battlefieldAssetUrls[key];
+          if (url === undefined) loadErrors.add(key);
+          else this.load.image(key, url);
         }
       },
       create(this: Phaser.Scene) {

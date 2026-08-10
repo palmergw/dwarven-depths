@@ -7,6 +7,7 @@ import {
   parseBattlefieldAssetManifest
 } from "./battlefield-assets.js";
 import rawManifest from "./battlefield-assets.json";
+import { BATTLEFIELD_RUNTIME_ASSET_KEYS } from "./battlefield-layers.js";
 
 describe("Shuttergate battlefield asset manifest", () => {
   it("binds every runtime asset to its source bytes, digest, layer, and budget", () => {
@@ -25,6 +26,9 @@ describe("Shuttergate battlefield asset manifest", () => {
     );
     expect(BATTLEFIELD_ASSET_MANIFEST.layerOrder).toEqual(
       BATTLEFIELD_LAYER_ORDER
+    );
+    expect(BATTLEFIELD_ASSET_MANIFEST.assets.map(({ key }) => key)).toEqual(
+      BATTLEFIELD_RUNTIME_ASSET_KEYS
     );
   });
 
