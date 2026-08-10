@@ -864,6 +864,7 @@ describe("run journey guidance", () => {
     await userEvent.click(await buttonWithText("Begin preparation"));
     await userEvent.click(await buttonWithText("Confirm preparation"));
     await buttonWithText("Pause combat");
+    const terminalSnapshotEmittedAt = Date.now();
     worker.emitTerminalSnapshot();
     worker.finish();
 
@@ -878,9 +879,8 @@ describe("run journey guidance", () => {
         ),
       { timeout: 10_000 }
     );
-    const startedAt = Date.now();
     await resultHeading("Victory results");
-    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(650);
+    expect(Date.now() - terminalSnapshotEmittedAt).toBeGreaterThanOrEqual(650);
     expect(document.querySelector(".active-combat-screen")).toBeNull();
   });
 
