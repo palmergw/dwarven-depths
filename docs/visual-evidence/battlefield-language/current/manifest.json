@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "sourceHead": "d3ab59767ceb443137e43431cded8fd85dc3af46",
+  "sourceHead": "2636b8123467396a5f82e97733faf8997e25b2a6",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "captures": [
     {
       "id": "quiet-paused-reduced-motion",
       "screenshot": "quiet-paused-reduced-motion.png",
-      "screenshotSha256": "872c4196f3f4922d5aa823c5defbe97163c7591bcef043fad24ae524e76243ea",
+      "screenshotSha256": "e04dbccecf4a8e5485c140861aa195ab229ac68a8c0d2431e7df09b2110e8ddf",
       "viewport": [
         1440,
         900
@@ -18,7 +18,7 @@
     {
       "id": "dense-wave-reduced-motion",
       "screenshot": "dense-wave-reduced-motion.png",
-      "screenshotSha256": "8cc1f4a3b7547e8ed3f847c44865ef2186c5b5175f764c997e2399233bc90619",
+      "screenshotSha256": "5b69378c0aa464f7e4ee471c10596fc1bad18f776d970265f8a208994e6bb1c9",
       "viewport": [
         1440,
         900
@@ -30,7 +30,7 @@
     {
       "id": "shield-slam-committed-reduced-motion",
       "screenshot": "shield-slam-committed-reduced-motion.png",
-      "screenshotSha256": "26470dbcddb1e49daaf78f3106d24df99352ea9f6c405a9707fe677c2f900eda",
+      "screenshotSha256": "f4f553de31ee765dd04f48ed0a4ecc2ec17fe3c3ec120aeb1ae7b83157f142f6",
       "viewport": [
         1440,
         900
@@ -42,7 +42,7 @@
     {
       "id": "shield-slam-impact-reduced-motion",
       "screenshot": "shield-slam-impact-reduced-motion.png",
-      "screenshotSha256": "9a170f99539703de5fd88dcb753d9f6423e91b34be7e0fa852c6b88b56e22293",
+      "screenshotSha256": "ef03a531f403c9a580a0447a923594fbb32523d7673c513723966bc5cec8c572",
       "viewport": [
         1440,
         900
@@ -54,7 +54,7 @@
     {
       "id": "damage-stagger-reduced-motion",
       "screenshot": "damage-stagger-reduced-motion.png",
-      "screenshotSha256": "8ac9d5b34f14a0ea71a12b4dede45ffe7a7786193ca7d8f5c08b44e0e4dae64e",
+      "screenshotSha256": "260e8423e1401c84cc8fbd5fdd5b57e9b98fd7cf2cba688ed4f7e4483a3c3e87",
       "viewport": [
         1440,
         900
@@ -66,7 +66,7 @@
     {
       "id": "terminal-defeat-reduced-motion",
       "screenshot": "terminal-defeat-reduced-motion.png",
-      "screenshotSha256": "639989f1a2784029d9c53d5d65dde22330549c8e066cc4e65756a379c0e26671",
+      "screenshotSha256": "4153dfd92cd6a2d5329f42496d530c4be404082cb75ae26f72857e1b45217aba",
       "viewport": [
         1440,
         900

@@ -1,10 +1,10 @@
 # Issue #273 exact-head visual review
 
-Implementation source head: `d3ab59767ceb443137e43431cded8fd85dc3af46`
+Implementation source head: `2636b8123467396a5f82e97733faf8997e25b2a6`
 
 ## Bounded product decision
 
-Approve or reject the newly authored Shuttergate combat presentation: fixed-scale Warden and hostile role/facing/action poses, damage/status and Shield Slam treatment, slinger source-to-target path, distinct downed/destroyed departure language, and normal/reduced-motion continuity. The previously approved Shuttergate map, projection, scale, game-first frame, and HUD composition are intentionally unchanged and are not being reopened for review.
+Approve or reject the corrected Shuttergate movement and attack treatment: four-way hostile facing is retained through attacks, and moving/windup/committed/impact/recovery have distinct directional poses in normal and reduced motion. The previously approved character art, damage/status and Shield Slam treatment, departure language, map, projection, scale, game-first frame, and HUD composition are unchanged and are not being reopened for review.
 
 ## Running-client evidence
 

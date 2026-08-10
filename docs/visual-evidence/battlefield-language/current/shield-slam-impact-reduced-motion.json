@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "shield-slam-impact-reduced-motion",
-  "sourceHead": "d3ab59767ceb443137e43431cded8fd85dc3af46",
+  "sourceHead": "2636b8123467396a5f82e97733faf8997e25b2a6",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "shield-slam-impact-reduced-motion.png",
-  "screenshotSha256": "9a170f99539703de5fd88dcb753d9f6423e91b34be7e0fa852c6b88b56e22293",
+  "screenshotSha256": "ef03a531f403c9a580a0447a923594fbb32523d7673c513723966bc5cec8c572",
   "viewport": [
     1440,
     900
@@ -202,6 +202,7 @@
   "renderer": {
     "schemaVersion": 1,
     "snapshotTick": 1832,
+    "snapshotPhase": "running",
     "updateCount": 1831,
     "entityObjects": 9,
     "pooledEffects": 1,

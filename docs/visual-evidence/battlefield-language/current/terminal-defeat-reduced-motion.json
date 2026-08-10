@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "terminal-defeat-reduced-motion",
-  "sourceHead": "d3ab59767ceb443137e43431cded8fd85dc3af46",
+  "sourceHead": "2636b8123467396a5f82e97733faf8997e25b2a6",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "terminal-defeat-reduced-motion.png",
-  "screenshotSha256": "639989f1a2784029d9c53d5d65dde22330549c8e066cc4e65756a379c0e26671",
+  "screenshotSha256": "4153dfd92cd6a2d5329f42496d530c4be404082cb75ae26f72857e1b45217aba",
   "viewport": [
     1440,
     900
@@ -166,6 +166,7 @@
   "renderer": {
     "schemaVersion": 1,
     "snapshotTick": 1834,
+    "snapshotPhase": "terminal",
     "updateCount": 1833,
     "entityObjects": 6,
     "pooledEffects": 1,

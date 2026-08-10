@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "dense-wave-reduced-motion",
-  "sourceHead": "d3ab59767ceb443137e43431cded8fd85dc3af46",
+  "sourceHead": "2636b8123467396a5f82e97733faf8997e25b2a6",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "dense-wave-reduced-motion.png",
-  "screenshotSha256": "8cc1f4a3b7547e8ed3f847c44865ef2186c5b5175f764c997e2399233bc90619",
+  "screenshotSha256": "5b69378c0aa464f7e4ee471c10596fc1bad18f776d970265f8a208994e6bb1c9",
   "viewport": [
     1440,
     900
@@ -202,6 +202,7 @@
   "renderer": {
     "schemaVersion": 1,
     "snapshotTick": 1801,
+    "snapshotPhase": "running",
     "updateCount": 1800,
     "entityObjects": 9,
     "pooledEffects": 1,

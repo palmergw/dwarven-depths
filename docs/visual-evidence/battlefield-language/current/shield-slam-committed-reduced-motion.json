@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "shield-slam-committed-reduced-motion",
-  "sourceHead": "d3ab59767ceb443137e43431cded8fd85dc3af46",
+  "sourceHead": "2636b8123467396a5f82e97733faf8997e25b2a6",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "shield-slam-committed-reduced-motion.png",
-  "screenshotSha256": "26470dbcddb1e49daaf78f3106d24df99352ea9f6c405a9707fe677c2f900eda",
+  "screenshotSha256": "f4f553de31ee765dd04f48ed0a4ecc2ec17fe3c3ec120aeb1ae7b83157f142f6",
   "viewport": [
     1440,
     900
@@ -136,14 +136,14 @@
             60
           ],
           "alphaBounds": [
-            634,
+            641,
             279,
-            58,
+            44,
             44
           ],
-          "nonzeroAlphaPixels": 1624,
-          "fullAlphaPixels": 1387,
-          "partialAlphaPixels": 237,
+          "nonzeroAlphaPixels": 1144,
+          "fullAlphaPixels": 989,
+          "partialAlphaPixels": 155,
           "intersectsUnobscuredWorldViewport": true
         }
       ]
@@ -202,6 +202,7 @@
   "renderer": {
     "schemaVersion": 1,
     "snapshotTick": 1826,
+    "snapshotPhase": "running",
     "updateCount": 1825,
     "entityObjects": 9,
     "pooledEffects": 1,
