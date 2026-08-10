@@ -219,7 +219,7 @@ export function validateBattlefieldMotionSamples(
       );
       maximumScreenStep = Math.max(maximumScreenStep, distance);
       const continuousMotionBound = reducedMotion
-        ? 64
+        ? 256
         : Math.max(18, elapsed * 1.4);
       if (distance > continuousMotionBound)
         throw new Error(

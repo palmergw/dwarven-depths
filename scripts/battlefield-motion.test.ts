@@ -110,6 +110,17 @@ describe("running-client battlefield motion evidence", () => {
     ).toMatchObject({
       trackedEntityId: "entity.enemy.shuttergate_001"
     });
+    reduced[3] = {
+      ...reduced[3],
+      entities: reduced[3].entities.map((candidate) =>
+        candidate.id.startsWith("entity.enemy.")
+          ? { ...candidate, screenPosition: [500, 320] as const }
+          : candidate
+      )
+    };
+    expect(() =>
+      validateBattlefieldMotionSamples(reduced, { reducedMotion: true })
+    ).toThrow("continuous motion bound");
   });
 
   it("strictly rejects extra properties and noncanonical entity order", () => {
