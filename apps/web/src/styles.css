@@ -1326,6 +1326,52 @@ main[data-view-phase="running"] .panel {
   margin: 0;
   color: #f4dca6;
 }
+.active-combat-screen .hud-plaque-right dd {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+.hud-approaching-count {
+  color: #d6a759;
+  font-size: 0.68em;
+  letter-spacing: 0.04em;
+}
+.wave-signal {
+  position: absolute;
+  z-index: 2;
+  top: 9%;
+  left: 50%;
+  display: grid;
+  min-width: 15rem;
+  padding: 0.35rem 1.4rem 0.4rem;
+  transform: translateX(-50%);
+  border-block: 1px solid #b27a32;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #090a0ce8 18% 82%,
+    transparent
+  );
+  color: #f4dca6;
+  font-family: Georgia, serif;
+  text-align: center;
+  text-shadow: 0 2px 2px #000;
+}
+.wave-signal strong {
+  color: #ffe3a0;
+  font-size: 0.9rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.wave-signal span {
+  color: #d5b477;
+  font-size: 0.72rem;
+}
+.wave-signal[data-wave-signal="elite"],
+.wave-signal[data-wave-signal="boss"] {
+  border-block-style: double;
+  border-block-width: 3px;
+}
 .active-combat-screen .combat-hud dd[data-fortress-state="fallen"] {
   color: #ffb7a0;
 }

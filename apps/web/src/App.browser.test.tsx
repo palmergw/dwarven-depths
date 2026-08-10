@@ -1444,7 +1444,7 @@ describe("player-facing combat HUD", () => {
 
     await vi.waitFor(() =>
       expect(document.querySelector(".combat-hud")?.textContent).toContain(
-        "FortressHoldingWave1Hostiles1"
+        "FortressHoldingWave1Hostiles1 active2 approaching"
       )
     );
     expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
@@ -1454,6 +1454,7 @@ describe("player-facing combat HUD", () => {
     expect(statusSignalKind("status.slow")).toBe("slow");
     expect(statusSignalKind("status.haste")).toBe("haste");
     expect(statusSignalKind("status.unknown")).toBe("unknown");
+    expect(document.querySelector(".wave-signal")).toBeNull();
     root.render(
       <CombatHud
         snapshot={{
@@ -1481,6 +1482,67 @@ describe("player-facing combat HUD", () => {
       ).toContain(
         "Elite enemy has status status.unknown (status.unknown), source unavailable in authoritative presentation state, from tick 23 through tick 29."
       )
+    );
+  });
+
+  it("visibly distinguishes approaching hostiles and telegraphs elite arrivals", async () => {
+    const snapshot = {
+      schemaVersion: 2,
+      scenarioId: "scenario.shuttergate",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 24,
+      previousTick: 23,
+      phase: "running",
+      nodes: [],
+      connections: [],
+      entities: [
+        {
+          id: "entity.enemy.elite",
+          nodeId: "node.entrance",
+          faction: "enemy",
+          visualId: "visual.gatebreaker_captain",
+          archetype: "elite",
+          position: { nodeId: "node.entrance", x: 0, y: 0 },
+          previousPosition: { nodeId: "node.entrance", x: 0, y: 0 },
+          currentHealth: 80,
+          maximumHealth: 80,
+          facing: "west",
+          action: { kind: "idle", phase: "idle", abilityId: null },
+          targetEntityId: null,
+          statuses: [],
+          transition: "spawned",
+          elite: true,
+          boss: false
+        }
+      ],
+      entityTransitions: [
+        { entityId: "entity.enemy.elite", kind: "spawned", atTick: 24 }
+      ],
+      encounter: {
+        startedWaveIds: ["wave.shuttergate.one", "wave.shuttergate.two"],
+        activeWaveId: "wave.shuttergate.two",
+        pendingSpawnCount: 3,
+        livingHostileCount: 1,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<CombatHud snapshot={snapshot} />);
+
+    await vi.waitFor(() =>
+      expect(document.querySelector(".hud-plaque-right")?.textContent).toBe(
+        "Hostiles1 active3 approaching"
+      )
+    );
+    expect(document.querySelector(".wave-signal")?.textContent).toBe(
+      "Elite breachWave 2 · Reinforced hostile incoming"
+    );
+    expect(document.querySelector(".wave-signal")).toHaveAttribute(
+      "data-wave-signal",
+      "elite"
     );
   });
 
