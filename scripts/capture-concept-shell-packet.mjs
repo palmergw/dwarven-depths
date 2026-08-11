@@ -82,6 +82,42 @@ try {
                   })
                 );
               } else if (message?.command?.type === "confirmPreparation") {
+                if (terminalState === "result") {
+                  this.dispatchEvent(
+                    new MessageEvent("message", {
+                      data: {
+                        protocolVersion: 4,
+                        type: "render_snapshot",
+                        snapshot: {
+                          schemaVersion: 2,
+                          scenarioId: "scenario.shuttergate.visual-evidence",
+                          levelId: "level.shuttergate_hall",
+                          mapId: "map.shuttergate_hall",
+                          tick: 4500,
+                          previousTick: 4499,
+                          phase: "terminal",
+                          nodes: [],
+                          connections: [],
+                          entities: [],
+                          entityTransitions: [],
+                          encounter: {
+                            startedWaveIds: [
+                              "wave.shuttergate.1",
+                              "wave.shuttergate.2",
+                              "wave.shuttergate.3",
+                              "wave.shuttergate.4",
+                              "wave.shuttergate.5"
+                            ],
+                            activeWaveId: "wave.shuttergate.5",
+                            pendingSpawnCount: 0,
+                            livingHostileCount: 0,
+                            terminalResult: "victory"
+                          }
+                        }
+                      }
+                    })
+                  );
+                }
                 this.dispatchEvent(
                   new MessageEvent("message", {
                     data:

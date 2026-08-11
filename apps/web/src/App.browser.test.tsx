@@ -507,8 +507,14 @@ class ControlledJourneyWorker {
         entities: [],
         entityTransitions: [],
         encounter: {
-          startedWaveIds: [],
-          activeWaveId: null,
+          startedWaveIds: [
+            "wave.shuttergate.1",
+            "wave.shuttergate.2",
+            "wave.shuttergate.3",
+            "wave.shuttergate.4",
+            "wave.shuttergate.5"
+          ],
+          activeWaveId: "wave.shuttergate.5",
           pendingSpawnCount: 0,
           livingHostileCount: 0,
           terminalResult
@@ -903,6 +909,9 @@ describe("run journey guidance", () => {
     await resultHeading("Victory results");
     expect(Date.now() - terminalSnapshotEmittedAt).toBeGreaterThanOrEqual(650);
     expect(document.querySelector(".active-combat-screen")).toBeNull();
+    expect(document.querySelector(".result-summary")).toHaveTextContent(
+      "Waves faced5"
+    );
   });
 
   it("does not strand a terminal result when battlefield assets fail to load", async () => {
