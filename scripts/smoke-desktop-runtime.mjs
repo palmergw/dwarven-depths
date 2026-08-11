@@ -9,7 +9,7 @@ import {
   writeFile
 } from "node:fs/promises";
 import { basename, resolve } from "node:path";
-import { validateDesktopRunEvidence } from "./desktop-run-evidence.mjs";
+import { verifyDesktopRunEvidence } from "./desktop-run-evidence.mjs";
 
 const binary = process.argv[2];
 if (binary === undefined) {
@@ -240,7 +240,7 @@ async function waitForResultEvidence() {
       const button = [...(details?.querySelectorAll("button") ?? [])]
         .find((candidate) => candidate.textContent?.trim() === "Download run evidence");
       const fields = Object.fromEntries(
-        [...(details?.querySelectorAll("dl > div") ?? [])].map((row) => [
+        [...document.querySelectorAll(".results dl > div")].map((row) => [
           row.querySelector("dt")?.textContent?.trim(),
           row.querySelector("dd")?.textContent?.trim()
         ])
@@ -257,7 +257,7 @@ async function waitForDownloadedFile() {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const files = await readdir(downloadDirectory);
     if (files.length > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
+      await new Promise((resolve) => setTimeout(resolve, 10_000));
       return readdir(downloadDirectory);
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -400,7 +400,10 @@ try {
     terminalResult: terminalFields["Terminal result"],
     terminalTick,
     finalStateChecksum: terminalFields["Final state checksum"],
-    eventStreamChecksum: terminalFields["Event checksum"]
+    eventStreamChecksum: terminalFields["Event checksum"],
+    forgeOreAwarded: Number(
+      String(terminalFields["Forge Ore earned"]).replace(/^\+/, "")
+    )
   };
   if (
     (expectedExport.terminalResult !== "victory" &&
@@ -408,7 +411,9 @@ try {
     !Number.isSafeInteger(terminalTick) ||
     terminalTick < 0 ||
     !/^[a-f0-9]{64}$/.test(expectedExport.finalStateChecksum) ||
-    !/^[a-f0-9]{64}$/.test(expectedExport.eventStreamChecksum)
+    !/^[a-f0-9]{64}$/.test(expectedExport.eventStreamChecksum) ||
+    !Number.isSafeInteger(expectedExport.forgeOreAwarded) ||
+    expectedExport.forgeOreAwarded < 0
   ) {
     throw new Error(
       `invalid packaged terminal fields: ${JSON.stringify(terminalFields)}`
@@ -434,7 +439,7 @@ try {
   const exportedBytes = await readFile(
     resolve(downloadDirectory, expectedFilename)
   );
-  const exportedEvidence = validateDesktopRunEvidence(
+  const exportedEvidence = await verifyDesktopRunEvidence(
     JSON.parse(exportedBytes.toString("utf8")),
     expectedExport
   );

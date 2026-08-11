@@ -7,7 +7,8 @@ const expected = {
   terminalResult: "defeat",
   terminalTick: 1834,
   finalStateChecksum: stateChecksum,
-  eventStreamChecksum: eventChecksum
+  eventStreamChecksum: eventChecksum,
+  forgeOreAwarded: 8
 };
 
 function validEvidence() {
@@ -47,9 +48,9 @@ function validEvidence() {
     replay: {
       schemaVersion: 1,
       simulationSchemaVersion: 1,
-      contentVersion: "1",
+      contentVersion: "phase-5-shuttergate-shield-slam-v2",
       contentManifestHash: "c".repeat(64),
-      scenarioId: "scenario.shuttergate_web_truth",
+      scenarioId: "scenario.conformance.shuttergate_web_truth",
       scenarioHash: "d".repeat(64),
       levelId: "level.shuttergate_hall",
       seed: "1",
@@ -121,6 +122,13 @@ describe("packaged desktop run evidence", () => {
       (value) => (value.campaign.profile.forgeOre += 1)
     ],
     [
+      "campaign reward mismatch",
+      (value) => {
+        value.campaign.forgeOreAwarded = 999;
+        value.campaign.profile.forgeOre = 999;
+      }
+    ],
+    [
       "malformed replay hash",
       (value) => (value.replay.contentManifestHash = "7")
     ],
@@ -132,6 +140,24 @@ describe("packaged desktop run evidence", () => {
       "extra command payload property",
       (value) =>
         Object.assign(firstReplayCommand(value).command, { untrusted: true })
+    ],
+    [
+      "invalid dwarf and target policy domains",
+      (value) =>
+        Object.assign(firstReplayCommand(value).command, {
+          type: "setTargetPolicy",
+          dwarfEntityId: "tampered",
+          requestedPolicy: "tampered"
+        })
+    ],
+    [
+      "invalid ability domain",
+      (value) =>
+        Object.assign(firstReplayCommand(value).command, {
+          type: "activateAbility",
+          dwarfEntityId: "entity.dwarf.warden",
+          abilityId: "ability.tampered"
+        })
     ],
     [
       "noncanonical command sequence",

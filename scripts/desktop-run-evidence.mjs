@@ -1,4 +1,13 @@
+import { readFile } from "node:fs/promises";
+import {
+  compileContent,
+  compileScenario
+} from "../packages/content-runtime/dist/index.js";
 import { normalizeProfileState } from "../packages/progression/dist/profile-state.js";
+import {
+  createShuttergateWebScenario,
+  verifyReplay
+} from "../packages/runtime/dist/index.js";
 
 function requireRecord(value, label) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -92,6 +101,31 @@ function validateReplayCommands(value) {
         throw new Error(`replay command ${index} ${key} must be a string`);
       }
     }
+    if (
+      "dwarfEntityId" in command &&
+      command.dwarfEntityId !== "entity.dwarf.warden"
+    ) {
+      throw new Error(`replay command ${index} has an invalid dwarf entity ID`);
+    }
+    if (
+      command.type === "activateAbility" &&
+      command.abilityId !== "ability.iron_warden.shield_slam"
+    ) {
+      throw new Error(`replay command ${index} has an invalid ability ID`);
+    }
+    if (
+      command.type === "setTargetPolicy" &&
+      ![
+        "boss_or_elite_first",
+        "fastest",
+        "highest_armor",
+        "highest_health",
+        "lowest_health",
+        "nearest"
+      ].includes(command.requestedPolicy)
+    ) {
+      throw new Error(`replay command ${index} has an invalid target policy`);
+    }
   }
 }
 
@@ -122,6 +156,9 @@ export function validateDesktopRunEvidence(value, expected) {
     campaign.forgeOreAwarded < 0
   ) {
     throw new Error("campaign resolution is malformed");
+  }
+  if (campaign.forgeOreAwarded !== expected.forgeOreAwarded) {
+    throw new Error("campaign reward does not match the packaged result");
   }
   const runConfiguration = requireRecord(
     evidence.runConfiguration,
@@ -212,8 +249,8 @@ export function validateDesktopRunEvidence(value, expected) {
     replay.levelId !== "level.shuttergate_hall" ||
     replay.seed !== runConfiguration.seed ||
     replay.rngAlgorithm !== "xorshift32-v1" ||
-    typeof replay.contentVersion !== "string" ||
-    typeof replay.scenarioId !== "string"
+    replay.contentVersion !== "phase-5-shuttergate-shield-slam-v2" ||
+    replay.scenarioId !== "scenario.conformance.shuttergate_web_truth"
   ) {
     throw new Error("replay metadata does not match the configured run");
   }
@@ -238,6 +275,56 @@ export function validateDesktopRunEvidence(value, expected) {
     checkpoint.eventStreamChecksum !== expected.eventStreamChecksum
   ) {
     throw new Error("terminal checkpoint does not match the packaged result");
+  }
+  return evidence;
+}
+
+export async function verifyDesktopRunEvidence(value, expected) {
+  const evidence = validateDesktopRunEvidence(value, expected);
+  const [contentSource, scenarioSource] = await Promise.all([
+    readFile(
+      new URL("../content/fixtures/phase-3-shuttergate.json", import.meta.url),
+      "utf8"
+    ),
+    readFile(
+      new URL(
+        "../scenarios/conformance/shuttergate-web-truth.json",
+        import.meta.url
+      ),
+      "utf8"
+    )
+  ]);
+  const content = await compileContent(JSON.parse(contentSource));
+  const configuredScenario = createShuttergateWebScenario(
+    compileScenario(
+      { ...JSON.parse(scenarioSource), seed: evidence.runConfiguration.seed },
+      content
+    ),
+    evidence.runConfiguration
+  );
+  const replayScenario = compileScenario(
+    {
+      ...configuredScenario,
+      commands: evidence.replay.commands.map(({ command }) => command)
+    },
+    content
+  );
+  const result = await verifyReplay(
+    evidence.replay,
+    replayScenario,
+    content,
+    undefined,
+    evidence.runConfiguration
+  );
+  if (
+    result.terminalResult !== expected.terminalResult ||
+    result.terminalTick !== expected.terminalTick ||
+    result.finalStateChecksum !== expected.finalStateChecksum ||
+    result.eventStreamChecksum !== expected.eventStreamChecksum
+  ) {
+    throw new Error(
+      "replayed export does not match the packaged terminal result"
+    );
   }
   return evidence;
 }
