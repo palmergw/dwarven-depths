@@ -1328,13 +1328,28 @@ main[data-view-phase="running"] .panel {
 }
 .active-combat-screen .hud-plaque-right dd {
   display: flex;
-  align-items: baseline;
-  gap: 0.45rem;
+  align-items: center;
+  gap: 0.35rem;
+}
+.active-combat-screen .hud-plaque-right dt {
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+}
+.hud-hostile-count {
+  display: grid;
+  line-height: 0.9;
+  white-space: nowrap;
+}
+.hud-hostile-count strong {
+  color: #f4dca6;
+  font: inherit;
+}
+.hud-hostile-count small {
+  font-size: 0.58em;
+  letter-spacing: 0.035em;
 }
 .hud-approaching-count {
   color: #d6a759;
-  font-size: 0.68em;
-  letter-spacing: 0.04em;
 }
 .wave-signal {
   position: absolute;

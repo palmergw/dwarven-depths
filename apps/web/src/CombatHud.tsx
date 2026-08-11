@@ -219,9 +219,11 @@ export function CombatHud({ snapshot, manualPaused = false }: CombatHudProps) {
         >
           <dt>Hostiles</dt>
           <dd>
-            <span>{encounter.hostiles} active</span>
-            <span className="hud-approaching-count">
-              {encounter.pending} approaching
+            <span className="hud-hostile-count">
+              <strong>{encounter.hostiles}</strong> <small>active</small>
+            </span>
+            <span className="hud-hostile-count hud-approaching-count">
+              <strong>{encounter.pending}</strong> <small>approaching</small>
             </span>
           </dd>
         </div>
@@ -233,8 +235,7 @@ export function CombatHud({ snapshot, manualPaused = false }: CombatHudProps) {
           role="status"
           aria-live="polite"
         >
-          <strong>{waveSignal.title}</strong>
-          <span>{waveSignal.detail}</span>
+          <strong>{waveSignal.title}</strong> <span>{waveSignal.detail}</span>
         </div>
       )}
       <p className="combat-state-summary" aria-live="polite" aria-atomic="true">

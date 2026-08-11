@@ -1460,7 +1460,7 @@ describe("player-facing combat HUD", () => {
     expect(statusSignalKind("status.haste")).toBe("haste");
     expect(statusSignalKind("status.unknown")).toBe("unknown");
     expect(document.querySelector(".wave-signal")?.textContent).toBe(
-      "Entrance watchWave 1 · 2 approaching"
+      "Entrance watch Wave 1 · 2 approaching"
     );
     expect(document.querySelector(".wave-signal")).toHaveAttribute(
       "data-wave-signal",
@@ -1549,7 +1549,7 @@ describe("player-facing combat HUD", () => {
       )
     );
     expect(document.querySelector(".wave-signal")?.textContent).toBe(
-      "Elite breachWave 2 · Reinforced hostile incoming"
+      "Elite breach Wave 2 · Reinforced hostile incoming"
     );
     expect(document.querySelector(".wave-signal")).toHaveAttribute(
       "data-wave-signal",
