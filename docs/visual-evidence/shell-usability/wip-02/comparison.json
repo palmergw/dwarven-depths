@@ -17,19 +17,19 @@
     "screenshotSha256": "eb48de907eae2f9b88fe510bda266993a8b82b3b293578d4ac7b6492541ace42"
   },
   "after": {
-    "sourceHead": "42c2603381462f694aa43040e1152a1a671094b0",
+    "sourceHead": "db804391342a655e56c0b3be33db770af8856b75",
     "screenshot": "desktop-forge.png",
-    "screenshotSha256": "c54f4e5f15a082a7627e6f173052ffcfeaa63f0fbf47569de7a3796d024e7aa3"
+    "screenshotSha256": "539164c38f774287feec5ce8e92af2de9e72ced847c6e114fdc05cc0cf5faee7"
   },
   "pixelDiff": {
     "dimensions": [
       1440,
       900
     ],
-    "changedPixelCount": 273346,
-    "changedPixelRatio": 0.21091512345679012,
-    "meanAbsoluteChannelDelta": 0.01367025614258049
+    "changedPixelCount": 273380,
+    "changedPixelRatio": 0.21094135802469136,
+    "meanAbsoluteChannelDelta": 0.013305274146695715
   },
   "comparisonScreenshot": "forge-before-after.png",
-  "comparisonScreenshotSha256": "f114ef7c795a017e57a534d5f73cbd0155f129ca58727173d4ad27d779740311"
+  "comparisonScreenshotSha256": "a52d0ef2a6bd6762b90098cf7762ac1c60257638c340bef7b3947a030b60acc7"
 }
