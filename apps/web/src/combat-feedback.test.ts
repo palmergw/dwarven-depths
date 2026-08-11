@@ -332,4 +332,48 @@ describe("combat presentation feedback", () => {
     await Promise.resolve();
     expect(createOscillator).not.toHaveBeenCalled();
   });
+
+  it("coalesces suspended feedback to the latest cue during audio unlock", async () => {
+    let resolveResume: (() => void) | undefined;
+    const setValueAtTime = vi.fn();
+    const createOscillator = vi.fn(() => ({
+      frequency: { setValueAtTime, exponentialRampToValueAtTime: vi.fn() },
+      type: "sine" as OscillatorType,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn()
+    }));
+    const resume = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveResume = resolve;
+        })
+    );
+    const context: CombatAudioContext = {
+      currentTime: 4,
+      destination: {},
+      state: "suspended",
+      createOscillator,
+      createGain: () => ({
+        gain: {
+          setValueAtTime: vi.fn(),
+          exponentialRampToValueAtTime: vi.fn()
+        },
+        connect: vi.fn()
+      }),
+      resume,
+      close: vi.fn(() => Promise.resolve())
+    };
+    const player = createCombatSoundPlayer(() => context);
+
+    player.playCue("wave");
+    player.playCue("damage");
+    expect(resume).toHaveBeenCalledOnce();
+    expect(createOscillator).not.toHaveBeenCalled();
+
+    resolveResume?.();
+    await Promise.resolve();
+    expect(createOscillator).toHaveBeenCalledOnce();
+    expect(setValueAtTime).toHaveBeenCalledWith(120, 4);
+  });
 });

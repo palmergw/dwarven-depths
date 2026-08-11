@@ -273,6 +273,8 @@ export function createCombatSoundPlayer(
 ): CombatSoundPlayer {
   let context: CombatAudioContext | undefined;
   let closed = false;
+  let resumePromise: Promise<void> | undefined;
+  let pendingCues: readonly CombatSoundCue[] | undefined;
 
   function ensureContext(): CombatAudioContext | undefined {
     if (closed) return undefined;
@@ -328,18 +330,42 @@ export function createCombatSoundPlayer(
     }
   }
 
+  function beginResume(activeContext: CombatAudioContext): void {
+    if (resumePromise !== undefined) return;
+    resumePromise = activeContext.resume().then(
+      () => {
+        resumePromise = undefined;
+        const latestCues = pendingCues;
+        pendingCues = undefined;
+        if (latestCues !== undefined) schedule(latestCues);
+      },
+      () => {
+        resumePromise = undefined;
+        pendingCues = undefined;
+      }
+    );
+  }
+
+  function playCues(cues: readonly CombatSoundCue[]): void {
+    const activeContext = ensureContext();
+    if (activeContext === undefined) return;
+    if (resumePromise !== undefined) {
+      pendingCues = cues;
+      return;
+    }
+    if (activeContext.state === "suspended") {
+      pendingCues = cues;
+      beginResume(activeContext);
+      return;
+    }
+    schedule(cues);
+  }
+
   return {
     play(feedback) {
       if (closed) return;
       try {
-        const activeContext = ensureContext();
-        if (activeContext === undefined) return;
-        if (activeContext.state === "suspended")
-          void activeContext
-            .resume()
-            .then(() => schedule(feedback.cues))
-            .catch(() => undefined);
-        else schedule(feedback.cues);
+        playCues(feedback.cues);
       } catch {
         // Presentation feedback remains visual and textual without Web Audio.
       }
@@ -347,14 +373,7 @@ export function createCombatSoundPlayer(
     playCue(cue) {
       if (closed) return;
       try {
-        const activeContext = ensureContext();
-        if (activeContext === undefined) return;
-        if (activeContext.state === "suspended")
-          void activeContext
-            .resume()
-            .then(() => schedule([cue]))
-            .catch(() => undefined);
-        else schedule([cue]);
+        playCues([cue]);
       } catch {
         // Player controls remain operable when Web Audio is unavailable.
       }
@@ -363,8 +382,7 @@ export function createCombatSoundPlayer(
       if (closed) return;
       try {
         const activeContext = ensureContext();
-        if (activeContext?.state === "suspended")
-          void activeContext.resume().catch(() => undefined);
+        if (activeContext?.state === "suspended") beginResume(activeContext);
       } catch {
         // A later user gesture may retry context creation.
       }
@@ -372,6 +390,7 @@ export function createCombatSoundPlayer(
     close() {
       if (closed) return;
       closed = true;
+      pendingCues = undefined;
       if (context !== undefined) void context.close().catch(() => undefined);
     }
   };
