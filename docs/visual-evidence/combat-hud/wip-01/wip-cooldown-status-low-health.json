@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "wip-cooldown-status-low-health",
   "label": "WIP #275 — wip-cooldown-status-low-health",
-  "sourceHead": "93313ec65282c18d42f120ac8c8a5233d00cc7dd",
+  "sourceHead": "8e0035595b1ba2b7e629043b912865c41d51e483",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-cooldown-status-low-health.png",
-  "screenshotSha256": "8c8d5b2eee4bf9eb33d34cd5efd4048bd95c2a7877947ed00907e7341bdc223b",
+  "screenshotSha256": "daff4282e6b449b379c919e2ac1e12e8675113fa997fcff7737b1e5508cd0152",
   "viewport": [1440, 900],
   "phase": "running",
   "truth": {
@@ -47,10 +47,10 @@
           "y": 320,
           "nominalHeight": 56,
           "canvasBounds": [549, 254, 112, 72],
-          "alphaBounds": [573, 264, 64, 56],
-          "nonzeroAlphaPixels": 2354,
-          "fullAlphaPixels": 2157,
-          "partialAlphaPixels": 197,
+          "alphaBounds": [580, 264, 50, 56],
+          "nonzeroAlphaPixels": 1714,
+          "fullAlphaPixels": 1384,
+          "partialAlphaPixels": 330,
           "intersectsUnobscuredWorldViewport": true
         },
         {
@@ -75,10 +75,10 @@
           "y": 330,
           "nominalHeight": 44,
           "canvasBounds": [798, 276, 80, 60],
-          "alphaBounds": [812, 286, 52, 44],
-          "nonzeroAlphaPixels": 1341,
-          "fullAlphaPixels": 1135,
-          "partialAlphaPixels": 206,
+          "alphaBounds": [805, 286, 67, 44],
+          "nonzeroAlphaPixels": 1339,
+          "fullAlphaPixels": 1060,
+          "partialAlphaPixels": 279,
           "intersectsUnobscuredWorldViewport": true
         },
         {
@@ -99,14 +99,14 @@
           "transition": "active",
           "elite": true,
           "boss": false,
-          "x": 1110,
-          "y": 253,
+          "x": 663,
+          "y": 323,
           "nominalHeight": 44,
-          "canvasBounds": [1070, 199, 80, 60],
-          "alphaBounds": [1084, 209, 52, 44],
-          "nonzeroAlphaPixels": 1341,
-          "fullAlphaPixels": 1135,
-          "partialAlphaPixels": 206,
+          "canvasBounds": [623, 269, 80, 60],
+          "alphaBounds": [634, 279, 58, 44],
+          "nonzeroAlphaPixels": 1624,
+          "fullAlphaPixels": 1387,
+          "partialAlphaPixels": 237,
           "intersectsUnobscuredWorldViewport": true
         }
       ]
@@ -125,7 +125,7 @@
       "exempts": ["hud"],
       "witness": {
         "entityId": "entity.enemy.shuttergate_006",
-        "subjectAlphaPixels": 1341,
+        "subjectAlphaPixels": 1025,
         "subjectPixelsOverRearArtifact": 0,
         "subjectPixelsOverGroundArtifact": 0,
         "subjectPixelsBehindForegroundArtifact": 0,
@@ -152,7 +152,8 @@
       "valid": true
     }
   },
-  "hud": "The ShuttergateFortressHoldingWave3Hostiles2Combat paused. Fortress holding. Wave 3. 2 hostiles active. Iron Warden health 9 of 240. Elite enemy is staggered until tick 1847.",
+  "hud": "The ShuttergateFortressHoldingWave3Hostiles2 active0 approachingCombat paused. Fortress holding. Wave 3. 2 hostiles active. Iron Warden health 9 of 240. Elite enemy is staggered, source Shield Slam, strength 1, from tick 1829 through tick 1847.",
+  "waveSignal": null,
   "health": {
     "current": "9",
     "maximum": "240",
@@ -170,14 +171,17 @@
   "speedControls": [
     {
       "label": "1× combat speed",
+      "shortcut": "-",
       "pressed": "true",
       "disabled": true
     },
     {
       "label": "2× combat speed",
+      "shortcut": "+",
       "pressed": "false",
       "disabled": false
     }
   ],
+  "keyboardHints": "Esc pause · 1 Shield Slam · −/+ speed · portrait targeting",
   "targetMenuOpen": "false"
 }
