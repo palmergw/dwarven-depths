@@ -105,7 +105,7 @@ describe("checkpoint upgrade purchasing", () => {
     await vi.waitFor(() => expect(heading).toHaveFocus());
     expect(await button("Maximum rank owned")).toBeDisabled();
     expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "Rank 2 of 2"
+      "Rank 2/2"
     );
   });
 
@@ -184,7 +184,7 @@ describe("checkpoint upgrade purchasing", () => {
     expect(await button("Purchase rank 1 for 10 Forge Ore")).toBeEnabled();
     const lockedItem = await vi.waitFor(() => {
       const candidate = document.querySelector(
-        '[aria-describedby^="upgrade-item-powder_cask-purchase-status"]'
+        'button[aria-describedby^="upgrade-item-powder_cask-purchase-status"]'
       );
       expect(candidate).toBeInstanceOf(HTMLButtonElement);
       return candidate as HTMLButtonElement;

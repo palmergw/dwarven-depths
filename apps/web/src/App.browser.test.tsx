@@ -4452,7 +4452,7 @@ describe("authoritative Shuttergate campaign journey", () => {
     );
     await vi.waitFor(() => {
       expect(document.body.textContent).toContain("Available Forge Ore: 6");
-      expect(document.body.textContent).toContain("Shield Slam TrainingRank 1");
+      expect(document.body.textContent).toContain("Rank 1/2");
     });
     await userEvent.click(await buttonWithText("Close upgrade inventory"));
     await reloadApp();

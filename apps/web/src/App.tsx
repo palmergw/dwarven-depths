@@ -273,6 +273,17 @@ function playerFacingName(id: StableId): string {
   }
 }
 
+function upgradeIcon(id: StableId): string {
+  switch (id) {
+    case "upgrade.ability.shield_slam":
+      return "♜";
+    case "upgrade.item.powder_cask":
+      return "✹";
+    default:
+      return "◆";
+  }
+}
+
 function upgradePurchaseState(
   profile: ProfileState,
   definition: PurchasedUpgradeDefinition
@@ -2006,22 +2017,10 @@ export function App({
                 Scroll for skills and recycle options{" "}
                 <span aria-hidden="true">↓</span>
               </p>
-              {checkpointProfile.profile.purchasedUpgrades.length === 0 ? (
-                <p>No upgrades purchased.</p>
-              ) : (
-                <dl className="upgrade-inventory-list">
-                  {checkpointProfile.profile.purchasedUpgrades.map(
-                    (upgrade) => (
-                      <div key={upgrade.upgradeId}>
-                        <dt>{playerFacingName(upgrade.upgradeId)}</dt>
-                        <dd>
-                          Rank {upgrade.rank}; {upgrade.forgeOreSpent} Forge Ore
-                          spent
-                        </dd>
-                      </div>
-                    )
-                  )}
-                </dl>
+              {checkpointProfile.profile.purchasedUpgrades.length === 0 && (
+                <p className="forge-inventory-summary">
+                  No upgrades purchased.
+                </p>
               )}
               <h4>Available upgrades</h4>
               <div className="upgrade-catalog">
@@ -2033,60 +2032,86 @@ export function App({
                   const headingId = `${definition.upgradeId.replaceAll(".", "-")}-heading`;
                   const descriptionId = `${definition.upgradeId.replaceAll(".", "-")}-purchase-status`;
                   const effectsId = `${definition.upgradeId.replaceAll(".", "-")}-effects`;
+                  const unavailable = state.unavailableReason !== undefined;
                   const pending =
                     upgradePurchaseStatus.kind === "pending" &&
                     upgradePurchaseStatus.upgradeId === definition.upgradeId;
                   return (
-                    <section key={definition.upgradeId}>
-                      <h5 id={headingId} tabIndex={-1}>
-                        {playerFacingName(definition.upgradeId)}
-                      </h5>
-                      <p>
-                        Rank {state.currentRank} of{" "}
-                        {definition.rankCosts.length}
-                      </p>
-                      <p id={descriptionId}>
-                        {state.unavailableReason ??
-                          `Next rank costs ${state.nextCost} Forge Ore.`}
-                      </p>
-                      <div id={effectsId}>
-                        {state.currentRank === 0 ? (
-                          <p>Owned effects: none.</p>
-                        ) : (
-                          <>
-                            <p>Owned effects:</p>
-                            <ul>
-                              {definition.passiveEffectsByRank
-                                .slice(0, state.currentRank)
-                                .map((effects, rankIndex) => (
-                                  <li
-                                    key={`${definition.upgradeId}-rank-${definition.passiveEffectsByRank.indexOf(effects) + 1}`}
-                                  >
-                                    Rank {rankIndex + 1}:{" "}
-                                    {describeEffects(effects)}
-                                  </li>
-                                ))}
-                            </ul>
-                          </>
-                        )}
-                        {state.nextCost === undefined ? (
-                          <p>No further rank effects.</p>
-                        ) : (
-                          <p>
-                            Rank {state.currentRank + 1} effects:{" "}
-                            {describeEffects(
-                              definition.passiveEffectsByRank[
-                                state.currentRank
-                              ] ?? []
-                            )}
-                          </p>
-                        )}
+                    <section
+                      className="upgrade-tile"
+                      key={definition.upgradeId}
+                      aria-labelledby={headingId}
+                      aria-describedby={`${descriptionId} ${effectsId}`}
+                      aria-disabled={unavailable}
+                      tabIndex={unavailable ? 0 : undefined}
+                    >
+                      <span className="upgrade-icon" aria-hidden="true">
+                        {upgradeIcon(definition.upgradeId)}
+                      </span>
+                      <span className="upgrade-rank">
+                        Rank {state.currentRank}/{definition.rankCosts.length}
+                      </span>
+                      <span className="upgrade-cost">
+                        {state.nextCost === undefined
+                          ? "Maximum rank"
+                          : `${state.nextCost} Forge Ore`}
+                      </span>
+                      <span
+                        className={`upgrade-availability ${unavailable ? "is-unavailable" : "is-available"}`}
+                      >
+                        {state.nextCost === undefined
+                          ? "Max"
+                          : unavailable
+                            ? "Unavailable"
+                            : "Available"}
+                      </span>
+                      <div className="upgrade-disclosure">
+                        <h5 id={headingId} tabIndex={-1}>
+                          {playerFacingName(definition.upgradeId)}
+                        </h5>
+                        <p id={descriptionId}>
+                          {state.unavailableReason ??
+                            `Next rank costs ${state.nextCost} Forge Ore.`}
+                        </p>
+                        <div id={effectsId}>
+                          {state.currentRank === 0 ? (
+                            <p>Owned effects: none.</p>
+                          ) : (
+                            <>
+                              <p>Owned effects:</p>
+                              <ul>
+                                {definition.passiveEffectsByRank
+                                  .slice(0, state.currentRank)
+                                  .map((effects, rankIndex) => (
+                                    <li
+                                      key={`${definition.upgradeId}-rank-${definition.passiveEffectsByRank.indexOf(effects) + 1}`}
+                                    >
+                                      Rank {rankIndex + 1}:{" "}
+                                      {describeEffects(effects)}
+                                    </li>
+                                  ))}
+                              </ul>
+                            </>
+                          )}
+                          {state.nextCost === undefined ? (
+                            <p>No further rank effects.</p>
+                          ) : (
+                            <p>
+                              Rank {state.currentRank + 1} effects:{" "}
+                              {describeEffects(
+                                definition.passiveEffectsByRank[
+                                  state.currentRank
+                                ] ?? []
+                              )}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <button
                         type="button"
                         aria-describedby={`${descriptionId} ${effectsId}`}
                         disabled={
-                          state.unavailableReason !== undefined ||
+                          unavailable ||
                           upgradePurchaseStatus.kind === "pending"
                         }
                         onClick={() =>

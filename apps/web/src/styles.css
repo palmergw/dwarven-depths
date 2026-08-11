@@ -949,11 +949,107 @@ main[data-view-phase="checkpoint"] .upgrades .forge-toolbar h3 {
   text-transform: uppercase;
 }
 main[data-view-phase="checkpoint"] .upgrade-catalog {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(9rem, 1fr));
+  gap: 0.8rem;
+  align-items: start;
 }
-main[data-view-phase="checkpoint"] .upgrade-catalog section {
+main[data-view-phase="checkpoint"] .upgrade-catalog .upgrade-tile {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 0.6rem;
+  min-height: 10.5rem;
+  padding: 0.85rem;
   border-color: #62472d;
-  background: #0b0806b8;
+  background:
+    radial-gradient(circle at 50% 28%, #7f552334, transparent 43%), #0b0806e8;
+  text-align: center;
+}
+.upgrade-icon {
+  grid-column: 1 / -1;
+  display: grid;
+  width: 4.4rem;
+  height: 4.4rem;
+  margin: 0 auto 0.2rem;
+  border: 1px solid #9b7139;
+  border-radius: 50%;
+  background: radial-gradient(circle, #6f4b21, #1a1008 72%);
+  box-shadow:
+    inset 0 0 0 0.25rem #120b07,
+    0 0 1.2rem #d68c2738;
+  color: #f4cf7a;
+  font:
+    2.25rem / 1 Georgia,
+    serif;
+  place-items: center;
+  text-shadow: 0 2px 0 #000;
+}
+.upgrade-rank,
+.upgrade-cost,
+.upgrade-availability {
+  font-size: 0.76em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.upgrade-rank {
+  color: #e7d4ae;
+  text-align: left;
+}
+.upgrade-cost {
+  color: #f2c76c;
+  text-align: right;
+}
+.upgrade-availability {
+  grid-column: 1 / -1;
+  color: #9dc282;
+}
+.upgrade-availability.is-unavailable {
+  color: #d8a788;
+}
+.upgrade-tile > button {
+  grid-column: 1 / -1;
+  margin: 0.15rem 0 0;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.78em;
+}
+.upgrade-disclosure {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  width: min(28rem, calc(200% + 0.8rem));
+  padding: 0.85rem 1rem;
+  border: 1px solid #a8793f;
+  background: #080604f5;
+  box-shadow: 0 0.9rem 2rem #000d;
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  transform: translateY(-0.25rem);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+.upgrade-tile:nth-child(4n + 3) .upgrade-disclosure,
+.upgrade-tile:nth-child(4n + 4) .upgrade-disclosure {
+  right: 0;
+  left: auto;
+}
+.upgrade-tile:is(:hover, :focus, :focus-within) .upgrade-disclosure {
+  opacity: 1;
+  transform: translateY(0);
+}
+.upgrade-disclosure h5,
+.upgrade-disclosure p {
+  margin: 0 0 0.45rem;
+}
+.upgrade-disclosure ul {
+  margin-bottom: 0.45rem;
+}
+.upgrade-tile:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
 }
 main[data-view-phase="checkpoint"] .upgrades h4 {
   color: #d9ad60;

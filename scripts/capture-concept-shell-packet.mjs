@@ -30,7 +30,7 @@ const sourceHead = stdout.trim();
 const viewports = {
   desktop: { width: 1440, height: 900 }
 };
-const captures = [
+const supportedCaptures = [
   "checkpoint",
   "settings",
   "forge",
@@ -38,6 +38,17 @@ const captures = [
   "result",
   "failure"
 ];
+const captures = process.env.DD_SHELL_PACKET_CAPTURES
+  ? process.env.DD_SHELL_PACKET_CAPTURES.split(",")
+  : supportedCaptures;
+if (
+  captures.length === 0 ||
+  captures.some((capture) => !supportedCaptures.includes(capture))
+) {
+  throw new Error(
+    `DD_SHELL_PACKET_CAPTURES must contain only: ${supportedCaptures.join(", ")}`
+  );
+}
 
 await mkdir(outputDirectory, { recursive: true });
 await Promise.all([
@@ -188,6 +199,9 @@ try {
         await page.getByRole("button", { name: "Settings" }).click();
       } else if (capture === "forge") {
         await page.getByRole("button", { name: /Upgrade inventory/ }).click();
+        await page
+          .getByRole("button", { name: "Purchase rank 1 for 10 Forge Ore" })
+          .focus();
       } else if (capture === "preparation") {
         await page.getByRole("button", { name: "Begin preparation" }).click();
       } else if (capture === "failure") {
