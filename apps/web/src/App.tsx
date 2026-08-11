@@ -76,6 +76,7 @@ type ViewState =
       readonly phase: "result";
       readonly result: Extract<WorkerMessage, { type: "result" }>;
       readonly savedProfile?: ProfileState;
+      readonly progressionSaveError?: string;
     }
   | {
       readonly phase: "failure";
@@ -1116,10 +1117,9 @@ export function App({
             if (workerRef.current !== worker) return;
             appliedTerminalRewardIdsRef.current.delete(campaign.rewardId);
             presentAfterTerminal({
-              phase: "failure",
-              message:
-                "The battle ended, but its progression was not saved. Return to the checkpoint and retry.",
-              inspectionMessage:
+              phase: "result",
+              result: message,
+              progressionSaveError:
                 error instanceof Error
                   ? error.message
                   : "Progression save failed."
@@ -2504,6 +2504,12 @@ export function App({
                   <dt>Replay commands</dt>
                   <dd>{view.result.commands.length}</dd>
                 </div>
+                {view.progressionSaveError !== undefined && (
+                  <div>
+                    <dt>Progression save</dt>
+                    <dd>{view.progressionSaveError}</dd>
+                  </div>
+                )}
               </dl>
               <button
                 type="button"

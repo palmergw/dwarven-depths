@@ -48,6 +48,15 @@ const beforeBytes = await readFile(
 const afterBytes = await readFile(
   new URL(afterEvidence.screenshot, afterDirectory)
 );
+const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+if (sha256(beforeBytes) !== beforeEvidence.screenshotSha256) {
+  throw new Error(
+    "Before Forge screenshot does not match its packet checksum."
+  );
+}
+if (sha256(afterBytes) !== afterEvidence.screenshotSha256) {
+  throw new Error("After Forge screenshot does not match its packet checksum.");
+}
 const browser = await chromium.launch({ headless: true });
 let pixelDiff;
 try {

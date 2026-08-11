@@ -1047,6 +1047,50 @@ describe("run journey guidance", () => {
     expect(results).not.toHaveTextContent("spend your reward");
   });
 
+  it("preserves the authoritative result summary when terminal progression cannot be written", async () => {
+    window.history.replaceState(null, "", "/?inspection=1");
+    const worker = new ControlledJourneyWorker();
+    const store = new PersistentJourneyProfileStore();
+    const writeProfile = store.write.bind(store);
+    store.write = async (request) => {
+      if (store.writes === 0) return writeProfile(request);
+      throw new Error("IndexedDB write failed");
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => store}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    worker.emitTerminalSnapshot();
+    worker.finish();
+
+    await vi.waitFor(
+      () =>
+        expect(document.querySelector("#results-heading")).toBeInstanceOf(
+          HTMLHeadingElement
+        ),
+      { timeout: 10_000 }
+    );
+    await resultHeading("Victory results");
+    const results = document.querySelector(".results");
+    expect(results).toHaveTextContent("OutcomeFortress held");
+    expect(results).toHaveTextContent("Waves faced5");
+    expect(results).toHaveTextContent("Forge Ore earned+8");
+    expect(results).toHaveTextContent("Run balance8 Forge Ore");
+    expect(results).toHaveTextContent("ProgressionReward not saved");
+    expect(results).toHaveTextContent("this run's reward cannot be spent");
+    expect(results).toHaveTextContent("Progression saveIndexedDB write failed");
+    expect(document.querySelector("#failure-heading")).toBeNull();
+  });
+
   it("adapts terminal guidance to failure details", async () => {
     const createWorker = (): Worker =>
       new ControlledFailureWorker() as unknown as Worker;
