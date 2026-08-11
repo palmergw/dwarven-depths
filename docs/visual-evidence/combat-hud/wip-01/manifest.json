@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "label": "WIP #275 combat HUD packet",
-  "sourceHead": "8e0035595b1ba2b7e629043b912865c41d51e483",
+  "sourceHead": "915befda6410b523d187867c1c965a07ce6ecfa8",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [1440, 900],
   "settings": {
-    "reducedMotion": true,
+    "motionCoverage": ["allow", "reduce"],
     "contrast": "standard",
     "textScale": "default"
   },
@@ -13,11 +13,16 @@
     {
       "id": "wip-default-active",
       "screenshot": "wip-default-active.png",
-      "screenshotSha256": "042b14540535cc3ba7bd7a2ba6547c630042cb9e22c565d8bf1f3a63ed5e2766",
-      "tick": 3,
+      "screenshotSha256": "eb567e8ba56c5c6929c2a3562aae710c8c18c07c74929cf098042d1fee70c631",
+      "tick": 2,
       "phase": "running",
+      "motionPreference": "allow",
+      "reducedMotion": false,
       "abilityState": "ready",
-      "waveSignal": null,
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 1 1 hostile entering"
+      },
       "health": {
         "current": "240",
         "maximum": "240",
@@ -27,9 +32,11 @@
     {
       "id": "wip-default-paused",
       "screenshot": "wip-default-paused.png",
-      "screenshotSha256": "c766921ad6fdf136512c7b3208cf659c9cc0dd5b722dadf3e345abf4cb261e9e",
+      "screenshotSha256": "1135f73d29aa8486795527836d38708167a4686ff6761b38b12f4d83c8cd7260",
       "tick": 2,
       "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
       "abilityState": "ready",
       "waveSignal": {
         "kind": "wave",
@@ -44,9 +51,11 @@
     {
       "id": "wip-wave-transition",
       "screenshot": "wip-wave-transition.png",
-      "screenshotSha256": "13a4bf055897a90930535cd8714cf5e77fabd7b00a2efc4366cba0ba51b3b569",
+      "screenshotSha256": "59009bd7ae341994e0a418a501fd1bcdac6aeb8e205e84d508b2ab2b6930e562",
       "tick": 901,
       "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
       "abilityState": "ready",
       "waveSignal": {
         "kind": "wave",
@@ -61,9 +70,11 @@
     {
       "id": "wip-ability-ready",
       "screenshot": "wip-ability-ready.png",
-      "screenshotSha256": "1bfb0de6de99a808f8e75f33f57698ef7f58ac2a95fe8c62d2ce15074fb5150f",
+      "screenshotSha256": "ebe543a4d868e3a07f04744b6e21c8baa05361df5763b455e0c715613eff9cc4",
       "tick": 1822,
       "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
       "abilityState": "ready",
       "waveSignal": null,
       "health": {
@@ -75,9 +86,11 @@
     {
       "id": "wip-cooldown-status-low-health",
       "screenshot": "wip-cooldown-status-low-health.png",
-      "screenshotSha256": "daff4282e6b449b379c919e2ac1e12e8675113fa997fcff7737b1e5508cd0152",
+      "screenshotSha256": "75fd8cbe255a2fec59d91093d490a2967dd56013f6160ca0f8a47162a3c1050d",
       "tick": 1830,
       "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
       "abilityState": "cooldown",
       "waveSignal": null,
       "health": {
@@ -89,18 +102,22 @@
     {
       "id": "wip-terminal-defeat",
       "screenshot": "wip-terminal-defeat.png",
-      "screenshotSha256": "7cd85d41bd84323d69e4034e64aa70553d7fd9a3aa1fab47d433dbc5c6175637",
+      "screenshotSha256": "91d90c75da0d7ee5f5ef0b3b8db240f7d2d0241845eae48897ae89c794bc49ed",
       "tick": 1860,
       "phase": "terminal",
+      "motionPreference": null,
+      "reducedMotion": true,
       "waveSignal": null,
       "health": {}
     },
     {
       "id": "wip-high-contrast-paused",
       "screenshot": "wip-high-contrast-paused.png",
-      "screenshotSha256": "d8df428b050609551981b531b5e9c97bd1c5da9ca41871c4ba1262ba5e4fa171",
+      "screenshotSha256": "eb6c39bc2e4d4be283e21f9f5a307d55771faeee78fa80d45345fa231c9b6af4",
       "tick": 2,
       "phase": "running",
+      "motionPreference": "reduce",
+      "reducedMotion": true,
       "abilityState": "ready",
       "waveSignal": {
         "kind": "wave",
@@ -115,9 +132,11 @@
     {
       "id": "wip-large-text-paused",
       "screenshot": "wip-large-text-paused.png",
-      "screenshotSha256": "f2574847a7acea3a820d8af1ee8deb430c33d0881e9f76f89b4454428203d4d7",
+      "screenshotSha256": "73a12b87f6f517135ba39c8f8f0b97af7a043ef61882d6815e2b2fe9b9e18568",
       "tick": 2,
       "phase": "running",
+      "motionPreference": "reduce",
+      "reducedMotion": true,
       "abilityState": "ready",
       "waveSignal": {
         "kind": "wave",

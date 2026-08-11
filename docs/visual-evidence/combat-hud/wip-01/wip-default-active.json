@@ -2,12 +2,14 @@
   "schemaVersion": 1,
   "id": "wip-default-active",
   "label": "WIP #275 — wip-default-active",
-  "sourceHead": "8e0035595b1ba2b7e629043b912865c41d51e483",
+  "sourceHead": "915befda6410b523d187867c1c965a07ce6ecfa8",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-default-active.png",
-  "screenshotSha256": "042b14540535cc3ba7bd7a2ba6547c630042cb9e22c565d8bf1f3a63ed5e2766",
+  "screenshotSha256": "eb567e8ba56c5c6929c2a3562aae710c8c18c07c74929cf098042d1fee70c631",
   "viewport": [1440, 900],
   "phase": "running",
+  "motionPreference": "allow",
+  "reducedMotion": false,
   "truth": {
     "schemaVersion": 1,
     "captureReady": true,
@@ -17,7 +19,7 @@
     "snapshot": {
       "levelId": "level.shuttergate_hall",
       "mapId": "map.shuttergate_hall",
-      "tick": 3,
+      "tick": 2,
       "phase": "running"
     },
     "registry": {
@@ -68,7 +70,7 @@
           },
           "targetEntityId": "entity.dwarf.warden",
           "statusIds": [],
-          "transition": "active",
+          "transition": "spawned",
           "elite": false,
           "boss": false,
           "x": 1054,
@@ -124,8 +126,11 @@
       "valid": true
     }
   },
-  "hud": "The ShuttergateFortressHoldingWave1Hostiles1 active0 approachingCombat active. Fortress holding. Wave 1. 1 hostiles active. Iron Warden health 240 of 240.",
-  "waveSignal": null,
+  "hud": "The ShuttergateFortressHoldingWave1Hostiles1 active0 approachingWave 1 1 hostile enteringCombat active. Fortress holding. Wave 1. 1 hostiles active. Iron Warden health 240 of 240.",
+  "waveSignal": {
+    "kind": "wave",
+    "text": "Wave 1 1 hostile entering"
+  },
   "health": {
     "current": "240",
     "maximum": "240",

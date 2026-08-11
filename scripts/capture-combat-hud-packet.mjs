@@ -457,6 +457,17 @@ try {
   await browser.close();
 }
 
+if (
+  !captures.some(
+    (capture) =>
+      capture.motionPreference === "allow" && capture.reducedMotion === false
+  ) ||
+  !captures.some((capture) => capture.reducedMotion === true)
+)
+  throw new Error(
+    "combat HUD packet must contain both normal-motion and reduced-motion evidence"
+  );
+
 const manifest = {
   schemaVersion: 1,
   label: "WIP #275 combat HUD packet",
