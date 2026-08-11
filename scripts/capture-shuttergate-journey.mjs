@@ -125,9 +125,16 @@ async function waitForCheckpoint() {
 async function runAttempt(attemptNumber, expectedResult) {
   await page.getByRole("button", { name: "Begin preparation" }).click();
   await page.getByRole("button", { name: "Confirm preparation" }).click();
-  await page.getByRole("button", { name: "Pause combat" }).waitFor({
-    timeout: 20_000
-  });
+  const combatToggle = page.locator(
+    'button[aria-label="Pause combat"], button[aria-label="Resume combat"]'
+  );
+  await combatToggle.waitFor({ timeout: 20_000 });
+  if ((await combatToggle.getAttribute("aria-label")) === "Resume combat") {
+    await combatToggle.click();
+    await page
+      .getByRole("button", { name: "Pause combat" })
+      .waitFor({ timeout: 5_000 });
+  }
   const speedButton = page.getByRole("button", { name: "2× combat speed" });
   await speedButton.click();
   await page.waitForFunction(
