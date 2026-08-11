@@ -68,6 +68,7 @@ try {
           globalThis.Worker = class EvidenceWorker extends EventTarget {
             postMessage(message) {
               if (message?.type === "initialize") {
+                this.runConfiguration = message.runConfiguration;
                 this.dispatchEvent(
                   new MessageEvent("message", {
                     data: {
@@ -92,6 +93,24 @@ try {
                             terminalTick: 1,
                             finalStateChecksum: checksum,
                             eventStreamChecksum: checksum,
+                            campaign: {
+                              schemaVersion: 1,
+                              attemptId: this.runConfiguration.attemptId,
+                              rewardId: `reward.${this.runConfiguration.attemptId}`,
+                              forgeOreAwarded: 8,
+                              profile: {
+                                ...this.runConfiguration.profile,
+                                revision:
+                                  this.runConfiguration.profile.revision + 1,
+                                forgeOre:
+                                  this.runConfiguration.profile.forgeOre + 8,
+                                claimedRewardIds: [
+                                  ...this.runConfiguration.profile
+                                    .claimedRewardIds,
+                                  `reward.${this.runConfiguration.attemptId}`
+                                ]
+                              }
+                            },
                             commands: [
                               {
                                 tick: 0,
