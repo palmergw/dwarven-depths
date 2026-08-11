@@ -1191,6 +1191,9 @@ main[data-view-phase="result"] .result-message {
   padding: 0.7rem 0.9rem;
   background: #0c0907;
 }
+.result-summary div:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
 .result-summary dd {
   margin-top: 0.15rem;
   color: #f1c875;
