@@ -79,11 +79,11 @@ async function readState() {
         ? {
             fixtureId: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__.fixtureId,
             tick: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__.snapshot.tick,
-            terminalResult:
-              window.__DWARVEN_DEPTHS_TRUTH_SCREEN__.snapshot.encounter
-                ?.terminalResult ?? null
+            phase: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__.snapshot.phase
           }
         : null,
+      resultHeading:
+        document.querySelector("#results-heading")?.textContent?.trim() ?? null,
       visibleText: document.body.innerText.replaceAll(/\s+/g, " ").trim()
     };
   });
@@ -96,7 +96,9 @@ async function captureStage(id, expectedShellView) {
     state.sourceClean !== true ||
     JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
     state.shellView !== expectedShellView ||
-    !state.visibleText.toLocaleLowerCase("en-US").includes("dwarven depths")
+    !state.visibleText.toLocaleLowerCase("en-US").includes("dwarven depths") ||
+    (expectedShellView === "result" &&
+      (state.truth?.phase !== "terminal" || state.resultHeading === null))
   )
     throw new Error(`invalid journey stage ${id}: ${JSON.stringify(state)}`);
   const screenshot = `${id}.png`;
