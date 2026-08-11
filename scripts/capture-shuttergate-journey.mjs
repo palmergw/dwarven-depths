@@ -195,6 +195,14 @@ try {
   const purchaseReloadText = (await readState()).visibleText;
   if (!/Forge Ore\s*6\b/.test(purchaseReloadText))
     throw new Error("purchased build did not survive a real page reload");
+  await page.getByRole("button", { name: "Upgrade inventory" }).click();
+  await page
+    .getByRole("button", {
+      name: "Purchase Shield Slam Training rank 2 for 25 Forge Ore"
+    })
+    .waitFor();
+  await page.getByText("Rank 1/2", { exact: true }).waitFor();
+  await page.getByRole("button", { name: "Close upgrade inventory" }).click();
   await captureStage("purchased-build-reloaded-checkpoint", "checkpoint");
 
   await runAttempt(3, expectedResults[2]);

@@ -32,6 +32,7 @@
     "capture:shuttergate-journey": "node scripts/capture-shuttergate-journey.mjs",
     "capture:combat-hud": "node scripts/capture-combat-hud-packet.mjs",
     "capture:shuttergate-comparison": "uv run --with-requirements assets/game-art/layered-map-poc/requirements.lock python3 scripts/build_shuttergate_comparison.py",
+    "capture:release-closeout-comparison": "uv run --with-requirements assets/game-art/layered-map-poc/requirements.lock python3 scripts/build_release_closeout_comparisons.py",
     "test:shuttergate-alpha-integrity": "node scripts/test-shuttergate-alpha-integrity.mjs",
     "sim": "pnpm build && node apps/sim-cli/dist/cli.js",
     "sim:built": "node apps/sim-cli/dist/cli.js",
