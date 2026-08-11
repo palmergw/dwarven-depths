@@ -200,7 +200,9 @@ try {
       } else if (capture === "forge") {
         await page.getByRole("button", { name: /Upgrade inventory/ }).click();
         await page
-          .getByRole("button", { name: "Purchase rank 1 for 10 Forge Ore" })
+          .getByRole("button", {
+            name: "Purchase Shield Slam Training rank 1 for 10 Forge Ore"
+          })
           .focus();
       } else if (capture === "preparation") {
         await page.getByRole("button", { name: "Begin preparation" }).click();

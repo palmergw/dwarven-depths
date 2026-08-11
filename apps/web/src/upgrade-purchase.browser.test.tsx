@@ -91,7 +91,10 @@ describe("checkpoint upgrade purchasing", () => {
     renderWithStore(store);
 
     await userEvent.click(await button("Upgrade inventory"));
-    const purchase = await button("Purchase rank 2 for 25 Forge Ore");
+    const purchase = await button("Purchase");
+    expect(purchase).toHaveAccessibleName(
+      "Purchase Shield Slam Training rank 2 for 25 Forge Ore"
+    );
     expect(await button("Close upgrade inventory")).toHaveClass(
       "primary-action"
     );
@@ -103,7 +106,9 @@ describe("checkpoint upgrade purchasing", () => {
       "upgrade-ability-shield_slam-heading"
     );
     await vi.waitFor(() => expect(heading).toHaveFocus());
-    expect(await button("Maximum rank owned")).toBeDisabled();
+    const maximumRank = await button("Max rank");
+    expect(maximumRank).toBeDisabled();
+    expect(maximumRank).toHaveAccessibleName("Shield Slam Training, max rank");
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Rank 2/2"
     );
@@ -125,7 +130,10 @@ describe("checkpoint upgrade purchasing", () => {
     renderWithStore(store);
 
     await userEvent.click(await button("Upgrade inventory"));
-    const purchase = await button("Purchase rank 1 for 10 Forge Ore");
+    const purchase = await button("Purchase");
+    expect(purchase).toHaveAccessibleName(
+      "Purchase Shield Slam Training rank 1 for 10 Forge Ore"
+    );
     expect(purchase).toHaveAccessibleDescription(
       expect.stringContaining(
         "Rank 1 effects: +760 maximum health; +2 attack damage; +4 attack range."
@@ -137,7 +145,11 @@ describe("checkpoint upgrade purchasing", () => {
 
     await vi.waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0]?.expectedRevision).toBe(initial.profile.revision);
-    expect(await button("Saving purchase…")).toBeDisabled();
+    const saving = await button("Saving…");
+    expect(saving).toBeDisabled();
+    expect(saving).toHaveAccessibleName(
+      "Saving purchase of Shield Slam Training rank 1 for 10 Forge Ore"
+    );
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Available Forge Ore: 40"
     );
@@ -159,9 +171,7 @@ describe("checkpoint upgrade purchasing", () => {
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Rank 1: +760 maximum health; +2 attack damage; +4 attack range."
     );
-    expect(
-      await button("Purchase rank 2 for 25 Forge Ore")
-    ).toHaveAccessibleDescription(
+    expect(await button("Purchase")).toHaveAccessibleDescription(
       expect.stringContaining("Rank 2 effects: +30 maximum health.")
     );
     expect(document.querySelector(".purchase-success")?.textContent).toContain(
@@ -181,7 +191,7 @@ describe("checkpoint upgrade purchasing", () => {
     renderWithStore(store);
 
     await userEvent.click(await button("Upgrade inventory"));
-    expect(await button("Purchase rank 1 for 10 Forge Ore")).toBeEnabled();
+    expect(await button("Purchase")).toBeEnabled();
     const lockedItem = await vi.waitFor(() => {
       const candidate = document.querySelector(
         'button[aria-describedby^="upgrade-item-powder_cask-purchase-status"]'
@@ -194,7 +204,7 @@ describe("checkpoint upgrade purchasing", () => {
       document.getElementById("upgrade-item-powder_cask-purchase-status")
     ).toHaveTextContent("Requires Powder Cask.");
 
-    await userEvent.click(await button("Purchase rank 1 for 10 Forge Ore"));
+    await userEvent.click(await button("Purchase"));
     await vi.waitFor(() =>
       expect(
         document.querySelector(".purchase-failure")?.textContent
@@ -203,7 +213,7 @@ describe("checkpoint upgrade purchasing", () => {
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Available Forge Ore: 10"
     );
-    expect(await button("Purchase rank 1 for 10 Forge Ore")).toBeEnabled();
+    expect(await button("Purchase")).toBeEnabled();
 
     await page.viewport(320, 720);
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
@@ -250,7 +260,7 @@ describe("checkpoint upgrade purchasing", () => {
     renderWithStore(store);
 
     await userEvent.click(await button("Upgrade inventory"));
-    await userEvent.click(await button("Purchase rank 1 for 10 Forge Ore"));
+    await userEvent.click(await button("Purchase"));
     await vi.waitFor(() =>
       expect(
         document.querySelector(".purchase-failure")?.textContent
@@ -260,7 +270,7 @@ describe("checkpoint upgrade purchasing", () => {
       "Available Forge Ore: 30"
     );
 
-    await userEvent.click(await button("Purchase rank 2 for 25 Forge Ore"));
+    await userEvent.click(await button("Purchase"));
     await vi.waitFor(() =>
       expect(
         document.querySelector(".purchase-success")?.textContent

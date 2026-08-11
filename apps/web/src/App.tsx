@@ -2109,6 +2109,13 @@ export function App({
                       </div>
                       <button
                         type="button"
+                        aria-label={
+                          pending
+                            ? `Saving purchase of ${playerFacingName(definition.upgradeId)} rank ${state.currentRank + 1} for ${state.nextCost} Forge Ore`
+                            : state.nextCost === undefined
+                              ? `${playerFacingName(definition.upgradeId)}, max rank`
+                              : `Purchase ${playerFacingName(definition.upgradeId)} rank ${state.currentRank + 1} for ${state.nextCost} Forge Ore`
+                        }
                         aria-describedby={`${descriptionId} ${effectsId}`}
                         disabled={
                           unavailable ||
@@ -2119,10 +2126,10 @@ export function App({
                         }
                       >
                         {pending
-                          ? "Saving purchase…"
+                          ? "Saving…"
                           : state.nextCost === undefined
-                            ? "Maximum rank owned"
-                            : `Purchase rank ${state.currentRank + 1} for ${state.nextCost} Forge Ore`}
+                            ? "Max rank"
+                            : "Purchase"}
                       </button>
                     </section>
                   );

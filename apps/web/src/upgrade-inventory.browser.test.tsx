@@ -161,12 +161,15 @@ describe("checkpoint upgrade inventory", () => {
     expect(tiles[0]).toHaveTextContent("10 Forge Ore");
     expect(tiles[1]).toHaveTextContent("Unavailable");
 
-    const availablePurchase = await button("Purchase rank 1 for 10 Forge Ore");
+    const availablePurchase = await button("Purchase");
     const availableDisclosure = tiles[0]?.querySelector<HTMLElement>(
       ".upgrade-disclosure"
     );
     expect(availablePurchase).toHaveAccessibleDescription(
       expect.stringContaining("Rank 1 effects")
+    );
+    expect(availablePurchase).toHaveAccessibleName(
+      "Purchase Shield Slam Training rank 1 for 10 Forge Ore"
     );
     expect(availableDisclosure).toHaveStyle({ opacity: "0" });
     availablePurchase.focus();

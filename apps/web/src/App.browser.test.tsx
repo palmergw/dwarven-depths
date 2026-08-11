@@ -4447,9 +4447,7 @@ describe("authoritative Shuttergate campaign journey", () => {
     await returnToCheckpoint();
     expect(document.body.textContent).toContain("Forge Ore16");
     await userEvent.click(await buttonWithText("Upgrade inventory"));
-    await userEvent.click(
-      await buttonWithText("Purchase rank 1 for 10 Forge Ore")
-    );
+    await userEvent.click(await buttonWithText("Purchase"));
     await vi.waitFor(() => {
       expect(document.body.textContent).toContain("Available Forge Ore: 6");
       expect(document.body.textContent).toContain("Rank 1/2");
