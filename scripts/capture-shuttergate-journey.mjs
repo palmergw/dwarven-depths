@@ -96,7 +96,7 @@ async function captureStage(id, expectedShellView) {
     state.sourceClean !== true ||
     JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
     state.shellView !== expectedShellView ||
-    !state.visibleText.includes("Dwarven Depths")
+    !state.visibleText.toLocaleLowerCase("en-US").includes("dwarven depths")
   )
     throw new Error(`invalid journey stage ${id}: ${JSON.stringify(state)}`);
   const screenshot = `${id}.png`;
