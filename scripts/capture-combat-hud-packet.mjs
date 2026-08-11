@@ -108,6 +108,11 @@ async function capture(page, id, expected) {
     viewport: [window.innerWidth, window.innerHeight],
     truth: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__,
     phase: document.querySelector("main")?.getAttribute("data-view-phase"),
+    motionPreference: localStorage.getItem(
+      "dwarven-depths.presentation.motion-preference.v1"
+    ),
+    reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)")
+      .matches,
     hud: document
       .querySelector(".combat-hud")
       ?.textContent?.replace(/\s+/g, " ")
@@ -229,6 +234,8 @@ async function capture(page, id, expected) {
     screenshotSha256: sha256(screenshotBytes),
     viewport: state.viewport,
     phase: state.phase,
+    motionPreference: state.motionPreference,
+    reducedMotion: state.reducedMotion,
     truth,
     hud: state.hud,
     waveSignal: state.waveSignal,
@@ -281,12 +288,12 @@ async function startFrozenActiveCombatPage(browser) {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1,
-    reducedMotion: "reduce"
+    reducedMotion: "no-preference"
   });
   await page.addInitScript(() => {
     localStorage.setItem(
       "dwarven-depths.presentation.motion-preference.v1",
-      "reduce"
+      "allow"
     );
   });
   await page.goto(baseUrl, { waitUntil: "networkidle" });
@@ -457,7 +464,7 @@ const manifest = {
   fixtureId,
   viewport: [1440, 900],
   settings: {
-    reducedMotion: true,
+    motionCoverage: ["allow", "reduce"],
     contrast: "standard",
     textScale: "default"
   },
@@ -467,6 +474,8 @@ const manifest = {
     screenshotSha256: capture.screenshotSha256,
     tick: capture.truth.snapshot.tick,
     phase: capture.truth.snapshot.phase,
+    motionPreference: capture.motionPreference,
+    reducedMotion: capture.reducedMotion,
     abilityState: capture.ability.state,
     waveSignal: capture.waveSignal,
     health: capture.health

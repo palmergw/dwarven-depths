@@ -438,6 +438,9 @@ export function App({
   const [pendingTargetPolicies, setPendingTargetPolicies] = useState<
     ReadonlyMap<string, TargetPolicy>
   >(new Map());
+  const [pendingSimulationSpeed, setPendingSimulationSpeed] = useState<
+    SimulationSpeed | undefined
+  >();
   const [rejectedAbilityKeys, setRejectedAbilityKeys] = useState<
     ReadonlySet<string>
   >(new Set());
@@ -491,6 +494,9 @@ export function App({
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
+  const pendingSimulationSpeedRef = useRef<SimulationSpeed | undefined>(
+    undefined
+  );
   const latestCombatControlsTickRef = useRef(-1);
   const pendingAbilityKeysRef = useRef(
     new Map<
@@ -1019,6 +1025,13 @@ export function App({
               "Worker resume command failed."
             );
           }
+          if (
+            message.protocolVersion === 4 &&
+            pendingSimulationSpeedRef.current === message.simulationSpeed
+          ) {
+            pendingSimulationSpeedRef.current = undefined;
+            setPendingSimulationSpeed(undefined);
+          }
         }
         setView(
           message.phase === "preparation"
@@ -1167,6 +1180,8 @@ export function App({
     initializedRef.current = false;
     submittedRef.current = false;
     manualPauseRequestedRef.current = undefined;
+    pendingSimulationSpeedRef.current = undefined;
+    setPendingSimulationSpeed(undefined);
     runStartingProfileRef.current = undefined;
     latestRenderSnapshotRef.current = undefined;
     terminalPresentationDeadlineRef.current = 0;
@@ -1208,17 +1223,29 @@ export function App({
 
   const setSimulationSpeed = useCallback(
     (speed: SimulationSpeed): void => {
-      if (view.phase !== "running" || view.simulationSpeed === speed) return;
+      if (
+        view.phase !== "running" ||
+        view.simulationSpeed === speed ||
+        pendingSimulationSpeedRef.current !== undefined
+      )
+        return;
+      pendingSimulationSpeedRef.current = speed;
+      setPendingSimulationSpeed(speed);
       uiSoundPlayerRef.current?.playCue("speed");
-      postCurrentWorkerMessage(
-        {
-          protocolVersion: WEB_PROTOCOL_VERSION,
-          type: "command",
-          requestId: crypto.randomUUID(),
-          command: { type: "setSimulationSpeed", speed }
-        },
-        "Worker combat-speed command failed."
-      );
+      if (
+        !postCurrentWorkerMessage(
+          {
+            protocolVersion: WEB_PROTOCOL_VERSION,
+            type: "command",
+            requestId: crypto.randomUUID(),
+            command: { type: "setSimulationSpeed", speed }
+          },
+          "Worker combat-speed command failed."
+        )
+      ) {
+        pendingSimulationSpeedRef.current = undefined;
+        setPendingSimulationSpeed(undefined);
+      }
     },
     [postCurrentWorkerMessage, view]
   );
@@ -1705,7 +1732,11 @@ export function App({
             >
               <span aria-hidden="true">{view.manualPaused ? "▶" : "Ⅱ"}</span>
             </button>
-            <fieldset className="combat-speed">
+            <fieldset
+              className="combat-speed"
+              aria-busy={pendingSimulationSpeed !== undefined}
+              data-pending-speed={pendingSimulationSpeed}
+            >
               <legend className="visually-hidden">Combat speed</legend>
               {([1, 2] as const).map((speed) => (
                 <button
@@ -1714,7 +1745,10 @@ export function App({
                   aria-label={`${speed}× combat speed`}
                   aria-keyshortcuts={speed === 1 ? "-" : "+"}
                   aria-pressed={view.simulationSpeed === speed}
-                  disabled={view.simulationSpeed === speed}
+                  disabled={
+                    view.simulationSpeed === speed ||
+                    pendingSimulationSpeed !== undefined
+                  }
                   onClick={() => setSimulationSpeed(speed)}
                 >
                   {speed}×

@@ -565,6 +565,7 @@ class ControlledTargetPolicyWorker {
   readonly targetPolicyCommands: string[] = [];
   readonly abilityCommands: string[] = [];
   readonly speedCommands: number[] = [];
+  acknowledgeSpeedCommands = true;
   lastTargetPolicyRequestId: string | undefined;
   lastAbilityRequestId: string | undefined;
 
@@ -647,15 +648,20 @@ class ControlledTargetPolicyWorker {
       candidate.command.speed !== undefined
     ) {
       this.speedCommands.push(candidate.command.speed);
-      this.emit({
-        protocolVersion: 4,
-        type: "snapshot",
-        phase: "running",
-        manualPaused: true,
-        resumeRequestId: null,
-        simulationSpeed: candidate.command.speed
-      });
+      if (this.acknowledgeSpeedCommands)
+        this.emitSpeed(candidate.command.speed as 1 | 2);
     }
+  }
+
+  emitSpeed(speed: 1 | 2): void {
+    this.emit({
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "running",
+      manualPaused: true,
+      resumeRequestId: null,
+      simulationSpeed: speed
+    });
   }
 
   emitControls(
@@ -1778,6 +1784,47 @@ describe("semantic combat controls", () => {
     expect(
       document.querySelector(".combat-keyboard-hints")?.textContent
     ).toContain("Esc pause · 1 Shield Slam · −/+ speed · portrait targeting");
+  });
+
+  it("binds speed controls to one pending authoritative acknowledgement", async () => {
+    const worker = new ControlledTargetPolicyWorker();
+    worker.acknowledgeSpeedCommands = false;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector('button[aria-label="2× combat speed"]')
+      ).toBeEnabled()
+    );
+    const doubleSpeed = document.querySelector(
+      'button[aria-label="2× combat speed"]'
+    ) as HTMLButtonElement;
+    doubleSpeed.click();
+    doubleSpeed.click();
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "+" }));
+    await vi.waitFor(() => expect(doubleSpeed).toBeDisabled());
+
+    expect(worker.speedCommands).toEqual([2]);
+    expect(document.querySelector(".combat-speed")).toHaveAttribute(
+      "aria-busy",
+      "true"
+    );
+    expect(doubleSpeed).toBeDisabled();
+
+    worker.emitSpeed(2);
+    await vi.waitFor(() =>
+      expect(document.querySelector(".combat-speed")).toHaveAttribute(
+        "aria-busy",
+        "false"
+      )
+    );
+    await userEvent.keyboard("-");
+    expect(worker.speedCommands).toEqual([2, 1]);
   });
 
   it("unlocks only the control bound to a rejected command and permits retry", async () => {
