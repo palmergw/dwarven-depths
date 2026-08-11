@@ -1240,7 +1240,7 @@ export function App({
             requestId: crypto.randomUUID(),
             command: { type: "setSimulationSpeed", speed }
           },
-          "Worker combat-speed command failed."
+          "Speed failed."
         )
       ) {
         pendingSimulationSpeedRef.current = undefined;
@@ -1732,11 +1732,7 @@ export function App({
             >
               <span aria-hidden="true">{view.manualPaused ? "▶" : "Ⅱ"}</span>
             </button>
-            <fieldset
-              className="combat-speed"
-              aria-busy={pendingSimulationSpeed !== undefined}
-              data-pending-speed={pendingSimulationSpeed}
-            >
+            <fieldset className="combat-speed">
               <legend className="visually-hidden">Combat speed</legend>
               {([1, 2] as const).map((speed) => (
                 <button

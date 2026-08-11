@@ -1810,18 +1810,16 @@ describe("semantic combat controls", () => {
     await vi.waitFor(() => expect(doubleSpeed).toBeDisabled());
 
     expect(worker.speedCommands).toEqual([2]);
-    expect(document.querySelector(".combat-speed")).toHaveAttribute(
-      "aria-busy",
-      "true"
-    );
     expect(doubleSpeed).toBeDisabled();
+    expect(
+      document.querySelector('button[aria-label="1× combat speed"]')
+    ).toBeDisabled();
 
     worker.emitSpeed(2);
     await vi.waitFor(() =>
-      expect(document.querySelector(".combat-speed")).toHaveAttribute(
-        "aria-busy",
-        "false"
-      )
+      expect(
+        document.querySelector('button[aria-label="1× combat speed"]')
+      ).toBeEnabled()
     );
     await userEvent.keyboard("-");
     expect(worker.speedCommands).toEqual([2, 1]);
