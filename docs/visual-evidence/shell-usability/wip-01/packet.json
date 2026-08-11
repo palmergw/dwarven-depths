@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceHead": "cfdb8af440918538165cfe48646aa3ebb77ad3c8",
+  "sourceHead": "db6cff9cd8dc5aa5c08a9de3d7536c4da9838154",
   "capture": {
     "browser": "chromium",
     "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
@@ -15,7 +15,7 @@
       "screenshot": "desktop-checkpoint.png",
       "screenshotSha256": "439f7582538c5c8dd5f6921241e7e105d6af769a168b2de586c1fea17fe1c143",
       "state": {
-        "sourceHead": "cfdb8af440918538165cfe48646aa3ebb77ad3c8",
+        "sourceHead": "db6cff9cd8dc5aa5c08a9de3d7536c4da9838154",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -47,7 +47,7 @@
       "screenshot": "desktop-settings.png",
       "screenshotSha256": "ddf4eb1a1c8da00b03d24a6637128d40a2ec577383ef5b7d49672ee701082428",
       "state": {
-        "sourceHead": "cfdb8af440918538165cfe48646aa3ebb77ad3c8",
+        "sourceHead": "db6cff9cd8dc5aa5c08a9de3d7536c4da9838154",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -77,7 +77,7 @@
       "screenshot": "desktop-forge.png",
       "screenshotSha256": "eb48de907eae2f9b88fe510bda266993a8b82b3b293578d4ac7b6492541ace42",
       "state": {
-        "sourceHead": "cfdb8af440918538165cfe48646aa3ebb77ad3c8",
+        "sourceHead": "db6cff9cd8dc5aa5c08a9de3d7536c4da9838154",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -109,7 +109,7 @@
       "screenshot": "desktop-preparation.png",
       "screenshotSha256": "1efc1e06f04d801c961061016febb1070657bece6d1f8da71e3b3f88ba3a1f09",
       "state": {
-        "sourceHead": "cfdb8af440918538165cfe48646aa3ebb77ad3c8",
+        "sourceHead": "db6cff9cd8dc5aa5c08a9de3d7536c4da9838154",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -139,7 +139,7 @@
       "screenshot": "desktop-result.png",
       "screenshotSha256": "48f10ea9f2a67159be1d166a1ddd1a0f3d0f23b69be712d185f29e6a5f34484c",
       "state": {
-        "sourceHead": "cfdb8af440918538165cfe48646aa3ebb77ad3c8",
+        "sourceHead": "db6cff9cd8dc5aa5c08a9de3d7536c4da9838154",
         "sourceClean": true,
         "viewport": [
           1440,
@@ -169,7 +169,7 @@
       "screenshot": "desktop-failure.png",
       "screenshotSha256": "03542e71d57ead5813eafb895984776c89642f7ed62592f05b57edd094d73892",
       "state": {
-        "sourceHead": "cfdb8af440918538165cfe48646aa3ebb77ad3c8",
+        "sourceHead": "db6cff9cd8dc5aa5c08a9de3d7536c4da9838154",
         "sourceClean": true,
         "viewport": [
           1440,
