@@ -12,7 +12,7 @@ const outputDirectory = process.env.DD_SHELL_PACKET_OUTPUT_DIRECTORY
   ? pathToFileURL(
       `${process.env.DD_SHELL_PACKET_OUTPUT_DIRECTORY.replace(/\/$/, "")}/`
     )
-  : new URL("../docs/visual-evidence/concept-shell/wip-03/", import.meta.url);
+  : new URL("../docs/visual-evidence/shell-usability/wip-01/", import.meta.url);
 const { stdout: trackedStatus } = await execFile(
   "git",
   ["status", "--porcelain=v1", "--untracked-files=no"],

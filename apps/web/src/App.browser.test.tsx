@@ -817,6 +817,13 @@ describe("run journey guidance", () => {
         "upcoming"
       ])
     );
+    const preparation = document.querySelector(".preparation-summary");
+    expect(preparation).toHaveTextContent("Fixed tutorial deployment");
+    expect(preparation).toHaveTextContent(
+      "There is no placement choice in this tutorial defence."
+    );
+    expect(preparation).toHaveTextContent("North approach · locked");
+    expect(preparation?.textContent).not.toContain("placement points");
 
     await userEvent.click(await buttonWithText("Confirm preparation"));
     await buttonWithText("Pause combat");
@@ -851,6 +858,14 @@ describe("run journey guidance", () => {
     ]);
     expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
       "download its authoritative run evidence"
+    );
+    const summary = document.querySelector(".result-summary");
+    expect(summary).toHaveAccessibleName("Expedition summary");
+    expect(summary).toHaveTextContent("OutcomeFortress held");
+    expect(summary).toHaveTextContent("Forge Ore earned+8");
+    expect(summary).toHaveTextContent("New balance8 Forge Ore");
+    expect(document.querySelector(".results")).toHaveTextContent(
+      "spend your reward and muster the next defence"
     );
   });
 
@@ -975,7 +990,7 @@ describe("run journey guidance", () => {
       expect(candidate).toBeInstanceOf(HTMLHeadingElement);
       return candidate as HTMLHeadingElement;
     });
-    expect(failure).toHaveTextContent("Run failed");
+    expect(failure).toHaveTextContent("The company must regroup");
     expect(failure.closest("section")).toHaveTextContent(
       "The expedition could not continue. Return to the checkpoint and try again."
     );
@@ -4116,9 +4131,11 @@ describe("authoritative web worker", () => {
     expect(preparationSummary?.textContent).toContain(
       "DefenceShuttergate Hall"
     );
-    expect(preparationSummary?.textContent).toContain("Company roster1 dwarf");
     expect(preparationSummary?.textContent).toContain(
-      "DeploymentFixed tutorial guard post"
+      "CompanyIron Warden ready"
+    );
+    expect(preparationSummary?.textContent).toContain(
+      "Guard postNorth approach · locked"
     );
     const button = document.querySelector("button");
     if (button === null) throw new Error("expected preparation button");
@@ -4399,8 +4416,8 @@ describe("authoritative Shuttergate campaign journey", () => {
     await buttonWithText("Pause combat");
     workers.at(-1)?.finish(8, "victory");
     await resultHeading("Victory results");
-    expect(document.body.textContent).toContain(
-      "Forge award: 8 ore. Company balance: 14 Forge Ore."
+    expect(document.querySelector(".result-summary")).toHaveTextContent(
+      "Forge Ore earned+8New balance14 Forge Ore"
     );
     expect(store.envelope?.profile).toMatchObject({
       forgeOre: 14,

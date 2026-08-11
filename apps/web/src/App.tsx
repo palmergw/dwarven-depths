@@ -207,10 +207,14 @@ function isolateDialogFromSiblings(dialog: HTMLElement): () => void {
     (element): element is HTMLElement =>
       element instanceof HTMLElement && element !== dialog
   );
-  const priorInertValues = siblings.map((element) => element.inert);
-  for (const element of siblings) element.inert = true;
+  const isolatedElements = siblings.flatMap((element) => [
+    element,
+    ...element.querySelectorAll<HTMLElement>(panelFocusableSelector)
+  ]);
+  const priorInertValues = isolatedElements.map((element) => element.inert);
+  for (const element of isolatedElements) element.inert = true;
   return () => {
-    for (const [index, element] of siblings.entries())
+    for (const [index, element] of isolatedElements.entries())
       element.inert = priorInertValues[index] ?? false;
   };
 }
@@ -1779,26 +1783,37 @@ export function App({
             <CombatHud snapshot={renderSnapshot} />
           )}
         {view.phase === "preparation" && (
-          <dl className="preparation-summary" aria-label="Preparation summary">
-            <div>
-              <dt>Defence</dt>
-              <dd>Shuttergate Hall</dd>
-            </div>
-            <div>
-              <dt>Company roster</dt>
-              <dd>
-                {view.deployableEntityCount === 0
-                  ? "Empty — no dwarves require placement"
-                  : view.deployableEntityCount === 1
-                    ? "1 dwarf"
-                    : `${view.deployableEntityCount} dwarves`}
-              </dd>
-            </div>
-            <div>
-              <dt>Deployment</dt>
-              <dd>Fixed tutorial guard post</dd>
-            </div>
-          </dl>
+          <section
+            className="preparation-summary"
+            aria-labelledby="preparation-heading"
+          >
+            <p className="preparation-kicker">Fixed tutorial deployment</p>
+            <h3 id="preparation-heading">Hold the north guard post</h3>
+            <p className="preparation-orders">
+              The Iron Warden deploys automatically at the marked guard post.
+              There is no placement choice in this tutorial defence.
+            </p>
+            <dl aria-label="Preparation summary">
+              <div>
+                <dt>Defence</dt>
+                <dd>Shuttergate Hall</dd>
+              </div>
+              <div>
+                <dt>Company</dt>
+                <dd>
+                  {view.deployableEntityCount === 0
+                    ? "Iron Warden assigned"
+                    : view.deployableEntityCount === 1
+                      ? "Iron Warden ready"
+                      : `${view.deployableEntityCount} dwarves ready`}
+                </dd>
+              </div>
+              <div>
+                <dt>Guard post</dt>
+                <dd>North approach · locked</dd>
+              </div>
+            </dl>
+          </section>
         )}
         <div
           className="status"
@@ -1840,72 +1855,95 @@ export function App({
             aria-labelledby="presentation-settings-heading"
             onKeyDown={containPanelFocus}
           >
+            <p className="settings-kicker">Pause & accessibility</p>
             <h3
               id="presentation-settings-heading"
               ref={settingsHeadingRef}
               tabIndex={-1}
             >
-              Presentation settings
+              Game settings
             </h3>
-            <label htmlFor="motion-preference">Motion preference</label>
-            <select
-              id="motion-preference"
-              value={motionPreference}
-              onChange={(event) => {
-                const preference = event.currentTarget.value;
-                if (!isMotionPreference(preference)) return;
-                setMotionPreference(preference);
-                storeMotionPreference(preference);
-              }}
-            >
-              <option value="device">Use device setting</option>
-              <option value="reduce">Reduce motion</option>
-              <option value="allow">Allow motion</option>
-            </select>
-            <label htmlFor="text-scale">Text size</label>
-            <select
-              id="text-scale"
-              value={textScale}
-              onChange={(event) => {
-                const scale = event.currentTarget.value;
-                if (!isTextScale(scale)) return;
-                setTextScale(scale);
-                storeTextScale(scale);
-              }}
-            >
-              <option value="default">Default</option>
-              <option value="large">Large</option>
-              <option value="extra-large">Extra large</option>
-            </select>
-            <label htmlFor="contrast-preference">Contrast</label>
-            <select
-              id="contrast-preference"
-              value={contrastPreference}
-              onChange={(event) => {
-                const preference = event.currentTarget.value;
-                if (!isContrastPreference(preference)) return;
-                setContrastPreference(preference);
-                storeContrastPreference(preference);
-              }}
-            >
-              <option value="standard">Standard</option>
-              <option value="high">High contrast</option>
-            </select>
-            <label htmlFor="sound-preference">Sound effects</label>
-            <select
-              id="sound-preference"
-              value={soundPreference}
-              onChange={(event) => {
-                const preference = event.currentTarget.value;
-                if (!isSoundPreference(preference)) return;
-                setSoundPreference(preference);
-                storeSoundPreference(preference);
-              }}
-            >
-              <option value="off">Off</option>
-              <option value="quiet">Quiet</option>
-              <option value="on">On</option>
-            </select>
+            <div className="settings-grid">
+              <label htmlFor="motion-preference">
+                <span className="settings-label-title">Motion</span>
+                <small className="settings-label-help">
+                  Control movement and transition animation.
+                </small>
+              </label>
+              <select
+                id="motion-preference"
+                value={motionPreference}
+                onChange={(event) => {
+                  const preference = event.currentTarget.value;
+                  if (!isMotionPreference(preference)) return;
+                  setMotionPreference(preference);
+                  storeMotionPreference(preference);
+                }}
+              >
+                <option value="device">Use device setting</option>
+                <option value="reduce">Reduce motion</option>
+                <option value="allow">Allow motion</option>
+              </select>
+              <label htmlFor="text-scale">
+                <span className="settings-label-title">Text size</span>
+                <small className="settings-label-help">
+                  Enlarge all player-facing labels and controls.
+                </small>
+              </label>
+              <select
+                id="text-scale"
+                value={textScale}
+                onChange={(event) => {
+                  const scale = event.currentTarget.value;
+                  if (!isTextScale(scale)) return;
+                  setTextScale(scale);
+                  storeTextScale(scale);
+                }}
+              >
+                <option value="default">Default</option>
+                <option value="large">Large</option>
+                <option value="extra-large">Extra large</option>
+              </select>
+              <label htmlFor="contrast-preference">
+                <span className="settings-label-title">Contrast</span>
+                <small className="settings-label-help">
+                  Strengthen borders and remove decorative shading.
+                </small>
+              </label>
+              <select
+                id="contrast-preference"
+                value={contrastPreference}
+                onChange={(event) => {
+                  const preference = event.currentTarget.value;
+                  if (!isContrastPreference(preference)) return;
+                  setContrastPreference(preference);
+                  storeContrastPreference(preference);
+                }}
+              >
+                <option value="standard">Standard</option>
+                <option value="high">High contrast</option>
+              </select>
+              <label htmlFor="sound-preference">
+                <span className="settings-label-title">Sound mix</span>
+                <small className="settings-label-help">
+                  Choose silence, a quiet mix, or the full mix.
+                </small>
+              </label>
+              <select
+                id="sound-preference"
+                value={soundPreference}
+                onChange={(event) => {
+                  const preference = event.currentTarget.value;
+                  if (!isSoundPreference(preference)) return;
+                  setSoundPreference(preference);
+                  storeSoundPreference(preference);
+                }}
+              >
+                <option value="off">Off</option>
+                <option value="quiet">Quiet mix</option>
+                <option value="on">Full mix</option>
+              </select>
+            </div>
             <p className="settings-help">
               These preferences affect presentation only and never change the
               expedition outcome. Sound is off until you opt in.
@@ -1931,26 +1969,39 @@ export function App({
                   : containPanelFocus
               }
             >
-              <h3
-                id="upgrade-inventory-heading"
-                ref={upgradeInventoryHeadingRef}
-                tabIndex={-1}
-              >
-                Ancestral Forge
-              </h3>
-              <button
-                className="primary-action forge-return"
-                type="button"
-                onClick={() => {
-                  setUpgradePurchaseStatus({ kind: "idle" });
-                  setRecycleConfirmationOpen(false);
-                  setSkillRecycleConfirmationOpen(false);
-                  setUpgradeInventoryOpen(false);
-                }}
-              >
-                Close upgrade inventory
-              </button>
-              <p>Available Forge Ore: {checkpointProfile.profile.forgeOre}</p>
+              <header className="forge-toolbar">
+                <div>
+                  <p className="forge-kicker">Company workshop</p>
+                  <h3
+                    id="upgrade-inventory-heading"
+                    ref={upgradeInventoryHeadingRef}
+                    tabIndex={-1}
+                  >
+                    Ancestral Forge
+                  </h3>
+                </div>
+                <p className="forge-balance">
+                  <span>Available Forge Ore:</span>{" "}
+                  <strong>{checkpointProfile.profile.forgeOre}</strong>
+                </p>
+                <button
+                  className="primary-action forge-return"
+                  type="button"
+                  onClick={() => {
+                    setUpgradePurchaseStatus({ kind: "idle" });
+                    setRecycleConfirmationOpen(false);
+                    setSkillRecycleConfirmationOpen(false);
+                    setUpgradeInventoryOpen(false);
+                  }}
+                >
+                  Close upgrade inventory
+                </button>
+              </header>
+              <p className="forge-resource-guide">
+                Defend Shuttergate to earn Forge Ore. Spend it here on permanent
+                company training. Item reinforcements unlock only after that
+                item joins the company inventory.
+              </p>
               {checkpointProfile.profile.purchasedUpgrades.length === 0 ? (
                 <p>No upgrades purchased.</p>
               ) : (
@@ -2307,6 +2358,11 @@ export function App({
         )}
         {view.phase === "result" && (
           <section className="results" aria-labelledby="results-heading">
+            <p className="result-kicker">
+              {view.result.terminalResult === "victory"
+                ? "Shuttergate secured"
+                : "The line is broken"}
+            </p>
             <h3 id="results-heading" ref={resultHeadingRef} tabIndex={-1}>
               {view.result.terminalResult === "victory"
                 ? "Victory results"
@@ -2317,17 +2373,52 @@ export function App({
                 ? "Shuttergate stands. The company returns to the forge."
                 : "Shuttergate has fallen. Rally the company and return stronger."}
             </p>
-            {view.result.protocolVersion === 4 &&
-              view.result.campaign !== undefined && (
-                <p className="result-reward">
-                  Forge award: {view.result.campaign.forgeOreAwarded} ore.
-                  Company balance:{" "}
-                  {(view.savedProfile ?? view.result.campaign.profile).forgeOre}{" "}
-                  Forge Ore.
-                </p>
+            <dl className="result-summary" aria-label="Expedition summary">
+              <div>
+                <dt>Outcome</dt>
+                <dd>
+                  {view.result.terminalResult === "victory"
+                    ? "Fortress held"
+                    : "Company withdrew"}
+                </dd>
+              </div>
+              {renderSnapshot?.schemaVersion === 2 && (
+                <div>
+                  <dt>Waves faced</dt>
+                  <dd>{renderSnapshot.encounter.startedWaveIds.length}</dd>
+                </div>
               )}
+              {view.result.protocolVersion === 4 &&
+                view.result.campaign !== undefined && (
+                  <>
+                    <div>
+                      <dt>Forge Ore earned</dt>
+                      <dd>+{view.result.campaign.forgeOreAwarded}</dd>
+                    </div>
+                    <div>
+                      <dt>New balance</dt>
+                      <dd>
+                        {
+                          (view.savedProfile ?? view.result.campaign.profile)
+                            .forgeOre
+                        }{" "}
+                        Forge Ore
+                      </dd>
+                    </div>
+                  </>
+                )}
+            </dl>
+            <p className="result-next-step">
+              {view.result.terminalResult === "victory"
+                ? "Return to the checkpoint to spend your reward and muster the next defence."
+                : "Return to the checkpoint, strengthen the Warden at the Forge, and try again."}
+            </p>
             <div className="result-actions">
-              <button type="button" onClick={returnToCheckpoint}>
+              <button
+                className="primary-action"
+                type="button"
+                onClick={returnToCheckpoint}
+              >
                 Return to checkpoint
               </button>
             </div>
@@ -2378,12 +2469,21 @@ export function App({
         )}
         {view.phase === "failure" && (
           <section className="results" aria-labelledby="failure-heading">
+            <p className="result-kicker">Expedition interrupted</p>
             <h3 id="failure-heading" ref={failureHeadingRef} tabIndex={-1}>
-              Run failed
+              The company must regroup
             </h3>
-            <p>{view.message}</p>
+            <p className="result-message">{view.message}</p>
+            <p className="result-next-step">
+              No reward was applied. Return safely to the checkpoint and begin
+              again when the company is ready.
+            </p>
             <div className="result-actions">
-              <button type="button" onClick={returnToCheckpoint}>
+              <button
+                className="primary-action"
+                type="button"
+                onClick={returnToCheckpoint}
+              >
                 Return to checkpoint
               </button>
             </div>
