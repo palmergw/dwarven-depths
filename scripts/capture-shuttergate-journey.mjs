@@ -173,7 +173,7 @@ try {
   await page.reload({ waitUntil: "networkidle" });
   await waitForCheckpoint();
   const firstReloadText = (await readState()).visibleText;
-  if (!firstReloadText.includes("Forge Ore8"))
+  if (!/Forge Ore\s*8\b/.test(firstReloadText))
     throw new Error("first reward did not survive a real page reload");
   await captureStage("attempt-1-reloaded-checkpoint", "checkpoint");
 
@@ -191,13 +191,13 @@ try {
   await page.reload({ waitUntil: "networkidle" });
   await waitForCheckpoint();
   const purchaseReloadText = (await readState()).visibleText;
-  if (!purchaseReloadText.includes("Forge Ore6"))
+  if (!/Forge Ore\s*6\b/.test(purchaseReloadText))
     throw new Error("purchased build did not survive a real page reload");
   await captureStage("purchased-build-reloaded-checkpoint", "checkpoint");
 
   await runAttempt(3, expectedResults[2]);
   const finalText = (await readState()).visibleText;
-  if (!finalText.includes("New balance14 Forge Ore"))
+  if (!/New balance\s*14 Forge Ore\b/.test(finalText))
     throw new Error(
       "victory reward summary is not bound to the persisted profile"
     );
