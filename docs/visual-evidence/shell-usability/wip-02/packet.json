@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "42c2603381462f694aa43040e1152a1a671094b0",
+  "capture": {
+    "browser": "chromium",
+    "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
+    "deviceScaleFactor": 1,
+    "reducedMotion": true,
+    "waitCondition": "networkidle-profile-ready-images-complete"
+  },
+  "evidence": [
+    {
+      "viewportName": "desktop",
+      "capture": "forge",
+      "screenshot": "desktop-forge.png",
+      "screenshotSha256": "c54f4e5f15a082a7627e6f173052ffcfeaa63f0fbf47569de7a3796d024e7aa3",
+      "state": {
+        "sourceHead": "42c2603381462f694aa43040e1152a1a671094b0",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "checkpoint",
+        "shellView": "forge",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [
+          1440,
+          900
+        ],
+        "panelScroll": [
+          1278,
+          718
+        ],
+        "visibleButtonNames": [
+          "Close upgrade inventory",
+          "Purchase rank 1 for 10 Forge Ore",
+          "Purchase rank 1 for 15 Forge Ore"
+        ]
+      }
+    }
+  ]
+}

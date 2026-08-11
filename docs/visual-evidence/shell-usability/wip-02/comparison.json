@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "decision": "Replace verbose Forge cards with compact icon-led tiles and focus/hover disclosure.",
+  "fixedState": {
+    "viewport": [
+      1440,
+      900
+    ],
+    "phase": "checkpoint",
+    "shellView": "forge",
+    "reducedMotion": true,
+    "deviceScaleFactor": 1
+  },
+  "before": {
+    "sourceHead": "b3c62fef2162187569d4425819249523a62ea62e",
+    "screenshot": "../wip-01/desktop-forge.png",
+    "screenshotSha256": "eb48de907eae2f9b88fe510bda266993a8b82b3b293578d4ac7b6492541ace42"
+  },
+  "after": {
+    "sourceHead": "42c2603381462f694aa43040e1152a1a671094b0",
+    "screenshot": "desktop-forge.png",
+    "screenshotSha256": "c54f4e5f15a082a7627e6f173052ffcfeaa63f0fbf47569de7a3796d024e7aa3"
+  },
+  "pixelDiff": {
+    "dimensions": [
+      1440,
+      900
+    ],
+    "changedPixelCount": 273346,
+    "changedPixelRatio": 0.21091512345679012,
+    "meanAbsoluteChannelDelta": 0.01367025614258049
+  },
+  "comparisonScreenshot": "forge-before-after.png",
+  "comparisonScreenshotSha256": "f114ef7c795a017e57a534d5f73cbd0155f129ca58727173d4ad27d779740311"
+}
