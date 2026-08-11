@@ -79,8 +79,8 @@ function validSamples() {
   return samples;
 }
 
-const committedExpectations = {
-  sourceHead: "c097a142ffb31c8ac506d6f5213105187ff0d204",
+const currentCommittedExpectations = {
+  sourceHead: "8d7be886382c931959d4b2c9eef028cf94b75096",
   transitionTicks: { "entity.enemy.shuttergate_001": 89 }
 };
 
@@ -260,18 +260,25 @@ describe("running-client battlefield motion evidence", () => {
   });
 
   it("independently verifies the committed video and sidecar derivations", async () => {
-    const directory = "docs/visual-evidence/release-closeout/wip-02/clip";
+    const directory = "docs/visual-evidence/release-closeout/wip-03/motion";
+    for (const motion of ["normal-motion", "reduced-motion"]) {
+      const evidence = JSON.parse(
+        await readFile(`${directory}/shuttergate-${motion}-clip.json`, "utf8")
+      );
+      const videoBytes = await readFile(`${directory}/${evidence.video}`);
+      expect(
+        validateBattlefieldMotionEvidence(
+          evidence,
+          videoBytes,
+          currentCommittedExpectations
+        )
+      ).toMatchObject(evidence.motionValidation);
+    }
+
     const evidence = JSON.parse(
       await readFile(`${directory}/shuttergate-normal-motion-clip.json`, "utf8")
     );
     const videoBytes = await readFile(`${directory}/${evidence.video}`);
-    expect(
-      validateBattlefieldMotionEvidence(
-        evidence,
-        videoBytes,
-        committedExpectations
-      )
-    ).toMatchObject(evidence.motionValidation);
 
     for (const tampered of [
       { ...evidence, videoSha256: "0".repeat(64) },
@@ -294,7 +301,7 @@ describe("running-client battlefield motion evidence", () => {
         validateBattlefieldMotionEvidence(
           tampered,
           videoBytes,
-          committedExpectations
+          currentCommittedExpectations
         )
       ).toThrow();
 
@@ -302,7 +309,7 @@ describe("running-client battlefield motion evidence", () => {
       validateBattlefieldMotionEvidence(
         { ...evidence, sourceHead: "0".repeat(40) },
         videoBytes,
-        committedExpectations
+        currentCommittedExpectations
       )
     ).toThrow("source head does not match");
 
@@ -319,7 +326,7 @@ describe("running-client battlefield motion evidence", () => {
       validateBattlefieldMotionEvidence(
         changedTransition,
         videoBytes,
-        committedExpectations
+        currentCommittedExpectations
       )
     ).toThrow();
   });

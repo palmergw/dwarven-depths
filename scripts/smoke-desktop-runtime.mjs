@@ -222,6 +222,21 @@ async function waitForButton(text) {
   throw new Error(`button did not reach ${text}`);
 }
 
+async function waitForTruthReady() {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    if (
+      (await evaluate(
+        "return window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady === true;"
+      )) === true
+    )
+      return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(
+    "authoritative preparation truth did not become capture-ready"
+  );
+}
+
 async function waitForCombatControl() {
   for (let attempt = 0; attempt < 300; attempt += 1) {
     try {
@@ -290,6 +305,7 @@ try {
     body: "{}"
   });
   const preparation = await waitForText("main button", "Confirm preparation");
+  await waitForTruthReady();
   progress("worker preparation ready");
   const preparationEvidence = await captureEvidence(
     "desktop-preparation",

@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "label": "WIP #275 combat HUD packet",
+  "sourceHead": "8d7be886382c931959d4b2c9eef028cf94b75096",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [1440, 900],
+  "settings": {
+    "motionCoverage": ["allow", "reduce"],
+    "contrast": "standard",
+    "textScale": "default"
+  },
+  "captures": [
+    {
+      "id": "wip-default-active",
+      "screenshot": "wip-default-active.png",
+      "screenshotSha256": "6fca700c7d9ad574af46152b47f3f6df0387b77e808023a1fdbf1ebace372976",
+      "tick": 2,
+      "phase": "running",
+      "motionPreference": "allow",
+      "reducedMotion": false,
+      "abilityState": "ready",
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 1 1 hostile entering"
+      },
+      "health": {
+        "current": "240",
+        "maximum": "240",
+        "low": "false"
+      }
+    },
+    {
+      "id": "wip-default-paused",
+      "screenshot": "wip-default-paused.png",
+      "screenshotSha256": "604cc5c6fe803e49f4bc33b429469c553fd53022facad8a4087519fd2f308ec5",
+      "tick": 2,
+      "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
+      "abilityState": "ready",
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 1 1 hostile entering"
+      },
+      "health": {
+        "current": "240",
+        "maximum": "240",
+        "low": "false"
+      }
+    },
+    {
+      "id": "wip-wave-transition",
+      "screenshot": "wip-wave-transition.png",
+      "screenshotSha256": "59009bd7ae341994e0a418a501fd1bcdac6aeb8e205e84d508b2ab2b6930e562",
+      "tick": 901,
+      "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
+      "abilityState": "ready",
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 2 1 hostile entering"
+      },
+      "health": {
+        "current": "150",
+        "maximum": "240",
+        "low": "false"
+      }
+    },
+    {
+      "id": "wip-ability-ready",
+      "screenshot": "wip-ability-ready.png",
+      "screenshotSha256": "ebe543a4d868e3a07f04744b6e21c8baa05361df5763b455e0c715613eff9cc4",
+      "tick": 1822,
+      "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
+      "abilityState": "ready",
+      "waveSignal": null,
+      "health": {
+        "current": "18",
+        "maximum": "240",
+        "low": "true"
+      }
+    },
+    {
+      "id": "wip-cooldown-status-low-health",
+      "screenshot": "wip-cooldown-status-low-health.png",
+      "screenshotSha256": "75fd8cbe255a2fec59d91093d490a2967dd56013f6160ca0f8a47162a3c1050d",
+      "tick": 1830,
+      "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
+      "abilityState": "cooldown",
+      "waveSignal": null,
+      "health": {
+        "current": "9",
+        "maximum": "240",
+        "low": "true"
+      }
+    },
+    {
+      "id": "wip-terminal-defeat",
+      "screenshot": "wip-terminal-defeat.png",
+      "screenshotSha256": "bfb579e1cb16cafe3755ea0e5e245536e56a53fc34f478a80685dcb0ca40fa2e",
+      "tick": 1860,
+      "phase": "terminal",
+      "motionPreference": null,
+      "reducedMotion": true,
+      "waveSignal": null,
+      "health": {}
+    },
+    {
+      "id": "wip-high-contrast-paused",
+      "screenshot": "wip-high-contrast-paused.png",
+      "screenshotSha256": "7f29ed67f672c1ea9ef5941da9628f353738c6b5b0c38064ee963d324914b180",
+      "tick": 2,
+      "phase": "running",
+      "motionPreference": "reduce",
+      "reducedMotion": true,
+      "abilityState": "ready",
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 1 1 hostile entering"
+      },
+      "health": {
+        "current": "240",
+        "maximum": "240",
+        "low": "false"
+      }
+    },
+    {
+      "id": "wip-large-text-paused",
+      "screenshot": "wip-large-text-paused.png",
+      "screenshotSha256": "0103250cc0b310c4f5822b849febe7c9cabb55e67a8950c91c87a41607efaf2b",
+      "tick": 2,
+      "phase": "running",
+      "motionPreference": "reduce",
+      "reducedMotion": true,
+      "abilityState": "ready",
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 1 1 hostile entering"
+      },
+      "health": {
+        "current": "240",
+        "maximum": "240",
+        "low": "false"
+      }
+    }
+  ]
+}

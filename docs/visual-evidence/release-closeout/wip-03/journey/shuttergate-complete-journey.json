@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "8d7be886382c931959d4b2c9eef028cf94b75096",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [
+    1440,
+    900
+  ],
+  "expectedResults": [
+    "defeat",
+    "defeat",
+    "victory"
+  ],
+  "video": "shuttergate-complete-journey.webm",
+  "videoSha256": "106e6c4ed668bf9ce7b38fca0335aba9261be5e329667be390c9bfd0c35cf775",
+  "stages": [
+    {
+      "id": "fresh-checkpoint",
+      "screenshot": "fresh-checkpoint.png",
+      "screenshotSha256": "439f7582538c5c8dd5f6921241e7e105d6af769a168b2de586c1fea17fe1c143",
+      "state": {
+        "sourceHead": "8d7be886382c931959d4b2c9eef028cf94b75096",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "checkpoint",
+        "shellView": "checkpoint",
+        "truth": null,
+        "resultHeading": null,
+        "visibleText": "DWARVEN DEPTHS SHUTTERGATE HALL COMPANY MUSTER SHUTTERGATE HALL The road is clear. Muster the company. BEGIN PREPARATION COMPANY Muster ready UPGRADE INVENTORY SETTINGS COMPANY ROSTER Iron Warden READY Forge Ore 0 Company strength 1 Checkpoint ready. Begin when you are ready to prepare."
+      }
+    },
+    {
+      "id": "attempt-1-defeat",
+      "screenshot": "attempt-1-defeat.png",
+      "screenshotSha256": "d048e7d6c244314357c0a28c19aecc469da284d7e643a454f77505a3c0812369",
+      "state": {
+        "sourceHead": "8d7be886382c931959d4b2c9eef028cf94b75096",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "result",
+        "shellView": "result",
+        "truth": {
+          "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+          "tick": 1914,
+          "phase": "terminal"
+        },
+        "resultHeading": "Defeat results",
+        "visibleText": "DWARVEN DEPTHS SHUTTERGATE HALL Shuttergate battlefield, terminal; 2 entities. Run complete: defeat. THE LINE IS BROKEN DEFEAT RESULTS Shuttergate has fallen. Rally the company and return stronger. Outcome Company withdrew Waves faced 3 Forge Ore earned +8 New balance 8 Forge Ore Progression Reward saved Return to the checkpoint, strengthen the Warden at the Forge, and try again. Return to checkpoint"
+      }
+    },
+    {
+      "id": "attempt-1-reloaded-checkpoint",
+      "screenshot": "attempt-1-reloaded-checkpoint.png",
+      "screenshotSha256": "542e9a7b64ab06ca58298031bd400a7aa70fbc4261a7e192d1c869fb5dfbdc23",
+      "state": {
+        "sourceHead": "8d7be886382c931959d4b2c9eef028cf94b75096",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "checkpoint",
+        "shellView": "checkpoint",
+        "truth": null,
+        "resultHeading": null,
+        "visibleText": "DWARVEN DEPTHS SHUTTERGATE HALL COMPANY MUSTER SHUTTERGATE HALL The road is clear. Muster the company. BEGIN PREPARATION COMPANY Muster ready UPGRADE INVENTORY SETTINGS COMPANY ROSTER Iron Warden READY Forge Ore 8 Company strength 1 Checkpoint ready. Begin when you are ready to prepare."
+      }
+    },
+    {
+      "id": "attempt-2-defeat",
+      "screenshot": "attempt-2-defeat.png",
+      "screenshotSha256": "2ca21b30c6cb38ab2365ccf21f61f6a3b209780e519041a3dbc9eeff864b21fd",
+      "state": {
+        "sourceHead": "8d7be886382c931959d4b2c9eef028cf94b75096",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "result",
+        "shellView": "result",
+        "truth": {
+          "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+          "tick": 1914,
+          "phase": "terminal"
+        },
+        "resultHeading": "Defeat results",
+        "visibleText": "DWARVEN DEPTHS SHUTTERGATE HALL Shuttergate battlefield, terminal; 2 entities. Run complete: defeat. THE LINE IS BROKEN DEFEAT RESULTS Shuttergate has fallen. Rally the company and return stronger. Outcome Company withdrew Waves faced 3 Forge Ore earned +8 New balance 16 Forge Ore Progression Reward saved Return to the checkpoint, strengthen the Warden at the Forge, and try again. Return to checkpoint"
+      }
+    },
+    {
+      "id": "purchased-build-reloaded-checkpoint",
+      "screenshot": "purchased-build-reloaded-checkpoint.png",
+      "screenshotSha256": "dd165d409495b7552ea203c606ce899989be7dc5611a2923f758f5806d5bbc45",
+      "state": {
+        "sourceHead": "8d7be886382c931959d4b2c9eef028cf94b75096",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "checkpoint",
+        "shellView": "checkpoint",
+        "truth": null,
+        "resultHeading": null,
+        "visibleText": "DWARVEN DEPTHS SHUTTERGATE HALL COMPANY MUSTER SHUTTERGATE HALL The road is clear. Muster the company. BEGIN PREPARATION COMPANY Muster ready UPGRADE INVENTORY SETTINGS COMPANY ROSTER Iron Warden READY Forge Ore 6 Company strength 1 Checkpoint ready. Begin when you are ready to prepare."
+      }
+    },
+    {
+      "id": "attempt-3-victory",
+      "screenshot": "attempt-3-victory.png",
+      "screenshotSha256": "f0d81ab90b7b8b28a1eee2d375d84d4192d9bcaff2f6ccec21a4812be3cbdb75",
+      "state": {
+        "sourceHead": "8d7be886382c931959d4b2c9eef028cf94b75096",
+        "sourceClean": true,
+        "viewport": [
+          1440,
+          900
+        ],
+        "phase": "result",
+        "shellView": "result",
+        "truth": {
+          "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+          "tick": 4501,
+          "phase": "terminal"
+        },
+        "resultHeading": "Victory results",
+        "visibleText": "DWARVEN DEPTHS SHUTTERGATE HALL Shuttergate battlefield, terminal; 1 entity. Run complete: victory. SHUTTERGATE SECURED VICTORY RESULTS Shuttergate stands. The company returns to the forge. Outcome Fortress held Waves faced 5 Forge Ore earned +23 New balance 29 Forge Ore Progression Reward saved Return to the checkpoint to spend your reward and muster the next defence. Return to checkpoint"
+      }
+    }
+  ]
+}

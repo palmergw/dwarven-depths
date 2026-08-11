@@ -8,16 +8,16 @@ from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "docs/visual-evidence/release-closeout/wip-02/comparisons"
+OUTPUT = ROOT / "docs/visual-evidence/release-closeout/wip-03/comparisons"
 CONCEPT = ROOT / "assets/concept-art/dwarven-depths-gameplay-mockup.png"
 PREVIOUS = ROOT / "docs/visual-evidence/combat-hud/wip-01/wip-default-active.png"
 CURRENT = (
     ROOT
-    / "docs/visual-evidence/release-closeout/wip-02/combat/wip-default-active.png"
+    / "docs/visual-evidence/release-closeout/wip-03/combat/wip-default-active.png"
 )
 CURRENT_SIDECAR = (
     ROOT
-    / "docs/visual-evidence/release-closeout/wip-02/combat/wip-default-active.json"
+    / "docs/visual-evidence/release-closeout/wip-03/combat/wip-default-active.json"
 )
 PREVIOUS_MANIFEST = ROOT / "docs/visual-evidence/combat-hud/wip-01/manifest.json"
 PANEL_SIZE = (1240, 700)

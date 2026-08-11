@@ -29,6 +29,20 @@ const rawVideoPath = `${temporaryVideoDirectory}/shuttergate-${motionId}-raw.web
 const videoTrimStartMilliseconds = 2_000;
 const sampleIntervalMilliseconds = 40;
 
+const { stdout: trackedStatus } = await execFile(
+  "git",
+  ["status", "--porcelain=v1", "--untracked-files=no"],
+  { cwd: repositoryRoot }
+);
+if (trackedStatus.trim() !== "")
+  throw new Error(
+    "Refusing to capture motion evidence from a worktree with tracked changes."
+  );
+const { stdout: headOutput } = await execFile("git", ["rev-parse", "HEAD"], {
+  cwd: repositoryRoot
+});
+const sourceHead = headOutput.trim();
+
 await mkdir(outputDirectory, { recursive: true });
 await rm(temporaryVideoDirectory, { force: true, recursive: true });
 await mkdir(temporaryVideoDirectory, { recursive: true });
@@ -36,11 +50,6 @@ await Promise.all([
   rm(videoUrl, { force: true }),
   rm(sidecarUrl, { force: true })
 ]);
-const { stdout } = await execFile("git", ["rev-parse", "HEAD"], {
-  cwd: repositoryRoot
-});
-const sourceHead = stdout.trim();
-
 async function resumeAndObserveTick(page, startingTick) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     await page.getByRole("button", { name: "Resume combat" }).click();
