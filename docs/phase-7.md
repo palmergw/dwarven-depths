@@ -26,7 +26,7 @@ The Linux desktop evaluation has a real package launch and interaction result, i
 ## Executable checks
 
 - `pnpm check:desktop-package`
-- `pnpm exec vitest run scripts/check-desktop-package.test.ts scripts/desktop-run-evidence.test.ts`
+- `pnpm --filter @dwarven-depths/progression build && pnpm exec vitest run scripts/check-desktop-package.test.ts scripts/desktop-run-evidence.test.ts`
 - `pnpm build:desktop:docker`
 - `pnpm check:mobile-package`
 - `pnpm exec vitest run scripts/check-mobile-package.test.ts scripts/check-mobile-apk.test.ts`
