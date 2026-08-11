@@ -112,6 +112,15 @@ async function capture(page, id, expected) {
       .querySelector(".combat-hud")
       ?.textContent?.replace(/\s+/g, " ")
       .trim(),
+    waveSignal: (() => {
+      const signal = document.querySelector(".wave-signal");
+      return signal === null
+        ? null
+        : {
+            kind: signal.getAttribute("data-wave-signal"),
+            text: signal.textContent?.replace(/\s+/g, " ").trim()
+          };
+    })(),
     health: {
       current: document
         .querySelector(".warden-health-track")
@@ -145,10 +154,15 @@ async function capture(page, id, expected) {
     speedControls: [...document.querySelectorAll(".combat-speed button")].map(
       (button) => ({
         label: button.getAttribute("aria-label"),
+        shortcut: button.getAttribute("aria-keyshortcuts"),
         pressed: button.getAttribute("aria-pressed"),
         disabled: button.disabled
       })
     ),
+    keyboardHints: document
+      .querySelector(".combat-keyboard-hints")
+      ?.textContent?.replace(/\s+/g, " ")
+      .trim(),
     targetMenuOpen: document
       .querySelector(".character-portrait-button")
       ?.getAttribute("aria-expanded"),
@@ -172,8 +186,18 @@ async function capture(page, id, expected) {
       JSON.stringify(
         state.phase === "running"
           ? [
-              { label: "1× combat speed", pressed: "true", disabled: true },
-              { label: "2× combat speed", pressed: "false", disabled: false }
+              {
+                label: "1× combat speed",
+                shortcut: "-",
+                pressed: "true",
+                disabled: true
+              },
+              {
+                label: "2× combat speed",
+                shortcut: "+",
+                pressed: "false",
+                disabled: false
+              }
             ]
           : []
       ) ||
@@ -207,10 +231,12 @@ async function capture(page, id, expected) {
     phase: state.phase,
     truth,
     hud: state.hud,
+    waveSignal: state.waveSignal,
     health: state.health,
     ability: state.ability,
     pause: state.pause,
     speedControls: state.speedControls,
+    keyboardHints: state.keyboardHints,
     targetMenuOpen: state.targetMenuOpen
   };
   await writeFile(sidecarUrl, `${JSON.stringify(sidecar, null, 2)}\n`);
@@ -442,6 +468,7 @@ const manifest = {
     tick: capture.truth.snapshot.tick,
     phase: capture.truth.snapshot.phase,
     abilityState: capture.ability.state,
+    waveSignal: capture.waveSignal,
     health: capture.health
   }))
 };

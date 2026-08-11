@@ -54,6 +54,7 @@ describe("combat presentation feedback", () => {
           faction: "enemy"
         }
       ],
+      cues: ["wave", "departure"],
       departures: [
         {
           id: "entity.dwarf.zed",
@@ -163,6 +164,90 @@ describe("combat presentation feedback", () => {
     });
   });
 
+  it("derives bounded action, impact, damage, and status cues from consecutive authoritative ticks", () => {
+    const entity = {
+      id: "entity.dwarf.warden",
+      nodeId: "node.gate",
+      faction: "dwarf",
+      visualId: "character.iron_warden",
+      archetype: "character",
+      position: { nodeId: "node.gate", x: 0, y: 0 },
+      previousPosition: { nodeId: "node.gate", x: 0, y: 0 },
+      currentHealth: 10,
+      maximumHealth: 10,
+      facing: "east",
+      action: { kind: "idle", phase: "idle", abilityId: null },
+      targetEntityId: "entity.enemy.raider",
+      statuses: [],
+      transition: "active",
+      elite: false,
+      boss: false
+    } as const;
+    const hostile = {
+      ...entity,
+      id: "entity.enemy.raider",
+      faction: "enemy",
+      visualId: "enemy.goblin_slinger",
+      archetype: "basic",
+      facing: "west",
+      targetEntityId: entity.id
+    } as const;
+    const base = {
+      schemaVersion: 2,
+      scenarioId: "scenario.feedback",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 20,
+      previousTick: 19,
+      phase: "running",
+      nodes: [],
+      connections: [],
+      entities: [entity, hostile],
+      entityTransitions: [],
+      encounter: {
+        startedWaveIds: ["wave.one"],
+        activeWaveId: "wave.one",
+        pendingSpawnCount: 0,
+        livingHostileCount: 1,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    const changed = {
+      ...base,
+      tick: 21,
+      previousTick: 20,
+      entities: [
+        {
+          ...entity,
+          action: {
+            kind: "ability",
+            phase: "impact",
+            abilityId: "ability.iron_warden.shield_slam"
+          }
+        },
+        {
+          ...hostile,
+          currentHealth: 7,
+          action: { kind: "basic_attack", phase: "committed", abilityId: null },
+          statuses: [
+            {
+              id: "status.staggered",
+              appliedAtTick: 21,
+              expiresAtTick: 25,
+              magnitude: 1
+            }
+          ]
+        }
+      ]
+    } as const satisfies RenderSnapshot;
+
+    expect(deriveCombatFeedback(base, changed)).toMatchObject({
+      tick: 21,
+      cues: ["ranged_attack", "shield_slam_impact", "damage", "status"]
+    });
+    expect(deriveCombatFeedback(changed, changed)).toBeUndefined();
+  });
+
   it("fails soft when audio creation is blocked", () => {
     const player = createCombatSoundPlayer(() => {
       throw new DOMException("blocked", "NotAllowedError");
@@ -201,7 +286,7 @@ describe("combat presentation feedback", () => {
       resume: vi.fn(() => Promise.resolve()),
       close
     };
-    const player = createCombatSoundPlayer(() => context);
+    const player = createCombatSoundPlayer(() => context, 0.5);
     const feedback = deriveCombatFeedback(
       snapshot(1, "running", ["entity.dwarf.one"]),
       snapshot(2, "terminal", ["entity.enemy.one"])
@@ -211,6 +296,7 @@ describe("combat presentation feedback", () => {
     player.play(feedback);
     expect(start).toHaveBeenCalledTimes(3);
     expect(stop).toHaveBeenCalledTimes(3);
+    expect(setValueAtTime).toHaveBeenCalledWith(0.0175, 4);
     player.close();
     player.close();
     expect(close).toHaveBeenCalledOnce();

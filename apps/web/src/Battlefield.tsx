@@ -2531,6 +2531,7 @@ export function Battlefield({
   snapshot,
   reduceMotion,
   soundEnabled,
+  soundVolume = 1,
   simulationSpeed = 1,
   evidenceEffectAlpha,
   onTerminalPresentationStarted = () => undefined,
@@ -2539,6 +2540,7 @@ export function Battlefield({
   readonly snapshot: RenderSnapshot;
   readonly reduceMotion: boolean;
   readonly soundEnabled: boolean;
+  readonly soundVolume?: number;
   readonly simulationSpeed?: 1 | 2;
   readonly evidenceEffectAlpha?: number;
   readonly onTerminalPresentationStarted?: (snapshot: RenderSnapshot) => void;
@@ -2574,13 +2576,18 @@ export function Battlefield({
       soundPlayerRef.current = undefined;
       return;
     }
-    const player = createCombatSoundPlayer();
+    const player = createCombatSoundPlayer(undefined, soundVolume);
     soundPlayerRef.current = player;
+    const unlock = () => player.unlock();
+    document.addEventListener("pointerdown", unlock, { capture: true });
+    document.addEventListener("keydown", unlock, { capture: true });
     return () => {
+      document.removeEventListener("pointerdown", unlock, { capture: true });
+      document.removeEventListener("keydown", unlock, { capture: true });
       player.close();
       if (soundPlayerRef.current === player) soundPlayerRef.current = undefined;
     };
-  }, [soundEnabled]);
+  }, [soundEnabled, soundVolume]);
 
   useEffect(() => {
     const parent = parentRef.current;

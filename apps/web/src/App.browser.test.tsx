@@ -1146,13 +1146,18 @@ describe("presentation settings", () => {
     await vi.waitFor(() => expect(appliedMotionPreference()).toBe("device"));
   });
 
-  it("keeps sound opt-in, keyboard selectable, and persistent", async () => {
+  it("keeps sound opt-in with keyboard-selectable quiet and full mix levels", async () => {
     renderApp();
     await vi.waitFor(() => expect(appliedSoundPreference()).toBe("off"));
     await userEvent.click(await buttonWithText("Settings"));
     const select = document.querySelector("#sound-preference");
     expect(select).toBeInstanceOf(HTMLSelectElement);
     (select as HTMLSelectElement).focus();
+    await userEvent.keyboard("{ArrowDown}");
+    await vi.waitFor(() => expect(appliedSoundPreference()).toBe("quiet"));
+    expect(window.localStorage.getItem(soundPreferenceStorageKey)).toBe(
+      "quiet"
+    );
     await userEvent.keyboard("{ArrowDown}");
     await vi.waitFor(() => expect(appliedSoundPreference()).toBe("on"));
     expect(window.localStorage.getItem(soundPreferenceStorageKey)).toBe("on");
@@ -1448,13 +1453,19 @@ describe("player-facing combat HUD", () => {
       )
     );
     expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
-      "Combat paused. Fortress holding. Wave 1. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. Elite enemy has status staggered (status.staggered), source Shield Slam, from tick 20 through tick 30. Elite enemy has status slowed (status.slow), source slowing effect, from tick 22 through tick 28."
+      "Combat paused. Fortress holding. Wave 1. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. Elite enemy is staggered, source Shield Slam, strength 1, from tick 20 through tick 30. Elite enemy is slowed, source slowing effect, strength 1, from tick 22 through tick 28."
     );
     expect(statusSignalKind("status.staggered")).toBe("stagger");
     expect(statusSignalKind("status.slow")).toBe("slow");
     expect(statusSignalKind("status.haste")).toBe("haste");
     expect(statusSignalKind("status.unknown")).toBe("unknown");
-    expect(document.querySelector(".wave-signal")).toBeNull();
+    expect(document.querySelector(".wave-signal")?.textContent).toBe(
+      "Entrance watchWave 1 · 2 approaching"
+    );
+    expect(document.querySelector(".wave-signal")).toHaveAttribute(
+      "data-wave-signal",
+      "approaching"
+    );
     root.render(
       <CombatHud
         snapshot={{
@@ -1480,7 +1491,7 @@ describe("player-facing combat HUD", () => {
       expect(
         document.querySelector(".combat-state-summary")?.textContent
       ).toContain(
-        "Elite enemy has status status.unknown (status.unknown), source unavailable in authoritative presentation state, from tick 23 through tick 29."
+        "Elite enemy is an unknown effect, source an unknown source, strength 1, from tick 23 through tick 29."
       )
     );
   });
@@ -1751,6 +1762,7 @@ describe("semantic combat controls", () => {
       'button[aria-label="2× combat speed"]'
     );
     expect(doubleSpeed).toBeInstanceOf(HTMLButtonElement);
+    expect(doubleSpeed).toHaveAttribute("aria-keyshortcuts", "+");
     await userEvent.click(doubleSpeed as HTMLButtonElement);
     await vi.waitFor(() => expect(doubleSpeed).toBeDisabled());
 
@@ -1758,9 +1770,14 @@ describe("semantic combat controls", () => {
       'button[aria-label="1× combat speed"]'
     );
     expect(normalSpeed).toBeInstanceOf(HTMLButtonElement);
-    (normalSpeed as HTMLButtonElement).focus();
-    await userEvent.keyboard("{Enter}");
-    expect(worker.speedCommands).toEqual([2, 1]);
+    expect(normalSpeed).toHaveAttribute("aria-keyshortcuts", "-");
+    await userEvent.keyboard("-");
+    await vi.waitFor(() => expect(normalSpeed).toBeDisabled());
+    await userEvent.keyboard("+");
+    expect(worker.speedCommands).toEqual([2, 1, 2]);
+    expect(
+      document.querySelector(".combat-keyboard-hints")?.textContent
+    ).toContain("Esc pause · 1 Shield Slam · −/+ speed · portrait targeting");
   });
 
   it("unlocks only the control bound to a rejected command and permits retry", async () => {

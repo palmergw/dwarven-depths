@@ -1372,6 +1372,12 @@ main[data-view-phase="running"] .panel {
   border-block-style: double;
   border-block-width: 3px;
 }
+.wave-signal[data-wave-signal="approaching"] {
+  border-block-style: dashed;
+}
+.active-combat-screen:has(.combat-pause-banner) .wave-signal {
+  top: 17%;
+}
 .active-combat-screen .combat-hud dd[data-fortress-state="fallen"] {
   color: #ffb7a0;
 }
@@ -1478,6 +1484,29 @@ main[data-view-phase="running"] .panel {
 .combat-speed button:not(:disabled):focus-visible {
   border-color: #d6a759;
   color: #ffe3a0;
+}
+.combat-keyboard-hints {
+  position: absolute;
+  z-index: 12;
+  right: 1.4%;
+  bottom: calc(2.2% + 80px);
+  margin: 0;
+  color: #d5b477;
+  font-family: Georgia, serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.035em;
+  text-shadow: 0 2px 2px #000;
+  pointer-events: none;
+}
+.combat-keyboard-hints kbd {
+  display: inline-block;
+  min-width: 1.35em;
+  padding: 0.05rem 0.2rem;
+  border: 1px solid #8f6937;
+  background: #0b0c0de8;
+  color: #ffe3a0;
+  font: inherit;
+  text-align: center;
 }
 .combat-pause-banner {
   position: absolute;

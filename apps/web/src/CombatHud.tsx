@@ -61,7 +61,7 @@ function encounterState(snapshot: RenderSnapshot): {
 }
 
 interface WaveSignal {
-  readonly kind: "wave" | "elite" | "boss" | "secured";
+  readonly kind: "approaching" | "wave" | "elite" | "boss" | "secured";
   readonly title: string;
   readonly detail: string;
 }
@@ -74,7 +74,7 @@ export function deriveWaveSignal(snapshot: RenderSnapshot): WaveSignal | null {
     return null;
   const waveNumber =
     snapshot.encounter.activeWaveId === null
-      ? snapshot.encounter.startedWaveIds.length
+      ? snapshot.encounter.startedWaveIds.length + 1
       : snapshot.encounter.startedWaveIds.indexOf(
           snapshot.encounter.activeWaveId
         ) + 1;
@@ -83,7 +83,9 @@ export function deriveWaveSignal(snapshot: RenderSnapshot): WaveSignal | null {
       entity.faction === "enemy" &&
       snapshot.entityTransitions.some(
         (transition) =>
-          transition.entityId === entity.id && transition.kind === "spawned"
+          transition.entityId === entity.id &&
+          transition.kind === "spawned" &&
+          transition.atTick === snapshot.tick
       )
   );
   if (arrivals.some((entity) => entity.boss))
@@ -103,6 +105,12 @@ export function deriveWaveSignal(snapshot: RenderSnapshot): WaveSignal | null {
       kind: "wave",
       title: `Wave ${waveNumber}`,
       detail: `${arrivals.length} ${arrivals.length === 1 ? "hostile" : "hostiles"} entering`
+    };
+  if (snapshot.encounter.pendingSpawnCount > 0)
+    return {
+      kind: "approaching",
+      title: "Entrance watch",
+      detail: `Wave ${waveNumber} · ${snapshot.encounter.pendingSpawnCount} approaching`
     };
   if (
     snapshot.encounter.activeWaveId !== null &&
@@ -133,8 +141,8 @@ function statusDetails(statusId: string): {
     return { effect: "staggered", source: "Shield Slam" };
   return (
     STATUS_DETAILS[statusId] ?? {
-      effect: statusId,
-      source: "unavailable in authoritative presentation state"
+      effect: "an unknown effect",
+      source: "an unknown source"
     }
   );
 }
@@ -154,7 +162,7 @@ function statusSummary(snapshot: RenderSnapshot): string {
     .flatMap((entity) =>
       entity.statuses.map((status) => {
         const details = statusDetails(status.id);
-        return `${combatantLabel(entity)} has status ${details.effect} (${status.id}), source ${details.source}, from tick ${status.appliedAtTick} through tick ${status.expiresAtTick}.`;
+        return `${combatantLabel(entity)} is ${details.effect}, source ${details.source}, strength ${status.magnitude}, from tick ${status.appliedAtTick} through tick ${status.expiresAtTick}.`;
       })
     )
     .join(" ");
