@@ -1,7 +1,15 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  access,
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  writeFile
+} from "node:fs/promises";
 import { basename, resolve } from "node:path";
+import { validateDesktopRunEvidence } from "./desktop-run-evidence.mjs";
 
 const binary = process.argv[2];
 if (binary === undefined) {
@@ -12,6 +20,9 @@ if (binary === undefined) {
 await access(binary);
 const evidenceDirectory =
   process.argv[3] === undefined ? undefined : resolve(process.argv[3]);
+const downloadDirectory = resolve(
+  process.env.DD_DESKTOP_DOWNLOAD_DIRECTORY ?? "/tmp/dwarven-depths-downloads"
+);
 const canonicalViewport = { width: 1440, height: 900 };
 
 const driver = spawn(
@@ -222,6 +233,37 @@ async function waitForButton(text) {
   throw new Error(`button did not reach ${text}`);
 }
 
+async function waitForResultEvidence() {
+  for (let attempt = 0; attempt < 1_200; attempt += 1) {
+    const result = await evaluate(`
+      const details = document.querySelector(".result-inspection");
+      const button = [...(details?.querySelectorAll("button") ?? [])]
+        .find((candidate) => candidate.textContent?.trim() === "Download run evidence");
+      const fields = Object.fromEntries(
+        [...(details?.querySelectorAll("dl > div") ?? [])].map((row) => [
+          row.querySelector("dt")?.textContent?.trim(),
+          row.querySelector("dd")?.textContent?.trim()
+        ])
+      );
+      return button === undefined ? null : fields;
+    `);
+    if (result !== null) return result;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error("packaged encounter did not reach an authoritative result");
+}
+
+async function waitForDownloadedFile() {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const files = await readdir(downloadDirectory);
+    if (files.length > 0) return files;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(
+    "packaged run evidence was not written to the download directory"
+  );
+}
+
 async function waitForTruthReady() {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     if (
@@ -279,6 +321,9 @@ try {
     await rm(evidenceDirectory, { recursive: true, force: true });
     await mkdir(evidenceDirectory, { recursive: true });
   }
+  await rm(downloadDirectory, { recursive: true, force: true });
+  await mkdir(downloadDirectory, { recursive: true });
+  await evaluate("window.history.replaceState(null, '', '?inspection=1');");
 
   const main = await waitForElement("main");
   const heading = await waitForElement("main h1");
@@ -334,6 +379,72 @@ try {
           return resumedControl.element;
         })();
   progress("background pause observed");
+  await request(`/session/${sessionId}/element/${resumeAction}/click`, {
+    method: "POST",
+    body: "{}"
+  });
+  const doubleSpeed = await waitForElement(
+    'button[aria-label="2× combat speed"]'
+  );
+  await request(`/session/${sessionId}/element/${doubleSpeed}/click`, {
+    method: "POST",
+    body: "{}"
+  });
+  progress("combat resumed at 2× speed");
+  const terminalFields = await waitForResultEvidence();
+  const terminalTick = Number(terminalFields["Terminal tick"]);
+  const expectedExport = {
+    terminalResult: terminalFields["Terminal result"],
+    terminalTick,
+    finalStateChecksum: terminalFields["Final state checksum"],
+    eventStreamChecksum: terminalFields["Event checksum"]
+  };
+  if (
+    (expectedExport.terminalResult !== "victory" &&
+      expectedExport.terminalResult !== "defeat") ||
+    !Number.isSafeInteger(terminalTick) ||
+    terminalTick < 0 ||
+    !/^[a-f0-9]{64}$/.test(expectedExport.finalStateChecksum) ||
+    !/^[a-f0-9]{64}$/.test(expectedExport.eventStreamChecksum)
+  ) {
+    throw new Error(
+      `invalid packaged terminal fields: ${JSON.stringify(terminalFields)}`
+    );
+  }
+  const inspectionSummary = await waitForElement(".result-inspection summary");
+  await request(`/session/${sessionId}/element/${inspectionSummary}/click`, {
+    method: "POST",
+    body: "{}"
+  });
+  const evidenceButton = await waitForButton("Download run evidence");
+  await request(`/session/${sessionId}/element/${evidenceButton}/click`, {
+    method: "POST",
+    body: "{}"
+  });
+  const downloadedFiles = await waitForDownloadedFile();
+  const expectedFilename = `dwarven-depths-run-evidence-v2-${expectedExport.finalStateChecksum}.json`;
+  if (downloadedFiles.length !== 1 || downloadedFiles[0] !== expectedFilename) {
+    throw new Error(
+      `expected exactly ${expectedFilename}; received ${JSON.stringify(downloadedFiles)}`
+    );
+  }
+  const exportedBytes = await readFile(
+    resolve(downloadDirectory, expectedFilename)
+  );
+  const exportedEvidence = validateDesktopRunEvidence(
+    JSON.parse(exportedBytes.toString("utf8")),
+    expectedExport
+  );
+  const exportEvidence = {
+    filename: expectedFilename,
+    sha256: createHash("sha256").update(exportedBytes).digest("hex"),
+    schemaVersion: exportedEvidence.schemaVersion,
+    terminalResult: expectedExport.terminalResult,
+    terminalTick: expectedExport.terminalTick,
+    finalStateChecksum: expectedExport.finalStateChecksum,
+    eventStreamChecksum: expectedExport.eventStreamChecksum
+  };
+  progress("authoritative run evidence exported and validated");
   const result = {
     ok: true,
     mainLandmark: main !== undefined,
@@ -341,7 +452,8 @@ try {
     checkpointAction: checkpointText,
     workerBackedPreparation: preparation.text,
     backgroundPause: resumeAction !== undefined,
-    backgroundPauseTrigger
+    backgroundPauseTrigger,
+    exportEvidence
   };
   if (
     evidenceDirectory !== undefined &&
