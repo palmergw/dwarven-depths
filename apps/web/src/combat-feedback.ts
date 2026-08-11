@@ -337,7 +337,11 @@ export function createCombatSoundPlayer(
         resumePromise = undefined;
         const latestCues = pendingCues;
         pendingCues = undefined;
-        if (latestCues !== undefined) schedule(latestCues);
+        try {
+          if (latestCues !== undefined) schedule(latestCues);
+        } catch {
+          // Audio scheduling remains fail-soft after an asynchronous unlock.
+        }
       },
       () => {
         resumePromise = undefined;

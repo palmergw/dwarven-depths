@@ -376,4 +376,23 @@ describe("combat presentation feedback", () => {
     expect(createOscillator).toHaveBeenCalledOnce();
     expect(setValueAtTime).toHaveBeenCalledWith(120, 4);
   });
+
+  it("fails soft when resumed audio scheduling throws asynchronously", async () => {
+    const context: CombatAudioContext = {
+      currentTime: 4,
+      destination: {},
+      state: "suspended",
+      createOscillator: () => {
+        throw new DOMException("unavailable", "InvalidStateError");
+      },
+      createGain: vi.fn(),
+      resume: vi.fn(() => Promise.resolve()),
+      close: vi.fn(() => Promise.resolve())
+    };
+    const player = createCombatSoundPlayer(() => context);
+
+    expect(() => player.playCue("wave")).not.toThrow();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
 });
