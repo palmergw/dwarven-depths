@@ -2400,7 +2400,11 @@ export function App({
                       <dd>+{view.result.campaign.forgeOreAwarded}</dd>
                     </div>
                     <div>
-                      <dt>New balance</dt>
+                      <dt>
+                        {view.savedProfile === undefined
+                          ? "Run balance"
+                          : "New balance"}
+                      </dt>
                       <dd>
                         {
                           (view.savedProfile ?? view.result.campaign.profile)
@@ -2411,15 +2415,23 @@ export function App({
                     </div>
                     <div>
                       <dt>Progression</dt>
-                      <dd>Reward saved</dd>
+                      <dd>
+                        {view.savedProfile === undefined
+                          ? "Reward not saved"
+                          : "Reward saved"}
+                      </dd>
                     </div>
                   </>
                 )}
             </dl>
             <p className="result-next-step">
-              {view.result.terminalResult === "victory"
-                ? "Return to the checkpoint to spend your reward and muster the next defence."
-                : "Return to the checkpoint, strengthen the Warden at the Forge, and try again."}
+              {view.result.protocolVersion === 4 &&
+              view.result.campaign !== undefined &&
+              view.savedProfile === undefined
+                ? "Local progression is unavailable. Return to the checkpoint and retry when storage is available; this run's reward cannot be spent."
+                : view.result.terminalResult === "victory"
+                  ? "Return to the checkpoint to spend your reward and muster the next defence."
+                  : "Return to the checkpoint, strengthen the Warden at the Forge, and try again."}
             </p>
             <div className="result-actions">
               <button

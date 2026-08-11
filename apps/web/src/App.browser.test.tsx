@@ -997,6 +997,47 @@ describe("run journey guidance", () => {
     expect(document.querySelector("#results-heading")).toBeNull();
   });
 
+  it("does not claim a valid terminal reward was saved when profile storage is unavailable", async () => {
+    const workers: ControlledJourneyWorker[] = [];
+    const createWorker = (): Worker => {
+      const worker = new ControlledJourneyWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={createWorker}
+        createProfileStore={() => ({
+          load: async () => {
+            throw new Error("IndexedDB unavailable");
+          },
+          write: async () => {
+            throw new Error("unexpected profile write");
+          },
+          close: async () => undefined
+        })}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    workers.at(-1)?.finish(8);
+
+    await resultHeading("Victory results");
+    const results = document.querySelector(".results");
+    expect(results).toHaveTextContent("Run balance8 Forge Ore");
+    expect(results).toHaveTextContent("ProgressionReward not saved");
+    expect(results).toHaveTextContent(
+      "Local progression is unavailable. Return to the checkpoint and retry when storage is available; this run's reward cannot be spent."
+    );
+    expect(results).not.toHaveTextContent("Reward saved");
+    expect(results).not.toHaveTextContent("spend your reward");
+  });
+
   it("adapts terminal guidance to failure details", async () => {
     const createWorker = (): Worker =>
       new ControlledFailureWorker() as unknown as Worker;
