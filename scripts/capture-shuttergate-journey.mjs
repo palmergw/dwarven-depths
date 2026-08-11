@@ -196,6 +196,8 @@ try {
   await captureStage("purchased-build-reloaded-checkpoint", "checkpoint");
 
   await runAttempt(3, expectedResults[2]);
+  await page.getByText("Reward saved", { exact: true }).waitFor();
+  await page.getByText("14 Forge Ore", { exact: true }).waitFor();
   const finalText = (await readState()).visibleText;
   if (!/New balance\s*14 Forge Ore\b/.test(finalText))
     throw new Error(
