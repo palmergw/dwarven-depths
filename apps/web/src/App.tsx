@@ -953,7 +953,8 @@ export function App({
       if (pendingView !== undefined) presentAfterTerminal(pendingView);
     };
     const failWorker = (inspectionMessage: string): void => {
-      if (workerRef.current !== worker) return;
+      if (workerRef.current !== worker || terminalResultPendingRef.current)
+        return;
       worker.terminate();
       workerRef.current = undefined;
       workerFailureRef.current = undefined;

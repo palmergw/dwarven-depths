@@ -1091,6 +1091,53 @@ describe("run journey guidance", () => {
     expect(document.querySelector("#failure-heading")).toBeNull();
   });
 
+  it("does not let a late worker failure overtake an accepted terminal reward", async () => {
+    const worker = new ControlledJourneyWorker();
+    const store = new PersistentJourneyProfileStore();
+    const writeProfile = store.write.bind(store);
+    let terminalEnvelope: ProfileSaveEnvelope | undefined;
+    let resolveTerminalWrite:
+      | ((envelope: ProfileSaveEnvelope) => void)
+      | undefined;
+    store.write = async (request) => {
+      if (store.writes === 0) return writeProfile(request);
+      terminalEnvelope = request.envelope as ProfileSaveEnvelope;
+      return new Promise<ProfileSaveEnvelope>((resolve) => {
+        resolveTerminalWrite = resolve;
+      });
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => store}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    worker.finish();
+    await vi.waitFor(() => expect(resolveTerminalWrite).toBeTypeOf("function"));
+
+    worker.emit({ malformed: "late worker response" });
+    if (terminalEnvelope === undefined || resolveTerminalWrite === undefined)
+      throw new Error("terminal profile write was not pending");
+    store.envelope = terminalEnvelope;
+    resolveTerminalWrite(terminalEnvelope);
+
+    await resultHeading("Victory results");
+    const results = document.querySelector(".results");
+    expect(results).toHaveTextContent("Forge Ore earned+8");
+    expect(results).toHaveTextContent("New balance8 Forge Ore");
+    expect(results).toHaveTextContent("ProgressionReward saved");
+    expect(results).not.toHaveTextContent("No reward was applied");
+    expect(document.querySelector("#failure-heading")).toBeNull();
+    expect(store.envelope.profile.forgeOre).toBe(8);
+  });
+
   it("adapts terminal guidance to failure details", async () => {
     const createWorker = (): Worker =>
       new ControlledFailureWorker() as unknown as Worker;
