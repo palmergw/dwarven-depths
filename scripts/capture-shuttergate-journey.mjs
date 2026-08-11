@@ -154,7 +154,7 @@ async function runAttempt(attemptNumber, expectedResult) {
     await page.waitForTimeout(250);
   }
   await page.locator('main[data-shell-view="result"]').waitFor();
-  const heading = await page.locator(".result-screen h2").textContent();
+  const heading = await page.locator(".results h3").textContent();
   if (heading?.toLocaleLowerCase("en-US").includes(expectedResult) !== true)
     throw new Error(
       `attempt ${attemptNumber} expected ${expectedResult}, received ${heading}`
