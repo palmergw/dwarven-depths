@@ -12,7 +12,7 @@ const outputDirectory = process.env.DD_SHELL_PACKET_OUTPUT_DIRECTORY
   ? pathToFileURL(
       `${process.env.DD_SHELL_PACKET_OUTPUT_DIRECTORY.replace(/\/$/, "")}/`
     )
-  : new URL("../docs/visual-evidence/concept-shell/wip-03/", import.meta.url);
+  : new URL("../docs/visual-evidence/shell-usability/wip-01/", import.meta.url);
 const { stdout: trackedStatus } = await execFile(
   "git",
   ["status", "--porcelain=v1", "--untracked-files=no"],
@@ -30,7 +30,7 @@ const sourceHead = stdout.trim();
 const viewports = {
   desktop: { width: 1440, height: 900 }
 };
-const captures = [
+const supportedCaptures = [
   "checkpoint",
   "settings",
   "forge",
@@ -38,6 +38,17 @@ const captures = [
   "result",
   "failure"
 ];
+const captures = process.env.DD_SHELL_PACKET_CAPTURES
+  ? process.env.DD_SHELL_PACKET_CAPTURES.split(",")
+  : supportedCaptures;
+if (
+  captures.length === 0 ||
+  captures.some((capture) => !supportedCaptures.includes(capture))
+) {
+  throw new Error(
+    `DD_SHELL_PACKET_CAPTURES must contain only: ${supportedCaptures.join(", ")}`
+  );
+}
 
 await mkdir(outputDirectory, { recursive: true });
 await Promise.all([
@@ -68,6 +79,7 @@ try {
           globalThis.Worker = class EvidenceWorker extends EventTarget {
             postMessage(message) {
               if (message?.type === "initialize") {
+                this.runConfiguration = message.runConfiguration;
                 this.dispatchEvent(
                   new MessageEvent("message", {
                     data: {
@@ -81,6 +93,42 @@ try {
                   })
                 );
               } else if (message?.command?.type === "confirmPreparation") {
+                if (terminalState === "result") {
+                  this.dispatchEvent(
+                    new MessageEvent("message", {
+                      data: {
+                        protocolVersion: 4,
+                        type: "render_snapshot",
+                        snapshot: {
+                          schemaVersion: 2,
+                          scenarioId: "scenario.shuttergate.visual-evidence",
+                          levelId: "level.shuttergate_hall",
+                          mapId: "map.shuttergate_hall",
+                          tick: 4500,
+                          previousTick: 4499,
+                          phase: "running",
+                          nodes: [],
+                          connections: [],
+                          entities: [],
+                          entityTransitions: [],
+                          encounter: {
+                            startedWaveIds: [
+                              "wave.shuttergate.1",
+                              "wave.shuttergate.2",
+                              "wave.shuttergate.3",
+                              "wave.shuttergate.4",
+                              "wave.shuttergate.5"
+                            ],
+                            activeWaveId: "wave.shuttergate.5",
+                            pendingSpawnCount: 0,
+                            livingHostileCount: 0,
+                            terminalResult: null
+                          }
+                        }
+                      }
+                    })
+                  );
+                }
                 this.dispatchEvent(
                   new MessageEvent("message", {
                     data:
@@ -92,6 +140,24 @@ try {
                             terminalTick: 1,
                             finalStateChecksum: checksum,
                             eventStreamChecksum: checksum,
+                            campaign: {
+                              schemaVersion: 1,
+                              attemptId: this.runConfiguration.attemptId,
+                              rewardId: `reward.${this.runConfiguration.attemptId}`,
+                              forgeOreAwarded: 8,
+                              profile: {
+                                ...this.runConfiguration.profile,
+                                revision:
+                                  this.runConfiguration.profile.revision + 1,
+                                forgeOre:
+                                  this.runConfiguration.profile.forgeOre + 8,
+                                claimedRewardIds: [
+                                  ...this.runConfiguration.profile
+                                    .claimedRewardIds,
+                                  `reward.${this.runConfiguration.attemptId}`
+                                ]
+                              }
+                            },
                             commands: [
                               {
                                 tick: 0,
@@ -133,6 +199,11 @@ try {
         await page.getByRole("button", { name: "Settings" }).click();
       } else if (capture === "forge") {
         await page.getByRole("button", { name: /Upgrade inventory/ }).click();
+        await page
+          .getByRole("button", {
+            name: "Purchase Shield Slam Training rank 1 for 10 Forge Ore"
+          })
+          .focus();
       } else if (capture === "preparation") {
         await page.getByRole("button", { name: "Begin preparation" }).click();
       } else if (capture === "failure") {

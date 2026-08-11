@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "sourceHead": "db804391342a655e56c0b3be33db770af8856b75",
+  "capture": {
+    "browser": "chromium",
+    "browserImage": "mcr.microsoft.com/playwright:v1.61.1-noble",
+    "deviceScaleFactor": 1,
+    "reducedMotion": true,
+    "waitCondition": "networkidle-profile-ready-images-complete"
+  },
+  "evidence": [
+    {
+      "viewportName": "desktop",
+      "capture": "forge",
+      "screenshot": "desktop-forge.png",
+      "screenshotSha256": "539164c38f774287feec5ce8e92af2de9e72ced847c6e114fdc05cc0cf5faee7",
+      "state": {
+        "sourceHead": "db804391342a655e56c0b3be33db770af8856b75",
+        "sourceClean": true,
+        "viewport": [1440, 900],
+        "phase": "checkpoint",
+        "shellView": "forge",
+        "mainCount": 1,
+        "visibleInspectionCount": 0,
+        "stableIdVisible": false,
+        "bodyScroll": [1440, 900],
+        "panelScroll": [1278, 718],
+        "visibleButtonNames": [
+          "Close upgrade inventory",
+          "Purchase",
+          "Purchase"
+        ]
+      }
+    }
+  ]
+}

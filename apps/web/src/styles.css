@@ -329,9 +329,6 @@ button:focus-visible {
 .settings select {
   display: block;
 }
-.settings label:not(:first-of-type) {
-  margin-top: 1rem;
-}
 .settings select {
   width: min(100%, 24rem);
   margin-top: 0.5rem;
@@ -347,6 +344,25 @@ button:focus-visible {
   outline-offset: 3px;
 }
 .settings-help {
+  color: #c5b695;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) minmax(12rem, 1fr);
+  gap: 0.8rem 1.25rem;
+  align-items: center;
+}
+.settings-label-title,
+.settings-label-help {
+  display: block;
+}
+.settings-label-title {
+  color: #f0c66f;
+  font-family: Georgia, serif;
+  font-weight: 700;
+}
+.settings-label-help {
+  margin-top: 0.2rem;
   color: #c5b695;
 }
 .upgrade-inventory-list {
@@ -841,6 +857,17 @@ main[data-view-phase="checkpoint"] .upgrades h3 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.settings-kicker,
+.forge-kicker,
+.preparation-kicker,
+.result-kicker {
+  margin: 0 0 0.3rem;
+  color: #d4a650;
+  font-size: 0.75em;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
 main[data-view-phase="checkpoint"] .settings select {
   width: 100%;
   border-radius: 0.1rem;
@@ -854,7 +881,7 @@ main[data-view-phase="checkpoint"] .upgrade-catalog button {
   background: #2b241b;
   color: #e6d5b4;
 }
-main[data-view-phase="checkpoint"] .upgrades > .primary-action {
+main[data-view-phase="checkpoint"] .upgrades .primary-action {
   border: 2px solid #ffe09a;
   background: linear-gradient(#d99a3a, #9c5b15);
   box-shadow:
@@ -863,14 +890,164 @@ main[data-view-phase="checkpoint"] .upgrades > .primary-action {
   font-weight: 800;
 }
 main[data-view-phase="checkpoint"] .forge-return {
-  margin-bottom: 0.75rem;
+  margin: 0;
+  white-space: nowrap;
+}
+.forge-toolbar {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  margin: 0 0 1rem;
+  padding: 1rem clamp(1.2rem, 3vw, 2.4rem);
+  border-bottom: 1px solid #7d5b36;
+  background: linear-gradient(90deg, #17100c, #090705f8);
+  box-shadow: 0 0.8rem 1.2rem #0009;
+}
+main[data-view-phase="checkpoint"] .upgrades .forge-toolbar h3 {
+  margin: 0;
+}
+.forge-balance {
+  margin: 0;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid #70502f;
+  background: #0b0806;
+  text-align: center;
+}
+.forge-balance span,
+.forge-balance strong {
+  display: block;
+}
+.forge-balance span {
+  color: #c5b695;
+  font-size: 0.72em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.forge-balance strong {
+  color: #f2c76c;
+  font-family: Georgia, serif;
+  font-size: 1.35em;
+}
+.forge-resource-guide {
+  max-width: 54rem;
+  padding: 0.8rem 1rem;
+  border-left: 0.25rem solid #a8793f;
+  background: #0b0806b8;
+  color: #ddcba7;
+}
+.forge-scroll-hint {
+  margin: -0.35rem 0 1rem;
+  color: #f0c66f;
+  font-size: 0.82em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-align: right;
+  text-transform: uppercase;
 }
 main[data-view-phase="checkpoint"] .upgrade-catalog {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(9rem, 1fr));
+  gap: 0.8rem;
+  align-items: start;
 }
-main[data-view-phase="checkpoint"] .upgrade-catalog section {
+main[data-view-phase="checkpoint"] .upgrade-catalog .upgrade-tile {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 0.6rem;
+  min-height: 10.5rem;
+  padding: 0.85rem;
   border-color: #62472d;
-  background: #0b0806b8;
+  background:
+    radial-gradient(circle at 50% 28%, #7f552334, transparent 43%), #0b0806e8;
+  text-align: center;
+}
+.upgrade-icon {
+  grid-column: 1 / -1;
+  display: grid;
+  width: 4.4rem;
+  height: 4.4rem;
+  margin: 0 auto 0.2rem;
+  border: 1px solid #9b7139;
+  border-radius: 50%;
+  background: radial-gradient(circle, #6f4b21, #1a1008 72%);
+  box-shadow:
+    inset 0 0 0 0.25rem #120b07,
+    0 0 1.2rem #d68c2738;
+  color: #f4cf7a;
+  font:
+    2.25rem / 1 Georgia,
+    serif;
+  place-items: center;
+  text-shadow: 0 2px 0 #000;
+}
+.upgrade-rank,
+.upgrade-cost,
+.upgrade-availability {
+  font-size: 0.76em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.upgrade-rank {
+  color: #e7d4ae;
+  text-align: left;
+}
+.upgrade-cost {
+  color: #f2c76c;
+  text-align: right;
+}
+.upgrade-availability {
+  grid-column: 1 / -1;
+  color: #9dc282;
+}
+.upgrade-availability.is-unavailable {
+  color: #d8a788;
+}
+.upgrade-tile > button {
+  grid-column: 1 / -1;
+  margin: 0.15rem 0 0;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.78em;
+}
+.upgrade-disclosure {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  left: calc(200% + 1.6rem);
+  width: calc(200% + 0.8rem);
+  padding: 0.85rem 1rem;
+  border: 1px solid #a8793f;
+  background: #080604f5;
+  box-shadow: 0 0.9rem 2rem #000d;
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  transform: translateY(-0.25rem);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+.upgrade-tile:nth-child(4n + 2) .upgrade-disclosure {
+  left: calc(100% + 0.8rem);
+}
+.upgrade-tile:is(:hover, :focus, :focus-within) .upgrade-disclosure {
+  opacity: 1;
+  transform: translateY(0);
+}
+.upgrade-disclosure h5,
+.upgrade-disclosure p {
+  margin: 0 0 0.45rem;
+}
+.upgrade-disclosure ul {
+  margin-bottom: 0.45rem;
+}
+.upgrade-tile:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
 }
 main[data-view-phase="checkpoint"] .upgrades h4 {
   color: #d9ad60;
@@ -1032,14 +1209,21 @@ main[data-view-phase="preparation"] .preparation-summary {
   background: #100b08e8;
   box-shadow: 0 1rem 3rem #000c;
 }
-main[data-view-phase="preparation"] .preparation-summary::before {
-  display: block;
-  margin-bottom: 0.75rem;
+main[data-view-phase="preparation"] .preparation-summary h3 {
+  margin: 0 0 0.65rem;
   color: #efc46c;
-  content: "PREPARE THE COMPANY";
   font-family: Georgia, serif;
-  font-size: 1.25rem;
-  letter-spacing: 0.1em;
+  font-size: 1.45rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+main[data-view-phase="preparation"] .preparation-orders {
+  margin: 0 0 0.75rem;
+  color: #e2d2b3;
+  line-height: 1.45;
+}
+main[data-view-phase="preparation"] .preparation-summary dl {
+  margin: 0;
 }
 .preparation-confirm {
   position: absolute;
@@ -1088,6 +1272,30 @@ main[data-view-phase="result"] .result-message {
   margin-right: auto;
   margin-left: auto;
 }
+.result-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 1.2rem 0;
+  border: 1px solid #5c432c;
+  background: #5c432c;
+  text-align: left;
+}
+.result-summary div {
+  padding: 0.7rem 0.9rem;
+  background: #0c0907;
+}
+.result-summary div:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+.result-summary dd {
+  margin-top: 0.15rem;
+  color: #f1c875;
+  font-weight: 800;
+}
+.result-next-step {
+  color: #ddcba7;
+}
 main[data-view-phase="result"] .result-actions,
 main[data-view-phase="failure"] .result-actions {
   justify-content: center;
@@ -1128,6 +1336,18 @@ main[data-view-phase="failure"] .result-actions {
     padding: 1rem;
   }
   main[data-view-phase="checkpoint"] .upgrade-catalog {
+    grid-template-columns: 1fr;
+  }
+  .upgrade-disclosure,
+  .upgrade-tile:nth-child(4n + 2) .upgrade-disclosure {
+    top: calc(100% + 0.45rem);
+    right: auto;
+    left: 0;
+    width: 100%;
+  }
+  .settings-grid,
+  .forge-toolbar,
+  .result-summary {
     grid-template-columns: 1fr;
   }
   main:is(

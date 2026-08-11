@@ -10,15 +10,22 @@ const distDirectory = resolve(root, process.argv[2] ?? "apps/web/dist/assets");
 
 const budgets = {
   mainJavaScript: 512_000,
+  // Developer evidence export is loaded only when explicitly requested from
+  // inspection mode rather than being paid by every player-mode startup.
+  deferredEvidenceJavaScript: 28_672,
   // The worker owns fixed-step combat plus profile-derived preparation and
   // terminal reward authority. Keep that cost isolated from the renderer and
   // bounded to 72 KiB compressed.
   workerJavaScript: 73_728,
   stylesheet: 10_240,
-  total: 589_824
+  // Keep the complete offline install bounded while allowing the one deferred
+  // evidence-export chunk; player startup remains governed by the unchanged
+  // main, worker, and stylesheet ceilings above.
+  total: 591_872
 };
 const classifications = [
   ["mainJavaScript", /^index-[\w-]+\.js$/],
+  ["deferredEvidenceJavaScript", /^run-evidence-[\w-]+\.js$/],
   ["workerJavaScript", /^simulation\.worker-[\w-]+\.js$/],
   ["stylesheet", /^index-[\w-]+\.css$/]
 ];

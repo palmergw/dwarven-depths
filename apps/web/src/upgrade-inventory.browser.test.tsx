@@ -114,10 +114,23 @@ describe("checkpoint upgrade inventory", () => {
       "Available Forge Ore: 19"
     );
     expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "Shield Slam TrainingRank 2; 11 Forge Ore spent"
+      "Shield Slam Training"
     );
     expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "Powder Cask ReinforcementRank 1; 7 Forge Ore spent"
+      "Powder Cask Reinforcement"
+    );
+    expect(document.querySelector(".forge-scroll-hint")).toHaveTextContent(
+      "Scroll for skills and recycle options"
+    );
+    const upgrades = document.querySelector<HTMLElement>(".upgrades");
+    const toolbar = document.querySelector<HTMLElement>(".forge-toolbar");
+    if (upgrades === null || toolbar === null)
+      throw new Error("expected Forge scroll surface and toolbar");
+    upgrades.scrollTop = upgrades.scrollHeight;
+    await vi.waitFor(() =>
+      expect(toolbar.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+        upgrades.getBoundingClientRect().top
+      )
     );
 
     await page.viewport(320, 720);
@@ -135,6 +148,45 @@ describe("checkpoint upgrade inventory", () => {
       )
     );
     expect(await button("Begin preparation")).toBeInstanceOf(HTMLButtonElement);
+  });
+
+  it("progressively discloses upgrade details for pointer and keyboard users", async () => {
+    const initial = createInitialProfile("character.iron_warden" as StableId);
+    renderWithStore(await readyStore({ ...initial, forgeOre: 19 }));
+
+    await userEvent.click(await button("Upgrade inventory"));
+    const tiles = document.querySelectorAll<HTMLElement>(".upgrade-tile");
+    expect(tiles).toHaveLength(2);
+    expect(tiles[0]).toHaveTextContent("Rank 0/2");
+    expect(tiles[0]).toHaveTextContent("10 Forge Ore");
+    expect(tiles[1]).toHaveTextContent("Unavailable");
+
+    const availablePurchase = await button("Purchase");
+    const availableDisclosure = tiles[0]?.querySelector<HTMLElement>(
+      ".upgrade-disclosure"
+    );
+    expect(availablePurchase).toHaveAccessibleDescription(
+      expect.stringContaining("Rank 1 effects")
+    );
+    expect(availablePurchase).toHaveAccessibleName(
+      "Purchase Shield Slam Training rank 1 for 10 Forge Ore"
+    );
+    expect(availableDisclosure).toHaveStyle({ opacity: "0" });
+    availablePurchase.focus();
+    await vi.waitFor(() =>
+      expect(availableDisclosure).toHaveStyle({ opacity: "1" })
+    );
+
+    expect(tiles[1]).toHaveAttribute("tabindex", "0");
+    tiles[1]?.focus();
+    await vi.waitFor(() =>
+      expect(
+        tiles[1]?.querySelector<HTMLElement>(".upgrade-disclosure")
+      ).toHaveStyle({ opacity: "1" })
+    );
+    expect(tiles[1]).toHaveAccessibleDescription(
+      expect.stringContaining("Requires Powder Cask")
+    );
   });
 
   it("shows an explicit empty inventory through mouse input", async () => {

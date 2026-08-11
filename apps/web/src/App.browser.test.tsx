@@ -507,8 +507,14 @@ class ControlledJourneyWorker {
         entities: [],
         entityTransitions: [],
         encounter: {
-          startedWaveIds: [],
-          activeWaveId: null,
+          startedWaveIds: [
+            "wave.shuttergate.1",
+            "wave.shuttergate.2",
+            "wave.shuttergate.3",
+            "wave.shuttergate.4",
+            "wave.shuttergate.5"
+          ],
+          activeWaveId: "wave.shuttergate.5",
           pendingSpawnCount: 0,
           livingHostileCount: 0,
           terminalResult
@@ -817,6 +823,13 @@ describe("run journey guidance", () => {
         "upcoming"
       ])
     );
+    const preparation = document.querySelector(".preparation-summary");
+    expect(preparation).toHaveTextContent("Fixed tutorial deployment");
+    expect(preparation).toHaveTextContent(
+      "There is no placement choice in this tutorial defence."
+    );
+    expect(preparation).toHaveTextContent("North approach · locked");
+    expect(preparation?.textContent).not.toContain("placement points");
 
     await userEvent.click(await buttonWithText("Confirm preparation"));
     await buttonWithText("Pause combat");
@@ -851,6 +864,14 @@ describe("run journey guidance", () => {
     ]);
     expect(journey.querySelector('[aria-current="step"]')).toHaveTextContent(
       "download its authoritative run evidence"
+    );
+    const summary = document.querySelector(".result-summary");
+    expect(summary).toHaveAccessibleName("Expedition summary");
+    expect(summary).toHaveTextContent("OutcomeFortress held");
+    expect(summary).toHaveTextContent("Forge Ore earned+8");
+    expect(summary).toHaveTextContent("New balance8 Forge Ore");
+    expect(document.querySelector(".results")).toHaveTextContent(
+      "spend your reward and muster the next defence"
     );
   });
 
@@ -888,6 +909,9 @@ describe("run journey guidance", () => {
     await resultHeading("Victory results");
     expect(Date.now() - terminalSnapshotEmittedAt).toBeGreaterThanOrEqual(650);
     expect(document.querySelector(".active-combat-screen")).toBeNull();
+    expect(document.querySelector(".result-summary")).toHaveTextContent(
+      "Waves faced5"
+    );
   });
 
   it("does not strand a terminal result when battlefield assets fail to load", async () => {
@@ -975,11 +999,143 @@ describe("run journey guidance", () => {
       expect(candidate).toBeInstanceOf(HTMLHeadingElement);
       return candidate as HTMLHeadingElement;
     });
-    expect(failure).toHaveTextContent("Run failed");
+    expect(failure).toHaveTextContent("The company must regroup");
     expect(failure.closest("section")).toHaveTextContent(
       "The expedition could not continue. Return to the checkpoint and try again."
     );
     expect(document.querySelector("#results-heading")).toBeNull();
+  });
+
+  it("does not claim a valid terminal reward was saved when profile storage is unavailable", async () => {
+    const workers: ControlledJourneyWorker[] = [];
+    const createWorker = (): Worker => {
+      const worker = new ControlledJourneyWorker();
+      workers.push(worker);
+      return worker as unknown as Worker;
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={createWorker}
+        createProfileStore={() => ({
+          load: async () => {
+            throw new Error("IndexedDB unavailable");
+          },
+          write: async () => {
+            throw new Error("unexpected profile write");
+          },
+          close: async () => undefined
+        })}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    workers.at(-1)?.finish(8);
+
+    await resultHeading("Victory results");
+    const results = document.querySelector(".results");
+    expect(results).toHaveTextContent("Run balance8 Forge Ore");
+    expect(results).toHaveTextContent("ProgressionReward not saved");
+    expect(results).toHaveTextContent(
+      "Local progression is unavailable. Return to the checkpoint and retry when storage is available; this run's reward cannot be spent."
+    );
+    expect(results).not.toHaveTextContent("Reward saved");
+    expect(results).not.toHaveTextContent("spend your reward");
+  });
+
+  it("preserves the authoritative result summary when terminal progression cannot be written", async () => {
+    window.history.replaceState(null, "", "/?inspection=1");
+    const worker = new ControlledJourneyWorker();
+    const store = new PersistentJourneyProfileStore();
+    const writeProfile = store.write.bind(store);
+    store.write = async (request) => {
+      if (store.writes === 0) return writeProfile(request);
+      throw new Error("IndexedDB write failed");
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => store}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    worker.emitTerminalSnapshot();
+    worker.finish();
+
+    await vi.waitFor(
+      () =>
+        expect(document.querySelector("#results-heading")).toBeInstanceOf(
+          HTMLHeadingElement
+        ),
+      { timeout: 10_000 }
+    );
+    await resultHeading("Victory results");
+    const results = document.querySelector(".results");
+    expect(results).toHaveTextContent("OutcomeFortress held");
+    expect(results).toHaveTextContent("Waves faced5");
+    expect(results).toHaveTextContent("Forge Ore earned+8");
+    expect(results).toHaveTextContent("Run balance8 Forge Ore");
+    expect(results).toHaveTextContent("ProgressionReward not saved");
+    expect(results).toHaveTextContent("this run's reward cannot be spent");
+    expect(results).toHaveTextContent("Progression saveIndexedDB write failed");
+    expect(document.querySelector("#failure-heading")).toBeNull();
+  });
+
+  it("does not let a late worker failure overtake an accepted terminal reward", async () => {
+    const worker = new ControlledJourneyWorker();
+    const store = new PersistentJourneyProfileStore();
+    const writeProfile = store.write.bind(store);
+    let terminalEnvelope: ProfileSaveEnvelope | undefined;
+    let resolveTerminalWrite:
+      | ((envelope: ProfileSaveEnvelope) => void)
+      | undefined;
+    store.write = async (request) => {
+      if (store.writes === 0) return writeProfile(request);
+      terminalEnvelope = request.envelope as ProfileSaveEnvelope;
+      return new Promise<ProfileSaveEnvelope>((resolve) => {
+        resolveTerminalWrite = resolve;
+      });
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => store}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await buttonWithText("Pause combat");
+    worker.finish();
+    await vi.waitFor(() => expect(resolveTerminalWrite).toBeTypeOf("function"));
+
+    worker.emit({ malformed: "late worker response" });
+    if (terminalEnvelope === undefined || resolveTerminalWrite === undefined)
+      throw new Error("terminal profile write was not pending");
+    store.envelope = terminalEnvelope;
+    resolveTerminalWrite(terminalEnvelope);
+
+    await resultHeading("Victory results");
+    const results = document.querySelector(".results");
+    expect(results).toHaveTextContent("Forge Ore earned+8");
+    expect(results).toHaveTextContent("New balance8 Forge Ore");
+    expect(results).toHaveTextContent("ProgressionReward saved");
+    expect(results).not.toHaveTextContent("No reward was applied");
+    expect(document.querySelector("#failure-heading")).toBeNull();
+    expect(store.envelope.profile.forgeOre).toBe(8);
   });
 
   it("adapts terminal guidance to failure details", async () => {
@@ -4116,9 +4272,11 @@ describe("authoritative web worker", () => {
     expect(preparationSummary?.textContent).toContain(
       "DefenceShuttergate Hall"
     );
-    expect(preparationSummary?.textContent).toContain("Company roster1 dwarf");
     expect(preparationSummary?.textContent).toContain(
-      "DeploymentFixed tutorial guard post"
+      "CompanyIron Warden ready"
+    );
+    expect(preparationSummary?.textContent).toContain(
+      "Guard postNorth approach · locked"
     );
     const button = document.querySelector("button");
     if (button === null) throw new Error("expected preparation button");
@@ -4380,12 +4538,10 @@ describe("authoritative Shuttergate campaign journey", () => {
     await returnToCheckpoint();
     expect(document.body.textContent).toContain("Forge Ore16");
     await userEvent.click(await buttonWithText("Upgrade inventory"));
-    await userEvent.click(
-      await buttonWithText("Purchase rank 1 for 10 Forge Ore")
-    );
+    await userEvent.click(await buttonWithText("Purchase"));
     await vi.waitFor(() => {
       expect(document.body.textContent).toContain("Available Forge Ore: 6");
-      expect(document.body.textContent).toContain("Shield Slam TrainingRank 1");
+      expect(document.body.textContent).toContain("Rank 1/2");
     });
     await userEvent.click(await buttonWithText("Close upgrade inventory"));
     await reloadApp();
@@ -4399,8 +4555,8 @@ describe("authoritative Shuttergate campaign journey", () => {
     await buttonWithText("Pause combat");
     workers.at(-1)?.finish(8, "victory");
     await resultHeading("Victory results");
-    expect(document.body.textContent).toContain(
-      "Forge award: 8 ore. Company balance: 14 Forge Ore."
+    expect(document.querySelector(".result-summary")).toHaveTextContent(
+      "Forge Ore earned+8New balance14 Forge Ore"
     );
     expect(store.envelope?.profile).toMatchObject({
       forgeOre: 14,
