@@ -119,6 +119,19 @@ describe("checkpoint upgrade inventory", () => {
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Powder Cask ReinforcementRank 1; 7 Forge Ore spent"
     );
+    expect(document.querySelector(".forge-scroll-hint")).toHaveTextContent(
+      "Scroll for skills and recycle options"
+    );
+    const upgrades = document.querySelector<HTMLElement>(".upgrades");
+    const toolbar = document.querySelector<HTMLElement>(".forge-toolbar");
+    if (upgrades === null || toolbar === null)
+      throw new Error("expected Forge scroll surface and toolbar");
+    upgrades.scrollTop = upgrades.scrollHeight;
+    await vi.waitFor(() =>
+      expect(toolbar.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+        upgrades.getBoundingClientRect().top
+      )
+    );
 
     await page.viewport(320, 720);
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(

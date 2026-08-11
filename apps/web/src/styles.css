@@ -896,12 +896,12 @@ main[data-view-phase="checkpoint"] .forge-return {
 .forge-toolbar {
   position: sticky;
   z-index: 2;
-  top: -2.4rem;
+  top: 0;
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: 1rem;
   align-items: center;
-  margin: -2.4rem -2.4rem 1rem;
+  margin: 0 0 1rem;
   padding: 1rem clamp(1.2rem, 3vw, 2.4rem);
   border-bottom: 1px solid #7d5b36;
   background: linear-gradient(90deg, #17100c, #090705f8);
@@ -938,6 +938,15 @@ main[data-view-phase="checkpoint"] .upgrades .forge-toolbar h3 {
   border-left: 0.25rem solid #a8793f;
   background: #0b0806b8;
   color: #ddcba7;
+}
+.forge-scroll-hint {
+  margin: -0.35rem 0 1rem;
+  color: #f0c66f;
+  font-size: 0.82em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-align: right;
+  text-transform: uppercase;
 }
 main[data-view-phase="checkpoint"] .upgrade-catalog {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1236,9 +1245,6 @@ main[data-view-phase="failure"] .result-actions {
   .forge-toolbar,
   .result-summary {
     grid-template-columns: 1fr;
-  }
-  .forge-toolbar {
-    position: static;
   }
   main:is(
       [data-view-phase="preparation"],

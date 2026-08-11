@@ -2002,6 +2002,10 @@ export function App({
                 company training. Item reinforcements unlock only after that
                 item joins the company inventory.
               </p>
+              <p className="forge-scroll-hint">
+                Scroll for skills and recycle options{" "}
+                <span aria-hidden="true">↓</span>
+              </p>
               {checkpointProfile.profile.purchasedUpgrades.length === 0 ? (
                 <p>No upgrades purchased.</p>
               ) : (
@@ -2404,6 +2408,10 @@ export function App({
                         }{" "}
                         Forge Ore
                       </dd>
+                    </div>
+                    <div>
+                      <dt>Progression</dt>
+                      <dd>Reward saved</dd>
                     </div>
                   </>
                 )}
