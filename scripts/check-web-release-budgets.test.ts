@@ -27,6 +27,7 @@ function validFiles(): Record<string, string> {
     "index-release.css": "body{color:white}",
     "index-release.js": "console.log('release')",
     "index-release.js.map": "ignored source map",
+    "run-evidence-release.js": "export const download=()=>{}",
     "simulation.worker-release.js": "self.onmessage=()=>{}"
   };
 }
@@ -46,6 +47,7 @@ describe("web release budgets", () => {
       compression: "gzip-9",
       measured: {
         mainJavaScript: expect.any(Number),
+        deferredEvidenceJavaScript: expect.any(Number),
         workerJavaScript: expect.any(Number),
         stylesheet: expect.any(Number),
         total: expect.any(Number)
@@ -77,6 +79,7 @@ describe("web release budgets", () => {
 
   it.each([
     ["missing worker", { "simulation.worker-release.js": undefined }],
+    ["missing evidence chunk", { "run-evidence-release.js": undefined }],
     ["duplicate main", { "index-extra.js": "duplicate" }],
     ["unexpected chunk", { "vendor-release.js": "unexpected" }]
   ])("rejects malformed asset sets: %s", (_label, changes) => {

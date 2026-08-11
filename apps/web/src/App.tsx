@@ -44,7 +44,6 @@ import {
   type WorkerMessage
 } from "./protocol.js";
 import type { RenderSnapshot } from "./render-snapshot.js";
-import { downloadRunEvidence } from "./run-evidence.js";
 
 const TERMINAL_PRESENTATION_DURATION_MS = 720;
 
@@ -2515,9 +2514,12 @@ export function App({
               <button
                 type="button"
                 onClick={() =>
-                  void downloadRunEvidence(
-                    view.result,
-                    runConfigurationRef.current
+                  void import("./run-evidence.js").then(
+                    ({ downloadRunEvidence }) =>
+                      downloadRunEvidence(
+                        view.result,
+                        runConfigurationRef.current
+                      )
                   )
                 }
               >
