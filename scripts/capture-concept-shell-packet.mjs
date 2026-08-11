@@ -95,7 +95,7 @@ try {
                           mapId: "map.shuttergate_hall",
                           tick: 4500,
                           previousTick: 4499,
-                          phase: "terminal",
+                          phase: "running",
                           nodes: [],
                           connections: [],
                           entities: [],
@@ -111,7 +111,7 @@ try {
                             activeWaveId: "wave.shuttergate.5",
                             pendingSpawnCount: 0,
                             livingHostileCount: 0,
-                            terminalResult: "victory"
+                            terminalResult: null
                           }
                         }
                       }
