@@ -134,6 +134,30 @@ describe("packaged desktop run evidence", () => {
         Object.assign(firstReplayCommand(value).command, { untrusted: true })
     ],
     [
+      "noncanonical command sequence",
+      (value) => (firstReplayCommand(value).sequence = 5)
+    ],
+    [
+      "command after terminal",
+      (value) => {
+        firstReplayCommand(value).tick = expected.terminalTick + 1;
+        firstReplayCommand(value).command.atTick = expected.terminalTick + 1;
+      }
+    ],
+    [
+      "attempt inconsistent with profile history",
+      (value) => {
+        value.runConfiguration.attemptId = "attempt.shuttergate.web_999999";
+        value.runConfiguration.seed = "42";
+        value.campaign.attemptId = "attempt.shuttergate.web_999999";
+        value.campaign.rewardId = "reward.attempt.shuttergate.web_999999";
+        value.campaign.profile.claimedRewardIds = [
+          "reward.attempt.shuttergate.web_999999"
+        ];
+        value.replay.seed = "42";
+      }
+    ],
+    [
       "terminal tick mismatch",
       (value) => (value.replay.expectedTerminalTick += 1)
     ],

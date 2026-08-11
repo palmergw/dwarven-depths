@@ -256,7 +256,10 @@ async function waitForResultEvidence() {
 async function waitForDownloadedFile() {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     const files = await readdir(downloadDirectory);
-    if (files.length > 0) return files;
+    if (files.length > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+      return readdir(downloadDirectory);
+    }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   throw new Error(

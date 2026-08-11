@@ -48,7 +48,11 @@ function validateReplayCommands(value) {
       envelope.sequence,
       `replay command ${index} sequence`
     );
-    if (tick < previousTick || sequence <= previousSequence) {
+    if (
+      tick < previousTick ||
+      sequence !== index ||
+      sequence <= previousSequence
+    ) {
       throw new Error(
         "replay commands must use canonical tick and sequence order"
       );
@@ -140,7 +144,24 @@ export function validateDesktopRunEvidence(value, expected) {
   const startingProfile = normalizeProfileState(runConfiguration.profile);
   const resolvedProfile = normalizeProfileState(campaign.profile);
   const expectedRewardId = `reward.${runConfiguration.attemptId}`;
+  const rewardPrefix = "reward.attempt.shuttergate.web_";
+  const claimedAttemptNumbers = startingProfile.claimedRewardIds
+    .filter((rewardId) => rewardId.startsWith(rewardPrefix))
+    .map((rewardId) => Number(rewardId.slice(rewardPrefix.length)));
   if (
+    claimedAttemptNumbers.some(
+      (attemptNumber, index) => attemptNumber !== index + 1
+    )
+  ) {
+    throw new Error("run profile campaign rewards are not contiguous");
+  }
+  const expectedAttemptNumber = claimedAttemptNumbers.length + 1;
+  const expectedAttemptId = `attempt.shuttergate.web_${String(
+    expectedAttemptNumber
+  ).padStart(6, "0")}`;
+  if (
+    runConfiguration.attemptId !== expectedAttemptId ||
+    runConfiguration.seed !== String(expectedAttemptNumber) ||
     campaign.attemptId !== runConfiguration.attemptId ||
     campaign.rewardId !== expectedRewardId ||
     startingProfile.claimedRewardIds.includes(expectedRewardId)
@@ -199,6 +220,9 @@ export function validateDesktopRunEvidence(value, expected) {
   requireHash(replay.contentManifestHash, "replay content manifest hash");
   requireHash(replay.scenarioHash, "replay scenario hash");
   validateReplayCommands(replay.commands);
+  if (replay.commands.some((command) => command.tick > expected.terminalTick)) {
+    throw new Error("replay command occurs after the terminal tick");
+  }
   const checkpoint = requireRecord(
     replay.checkpoints[0],
     "terminal checkpoint"
