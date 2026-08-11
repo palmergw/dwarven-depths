@@ -17,23 +17,14 @@
       "state": {
         "sourceHead": "db804391342a655e56c0b3be33db770af8856b75",
         "sourceClean": true,
-        "viewport": [
-          1440,
-          900
-        ],
+        "viewport": [1440, 900],
         "phase": "checkpoint",
         "shellView": "forge",
         "mainCount": 1,
         "visibleInspectionCount": 0,
         "stableIdVisible": false,
-        "bodyScroll": [
-          1440,
-          900
-        ],
-        "panelScroll": [
-          1278,
-          718
-        ],
+        "bodyScroll": [1440, 900],
+        "panelScroll": [1278, 718],
         "visibleButtonNames": [
           "Close upgrade inventory",
           "Purchase",
