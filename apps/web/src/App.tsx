@@ -33,6 +33,10 @@ import {
   validateCheckpointAttemptResult
 } from "./checkpoint-profile.js";
 import {
+  type CombatSoundPlayer,
+  createCombatSoundPlayer
+} from "./combat-feedback.js";
+import {
   parseWorkerMessage,
   type SimulationSpeed,
   type TargetPolicy,
@@ -168,7 +172,7 @@ const contrastPreferences = ["standard", "high"] as const;
 type ContrastPreference = (typeof contrastPreferences)[number];
 const soundPreferenceStorageKey =
   "dwarven-depths.presentation.sound-preference.v1";
-const soundPreferences = ["off", "on"] as const;
+const soundPreferences = ["off", "quiet", "on"] as const;
 type SoundPreference = (typeof soundPreferences)[number];
 
 const panelFocusableSelector =
@@ -434,6 +438,9 @@ export function App({
   const [pendingTargetPolicies, setPendingTargetPolicies] = useState<
     ReadonlyMap<string, TargetPolicy>
   >(new Map());
+  const [pendingSimulationSpeed, setPendingSimulationSpeed] = useState<
+    SimulationSpeed | undefined
+  >();
   const [rejectedAbilityKeys, setRejectedAbilityKeys] = useState<
     ReadonlySet<string>
   >(new Set());
@@ -460,6 +467,7 @@ export function App({
   const [deviceReducedMotion, setDeviceReducedMotion] =
     useState(readsReducedMotion);
   const workerRef = useRef<Worker | undefined>(undefined);
+  const uiSoundPlayerRef = useRef<CombatSoundPlayer | undefined>(undefined);
   const runConfigurationRef = useRef<
     ReturnType<typeof createRunConfiguration> | undefined
   >(undefined);
@@ -486,6 +494,9 @@ export function App({
   const initializedRef = useRef(false);
   const submittedRef = useRef(false);
   const manualPauseRequestedRef = useRef<boolean | undefined>(undefined);
+  const pendingSimulationSpeedRef = useRef<SimulationSpeed | undefined>(
+    undefined
+  );
   const latestCombatControlsTickRef = useRef(-1);
   const pendingAbilityKeysRef = useRef(
     new Map<
@@ -579,6 +590,24 @@ export function App({
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
+
+  useEffect(() => {
+    if (soundPreference === "off") {
+      uiSoundPlayerRef.current?.close();
+      uiSoundPlayerRef.current = undefined;
+      return;
+    }
+    const player = createCombatSoundPlayer(
+      undefined,
+      soundPreference === "quiet" ? 0.45 : 1
+    );
+    uiSoundPlayerRef.current = player;
+    return () => {
+      player.close();
+      if (uiSoundPlayerRef.current === player)
+        uiSoundPlayerRef.current = undefined;
+    };
+  }, [soundPreference]);
 
   useEffect(() => {
     let active = true;
@@ -996,6 +1025,13 @@ export function App({
               "Worker resume command failed."
             );
           }
+          if (
+            message.protocolVersion === 4 &&
+            pendingSimulationSpeedRef.current === message.simulationSpeed
+          ) {
+            pendingSimulationSpeedRef.current = undefined;
+            setPendingSimulationSpeed(undefined);
+          }
         }
         setView(
           message.phase === "preparation"
@@ -1082,6 +1118,7 @@ export function App({
           pendingAbilityKeysRef.current.delete(key);
           setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
           setRejectedAbilityKeys((current) => new Set(current).add(key));
+          uiSoundPlayerRef.current?.playCue("ui_reject");
           return;
         }
         for (const [
@@ -1101,6 +1138,7 @@ export function App({
           setRejectedTargetPolicies((current) =>
             new Set(current).add(dwarfEntityId)
           );
+          uiSoundPlayerRef.current?.playCue("ui_reject");
           return;
         }
       } else {
@@ -1142,6 +1180,8 @@ export function App({
     initializedRef.current = false;
     submittedRef.current = false;
     manualPauseRequestedRef.current = undefined;
+    pendingSimulationSpeedRef.current = undefined;
+    setPendingSimulationSpeed(undefined);
     runStartingProfileRef.current = undefined;
     latestRenderSnapshotRef.current = undefined;
     terminalPresentationDeadlineRef.current = 0;
@@ -1167,6 +1207,7 @@ export function App({
       )
         return;
       manualPauseRequestedRef.current = paused;
+      uiSoundPlayerRef.current?.playCue(paused ? "pause" : "resume");
       postCurrentWorkerMessage(
         {
           protocolVersion: WEB_PROTOCOL_VERSION,
@@ -1182,16 +1223,29 @@ export function App({
 
   const setSimulationSpeed = useCallback(
     (speed: SimulationSpeed): void => {
-      if (view.phase !== "running" || view.simulationSpeed === speed) return;
-      postCurrentWorkerMessage(
-        {
-          protocolVersion: WEB_PROTOCOL_VERSION,
-          type: "command",
-          requestId: crypto.randomUUID(),
-          command: { type: "setSimulationSpeed", speed }
-        },
-        "Worker combat-speed command failed."
-      );
+      if (
+        view.phase !== "running" ||
+        view.simulationSpeed === speed ||
+        pendingSimulationSpeedRef.current !== undefined
+      )
+        return;
+      pendingSimulationSpeedRef.current = speed;
+      setPendingSimulationSpeed(speed);
+      uiSoundPlayerRef.current?.playCue("speed");
+      if (
+        !postCurrentWorkerMessage(
+          {
+            protocolVersion: WEB_PROTOCOL_VERSION,
+            type: "command",
+            requestId: crypto.randomUUID(),
+            command: { type: "setSimulationSpeed", speed }
+          },
+          "Speed failed."
+        )
+      ) {
+        pendingSimulationSpeedRef.current = undefined;
+        setPendingSimulationSpeed(undefined);
+      }
     },
     [postCurrentWorkerMessage, view]
   );
@@ -1223,6 +1277,7 @@ export function App({
         submittedAtTick: latestCombatControlsTickRef.current
       });
       pendingTargetPoliciesRef.current = nextPendingTargetPolicies;
+      uiSoundPlayerRef.current?.playCue("ui_confirm");
       setPendingTargetPolicies(
         new Map(
           [...nextPendingTargetPolicies].map(([entityId, pending]) => [
@@ -1275,6 +1330,7 @@ export function App({
         requestId,
         submittedAtTick: latestCombatControlsTickRef.current
       });
+      uiSoundPlayerRef.current?.playCue("ui_confirm");
       setPendingAbilityKeys(new Set(pendingAbilityKeysRef.current.keys()));
       postCurrentWorkerMessage(
         {
@@ -1292,19 +1348,17 @@ export function App({
   useLayoutEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.repeat || view.phase !== "running") return;
+      const target = event.target;
+      const editing =
+        target instanceof HTMLElement &&
+        (target.isContentEditable || target.matches("input, select, textarea"));
       if (
         event.key === "1" &&
         !event.altKey &&
         !event.ctrlKey &&
         !event.metaKey
       ) {
-        const target = event.target;
-        if (
-          target instanceof HTMLElement &&
-          (target.isContentEditable ||
-            target.matches("input, select, textarea"))
-        )
-          return;
+        if (editing) return;
         const dwarf = combatControls?.dwarves.find(
           (candidate) => candidate.activeAbilities?.length
         );
@@ -1312,6 +1366,20 @@ export function App({
         if (dwarf === undefined || ability === undefined) return;
         event.preventDefault();
         activateAbility(dwarf.entityId, ability.abilityId);
+        return;
+      }
+      if (
+        !editing &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        (event.key === "-" ||
+          event.key === "_" ||
+          event.key === "=" ||
+          event.key === "+")
+      ) {
+        event.preventDefault();
+        setSimulationSpeed(event.key === "-" || event.key === "_" ? 1 : 2);
         return;
       }
       if (event.key !== "Escape") return;
@@ -1337,7 +1405,13 @@ export function App({
       window.removeEventListener("pagehide", onBackground);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [activateAbility, combatControls, view, setManualPause]);
+  }, [
+    activateAbility,
+    combatControls,
+    setManualPause,
+    setSimulationSpeed,
+    view
+  ]);
 
   useLayoutEffect(() => {
     const onCheckpointEscape = (event: KeyboardEvent) => {
@@ -1604,7 +1678,8 @@ export function App({
                 motionPreference === "reduce" ||
                 (motionPreference === "device" && deviceReducedMotion)
               }
-              soundEnabled={soundPreference === "on"}
+              soundEnabled={soundPreference !== "off"}
+              soundVolume={soundPreference === "quiet" ? 0.45 : 1}
               onTerminalPresentationStarted={(snapshot) =>
                 terminalPresentationStartedRef.current?.(snapshot)
               }
@@ -1651,6 +1726,7 @@ export function App({
               className="combat-pause"
               type="button"
               aria-label={view.manualPaused ? "Resume combat" : "Pause combat"}
+              aria-keyshortcuts="Escape"
               aria-pressed={view.manualPaused}
               onClick={() => setManualPause(!view.manualPaused)}
             >
@@ -1663,14 +1739,22 @@ export function App({
                   key={speed}
                   type="button"
                   aria-label={`${speed}× combat speed`}
+                  aria-keyshortcuts={speed === 1 ? "-" : "+"}
                   aria-pressed={view.simulationSpeed === speed}
-                  disabled={view.simulationSpeed === speed}
+                  disabled={
+                    view.simulationSpeed === speed ||
+                    pendingSimulationSpeed !== undefined
+                  }
                   onClick={() => setSimulationSpeed(speed)}
                 >
                   {speed}×
                 </button>
               ))}
             </fieldset>
+            <p className="combat-keyboard-hints">
+              <kbd>Esc</kbd> pause · <kbd>1</kbd> Shield Slam · <kbd>−</kbd>/
+              <kbd>+</kbd> speed · portrait targeting
+            </p>
             {view.manualPaused && (
               <div className="combat-pause-banner" role="status">
                 <strong>Combat paused</strong>
@@ -1686,7 +1770,8 @@ export function App({
               motionPreference === "reduce" ||
               (motionPreference === "device" && deviceReducedMotion)
             }
-            soundEnabled={soundPreference === "on"}
+            soundEnabled={soundPreference !== "off"}
+            soundVolume={soundPreference === "quiet" ? 0.45 : 1}
           />
         )}
         {renderSnapshot !== undefined &&
@@ -1818,6 +1903,7 @@ export function App({
               }}
             >
               <option value="off">Off</option>
+              <option value="quiet">Quiet</option>
               <option value="on">On</option>
             </select>
             <p className="settings-help">

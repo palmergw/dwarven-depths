@@ -2,12 +2,14 @@
   "schemaVersion": 1,
   "id": "wip-terminal-defeat",
   "label": "WIP #275 — wip-terminal-defeat",
-  "sourceHead": "93313ec65282c18d42f120ac8c8a5233d00cc7dd",
+  "sourceHead": "915befda6410b523d187867c1c965a07ce6ecfa8",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-terminal-defeat.png",
-  "screenshotSha256": "e9835d221bf197150f487236792b4f58c2fda13f0e5c76595f8aefa6913791c4",
+  "screenshotSha256": "91d90c75da0d7ee5f5ef0b3b8db240f7d2d0241845eae48897ae89c794bc49ed",
   "viewport": [1440, 900],
   "phase": "result",
+  "motionPreference": null,
+  "reducedMotion": true,
   "truth": {
     "schemaVersion": 1,
     "captureReady": true,
@@ -47,10 +49,10 @@
           "y": 330,
           "nominalHeight": 44,
           "canvasBounds": [798, 276, 80, 60],
-          "alphaBounds": [825, 286, 26, 44],
-          "nonzeroAlphaPixels": 705,
-          "fullAlphaPixels": 550,
-          "partialAlphaPixels": 155,
+          "alphaBounds": [805, 286, 67, 44],
+          "nonzeroAlphaPixels": 1339,
+          "fullAlphaPixels": 1060,
+          "partialAlphaPixels": 279,
           "intersectsUnobscuredWorldViewport": true
         },
         {
@@ -71,14 +73,14 @@
           "transition": "active",
           "elite": true,
           "boss": false,
-          "x": 1110,
-          "y": 253,
+          "x": 663,
+          "y": 323,
           "nominalHeight": 44,
-          "canvasBounds": [1070, 199, 80, 60],
-          "alphaBounds": [1084, 209, 52, 44],
-          "nonzeroAlphaPixels": 1341,
-          "fullAlphaPixels": 1135,
-          "partialAlphaPixels": 206,
+          "canvasBounds": [623, 269, 80, 60],
+          "alphaBounds": [634, 279, 58, 44],
+          "nonzeroAlphaPixels": 1624,
+          "fullAlphaPixels": 1387,
+          "partialAlphaPixels": 237,
           "intersectsUnobscuredWorldViewport": true
         }
       ]
@@ -97,7 +99,7 @@
       "exempts": ["hud"],
       "witness": {
         "entityId": "entity.enemy.shuttergate_006",
-        "subjectAlphaPixels": 1341,
+        "subjectAlphaPixels": 1025,
         "subjectPixelsOverRearArtifact": 0,
         "subjectPixelsOverGroundArtifact": 0,
         "subjectPixelsBehindForegroundArtifact": 0,
@@ -124,7 +126,8 @@
       "valid": true
     }
   },
-  "hud": "The ShuttergateFortressFallenWave3Hostiles2Combat ended in defeat. Fortress fallen. Wave 3. 2 hostiles active.",
+  "hud": "The ShuttergateFortressFallenWave3Hostiles2 active0 approachingCombat ended in defeat. Fortress fallen. Wave 3. 2 hostiles active.",
+  "waveSignal": null,
   "health": {},
   "ability": {
     "disabled": null

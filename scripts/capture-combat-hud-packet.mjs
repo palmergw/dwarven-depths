@@ -108,10 +108,24 @@ async function capture(page, id, expected) {
     viewport: [window.innerWidth, window.innerHeight],
     truth: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__,
     phase: document.querySelector("main")?.getAttribute("data-view-phase"),
+    motionPreference: localStorage.getItem(
+      "dwarven-depths.presentation.motion-preference.v1"
+    ),
+    reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)")
+      .matches,
     hud: document
       .querySelector(".combat-hud")
       ?.textContent?.replace(/\s+/g, " ")
       .trim(),
+    waveSignal: (() => {
+      const signal = document.querySelector(".wave-signal");
+      return signal === null
+        ? null
+        : {
+            kind: signal.getAttribute("data-wave-signal"),
+            text: signal.textContent?.replace(/\s+/g, " ").trim()
+          };
+    })(),
     health: {
       current: document
         .querySelector(".warden-health-track")
@@ -145,10 +159,15 @@ async function capture(page, id, expected) {
     speedControls: [...document.querySelectorAll(".combat-speed button")].map(
       (button) => ({
         label: button.getAttribute("aria-label"),
+        shortcut: button.getAttribute("aria-keyshortcuts"),
         pressed: button.getAttribute("aria-pressed"),
         disabled: button.disabled
       })
     ),
+    keyboardHints: document
+      .querySelector(".combat-keyboard-hints")
+      ?.textContent?.replace(/\s+/g, " ")
+      .trim(),
     targetMenuOpen: document
       .querySelector(".character-portrait-button")
       ?.getAttribute("aria-expanded"),
@@ -172,8 +191,18 @@ async function capture(page, id, expected) {
       JSON.stringify(
         state.phase === "running"
           ? [
-              { label: "1× combat speed", pressed: "true", disabled: true },
-              { label: "2× combat speed", pressed: "false", disabled: false }
+              {
+                label: "1× combat speed",
+                shortcut: "-",
+                pressed: "true",
+                disabled: true
+              },
+              {
+                label: "2× combat speed",
+                shortcut: "+",
+                pressed: "false",
+                disabled: false
+              }
             ]
           : []
       ) ||
@@ -205,12 +234,16 @@ async function capture(page, id, expected) {
     screenshotSha256: sha256(screenshotBytes),
     viewport: state.viewport,
     phase: state.phase,
+    motionPreference: state.motionPreference,
+    reducedMotion: state.reducedMotion,
     truth,
     hud: state.hud,
+    waveSignal: state.waveSignal,
     health: state.health,
     ability: state.ability,
     pause: state.pause,
     speedControls: state.speedControls,
+    keyboardHints: state.keyboardHints,
     targetMenuOpen: state.targetMenuOpen
   };
   await writeFile(sidecarUrl, `${JSON.stringify(sidecar, null, 2)}\n`);
@@ -255,12 +288,12 @@ async function startFrozenActiveCombatPage(browser) {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1,
-    reducedMotion: "reduce"
+    reducedMotion: "no-preference"
   });
   await page.addInitScript(() => {
     localStorage.setItem(
       "dwarven-depths.presentation.motion-preference.v1",
-      "reduce"
+      "allow"
     );
   });
   await page.goto(baseUrl, { waitUntil: "networkidle" });
@@ -424,6 +457,17 @@ try {
   await browser.close();
 }
 
+if (
+  !captures.some(
+    (capture) =>
+      capture.motionPreference === "allow" && capture.reducedMotion === false
+  ) ||
+  !captures.some((capture) => capture.reducedMotion === true)
+)
+  throw new Error(
+    "combat HUD packet must contain both normal-motion and reduced-motion evidence"
+  );
+
 const manifest = {
   schemaVersion: 1,
   label: "WIP #275 combat HUD packet",
@@ -431,7 +475,7 @@ const manifest = {
   fixtureId,
   viewport: [1440, 900],
   settings: {
-    reducedMotion: true,
+    motionCoverage: ["allow", "reduce"],
     contrast: "standard",
     textScale: "default"
   },
@@ -441,7 +485,10 @@ const manifest = {
     screenshotSha256: capture.screenshotSha256,
     tick: capture.truth.snapshot.tick,
     phase: capture.truth.snapshot.phase,
+    motionPreference: capture.motionPreference,
+    reducedMotion: capture.reducedMotion,
     abilityState: capture.ability.state,
+    waveSignal: capture.waveSignal,
     health: capture.health
   }))
 };

@@ -2,12 +2,14 @@
   "schemaVersion": 1,
   "id": "wip-default-active",
   "label": "WIP #275 — wip-default-active",
-  "sourceHead": "93313ec65282c18d42f120ac8c8a5233d00cc7dd",
+  "sourceHead": "915befda6410b523d187867c1c965a07ce6ecfa8",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wip-default-active.png",
-  "screenshotSha256": "9bc52d7727f3b983948960f7783d8f05fec73d3a50e9853c0b1f1a5c1d26946d",
+  "screenshotSha256": "eb567e8ba56c5c6929c2a3562aae710c8c18c07c74929cf098042d1fee70c631",
   "viewport": [1440, 900],
   "phase": "running",
+  "motionPreference": "allow",
+  "reducedMotion": false,
   "truth": {
     "schemaVersion": 1,
     "captureReady": true,
@@ -17,7 +19,7 @@
     "snapshot": {
       "levelId": "level.shuttergate_hall",
       "mapId": "map.shuttergate_hall",
-      "tick": 7,
+      "tick": 2,
       "phase": "running"
     },
     "registry": {
@@ -68,17 +70,17 @@
           },
           "targetEntityId": "entity.dwarf.warden",
           "statusIds": [],
-          "transition": "active",
+          "transition": "spawned",
           "elite": false,
           "boss": false,
           "x": 1054,
           "y": 302,
           "nominalHeight": 44,
           "canvasBounds": [1014, 248, 80, 60],
-          "alphaBounds": [1028, 258, 52, 44],
-          "nonzeroAlphaPixels": 1341,
-          "fullAlphaPixels": 1135,
-          "partialAlphaPixels": 206,
+          "alphaBounds": [1032, 258, 44, 44],
+          "nonzeroAlphaPixels": 1201,
+          "fullAlphaPixels": 1017,
+          "partialAlphaPixels": 184,
           "intersectsUnobscuredWorldViewport": true
         }
       ]
@@ -97,10 +99,10 @@
       "exempts": ["hud"],
       "witness": {
         "entityId": "entity.enemy.shuttergate_001",
-        "subjectAlphaPixels": 1341,
+        "subjectAlphaPixels": 1025,
         "subjectPixelsOverRearArtifact": 0,
         "subjectPixelsOverGroundArtifact": 0,
-        "subjectPixelsBehindForegroundArtifact": 1186,
+        "subjectPixelsBehindForegroundArtifact": 1022,
         "worldRingPixelsBehindForegroundArtifact": 298,
         "transientEffectPixelsBehindForegroundArtifact": 313
       },
@@ -109,7 +111,7 @@
         "actualAnchor": [1054, 302],
         "rearOverlapPixels": 0,
         "subjectGroundOverlapPixels": 0,
-        "foregroundOcclusionPixels": 1186,
+        "foregroundOcclusionPixels": 1022,
         "worldRingOcclusionPixels": 298,
         "transientEffectOcclusionPixels": 313
       }
@@ -124,7 +126,11 @@
       "valid": true
     }
   },
-  "hud": "The ShuttergateFortressHoldingWave1Hostiles1Combat active. Fortress holding. Wave 1. 1 hostiles active. Iron Warden health 240 of 240.",
+  "hud": "The ShuttergateFortressHoldingWave1Hostiles1 active0 approachingWave 1 1 hostile enteringCombat active. Fortress holding. Wave 1. 1 hostiles active. Iron Warden health 240 of 240.",
+  "waveSignal": {
+    "kind": "wave",
+    "text": "Wave 1 1 hostile entering"
+  },
   "health": {
     "current": "240",
     "maximum": "240",
@@ -141,14 +147,17 @@
   "speedControls": [
     {
       "label": "1× combat speed",
+      "shortcut": "-",
       "pressed": "true",
       "disabled": true
     },
     {
       "label": "2× combat speed",
+      "shortcut": "+",
       "pressed": "false",
       "disabled": false
     }
   ],
+  "keyboardHints": "Esc pause · 1 Shield Slam · −/+ speed · portrait targeting",
   "targetMenuOpen": "false"
 }

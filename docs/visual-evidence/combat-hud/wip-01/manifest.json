@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "label": "WIP #275 combat HUD packet",
-  "sourceHead": "93313ec65282c18d42f120ac8c8a5233d00cc7dd",
+  "sourceHead": "915befda6410b523d187867c1c965a07ce6ecfa8",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [1440, 900],
   "settings": {
-    "reducedMotion": true,
+    "motionCoverage": ["allow", "reduce"],
     "contrast": "standard",
     "textScale": "default"
   },
@@ -13,10 +13,16 @@
     {
       "id": "wip-default-active",
       "screenshot": "wip-default-active.png",
-      "screenshotSha256": "9bc52d7727f3b983948960f7783d8f05fec73d3a50e9853c0b1f1a5c1d26946d",
-      "tick": 7,
+      "screenshotSha256": "eb567e8ba56c5c6929c2a3562aae710c8c18c07c74929cf098042d1fee70c631",
+      "tick": 2,
       "phase": "running",
+      "motionPreference": "allow",
+      "reducedMotion": false,
       "abilityState": "ready",
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 1 1 hostile entering"
+      },
       "health": {
         "current": "240",
         "maximum": "240",
@@ -26,10 +32,16 @@
     {
       "id": "wip-default-paused",
       "screenshot": "wip-default-paused.png",
-      "screenshotSha256": "74fc14d782d68c2088a26312acb3f9027b1bc1ac84e817d09b5a21369770546a",
+      "screenshotSha256": "1135f73d29aa8486795527836d38708167a4686ff6761b38b12f4d83c8cd7260",
       "tick": 2,
       "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
       "abilityState": "ready",
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 1 1 hostile entering"
+      },
       "health": {
         "current": "240",
         "maximum": "240",
@@ -39,10 +51,16 @@
     {
       "id": "wip-wave-transition",
       "screenshot": "wip-wave-transition.png",
-      "screenshotSha256": "c100701f3668ab8c518afdd1d0717df3e565e26a90d2ec4a2c57de916cffa4b5",
+      "screenshotSha256": "59009bd7ae341994e0a418a501fd1bcdac6aeb8e205e84d508b2ab2b6930e562",
       "tick": 901,
       "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
       "abilityState": "ready",
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 2 1 hostile entering"
+      },
       "health": {
         "current": "150",
         "maximum": "240",
@@ -52,10 +70,13 @@
     {
       "id": "wip-ability-ready",
       "screenshot": "wip-ability-ready.png",
-      "screenshotSha256": "7c31fd67c145dde6fc659d904443d2a1567166b18b59f10e45e30788d519ca17",
+      "screenshotSha256": "ebe543a4d868e3a07f04744b6e21c8baa05361df5763b455e0c715613eff9cc4",
       "tick": 1822,
       "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
       "abilityState": "ready",
+      "waveSignal": null,
       "health": {
         "current": "18",
         "maximum": "240",
@@ -65,10 +86,13 @@
     {
       "id": "wip-cooldown-status-low-health",
       "screenshot": "wip-cooldown-status-low-health.png",
-      "screenshotSha256": "8c8d5b2eee4bf9eb33d34cd5efd4048bd95c2a7877947ed00907e7341bdc223b",
+      "screenshotSha256": "75fd8cbe255a2fec59d91093d490a2967dd56013f6160ca0f8a47162a3c1050d",
       "tick": 1830,
       "phase": "running",
+      "motionPreference": null,
+      "reducedMotion": true,
       "abilityState": "cooldown",
+      "waveSignal": null,
       "health": {
         "current": "9",
         "maximum": "240",
@@ -78,18 +102,27 @@
     {
       "id": "wip-terminal-defeat",
       "screenshot": "wip-terminal-defeat.png",
-      "screenshotSha256": "e9835d221bf197150f487236792b4f58c2fda13f0e5c76595f8aefa6913791c4",
+      "screenshotSha256": "91d90c75da0d7ee5f5ef0b3b8db240f7d2d0241845eae48897ae89c794bc49ed",
       "tick": 1860,
       "phase": "terminal",
+      "motionPreference": null,
+      "reducedMotion": true,
+      "waveSignal": null,
       "health": {}
     },
     {
       "id": "wip-high-contrast-paused",
       "screenshot": "wip-high-contrast-paused.png",
-      "screenshotSha256": "a1f776f22420817f958766856f222c025bc3002efcee8656c89c7455af17a654",
+      "screenshotSha256": "eb6c39bc2e4d4be283e21f9f5a307d55771faeee78fa80d45345fa231c9b6af4",
       "tick": 2,
       "phase": "running",
+      "motionPreference": "reduce",
+      "reducedMotion": true,
       "abilityState": "ready",
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 1 1 hostile entering"
+      },
       "health": {
         "current": "240",
         "maximum": "240",
@@ -99,10 +132,16 @@
     {
       "id": "wip-large-text-paused",
       "screenshot": "wip-large-text-paused.png",
-      "screenshotSha256": "044692e07dc8b4cf440a9ad55ae7ef339b9dfb187db021a7b6d692beb628c047",
+      "screenshotSha256": "73a12b87f6f517135ba39c8f8f0b97af7a043ef61882d6815e2b2fe9b9e18568",
       "tick": 2,
       "phase": "running",
+      "motionPreference": "reduce",
+      "reducedMotion": true,
       "abilityState": "ready",
+      "waveSignal": {
+        "kind": "wave",
+        "text": "Wave 1 1 hostile entering"
+      },
       "health": {
         "current": "240",
         "maximum": "240",

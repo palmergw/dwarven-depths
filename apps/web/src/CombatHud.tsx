@@ -60,6 +60,71 @@ function encounterState(snapshot: RenderSnapshot): {
   };
 }
 
+interface WaveSignal {
+  readonly kind: "approaching" | "wave" | "elite" | "boss" | "secured";
+  readonly title: string;
+  readonly detail: string;
+}
+
+export function deriveWaveSignal(snapshot: RenderSnapshot): WaveSignal | null {
+  if (
+    snapshot.schemaVersion !== 2 ||
+    snapshot.encounter.terminalResult !== null
+  )
+    return null;
+  const waveNumber =
+    snapshot.encounter.activeWaveId === null
+      ? snapshot.encounter.startedWaveIds.length + 1
+      : snapshot.encounter.startedWaveIds.indexOf(
+          snapshot.encounter.activeWaveId
+        ) + 1;
+  const arrivals = snapshot.entities.filter(
+    (entity) =>
+      entity.faction === "enemy" &&
+      snapshot.entityTransitions.some(
+        (transition) =>
+          transition.entityId === entity.id &&
+          transition.kind === "spawned" &&
+          transition.atTick === snapshot.tick
+      )
+  );
+  if (arrivals.some((entity) => entity.boss))
+    return {
+      kind: "boss",
+      title: "Boss breach",
+      detail: `Wave ${waveNumber} · Hold the Shuttergate`
+    };
+  if (arrivals.some((entity) => entity.elite))
+    return {
+      kind: "elite",
+      title: "Elite breach",
+      detail: `Wave ${waveNumber} · Reinforced hostile incoming`
+    };
+  if (arrivals.length > 0)
+    return {
+      kind: "wave",
+      title: `Wave ${waveNumber}`,
+      detail: `${arrivals.length} ${arrivals.length === 1 ? "hostile" : "hostiles"} entering`
+    };
+  if (snapshot.encounter.pendingSpawnCount > 0)
+    return {
+      kind: "approaching",
+      title: "Entrance watch",
+      detail: `Wave ${waveNumber} · ${snapshot.encounter.pendingSpawnCount} approaching`
+    };
+  if (
+    snapshot.encounter.activeWaveId !== null &&
+    snapshot.encounter.livingHostileCount === 0 &&
+    snapshot.encounter.pendingSpawnCount === 0
+  )
+    return {
+      kind: "secured",
+      title: `Wave ${waveNumber} secured`,
+      detail: "Stand ready"
+    };
+  return null;
+}
+
 const STATUS_DETAILS: Readonly<
   Record<string, { readonly effect: string; readonly source: string }>
 > = {
@@ -76,8 +141,8 @@ function statusDetails(statusId: string): {
     return { effect: "staggered", source: "Shield Slam" };
   return (
     STATUS_DETAILS[statusId] ?? {
-      effect: statusId,
-      source: "unavailable in authoritative presentation state"
+      effect: "an unknown effect",
+      source: "an unknown source"
     }
   );
 }
@@ -97,7 +162,7 @@ function statusSummary(snapshot: RenderSnapshot): string {
     .flatMap((entity) =>
       entity.statuses.map((status) => {
         const details = statusDetails(status.id);
-        return `${combatantLabel(entity)} has status ${details.effect} (${status.id}), source ${details.source}, from tick ${status.appliedAtTick} through tick ${status.expiresAtTick}.`;
+        return `${combatantLabel(entity)} is ${details.effect}, source ${details.source}, strength ${status.magnitude}, from tick ${status.appliedAtTick} through tick ${status.expiresAtTick}.`;
       })
     )
     .join(" ");
@@ -112,6 +177,7 @@ export function CombatHud({ snapshot, manualPaused = false }: CombatHudProps) {
   const health = healthState(snapshot);
   const encounter = encounterState(snapshot);
   const activeStatuses = statusSummary(snapshot);
+  const waveSignal = deriveWaveSignal(snapshot);
   const combatActivity =
     encounter.terminalResult === null
       ? manualPaused
@@ -152,9 +218,26 @@ export function CombatHud({ snapshot, manualPaused = false }: CombatHudProps) {
           data-faction="enemy"
         >
           <dt>Hostiles</dt>
-          <dd>{encounter.hostiles}</dd>
+          <dd>
+            <span className="hud-hostile-count">
+              <strong>{encounter.hostiles}</strong> <small>active</small>
+            </span>
+            <span className="hud-hostile-count hud-approaching-count">
+              <strong>{encounter.pending}</strong> <small>approaching</small>
+            </span>
+          </dd>
         </div>
       </dl>
+      {waveSignal !== null && (
+        <div
+          className="wave-signal"
+          data-wave-signal={waveSignal.kind}
+          role="status"
+          aria-live="polite"
+        >
+          <strong>{waveSignal.title}</strong> <span>{waveSignal.detail}</span>
+        </div>
+      )}
       <p className="combat-state-summary" aria-live="polite" aria-atomic="true">
         {combatActivity}. Fortress {encounter.fortress.toLowerCase()}. Wave{" "}
         {encounter.wave}.{` ${encounter.hostiles} hostiles active`}

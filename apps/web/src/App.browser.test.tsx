@@ -565,6 +565,7 @@ class ControlledTargetPolicyWorker {
   readonly targetPolicyCommands: string[] = [];
   readonly abilityCommands: string[] = [];
   readonly speedCommands: number[] = [];
+  acknowledgeSpeedCommands = true;
   lastTargetPolicyRequestId: string | undefined;
   lastAbilityRequestId: string | undefined;
 
@@ -647,15 +648,20 @@ class ControlledTargetPolicyWorker {
       candidate.command.speed !== undefined
     ) {
       this.speedCommands.push(candidate.command.speed);
-      this.emit({
-        protocolVersion: 4,
-        type: "snapshot",
-        phase: "running",
-        manualPaused: true,
-        resumeRequestId: null,
-        simulationSpeed: candidate.command.speed
-      });
+      if (this.acknowledgeSpeedCommands)
+        this.emitSpeed(candidate.command.speed as 1 | 2);
     }
+  }
+
+  emitSpeed(speed: 1 | 2): void {
+    this.emit({
+      protocolVersion: 4,
+      type: "snapshot",
+      phase: "running",
+      manualPaused: true,
+      resumeRequestId: null,
+      simulationSpeed: speed
+    });
   }
 
   emitControls(
@@ -1146,13 +1152,18 @@ describe("presentation settings", () => {
     await vi.waitFor(() => expect(appliedMotionPreference()).toBe("device"));
   });
 
-  it("keeps sound opt-in, keyboard selectable, and persistent", async () => {
+  it("keeps sound opt-in with keyboard-selectable quiet and full mix levels", async () => {
     renderApp();
     await vi.waitFor(() => expect(appliedSoundPreference()).toBe("off"));
     await userEvent.click(await buttonWithText("Settings"));
     const select = document.querySelector("#sound-preference");
     expect(select).toBeInstanceOf(HTMLSelectElement);
     (select as HTMLSelectElement).focus();
+    await userEvent.keyboard("{ArrowDown}");
+    await vi.waitFor(() => expect(appliedSoundPreference()).toBe("quiet"));
+    expect(window.localStorage.getItem(soundPreferenceStorageKey)).toBe(
+      "quiet"
+    );
     await userEvent.keyboard("{ArrowDown}");
     await vi.waitFor(() => expect(appliedSoundPreference()).toBe("on"));
     expect(window.localStorage.getItem(soundPreferenceStorageKey)).toBe("on");
@@ -1444,16 +1455,23 @@ describe("player-facing combat HUD", () => {
 
     await vi.waitFor(() =>
       expect(document.querySelector(".combat-hud")?.textContent).toContain(
-        "FortressHoldingWave1Hostiles1"
+        "FortressHoldingWave1Hostiles1 active2 approaching"
       )
     );
     expect(document.querySelector(".combat-state-summary")?.textContent).toBe(
-      "Combat paused. Fortress holding. Wave 1. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. Elite enemy has status staggered (status.staggered), source Shield Slam, from tick 20 through tick 30. Elite enemy has status slowed (status.slow), source slowing effect, from tick 22 through tick 28."
+      "Combat paused. Fortress holding. Wave 1. 1 hostiles active, 2 approaching. Iron Warden health 20 of 100. Elite enemy is staggered, source Shield Slam, strength 1, from tick 20 through tick 30. Elite enemy is slowed, source slowing effect, strength 1, from tick 22 through tick 28."
     );
     expect(statusSignalKind("status.staggered")).toBe("stagger");
     expect(statusSignalKind("status.slow")).toBe("slow");
     expect(statusSignalKind("status.haste")).toBe("haste");
     expect(statusSignalKind("status.unknown")).toBe("unknown");
+    expect(document.querySelector(".wave-signal")?.textContent).toBe(
+      "Entrance watch Wave 1 · 2 approaching"
+    );
+    expect(document.querySelector(".wave-signal")).toHaveAttribute(
+      "data-wave-signal",
+      "approaching"
+    );
     root.render(
       <CombatHud
         snapshot={{
@@ -1479,8 +1497,69 @@ describe("player-facing combat HUD", () => {
       expect(
         document.querySelector(".combat-state-summary")?.textContent
       ).toContain(
-        "Elite enemy has status status.unknown (status.unknown), source unavailable in authoritative presentation state, from tick 23 through tick 29."
+        "Elite enemy is an unknown effect, source an unknown source, strength 1, from tick 23 through tick 29."
       )
+    );
+  });
+
+  it("visibly distinguishes approaching hostiles and telegraphs elite arrivals", async () => {
+    const snapshot = {
+      schemaVersion: 2,
+      scenarioId: "scenario.shuttergate",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 24,
+      previousTick: 23,
+      phase: "running",
+      nodes: [],
+      connections: [],
+      entities: [
+        {
+          id: "entity.enemy.elite",
+          nodeId: "node.entrance",
+          faction: "enemy",
+          visualId: "visual.gatebreaker_captain",
+          archetype: "elite",
+          position: { nodeId: "node.entrance", x: 0, y: 0 },
+          previousPosition: { nodeId: "node.entrance", x: 0, y: 0 },
+          currentHealth: 80,
+          maximumHealth: 80,
+          facing: "west",
+          action: { kind: "idle", phase: "idle", abilityId: null },
+          targetEntityId: null,
+          statuses: [],
+          transition: "spawned",
+          elite: true,
+          boss: false
+        }
+      ],
+      entityTransitions: [
+        { entityId: "entity.enemy.elite", kind: "spawned", atTick: 24 }
+      ],
+      encounter: {
+        startedWaveIds: ["wave.shuttergate.one", "wave.shuttergate.two"],
+        activeWaveId: "wave.shuttergate.two",
+        pendingSpawnCount: 3,
+        livingHostileCount: 1,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<CombatHud snapshot={snapshot} />);
+
+    await vi.waitFor(() =>
+      expect(document.querySelector(".hud-plaque-right")?.textContent).toBe(
+        "Hostiles1 active3 approaching"
+      )
+    );
+    expect(document.querySelector(".wave-signal")?.textContent).toBe(
+      "Elite breach Wave 2 · Reinforced hostile incoming"
+    );
+    expect(document.querySelector(".wave-signal")).toHaveAttribute(
+      "data-wave-signal",
+      "elite"
     );
   });
 
@@ -1689,6 +1768,7 @@ describe("semantic combat controls", () => {
       'button[aria-label="2× combat speed"]'
     );
     expect(doubleSpeed).toBeInstanceOf(HTMLButtonElement);
+    expect(doubleSpeed).toHaveAttribute("aria-keyshortcuts", "+");
     await userEvent.click(doubleSpeed as HTMLButtonElement);
     await vi.waitFor(() => expect(doubleSpeed).toBeDisabled());
 
@@ -1696,8 +1776,52 @@ describe("semantic combat controls", () => {
       'button[aria-label="1× combat speed"]'
     );
     expect(normalSpeed).toBeInstanceOf(HTMLButtonElement);
-    (normalSpeed as HTMLButtonElement).focus();
-    await userEvent.keyboard("{Enter}");
+    expect(normalSpeed).toHaveAttribute("aria-keyshortcuts", "-");
+    await userEvent.keyboard("-");
+    await vi.waitFor(() => expect(normalSpeed).toBeDisabled());
+    await userEvent.keyboard("+");
+    expect(worker.speedCommands).toEqual([2, 1, 2]);
+    expect(
+      document.querySelector(".combat-keyboard-hints")?.textContent
+    ).toContain("Esc pause · 1 Shield Slam · −/+ speed · portrait targeting");
+  });
+
+  it("binds speed controls to one pending authoritative acknowledgement", async () => {
+    const worker = new ControlledTargetPolicyWorker();
+    worker.acknowledgeSpeedCommands = false;
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(<App createWorker={() => worker as unknown as Worker} />);
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector('button[aria-label="2× combat speed"]')
+      ).toBeEnabled()
+    );
+    const doubleSpeed = document.querySelector(
+      'button[aria-label="2× combat speed"]'
+    ) as HTMLButtonElement;
+    doubleSpeed.click();
+    doubleSpeed.click();
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "+" }));
+    await vi.waitFor(() => expect(doubleSpeed).toBeDisabled());
+
+    expect(worker.speedCommands).toEqual([2]);
+    expect(doubleSpeed).toBeDisabled();
+    expect(
+      document.querySelector('button[aria-label="1× combat speed"]')
+    ).toBeDisabled();
+
+    worker.emitSpeed(2);
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector('button[aria-label="1× combat speed"]')
+      ).toBeEnabled()
+    );
+    await userEvent.keyboard("-");
     expect(worker.speedCommands).toEqual([2, 1]);
   });
 
