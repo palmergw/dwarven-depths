@@ -1909,8 +1909,8 @@ class PersistentBattlefieldScene {
       const forwardX = x + facingSign * (24 + eased * 24);
       effect.clear().setAlpha(intensity);
       if (entity.action.phase === "windup") {
-        effect.fillStyle(0x160805, 0.72);
-        effect.fillCircle(x - facingSign * 15, y + 8, hostile ? 42 : 50);
+        effect.fillStyle(color, 0.16);
+        effect.fillCircle(x - facingSign * 15, y + 8, hostile ? 36 : 44);
         effect.lineStyle(10, color, 1);
         effect.beginPath();
         effect.arc(x - facingSign * 12, y, hostile ? 37 : 46, 3.4, 6.05);
@@ -1950,9 +1950,7 @@ class PersistentBattlefieldScene {
             : this.entities.get(entity.targetEntityId);
         const impactX = targetObjects?.pivotX ?? forwardX;
         const impactY = (targetObjects?.pivotY ?? y + 24) - 27;
-        effect.fillStyle(0x190502, 0.78);
-        effect.fillCircle(impactX, impactY, hostile ? 50 : 66);
-        effect.fillStyle(color, 0.46);
+        effect.fillStyle(color, 0.22);
         effect.fillCircle(impactX, impactY, hostile ? 43 : 58);
         effect.lineStyle(9, 0xfff4c7, 1);
         effect.strokeCircle(impactX, impactY, hostile ? 34 : 48);
@@ -2173,7 +2171,7 @@ class PersistentBattlefieldScene {
         impactEmphasisKey !== this.lastImpactEmphasisKey
       ) {
         this.lastImpactEmphasisKey = impactEmphasisKey;
-        if (!reduceMotion) this.scene.cameras.main.shake(120, 0.0055);
+        if (!reduceMotion) this.scene.cameras.main.shake(110, 0.0035);
       }
     } else this.actionClocks.clear();
     const liveIds = new Set(orderedEntities.map(({ id }) => id));
