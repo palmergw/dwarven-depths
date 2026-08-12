@@ -2122,9 +2122,12 @@ class PersistentBattlefieldScene {
     if (interpolationTick !== undefined)
       this.lastInterpolatedTick = interpolationTick;
 
-    this.scene.tweens.killTweensOf(this.effects);
-    this.activeEffects = 0;
-    if (feedback !== undefined) {
+    if (
+      feedback !== undefined &&
+      (feedback.arrivals.length > 0 || feedback.departures.length > 0)
+    ) {
+      this.scene.tweens.killTweensOf(this.effects);
+      this.activeEffects = 0;
       const arrivalIds = new Set(feedback.arrivals.map(({ id }) => id));
       const effectEntities = [
         ...orderedEntities
@@ -2152,35 +2155,39 @@ class PersistentBattlefieldScene {
           this.activeEffects += 1;
         }
       }
-    }
-    for (
-      let index = this.activeEffects;
-      index < this.effects.length;
-      index += 1
-    ) {
-      const effect = this.effects[index];
-      if (effect !== undefined) {
-        clearDepthVisibilityMask(effect);
-        effect.setVisible(false);
+      for (
+        let index = this.activeEffects;
+        index < this.effects.length;
+        index += 1
+      ) {
+        const effect = this.effects[index];
+        if (effect !== undefined) {
+          clearDepthVisibilityMask(effect);
+          effect.setVisible(false);
+        }
       }
+      const active = this.effects.slice(0, this.activeEffects);
+      this.effectsExpireAt =
+        active.length === 0
+          ? 0
+          : this.scene.time.now + battlefieldEffectLifetime(reduceMotion);
+      if (
+        active.length > 0 &&
+        !reduceMotion &&
+        evidenceEffectAlpha === undefined
+      )
+        this.scene.tweens.add({
+          targets: active,
+          alpha: 0.15,
+          duration: 420,
+          yoyo: true,
+          repeat: 1
+        });
+      else if (active.length > 0 && evidenceEffectAlpha === undefined)
+        for (const effect of active) effect.setAlpha(1);
+      else if (evidenceEffectAlpha !== undefined)
+        for (const effect of active) effect.setAlpha(evidenceEffectAlpha);
     }
-    const active = this.effects.slice(0, this.activeEffects);
-    this.effectsExpireAt =
-      active.length === 0
-        ? 0
-        : this.scene.time.now + battlefieldEffectLifetime(reduceMotion);
-    if (active.length > 0 && !reduceMotion && evidenceEffectAlpha === undefined)
-      this.scene.tweens.add({
-        targets: active,
-        alpha: 0.15,
-        duration: 420,
-        yoyo: true,
-        repeat: 1
-      });
-    else if (active.length > 0 && evidenceEffectAlpha === undefined)
-      for (const effect of active) effect.setAlpha(1);
-    else if (evidenceEffectAlpha !== undefined)
-      for (const effect of active) effect.setAlpha(evidenceEffectAlpha);
 
     const projectilePaths = deriveSlingerProjectilePaths(
       snapshot,
@@ -2376,7 +2383,8 @@ class PersistentBattlefieldScene {
       const objects = this.entities.get(entity.id);
       if (objects !== undefined) this.scene.children.bringToTop(objects.ring);
     }
-    for (const effect of active) this.scene.children.bringToTop(effect);
+    for (const effect of this.effects.slice(0, this.activeEffects))
+      this.scene.children.bringToTop(effect);
     for (const effect of this.projectileEffects.values())
       this.scene.children.bringToTop(effect);
     for (const entity of orderedEntities) {
@@ -2385,7 +2393,8 @@ class PersistentBattlefieldScene {
         this.scene.children.bringToTop(objects.subject);
     }
     this.scene.children.bringToTop(this.lighting);
-    for (const effect of active) this.scene.children.bringToTop(effect);
+    for (const effect of this.effects.slice(0, this.activeEffects))
+      this.scene.children.bringToTop(effect);
     for (const effect of this.abilityEffects.values())
       this.scene.children.bringToTop(effect);
     for (const objects of this.entities.values())
