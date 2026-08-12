@@ -233,12 +233,18 @@ export function createPresentationSnapshot(
       previousPosition !== null && previousPosition.nodeId !== position.nodeId;
     const authoritativeTargetEntityId =
       entry.combatant.actionState.currentTargetEntityId;
+    const committedAttackTargetEntityId =
+      state.battlefield?.pendingCommittedAttacks.find(
+        (attack) => attack.sourceEntityId === entry.combatant.entityId
+      )?.targetEntityId;
+    const facingTargetEntityId =
+      committedAttackTargetEntityId ?? authoritativeTargetEntityId;
     const targetNodeId =
-      authoritativeTargetEntityId === null
+      facingTargetEntityId === null || facingTargetEntityId === undefined
         ? undefined
-        : occupancy.get(authoritativeTargetEntityId);
+        : occupancy.get(facingTargetEntityId);
     const activeTargetEntityId =
-      targetNodeId === undefined ? null : authoritativeTargetEntityId;
+      targetNodeId === undefined ? null : facingTargetEntityId;
     const targetPosition =
       targetNodeId === undefined
         ? undefined
@@ -251,10 +257,6 @@ export function createPresentationSnapshot(
       shieldSlamImpactTargetsBySource,
       previousIsAdjacent
     );
-    const committedAttackTargetEntityId =
-      state.battlefield?.pendingCommittedAttacks.find(
-        (attack) => attack.sourceEntityId === entry.combatant.entityId
-      )?.targetEntityId;
     const targetEntityId =
       action.kind === "basic_attack" &&
       (action.phase === "committed" || action.phase === "impact")

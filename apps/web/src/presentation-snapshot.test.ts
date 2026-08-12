@@ -310,6 +310,56 @@ describe("presentation snapshot v2", () => {
       kind: "ability",
       phase: "committed"
     });
+    const activeBattlefield = activeState.battlefield;
+    if (activeBattlefield === undefined)
+      throw new Error("missing active battlefield");
+    const dwarf = activeBattlefield.dwarfCombatants[0];
+    const enemy = activeBattlefield.enemyCombatants[0];
+    if (dwarf === undefined || enemy === undefined)
+      throw new Error("missing facing fixture combatants");
+    const committedFacing = createPresentationSnapshot(
+      content,
+      scenario,
+      {
+        ...activeState,
+        battlefield: {
+          ...activeBattlefield,
+          dwarfCombatants: [
+            {
+              ...dwarf,
+              actionState: {
+                ...dwarf.actionState,
+                currentTargetEntityId: null,
+                activeBasicAttack: null
+              }
+            }
+          ],
+          pendingCommittedAttacks: [
+            {
+              schemaVersion: 1,
+              attackId: "attack.fixture.facing" as never,
+              sourceEntityId: dwarf.entityId,
+              targetEntityId: enemy.entityId,
+              committedAtTick: activeState.tick,
+              impactAtTick: activeState.tick + 1,
+              cooldownCompleteAtTick: activeState.tick + 2,
+              damage: 1,
+              range: 3
+            }
+          ]
+        },
+        committedAbilities: []
+      },
+      "running",
+      initial
+    );
+    expect(
+      committedFacing.entities.find((entity) => entity.id === dwarf.entityId)
+    ).toMatchObject({
+      targetEntityId: enemy.entityId,
+      facing: "west",
+      action: { kind: "basic_attack", phase: "committed" }
+    });
     expect(
       parseRenderSnapshot({
         ...active,
@@ -333,9 +383,6 @@ describe("presentation snapshot v2", () => {
       })
     ).toBeUndefined();
 
-    const activeBattlefield = activeState.battlefield;
-    if (activeBattlefield === undefined)
-      throw new Error("missing active battlefield");
     const destroyedState: SimulationState = {
       ...activeState,
       tick: activeState.tick + 1,
