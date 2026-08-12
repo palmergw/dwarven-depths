@@ -2994,7 +2994,11 @@ describe("authoritative web worker", () => {
       currentHealth: 10,
       maximumHealth: 10,
       facing: "east" as const,
-      action: { kind: "idle" as const, phase: "idle" as const, abilityId: null },
+      action: {
+        kind: "idle" as const,
+        phase: "idle" as const,
+        abilityId: null
+      },
       targetEntityId: null,
       statuses: [],
       transition: "spawned" as const,
