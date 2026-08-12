@@ -646,7 +646,8 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
       (entity) =>
         entity.targetEntityId !== null &&
         (entity.targetEntityId === entity.id ||
-          !entityIds.has(entity.targetEntityId))
+          (!entityIds.has(entity.targetEntityId) &&
+            !departedEntityIds.has(entity.targetEntityId)))
     ) ||
     entities.some((entity) => {
       const impactTargetEntityIds = entity.action.impactTargetEntityIds ?? [];

@@ -613,13 +613,18 @@ export function selectCombatPoseTreatment(
     entity.action.kind === "moving" || entity.transition === "moving"
       ? "moving"
       : entity.action.phase;
+  const authoredAttack =
+    entity.action.kind === "basic_attack" || entity.action.kind === "ability";
+  const sourceFacesEast = entity.faction === "dwarf";
   return {
     source,
     angle: 0,
     flipX:
-      entity.faction === "enemy" &&
-      entity.action.kind === "basic_attack" &&
-      entity.facing === "east",
+      authoredAttack &&
+      ((sourceFacesEast &&
+        (entity.facing === "west" || entity.facing === "south")) ||
+        (!sourceFacesEast &&
+          (entity.facing === "east" || entity.facing === "north"))),
     state
   };
 }
@@ -706,11 +711,20 @@ export interface SlingerProjectilePath {
 
 export function deriveSlingerProjectilePaths(
   snapshot: RenderSnapshot,
-  primitives: BattlefieldPrimitives
+  primitives: BattlefieldPrimitives,
+  previousSnapshot?: RenderSnapshot
 ): readonly SlingerProjectilePath[] {
   if (snapshot.schemaVersion !== 2) return [];
+  const previousPrimitives =
+    previousSnapshot?.schemaVersion === 2 &&
+    previousSnapshot.scenarioId === snapshot.scenarioId &&
+    previousSnapshot.tick === snapshot.previousTick
+      ? buildBattlefieldPrimitives(previousSnapshot)
+      : undefined;
   const positions = new Map(
-    primitives.entities.map((entity) => [entity.id, entity])
+    [...(previousPrimitives?.entities ?? []), ...primitives.entities].map(
+      (entity) => [entity.id, entity]
+    )
   );
   return snapshot.entities
     .filter(
@@ -2082,7 +2096,11 @@ class PersistentBattlefieldScene {
     else if (evidenceEffectAlpha !== undefined)
       for (const effect of active) effect.setAlpha(evidenceEffectAlpha);
 
-    const projectilePaths = deriveSlingerProjectilePaths(snapshot, primitives);
+    const projectilePaths = deriveSlingerProjectilePaths(
+      snapshot,
+      primitives,
+      previousSnapshot
+    );
     const liveProjectileIds = new Set(
       projectilePaths.map(({ sourceId }) => sourceId)
     );

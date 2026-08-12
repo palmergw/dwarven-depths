@@ -3073,8 +3073,34 @@ describe("authoritative web worker", () => {
       source: "slinger-attack-committed-source",
       state: "committed",
       angle: 0,
-      flipX: false
+      flipX: true
     });
+    expect(
+      ["north", "east", "south", "west"].map((facing) =>
+        selectCombatPoseTreatment(
+          {
+            ...snapshot,
+            entities: [
+              {
+                ...entity,
+                facing: facing as typeof entity.facing,
+                action: {
+                  kind: "basic_attack",
+                  phase: "committed",
+                  abilityId: null
+                }
+              }
+            ]
+          },
+          entity.id
+        )
+      )
+    ).toMatchObject([
+      { angle: 0, flipX: false },
+      { angle: 0, flipX: false },
+      { angle: 0, flipX: true },
+      { angle: 0, flipX: true }
+    ]);
     expect(
       selectCombatPoseAsset(
         {
@@ -3379,6 +3405,31 @@ describe("authoritative web worker", () => {
       deriveSlingerProjectilePaths(
         projectileSnapshot,
         projectilePrimitives
+      ).map(({ sourceId, targetId }) => [sourceId, targetId])
+    ).toEqual([[slinger.id, entity.id]]);
+    const lethalImpact = {
+      ...projectileSnapshot,
+      tick: projectileSnapshot.tick + 1,
+      previousTick: projectileSnapshot.tick,
+      entities: [
+        {
+          ...slinger,
+          action: { ...slinger.action, phase: "impact" }
+        }
+      ],
+      entityTransitions: [
+        {
+          entityId: entity.id,
+          kind: "downed",
+          atTick: projectileSnapshot.tick + 1
+        }
+      ]
+    } as const satisfies RenderSnapshot;
+    expect(
+      deriveSlingerProjectilePaths(
+        lethalImpact,
+        buildBattlefieldPrimitives(lethalImpact),
+        projectileSnapshot
       ).map(({ sourceId, targetId }) => [sourceId, targetId])
     ).toEqual([[slinger.id, entity.id]]);
     expect(

@@ -237,12 +237,31 @@ export function createPresentationSnapshot(
       authoritativeTargetEntityId === null
         ? undefined
         : occupancy.get(authoritativeTargetEntityId);
-    const targetEntityId =
+    const activeTargetEntityId =
       targetNodeId === undefined ? null : authoritativeTargetEntityId;
     const targetPosition =
       targetNodeId === undefined
         ? undefined
         : positionFor(targetNodeId, positions);
+    const action = actionFor(
+      state,
+      entry.combatant,
+      moved,
+      previousById.get(entry.combatant.entityId)?.action,
+      shieldSlamImpactTargetsBySource,
+      previousIsAdjacent
+    );
+    const committedAttackTargetEntityId =
+      state.battlefield?.pendingCommittedAttacks.find(
+        (attack) => attack.sourceEntityId === entry.combatant.entityId
+      )?.targetEntityId;
+    const targetEntityId =
+      action.kind === "basic_attack" &&
+      (action.phase === "committed" || action.phase === "impact")
+        ? (committedAttackTargetEntityId ??
+          previousById.get(entry.combatant.entityId)?.targetEntityId ??
+          activeTargetEntityId)
+        : activeTargetEntityId;
     entities.push({
       id: entry.combatant.entityId,
       nodeId,
@@ -254,14 +273,7 @@ export function createPresentationSnapshot(
       currentHealth: entry.combatant.currentHealth,
       maximumHealth: entry.combatant.maximumHealth,
       facing: facingFrom(position, targetPosition, previousPosition),
-      action: actionFor(
-        state,
-        entry.combatant,
-        moved,
-        previousById.get(entry.combatant.entityId)?.action,
-        shieldSlamImpactTargetsBySource,
-        previousIsAdjacent
-      ),
+      action,
       targetEntityId,
       statuses: [...(state.activeStatuses ?? [])]
         .filter((status) => status.ownerEntityId === entry.combatant.entityId)
