@@ -562,6 +562,18 @@ export interface TemporalCombatTreatment {
   readonly verticalOffset: number;
 }
 
+function combatRoleStrength(entity: RenderEntityV2): number {
+  if (
+    entity.action.kind === "ability" &&
+    entity.action.abilityId === "ability.iron_warden.shield_slam"
+  )
+    return 1.35;
+  if (entity.visualId === "enemy.goblin_slinger") return 0.72;
+  if (entity.visualId === "enemy.goblin_bulwark") return 1.18;
+  if (entity.visualId === "enemy.gatebreaker_captain") return 1.28;
+  return entity.faction === "dwarf" ? 1.1 : 1;
+}
+
 /** Bounded visual cadence around an authoritative pose and render pivot. */
 export function deriveTemporalCombatTreatment(
   entity: RenderEntityV2,
@@ -579,7 +591,7 @@ export function deriveTemporalCombatTreatment(
           ? 0.0056
           : 0.0068;
   const wave = Math.sin(elapsed * cadence);
-  const strength = reduceMotion ? 0.22 : 1;
+  const strength = (reduceMotion ? 0.22 : 1) * combatRoleStrength(entity);
   if (entity.action.kind === "moving" || entity.transition === "moving")
     return {
       angleOffset: wave * 1.8 * strength,
@@ -764,6 +776,22 @@ export interface SlingerProjectilePath {
   readonly source: RenderPrimitive;
   readonly target: RenderPrimitive;
   readonly phase: "committed" | "impact";
+}
+
+export function projectileProgressForPhase(
+  phase: SlingerProjectilePath["phase"],
+  phaseElapsedMilliseconds: number,
+  simulationSpeed: 1 | 2,
+  reduceMotion: boolean
+): number {
+  if (phase === "impact" || reduceMotion) return 1;
+  return Math.min(
+    0.94,
+    Math.max(
+      0.08,
+      (Math.max(0, phaseElapsedMilliseconds) * simulationSpeed) / 260
+    )
+  );
 }
 
 export function deriveSlingerProjectilePaths(
@@ -1596,6 +1624,11 @@ interface PersistentEntityObjects {
   poseAngle: number;
 }
 
+interface ActionClock {
+  readonly signature: string;
+  readonly startedAt: number;
+}
+
 type RenderEntityV2 = Extract<
   RenderSnapshot,
   { readonly schemaVersion: 2 }
@@ -1621,6 +1654,7 @@ class PersistentBattlefieldScene {
   readonly effects: Phaser.GameObjects.Graphics[] = [];
   readonly projectileEffects = new Map<string, Phaser.GameObjects.Graphics>();
   readonly abilityEffects = new Map<string, Phaser.GameObjects.Image>();
+  readonly actionClocks = new Map<string, ActionClock>();
   readonly lighting: Phaser.GameObjects.Image;
   readonly terminalFrame: Phaser.GameObjects.Graphics;
   readonly terminalText: Phaser.GameObjects.Text;
@@ -1710,7 +1744,7 @@ class PersistentBattlefieldScene {
       deltaMilliseconds,
       simulationSpeed
     );
-    for (const objects of this.entities.values()) {
+    for (const [entityId, objects] of this.entities) {
       const deltaX = objects.targetX - objects.pivotX;
       const deltaY = objects.targetY - objects.pivotY;
       const distance = Math.hypot(deltaX, deltaY);
@@ -1727,9 +1761,7 @@ class PersistentBattlefieldScene {
       objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
       const snapshotEntity =
         this.lastSnapshot?.schemaVersion === 2
-          ? this.lastSnapshot.entities.find(
-              ({ id }) => id === objects.subject.getData("renderEntityId")
-            )
+          ? this.lastSnapshot.entities.find(({ id }) => id === entityId)
           : undefined;
       if (snapshotEntity !== undefined) {
         const treatment = deriveTemporalCombatTreatment(
@@ -1760,6 +1792,64 @@ class PersistentBattlefieldScene {
         objects.signal.setPosition(offsetX, offsetY);
         objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
         objects.subject.clearTint();
+      }
+    }
+    this.updateProjectileEffects(simulationSpeed, reduceMotion);
+  }
+
+  private updateProjectileEffects(
+    simulationSpeed: 1 | 2,
+    reduceMotion: boolean
+  ): void {
+    if (this.lastSnapshot === undefined) return;
+    const projectilePaths = deriveSlingerProjectilePaths(
+      this.lastSnapshot,
+      buildBattlefieldPrimitives(this.lastSnapshot)
+    );
+    const liveProjectileIds = new Set(
+      projectilePaths.map(({ sourceId }) => sourceId)
+    );
+    for (const [id, effect] of this.projectileEffects)
+      if (!liveProjectileIds.has(id)) {
+        this.layers["world-effects"].delete(effect);
+        effect.destroy();
+        this.projectileEffects.delete(id);
+      }
+    for (const path of projectilePaths) {
+      if (
+        !this.projectileEffects.has(path.sourceId) &&
+        this.projectileEffects.size >= MAX_POOLED_EFFECTS
+      )
+        continue;
+      const effect =
+        this.projectileEffects.get(path.sourceId) ?? this.scene.add.graphics();
+      const clock = this.actionClocks.get(path.sourceId);
+      const progress = projectileProgressForPhase(
+        path.phase,
+        clock === undefined ? 0 : this.scene.time.now - clock.startedAt,
+        simulationSpeed,
+        reduceMotion
+      );
+      const sourceY = path.source.y - 28;
+      const targetY = path.target.y - 34;
+      const projectileX =
+        path.source.x + (path.target.x - path.source.x) * progress;
+      const projectileY = sourceY + (targetY - sourceY) * progress;
+      effect.clear();
+      effect.lineStyle(3, 0xf0aa52, 0.9);
+      effect.lineBetween(path.source.x, sourceY, projectileX, projectileY);
+      effect.fillStyle(0xffd17a, 1);
+      effect.fillCircle(projectileX, projectileY, reduceMotion ? 4 : 6);
+      if (path.phase === "impact") {
+        effect.lineStyle(2, 0xffd17a, reduceMotion ? 0.75 : 1);
+        effect.strokeCircle(path.target.x, targetY, reduceMotion ? 7 : 12);
+      }
+      effect.lineStyle(2, 0xd8eef5, 0.95);
+      effect.strokeCircle(path.source.x, sourceY, 5);
+      effect.setAlpha(reduceMotion ? 0.82 : 1);
+      if (!this.projectileEffects.has(path.sourceId)) {
+        this.projectileEffects.set(path.sourceId, effect);
+        this.layers["world-effects"].add(effect);
       }
     }
   }
@@ -1874,6 +1964,19 @@ class PersistentBattlefieldScene {
     const orderedEntities = [...primitives.entities].sort(
       comparePresentationPrimitives
     );
+    if (snapshot.schemaVersion === 2) {
+      const liveActionIds = new Set(snapshot.entities.map(({ id }) => id));
+      for (const id of this.actionClocks.keys())
+        if (!liveActionIds.has(id)) this.actionClocks.delete(id);
+      for (const entity of snapshot.entities) {
+        const signature = `${entity.action.kind}:${entity.action.phase}:${entity.action.abilityId ?? "none"}:${entity.targetEntityId ?? "none"}`;
+        if (this.actionClocks.get(entity.id)?.signature !== signature)
+          this.actionClocks.set(entity.id, {
+            signature,
+            startedAt: this.scene.time.now
+          });
+      }
+    } else this.actionClocks.clear();
     const liveIds = new Set(orderedEntities.map(({ id }) => id));
     const departureIds = new Set(
       feedback?.departures.map(({ id }) => id) ?? []
@@ -1990,7 +2093,7 @@ class PersistentBattlefieldScene {
       const displayedOrigin =
         existing === undefined
           ? undefined
-          : { id: entity.id, x: existing.subject.x, y: existing.subject.y };
+          : { id: entity.id, x: existing.pivotX, y: existing.pivotY };
       const presentation = deriveCombatPresentationState(
         snapshot,
         previousSnapshot,
@@ -2153,52 +2256,7 @@ class PersistentBattlefieldScene {
     else if (evidenceEffectAlpha !== undefined)
       for (const effect of active) effect.setAlpha(evidenceEffectAlpha);
 
-    const projectilePaths = deriveSlingerProjectilePaths(snapshot, primitives);
-    const liveProjectileIds = new Set(
-      projectilePaths.map(({ sourceId }) => sourceId)
-    );
-    for (const [id, effect] of this.projectileEffects)
-      if (!liveProjectileIds.has(id)) {
-        this.layers["world-effects"].delete(effect);
-        effect.destroy();
-        this.projectileEffects.delete(id);
-      }
-    for (const path of projectilePaths) {
-      const effect =
-        this.projectileEffects.get(path.sourceId) ?? this.scene.add.graphics();
-      effect.clear();
-      effect.lineStyle(3, 0xf0aa52, 0.9);
-      const projectileProgress = path.phase === "impact" ? 1 : 0.58;
-      const projectileX =
-        path.source.x + (path.target.x - path.source.x) * projectileProgress;
-      const projectileY =
-        path.source.y -
-        28 +
-        (path.target.y - 34 - (path.source.y - 28)) * projectileProgress;
-      effect.lineBetween(
-        path.source.x,
-        path.source.y - 28,
-        projectileX,
-        projectileY
-      );
-      effect.fillStyle(0xffd17a, 1);
-      effect.fillCircle(projectileX, projectileY, reduceMotion ? 4 : 6);
-      if (path.phase === "impact") {
-        effect.lineStyle(2, 0xffd17a, reduceMotion ? 0.75 : 1);
-        effect.strokeCircle(
-          path.target.x,
-          path.target.y - 34,
-          reduceMotion ? 7 : 12
-        );
-      }
-      effect.lineStyle(2, 0xd8eef5, 0.95);
-      effect.strokeCircle(path.source.x, path.source.y - 28, 5);
-      effect.setAlpha(reduceMotion ? 0.82 : 1);
-      if (!this.projectileEffects.has(path.sourceId)) {
-        this.projectileEffects.set(path.sourceId, effect);
-        this.layers["world-effects"].add(effect);
-      }
-    }
+    this.updateProjectileEffects(1, reduceMotion);
 
     const abilityImpactIds = deriveShieldSlamImpactIds(
       snapshot,
@@ -2450,6 +2508,7 @@ class PersistentBattlefieldScene {
     this.abilityEffects.clear();
     this.entities.clear();
     this.departures.clear();
+    this.actionClocks.clear();
     this.effects.length = 0;
     for (const layer of Object.values(this.layers)) layer.clear();
   }

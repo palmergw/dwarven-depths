@@ -24,6 +24,7 @@ import {
   deriveSlingerProjectilePaths,
   deriveTemporalCombatTreatment,
   interpolationDistanceForFrame,
+  projectileProgressForPhase,
   renderedFactionForSourceKey,
   selectCombatPoseAsset,
   selectCombatPoseTreatment,
@@ -3337,6 +3338,12 @@ describe("authoritative web worker", () => {
       deriveSlingerProjectilePaths(projectileSnapshot, projectilePrimitives)[0]
         ?.phase
     ).toBe("committed");
+    expect(projectileProgressForPhase("committed", 0, 1, false)).toBe(0.08);
+    expect(projectileProgressForPhase("committed", 65, 2, false)).toBe(0.5);
+    expect(projectileProgressForPhase("committed", 130, 1, false)).toBe(0.5);
+    expect(projectileProgressForPhase("committed", 260, 1, false)).toBe(0.94);
+    expect(projectileProgressForPhase("impact", 0, 1, false)).toBe(1);
+    expect(projectileProgressForPhase("committed", 0, 1, true)).toBe(1);
     expect(
       deriveSlingerProjectilePaths(
         {
