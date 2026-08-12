@@ -151,6 +151,7 @@ export function createPresentationSnapshot(
           entity.faction === "dwarf" &&
           entity.action.kind === "ability" &&
           entity.action.abilityId === "ability.iron_warden.shield_slam" &&
+          entity.action.phase === "committed" &&
           !state.committedAbilities?.some(
             (ability) => ability.sourceEntityId === entity.id
           )

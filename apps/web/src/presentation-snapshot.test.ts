@@ -122,6 +122,14 @@ describe("presentation snapshot v2", () => {
         (entity) => entity.faction === "dwarf"
       )?.action
     ).toMatchObject({ kind: "ability", phase: "committed" });
+    const afterShieldSlamImpact = snapshots[shieldSlamImpactIndex + 1];
+    if (afterShieldSlamImpact === undefined)
+      throw new Error("missing post-impact Shield Slam snapshot");
+    expect(
+      afterShieldSlamImpact.entities.find(
+        (entity) => entity.faction === "dwarf"
+      )?.action
+    ).not.toMatchObject({ kind: "ability", phase: "impact" });
 
     const running = snapshots.find(
       (snapshot) =>
