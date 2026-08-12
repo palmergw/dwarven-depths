@@ -724,8 +724,7 @@ export function deriveShieldSlamImpactIds(
   const authoritativeImpactIds = [...damagedHostileIds, ...departedHostileIds]
     .filter((id, index, ids) => ids.indexOf(id) === index)
     .sort(compareRenderIds);
-  if (authoritativeImpactIds.length > 0) return authoritativeImpactIds;
-  return shieldSlam.targetEntityId === null ? [] : [shieldSlam.targetEntityId];
+  return authoritativeImpactIds;
 }
 
 export interface SlingerProjectilePath {

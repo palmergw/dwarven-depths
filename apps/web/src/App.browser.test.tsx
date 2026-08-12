@@ -3167,6 +3167,18 @@ describe("authoritative web worker", () => {
     expect(
       deriveShieldSlamImpactIds(
         {
+          ...snapshot,
+          entities: [{ ...entity, targetEntityId: hostile.id }]
+        },
+        {
+          ...previous,
+          entities: [{ ...entity, targetEntityId: hostile.id }]
+        }
+      )
+    ).toEqual([]);
+    expect(
+      deriveShieldSlamImpactIds(
+        {
           ...multiTarget,
           entities: [entity, hostile],
           entityTransitions: [
