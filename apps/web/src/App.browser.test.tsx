@@ -22,6 +22,7 @@ import {
   deriveCombatPresentationState,
   deriveShieldSlamImpactIds,
   deriveSlingerProjectilePaths,
+  deriveTemporalCombatTreatment,
   interpolationDistanceForFrame,
   renderedFactionForSourceKey,
   selectCombatPoseAsset,
@@ -3240,6 +3241,33 @@ describe("authoritative web worker", () => {
         ).angle
     );
     expect(new Set(attackPhaseAngles).size).toBe(3);
+    const moving = {
+      ...hostile,
+      action: { kind: "moving", phase: "idle", abilityId: null },
+      transition: "moving"
+    } as const;
+    const cadenceAt1x = deriveTemporalCombatTreatment(moving, 125, 1, false);
+    const cadenceAt2x = deriveTemporalCombatTreatment(moving, 62.5, 2, false);
+    expect(cadenceAt2x).toEqual(cadenceAt1x);
+    expect(cadenceAt1x.verticalOffset).toBeLessThan(0);
+    const reducedCadence = deriveTemporalCombatTreatment(moving, 125, 1, true);
+    expect(Math.abs(reducedCadence.verticalOffset)).toBeLessThan(
+      Math.abs(cadenceAt1x.verticalOffset)
+    );
+    const phaseTreatments = (
+      ["windup", "committed", "impact", "recovery"] as const
+    ).map((phase) =>
+      deriveTemporalCombatTreatment(
+        {
+          ...hostile,
+          action: { kind: "basic_attack", phase, abilityId: null }
+        },
+        0,
+        1,
+        false
+      )
+    );
+    expect(new Set(phaseTreatments.map(({ scaleX }) => scaleX)).size).toBe(4);
     expect(
       selectCombatPoseTreatment(
         {
@@ -3305,6 +3333,10 @@ describe("authoritative web worker", () => {
         projectilePrimitives
       ).map(({ sourceId, targetId }) => [sourceId, targetId])
     ).toEqual([[slinger.id, entity.id]]);
+    expect(
+      deriveSlingerProjectilePaths(projectileSnapshot, projectilePrimitives)[0]
+        ?.phase
+    ).toBe("committed");
     expect(
       deriveSlingerProjectilePaths(
         {

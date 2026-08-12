@@ -555,6 +555,56 @@ export interface CombatPoseTreatment {
     | "recovery";
 }
 
+export interface TemporalCombatTreatment {
+  readonly angleOffset: number;
+  readonly scaleX: number;
+  readonly scaleY: number;
+  readonly verticalOffset: number;
+}
+
+/** Bounded visual cadence around an authoritative pose and render pivot. */
+export function deriveTemporalCombatTreatment(
+  entity: RenderEntityV2,
+  elapsedMilliseconds: number,
+  simulationSpeed: 1 | 2,
+  reduceMotion: boolean
+): TemporalCombatTreatment {
+  const elapsed = Math.max(0, elapsedMilliseconds) * simulationSpeed;
+  const cadence =
+    entity.visualId === "enemy.goblin_slinger"
+      ? 0.008
+      : entity.visualId === "enemy.goblin_bulwark"
+        ? 0.0048
+        : entity.visualId === "enemy.gatebreaker_captain"
+          ? 0.0056
+          : 0.0068;
+  const wave = Math.sin(elapsed * cadence);
+  const strength = reduceMotion ? 0.22 : 1;
+  if (entity.action.kind === "moving" || entity.transition === "moving")
+    return {
+      angleOffset: wave * 1.8 * strength,
+      scaleX: 1 + wave * 0.012 * strength,
+      scaleY: 1 - wave * 0.018 * strength,
+      verticalOffset: -Math.abs(wave) * 2.4 * strength
+    };
+  const treatment =
+    entity.action.phase === "windup"
+      ? { angle: -2.5, x: 0.97, y: 1.03, lift: 1 }
+      : entity.action.phase === "committed"
+        ? { angle: 2, x: 1.025, y: 0.98, lift: -1 }
+        : entity.action.phase === "impact"
+          ? { angle: 4.5, x: 1.055, y: 0.95, lift: 2 }
+          : entity.action.phase === "recovery"
+            ? { angle: -1.5, x: 0.985, y: 1.01, lift: 0 }
+            : { angle: wave * 0.35, x: 1, y: 1, lift: 0 };
+  return {
+    angleOffset: treatment.angle * strength,
+    scaleX: 1 + (treatment.x - 1) * strength,
+    scaleY: 1 + (treatment.y - 1) * strength,
+    verticalOffset: treatment.lift * strength
+  };
+}
+
 export function selectCombatPoseTreatment(
   snapshot: RenderSnapshot,
   entityId: string,
@@ -713,6 +763,7 @@ export interface SlingerProjectilePath {
   readonly targetId: string;
   readonly source: RenderPrimitive;
   readonly target: RenderPrimitive;
+  readonly phase: "committed" | "impact";
 }
 
 export function deriveSlingerProjectilePaths(
@@ -743,7 +794,8 @@ export function deriveSlingerProjectilePaths(
               sourceId: entity.id,
               targetId: entity.targetEntityId as string,
               source,
-              target
+              target,
+              phase: entity.action.phase as "committed" | "impact"
             }
           ];
     });
@@ -1539,6 +1591,9 @@ interface PersistentEntityObjects {
   signalPresentation: CombatPresentationState | undefined;
   targetX: number;
   targetY: number;
+  pivotX: number;
+  pivotY: number;
+  poseAngle: number;
 }
 
 type RenderEntityV2 = Extract<
@@ -1637,6 +1692,8 @@ class PersistentBattlefieldScene {
     const offsetY = origin.y - destination.y;
     objects.targetX = destination.x;
     objects.targetY = destination.y;
+    objects.pivotX = origin.x;
+    objects.pivotY = origin.y;
     objects.ring.setPosition(origin.x, origin.y);
     objects.subject.setPosition(origin.x, origin.y);
     objects.signal.setPosition(offsetX, offsetY);
@@ -1644,24 +1701,48 @@ class PersistentBattlefieldScene {
     signalMask?.setPosition(offsetX, offsetY);
   }
 
-  updateMotion(deltaMilliseconds: number, simulationSpeed: 1 | 2): void {
+  updateMotion(
+    deltaMilliseconds: number,
+    simulationSpeed: 1 | 2,
+    reduceMotion: boolean
+  ): void {
     const maximumStep = interpolationDistanceForFrame(
       deltaMilliseconds,
       simulationSpeed
     );
     for (const objects of this.entities.values()) {
-      const deltaX = objects.targetX - objects.subject.x;
-      const deltaY = objects.targetY - objects.subject.y;
+      const deltaX = objects.targetX - objects.pivotX;
+      const deltaY = objects.targetY - objects.pivotY;
       const distance = Math.hypot(deltaX, deltaY);
       const ratio = distance === 0 ? 1 : Math.min(1, maximumStep / distance);
-      const x = objects.subject.x + deltaX * ratio;
-      const y = objects.subject.y + deltaY * ratio;
+      const x = objects.pivotX + deltaX * ratio;
+      const y = objects.pivotY + deltaY * ratio;
+      objects.pivotX = x;
+      objects.pivotY = y;
       objects.subject.setPosition(x, y);
       objects.ring.setPosition(x, y);
       const offsetX = x - objects.targetX;
       const offsetY = y - objects.targetY;
       objects.signal.setPosition(offsetX, offsetY);
       objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
+      const snapshotEntity =
+        this.lastSnapshot?.schemaVersion === 2
+          ? this.lastSnapshot.entities.find(
+              ({ id }) => id === objects.subject.getData("renderEntityId")
+            )
+          : undefined;
+      if (snapshotEntity !== undefined) {
+        const treatment = deriveTemporalCombatTreatment(
+          snapshotEntity,
+          this.scene.time.now,
+          simulationSpeed,
+          reduceMotion
+        );
+        objects.subject
+          .setAngle(objects.poseAngle + treatment.angleOffset)
+          .setScale(treatment.scaleX, treatment.scaleY)
+          .setY(y + treatment.verticalOffset);
+      }
       if (
         objects.signalDamaged &&
         objects.damagedUntil <= this.scene.time.now &&
@@ -1965,11 +2046,15 @@ class PersistentBattlefieldScene {
           signalEntity: undefined,
           signalPresentation: undefined,
           targetX: entity.x,
-          targetY: entity.y
+          targetY: entity.y,
+          pivotX: entity.x,
+          pivotY: entity.y,
+          poseAngle: poseTreatment.angle
         });
       }
       const objects = this.entities.get(entity.id);
       if (objects !== undefined) {
+        objects.poseAngle = poseTreatment.angle;
         if (presentation?.damaged === true)
           objects.damagedUntil =
             this.scene.time.now + DAMAGE_SIGNAL_DURATION_MS;
@@ -2008,6 +2093,8 @@ class PersistentBattlefieldScene {
       else if (objects !== undefined) {
         objects.targetX = entity.x;
         objects.targetY = entity.y;
+        objects.pivotX = entity.x;
+        objects.pivotY = entity.y;
       }
     }
     if (interpolationTick !== undefined)
@@ -2081,18 +2168,29 @@ class PersistentBattlefieldScene {
         this.projectileEffects.get(path.sourceId) ?? this.scene.add.graphics();
       effect.clear();
       effect.lineStyle(3, 0xf0aa52, 0.9);
+      const projectileProgress = path.phase === "impact" ? 1 : 0.58;
+      const projectileX =
+        path.source.x + (path.target.x - path.source.x) * projectileProgress;
+      const projectileY =
+        path.source.y -
+        28 +
+        (path.target.y - 34 - (path.source.y - 28)) * projectileProgress;
       effect.lineBetween(
         path.source.x,
         path.source.y - 28,
-        path.target.x,
-        path.target.y - 34
+        projectileX,
+        projectileY
       );
       effect.fillStyle(0xffd17a, 1);
-      effect.fillCircle(
-        path.target.x,
-        path.target.y - 34,
-        reduceMotion ? 4 : 6
-      );
+      effect.fillCircle(projectileX, projectileY, reduceMotion ? 4 : 6);
+      if (path.phase === "impact") {
+        effect.lineStyle(2, 0xffd17a, reduceMotion ? 0.75 : 1);
+        effect.strokeCircle(
+          path.target.x,
+          path.target.y - 34,
+          reduceMotion ? 7 : 12
+        );
+      }
       effect.lineStyle(2, 0xd8eef5, 0.95);
       effect.strokeCircle(path.source.x, path.source.y - 28, 5);
       effect.setAlpha(reduceMotion ? 0.82 : 1);
@@ -2466,7 +2564,7 @@ function createBattlefieldRenderer(
           onTerminalPresentationCompleted(snapshot);
       },
       update(_time: number, delta: number) {
-        persistentScene?.updateMotion(delta, simulationSpeed);
+        persistentScene?.updateMotion(delta, simulationSpeed, reduceMotion);
         persistentScene?.updateDepartures();
         if (
           persistentScene?.terminalPresentationComplete() === true &&
