@@ -23,6 +23,7 @@ import {
   deriveShieldSlamImpactIds,
   deriveSlingerProjectilePaths,
   interpolationDistanceForFrame,
+  locomotionCadenceOffset,
   renderedFactionForSourceKey,
   selectCombatPoseAsset,
   selectCombatPoseTreatment,
@@ -2969,6 +2970,14 @@ describe("authoritative web worker", () => {
     expect(interpolationDistanceForFrame(16, 1)).toBeCloseTo(14.4);
     expect(interpolationDistanceForFrame(16, 2)).toBeCloseTo(28.8);
     expect(interpolationDistanceForFrame(-1, 2)).toBe(0);
+  });
+
+  it("adds bounded locomotion cadence without weakening reduced motion", () => {
+    expect(locomotionCadenceOffset(90, 1, true, false)).toBeCloseTo(1.5);
+    expect(locomotionCadenceOffset(90, 2, true, false)).toBeCloseTo(0);
+    expect(locomotionCadenceOffset(90, 1, false, false)).toBe(0);
+    expect(locomotionCadenceOffset(90, 1, true, true)).toBe(0);
+    expect(locomotionCadenceOffset(-90, 1, true, false)).toBe(0);
   });
 
   it("binds authored combat poses to authoritative snapshot-v2 action phases", () => {

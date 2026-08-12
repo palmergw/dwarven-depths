@@ -53,6 +53,20 @@ export function interpolationDistanceForFrame(
     simulationSpeed
   );
 }
+
+export function locomotionCadenceOffset(
+  elapsedMilliseconds: number,
+  simulationSpeed: 1 | 2,
+  moving: boolean,
+  reduceMotion: boolean
+): number {
+  if (!moving || reduceMotion) return 0;
+  return (
+    Math.sin(
+      (Math.max(0, elapsedMilliseconds) * simulationSpeed * Math.PI) / 180
+    ) * 1.5
+  );
+}
 const textureAlphaMetricsCache = new Map<string, TextureAlphaMetrics>();
 
 const environmentUrl = new URL(
@@ -1568,6 +1582,8 @@ interface PersistentEntityObjects {
   signalDamaged: boolean;
   signalEntity: RenderPrimitive | undefined;
   signalPresentation: CombatPresentationState | undefined;
+  motionX: number;
+  motionY: number;
   targetX: number;
   targetY: number;
 }
@@ -1668,6 +1684,8 @@ class PersistentBattlefieldScene {
     const offsetY = origin.y - destination.y;
     objects.targetX = destination.x;
     objects.targetY = destination.y;
+    objects.motionX = origin.x;
+    objects.motionY = origin.y;
     objects.ring.setPosition(origin.x, origin.y);
     objects.subject.setPosition(origin.x, origin.y);
     objects.subject.mask?.geometryMask?.setPosition(offsetX, offsetY);
@@ -1676,22 +1694,34 @@ class PersistentBattlefieldScene {
     signalMask?.setPosition(offsetX, offsetY);
   }
 
-  updateMotion(deltaMilliseconds: number, simulationSpeed: 1 | 2): void {
+  updateMotion(
+    deltaMilliseconds: number,
+    simulationSpeed: 1 | 2,
+    reduceMotion: boolean
+  ): void {
     const maximumStep = interpolationDistanceForFrame(
       deltaMilliseconds,
       simulationSpeed
     );
     for (const objects of this.entities.values()) {
-      const deltaX = objects.targetX - objects.subject.x;
-      const deltaY = objects.targetY - objects.subject.y;
+      const deltaX = objects.targetX - objects.motionX;
+      const deltaY = objects.targetY - objects.motionY;
       const distance = Math.hypot(deltaX, deltaY);
       const ratio = distance === 0 ? 1 : Math.min(1, maximumStep / distance);
-      const x = objects.subject.x + deltaX * ratio;
-      const y = objects.subject.y + deltaY * ratio;
-      objects.subject.setPosition(x, y);
+      const x = objects.motionX + deltaX * ratio;
+      const y = objects.motionY + deltaY * ratio;
+      const locomotionCadence = locomotionCadenceOffset(
+        this.scene.time.now,
+        simulationSpeed,
+        distance > 0,
+        reduceMotion
+      );
+      objects.motionX = x;
+      objects.motionY = y;
+      objects.subject.setPosition(x, y + locomotionCadence);
       objects.ring.setPosition(x, y);
       const offsetX = x - objects.targetX;
-      const offsetY = y - objects.targetY;
+      const offsetY = y + locomotionCadence - objects.targetY;
       objects.subject.mask?.geometryMask?.setPosition(offsetX, offsetY);
       objects.signal.setPosition(offsetX, offsetY);
       objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
@@ -1956,7 +1986,7 @@ class PersistentBattlefieldScene {
       const displayedOrigin =
         existing === undefined
           ? undefined
-          : { id: entity.id, x: existing.subject.x, y: existing.subject.y };
+          : { id: entity.id, x: existing.motionX, y: existing.motionY };
       const presentation = deriveCombatPresentationState(
         snapshot,
         previousSnapshot,
@@ -2011,6 +2041,8 @@ class PersistentBattlefieldScene {
           signalDamaged: false,
           signalEntity: undefined,
           signalPresentation: undefined,
+          motionX: entity.x,
+          motionY: entity.y,
           targetX: entity.x,
           targetY: entity.y
         });
@@ -2053,6 +2085,8 @@ class PersistentBattlefieldScene {
       )
         this.interpolateEntity(objects, origin, entity);
       else if (objects !== undefined) {
+        objects.motionX = entity.x;
+        objects.motionY = entity.y;
         objects.targetX = entity.x;
         objects.targetY = entity.y;
       }
@@ -2587,7 +2621,7 @@ function createBattlefieldRenderer(
           onTerminalPresentationCompleted(snapshot);
       },
       update(_time: number, delta: number) {
-        persistentScene?.updateMotion(delta, simulationSpeed);
+        persistentScene?.updateMotion(delta, simulationSpeed, reduceMotion);
         persistentScene?.updateDepartures();
         if (
           persistentScene?.terminalPresentationComplete() === true &&
