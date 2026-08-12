@@ -2,7 +2,10 @@
   "schemaVersion": 2,
   "issue": 316,
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-  "viewport": [1440, 900],
+  "viewport": [
+    1440,
+    900
+  ],
   "motion": "normal-motion",
   "authoritativeInterval": {
     "startingTick": 9,
@@ -14,35 +17,57 @@
     "videoSha256": "266d1a92967dd1546f8c735f5c1c16feb87eece09e77cba7675115ded55440ba",
     "sidecar": "before-approved-baseline.json",
     "sidecarSha256": "258c6bfb684030a7ef98447e87a3b3705700a7ec8ec086c09320528e4243b1fa",
-    "intervalMilliseconds": [2240, 3055]
+    "intervalMilliseconds": [
+      2240,
+      3038
+    ]
   },
   "after": {
-    "sourceHead": "9ae13160d26c2e202b5c7b94e220d1a387990e5b",
-    "video": "after-emphatic-phases.webm",
-    "videoSha256": "6c9fc14cafac87bf0f602e1b4eb54c454adc7644d4872ca8d04abd6ad8f64d1b",
-    "sidecar": "after-emphatic-phases.json",
-    "sidecarSha256": "d0b13dbc9dca3426432fc02a050012347f5bd4b32a7660448b18e5dd73d4dc7b",
-    "intervalMilliseconds": [4126, 4951]
+    "sourceHead": "1a34fcea3b77a222d76b6c1a6372adf310b192c9",
+    "video": "after-forceful-actions.webm",
+    "videoSha256": "af120784286936320091bd02ff8ff8ed00b2de3e6546701a790c7f74c402305a",
+    "sidecar": "after-forceful-actions.json",
+    "sidecarSha256": "8a5e620a7cc3ca65162aff488a6f965a9787b84323f851bcb3c51fcb13e080cc",
+    "intervalMilliseconds": [
+      3357,
+      4155
+    ]
   },
   "comparison": {
     "actorActionCrop": {
       "video": "adjacent-action-crop.webm",
-      "videoSha256": "a71c7fd1bf3997c35c177c797cb5fe027f6b4f3d29855337998e1e1dfcd75323",
-      "sourceCrop": [300, 180, 620, 360],
-      "displayDimensions": [1800, 522],
-      "durationMilliseconds": 840
+      "videoSha256": "a60fc77e0c9a5fafe73df44a63c44600ae1592482af207d5f0e2461b63acb9e8",
+      "sourceCrop": [
+        300,
+        180,
+        620,
+        360
+      ],
+      "displayDimensions": [
+        1800,
+        522
+      ],
+      "durationMilliseconds": 798
     },
     "fullFrameContext": {
       "video": "adjacent-full-frame.webm",
-      "videoSha256": "9c17784b5023222987ebcd17688e06d1147008c7498e98abbc39103b6f8fdc7a",
-      "sourceCrop": [0, 0, 1440, 900],
-      "displayDimensions": [2880, 900],
-      "durationMilliseconds": 840
+      "videoSha256": "1afbc5ded686455244da2730a134fd6a2e1ea544ce4affb583babf04d2a4ca29",
+      "sourceCrop": [
+        0,
+        0,
+        1440,
+        900
+      ],
+      "displayDimensions": [
+        2880,
+        900
+      ],
+      "durationMilliseconds": 798
     },
     "still": "adjacent-action-still.png",
-    "stillSha256": "d63568c09b02f858d3e3177679f1aeba3dac0a57eff76f3a1f87d85a6fc1d20a",
-    "changedRegion": "Iron Warden and cutter silhouettes plus phase-bound windup, commitment, impact, and recovery emphasis at the north guard post",
+    "stillSha256": "4bbc8d1b83f1794b7307b9abcec30a66fe4cf82027171026dc3118703d69f3e4",
+    "changedRegion": "Iron Warden and cutter silhouettes at the north guard post: deep anticipation lean, directional commitment, displaced impact burst, hit recoil, and returning recovery arc",
     "changedMotionInterval": "authoritative ticks 9 through 54"
   },
-  "decision": "Approve the human-obvious combat phase silhouettes and bounded phase emphasis shown in the synchronized actor/action crop, with the full-frame clip confirming preserved Shuttergate composition and unit scale."
+  "decision": "Approve the human-obvious anticipation, commitment, impact, recoil, and recovery treatment shown in the synchronized actor/action crop, with the full-frame clip confirming preserved Shuttergate composition and unit scale."
 }
