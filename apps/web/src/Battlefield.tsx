@@ -1462,11 +1462,12 @@ function addDepthTestedBillboard(
   height: number,
   pivotX: number,
   pivotY: number,
-  _staticDepth: StaticSceneDepth,
+  staticDepth: StaticSceneDepth,
   existing?: Phaser.GameObjects.Image
 ): Phaser.GameObjects.Image {
   if (entity.cameraDepth === undefined) {
     const image = existing ?? scene.add.image(entity.x, entity.y, sourceKey);
+    image.clearMask(true);
     image
       .setTexture(sourceKey)
       .setPosition(entity.x, entity.y)
@@ -1483,6 +1484,23 @@ function addDepthTestedBillboard(
     .setOrigin(pivotX / width, pivotY / height);
   image.setData("renderEntityId", entity.id);
   image.setData("renderSourceKey", sourceKey);
+  image.setMask(
+    createDepthVisibilityMask(
+      scene,
+      width,
+      height,
+      {
+        kind: "upright-billboard",
+        cameraDepth: entity.cameraDepth,
+        cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+        depthEdgeGuardPixels: 1,
+        frameLeft: Math.round(entity.x) - pivotX,
+        frameTop: Math.round(entity.y) - pivotY,
+        pivotY
+      },
+      staticDepth
+    )
+  );
   return image;
 }
 
