@@ -87,6 +87,42 @@ describe("presentation snapshot v2", () => {
     for (const snapshot of snapshots)
       expect(parseRenderSnapshot(snapshot)).toEqual(snapshot);
 
+    const shieldSlamImpactIndex = snapshots.findIndex((snapshot) =>
+      snapshot.entities.some(
+        (entity) =>
+          entity.action.kind === "ability" &&
+          entity.action.abilityId === "ability.iron_warden.shield_slam" &&
+          entity.action.phase === "impact"
+      )
+    );
+    expect(shieldSlamImpactIndex).toBeGreaterThan(0);
+    const shieldSlamImpact = snapshots[shieldSlamImpactIndex];
+    const beforeShieldSlamImpact = snapshots[shieldSlamImpactIndex - 1];
+    if (shieldSlamImpact === undefined || beforeShieldSlamImpact === undefined)
+      throw new Error("missing Shield Slam impact snapshots");
+    const priorHealthById = new Map(
+      beforeShieldSlamImpact.entities.map((entity) => [
+        entity.id,
+        entity.currentHealth
+      ])
+    );
+    expect(
+      shieldSlamImpact.entities.some(
+        (entity) =>
+          entity.faction === "enemy" &&
+          entity.currentHealth < (priorHealthById.get(entity.id) ?? 0)
+      ) ||
+        shieldSlamImpact.entityTransitions.some(
+          (transition) =>
+            transition.kind === "downed" || transition.kind === "destroyed"
+        )
+    ).toBe(true);
+    expect(
+      beforeShieldSlamImpact.entities.find(
+        (entity) => entity.faction === "dwarf"
+      )?.action
+    ).toMatchObject({ kind: "ability", phase: "committed" });
+
     const running = snapshots.find(
       (snapshot) =>
         snapshot.phase === "running" &&

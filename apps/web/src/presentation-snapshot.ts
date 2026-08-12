@@ -46,7 +46,9 @@ function facingFrom(
 function actionFor(
   state: SimulationState,
   combatant: BattlefieldDwarfCombatant | BattlefieldEnemyCombatant,
-  moved: boolean
+  moved: boolean,
+  previousAction: RenderEntityV2["action"] | undefined,
+  resolvedShieldSlamSourceIds: ReadonlySet<string>
 ): RenderEntityV2["action"] {
   const ability = state.committedAbilities?.find(
     (candidate) => candidate.sourceEntityId === combatant.entityId
@@ -54,8 +56,18 @@ function actionFor(
   if (ability !== undefined)
     return {
       kind: "ability",
-      phase: state.tick < ability.impactAtTick ? "committed" : "impact",
+      phase: "committed",
       abilityId: ability.abilityId
+    };
+  if (
+    resolvedShieldSlamSourceIds.has(combatant.entityId) &&
+    previousAction?.kind === "ability" &&
+    previousAction.abilityId === "ability.iron_warden.shield_slam"
+  )
+    return {
+      kind: "ability",
+      phase: "impact",
+      abilityId: previousAction.abilityId
     };
   const attack = combatant.actionState.activeBasicAttack;
   if (attack !== null)
@@ -132,6 +144,19 @@ export function createPresentationSnapshot(
       boss: combatant.classification === "boss"
     }))
   ];
+  const resolvedShieldSlamSourceIds = new Set(
+    (previous?.entities ?? [])
+      .filter(
+        (entity) =>
+          entity.faction === "dwarf" &&
+          entity.action.kind === "ability" &&
+          entity.action.abilityId === "ability.iron_warden.shield_slam" &&
+          !state.committedAbilities?.some(
+            (ability) => ability.sourceEntityId === entity.id
+          )
+      )
+      .map(({ id }) => id)
+  );
   const entities: RenderEntityV2[] = [];
   for (const entry of combatants.sort((left, right) =>
     compareRenderIds(left.combatant.entityId, right.combatant.entityId)
@@ -170,7 +195,13 @@ export function createPresentationSnapshot(
       currentHealth: entry.combatant.currentHealth,
       maximumHealth: entry.combatant.maximumHealth,
       facing: facingFrom(position, targetPosition, previousPosition),
-      action: actionFor(state, entry.combatant, moved),
+      action: actionFor(
+        state,
+        entry.combatant,
+        moved,
+        previousById.get(entry.combatant.entityId)?.action,
+        resolvedShieldSlamSourceIds
+      ),
       targetEntityId,
       statuses: [...(state.activeStatuses ?? [])]
         .filter((status) => status.ownerEntityId === entry.combatant.entityId)
