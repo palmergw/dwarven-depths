@@ -558,21 +558,13 @@ export function selectCombatPoseAsset(
     entity.id
   );
   if (dwarf && presentation?.damaged === true) return "warden-hit-source";
-  const previousEntity =
-    previousSnapshot?.schemaVersion === 2 &&
-    previousSnapshot.scenarioId === snapshot.scenarioId &&
-    previousSnapshot.tick === snapshot.previousTick
-      ? previousSnapshot.entities.find(({ id }) => id === entity.id)
-      : undefined;
   const authoredPhase =
     entity.action.phase === "windup" ||
     entity.action.phase === "committed" ||
-    entity.action.phase === "impact"
+    entity.action.phase === "impact" ||
+    entity.action.phase === "recoil"
       ? entity.action.phase
-      : entity.action.phase === "recovery" &&
-          previousEntity?.action.phase === "impact"
-        ? "recoil"
-        : "recovery";
+      : "recovery";
   if (
     dwarf &&
     entity.action.kind === "ability" &&
@@ -602,6 +594,7 @@ export interface CombatPoseTreatment {
     | "windup"
     | "committed"
     | "impact"
+    | "recoil"
     | "recovery";
 }
 

@@ -48,6 +48,7 @@ function actionFor(
   state: SimulationState,
   combatant: BattlefieldDwarfCombatant | BattlefieldEnemyCombatant,
   moved: boolean,
+  previousAction: RenderEntityV2["action"] | undefined,
   shieldSlamImpactTargetsBySource: ReadonlyMap<string, readonly string[]>
 ): RenderEntityV2["action"] {
   const ability = state.committedAbilities?.find(
@@ -67,6 +68,17 @@ function actionFor(
       abilityId: "ability.iron_warden.shield_slam",
       impactTargetEntityIds:
         shieldSlamImpactTargetsBySource.get(combatant.entityId) ?? []
+    };
+  if (
+    previousAction?.kind === "ability" &&
+    previousAction.abilityId === "ability.iron_warden.shield_slam" &&
+    (previousAction.phase === "impact" || previousAction.phase === "recoil")
+  )
+    return {
+      kind: "ability",
+      phase: previousAction.phase === "impact" ? "recoil" : "recovery",
+      abilityId: previousAction.abilityId,
+      impactTargetEntityIds: []
     };
   const attack = combatant.actionState.activeBasicAttack;
   if (attack !== null)
@@ -215,6 +227,7 @@ export function createPresentationSnapshot(
         state,
         entry.combatant,
         moved,
+        previousById.get(entry.combatant.entityId)?.action,
         shieldSlamImpactTargetsBySource
       ),
       targetEntityId,

@@ -52,7 +52,13 @@ export interface RenderEntityV2 extends RenderEntity {
   readonly facing: "north" | "east" | "south" | "west";
   readonly action: {
     readonly kind: "idle" | "moving" | "basic_attack" | "ability";
-    readonly phase: "idle" | "windup" | "committed" | "impact" | "recovery";
+    readonly phase:
+      | "idle"
+      | "windup"
+      | "committed"
+      | "impact"
+      | "recoil"
+      | "recovery";
     readonly abilityId: string | null;
     readonly impactTargetEntityIds?: readonly string[];
   };
@@ -433,6 +439,7 @@ function parseV2Entity(
       value.action.phase !== "windup" &&
       value.action.phase !== "committed" &&
       value.action.phase !== "impact" &&
+      value.action.phase !== "recoil" &&
       value.action.phase !== "recovery") ||
     (value.action.abilityId !== null &&
       !isIdentifier(value.action.abilityId)) ||
@@ -624,9 +631,7 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
     return undefined;
   const entityIds = new Set(entities.map((entity) => entity.id));
   const enemyEntityIds = new Set(
-    entities
-      .filter((entity) => entity.faction === "enemy")
-      .map(({ id }) => id)
+    entities.filter((entity) => entity.faction === "enemy").map(({ id }) => id)
   );
   const departedEntityIds = new Set(
     transitions
@@ -652,7 +657,9 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
           entity.action.abilityId !== "ability.iron_warden.shield_slam" ||
           entity.action.phase !== "impact" ||
           impactTargetEntityIds.some(
-            (id) => !enemyEntityIds.has(id) && !departedEntityIds.has(id)
+            (id) =>
+              !enemyEntityIds.has(id) &&
+              (!departedEntityIds.has(id) || !id.startsWith("entity.enemy."))
           ))
       );
     }) ||

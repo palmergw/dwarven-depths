@@ -130,7 +130,15 @@ describe("presentation snapshot v2", () => {
       afterShieldSlamImpact.entities.find(
         (entity) => entity.faction === "dwarf"
       )?.action
-    ).not.toMatchObject({ kind: "ability", phase: "impact" });
+    ).toMatchObject({ kind: "ability", phase: "recoil" });
+    const afterShieldSlamRecoil = snapshots[shieldSlamImpactIndex + 2];
+    if (afterShieldSlamRecoil === undefined)
+      throw new Error("missing Shield Slam recovery snapshot");
+    expect(
+      afterShieldSlamRecoil.entities.find(
+        (entity) => entity.faction === "dwarf"
+      )?.action
+    ).toMatchObject({ kind: "ability", phase: "recovery" });
 
     const running = snapshots.find(
       (snapshot) =>
