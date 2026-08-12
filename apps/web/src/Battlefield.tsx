@@ -1499,31 +1499,12 @@ function addDepthTestedBillboard(
     image.setData("renderSourceKey", sourceKey);
     return image;
   }
-  const frameLeft = Math.round(entity.x) - pivotX;
-  const frameTop = Math.round(entity.y) - pivotY;
   const image = existing ?? scene.add.image(entity.x, entity.y, sourceKey);
   image.clearMask(true);
   image
     .setTexture(sourceKey)
     .setPosition(entity.x, entity.y)
-    .setOrigin(pivotX / width, pivotY / height)
-    .setMask(
-      createDepthVisibilityMask(
-        scene,
-        width,
-        height,
-        {
-          kind: "upright-billboard",
-          cameraDepth: entity.cameraDepth,
-          cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
-          depthEdgeGuardPixels: 1,
-          frameLeft,
-          frameTop,
-          pivotY
-        },
-        staticDepth
-      )
-    );
+    .setOrigin(pivotX / width, pivotY / height);
   image.setData("renderEntityId", entity.id);
   image.setData("renderSourceKey", sourceKey);
   return image;
