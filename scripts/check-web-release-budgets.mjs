@@ -18,10 +18,10 @@ const budgets = {
   // bounded to 72 KiB compressed.
   workerJavaScript: 73_728,
   stylesheet: 10_240,
-  // Keep the complete offline install bounded while allowing the one deferred
-  // evidence-export chunk; player startup remains governed by the unchanged
-  // main, worker, and stylesheet ceilings above.
-  total: 591_872
+  // Keep the complete offline install bounded while allowing the authored
+  // combat-pose selector and authority-bound impact projection. Player startup
+  // remains governed by the unchanged main, worker, and stylesheet ceilings.
+  total: 604_160
 };
 const classifications = [
   ["mainJavaScript", /^index-[\w-]+\.js$/],
