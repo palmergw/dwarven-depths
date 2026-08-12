@@ -1202,8 +1202,9 @@ function createDepthClippedPresentationTexture(
   const source = scene.textures.get(sourceKey).getSourceImage() as
     | HTMLImageElement
     | HTMLCanvasElement;
-  if (scene.textures.exists(outputKey)) scene.textures.remove(outputKey);
-  const texture = scene.textures.createCanvas(outputKey, width, height);
+  const texture = scene.textures.exists(outputKey)
+    ? (scene.textures.get(outputKey) as Phaser.Textures.CanvasTexture)
+    : scene.textures.createCanvas(outputKey, width, height);
   if (texture === null)
     throw new Error(`unable to create depth-clipped texture: ${outputKey}`);
   const context = texture.context;
