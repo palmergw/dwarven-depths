@@ -1501,30 +1501,29 @@ function addDepthTestedBillboard(
   }
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
-  if (existing !== undefined) existing.setTexture(sourceKey);
-  const outputKey = `subject-depth-${entity.id}-${sourceKey}`;
-  const texture = createDepthClippedPresentationTexture(
-    scene,
-    sourceKey,
-    outputKey,
-    width,
-    height,
-    {
-      kind: "upright-billboard",
-      cameraDepth: entity.cameraDepth,
-      cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
-      depthEdgeGuardPixels: 1,
-      frameLeft,
-      frameTop,
-      pivotY
-    },
-    staticDepth
-  );
-  const image = existing ?? scene.add.image(entity.x, entity.y, texture);
+  const image = existing ?? scene.add.image(entity.x, entity.y, sourceKey);
+  image.clearMask(true);
   image
-    .setTexture(texture)
+    .setTexture(sourceKey)
     .setPosition(entity.x, entity.y)
-    .setOrigin(pivotX / width, pivotY / height);
+    .setOrigin(pivotX / width, pivotY / height)
+    .setMask(
+      createDepthVisibilityMask(
+        scene,
+        width,
+        height,
+        {
+          kind: "upright-billboard",
+          cameraDepth: entity.cameraDepth,
+          cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+          depthEdgeGuardPixels: 1,
+          frameLeft,
+          frameTop,
+          pivotY
+        },
+        staticDepth
+      )
+    );
   image.setData("renderEntityId", entity.id);
   image.setData("renderSourceKey", sourceKey);
   return image;
@@ -1706,16 +1705,12 @@ class PersistentBattlefieldScene {
     this.layers["world-entities"].delete(objects.subject);
     this.layers["world-effects"].delete(objects.signal);
     objects.ring.destroy();
+    objects.subject.clearMask(true);
     objects.signal.clearMask(true);
     objects.signal.destroy();
     objects.subject.setTexture("warden-runtime");
     objects.subject.destroy();
-    for (const textureKey of this.scene.textures
-      .getTextureKeys()
-      .filter(
-        (key) =>
-          key === `ring-depth-${id}` || key.startsWith(`subject-depth-${id}-`)
-      ))
+    for (const textureKey of [`ring-depth-${id}`])
       if (this.scene.textures.exists(textureKey))
         this.scene.textures.remove(textureKey);
   }
