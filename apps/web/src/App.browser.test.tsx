@@ -26,6 +26,7 @@ import {
   renderedFactionForSourceKey,
   selectCombatPoseAsset,
   selectCombatPoseTreatment,
+  slingerProjectileHead,
   statusSignalKind
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
@@ -3410,6 +3411,15 @@ describe("authoritative web worker", () => {
         projectilePrimitives
       ).map(({ sourceId, targetId }) => [sourceId, targetId])
     ).toEqual([[slinger.id, entity.id]]);
+    const committedPath = deriveSlingerProjectilePaths(
+      projectileSnapshot,
+      projectilePrimitives
+    )[0];
+    if (committedPath === undefined) throw new Error("missing projectile path");
+    expect(slingerProjectileHead(committedPath)).not.toEqual({
+      x: committedPath.target.x,
+      y: committedPath.target.y - 34
+    });
     const lethalImpact = {
       ...projectileSnapshot,
       tick: projectileSnapshot.tick + 1,
@@ -3435,6 +3445,16 @@ describe("authoritative web worker", () => {
         projectileSnapshot
       ).map(({ sourceId, targetId }) => [sourceId, targetId])
     ).toEqual([[slinger.id, entity.id]]);
+    const impactPath = deriveSlingerProjectilePaths(
+      lethalImpact,
+      buildBattlefieldPrimitives(lethalImpact),
+      projectileSnapshot
+    )[0];
+    if (impactPath === undefined) throw new Error("missing impact path");
+    expect(slingerProjectileHead(impactPath)).toEqual({
+      x: impactPath.target.x,
+      y: impactPath.target.y - 34
+    });
     expect(
       deriveSlingerProjectilePaths(
         {

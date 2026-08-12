@@ -711,8 +711,21 @@ export function deriveShieldSlamImpactIds(
 export interface SlingerProjectilePath {
   readonly sourceId: string;
   readonly targetId: string;
+  readonly phase: "committed" | "impact";
   readonly source: RenderPrimitive;
   readonly target: RenderPrimitive;
+}
+
+export function slingerProjectileHead(path: SlingerProjectilePath): {
+  readonly x: number;
+  readonly y: number;
+} {
+  return path.phase === "impact"
+    ? { x: path.target.x, y: path.target.y - 34 }
+    : {
+        x: path.source.x + (path.target.x - path.source.x) * 0.58,
+        y: path.source.y - 28 + (path.target.y - 6 - path.source.y) * 0.58
+      };
 }
 
 export function deriveSlingerProjectilePaths(
@@ -751,6 +764,7 @@ export function deriveSlingerProjectilePaths(
             {
               sourceId: entity.id,
               targetId: entity.targetEntityId as string,
+              phase: entity.action.phase as "committed" | "impact",
               source,
               target
             }
@@ -2107,9 +2121,14 @@ class PersistentBattlefieldScene {
       primitives,
       previousSnapshot
     );
+    const abilityImpactIds = deriveShieldSlamImpactIds(
+      snapshot,
+      previousSnapshot
+    );
     const liveProjectileIds = new Set(
       projectilePaths.map(({ sourceId }) => sourceId)
     );
+    if (abilityImpactIds.length > 0) liveProjectileIds.add("shield-slam-area");
     for (const [id, effect] of this.projectileEffects)
       if (!liveProjectileIds.has(id)) {
         this.layers["world-effects"].delete(effect);
@@ -2121,18 +2140,15 @@ class PersistentBattlefieldScene {
         this.projectileEffects.get(path.sourceId) ?? this.scene.add.graphics();
       effect.clear();
       effect.lineStyle(2, 0xc88942, 0.72);
+      const { x: projectileX, y: projectileY } = slingerProjectileHead(path);
       effect.lineBetween(
         path.source.x,
         path.source.y - 28,
-        path.target.x,
-        path.target.y - 34
+        projectileX,
+        projectileY
       );
       effect.fillStyle(0xffd17a, 1);
-      effect.fillCircle(
-        path.target.x,
-        path.target.y - 34,
-        reduceMotion ? 3 : 4
-      );
+      effect.fillCircle(projectileX, projectileY, reduceMotion ? 3 : 4);
       effect.lineStyle(1, 0xe9b762, 0.75);
       effect.strokeCircle(path.source.x, path.source.y - 28, 3);
       effect.setAlpha(reduceMotion ? 0.82 : 1);
@@ -2142,14 +2158,62 @@ class PersistentBattlefieldScene {
       }
     }
 
-    const abilityImpactIds = deriveShieldSlamImpactIds(
-      snapshot,
-      previousSnapshot
-    );
     const impactKey =
       snapshot.schemaVersion === 2
         ? `${snapshot.scenarioId}:${snapshot.tick}:${abilityImpactIds.join(",")}`
         : undefined;
+    if (abilityImpactIds.length > 0 && snapshot.schemaVersion === 2) {
+      const sourceId = snapshot.entities.find(
+        (entity) =>
+          entity.action.kind === "ability" &&
+          entity.action.abilityId === "ability.iron_warden.shield_slam" &&
+          entity.action.phase === "impact"
+      )?.id;
+      const source = primitives.entities.find(({ id }) => id === sourceId);
+      const targets = abilityImpactIds.flatMap((id) => {
+        const target = primitives.entities.find((entity) => entity.id === id);
+        return target === undefined ? [] : [target];
+      });
+      if (source !== undefined && targets.length > 0) {
+        const area =
+          this.projectileEffects.get("shield-slam-area") ??
+          this.scene.add.graphics();
+        const targetX =
+          targets.reduce((sum, target) => sum + target.x, 0) / targets.length;
+        const targetY =
+          targets.reduce((sum, target) => sum + target.y, 0) / targets.length;
+        const deltaX = targetX - source.x;
+        const deltaY = targetY - source.y;
+        const distance = Math.hypot(deltaX, deltaY) || 1;
+        const perpendicularX = (-deltaY / distance) * 28;
+        const perpendicularY = (deltaX / distance) * 28;
+        if (Number.isFinite(targetX) && Number.isFinite(targetY)) {
+          area.clear();
+          area.fillStyle(0xd89b45, reduceMotion ? 0.14 : 0.22);
+          area.fillTriangle(
+            source.x,
+            source.y - 18,
+            targetX + perpendicularX,
+            targetY + perpendicularY,
+            targetX - perpendicularX,
+            targetY - perpendicularY
+          );
+          area.lineStyle(2, 0xf2c16f, 0.55);
+          area.strokeTriangle(
+            source.x,
+            source.y - 18,
+            targetX + perpendicularX,
+            targetY + perpendicularY,
+            targetX - perpendicularX,
+            targetY - perpendicularY
+          );
+          if (!this.projectileEffects.has("shield-slam-area")) {
+            this.projectileEffects.set("shield-slam-area", area);
+            this.layers["world-effects"].add(area);
+          }
+        }
+      }
+    }
     const previousPrimitivesById = new Map(
       previousSnapshot === undefined
         ? []
