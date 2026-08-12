@@ -26,7 +26,7 @@
     "video": "after-authored-frames.webm",
     "videoSha256": "a544d4905011f7b24f9d5175c1c8d04e4814f8feda2084cc1c66947a2abc6595",
     "sidecar": "after-authored-frames.json",
-    "sidecarSha256": "73d2df1b105b1e2302d33bcde16b729fac834642c35370a23b28bd4143a927f6",
+    "sidecarSha256": "a4778ad01e4cbc8037ac9d16ae482c3967b59e7782f450f768d547edbc8bfba4",
     "startingTick": 2,
     "endingTick": 169,
     "attackPhases": ["committed", "recovery", "windup"]
