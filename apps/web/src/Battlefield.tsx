@@ -2544,6 +2544,10 @@ function createBattlefieldRenderer(
   initialReduceMotion: boolean,
   initialSimulationSpeed: 1 | 2,
   initialEvidenceEffectAlpha: number | undefined,
+  onInitialPresentationRendered: (
+    snapshot: RenderSnapshot,
+    feedback: CombatFeedback | undefined
+  ) => void,
   onTerminalPresentationStarted: (snapshot: RenderSnapshot) => void,
   onTerminalPresentationCompleted: (snapshot: RenderSnapshot) => void
 ): BattlefieldRenderer {
@@ -2628,6 +2632,7 @@ function createBattlefieldRenderer(
           undefined,
           evidenceEffectAlpha
         );
+        onInitialPresentationRendered(snapshot, feedback);
         if (snapshot.schemaVersion === 2 && snapshot.phase === "terminal")
           onTerminalPresentationStarted(snapshot);
         if (persistentScene.terminalPresentationComplete())
@@ -2769,16 +2774,13 @@ export function Battlefield({
         latestReduceMotionRef.current,
         latestSimulationSpeedRef.current,
         latestEvidenceEffectAlphaRef.current,
+        markInitialFeedbackRendered,
         (terminalSnapshot) =>
           latestTerminalPresentationStartedRef.current(terminalSnapshot),
         (terminalSnapshot) =>
           latestTerminalPresentationCompletedRef.current(terminalSnapshot)
       );
       rendererRef.current = renderer;
-      markInitialFeedbackRendered(
-        latestSnapshotRef.current,
-        latestFeedbackRef.current
-      );
     });
     return () => {
       cancelAnimationFrame(frame);
