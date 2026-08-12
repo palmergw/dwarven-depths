@@ -2170,21 +2170,37 @@ class PersistentBattlefieldScene {
           entity.action.phase === "impact"
       )?.id;
       const source = primitives.entities.find(({ id }) => id === sourceId);
+      const sourceEntity = snapshot.entities.find(({ id }) => id === sourceId);
       const targets = abilityImpactIds.flatMap((id) => {
         const target = primitives.entities.find((entity) => entity.id === id);
         return target === undefined ? [] : [target];
       });
-      if (source !== undefined && targets.length > 0) {
+      if (
+        source !== undefined &&
+        sourceEntity !== undefined &&
+        targets.length > 0
+      ) {
         const area =
           this.projectileEffects.get("shield-slam-area") ??
           this.scene.add.graphics();
-        const targetX =
-          targets.reduce((sum, target) => sum + target.x, 0) / targets.length;
-        const targetY =
-          targets.reduce((sum, target) => sum + target.y, 0) / targets.length;
+        const distance = Math.max(
+          72,
+          ...targets.map((target) =>
+            Math.hypot(target.x - source.x, target.y - source.y)
+          )
+        );
+        const facingDelta =
+          sourceEntity.facing === "east"
+            ? { x: 1, y: 0 }
+            : sourceEntity.facing === "west"
+              ? { x: -1, y: 0 }
+              : sourceEntity.facing === "north"
+                ? { x: 0, y: -1 }
+                : { x: 0, y: 1 };
+        const targetX = source.x + facingDelta.x * distance;
+        const targetY = source.y + facingDelta.y * distance;
         const deltaX = targetX - source.x;
         const deltaY = targetY - source.y;
-        const distance = Math.hypot(deltaX, deltaY) || 1;
         const perpendicularX = (-deltaY / distance) * 28;
         const perpendicularY = (deltaX / distance) * 28;
         if (Number.isFinite(targetX) && Number.isFinite(targetY)) {

@@ -44,6 +44,15 @@ function facingFrom(
   return deltaY >= 0 ? "south" : "north";
 }
 
+function facingFromDelta(
+  deltaX: number,
+  deltaY: number
+): RenderEntityV2["facing"] {
+  if (Math.abs(deltaX) >= Math.abs(deltaY))
+    return deltaX >= 0 ? "east" : "west";
+  return deltaY >= 0 ? "south" : "north";
+}
+
 function actionFor(
   state: SimulationState,
   combatant: BattlefieldDwarfCombatant | BattlefieldEnemyCombatant,
@@ -286,6 +295,21 @@ export function createPresentationSnapshot(
       previousIsAdjacent,
       basicAttackImpactSources.has(entry.combatant.entityId)
     );
+    const committedAbility = state.committedAbilities?.find(
+      (ability) => ability.sourceEntityId === entry.combatant.entityId
+    );
+    const facing =
+      committedAbility !== undefined
+        ? facingFromDelta(
+            committedAbility.aimDeltaX,
+            committedAbility.aimDeltaY
+          )
+        : action.kind === "ability" &&
+            action.abilityId === "ability.iron_warden.shield_slam" &&
+            previousIsAdjacent
+          ? (previousById.get(entry.combatant.entityId)?.facing ??
+            facingFrom(position, targetPosition, previousPosition))
+          : facingFrom(position, targetPosition, previousPosition);
     const targetEntityId =
       action.kind === "basic_attack" &&
       (action.phase === "committed" || action.phase === "impact")
@@ -303,7 +327,7 @@ export function createPresentationSnapshot(
       previousPosition,
       currentHealth: entry.combatant.currentHealth,
       maximumHealth: entry.combatant.maximumHealth,
-      facing: facingFrom(position, targetPosition, previousPosition),
+      facing,
       action,
       targetEntityId,
       statuses: [...(state.activeStatuses ?? [])]
