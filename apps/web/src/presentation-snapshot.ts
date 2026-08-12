@@ -59,7 +59,7 @@ function actionFor(
   if (ability !== undefined)
     return {
       kind: "ability",
-      phase: state.tick === ability.committedAtTick ? "windup" : "committed",
+      phase: state.tick <= ability.committedAtTick + 1 ? "windup" : "committed",
       abilityId: ability.abilityId,
       impactTargetEntityIds: []
     };
@@ -273,7 +273,9 @@ export function createPresentationSnapshot(
       targetNodeId === undefined ? null : facingTargetEntityId;
     const targetPosition =
       targetNodeId === undefined
-        ? undefined
+        ? facingTargetEntityId === null || facingTargetEntityId === undefined
+          ? undefined
+          : previousById.get(facingTargetEntityId)?.position
         : positionFor(targetNodeId, positions);
     const action = actionFor(
       state,
