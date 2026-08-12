@@ -1,52 +1,39 @@
 {
   "schemaVersion": 1,
-  "sourceHead": "6f845796f3d4b6b1ed8a51d39bb9f67fedde2189",
+  "sourceHead": "84c91a505d3fedb1e96a6d8dde5bb8dd9d1642a2",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-  "viewport": [
-    1440,
-    900
-  ],
+  "viewport": [1440, 900],
   "video": "shuttergate-normal-motion-clip.webm",
-  "videoSha256": "c61de22a12f47fd6eff5359218e21bbd4d961421275595d917114aa10800b0a0",
+  "videoSha256": "5e2f72f620c089cd8cc95562692d38ad6871d3832934a0a98e1e1adc928c6531",
   "motion": "normal-motion",
   "approximateDurationSeconds": 7,
   "videoTrimStartMilliseconds": 2000,
   "sampleIntervalMilliseconds": 40,
   "startingTick": 2,
-  "endingTick": 170,
+  "endingTick": 167,
   "motionValidation": {
     "trackedEntityId": "entity.enemy.shuttergate_001",
-    "sampleCount": 153,
-    "activeSampleCount": 99,
-    "departureSampleCount": 15,
+    "sampleCount": 145,
+    "activeSampleCount": 94,
+    "departureSampleCount": 14,
     "visitedRoute": [
       "node.shuttergate_west_entry",
       "node.shuttergate_west_hall",
       "node.shuttergate_gate"
     ],
-    "attackPhases": [
-      "committed",
-      "recovery",
-      "windup"
-    ],
-    "maximumScreenStep": 45.009000000000015
+    "attackPhases": ["committed", "recovery", "windup"],
+    "maximumScreenStep": 65.99700000000009
   },
   "samples": [
     {
-      "videoTimeMilliseconds": 416,
+      "videoTimeMilliseconds": 1037,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -59,14 +46,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -79,20 +60,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 460,
+      "videoTimeMilliseconds": 1080,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -105,14 +80,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -125,20 +94,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 503,
+      "videoTimeMilliseconds": 1124,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -151,14 +114,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -171,20 +128,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 549,
+      "videoTimeMilliseconds": 1175,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -197,14 +148,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -217,20 +162,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 593,
+      "videoTimeMilliseconds": 1219,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -243,14 +182,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -263,20 +196,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 635,
+      "videoTimeMilliseconds": 1266,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -289,14 +216,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -309,20 +230,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 678,
+      "videoTimeMilliseconds": 1309,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -335,14 +250,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -355,20 +264,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 719,
+      "videoTimeMilliseconds": 1358,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -381,14 +284,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -401,20 +298,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 765,
+      "videoTimeMilliseconds": 1404,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -427,14 +318,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -447,20 +332,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 809,
+      "videoTimeMilliseconds": 1455,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -473,14 +352,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -493,20 +366,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 853,
+      "videoTimeMilliseconds": 1503,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -519,14 +386,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -539,20 +400,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 894,
+      "videoTimeMilliseconds": 1545,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -565,14 +420,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -585,20 +434,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 936,
+      "videoTimeMilliseconds": 1589,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -611,14 +454,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -631,20 +468,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 983,
+      "videoTimeMilliseconds": 1634,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -657,14 +488,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -677,20 +502,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1025,
+      "videoTimeMilliseconds": 1676,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -703,14 +522,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -723,20 +536,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1067,
+      "videoTimeMilliseconds": 1728,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -749,14 +556,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -769,20 +570,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1109,
+      "videoTimeMilliseconds": 1774,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -795,14 +590,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -815,20 +604,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1153,
+      "videoTimeMilliseconds": 1818,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -841,14 +624,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -861,20 +638,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1195,
+      "videoTimeMilliseconds": 1863,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -887,14 +658,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -907,20 +672,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1236,
+      "videoTimeMilliseconds": 1906,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -933,14 +692,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -953,20 +706,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1278,
+      "videoTimeMilliseconds": 1953,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -979,14 +726,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -999,20 +740,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1320,
+      "videoTimeMilliseconds": 1996,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1025,14 +760,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1045,20 +774,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1367,
+      "videoTimeMilliseconds": 2044,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1071,14 +794,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1091,20 +808,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1409,
+      "videoTimeMilliseconds": 2087,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1117,14 +828,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1137,20 +842,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1451,
+      "videoTimeMilliseconds": 2130,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1163,14 +862,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1183,20 +876,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1493,
+      "videoTimeMilliseconds": 2180,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1209,14 +896,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1229,20 +910,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1535,
+      "videoTimeMilliseconds": 2227,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1255,14 +930,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1275,20 +944,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1576,
+      "videoTimeMilliseconds": 2271,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1301,14 +964,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1321,20 +978,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1621,
+      "videoTimeMilliseconds": 2322,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1347,14 +998,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1367,20 +1012,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1662,
+      "videoTimeMilliseconds": 2370,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1393,14 +1032,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1413,20 +1046,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1705,
+      "videoTimeMilliseconds": 2414,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1439,14 +1066,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1459,20 +1080,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1753,
+      "videoTimeMilliseconds": 2461,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1485,14 +1100,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1505,20 +1114,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1794,
+      "videoTimeMilliseconds": 2503,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1531,14 +1134,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1551,20 +1148,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1838,
+      "videoTimeMilliseconds": 2548,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1577,14 +1168,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1597,20 +1182,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1887,
+      "videoTimeMilliseconds": 2590,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1623,750 +1202,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 1935,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 1978,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2021,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2062,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2104,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2147,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2189,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2242,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2289,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2335,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2377,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2421,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2464,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2505,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2551,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 2594,
-      "tick": 2,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2385,14 +1222,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2405,14 +1236,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2425,20 +1250,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 2680,
+      "videoTimeMilliseconds": 2684,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2451,14 +1270,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2471,20 +1284,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 2721,
+      "videoTimeMilliseconds": 2730,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2497,14 +1304,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2517,20 +1318,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 2769,
+      "videoTimeMilliseconds": 2780,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2543,14 +1338,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2563,20 +1352,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 2812,
+      "videoTimeMilliseconds": 2831,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2589,14 +1372,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2609,20 +1386,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 2854,
+      "videoTimeMilliseconds": 2879,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2635,14 +1406,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2655,20 +1420,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 2896,
+      "videoTimeMilliseconds": 2924,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2681,14 +1440,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2701,20 +1454,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 2943,
+      "videoTimeMilliseconds": 2967,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2727,14 +1474,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2747,20 +1488,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 2984,
+      "videoTimeMilliseconds": 3012,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2773,14 +1508,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2793,20 +1522,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 3030,
+      "videoTimeMilliseconds": 3059,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2819,14 +1542,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2839,20 +1556,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 3072,
+      "videoTimeMilliseconds": 3105,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2865,14 +1576,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2885,20 +1590,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 3114,
+      "videoTimeMilliseconds": 3147,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2911,14 +1610,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2931,20 +1624,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 3160,
+      "videoTimeMilliseconds": 3194,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2957,14 +1644,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2977,20 +1658,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 3217,
+      "videoTimeMilliseconds": 3237,
       "tick": 2,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -3003,14 +1678,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -3023,20 +1692,490 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 3271,
+      "videoTimeMilliseconds": 3280,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3329,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3376,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3418,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3463,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3505,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3556,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3600,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3644,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3692,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3749,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3793,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3835,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3890,
+      "tick": 2,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_entry",
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 3940,
       "tick": 4,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -3049,14 +2188,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -3069,20 +2202,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 3319,
+      "videoTimeMilliseconds": 3985,
       "tick": 7,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -3095,708 +2222,12 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
             "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3361,
-      "tick": 10,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_hall",
-          "worldPosition": [
-            -3,
-            0
-          ],
-          "screenPosition": [
-            1009.3733872002016,
-            307.78493128886277
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3407,
-      "tick": 12,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_west_hall",
-          "worldPosition": [
-            -3,
-            0
-          ],
-          "screenPosition": [
-            979.6163617852959,
-            311.6423234722765
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3454,
-      "tick": 15,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            934.8793854589262,
-            315.8905092289579
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3503,
-      "tick": 17,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            889.8947629078338,
-            317.06683143641754
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3545,
-      "tick": 20,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 240,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            844.9101403567414,
-            318.2431536438771
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "committed"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3593,
-      "tick": 22,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 230,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "committed"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            814.9233909641833,
-            319.0272900273697
-          ],
-          "currentHealth": 50,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3639,
-      "tick": 25,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 230,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            769.9477653376011,
-            320.2033769703878
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3684,
-      "tick": 28,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 230,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            724.9541458619987,
-            321.37993444228886
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3726,
-      "tick": 30,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 230,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            679.9695233109063,
-            322.5562566497485
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3770,
-      "tick": 33,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 230,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3812,
-      "tick": 35,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 230,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3858,
-      "tick": 37,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 230,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3901,
-      "tick": 40,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 230,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3952,
-      "tick": 42,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 230,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 3994,
-      "tick": 45,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 230,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
           },
           "lifecycle": "active",
           "transitionTick": null,
@@ -3806,572 +2237,14 @@
     },
     {
       "videoTimeMilliseconds": 4039,
-      "tick": 48,
+      "tick": 9,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4087,
-      "tick": 50,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4134,
-      "tick": 53,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4179,
-      "tick": 55,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 32,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4222,
-      "tick": 58,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 14,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4267,
-      "tick": 60,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 14,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4309,
-      "tick": 63,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 14,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4358,
-      "tick": 65,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 14,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4402,
-      "tick": 68,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 14,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4450,
-      "tick": 70,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 14,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "windup"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4494,
-      "tick": 73,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 220,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 14,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4538,
-      "tick": 76,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
-          "currentHealth": 14,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 4587,
-      "tick": 78,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
           "action": {
             "kind": "idle",
             "phase": "idle"
@@ -4382,15 +2255,621 @@
         },
         {
           "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_hall",
+          "worldPosition": [-3, 0],
+          "screenPosition": [1018.3076350827213, 306.62678804483244],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4089,
+      "tick": 12,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_west_hall",
+          "worldPosition": [-3, 0],
+          "screenPosition": [969.218361002943, 312.9902124625815],
+          "currentHealth": 50,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4148,
+      "tick": 15,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [920.0137943630681, 317.57939076821344],
+          "currentHealth": 50,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4194,
+      "tick": 18,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [869.0221341319543, 318.65484224301815],
+          "currentHealth": 50,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4242,
+      "tick": 20,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 240,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [836.0264718648828, 319.35074493546716],
+          "currentHealth": 50,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "committed"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4301,
+      "tick": 23,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 230,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [770.0441453297218, 320.742360545974],
+          "currentHealth": 50,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4344,
+      "tick": 26,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 230,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [722.0668147575851, 321.7542375997341],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4397,
+      "tick": 29,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 230,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [677.0678218484976, 322.70329933001426],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4448,
+      "tick": 31,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 230,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4492,
+      "tick": 33,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 230,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4540,
+      "tick": 36,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 230,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4599,
+      "tick": 38,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 230,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4651,
+      "tick": 42,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 230,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4702,
+      "tick": 44,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 230,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4753,
+      "tick": 47,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 230,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4804,
+      "tick": 50,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 220,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4852,
+      "tick": 53,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 220,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4905,
+      "tick": 55,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 220,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 32,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 4956,
+      "tick": 58,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 220,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4403,20 +2882,218 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 4628,
-      "tick": 81,
+      "videoTimeMilliseconds": 5016,
+      "tick": 61,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 220,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 14,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 5076,
+      "tick": 64,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 220,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 14,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 5141,
+      "tick": 66,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 220,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 14,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 5197,
+      "tick": 71,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 220,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 14,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "windup"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 5260,
+      "tick": 74,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 14,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 5309,
+      "tick": 77,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        },
+        {
+          "id": "entity.enemy.shuttergate_001",
+          "nodeId": "node.shuttergate_gate",
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
+          "currentHealth": 14,
+          "action": {
+            "kind": "basic_attack",
+            "phase": "recovery"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 5351,
+      "tick": 80,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4429,14 +3106,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4449,20 +3120,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 4675,
+      "videoTimeMilliseconds": 5403,
       "tick": 83,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4475,14 +3140,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4495,20 +3154,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 4719,
+      "videoTimeMilliseconds": 5449,
       "tick": 86,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4521,14 +3174,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4541,20 +3188,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 4768,
+      "videoTimeMilliseconds": 5495,
       "tick": 88,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4567,14 +3208,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4587,20 +3222,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 4811,
+      "videoTimeMilliseconds": 5538,
       "tick": 91,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4613,14 +3242,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            324.94444444444446
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 324.2988888888889],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4628,25 +3251,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.9305555555555556
+          "alpha": 0.9536111111111116
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 4854,
-      "tick": 94,
+      "videoTimeMilliseconds": 5597,
+      "tick": 93,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4659,14 +3276,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            326.2394444444445
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 326.8927777777778],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4674,25 +3285,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.8843055555555553
+          "alpha": 0.8609722222222229
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 4896,
-      "tick": 96,
+      "videoTimeMilliseconds": 5643,
+      "tick": 97,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4705,14 +3310,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            328.1838888888889
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 328.18777777777774],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4720,25 +3319,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.8148611111111108
+          "alpha": 0.8147222222222228
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 4944,
-      "tick": 98,
+      "videoTimeMilliseconds": 5692,
+      "tick": 99,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4751,14 +3344,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            330.12833333333333
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 330.78166666666664],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4766,25 +3353,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.7454166666666664
+          "alpha": 0.7220833333333341
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 4997,
-      "tick": 101,
+      "videoTimeMilliseconds": 5737,
+      "tick": 102,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4797,14 +3378,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            332.06888888888886
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 332.7261111111111],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4812,25 +3387,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.6761111111111113
+          "alpha": 0.6526388888888897
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 5043,
-      "tick": 104,
+      "videoTimeMilliseconds": 5787,
+      "tick": 105,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4843,14 +3412,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            334.01722222222224
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 334.0211111111111],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4858,25 +3421,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.6065277777777776
+          "alpha": 0.6063888888888894
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 5086,
+      "videoTimeMilliseconds": 5832,
       "tick": 107,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4889,14 +3446,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            335.31222222222226
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 335.96555555555557],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4904,29 +3455,23 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.5602777777777772
+          "alpha": 0.5369444444444449
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 5131,
-      "tick": 109,
+      "videoTimeMilliseconds": 5874,
+      "tick": 110,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
+            "kind": "idle",
+            "phase": "idle"
           },
           "lifecycle": "active",
           "transitionTick": null,
@@ -4935,14 +3480,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            337.25666666666666
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 337.90999999999997],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4950,25 +3489,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.4908333333333328
+          "alpha": 0.46750000000000047
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 5176,
+      "videoTimeMilliseconds": 5928,
       "tick": 112,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4981,14 +3514,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            339.2011111111111
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 339.205],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4996,25 +3523,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.42138888888888837
+          "alpha": 0.42125000000000024
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 5218,
-      "tick": 114,
+      "videoTimeMilliseconds": 5978,
+      "tick": 115,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5027,14 +3548,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            340.5
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 341.14944444444444],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -5042,25 +3557,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.375
+          "alpha": 0.3518055555555558
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 5263,
-      "tick": 117,
+      "videoTimeMilliseconds": 6026,
+      "tick": 118,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5073,14 +3582,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            342.4405555555556
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 343.74333333333334],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -5088,25 +3591,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.3056944444444437
+          "alpha": 0.2591666666666672
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 5311,
-      "tick": 119,
+      "videoTimeMilliseconds": 6074,
+      "tick": 121,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5119,14 +3616,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            344.385
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 345.68777777777774],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -5134,25 +3625,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.2362499999999993
+          "alpha": 0.18972222222222268
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 5360,
-      "tick": 122,
+      "videoTimeMilliseconds": 6124,
+      "tick": 124,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5165,14 +3650,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            345.6838888888889
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 346.98277777777776],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -5180,25 +3659,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.18986111111111081
+          "alpha": 0.14347222222222245
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 5416,
-      "tick": 125,
+      "videoTimeMilliseconds": 6175,
+      "tick": 126,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5211,14 +3684,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            348.2738888888889
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 349.57277777777773],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -5226,71 +3693,19 @@
           },
           "lifecycle": "destroyed",
           "transitionTick": 89,
-          "alpha": 0.09736111111111034
+          "alpha": 0.050972222222223196
         }
       ]
     },
     {
-      "videoTimeMilliseconds": 5459,
-      "tick": 128,
+      "videoTimeMilliseconds": 6229,
+      "tick": 129,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        },
-        {
-          "id": "entity.enemy.shuttergate_001",
-          "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            350.22222222222223
-          ],
-          "currentHealth": 14,
-          "action": {
-            "kind": "basic_attack",
-            "phase": "recovery"
-          },
-          "lifecycle": "destroyed",
-          "transitionTick": 89,
-          "alpha": 0.02777777777777779
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 5501,
-      "tick": 131,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5303,20 +3718,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 5543,
-      "tick": 133,
+      "videoTimeMilliseconds": 6272,
+      "tick": 132,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5329,436 +3738,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 5591,
+      "videoTimeMilliseconds": 6316,
       "tick": 135,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 5642,
-      "tick": 138,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 5691,
-      "tick": 141,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 5735,
-      "tick": 144,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 5783,
-      "tick": 146,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 5825,
-      "tick": 149,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 5868,
-      "tick": 152,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 5921,
-      "tick": 154,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 5970,
-      "tick": 157,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 6011,
-      "tick": 160,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 6054,
-      "tick": 163,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 6102,
-      "tick": 165,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 6144,
-      "tick": 168,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 6188,
-      "tick": 170,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 6230,
-      "tick": 170,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 6275,
-      "tick": 170,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
-          "currentHealth": 210,
-          "action": {
-            "kind": "idle",
-            "phase": "idle"
-          },
-          "lifecycle": "active",
-          "transitionTick": null,
-          "alpha": 1
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 6319,
-      "tick": 170,
-      "entities": [
-        {
-          "id": "entity.dwarf.warden",
-          "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5772,19 +3759,13 @@
     },
     {
       "videoTimeMilliseconds": 6361,
-      "tick": 170,
+      "tick": 137,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5797,20 +3778,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6404,
-      "tick": 170,
+      "videoTimeMilliseconds": 6410,
+      "tick": 140,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5823,20 +3798,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6449,
-      "tick": 170,
+      "videoTimeMilliseconds": 6463,
+      "tick": 142,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5849,20 +3818,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6492,
-      "tick": 170,
+      "videoTimeMilliseconds": 6515,
+      "tick": 145,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5875,20 +3838,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6537,
-      "tick": 170,
+      "videoTimeMilliseconds": 6568,
+      "tick": 148,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5901,20 +3858,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6583,
-      "tick": 170,
+      "videoTimeMilliseconds": 6624,
+      "tick": 151,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5927,20 +3878,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6625,
-      "tick": 170,
+      "videoTimeMilliseconds": 6685,
+      "tick": 154,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5953,20 +3898,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6667,
-      "tick": 170,
+      "videoTimeMilliseconds": 6727,
+      "tick": 158,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5979,20 +3918,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6709,
-      "tick": 170,
+      "videoTimeMilliseconds": 6773,
+      "tick": 161,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6005,20 +3938,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6753,
-      "tick": 170,
+      "videoTimeMilliseconds": 6819,
+      "tick": 163,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6031,20 +3958,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6794,
-      "tick": 170,
+      "videoTimeMilliseconds": 6871,
+      "tick": 166,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6057,20 +3978,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6836,
-      "tick": 170,
+      "videoTimeMilliseconds": 6919,
+      "tick": 167,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6083,20 +3998,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6878,
-      "tick": 170,
+      "videoTimeMilliseconds": 6963,
+      "tick": 167,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6109,20 +4018,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6920,
-      "tick": 170,
+      "videoTimeMilliseconds": 7008,
+      "tick": 167,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6135,20 +4038,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 6966,
-      "tick": 170,
+      "videoTimeMilliseconds": 7059,
+      "tick": 167,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6161,20 +4058,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 7009,
-      "tick": 170,
+      "videoTimeMilliseconds": 7108,
+      "tick": 167,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6187,20 +4078,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 7050,
-      "tick": 170,
+      "videoTimeMilliseconds": 7157,
+      "tick": 167,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6213,20 +4098,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 7092,
-      "tick": 170,
+      "videoTimeMilliseconds": 7204,
+      "tick": 167,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6239,20 +4118,14 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 7137,
-      "tick": 170,
+      "videoTimeMilliseconds": 7252,
+      "tick": 167,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -6265,20 +4138,294 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 7182,
-      "tick": 170,
+      "videoTimeMilliseconds": 7295,
+      "tick": 167,
       "entities": [
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7337,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7379,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7422,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7468,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7513,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7563,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7605,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7649,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7699,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7742,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7784,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7827,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7869,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
+          "currentHealth": 210,
+          "action": {
+            "kind": "idle",
+            "phase": "idle"
+          },
+          "lifecycle": "active",
+          "transitionTick": null,
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 7920,
+      "tick": 167,
+      "entities": [
+        {
+          "id": "entity.dwarf.warden",
+          "nodeId": "node.shuttergate_north_guard",
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",

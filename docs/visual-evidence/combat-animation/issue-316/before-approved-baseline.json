@@ -2,10 +2,7 @@
   "schemaVersion": 1,
   "sourceHead": "8d7be886382c931959d4b2c9eef028cf94b75096",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-  "viewport": [
-    1440,
-    900
-  ],
+  "viewport": [1440, 900],
   "video": "shuttergate-normal-motion-clip.webm",
   "videoSha256": "266d1a92967dd1546f8c735f5c1c16feb87eece09e77cba7675115ded55440ba",
   "motion": "normal-motion",
@@ -24,11 +21,7 @@
       "node.shuttergate_west_hall",
       "node.shuttergate_gate"
     ],
-    "attackPhases": [
-      "committed",
-      "recovery",
-      "windup"
-    ],
+    "attackPhases": ["committed", "recovery", "windup"],
     "maximumScreenStep": 45.00000000000002
   },
   "samples": [
@@ -39,14 +32,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -59,14 +46,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -85,14 +66,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -105,14 +80,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -131,14 +100,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -151,14 +114,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -177,14 +134,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -197,14 +148,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -223,14 +168,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -243,14 +182,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -269,14 +202,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -289,14 +216,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -315,14 +236,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -335,14 +250,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -361,14 +270,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -381,14 +284,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -407,14 +304,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -427,14 +318,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -453,14 +338,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -473,14 +352,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -499,14 +372,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -519,14 +386,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -545,14 +406,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -565,14 +420,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -591,14 +440,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -611,14 +454,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -637,14 +474,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -657,14 +488,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -683,14 +508,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -703,14 +522,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -729,14 +542,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -749,14 +556,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -775,14 +576,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -795,14 +590,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -821,14 +610,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -841,14 +624,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -867,14 +644,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -887,14 +658,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -913,14 +678,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -933,14 +692,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -959,14 +712,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -979,14 +726,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1005,14 +746,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1025,14 +760,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1051,14 +780,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1071,14 +794,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1097,14 +814,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1117,14 +828,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1143,14 +848,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1163,14 +862,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1189,14 +882,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1209,14 +896,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1235,14 +916,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1255,14 +930,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1281,14 +950,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1301,14 +964,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1327,14 +984,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1347,14 +998,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1373,14 +1018,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1393,14 +1032,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1419,14 +1052,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1439,14 +1066,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1465,14 +1086,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1485,14 +1100,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1511,14 +1120,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1531,14 +1134,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1557,14 +1154,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1577,14 +1168,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1603,14 +1188,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1623,14 +1202,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1649,14 +1222,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1669,14 +1236,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1695,14 +1256,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1715,14 +1270,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1741,14 +1290,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1761,14 +1304,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1787,14 +1324,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1807,14 +1338,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1833,14 +1358,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1853,14 +1372,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1879,14 +1392,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1899,14 +1406,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1925,14 +1426,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1945,14 +1440,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -1971,14 +1460,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -1991,14 +1474,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2017,14 +1494,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2037,14 +1508,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2063,14 +1528,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2083,14 +1542,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2109,14 +1562,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2129,14 +1576,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2155,14 +1596,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2175,14 +1610,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2201,14 +1630,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2221,14 +1644,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2247,14 +1664,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2267,14 +1678,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2293,14 +1698,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2313,14 +1712,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2339,14 +1732,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2359,14 +1746,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_entry",
-          "worldPosition": [
-            -6,
-            0
-          ],
-          "screenPosition": [
-            1054,
-            302
-          ],
+          "worldPosition": [-6, 0],
+          "screenPosition": [1054, 302],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2385,14 +1766,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2405,14 +1780,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_hall",
-          "worldPosition": [
-            -3,
-            0
-          ],
-          "screenPosition": [
-            1039.1304126151072,
-            303.92753910544906
-          ],
+          "worldPosition": [-3, 0],
+          "screenPosition": [1039.1304126151072, 303.92753910544906],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2431,14 +1800,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "idle",
@@ -2451,14 +1814,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_west_hall",
-          "worldPosition": [
-            -3,
-            0
-          ],
-          "screenPosition": [
-            994.5127251378686,
-            309.711313408054
-          ],
+          "worldPosition": [-3, 0],
+          "screenPosition": [994.5127251378686, 309.711313408054],
           "currentHealth": 50,
           "action": {
             "kind": "idle",
@@ -2477,14 +1834,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "basic_attack",
@@ -2497,14 +1848,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            949.7778756323396,
-            314.0351647194907
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [949.7778756323396, 314.0351647194907],
           "currentHealth": 50,
           "action": {
             "kind": "basic_attack",
@@ -2523,14 +1868,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "basic_attack",
@@ -2543,14 +1882,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            904.8088426365501,
-            315.44092160586877
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [904.8088426365501, 315.44092160586877],
           "currentHealth": 50,
           "action": {
             "kind": "basic_attack",
@@ -2569,14 +1902,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "basic_attack",
@@ -2589,14 +1916,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            874.8174931650634,
-            316.3784678069459
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [874.8174931650634, 316.3784678069459],
           "currentHealth": 50,
           "action": {
             "kind": "basic_attack",
@@ -2615,14 +1936,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 240,
           "action": {
             "kind": "basic_attack",
@@ -2635,14 +1950,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            829.8394645635536,
-            317.78450590094275
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [829.8394645635536, 317.78450590094275],
           "currentHealth": 50,
           "action": {
             "kind": "basic_attack",
@@ -2661,14 +1970,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 230,
           "action": {
             "kind": "basic_attack",
@@ -2681,14 +1984,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            799.8481150920669,
-            318.72205210201986
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [799.8481150920669, 318.72205210201986],
           "currentHealth": 50,
           "action": {
             "kind": "basic_attack",
@@ -2707,14 +2004,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 230,
           "action": {
             "kind": "basic_attack",
@@ -2727,14 +2018,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            754.8700864905571,
-            320.12809019601673
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [754.8700864905571, 320.12809019601673],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -2753,14 +2038,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 230,
           "action": {
             "kind": "basic_attack",
@@ -2773,14 +2052,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            709.910049100488,
-            321.53356587477606
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [709.910049100488, 321.53356587477606],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -2799,14 +2072,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 230,
           "action": {
             "kind": "basic_attack",
@@ -2819,14 +2086,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            664.9320204989782,
-            322.939603968773
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [664.9320204989782, 322.939603968773],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -2845,14 +2106,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 230,
           "action": {
             "kind": "basic_attack",
@@ -2865,14 +2120,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -2891,14 +2140,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 230,
           "action": {
             "kind": "basic_attack",
@@ -2911,14 +2154,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -2937,14 +2174,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 230,
           "action": {
             "kind": "basic_attack",
@@ -2957,14 +2188,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -2983,14 +2208,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 230,
           "action": {
             "kind": "basic_attack",
@@ -3003,14 +2222,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -3029,14 +2242,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 230,
           "action": {
             "kind": "basic_attack",
@@ -3049,14 +2256,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -3075,14 +2276,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 230,
           "action": {
             "kind": "basic_attack",
@@ -3095,14 +2290,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -3121,14 +2310,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 220,
           "action": {
             "kind": "basic_attack",
@@ -3141,14 +2324,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -3167,14 +2344,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 220,
           "action": {
             "kind": "basic_attack",
@@ -3187,14 +2358,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -3213,14 +2378,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 220,
           "action": {
             "kind": "basic_attack",
@@ -3233,14 +2392,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 32,
           "action": {
             "kind": "basic_attack",
@@ -3259,14 +2412,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 220,
           "action": {
             "kind": "basic_attack",
@@ -3279,14 +2426,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3305,14 +2446,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 220,
           "action": {
             "kind": "basic_attack",
@@ -3325,14 +2460,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3351,14 +2480,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 220,
           "action": {
             "kind": "basic_attack",
@@ -3371,14 +2494,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3397,14 +2514,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 220,
           "action": {
             "kind": "basic_attack",
@@ -3417,14 +2528,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3443,14 +2548,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 220,
           "action": {
             "kind": "basic_attack",
@@ -3463,14 +2562,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3489,14 +2582,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 220,
           "action": {
             "kind": "basic_attack",
@@ -3509,14 +2596,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3535,14 +2616,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 220,
           "action": {
             "kind": "basic_attack",
@@ -3555,14 +2630,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3581,14 +2650,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -3601,14 +2664,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3627,14 +2684,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -3647,14 +2698,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3673,14 +2718,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -3693,14 +2732,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3719,14 +2752,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -3739,14 +2766,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3765,14 +2786,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -3785,14 +2800,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3811,14 +2820,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -3831,14 +2834,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            323
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 323],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3857,14 +2854,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -3877,14 +2868,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            324.2988888888889
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 324.2988888888889],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3903,14 +2888,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -3923,14 +2902,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            326.2394444444445
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 326.2394444444445],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3949,14 +2922,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -3969,14 +2936,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            327.5383333333333
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 327.5383333333333],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -3995,14 +2956,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4015,14 +2970,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            329.48277777777776
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 329.48277777777776],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4041,14 +2990,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4061,14 +3004,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            331.4272222222222
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 331.4272222222222],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4087,14 +3024,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4107,14 +3038,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            332.72222222222223
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 332.72222222222223],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4133,14 +3058,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4153,14 +3072,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            334.6666666666667
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 334.6666666666667],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4179,14 +3092,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "basic_attack",
@@ -4199,14 +3106,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            336.6111111111111
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 336.6111111111111],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4225,14 +3126,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4245,14 +3140,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            337.90999999999997
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 337.90999999999997],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4271,14 +3160,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4291,14 +3174,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            339.85055555555556
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 339.85055555555556],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4317,14 +3194,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4337,14 +3208,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            341.795
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 341.795],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4363,14 +3228,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4383,14 +3242,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            343.09
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 343.09],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4409,14 +3262,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4429,14 +3276,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            345.0383333333333
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 345.0383333333333],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4455,14 +3296,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4475,14 +3310,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            346.98277777777776
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 346.98277777777776],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4501,14 +3330,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4521,14 +3344,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            348.2738888888889
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 348.2738888888889],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4547,14 +3364,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4567,14 +3378,8 @@
         {
           "id": "entity.enemy.shuttergate_001",
           "nodeId": "node.shuttergate_gate",
-          "worldPosition": [
-            0,
-            0
-          ],
-          "screenPosition": [
-            663,
-            350.22222222222223
-          ],
+          "worldPosition": [0, 0],
+          "screenPosition": [663, 350.22222222222223],
           "currentHealth": 14,
           "action": {
             "kind": "basic_attack",
@@ -4593,14 +3398,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4619,14 +3418,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4645,14 +3438,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4671,14 +3458,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4697,14 +3478,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4723,14 +3498,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4749,14 +3518,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4775,14 +3538,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4801,14 +3558,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4827,14 +3578,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4853,14 +3598,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4879,14 +3618,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4905,14 +3638,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4931,14 +3658,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4957,14 +3678,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -4983,14 +3698,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5009,14 +3718,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5035,14 +3738,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5061,14 +3758,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5087,14 +3778,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5113,14 +3798,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5139,14 +3818,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5165,14 +3838,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5191,14 +3858,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5217,14 +3878,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5243,14 +3898,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5269,14 +3918,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5295,14 +3938,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5321,14 +3958,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5347,14 +3978,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5373,14 +3998,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5399,14 +4018,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5425,14 +4038,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5451,14 +4058,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5477,14 +4078,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5503,14 +4098,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5529,14 +4118,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5555,14 +4138,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
@@ -5581,14 +4158,8 @@
         {
           "id": "entity.dwarf.warden",
           "nodeId": "node.shuttergate_north_guard",
-          "worldPosition": [
-            0,
-            -1
-          ],
-          "screenPosition": [
-            605,
-            320
-          ],
+          "worldPosition": [0, -1],
+          "screenPosition": [605, 320],
           "currentHealth": 210,
           "action": {
             "kind": "idle",
