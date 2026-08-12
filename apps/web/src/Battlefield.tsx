@@ -1241,6 +1241,14 @@ function createDepthVisibilityMask(
   return shape.createGeometryMask();
 }
 
+function clearDepthVisibilityMask(
+  object: Phaser.GameObjects.Components.Mask
+): void {
+  const geometry = object.mask?.geometryMask;
+  object.clearMask(true);
+  geometry?.destroy();
+}
+
 function addDepthTestedRing(
   scene: Phaser.Scene,
   entity: RenderPrimitive,
@@ -1308,7 +1316,7 @@ function updateEntitySignal(
   presentation: CombatPresentationState | undefined,
   staticDepth: StaticSceneDepth
 ): void {
-  signal.clearMask(true);
+  clearDepthVisibilityMask(signal);
   signal.clear();
   signal.setPosition(0, 0);
   if (presentation === undefined) return;
@@ -1403,7 +1411,7 @@ function addDepthTestedEffect(
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
   const effect = existing ?? scene.add.graphics();
-  effect.clearMask(true);
+  clearDepthVisibilityMask(effect);
   effect.clear();
   effect.setAlpha(1);
   if (kind === "arrival") {
@@ -1467,7 +1475,7 @@ function addDepthTestedBillboard(
 ): Phaser.GameObjects.Image {
   if (entity.cameraDepth === undefined) {
     const image = existing ?? scene.add.image(entity.x, entity.y, sourceKey);
-    image.clearMask(true);
+    clearDepthVisibilityMask(image);
     image
       .setTexture(sourceKey)
       .setPosition(entity.x, entity.y)
@@ -1477,7 +1485,7 @@ function addDepthTestedBillboard(
     return image;
   }
   const image = existing ?? scene.add.image(entity.x, entity.y, sourceKey);
-  image.clearMask(true);
+  clearDepthVisibilityMask(image);
   image
     .setTexture(sourceKey)
     .setPosition(entity.x, entity.y)
@@ -1628,6 +1636,7 @@ class PersistentBattlefieldScene {
     objects.targetY = destination.y;
     objects.ring.setPosition(origin.x, origin.y);
     objects.subject.setPosition(origin.x, origin.y);
+    objects.subject.mask?.geometryMask?.setPosition(offsetX, offsetY);
     objects.signal.setPosition(offsetX, offsetY);
     const signalMask = objects.signal.mask?.geometryMask;
     signalMask?.setPosition(offsetX, offsetY);
@@ -1649,6 +1658,7 @@ class PersistentBattlefieldScene {
       objects.ring.setPosition(x, y);
       const offsetX = x - objects.targetX;
       const offsetY = y - objects.targetY;
+      objects.subject.mask?.geometryMask?.setPosition(offsetX, offsetY);
       objects.signal.setPosition(offsetX, offsetY);
       objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
       if (
@@ -1680,8 +1690,8 @@ class PersistentBattlefieldScene {
     this.layers["world-entities"].delete(objects.subject);
     this.layers["world-effects"].delete(objects.signal);
     objects.ring.destroy();
-    objects.subject.clearMask(true);
-    objects.signal.clearMask(true);
+    clearDepthVisibilityMask(objects.subject);
+    clearDepthVisibilityMask(objects.signal);
     objects.signal.destroy();
     objects.subject.setTexture("warden-runtime");
     objects.subject.destroy();
