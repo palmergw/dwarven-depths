@@ -3264,16 +3264,29 @@ describe("authoritative web worker", () => {
           ...hostile,
           action: { kind: "basic_attack", phase, abilityId: null }
         },
-        0,
+        180,
         1,
         false
       )
     );
     expect(new Set(phaseTreatments.map(({ scaleX }) => scaleX)).size).toBe(4);
     expect(
-      phaseTreatments.map(({ horizontalOffset }) => horizontalOffset)
-    ).toEqual([-5, 8, 12, -3]);
-    expect(phaseTreatments[2]?.scaleX).toBeGreaterThan(1.1);
+      phaseTreatments.map(({ horizontalOffset }) => Math.abs(horizontalOffset))
+    ).toEqual([11, 18, 25, 0]);
+    expect(phaseTreatments[2]?.scaleX).toBeGreaterThanOrEqual(1.2);
+    const earlyCommitment = deriveTemporalCombatTreatment(
+      {
+        ...hostile,
+        action: { kind: "basic_attack", phase: "committed", abilityId: null }
+      },
+      45,
+      1,
+      false
+    );
+    expect(earlyCommitment.horizontalOffset).toBeGreaterThan(0);
+    expect(earlyCommitment.horizontalOffset).toBeLessThan(
+      phaseTreatments[1]?.horizontalOffset ?? 0
+    );
     expect(
       selectCombatPoseTreatment(
         {

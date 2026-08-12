@@ -601,15 +601,41 @@ export function deriveTemporalCombatTreatment(
       scaleY: 1 - wave * 0.04 * strength,
       verticalOffset: -Math.abs(wave) * 4.6 * strength
     };
+  const phaseProgress = Math.min(1, elapsed / 180);
+  const phaseEmphasis = Math.sin((phaseProgress * Math.PI) / 2);
   const treatment =
     entity.action.phase === "windup"
-      ? { angle: -10, forward: -5, x: 0.9, y: 1.08, lift: 2 }
+      ? {
+          angle: -18 * phaseEmphasis,
+          forward: -11 * phaseEmphasis,
+          x: 1 - 0.12 * phaseEmphasis,
+          y: 1 + 0.14 * phaseEmphasis,
+          lift: 4 * phaseEmphasis
+        }
       : entity.action.phase === "committed"
-        ? { angle: 8, forward: 8, x: 1.1, y: 0.92, lift: -3 }
+        ? {
+            angle: 16 * phaseEmphasis,
+            forward: 18 * phaseEmphasis,
+            x: 1 + 0.16 * phaseEmphasis,
+            y: 1 - 0.13 * phaseEmphasis,
+            lift: -5 * phaseEmphasis
+          }
         : entity.action.phase === "impact"
-          ? { angle: 15, forward: 12, x: 1.14, y: 0.88, lift: 4 }
+          ? {
+              angle: 24 * phaseEmphasis,
+              forward: 25 * phaseEmphasis,
+              x: 1 + 0.2 * phaseEmphasis,
+              y: 1 - 0.18 * phaseEmphasis,
+              lift: 7 * phaseEmphasis
+            }
           : entity.action.phase === "recovery"
-            ? { angle: -6, forward: -3, x: 0.94, y: 1.05, lift: 1 }
+            ? {
+                angle: -14 * (1 - phaseProgress),
+                forward: -12 * (1 - phaseProgress),
+                x: 0.9 + 0.1 * phaseProgress,
+                y: 1.12 - 0.12 * phaseProgress,
+                lift: 3 * (1 - phaseProgress)
+              }
             : {
                 angle: wave * 0.7,
                 forward: 0,
@@ -1626,6 +1652,7 @@ interface PersistentEntityObjects {
   readonly subject: Phaser.GameObjects.Image;
   readonly signal: Phaser.GameObjects.Graphics;
   damagedUntil: number;
+  damagedStartedAt: number;
   signalDamaged: boolean;
   signalEntity: RenderPrimitive | undefined;
   signalPresentation: CombatPresentationState | undefined;
@@ -1777,17 +1804,42 @@ class PersistentBattlefieldScene {
           ? this.lastSnapshot.entities.find(({ id }) => id === entityId)
           : undefined;
       if (snapshotEntity !== undefined) {
+        const actionClock = this.actionClocks.get(entityId);
+        const treatmentElapsed =
+          snapshotEntity.action.kind === "moving" ||
+          snapshotEntity.transition === "moving"
+            ? this.scene.time.now
+            : this.scene.time.now -
+              (actionClock?.startedAt ?? this.scene.time.now);
         const treatment = deriveTemporalCombatTreatment(
           snapshotEntity,
-          this.scene.time.now,
+          treatmentElapsed,
           simulationSpeed,
           reduceMotion
         );
+        const damageProgress = Math.min(
+          1,
+          Math.max(
+            0,
+            (this.scene.time.now - objects.damagedStartedAt) /
+              DAMAGE_SIGNAL_DURATION_MS
+          )
+        );
+        const damageRecoil =
+          objects.damagedUntil > this.scene.time.now
+            ? Math.sin(damageProgress * Math.PI) * (reduceMotion ? 3 : 11)
+            : 0;
         objects.subject
           .setAngle(objects.poseAngle + treatment.angleOffset)
           .setScale(treatment.scaleX, treatment.scaleY)
           .setPosition(
-            x + treatment.horizontalOffset,
+            x +
+              treatment.horizontalOffset -
+              damageRecoil *
+                (snapshotEntity.facing === "west" ||
+                snapshotEntity.facing === "north"
+                  ? -1
+                  : 1),
             y + treatment.verticalOffset
           );
       }
@@ -1841,37 +1893,57 @@ class PersistentBattlefieldScene {
       const hostile = entity.faction === "enemy";
       const color = hostile ? 0xff9a45 : 0x7ee8ff;
       const intensity = reduceMotion ? 0.72 : 1;
+      const facingSign =
+        entity.facing === "west" || entity.facing === "north" ? -1 : 1;
+      const clock = this.actionClocks.get(entity.id);
+      const progress = Math.min(
+        1,
+        Math.max(
+          0,
+          (this.scene.time.now - (clock?.startedAt ?? this.scene.time.now)) /
+            180
+        )
+      );
+      const eased = Math.sin((progress * Math.PI) / 2);
+      const forwardX = x + facingSign * (24 + eased * 24);
       effect.clear().setAlpha(intensity);
       if (entity.action.phase === "windup") {
-        effect.lineStyle(4, color, 0.95);
+        effect.lineStyle(6, color, 0.95);
         effect.beginPath();
-        effect.arc(x, y, hostile ? 25 : 31, 3.55, 5.85);
+        effect.arc(x - facingSign * 8, y, hostile ? 31 : 38, 3.55, 5.85);
         effect.strokePath();
         effect.fillStyle(color, 0.28);
-        effect.fillCircle(x, y + 20, hostile ? 18 : 23);
+        effect.fillTriangle(
+          x - facingSign * 42,
+          y + 18,
+          x - facingSign * 17,
+          y - 18,
+          x - facingSign * 10,
+          y + 26
+        );
       } else if (entity.action.phase === "committed") {
-        effect.lineStyle(7, color, 0.95);
-        effect.lineBetween(x - 27, y - 20, x + 31, y + 20);
-        effect.lineStyle(3, 0xfff0b8, 1);
-        effect.lineBetween(x - 20, y - 24, x + 35, y + 14);
+        effect.lineStyle(12, color, 0.38);
+        effect.lineBetween(x - facingSign * 18, y + 12, forwardX, y - 16);
+        effect.lineStyle(5, 0xfff0b8, 1);
+        effect.lineBetween(x, y + 8, forwardX + facingSign * 10, y - 21);
       } else if (entity.action.phase === "impact") {
         effect.fillStyle(color, 0.3);
-        effect.fillCircle(x, y, hostile ? 34 : 42);
-        effect.lineStyle(5, 0xfff0b8, 1);
-        effect.strokeCircle(x, y, hostile ? 26 : 34);
+        effect.fillCircle(forwardX, y, hostile ? 43 : 53);
+        effect.lineStyle(7, 0xfff0b8, 1);
+        effect.strokeCircle(forwardX, y, hostile ? 32 : 42);
         for (let index = 0; index < 8; index += 1) {
           const angle = (Math.PI * index) / 4;
           effect.lineBetween(
-            x + Math.cos(angle) * 27,
-            y + Math.sin(angle) * 27,
-            x + Math.cos(angle) * 43,
-            y + Math.sin(angle) * 43
+            forwardX + Math.cos(angle) * 35,
+            y + Math.sin(angle) * 35,
+            forwardX + Math.cos(angle) * 60,
+            y + Math.sin(angle) * 60
           );
         }
       } else {
-        effect.lineStyle(3, color, 0.65);
+        effect.lineStyle(5, color, 0.65 * (1 - progress * 0.65));
         effect.beginPath();
-        effect.arc(x, y + 12, hostile ? 21 : 27, 0.2, 2.95);
+        effect.arc(x - facingSign * 10, y + 12, hostile ? 27 : 34, 0.2, 2.95);
         effect.strokePath();
       }
       if (!this.actionEffects.has(entity.id)) {
@@ -2229,6 +2301,7 @@ class PersistentBattlefieldScene {
           subject,
           signal,
           damagedUntil: 0,
+          damagedStartedAt: 0,
           signalDamaged: false,
           signalEntity: undefined,
           signalPresentation: undefined,
@@ -2242,9 +2315,11 @@ class PersistentBattlefieldScene {
       const objects = this.entities.get(entity.id);
       if (objects !== undefined) {
         objects.poseAngle = poseTreatment.angle;
-        if (presentation?.damaged === true)
+        if (presentation?.damaged === true) {
+          objects.damagedStartedAt = this.scene.time.now;
           objects.damagedUntil =
             this.scene.time.now + DAMAGE_SIGNAL_DURATION_MS;
+        }
         const signalPresentation =
           presentation === undefined
             ? undefined
