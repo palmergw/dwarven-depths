@@ -308,7 +308,7 @@ describe("presentation snapshot v2", () => {
       active.entities.find((entity) => entity.faction === "dwarf")?.action
     ).toMatchObject({
       kind: "ability",
-      phase: "committed"
+      phase: "windup"
     });
     const activeBattlefield = activeState.battlefield;
     if (activeBattlefield === undefined)

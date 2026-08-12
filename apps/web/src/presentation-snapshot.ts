@@ -50,7 +50,8 @@ function actionFor(
   moved: boolean,
   previousAction: RenderEntityV2["action"] | undefined,
   shieldSlamImpactTargetsBySource: ReadonlyMap<string, readonly string[]>,
-  previousIsAdjacent: boolean
+  previousIsAdjacent: boolean,
+  basicAttackImpacted: boolean
 ): RenderEntityV2["action"] {
   const ability = state.committedAbilities?.find(
     (candidate) => candidate.sourceEntityId === combatant.entityId
@@ -58,7 +59,7 @@ function actionFor(
   if (ability !== undefined)
     return {
       kind: "ability",
-      phase: "committed",
+      phase: state.tick === ability.committedAtTick ? "windup" : "committed",
       abilityId: ability.abilityId,
       impactTargetEntityIds: []
     };
@@ -108,7 +109,7 @@ function actionFor(
   if (
     previousIsAdjacent &&
     previousAction?.kind === "basic_attack" &&
-    (previousAction.phase === "committed" ||
+    ((previousAction.phase === "committed" && basicAttackImpacted) ||
       previousAction.phase === "impact" ||
       previousAction.phase === "recoil")
   )
@@ -216,6 +217,31 @@ export function createPresentationSnapshot(
         : []
     )
   );
+  const currentCombatantsById = new Map<
+    string,
+    (typeof combatants)[number]["combatant"]
+  >(combatants.map(({ combatant }) => [combatant.entityId, combatant]));
+  const basicAttackImpactSources = new Set(
+    previousIsAdjacent
+      ? (previous?.entities ?? []).flatMap((source) => {
+          if (
+            source.action.kind !== "basic_attack" ||
+            source.action.phase !== "committed" ||
+            source.targetEntityId === null
+          )
+            return [];
+          const previousTarget = previousById.get(source.targetEntityId);
+          const currentTarget = currentCombatantsById.get(
+            source.targetEntityId
+          );
+          return previousTarget !== undefined &&
+            (currentTarget === undefined ||
+              currentTarget.currentHealth < previousTarget.currentHealth)
+            ? [source.id]
+            : [];
+        })
+      : []
+  );
   const entities: RenderEntityV2[] = [];
   for (const entry of combatants.sort((left, right) =>
     compareRenderIds(left.combatant.entityId, right.combatant.entityId)
@@ -255,7 +281,8 @@ export function createPresentationSnapshot(
       moved,
       previousById.get(entry.combatant.entityId)?.action,
       shieldSlamImpactTargetsBySource,
-      previousIsAdjacent
+      previousIsAdjacent,
+      basicAttackImpactSources.has(entry.combatant.entityId)
     );
     const targetEntityId =
       action.kind === "basic_attack" &&
