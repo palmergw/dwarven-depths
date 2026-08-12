@@ -3,6 +3,7 @@ import type {
   BattlefieldDwarfCombatant,
   BattlefieldEnemyCombatant,
   ScenarioDefinition,
+  SimulationEvent,
   SimulationState
 } from "@dwarven-depths/contracts";
 import {
@@ -47,8 +48,7 @@ function actionFor(
   state: SimulationState,
   combatant: BattlefieldDwarfCombatant | BattlefieldEnemyCombatant,
   moved: boolean,
-  previousAction: RenderEntityV2["action"] | undefined,
-  resolvedShieldSlamSourceIds: ReadonlySet<string>
+  shieldSlamImpactTargetsBySource: ReadonlyMap<string, readonly string[]>
 ): RenderEntityV2["action"] {
   const ability = state.committedAbilities?.find(
     (candidate) => candidate.sourceEntityId === combatant.entityId
@@ -57,17 +57,16 @@ function actionFor(
     return {
       kind: "ability",
       phase: "committed",
-      abilityId: ability.abilityId
+      abilityId: ability.abilityId,
+      impactTargetEntityIds: []
     };
-  if (
-    resolvedShieldSlamSourceIds.has(combatant.entityId) &&
-    previousAction?.kind === "ability" &&
-    previousAction.abilityId === "ability.iron_warden.shield_slam"
-  )
+  if (shieldSlamImpactTargetsBySource.has(combatant.entityId))
     return {
       kind: "ability",
       phase: "impact",
-      abilityId: previousAction.abilityId
+      abilityId: "ability.iron_warden.shield_slam",
+      impactTargetEntityIds:
+        shieldSlamImpactTargetsBySource.get(combatant.entityId) ?? []
     };
   const attack = combatant.actionState.activeBasicAttack;
   if (attack !== null)
@@ -79,16 +78,32 @@ function actionFor(
           : state.tick < attack.impactAtTick
             ? "committed"
             : "impact",
-      abilityId: null
+      abilityId: null,
+      impactTargetEntityIds: []
     };
   if (
     combatant.actionState.cooldownCompleteAtTick !== null &&
     combatant.actionState.cooldownCompleteAtTick > state.tick
   )
-    return { kind: "basic_attack", phase: "recovery", abilityId: null };
+    return {
+      kind: "basic_attack",
+      phase: "recovery",
+      abilityId: null,
+      impactTargetEntityIds: []
+    };
   return moved
-    ? { kind: "moving", phase: "idle", abilityId: null }
-    : { kind: "idle", phase: "idle", abilityId: null };
+    ? {
+        kind: "moving",
+        phase: "idle",
+        abilityId: null,
+        impactTargetEntityIds: []
+      }
+    : {
+        kind: "idle",
+        phase: "idle",
+        abilityId: null,
+        impactTargetEntityIds: []
+      };
 }
 
 export function createPresentationSnapshot(
@@ -96,7 +111,8 @@ export function createPresentationSnapshot(
   scenario: ScenarioDefinition,
   state: SimulationState,
   phase: RenderPhase,
-  previous?: RenderSnapshotV2
+  previous?: RenderSnapshotV2,
+  events: readonly SimulationEvent[] = []
 ): RenderSnapshotV2 {
   const level = content.levels.get(scenario.levelId);
   const map =
@@ -144,19 +160,18 @@ export function createPresentationSnapshot(
       boss: combatant.classification === "boss"
     }))
   ];
-  const resolvedShieldSlamSourceIds = new Set(
-    (previous?.entities ?? [])
-      .filter(
-        (entity) =>
-          entity.faction === "dwarf" &&
-          entity.action.kind === "ability" &&
-          entity.action.abilityId === "ability.iron_warden.shield_slam" &&
-          entity.action.phase === "committed" &&
-          !state.committedAbilities?.some(
-            (ability) => ability.sourceEntityId === entity.id
-          )
-      )
-      .map(({ id }) => id)
+  const shieldSlamImpactTargetsBySource = new Map(
+    events.flatMap((event) =>
+      event.type === "ability.impact" &&
+      event.abilityId === "ability.iron_warden.shield_slam"
+        ? [
+            [
+              event.sourceEntityId,
+              [...event.targetEntityIds].sort(compareRenderIds)
+            ] as const
+          ]
+        : []
+    )
   );
   const entities: RenderEntityV2[] = [];
   for (const entry of combatants.sort((left, right) =>
@@ -200,8 +215,7 @@ export function createPresentationSnapshot(
         state,
         entry.combatant,
         moved,
-        previousById.get(entry.combatant.entityId)?.action,
-        resolvedShieldSlamSourceIds
+        shieldSlamImpactTargetsBySource
       ),
       targetEntityId,
       statuses: [...(state.activeStatuses ?? [])]

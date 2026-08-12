@@ -2985,7 +2985,8 @@ describe("authoritative web worker", () => {
       action: {
         kind: "ability",
         phase: "impact",
-        abilityId: "ability.iron_warden.shield_slam"
+        abilityId: "ability.iron_warden.shield_slam",
+        impactTargetEntityIds: ["entity.enemy.alpha", "entity.enemy.beta"]
       },
       targetEntityId: null,
       statuses: [],
@@ -3167,12 +3168,54 @@ describe("authoritative web worker", () => {
     expect(
       deriveShieldSlamImpactIds(
         {
+          ...multiTarget,
+          entities: [
+            entity,
+            hostile,
+            elite,
+            {
+              ...hostile,
+              id: "entity.enemy.concurrent",
+              currentHealth: 1
+            }
+          ]
+        },
+        {
+          ...multiTargetPrevious,
+          entities: [
+            entity,
+            { ...hostile, currentHealth: 10 },
+            { ...elite, currentHealth: 10 },
+            {
+              ...hostile,
+              id: "entity.enemy.concurrent",
+              currentHealth: 10
+            }
+          ]
+        }
+      )
+    ).toEqual(["entity.enemy.alpha", "entity.enemy.beta"]);
+    expect(
+      deriveShieldSlamImpactIds(
+        {
           ...snapshot,
-          entities: [{ ...entity, targetEntityId: hostile.id }]
+          entities: [
+            {
+              ...entity,
+              targetEntityId: hostile.id,
+              action: { ...entity.action, impactTargetEntityIds: [] }
+            }
+          ]
         },
         {
           ...previous,
-          entities: [{ ...entity, targetEntityId: hostile.id }]
+          entities: [
+            {
+              ...entity,
+              targetEntityId: hostile.id,
+              action: { ...entity.action, impactTargetEntityIds: [] }
+            }
+          ]
         }
       )
     ).toEqual([]);

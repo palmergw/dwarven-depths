@@ -52,7 +52,8 @@ async function buildFixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
         scenario,
         step.state,
         step.state.phase === "TERMINAL" ? "terminal" : "running",
-        previous
+        previous,
+        step.events
       )
     );
     shieldSlamCommitted ||= (step.state.committedAbilities?.length ?? 0) > 0;

@@ -684,7 +684,7 @@ export function deriveCombatPresentationState(
 
 export function deriveShieldSlamImpactIds(
   snapshot: RenderSnapshot,
-  previousSnapshot: RenderSnapshot | undefined
+  _previousSnapshot: RenderSnapshot | undefined
 ): readonly string[] {
   if (snapshot.schemaVersion !== 2) return [];
   const shieldSlam = snapshot.entities.find(
@@ -695,36 +695,7 @@ export function deriveShieldSlamImpactIds(
       entity.action.phase === "impact"
   );
   if (shieldSlam === undefined) return [];
-  const damagedHostileIds = snapshot.entities
-    .filter(
-      (entity) =>
-        entity.faction === "enemy" &&
-        deriveCombatPresentationState(snapshot, previousSnapshot, entity.id)
-          ?.damaged === true
-    )
-    .map(({ id }) => id)
-    .sort(compareRenderIds);
-  const departedHostileIds =
-    previousSnapshot?.schemaVersion === 2 &&
-    previousSnapshot.scenarioId === snapshot.scenarioId &&
-    previousSnapshot.tick === snapshot.previousTick
-      ? snapshot.entityTransitions
-          .filter(
-            (transition) =>
-              transition.atTick === snapshot.tick &&
-              (transition.kind === "downed" || transition.kind === "destroyed")
-          )
-          .flatMap((transition) => {
-            const previous = previousSnapshot.entities.find(
-              ({ id }) => id === transition.entityId
-            );
-            return previous?.faction === "enemy" ? [transition.entityId] : [];
-          })
-      : [];
-  const authoritativeImpactIds = [...damagedHostileIds, ...departedHostileIds]
-    .filter((id, index, ids) => ids.indexOf(id) === index)
-    .sort(compareRenderIds);
-  return authoritativeImpactIds;
+  return shieldSlam.action.impactTargetEntityIds ?? [];
 }
 
 export interface SlingerProjectilePath {
