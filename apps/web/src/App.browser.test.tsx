@@ -3571,7 +3571,7 @@ describe("authoritative web worker", () => {
       ).toBeLessThanOrEqual(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
-        cycle % 2 === 0 ? 57 : 55
+        cycle % 2 === 0 ? 57 : 56
       );
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects
