@@ -623,6 +623,14 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
   )
     return undefined;
   const entityIds = new Set(entities.map((entity) => entity.id));
+  const departedEntityIds = new Set(
+    transitions
+      .filter(
+        (transition) =>
+          transition.kind === "downed" || transition.kind === "destroyed"
+      )
+      .map(({ entityId }) => entityId)
+  );
   if (
     entities.some(
       (entity) =>
@@ -630,6 +638,19 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
         (entity.targetEntityId === entity.id ||
           !entityIds.has(entity.targetEntityId))
     ) ||
+    entities.some((entity) => {
+      const impactTargetEntityIds = entity.action.impactTargetEntityIds ?? [];
+      return (
+        impactTargetEntityIds.length > 0 &&
+        (entity.faction !== "dwarf" ||
+          entity.action.kind !== "ability" ||
+          entity.action.abilityId !== "ability.iron_warden.shield_slam" ||
+          entity.action.phase !== "impact" ||
+          impactTargetEntityIds.some(
+            (id) => !entityIds.has(id) && !departedEntityIds.has(id)
+          ))
+      );
+    }) ||
     transitions.some((transition) =>
       transition.kind === "spawned"
         ? !entityIds.has(transition.entityId) ||

@@ -684,9 +684,15 @@ export function deriveCombatPresentationState(
 
 export function deriveShieldSlamImpactIds(
   snapshot: RenderSnapshot,
-  _previousSnapshot: RenderSnapshot | undefined
+  previousSnapshot: RenderSnapshot | undefined
 ): readonly string[] {
   if (snapshot.schemaVersion !== 2) return [];
+  if (
+    previousSnapshot?.schemaVersion !== 2 ||
+    previousSnapshot.scenarioId !== snapshot.scenarioId ||
+    previousSnapshot.tick !== snapshot.previousTick
+  )
+    return [];
   const shieldSlam = snapshot.entities.find(
     (entity) =>
       entity.faction === "dwarf" &&

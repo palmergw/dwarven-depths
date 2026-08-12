@@ -3165,6 +3165,13 @@ describe("authoritative web worker", () => {
     expect(deriveShieldSlamImpactIds(multiTarget, multiTargetPrevious)).toEqual(
       ["entity.enemy.alpha", "entity.enemy.beta"]
     );
+    expect(deriveShieldSlamImpactIds(multiTarget, undefined)).toEqual([]);
+    expect(
+      deriveShieldSlamImpactIds(multiTarget, {
+        ...multiTargetPrevious,
+        tick: multiTargetPrevious.tick - 1
+      })
+    ).toEqual([]);
     expect(
       deriveShieldSlamImpactIds(
         {
