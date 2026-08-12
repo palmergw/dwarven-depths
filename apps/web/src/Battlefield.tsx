@@ -2429,7 +2429,7 @@ class PersistentBattlefieldScene {
                 id: entity.id,
                 nodeId: entity.nodeId,
                 worldPosition: [entity.position.x, entity.position.y] as const,
-                screenPosition: [objects.subject.x, objects.subject.y] as const,
+                screenPosition: [objects.pivotX, objects.pivotY] as const,
                 currentHealth: entity.currentHealth,
                 action: {
                   kind: entity.action.kind,
