@@ -168,6 +168,17 @@ describe("presentation snapshot v2", () => {
         snapshot.entities.some((entity) => entity.action.kind === "ability")
       )
     ).toBe(true);
+    for (const phase of ["windup", "committed", "impact", "recoil"] as const)
+      expect(
+        snapshots.some((snapshot) =>
+          snapshot.entities.some(
+            (entity) =>
+              entity.action.kind === "basic_attack" &&
+              entity.action.phase === phase
+          )
+        ),
+        `missing authoritative basic-attack ${phase} presentation`
+      ).toBe(true);
     expect(
       snapshots.some((snapshot) =>
         snapshot.entities.some((entity) => entity.statuses.length > 0)

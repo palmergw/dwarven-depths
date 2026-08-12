@@ -49,7 +49,8 @@ function actionFor(
   combatant: BattlefieldDwarfCombatant | BattlefieldEnemyCombatant,
   moved: boolean,
   previousAction: RenderEntityV2["action"] | undefined,
-  shieldSlamImpactTargetsBySource: ReadonlyMap<string, readonly string[]>
+  shieldSlamImpactTargetsBySource: ReadonlyMap<string, readonly string[]>,
+  previousIsAdjacent: boolean
 ): RenderEntityV2["action"] {
   const ability = state.committedAbilities?.find(
     (candidate) => candidate.sourceEntityId === combatant.entityId
@@ -70,6 +71,7 @@ function actionFor(
         shieldSlamImpactTargetsBySource.get(combatant.entityId) ?? []
     };
   if (
+    previousIsAdjacent &&
     previousAction?.kind === "ability" &&
     previousAction.abilityId === "ability.iron_warden.shield_slam" &&
     (previousAction.phase === "impact" || previousAction.phase === "recoil")
@@ -78,6 +80,16 @@ function actionFor(
       kind: "ability",
       phase: previousAction.phase === "impact" ? "recoil" : "recovery",
       abilityId: previousAction.abilityId,
+      impactTargetEntityIds: []
+    };
+  const committedAttack = state.battlefield?.pendingCommittedAttacks.find(
+    (candidate) => candidate.sourceEntityId === combatant.entityId
+  );
+  if (committedAttack !== undefined)
+    return {
+      kind: "basic_attack",
+      phase: "committed",
+      abilityId: null,
       impactTargetEntityIds: []
     };
   const attack = combatant.actionState.activeBasicAttack;
@@ -90,6 +102,24 @@ function actionFor(
           : state.tick < attack.impactAtTick
             ? "committed"
             : "impact",
+      abilityId: null,
+      impactTargetEntityIds: []
+    };
+  if (
+    previousIsAdjacent &&
+    previousAction?.kind === "basic_attack" &&
+    (previousAction.phase === "committed" ||
+      previousAction.phase === "impact" ||
+      previousAction.phase === "recoil")
+  )
+    return {
+      kind: "basic_attack",
+      phase:
+        previousAction.phase === "committed"
+          ? "impact"
+          : previousAction.phase === "impact"
+            ? "recoil"
+            : "recovery",
       abilityId: null,
       impactTargetEntityIds: []
     };
@@ -154,6 +184,7 @@ export function createPresentationSnapshot(
   const previousById = new Map(
     previous?.entities.map((entity) => [entity.id, entity])
   );
+  const previousIsAdjacent = previous?.tick === state.tick - 1;
   const combatants = [
     ...(state.battlefield?.dwarfCombatants ?? []).map((combatant) => ({
       combatant,
@@ -228,7 +259,8 @@ export function createPresentationSnapshot(
         entry.combatant,
         moved,
         previousById.get(entry.combatant.entityId)?.action,
-        shieldSlamImpactTargetsBySource
+        shieldSlamImpactTargetsBySource,
+        previousIsAdjacent
       ),
       targetEntityId,
       statuses: [...(state.activeStatuses ?? [])]
