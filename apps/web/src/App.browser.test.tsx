@@ -13,6 +13,7 @@ import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import {
   Battlefield,
+  battlefieldEffectLifetime,
   buildBattlefieldPrimitives,
   buildDepartureFeedbackPrimitives,
   buildInterpolationOrigins,
@@ -2980,6 +2981,8 @@ describe("authoritative web worker", () => {
     expect(locomotionCadenceOffset(90, 1, false, false)).toBe(0);
     expect(locomotionCadenceOffset(90, 1, true, true)).toBe(0);
     expect(locomotionCadenceOffset(-90, 1, true, false)).toBe(0);
+    expect(battlefieldEffectLifetime(false)).toBe(1_680);
+    expect(battlefieldEffectLifetime(true)).toBe(420);
   });
 
   it("consumes initial arrival feedback only after a renderer frame", () => {

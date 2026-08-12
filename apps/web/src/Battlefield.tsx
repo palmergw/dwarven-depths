@@ -40,6 +40,8 @@ const PADDING = 96;
 const INTERPOLATION_SPEED_PIXELS_PER_MILLISECOND = 0.9;
 const DEPARTURE_DURATION_MS = 720;
 const DAMAGE_SIGNAL_DURATION_MS = 280;
+const EFFECT_DURATION_MS = 1_680;
+const REDUCED_MOTION_EFFECT_DURATION_MS = 420;
 const MAX_POOLED_EFFECTS = 64;
 const FIXTURE_ID = "scenarios/conformance/shuttergate-web-truth.json";
 const renderedInitialFeedbackSnapshots = new WeakSet<RenderSnapshot>();
@@ -54,6 +56,10 @@ export function markInitialFeedbackRendered(
 ): void {
   if (feedback !== undefined && feedback.arrivals.length > 0)
     renderedInitialFeedbackSnapshots.add(snapshot);
+}
+
+export function battlefieldEffectLifetime(reduceMotion: boolean): number {
+  return reduceMotion ? REDUCED_MOTION_EFFECT_DURATION_MS : EFFECT_DURATION_MS;
 }
 
 export function interpolationDistanceForFrame(
@@ -1631,6 +1637,7 @@ class PersistentBattlefieldScene {
   readonly terminalText: Phaser.GameObjects.Text;
   updateCount = 0;
   activeEffects = 0;
+  effectsExpireAt = 0;
   lastInterpolatedTick: string | undefined;
   lastAbilityEffectTick: string | undefined;
   lastSnapshot: RenderSnapshot | undefined;
@@ -1712,6 +1719,14 @@ class PersistentBattlefieldScene {
     simulationSpeed: 1 | 2,
     reduceMotion: boolean
   ): void {
+    if (this.activeEffects > 0 && this.scene.time.now >= this.effectsExpireAt) {
+      for (const effect of this.effects) {
+        clearDepthVisibilityMask(effect);
+        effect.setVisible(false);
+      }
+      this.activeEffects = 0;
+      this.effectsExpireAt = 0;
+    }
     const maximumStep = interpolationDistanceForFrame(
       deltaMilliseconds,
       simulationSpeed
@@ -2150,6 +2165,10 @@ class PersistentBattlefieldScene {
       }
     }
     const active = this.effects.slice(0, this.activeEffects);
+    this.effectsExpireAt =
+      active.length === 0
+        ? 0
+        : this.scene.time.now + battlefieldEffectLifetime(reduceMotion);
     if (active.length > 0 && !reduceMotion && evidenceEffectAlpha === undefined)
       this.scene.tweens.add({
         targets: active,
