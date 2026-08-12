@@ -95,3 +95,24 @@ Create an ORIGINAL production sprite atlas for the Dwarven Depths project preser
 ### Bounded QA
 
 The generated source follows the project-owned reference identity rather than the prompt's inaccurate weapon nouns: it preserves the Warden's square-headed hammer and tall rectangular shield. Exactly five complete, separated figures form a planted anticipation-through-recovery cycle with restrained contact sparks. The deterministic exporter binds the source digest, five equal crops, stable phase IDs, dimensions, alpha treatment, and generated files.
+
+## `iron-warden-shield-slam-cycle-master.png`
+
+- Provider: `openai-codex`
+- Model: `gpt-image-2-medium`
+- Aspect ratio: `landscape`
+- Requested size setting: `1536x1024`
+- Saved dimensions: `2172x724`
+- Quality: `medium`
+- Modality: `image`
+- Input image: `assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png`
+- Source SHA-256: `46c5a0ae9fd29cab5183239b313a9c03141059cb569af324d4ef02eb4e18c698`
+- License: project MIT license (`LICENSE`)
+
+### Exact prompt
+
+Create an ORIGINAL production sprite atlas for the Dwarven Depths project, preserving exactly the same Iron Warden identity, anatomy, proportions, bronze and dark-steel armor, red braided beard, square-headed one-handed hammer, tall rectangular shield, warm painterly pixel-art rendering, elevated three-quarter camera, and uniform deep navy keyed background shown in the project-owned reference. No text, labels, borders, UI, rings, bars, environment, floor, or unrelated poses. Arrange EXACTLY FIVE evenly separated complete Iron Warden figures in one horizontal row. All figures must have boots planted on exactly the same invisible ground line and remain exactly the same body scale. Left to right, depict one coherent SHIELD SLAM cycle: (1) anticipation—knees compress, weight braces behind both planted boots, tall shield drawn close and slightly back, hammer hand guarding; (2) commitment—shield shoulder and arm begin driving forward while torso remains anatomically stable; (3) contact—shield face reaches maximum forward extension with a tiny restrained warm amber edge spark, body behind the shield, no magic arc; (4) recoil—shield rebounds toward the torso and knees absorb force; (5) recovery—returns toward guarded idle. Motion must come from shield arm, shoulder, knees, and believable weight shift, never whole-body stretch, squash, rotation, sliding, or distortion. Preserve shield dimensions/design, hammer dimensions/design, beard, armor, lighting, and camera perfectly across all five frames. No cropped equipment, duplicated limbs, detached parts, cyan effects, or smooth vector style. Crisp silhouettes that remain readable at 56-pixel gameplay height. Uniform dark navy (#061525-like) background suitable for deterministic color-key alpha extraction.
+
+### Bounded QA
+
+Exactly five complete figures preserve the Warden's anatomy, shield, hammer, scale, and planted ground line. The action is authored through shield extension and braced weight transfer, with a restrained warm contact spark and no detached overlay. The deterministic exporter binds the source digest and all five phase exports.

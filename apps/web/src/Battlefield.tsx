@@ -129,6 +129,14 @@ const wardenAttackCycleAssetUrls = Object.fromEntries(
     ]
   )
 );
+const wardenShieldSlamCycleAssetUrls = Object.fromEntries(
+  (["windup", "committed", "impact", "recoil", "recovery"] as const).map(
+    (phase) => [
+      `warden-shield-slam-${phase}-source`,
+      combatAnimationAssetUrl(`iron-warden-shield-slam-${phase}.png`)
+    ]
+  )
+);
 const warmLightOverlayUrl = new URL(
   "../../../assets/game-art/production-scene/exports/lighting/warm-light-overlay.png",
   import.meta.url
@@ -184,6 +192,7 @@ const battlefieldAssetUrls: Readonly<Record<string, string>> = {
   ...hostileDirectionalAssetUrls,
   ...hostileAttackCycleAssetUrls,
   ...wardenAttackCycleAssetUrls,
+  ...wardenShieldSlamCycleAssetUrls,
   "warm-light-overlay": warmLightOverlayUrl,
   "hostile-faction-ring": hostileFactionRingUrl,
   "shield-slam-impact": shieldSlamImpactUrl,
@@ -490,6 +499,7 @@ type CombatPoseAssetKey =
   | "warden-basic-attack-source"
   | `warden-basic-attack-${"windup" | "committed" | "impact" | "recoil" | "recovery"}-source`
   | "warden-shield-slam-source"
+  | `warden-shield-slam-${"windup" | "committed" | "impact" | "recoil" | "recovery"}-source`
   | "warden-hit-source"
   | "warden-guard-source"
   | "warden-downed-source"
@@ -548,39 +558,36 @@ export function selectCombatPoseAsset(
     entity.id
   );
   if (dwarf && presentation?.damaged === true) return "warden-hit-source";
-  const activePose =
+  const previousEntity =
+    previousSnapshot?.schemaVersion === 2 &&
+    previousSnapshot.scenarioId === snapshot.scenarioId &&
+    previousSnapshot.tick === snapshot.previousTick
+      ? previousSnapshot.entities.find(({ id }) => id === entity.id)
+      : undefined;
+  const authoredPhase =
     entity.action.phase === "windup" ||
     entity.action.phase === "committed" ||
-    entity.action.phase === "impact";
+    entity.action.phase === "impact"
+      ? entity.action.phase
+      : entity.action.phase === "recovery" &&
+          previousEntity?.action.phase === "impact"
+        ? "recoil"
+        : "recovery";
   if (
     dwarf &&
     entity.action.kind === "ability" &&
     entity.action.abilityId === "ability.iron_warden.shield_slam" &&
-    activePose
+    entity.action.phase !== "idle"
   )
-    return "warden-shield-slam-source";
+    return `warden-shield-slam-${authoredPhase}-source`;
   if (dwarf && entity.action.kind === "basic_attack") {
-    const phase =
-      entity.action.phase === "windup" ||
-      entity.action.phase === "committed" ||
-      entity.action.phase === "impact" ||
-      entity.action.phase === "recovery"
-        ? entity.action.phase
-        : "recoil";
-    return `warden-basic-attack-${phase}-source`;
+    return `warden-basic-attack-${authoredPhase}-source`;
   }
   if (dwarf && entity.action.phase === "recovery") return "warden-guard-source";
   if (dwarf) return "warden-source";
   const prefix = hostilePosePrefix(entity.visualId);
   if (entity.action.kind === "basic_attack" && entity.action.phase !== "idle") {
-    const phase =
-      entity.action.phase === "windup" ||
-      entity.action.phase === "committed" ||
-      entity.action.phase === "impact" ||
-      entity.action.phase === "recovery"
-        ? entity.action.phase
-        : "recoil";
-    return `${prefix}-attack-${phase}-source`;
+    return `${prefix}-attack-${authoredPhase}-source`;
   }
   return hostileIdlePoseAsset(prefix, entity.facing);
 }
@@ -1863,6 +1870,9 @@ class PersistentBattlefieldScene {
         (phase) => `warden-basic-attack-${phase}-source` as const
       ),
       "warden-shield-slam-source",
+      ...(["windup", "committed", "impact", "recoil", "recovery"] as const).map(
+        (phase) => `warden-shield-slam-${phase}-source` as const
+      ),
       "warden-hit-source",
       "warden-guard-source",
       "warden-downed-source",
@@ -2085,7 +2095,7 @@ class PersistentBattlefieldScene {
       const effect =
         this.projectileEffects.get(path.sourceId) ?? this.scene.add.graphics();
       effect.clear();
-      effect.lineStyle(3, 0xf0aa52, 0.9);
+      effect.lineStyle(2, 0xc88942, 0.72);
       effect.lineBetween(
         path.source.x,
         path.source.y - 28,
@@ -2096,10 +2106,10 @@ class PersistentBattlefieldScene {
       effect.fillCircle(
         path.target.x,
         path.target.y - 34,
-        reduceMotion ? 4 : 6
+        reduceMotion ? 3 : 4
       );
-      effect.lineStyle(2, 0xd8eef5, 0.95);
-      effect.strokeCircle(path.source.x, path.source.y - 28, 5);
+      effect.lineStyle(1, 0xe9b762, 0.75);
+      effect.strokeCircle(path.source.x, path.source.y - 28, 3);
       effect.setAlpha(reduceMotion ? 0.82 : 1);
       if (!this.projectileEffects.has(path.sourceId)) {
         this.projectileEffects.set(path.sourceId, effect);
@@ -2160,15 +2170,15 @@ class PersistentBattlefieldScene {
       effect
         .setTexture(texture)
         .setPosition(effectX, effectY)
-        .setAlpha(0.82)
-        .setScale(0.78);
+        .setAlpha(0.7)
+        .setScale(0.56);
       this.abilityEffects.set(id, effect);
       this.layers["world-effects"].add(effect);
       if (!reduceMotion && impactKey !== this.lastAbilityEffectTick)
         this.scene.tweens.add({
           targets: effect,
           alpha: 0.35,
-          scale: 0.9,
+          scale: 0.64,
           duration: 180,
           yoyo: true
         });

@@ -8,6 +8,7 @@
     "assets/game-art/combat-animation/sources/shuttergate-hostile-facing-atlas-master.png": "7e70295ef8eee65e100bbfecda451501ae1a1de041835e7570aa204cfc397953",
     "assets/game-art/combat-animation/sources/shuttergate-hostile-attack-cycle-master.png": "ad465196d3a473e904a477588d31bce835dc37ef993eed3afdcb5f904a948b52",
     "assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png": "226aa23dea6cabfc04403cc93343e8122dd297615037911245b74750d8e279a2",
+    "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "46c5a0ae9fd29cab5183239b313a9c03141059cb569af324d4ef02eb4e18c698",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938"
   },
   "files": [
@@ -442,6 +443,46 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
       "sha256": "cc4c637fbc1b831ea42b10ffcf00e03c291d5c32a1146a02bf0b84160ddb0886"
+    },
+    {
+      "id": "iron-warden-shield-slam-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam-committed.png",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "e8cefa4cf3c8e0f24dacbc027756469dfb6a804793f8799979bcc480469a7f01"
+    },
+    {
+      "id": "iron-warden-shield-slam-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam-impact.png",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "73ceb59a35dc41e00450c6bb7275b3bc35e7c4ccfc215f22b8048c92fe6f336f"
+    },
+    {
+      "id": "iron-warden-shield-slam-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam-recoil.png",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "a942715640b2bc1cabdd6ca4c6638a7b43c2ed9e1246e3868ae0fac7a0696593"
+    },
+    {
+      "id": "iron-warden-shield-slam-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam-recovery.png",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "fb0ff04c0d3b802b95555b04098e741d53d7f22744e3c4073196c56d07e7e9ca"
+    },
+    {
+      "id": "iron-warden-shield-slam-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam-windup.png",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "577a3f6c76251d03645258e51d07c74d91a9fd034f752e8c9d646bc5b72d48d4"
     },
     {
       "id": "iron-warden-shield-slam",

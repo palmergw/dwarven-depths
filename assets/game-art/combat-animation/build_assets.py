@@ -19,6 +19,9 @@ WARDEN_SOURCE = ROOT / "assets/game-art/visual-direction/sources/iron-warden-mas
 WARDEN_ATTACK_CYCLE_SOURCE = (
     PACKAGE / "sources/iron-warden-basic-attack-cycle-master.png"
 )
+WARDEN_SHIELD_SLAM_CYCLE_SOURCE = (
+    PACKAGE / "sources/iron-warden-shield-slam-cycle-master.png"
+)
 HOSTILE_SOURCE = PACKAGE / "sources/shuttergate-hostile-role-atlas-master.png"
 FACING_SOURCE = PACKAGE / "sources/shuttergate-hostile-facing-atlas-master.png"
 HOSTILE_ATTACK_CYCLE_SOURCE = (
@@ -30,6 +33,7 @@ SOURCE_DIGESTS = {
     "assets/game-art/combat-animation/sources/shuttergate-hostile-facing-atlas-master.png": "7e70295ef8eee65e100bbfecda451501ae1a1de041835e7570aa204cfc397953",
     "assets/game-art/combat-animation/sources/shuttergate-hostile-attack-cycle-master.png": "ad465196d3a473e904a477588d31bce835dc37ef993eed3afdcb5f904a948b52",
     "assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png": "226aa23dea6cabfc04403cc93343e8122dd297615037911245b74750d8e279a2",
+    "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "46c5a0ae9fd29cab5183239b313a9c03141059cb569af324d4ef02eb4e18c698",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
 }
 
@@ -237,6 +241,26 @@ def build_outputs() -> dict[str, bytes]:
                 )
             )
             outputs[f"iron-warden-basic-attack-{phase}.png"] = encode_png(
+                miniature(cell, (112, 72), (56, 66), (104, 56))
+            )
+    with Image.open(WARDEN_SHIELD_SLAM_CYCLE_SOURCE) as master:
+        column_edges = [round(index * master.width / 5) for index in range(6)]
+        for column, phase in enumerate(HOSTILE_ATTACK_PHASES):
+            cell = trim(
+                remove_alpha_fragments(
+                    keyed_alpha(
+                        master.crop(
+                            (
+                                column_edges[column],
+                                0,
+                                column_edges[column + 1],
+                                master.height,
+                            )
+                        )
+                    )
+                )
+            )
+            outputs[f"iron-warden-shield-slam-{phase}.png"] = encode_png(
                 miniature(cell, (112, 72), (56, 66), (104, 56))
             )
     with Image.open(HOSTILE_SOURCE) as master:

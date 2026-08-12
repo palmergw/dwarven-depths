@@ -3014,7 +3014,7 @@ describe("authoritative web worker", () => {
       }
     } as const satisfies RenderSnapshot;
     expect(selectCombatPoseAsset(snapshot, entity.id)).toBe(
-      "warden-shield-slam-source"
+      "warden-shield-slam-impact-source"
     );
     expect(
       selectCombatPoseTreatment(
@@ -3084,7 +3084,21 @@ describe("authoritative web worker", () => {
         },
         entity.id
       )
-    ).toBe("warden-guard-source");
+    ).toBe("warden-shield-slam-recovery-source");
+    expect(
+      selectCombatPoseAsset(
+        {
+          ...snapshot,
+          tick: 5,
+          previousTick: 4,
+          entities: [
+            { ...entity, action: { ...entity.action, phase: "recovery" } }
+          ]
+        },
+        entity.id,
+        snapshot
+      )
+    ).toBe("warden-shield-slam-recoil-source");
     const damaged = {
       ...snapshot,
       entities: [
@@ -3571,7 +3585,7 @@ describe("authoritative web worker", () => {
       ).toBeLessThanOrEqual(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
-        cycle % 2 === 0 ? 57 : 56
+        cycle % 2 === 0 ? 62 : 61
       );
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects
