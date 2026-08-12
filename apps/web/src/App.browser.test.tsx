@@ -3251,6 +3251,7 @@ describe("authoritative web worker", () => {
     const cadenceAt2x = deriveTemporalCombatTreatment(moving, 62.5, 2, false);
     expect(cadenceAt2x).toEqual(cadenceAt1x);
     expect(cadenceAt1x.verticalOffset).toBeLessThan(0);
+    expect(Math.abs(cadenceAt1x.horizontalOffset)).toBeGreaterThan(0);
     const reducedCadence = deriveTemporalCombatTreatment(moving, 125, 1, true);
     expect(Math.abs(reducedCadence.verticalOffset)).toBeLessThan(
       Math.abs(cadenceAt1x.verticalOffset)
@@ -3269,6 +3270,10 @@ describe("authoritative web worker", () => {
       )
     );
     expect(new Set(phaseTreatments.map(({ scaleX }) => scaleX)).size).toBe(4);
+    expect(
+      phaseTreatments.map(({ horizontalOffset }) => horizontalOffset)
+    ).toEqual([-5, 8, 12, -3]);
+    expect(phaseTreatments[2]?.scaleX).toBeGreaterThan(1.1);
     expect(
       selectCombatPoseTreatment(
         {

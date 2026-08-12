@@ -557,6 +557,7 @@ export interface CombatPoseTreatment {
 
 export interface TemporalCombatTreatment {
   readonly angleOffset: number;
+  readonly horizontalOffset: number;
   readonly scaleX: number;
   readonly scaleY: number;
   readonly verticalOffset: number;
@@ -594,23 +595,34 @@ export function deriveTemporalCombatTreatment(
   const strength = (reduceMotion ? 0.22 : 1) * combatRoleStrength(entity);
   if (entity.action.kind === "moving" || entity.transition === "moving")
     return {
-      angleOffset: wave * 1.8 * strength,
-      scaleX: 1 + wave * 0.012 * strength,
-      scaleY: 1 - wave * 0.018 * strength,
-      verticalOffset: -Math.abs(wave) * 2.4 * strength
+      angleOffset: wave * 3.2 * strength,
+      horizontalOffset: wave * 2.8 * strength,
+      scaleX: 1 + wave * 0.025 * strength,
+      scaleY: 1 - wave * 0.04 * strength,
+      verticalOffset: -Math.abs(wave) * 4.6 * strength
     };
   const treatment =
     entity.action.phase === "windup"
-      ? { angle: -2.5, x: 0.97, y: 1.03, lift: 1 }
+      ? { angle: -10, forward: -5, x: 0.9, y: 1.08, lift: 2 }
       : entity.action.phase === "committed"
-        ? { angle: 2, x: 1.025, y: 0.98, lift: -1 }
+        ? { angle: 8, forward: 8, x: 1.1, y: 0.92, lift: -3 }
         : entity.action.phase === "impact"
-          ? { angle: 4.5, x: 1.055, y: 0.95, lift: 2 }
+          ? { angle: 15, forward: 12, x: 1.14, y: 0.88, lift: 4 }
           : entity.action.phase === "recovery"
-            ? { angle: -1.5, x: 0.985, y: 1.01, lift: 0 }
-            : { angle: wave * 0.35, x: 1, y: 1, lift: 0 };
+            ? { angle: -6, forward: -3, x: 0.94, y: 1.05, lift: 1 }
+            : {
+                angle: wave * 0.7,
+                forward: 0,
+                x: 1,
+                y: 1,
+                lift: 0
+              };
   return {
     angleOffset: treatment.angle * strength,
+    horizontalOffset:
+      treatment.forward *
+      strength *
+      (entity.facing === "west" || entity.facing === "north" ? -1 : 1),
     scaleX: 1 + (treatment.x - 1) * strength,
     scaleY: 1 + (treatment.y - 1) * strength,
     verticalOffset: treatment.lift * strength
@@ -1653,6 +1665,7 @@ class PersistentBattlefieldScene {
   readonly departures = new Map<string, DepartingEntityObjects>();
   readonly effects: Phaser.GameObjects.Graphics[] = [];
   readonly projectileEffects = new Map<string, Phaser.GameObjects.Graphics>();
+  readonly actionEffects = new Map<string, Phaser.GameObjects.Graphics>();
   readonly abilityEffects = new Map<string, Phaser.GameObjects.Image>();
   readonly actionClocks = new Map<string, ActionClock>();
   readonly lighting: Phaser.GameObjects.Image;
@@ -1773,7 +1786,10 @@ class PersistentBattlefieldScene {
         objects.subject
           .setAngle(objects.poseAngle + treatment.angleOffset)
           .setScale(treatment.scaleX, treatment.scaleY)
-          .setY(y + treatment.verticalOffset);
+          .setPosition(
+            x + treatment.horizontalOffset,
+            y + treatment.verticalOffset
+          );
       }
       if (
         objects.signalDamaged &&
@@ -1794,7 +1810,75 @@ class PersistentBattlefieldScene {
         objects.subject.clearTint();
       }
     }
+    this.updateActionEffects(reduceMotion);
     this.updateProjectileEffects(simulationSpeed, reduceMotion);
+  }
+
+  private updateActionEffects(reduceMotion: boolean): void {
+    if (this.lastSnapshot?.schemaVersion !== 2) return;
+    const active = this.lastSnapshot.entities.filter(
+      (entity) =>
+        entity.action.kind !== "idle" &&
+        entity.action.kind !== "moving" &&
+        entity.action.phase !== "idle"
+    );
+    const liveIds = new Set(active.map(({ id }) => id));
+    for (const [id, effect] of this.actionEffects)
+      if (!liveIds.has(id)) {
+        this.layers["world-effects"].delete(effect);
+        effect.destroy();
+        this.actionEffects.delete(id);
+      }
+    for (const entity of active) {
+      if (!this.actionEffects.has(entity.id) && this.actionEffects.size >= 16)
+        continue;
+      const objects = this.entities.get(entity.id);
+      if (objects === undefined) continue;
+      const effect =
+        this.actionEffects.get(entity.id) ?? this.scene.add.graphics();
+      const x = objects.pivotX;
+      const y = objects.pivotY - 24;
+      const hostile = entity.faction === "enemy";
+      const color = hostile ? 0xff9a45 : 0x7ee8ff;
+      const intensity = reduceMotion ? 0.72 : 1;
+      effect.clear().setAlpha(intensity);
+      if (entity.action.phase === "windup") {
+        effect.lineStyle(4, color, 0.95);
+        effect.beginPath();
+        effect.arc(x, y, hostile ? 25 : 31, 3.55, 5.85);
+        effect.strokePath();
+        effect.fillStyle(color, 0.28);
+        effect.fillCircle(x, y + 20, hostile ? 18 : 23);
+      } else if (entity.action.phase === "committed") {
+        effect.lineStyle(7, color, 0.95);
+        effect.lineBetween(x - 27, y - 20, x + 31, y + 20);
+        effect.lineStyle(3, 0xfff0b8, 1);
+        effect.lineBetween(x - 20, y - 24, x + 35, y + 14);
+      } else if (entity.action.phase === "impact") {
+        effect.fillStyle(color, 0.3);
+        effect.fillCircle(x, y, hostile ? 34 : 42);
+        effect.lineStyle(5, 0xfff0b8, 1);
+        effect.strokeCircle(x, y, hostile ? 26 : 34);
+        for (let index = 0; index < 8; index += 1) {
+          const angle = (Math.PI * index) / 4;
+          effect.lineBetween(
+            x + Math.cos(angle) * 27,
+            y + Math.sin(angle) * 27,
+            x + Math.cos(angle) * 43,
+            y + Math.sin(angle) * 43
+          );
+        }
+      } else {
+        effect.lineStyle(3, color, 0.65);
+        effect.beginPath();
+        effect.arc(x, y + 12, hostile ? 21 : 27, 0.2, 2.95);
+        effect.strokePath();
+      }
+      if (!this.actionEffects.has(entity.id)) {
+        this.actionEffects.set(entity.id, effect);
+        this.layers["world-effects"].add(effect);
+      }
+    }
   }
 
   private updateProjectileEffects(
@@ -2349,6 +2433,8 @@ class PersistentBattlefieldScene {
     for (const effect of active) this.scene.children.bringToTop(effect);
     for (const effect of this.projectileEffects.values())
       this.scene.children.bringToTop(effect);
+    for (const effect of this.actionEffects.values())
+      this.scene.children.bringToTop(effect);
     for (const entity of orderedEntities) {
       const objects = this.entities.get(entity.id);
       if (objects !== undefined)
@@ -2504,6 +2590,8 @@ class PersistentBattlefieldScene {
     for (const effect of this.effects) effect.clearMask(true);
     for (const effect of this.projectileEffects.values()) effect.destroy();
     this.projectileEffects.clear();
+    for (const effect of this.actionEffects.values()) effect.destroy();
+    this.actionEffects.clear();
     for (const effect of this.abilityEffects.values()) effect.destroy();
     this.abilityEffects.clear();
     this.entities.clear();
