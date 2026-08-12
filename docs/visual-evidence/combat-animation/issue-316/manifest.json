@@ -19,24 +19,24 @@
     "sidecarSha256": "258c6bfb684030a7ef98447e87a3b3705700a7ec8ec086c09320528e4243b1fa",
     "intervalMilliseconds": [
       2240,
-      3038
+      3055
     ]
   },
   "after": {
-    "sourceHead": "1a34fcea3b77a222d76b6c1a6372adf310b192c9",
-    "video": "after-forceful-actions.webm",
-    "videoSha256": "af120784286936320091bd02ff8ff8ed00b2de3e6546701a790c7f74c402305a",
-    "sidecar": "after-forceful-actions.json",
-    "sidecarSha256": "8a5e620a7cc3ca65162aff488a6f965a9787b84323f851bcb3c51fcb13e080cc",
+    "sourceHead": "7e55e82fb6de278b2405ef55ee251fca07515447",
+    "video": "after-unmistakable-force.webm",
+    "videoSha256": "d3d676f1c60fc2f9c69b66f3416db71ca8aa5244064b2dda0ec13b1460750205",
+    "sidecar": "after-unmistakable-force.json",
+    "sidecarSha256": "d6ae792ad46380fee05d672c3cc9dd1f34a1a8ccf5711f675657f98cec5ea1cc",
     "intervalMilliseconds": [
-      3357,
-      4155
+      2598,
+      3385
     ]
   },
   "comparison": {
     "actorActionCrop": {
       "video": "adjacent-action-crop.webm",
-      "videoSha256": "a60fc77e0c9a5fafe73df44a63c44600ae1592482af207d5f0e2461b63acb9e8",
+      "videoSha256": "5e1419be547167ec7ee08a249699691cb76bcd6dc86029faafd1cb88683b4fde",
       "sourceCrop": [
         300,
         180,
@@ -47,11 +47,11 @@
         1800,
         522
       ],
-      "durationMilliseconds": 798
+      "durationMilliseconds": 815
     },
     "fullFrameContext": {
       "video": "adjacent-full-frame.webm",
-      "videoSha256": "1afbc5ded686455244da2730a134fd6a2e1ea544ce4affb583babf04d2a4ca29",
+      "videoSha256": "bb248d5717cbc882d1fde882b3fc3f966aa8fa8ee54b0781cdbee13b5df11236",
       "sourceCrop": [
         0,
         0,
@@ -62,12 +62,13 @@
         2880,
         900
       ],
-      "durationMilliseconds": 798
+      "durationMilliseconds": 815
     },
     "still": "adjacent-action-still.png",
-    "stillSha256": "4bbc8d1b83f1794b7307b9abcec30a66fe4cf82027171026dc3118703d69f3e4",
-    "changedRegion": "Iron Warden and cutter silhouettes at the north guard post: deep anticipation lean, directional commitment, displaced impact burst, hit recoil, and returning recovery arc",
+    "stillSha256": "9e62986d0cb23bedc2eb39687fe53f15b95b4cf072af9bb495ed3db87668cb81",
+    "stillHalfPsnrDb": 20.860596,
+    "changedRegion": "Iron Warden and cutter at the north guard post: silhouette-scale anticipation and lunge, bright directional commitment trail, target-centered radial impact, doubled hit recoil, recovery lean, and bounded impact camera emphasis",
     "changedMotionInterval": "authoritative ticks 9 through 54"
   },
-  "decision": "Approve the human-obvious anticipation, commitment, impact, recoil, and recovery treatment shown in the synchronized actor/action crop, with the full-frame clip confirming preserved Shuttergate composition and unit scale."
+  "decision": "Approve the human-obvious silhouette-scale anticipation, commitment, impact, recoil, and recovery treatment shown in the synchronized actor/action crop, with the full-frame clip confirming preserved Shuttergate composition and fixed unit scale."
 }
