@@ -22,9 +22,7 @@ import {
   deriveCombatPresentationState,
   deriveShieldSlamImpactIds,
   deriveSlingerProjectilePaths,
-  deriveTemporalCombatTreatment,
   interpolationDistanceForFrame,
-  projectileProgressForPhase,
   renderedFactionForSourceKey,
   selectCombatPoseAsset,
   selectCombatPoseTreatment,
@@ -3032,7 +3030,7 @@ describe("authoritative web worker", () => {
         },
         entity.id
       )
-    ).toMatchObject({ state: "moving", angle: 3 });
+    ).toMatchObject({ state: "moving", angle: 0 });
     expect(
       selectCombatPoseAsset(
         {
@@ -3048,7 +3046,7 @@ describe("authoritative web worker", () => {
         },
         entity.id
       )
-    ).toBe("raider-attack-source");
+    ).toBe("raider-attack-windup-source");
     expect(
       selectCombatPoseTreatment(
         {
@@ -3071,9 +3069,9 @@ describe("authoritative web worker", () => {
         entity.id
       )
     ).toMatchObject({
-      source: "slinger-attack-source",
+      source: "slinger-attack-committed-source",
       state: "committed",
-      angle: 86,
+      angle: 0,
       flipX: false
     });
     expect(
@@ -3213,10 +3211,10 @@ describe("authoritative web worker", () => {
       )
     );
     expect(directionalAttackTreatments.map(({ source }) => source)).toEqual([
-      "raider-attack-source",
-      "raider-attack-source",
-      "raider-attack-source",
-      "raider-attack-source"
+      "raider-attack-committed-source",
+      "raider-attack-committed-source",
+      "raider-attack-committed-source",
+      "raider-attack-committed-source"
     ]);
     expect(
       new Set(
@@ -3224,8 +3222,8 @@ describe("authoritative web worker", () => {
           ({ angle, flipX }) => `${angle}:${String(flipX)}`
         )
       ).size
-    ).toBe(4);
-    const attackPhaseAngles = (["windup", "committed", "impact"] as const).map(
+    ).toBe(2);
+    const attackPhaseSources = (["windup", "committed", "impact"] as const).map(
       (phase) =>
         selectCombatPoseTreatment(
           {
@@ -3239,54 +3237,9 @@ describe("authoritative web worker", () => {
             ]
           },
           hostile.id
-        ).angle
+        ).source
     );
-    expect(new Set(attackPhaseAngles).size).toBe(3);
-    const moving = {
-      ...hostile,
-      action: { kind: "moving", phase: "idle", abilityId: null },
-      transition: "moving"
-    } as const;
-    const cadenceAt1x = deriveTemporalCombatTreatment(moving, 125, 1, false);
-    const cadenceAt2x = deriveTemporalCombatTreatment(moving, 62.5, 2, false);
-    expect(cadenceAt2x).toEqual(cadenceAt1x);
-    expect(cadenceAt1x.verticalOffset).toBeLessThan(0);
-    expect(Math.abs(cadenceAt1x.horizontalOffset)).toBeGreaterThan(0);
-    const reducedCadence = deriveTemporalCombatTreatment(moving, 125, 1, true);
-    expect(Math.abs(reducedCadence.verticalOffset)).toBeLessThan(
-      Math.abs(cadenceAt1x.verticalOffset)
-    );
-    const phaseTreatments = (
-      ["windup", "committed", "impact", "recovery"] as const
-    ).map((phase) =>
-      deriveTemporalCombatTreatment(
-        {
-          ...hostile,
-          action: { kind: "basic_attack", phase, abilityId: null }
-        },
-        180,
-        1,
-        false
-      )
-    );
-    expect(new Set(phaseTreatments.map(({ scaleX }) => scaleX)).size).toBe(4);
-    expect(
-      phaseTreatments.map(({ horizontalOffset }) => Math.abs(horizontalOffset))
-    ).toEqual([24, 38, 52, 0]);
-    expect(phaseTreatments[2]?.scaleX).toBeGreaterThanOrEqual(1.34);
-    const earlyCommitment = deriveTemporalCombatTreatment(
-      {
-        ...hostile,
-        action: { kind: "basic_attack", phase: "committed", abilityId: null }
-      },
-      45,
-      1,
-      false
-    );
-    expect(earlyCommitment.horizontalOffset).toBeGreaterThan(0);
-    expect(earlyCommitment.horizontalOffset).toBeLessThan(
-      phaseTreatments[1]?.horizontalOffset ?? 0
-    );
+    expect(new Set(attackPhaseSources).size).toBe(3);
     expect(
       selectCombatPoseTreatment(
         {
@@ -3306,9 +3259,9 @@ describe("authoritative web worker", () => {
         hostile.id
       )
     ).toMatchObject({
-      source: "raider-attack-source",
+      source: "raider-attack-windup-source",
       state: "windup",
-      angle: 6,
+      angle: 0,
       flipX: false
     });
     expect(
@@ -3330,9 +3283,9 @@ describe("authoritative web worker", () => {
         hostile.id
       )
     ).toMatchObject({
-      source: "raider-attack-source",
+      source: "raider-attack-impact-source",
       state: "impact",
-      angle: 8,
+      angle: 0,
       flipX: true
     });
     const slinger = {
@@ -3352,16 +3305,6 @@ describe("authoritative web worker", () => {
         projectilePrimitives
       ).map(({ sourceId, targetId }) => [sourceId, targetId])
     ).toEqual([[slinger.id, entity.id]]);
-    expect(
-      deriveSlingerProjectilePaths(projectileSnapshot, projectilePrimitives)[0]
-        ?.phase
-    ).toBe("committed");
-    expect(projectileProgressForPhase("committed", 0, 1, false)).toBe(0.08);
-    expect(projectileProgressForPhase("committed", 65, 2, false)).toBe(0.5);
-    expect(projectileProgressForPhase("committed", 130, 1, false)).toBe(0.5);
-    expect(projectileProgressForPhase("committed", 260, 1, false)).toBe(0.94);
-    expect(projectileProgressForPhase("impact", 0, 1, false)).toBe(1);
-    expect(projectileProgressForPhase("committed", 0, 1, true)).toBe(1);
     expect(
       deriveSlingerProjectilePaths(
         {
@@ -3628,7 +3571,7 @@ describe("authoritative web worker", () => {
       ).toBeLessThanOrEqual(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
-        cycle % 2 === 0 ? 34 : 32
+        cycle % 2 === 0 ? 59 : 57
       );
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects

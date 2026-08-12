@@ -6,9 +6,51 @@
   "sources": {
     "assets/game-art/combat-animation/sources/shuttergate-hostile-role-atlas-master.png": "8f27d5e80b9adcbcab6d3b05435fda8777c81326d2a1f8e590673c04d14ed660",
     "assets/game-art/combat-animation/sources/shuttergate-hostile-facing-atlas-master.png": "7e70295ef8eee65e100bbfecda451501ae1a1de041835e7570aa204cfc397953",
+    "assets/game-art/combat-animation/sources/shuttergate-hostile-attack-cycle-master.png": "ad465196d3a473e904a477588d31bce835dc37ef993eed3afdcb5f904a948b52",
+    "assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png": "226aa23dea6cabfc04403cc93343e8122dd297615037911245b74750d8e279a2",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938"
   },
   "files": [
+    {
+      "id": "gatebreaker-captain-attack-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-committed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "29dd4aa791b3bb5876deefbc5584a721ebc92bca5a6324aafaa56c2e690ab8ff"
+    },
+    {
+      "id": "gatebreaker-captain-attack-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-impact.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "5a4abe008e81209ad2e71601615d5c724b999e0ee87508efd50622ae9146beea"
+    },
+    {
+      "id": "gatebreaker-captain-attack-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-recoil.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "84772a08245f51f81718ed4ef6be54ec828a0d66e6c9a39bab8982b956c5d908"
+    },
+    {
+      "id": "gatebreaker-captain-attack-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-recovery.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "8d45e835d1706d4c8c4811eaa145e1b5f4dc8a5ce0a2939385b0c512fa5c54f6"
+    },
+    {
+      "id": "gatebreaker-captain-attack-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-windup.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "5f6100504e234aa07a24bca8b619eda437430370fbea9d555f057e96b2f0bf87"
+    },
     {
       "id": "gatebreaker-captain-attack",
       "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack.png",
@@ -56,6 +98,46 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
       "sha256": "63a9c24169340a9ebcd2772e199fedbf3a2ac280ae94a4ac284a706d6afe7a38"
+    },
+    {
+      "id": "goblin-bulwark-attack-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-bulwark-attack-committed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "73f27339d51bd5c6f10887d024ad52568d529f06022f39298aeb999b2698dbc3"
+    },
+    {
+      "id": "goblin-bulwark-attack-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-bulwark-attack-impact.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "97180324127f960e7cb4ee7b44ea2a107e3cfe22661a40672e4b8007cc8590a2"
+    },
+    {
+      "id": "goblin-bulwark-attack-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-bulwark-attack-recoil.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "3e50389d116435033f92e5fabdf0b174e004ff1f1b450b80cf342fc8888ef146"
+    },
+    {
+      "id": "goblin-bulwark-attack-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-bulwark-attack-recovery.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "4630a6def8677b6c8b06b6ca80be543b7a45f4e3a94c09ef26ca9e216d41e8df"
+    },
+    {
+      "id": "goblin-bulwark-attack-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-bulwark-attack-windup.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "1c976b9f308175dc3701bdc35433384a756f2fb3755878622c964cf1a919cb11"
     },
     {
       "id": "goblin-bulwark-attack",
@@ -106,6 +188,46 @@
       "sha256": "ba080bb532b6b60c7448bd667b6eb6e24fb63367539910f44999b57302c3662f"
     },
     {
+      "id": "goblin-cutter-attack-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack-committed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "a35e67528adeac96251c62253390b51002e7e8764ff67c59ad057e2a000ab580"
+    },
+    {
+      "id": "goblin-cutter-attack-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack-impact.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "5d3971f7b4b801de5c76c97ad9f422afdf90db97637ca9800babb391c890387e"
+    },
+    {
+      "id": "goblin-cutter-attack-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack-recoil.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "6afcf4d55ba8fbdefa266e06e3e36979ff21c679d8326b75dcb93b967ef63b34"
+    },
+    {
+      "id": "goblin-cutter-attack-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack-recovery.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "c9560db4ba7da9af4d9ec45bd6adf7d2c7b92cf3b6d56395490e0286ef7aed05"
+    },
+    {
+      "id": "goblin-cutter-attack-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack-windup.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f6b00b761ee902c469d38fc71dec2afcd8e93e635d2c6022c016cfeddfa1be1a"
+    },
+    {
       "id": "goblin-cutter-attack",
       "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack.png",
       "dimensions": [80, 60],
@@ -154,6 +276,46 @@
       "sha256": "d8f03077627f4c3f01aa62abaf9d87737e07920bdaf5ea4d0ad5bf22e221c500"
     },
     {
+      "id": "goblin-slinger-attack-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-committed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "4052093002c86e53abe9033ab00851eeb72c99e4cb8f26d50cb34898ea7ab081"
+    },
+    {
+      "id": "goblin-slinger-attack-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-impact.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "33e22373c472263e1bff906bea9c189611ee837d217d1ae2998837b2bf50917c"
+    },
+    {
+      "id": "goblin-slinger-attack-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-recoil.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "e833a2d27d8613622585693f7dfeadd4b90f833a0032aaf5344603c4c491c514"
+    },
+    {
+      "id": "goblin-slinger-attack-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-recovery.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "77d300a56a90ed235494180321af0a15e7c951f58c2f1500c85572937646a074"
+    },
+    {
+      "id": "goblin-slinger-attack-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-windup.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f763c22b06a6aa5014f54bc9db35af5a31bb3720808e5cc7bd8b75762501e2d8"
+    },
+    {
       "id": "goblin-slinger-attack",
       "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack.png",
       "dimensions": [80, 60],
@@ -200,6 +362,46 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
       "sha256": "1a980a96e6be6466c2c2f1789f7e8b25c931776ee0eed4c16d202ab15ec145ac"
+    },
+    {
+      "id": "iron-warden-basic-attack-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-committed.png",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "317828d9570257c50241151cc4f9c06f1065e0216f1e0521e375eb45195f0ff8"
+    },
+    {
+      "id": "iron-warden-basic-attack-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-impact.png",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "c1e504197c306eedaedc2596caa92a74a75032d5f90d67ce34671a480d92301e"
+    },
+    {
+      "id": "iron-warden-basic-attack-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-recoil.png",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "9497bd2cb018eb3f0610410c875cbbc207daa8b7a2c3ba41967db76648c88c05"
+    },
+    {
+      "id": "iron-warden-basic-attack-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-recovery.png",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "d47b3c3a42b481e41ff4889dd8df944820b36cedd88bc284f031960f608e9336"
+    },
+    {
+      "id": "iron-warden-basic-attack-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-windup.png",
+      "dimensions": [112, 72],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "c385d43ec7eef7daccfcc5729798170852720659424656a9d19c89a2a23431c7"
     },
     {
       "id": "iron-warden-basic-attack",
