@@ -102,17 +102,23 @@ The generated source follows the project-owned reference identity rather than th
 - Model: `gpt-image-2-medium`
 - Aspect ratio: `landscape`
 - Requested size setting: `1536x1024`
-- Saved dimensions: `2172x724`
+- Saved dimensions: `1536x1024`
 - Quality: `medium`
 - Modality: `image`
-- Input image: `assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png`
-- Source SHA-256: `46c5a0ae9fd29cab5183239b313a9c03141059cb569af324d4ef02eb4e18c698`
+- Input images: `assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png`, `assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png` (preceding rejected candidate used only as identity/continuity references)
+- Source SHA-256: `bbf7c4fd3090f767ca8a187befc495a46303ad9934a57cd0cf6a28bdfda2d6c4`
 - License: project MIT license (`LICENSE`)
 
 ### Exact prompt
 
-Create an ORIGINAL production sprite atlas for the Dwarven Depths project, preserving exactly the same Iron Warden identity, anatomy, proportions, bronze and dark-steel armor, red braided beard, square-headed one-handed hammer, tall rectangular shield, warm painterly pixel-art rendering, elevated three-quarter camera, and uniform deep navy keyed background shown in the project-owned reference. No text, labels, borders, UI, rings, bars, environment, floor, or unrelated poses. Arrange EXACTLY FIVE evenly separated complete Iron Warden figures in one horizontal row. All figures must have boots planted on exactly the same invisible ground line and remain exactly the same body scale. Left to right, depict one coherent SHIELD SLAM cycle: (1) anticipation—knees compress, weight braces behind both planted boots, tall shield drawn close and slightly back, hammer hand guarding; (2) commitment—shield shoulder and arm begin driving forward while torso remains anatomically stable; (3) contact—shield face reaches maximum forward extension with a tiny restrained warm amber edge spark, body behind the shield, no magic arc; (4) recoil—shield rebounds toward the torso and knees absorb force; (5) recovery—returns toward guarded idle. Motion must come from shield arm, shoulder, knees, and believable weight shift, never whole-body stretch, squash, rotation, sliding, or distortion. Preserve shield dimensions/design, hammer dimensions/design, beard, armor, lighting, and camera perfectly across all five frames. No cropped equipment, duplicated limbs, detached parts, cyan effects, or smooth vector style. Crisp silhouettes that remain readable at 56-pixel gameplay height. Uniform dark navy (#061525-like) background suitable for deterministic color-key alpha extraction.
+Create a replacement ORIGINAL production sprite atlas for the Dwarven Depths project. Preserve the exact same Iron Warden character identity from the references: stocky dwarf anatomy, red braided beard, bronze and dark-steel armor, square-headed one-handed hammer, tall rectangular shield with diamond emblem, warm painterly pixel-art rendering, elevated three-quarter camera, crisp silhouette. Output exactly FIVE evenly separated, complete figures in one horizontal row on a perfectly uniform deep navy (#061525) removable background. No text, labels, borders, UI, rings, bars, floor, scenery, cyan, magic arc, detached effect, extra figures, cropped equipment, duplicated limbs, or smooth vector art.
+
+This is a forceful but anatomy-stable SHIELD SLAM cycle designed to remain unmistakable at only 56 pixels tall. Keep body, head, beard, armor, hammer, shield dimensions, lighting, camera, and logical ground line consistent. Both boots remain planted and clearly visible in every frame; motion comes from knees, hips, shoulder, shield arm, and believable weight transfer—never global rotation, stretch, squash, sliding, or distortion.
+
+Left to right: (1) ANTICIPATION: unmistakably low, wide braced silhouette; knees deeply compressed; hips and shoulders pulled back; shield drawn tightly beside the torso and visibly rearward; hammer hand guarding high. This must read as stored weight, not idle. (2) COMMITMENT: strong forward diagonal through shoulder and shield arm; rear knee driving; shield halfway thrust forward; torso stable; clear separation from frames 1 and 3. (3) CONTACT: shield face at maximum forward extension well ahead of head and torso; body visibly driving behind it; tiny restrained warm amber edge sparks only; strongest silhouette in the row. (4) RECOIL: shield has visibly bounced back and upward toward the shoulder; torso and knees absorb force rearward; hammer arm counterbalances low; clearly different from idle and anticipation. (5) RECOVERY: guarded settling pose midway back to idle, shield returned in front but still slightly angled, knees partly bent, hammer lowering; clearly distinct from frame 1.
+
+Prioritize broad readable silhouette differences, consistent planted boots, weapon/shield motion, and animation continuity at gameplay scale. Exactly five figures.
 
 ### Bounded QA
 
-Exactly five complete figures preserve the Warden's anatomy, shield, hammer, scale, and planted ground line. The action is authored through shield extension and braced weight transfer, with a restrained warm contact spark and no detached overlay. The deterministic exporter binds the source digest and all five phase exports.
+Exactly five complete figures preserve the Warden's identity, anatomy, shield, hammer, scale, and planted ground line. The low brace, forward drive, maximum shield contact, high shield rebound, and guarded settle are distinct at gameplay scale. The contact accent is warm and restrained with no detached overlay. The deterministic exporter binds the source digest and all five phase exports.

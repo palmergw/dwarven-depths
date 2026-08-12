@@ -33,7 +33,7 @@ SOURCE_DIGESTS = {
     "assets/game-art/combat-animation/sources/shuttergate-hostile-facing-atlas-master.png": "7e70295ef8eee65e100bbfecda451501ae1a1de041835e7570aa204cfc397953",
     "assets/game-art/combat-animation/sources/shuttergate-hostile-attack-cycle-master.png": "ad465196d3a473e904a477588d31bce835dc37ef993eed3afdcb5f904a948b52",
     "assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png": "226aa23dea6cabfc04403cc93343e8122dd297615037911245b74750d8e279a2",
-    "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "46c5a0ae9fd29cab5183239b313a9c03141059cb569af324d4ef02eb4e18c698",
+    "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "bbf7c4fd3090f767ca8a187befc495a46303ad9934a57cd0cf6a28bdfda2d6c4",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
 }
 
