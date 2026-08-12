@@ -3152,6 +3152,9 @@ describe("authoritative web worker", () => {
     expect(
       deriveCombatPresentationState(damaged, previous, entity.id)
     ).toMatchObject({ healthRatio: 0.7, damaged: true, status: true });
+    expect(selectCombatPoseAsset(damaged, entity.id, previous)).toBe(
+      "warden-shield-slam-impact-source"
+    );
     expect(
       deriveCombatPresentationState(
         damaged,

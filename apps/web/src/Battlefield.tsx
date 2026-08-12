@@ -557,7 +557,13 @@ export function selectCombatPoseAsset(
     previousSnapshot,
     entity.id
   );
-  if (dwarf && presentation?.damaged === true) return "warden-hit-source";
+  if (
+    dwarf &&
+    presentation?.damaged === true &&
+    entity.action.kind !== "basic_attack" &&
+    entity.action.kind !== "ability"
+  )
+    return "warden-hit-source";
   const authoredPhase =
     entity.action.phase === "windup" ||
     entity.action.phase === "committed" ||
