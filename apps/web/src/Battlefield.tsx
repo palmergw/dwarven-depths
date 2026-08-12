@@ -1735,6 +1735,7 @@ class PersistentBattlefieldScene {
           .setY(departure.originY + 28 * progress)
           .setTint(0xff5c4d);
       }
+      subject.mask?.geometryMask?.setPosition(0, subject.y - departure.originY);
       if (progress < 1) continue;
       this.destroyEntityObjects(id, departure.objects);
       this.departures.delete(id);
