@@ -42,6 +42,19 @@ const DEPARTURE_DURATION_MS = 720;
 const DAMAGE_SIGNAL_DURATION_MS = 280;
 const MAX_POOLED_EFFECTS = 64;
 const FIXTURE_ID = "scenarios/conformance/shuttergate-web-truth.json";
+const renderedInitialFeedbackSnapshots = new WeakSet<RenderSnapshot>();
+
+export function hasRenderedInitialFeedback(snapshot: RenderSnapshot): boolean {
+  return renderedInitialFeedbackSnapshots.has(snapshot);
+}
+
+export function markInitialFeedbackRendered(
+  snapshot: RenderSnapshot,
+  feedback: CombatFeedback | undefined
+): void {
+  if (feedback !== undefined && feedback.arrivals.length > 0)
+    renderedInitialFeedbackSnapshots.add(snapshot);
+}
 
 export function interpolationDistanceForFrame(
   deltaMilliseconds: number,
@@ -2762,6 +2775,10 @@ export function Battlefield({
           latestTerminalPresentationCompletedRef.current(terminalSnapshot)
       );
       rendererRef.current = renderer;
+      markInitialFeedbackRendered(
+        latestSnapshotRef.current,
+        latestFeedbackRef.current
+      );
     });
     return () => {
       cancelAnimationFrame(frame);
@@ -2772,7 +2789,10 @@ export function Battlefield({
 
   useEffect(() => {
     const previousSnapshot = previousSnapshotRef.current;
-    const nextFeedback = deriveCombatFeedback(previousSnapshot, snapshot);
+    const nextFeedback =
+      previousSnapshot === undefined && hasRenderedInitialFeedback(snapshot)
+        ? undefined
+        : deriveCombatFeedback(previousSnapshot, snapshot);
     const renderedFeedback =
       evidenceEffectAlpha !== undefined && nextFeedback === undefined
         ? latestFeedbackRef.current

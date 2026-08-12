@@ -30,7 +30,6 @@ export type CombatSoundCue =
   | "speed";
 
 const phaseOrder = { preparation: 0, running: 1, terminal: 2 } as const;
-const consumedInitialTransitionSnapshots = new WeakSet<RenderSnapshot>();
 
 function byId(left: RenderEntity, right: RenderEntity): number {
   return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
@@ -148,7 +147,6 @@ export function deriveCombatFeedback(
 ): CombatFeedback | undefined {
   if (previous === undefined) {
     if (current.schemaVersion !== 2) return undefined;
-    if (consumedInitialTransitionSnapshots.has(current)) return undefined;
     const arrivals = current.entities
       .filter((entity) =>
         current.entityTransitions.some(
@@ -158,7 +156,6 @@ export function deriveCombatFeedback(
       )
       .sort(byId);
     if (arrivals.length === 0) return undefined;
-    consumedInitialTransitionSnapshots.add(current);
     return {
       tick: current.tick,
       arrivals,

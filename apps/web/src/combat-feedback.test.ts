@@ -118,7 +118,7 @@ describe("combat presentation feedback", () => {
     expect(shouldAdvanceCombatFeedbackBaseline(resumed, skipped)).toBe(false);
   });
 
-  it("presents authored v2 deployment arrivals once across remounts", () => {
+  it("presents authored v2 deployment arrivals on the first mounted snapshot", () => {
     const entity = {
       id: "entity.dwarf.warden",
       nodeId: "node.gate",
@@ -162,7 +162,6 @@ describe("combat presentation feedback", () => {
       departures: [],
       terminal: false
     });
-    expect(deriveCombatFeedback(undefined, initial)).toBeUndefined();
   });
 
   it("derives bounded action, impact, damage, and status cues from consecutive authoritative ticks", () => {

@@ -22,8 +22,10 @@ import {
   deriveCombatPresentationState,
   deriveShieldSlamImpactIds,
   deriveSlingerProjectilePaths,
+  hasRenderedInitialFeedback,
   interpolationDistanceForFrame,
   locomotionCadenceOffset,
+  markInitialFeedbackRendered,
   renderedFactionForSourceKey,
   selectCombatPoseAsset,
   selectCombatPoseTreatment,
@@ -2978,6 +2980,53 @@ describe("authoritative web worker", () => {
     expect(locomotionCadenceOffset(90, 1, false, false)).toBe(0);
     expect(locomotionCadenceOffset(90, 1, true, true)).toBe(0);
     expect(locomotionCadenceOffset(-90, 1, true, false)).toBe(0);
+  });
+
+  it("consumes initial arrival feedback only after a renderer frame", () => {
+    const entity = {
+      id: "entity.dwarf.warden",
+      nodeId: "node.gate",
+      faction: "dwarf" as const,
+      visualId: "character.iron_warden",
+      archetype: "character" as const,
+      position: { nodeId: "node.gate", x: 0, y: 0 },
+      previousPosition: null,
+      currentHealth: 10,
+      maximumHealth: 10,
+      facing: "east" as const,
+      action: { kind: "idle" as const, phase: "idle" as const, abilityId: null },
+      targetEntityId: null,
+      statuses: [],
+      transition: "spawned" as const,
+      elite: false,
+      boss: false
+    };
+    const snapshot = {
+      schemaVersion: 2,
+      scenarioId: "scenario.deployment",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 1,
+      previousTick: null,
+      phase: "running",
+      nodes: [{ id: "node.gate", x: 0, y: 0 }],
+      connections: [],
+      entities: [entity],
+      entityTransitions: [{ entityId: entity.id, kind: "spawned", atTick: 1 }],
+      encounter: {
+        startedWaveIds: [],
+        activeWaveId: null,
+        pendingSpawnCount: 0,
+        livingHostileCount: 0,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    const feedback = deriveCombatFeedback(undefined, snapshot);
+    expect(hasRenderedInitialFeedback(snapshot)).toBe(false);
+    markInitialFeedbackRendered(snapshot, undefined);
+    expect(hasRenderedInitialFeedback(snapshot)).toBe(false);
+    markInitialFeedbackRendered(snapshot, feedback);
+    expect(hasRenderedInitialFeedback(snapshot)).toBe(true);
   });
 
   it("binds authored combat poses to authoritative snapshot-v2 action phases", () => {
