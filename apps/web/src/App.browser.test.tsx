@@ -3272,8 +3272,8 @@ describe("authoritative web worker", () => {
     expect(new Set(phaseTreatments.map(({ scaleX }) => scaleX)).size).toBe(4);
     expect(
       phaseTreatments.map(({ horizontalOffset }) => Math.abs(horizontalOffset))
-    ).toEqual([11, 18, 25, 0]);
-    expect(phaseTreatments[2]?.scaleX).toBeGreaterThanOrEqual(1.2);
+    ).toEqual([24, 38, 52, 0]);
+    expect(phaseTreatments[2]?.scaleX).toBeGreaterThanOrEqual(1.34);
     const earlyCommitment = deriveTemporalCombatTreatment(
       {
         ...hostile,

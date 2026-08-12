@@ -595,46 +595,46 @@ export function deriveTemporalCombatTreatment(
   const strength = (reduceMotion ? 0.22 : 1) * combatRoleStrength(entity);
   if (entity.action.kind === "moving" || entity.transition === "moving")
     return {
-      angleOffset: wave * 3.2 * strength,
-      horizontalOffset: wave * 2.8 * strength,
-      scaleX: 1 + wave * 0.025 * strength,
-      scaleY: 1 - wave * 0.04 * strength,
-      verticalOffset: -Math.abs(wave) * 4.6 * strength
+      angleOffset: wave * 5.5 * strength,
+      horizontalOffset: wave * 4.5 * strength,
+      scaleX: 1 + wave * 0.04 * strength,
+      scaleY: 1 - wave * 0.065 * strength,
+      verticalOffset: -Math.abs(wave) * 7.5 * strength
     };
   const phaseProgress = Math.min(1, elapsed / 180);
   const phaseEmphasis = Math.sin((phaseProgress * Math.PI) / 2);
   const treatment =
     entity.action.phase === "windup"
       ? {
-          angle: -18 * phaseEmphasis,
-          forward: -11 * phaseEmphasis,
-          x: 1 - 0.12 * phaseEmphasis,
-          y: 1 + 0.14 * phaseEmphasis,
-          lift: 4 * phaseEmphasis
+          angle: -30 * phaseEmphasis,
+          forward: -24 * phaseEmphasis,
+          x: 1 - 0.18 * phaseEmphasis,
+          y: 1 + 0.22 * phaseEmphasis,
+          lift: 8 * phaseEmphasis
         }
       : entity.action.phase === "committed"
         ? {
-            angle: 16 * phaseEmphasis,
-            forward: 18 * phaseEmphasis,
-            x: 1 + 0.16 * phaseEmphasis,
-            y: 1 - 0.13 * phaseEmphasis,
-            lift: -5 * phaseEmphasis
+            angle: 27 * phaseEmphasis,
+            forward: 38 * phaseEmphasis,
+            x: 1 + 0.27 * phaseEmphasis,
+            y: 1 - 0.2 * phaseEmphasis,
+            lift: -9 * phaseEmphasis
           }
         : entity.action.phase === "impact"
           ? {
-              angle: 24 * phaseEmphasis,
-              forward: 25 * phaseEmphasis,
-              x: 1 + 0.2 * phaseEmphasis,
-              y: 1 - 0.18 * phaseEmphasis,
-              lift: 7 * phaseEmphasis
+              angle: 38 * phaseEmphasis,
+              forward: 52 * phaseEmphasis,
+              x: 1 + 0.34 * phaseEmphasis,
+              y: 1 - 0.26 * phaseEmphasis,
+              lift: 12 * phaseEmphasis
             }
           : entity.action.phase === "recovery"
             ? {
-                angle: -14 * (1 - phaseProgress),
-                forward: -12 * (1 - phaseProgress),
-                x: 0.9 + 0.1 * phaseProgress,
-                y: 1.12 - 0.12 * phaseProgress,
-                lift: 3 * (1 - phaseProgress)
+                angle: -24 * (1 - phaseProgress),
+                forward: -22 * (1 - phaseProgress),
+                x: 0.82 + 0.18 * phaseProgress,
+                y: 1.2 - 0.2 * phaseProgress,
+                lift: 7 * (1 - phaseProgress)
               }
             : {
                 angle: wave * 0.7,
@@ -1695,6 +1695,7 @@ class PersistentBattlefieldScene {
   readonly actionEffects = new Map<string, Phaser.GameObjects.Graphics>();
   readonly abilityEffects = new Map<string, Phaser.GameObjects.Image>();
   readonly actionClocks = new Map<string, ActionClock>();
+  lastImpactEmphasisKey: string | undefined;
   readonly lighting: Phaser.GameObjects.Image;
   readonly terminalFrame: Phaser.GameObjects.Graphics;
   readonly terminalText: Phaser.GameObjects.Text;
@@ -1827,7 +1828,7 @@ class PersistentBattlefieldScene {
         );
         const damageRecoil =
           objects.damagedUntil > this.scene.time.now
-            ? Math.sin(damageProgress * Math.PI) * (reduceMotion ? 3 : 11)
+            ? Math.sin(damageProgress * Math.PI) * (reduceMotion ? 5 : 22)
             : 0;
         objects.subject
           .setAngle(objects.poseAngle + treatment.angleOffset)
@@ -1908,9 +1909,11 @@ class PersistentBattlefieldScene {
       const forwardX = x + facingSign * (24 + eased * 24);
       effect.clear().setAlpha(intensity);
       if (entity.action.phase === "windup") {
-        effect.lineStyle(6, color, 0.95);
+        effect.fillStyle(0x160805, 0.72);
+        effect.fillCircle(x - facingSign * 15, y + 8, hostile ? 42 : 50);
+        effect.lineStyle(10, color, 1);
         effect.beginPath();
-        effect.arc(x - facingSign * 8, y, hostile ? 31 : 38, 3.55, 5.85);
+        effect.arc(x - facingSign * 12, y, hostile ? 37 : 46, 3.4, 6.05);
         effect.strokePath();
         effect.fillStyle(color, 0.28);
         effect.fillTriangle(
@@ -1922,22 +1925,45 @@ class PersistentBattlefieldScene {
           y + 26
         );
       } else if (entity.action.phase === "committed") {
-        effect.lineStyle(12, color, 0.38);
-        effect.lineBetween(x - facingSign * 18, y + 12, forwardX, y - 16);
-        effect.lineStyle(5, 0xfff0b8, 1);
-        effect.lineBetween(x, y + 8, forwardX + facingSign * 10, y - 21);
-      } else if (entity.action.phase === "impact") {
         effect.fillStyle(color, 0.3);
-        effect.fillCircle(forwardX, y, hostile ? 43 : 53);
+        effect.fillTriangle(
+          x - facingSign * 34,
+          y + 29,
+          forwardX + facingSign * 27,
+          y - 28,
+          forwardX + facingSign * 13,
+          y + 22
+        );
+        effect.lineStyle(18, color, 0.5);
+        effect.lineBetween(x - facingSign * 26, y + 18, forwardX, y - 18);
         effect.lineStyle(7, 0xfff0b8, 1);
-        effect.strokeCircle(forwardX, y, hostile ? 32 : 42);
-        for (let index = 0; index < 8; index += 1) {
-          const angle = (Math.PI * index) / 4;
+        effect.lineBetween(
+          x - facingSign * 7,
+          y + 10,
+          forwardX + facingSign * 18,
+          y - 25
+        );
+      } else if (entity.action.phase === "impact") {
+        const targetObjects =
+          entity.targetEntityId === null
+            ? undefined
+            : this.entities.get(entity.targetEntityId);
+        const impactX = targetObjects?.pivotX ?? forwardX;
+        const impactY = (targetObjects?.pivotY ?? y + 24) - 27;
+        effect.fillStyle(0x190502, 0.78);
+        effect.fillCircle(impactX, impactY, hostile ? 50 : 66);
+        effect.fillStyle(color, 0.46);
+        effect.fillCircle(impactX, impactY, hostile ? 43 : 58);
+        effect.lineStyle(9, 0xfff4c7, 1);
+        effect.strokeCircle(impactX, impactY, hostile ? 34 : 48);
+        effect.lineStyle(7, color, 1);
+        for (let index = 0; index < 12; index += 1) {
+          const angle = (Math.PI * index) / 6;
           effect.lineBetween(
-            forwardX + Math.cos(angle) * 35,
-            y + Math.sin(angle) * 35,
-            forwardX + Math.cos(angle) * 60,
-            y + Math.sin(angle) * 60
+            impactX + Math.cos(angle) * 39,
+            impactY + Math.sin(angle) * 39,
+            impactX + Math.cos(angle) * (hostile ? 68 : 82),
+            impactY + Math.sin(angle) * (hostile ? 68 : 82)
           );
         }
       } else {
@@ -2131,6 +2157,23 @@ class PersistentBattlefieldScene {
             signature,
             startedAt: this.scene.time.now
           });
+      }
+      const impactEntity = snapshot.entities.find(
+        (entity) =>
+          entity.action.phase === "impact" &&
+          entity.action.kind !== "idle" &&
+          entity.action.kind !== "moving"
+      );
+      const impactEmphasisKey =
+        impactEntity === undefined
+          ? undefined
+          : `${snapshot.scenarioId}:${snapshot.tick}:${impactEntity.id}`;
+      if (
+        impactEmphasisKey !== undefined &&
+        impactEmphasisKey !== this.lastImpactEmphasisKey
+      ) {
+        this.lastImpactEmphasisKey = impactEmphasisKey;
+        if (!reduceMotion) this.scene.cameras.main.shake(120, 0.0055);
       }
     } else this.actionClocks.clear();
     const liveIds = new Set(orderedEntities.map(({ id }) => id));
