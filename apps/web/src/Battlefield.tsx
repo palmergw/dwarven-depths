@@ -2061,8 +2061,11 @@ class PersistentBattlefieldScene {
       index < this.effects.length;
       index += 1
     ) {
-      this.effects[index]?.clearMask(true);
-      this.effects[index]?.setVisible(false);
+      const effect = this.effects[index];
+      if (effect !== undefined) {
+        clearDepthVisibilityMask(effect);
+        effect.setVisible(false);
+      }
     }
     const active = this.effects.slice(0, this.activeEffects);
     if (active.length > 0 && !reduceMotion && evidenceEffectAlpha === undefined)
@@ -2352,12 +2355,13 @@ class PersistentBattlefieldScene {
     this.scene.tweens.killTweensOf(this.effects);
     for (const objects of this.entities.values()) {
       this.scene.tweens.killTweensOf([objects.ring, objects.subject]);
-      objects.signal.clearMask(true);
+      clearDepthVisibilityMask(objects.signal);
+      clearDepthVisibilityMask(objects.subject);
       objects.subject.setTexture("warden-runtime");
     }
     for (const [id, departure] of this.departures)
       this.destroyEntityObjects(id, departure.objects);
-    for (const effect of this.effects) effect.clearMask(true);
+    for (const effect of this.effects) clearDepthVisibilityMask(effect);
     for (const effect of this.projectileEffects.values()) effect.destroy();
     this.projectileEffects.clear();
     for (const effect of this.abilityEffects.values()) effect.destroy();
