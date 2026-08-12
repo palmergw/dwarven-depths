@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "issue": 316,
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [1440, 900],
+  "crop": [0, 0, 1440, 900],
+  "motion": "normal-motion",
+  "before": {
+    "sourceHead": "8d7be886382c931959d4b2c9eef028cf94b75096",
+    "video": "before-approved-baseline.webm",
+    "videoSha256": "266d1a92967dd1546f8c735f5c1c16feb87eece09e77cba7675115ded55440ba",
+    "sidecar": "before-approved-baseline.json",
+    "tick15WindupTimeMilliseconds": 2338
+  },
+  "after": {
+    "sourceHead": "755bf6d02a355652e1447a92ec306af9824050c1",
+    "video": "after-current-head.webm",
+    "videoSha256": "34e0cf1033ac3d8b2569db2c4172f174a002a1a76e245c471d18630497c48127",
+    "sidecar": "after-current-head.json",
+    "tick15WindupTimeMilliseconds": 2603
+  },
+  "comparison": {
+    "clip": "adjacent-ticks-2-140.webm",
+    "clipSha256": "703fca63720dec6c141c9db3ab77845a39b8590634affaf3447d9c4a89e81331",
+    "still": "adjacent-tick-15-windup.png",
+    "changedRegion": "shared tactical floor: authored combatant billboards and slinger projectile/impact effects only",
+    "motionInterval": "authoritative ticks 2 through 140",
+    "tick15FullFramePsnrAverageDb": 35.381851,
+    "tick15ChangedPixelRatio": 0.7381327160493827,
+    "tick15MeanAbsoluteChannelDelta": 0.006951149842653111
+  },
+  "decision": "Approve the role-weighted combat pose cadence and continuous slinger projectile treatment shown in the adjacent synchronized evidence."
+}
