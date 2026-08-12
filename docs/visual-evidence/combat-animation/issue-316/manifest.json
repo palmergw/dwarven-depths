@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "issue": 316,
-  "sourceHead": "84c91a505d3fedb1e96a6d8dde5bb8dd9d1642a2",
+  "sourceHead": "44c00dc1b1e22c3b6e2c871cf90e428bda13dd08",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [1440, 900],
-  "decision": "Approve the anatomy-stable authored combat frames replacing rigid whole-body transform animation.",
-  "changedRegion": "Iron Warden and hostile action silhouettes at the north guard post",
+  "decision": "Approve the authored Shield Slam cycle, authored basic-attack frames, and restrained warm combat effects replacing rigid whole-body transform animation.",
+  "changedRegion": "Iron Warden and hostile anticipation/contact/recovery silhouettes and restrained effects at the north guard post",
   "normalPlayIntervalSeconds": [0, 7],
   "actionComparisonIntervalSeconds": [0, 2.48],
   "beforeActionSourceIntervalSeconds": [2.15, 4.63],
@@ -22,27 +22,27 @@
     "attackPhases": ["committed", "recovery", "windup"]
   },
   "after": {
-    "head": "84c91a505d3fedb1e96a6d8dde5bb8dd9d1642a2",
+    "head": "44c00dc1b1e22c3b6e2c871cf90e428bda13dd08",
     "video": "after-authored-frames.webm",
-    "videoSha256": "5e2f72f620c089cd8cc95562692d38ad6871d3832934a0a98e1e1adc928c6531",
+    "videoSha256": "a544d4905011f7b24f9d5175c1c8d04e4814f8feda2084cc1c66947a2abc6595",
     "sidecar": "after-authored-frames.json",
-    "sidecarSha256": "47d4154af99e1026c38adb54cc66fb4cac6f94ad4e066454325f54cc3b567d91",
+    "sidecarSha256": "73d2df1b105b1e2302d33bcde16b729fac834642c35370a23b28bd4143a927f6",
     "startingTick": 2,
-    "endingTick": 167,
+    "endingTick": 169,
     "attackPhases": ["committed", "recovery", "windup"]
   },
   "comparisons": [
     {
       "file": "adjacent-action-crop.webm",
-      "sha256": "c16b125d617e6b9cd864cc1d727f9aa9744c7b7b449c8bbfd5a2aeab50b21d94"
+      "sha256": "c89cb9bea080a707d3fb6f2be75f672fed826d26e3813e40667012a7c69dc0d6"
     },
     {
       "file": "adjacent-full-frame.webm",
-      "sha256": "2e97caf539cc73f0f7ebc69b64ec87979ff25c9322050498c60411375ee0c5ab"
+      "sha256": "292bb4aa68c3e2af39ed02954255f87fafff53f764d4543af100d28999e1d9de"
     },
     {
       "file": "adjacent-action-still.png",
-      "sha256": "b5ca10a277bf8df9c708ecb2569a08a130ea8931095f2809b6d2da06610bf959"
+      "sha256": "ab7b9ec3054d4cacb63453c2d08a17a95acce1127af830ca50e7d1c209ea1902"
     }
   ],
   "integrity": {
@@ -50,13 +50,12 @@
     "gameplayAuthorityUnchanged": true,
     "greenMissingTextureFrames": 0,
     "cyanDebugOverlays": 0,
-    "internalNormalScaleReview": "passed",
+    "internalNormalScaleReview": "passed: full 1440x900 clip reviewed for planted silhouettes, warm restrained effects, ground contact, and dense-combat legibility",
     "actionCropPixelDiff": {
-      "frames": 63,
-      "meanMse": 18.364920634920637,
-      "minimumMse": 4.12,
-      "maximumMse": 36.71,
-      "averagePsnrDb": 35.490939
+      "comparison": "synchronized 380x320 before/after action crops",
+      "averagePsnrDb": 32.883754,
+      "minimumPsnrDb": 29.740506,
+      "maximumPsnrDb": 40.09912
     }
   }
 }
