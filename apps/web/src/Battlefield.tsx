@@ -1502,10 +1502,18 @@ function addDepthTestedBillboard(
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
   if (existing !== undefined) existing.setTexture(sourceKey);
+  const outputKey = `subject-depth-${entity.id}-${sourceKey}`;
+  for (const staleKey of scene.textures
+    .getTextureKeys()
+    .filter(
+      (key) =>
+        key.startsWith(`subject-depth-${entity.id}-`) && key !== outputKey
+    ))
+    scene.textures.remove(staleKey);
   const texture = createDepthClippedPresentationTexture(
     scene,
     sourceKey,
-    `subject-depth-${entity.id}`,
+    outputKey,
     width,
     height,
     {
@@ -1709,7 +1717,12 @@ class PersistentBattlefieldScene {
     objects.signal.destroy();
     objects.subject.setTexture("warden-runtime");
     objects.subject.destroy();
-    for (const textureKey of [`ring-depth-${id}`, `subject-depth-${id}`])
+    for (const textureKey of this.scene.textures
+      .getTextureKeys()
+      .filter(
+        (key) =>
+          key === `ring-depth-${id}` || key.startsWith(`subject-depth-${id}-`)
+      ))
       if (this.scene.textures.exists(textureKey))
         this.scene.textures.remove(textureKey);
   }
