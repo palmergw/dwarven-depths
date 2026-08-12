@@ -3093,7 +3093,7 @@ describe("authoritative web worker", () => {
           tick: 5,
           previousTick: 4,
           entities: [
-            { ...entity, action: { ...entity.action, phase: "recovery" } }
+            { ...entity, action: { ...entity.action, phase: "recoil" } }
           ]
         },
         entity.id,
