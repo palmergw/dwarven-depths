@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
   "issue": 316,
-  "sourceHead": "44c00dc1b1e22c3b6e2c871cf90e428bda13dd08",
+  "sourceHead": "674edabb60228ae948c0832f74c250e08fd998d9",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [1440, 900],
-  "decision": "Approve the authored Shield Slam cycle, authored basic-attack frames, and restrained warm combat effects replacing rigid whole-body transform animation.",
-  "changedRegion": "Iron Warden and hostile anticipation/contact/recovery silhouettes and restrained effects at the north guard post",
+  "decision": "Approve the strengthened authored Shield Slam silhouettes replacing the rejected subtle cycle while preserving the authored basic-attack frames and restrained warm effects.",
+  "changedRegion": "Iron Warden Shield Slam anticipation, commitment, contact, recoil, and recovery silhouette at the north guard post",
   "normalPlayIntervalSeconds": [0, 7],
   "actionComparisonIntervalSeconds": [0, 2.48],
   "beforeActionSourceIntervalSeconds": [2.15, 4.63],
-  "afterActionSourceIntervalSeconds": [3.95, 6.43],
+  "afterActionSourceIntervalSeconds": [2.15, 4.63],
   "actionCrop": [430, 230, 620, 390],
   "before": {
     "head": "8d7be886382c931959d4b2c9eef028cf94b75096",
@@ -22,11 +22,11 @@
     "attackPhases": ["committed", "recovery", "windup"]
   },
   "after": {
-    "head": "44c00dc1b1e22c3b6e2c871cf90e428bda13dd08",
+    "head": "674edabb60228ae948c0832f74c250e08fd998d9",
     "video": "after-authored-frames.webm",
-    "videoSha256": "a544d4905011f7b24f9d5175c1c8d04e4814f8feda2084cc1c66947a2abc6595",
+    "videoSha256": "af08bcfa8b456769f02b21c8abfb66044e88d5edd578a27afcd7e896bbdc1ab1",
     "sidecar": "after-authored-frames.json",
-    "sidecarSha256": "a4778ad01e4cbc8037ac9d16ae482c3967b59e7782f450f768d547edbc8bfba4",
+    "sidecarSha256": "f00d3ad78644cdba93cd19519bb24f52fcaa4a4cf877b53c2db5bcc97e141a85",
     "startingTick": 2,
     "endingTick": 169,
     "attackPhases": ["committed", "recovery", "windup"]
@@ -34,15 +34,15 @@
   "comparisons": [
     {
       "file": "adjacent-action-crop.webm",
-      "sha256": "c89cb9bea080a707d3fb6f2be75f672fed826d26e3813e40667012a7c69dc0d6"
+      "sha256": "92a9e27427aebd3ba045de56c2f19c43062552b3ccdb45249b3f470055d58df1"
     },
     {
       "file": "adjacent-full-frame.webm",
-      "sha256": "292bb4aa68c3e2af39ed02954255f87fafff53f764d4543af100d28999e1d9de"
+      "sha256": "d998eabe354e13ef5fe996259d8f9c4ad8fa7edb76fbfc464d0d30f475c986ad"
     },
     {
       "file": "adjacent-action-still.png",
-      "sha256": "ab7b9ec3054d4cacb63453c2d08a17a95acce1127af830ca50e7d1c209ea1902"
+      "sha256": "ba3447c22c0cb0182c448801ac0eb6d65fa85dfee422cadcf47b092680ed5eb9"
     }
   ],
   "integrity": {
@@ -50,12 +50,12 @@
     "gameplayAuthorityUnchanged": true,
     "greenMissingTextureFrames": 0,
     "cyanDebugOverlays": 0,
-    "internalNormalScaleReview": "passed: full 1440x900 clip reviewed for planted silhouettes, warm restrained effects, ground contact, and dense-combat legibility",
+    "internalNormalScaleReview": "passed: complete 1440x900 normal-play clip and synchronized action crop reviewed for planted authored silhouettes, warm restrained effects, ground contact, and combat legibility",
     "actionCropPixelDiff": {
       "comparison": "synchronized 380x320 before/after action crops",
-      "averagePsnrDb": 32.883754,
-      "minimumPsnrDb": 29.740506,
-      "maximumPsnrDb": 40.09912
+      "averagePsnrDb": 33.642929,
+      "minimumPsnrDb": 30.23494,
+      "maximumPsnrDb": 40.764511
     }
   }
 }
