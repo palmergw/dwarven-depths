@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "issue": 316,
+  "sourceHead": "6f845796f3d4b6b1ed8a51d39bb9f67fedde2189",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [1440, 900],
+  "decision": "Approve the anatomy-stable authored combat frames replacing rigid whole-body transform animation.",
+  "changedRegion": "Iron Warden and hostile action silhouettes at the north guard post",
+  "normalPlayIntervalSeconds": [0, 6.9],
+  "actionCropIntervalSeconds": [3.3, 6.3],
+  "actionCrop": [430, 230, 620, 390],
+  "before": {
+    "head": "6cbc1d66ae40a0addc9efebf551cfa9b6c914628",
+    "video": "before-approved-baseline.webm",
+    "videoSha256": "266d1a92967dd1546f8c735f5c1c16feb87eece09e77cba7675115ded55440ba",
+    "sidecar": "before-approved-baseline.json",
+    "sidecarSha256": "258c6bfb684030a7ef98447e87a3b3705700a7ec8ec086c09320528e4243b1fa"
+  },
+  "after": {
+    "head": "6f845796f3d4b6b1ed8a51d39bb9f67fedde2189",
+    "video": "after-authored-frames.webm",
+    "videoSha256": "c61de22a12f47fd6eff5359218e21bbd4d961421275595d917114aa10800b0a0",
+    "sidecar": "after-authored-frames.json",
+    "sidecarSha256": "bc3b4f8d4ccde865c420167df425d80d54e3a1d2bcd1024a81d635d46657f399",
+    "startingTick": 2,
+    "endingTick": 170,
+    "attackPhases": ["committed", "recovery", "windup"]
+  },
+  "comparisons": [
+    {
+      "file": "adjacent-action-crop.webm",
+      "sha256": "66d2479ef14a45da8eb5f70e2ca0e7d0c0006b6a11df4ce6d53763d5293cbcfb"
+    },
+    {
+      "file": "adjacent-full-frame.webm",
+      "sha256": "c83160b913fb6d126c5f307e2ac0fa08343a1d076eb1a2ef03437b99974ea55f"
+    },
+    {
+      "file": "adjacent-action-still.png",
+      "sha256": "a6737ae9c772465e0ea9e3a0fcc023142e5ecee562aec9f6b766213000fcb2b6"
+    }
+  ],
+  "integrity": {
+    "fixedUnitScalePreserved": true,
+    "gameplayAuthorityUnchanged": true,
+    "greenMissingTextureFrames": 0,
+    "cyanDebugOverlays": 0,
+    "internalNormalScaleReview": "passed"
+  }
+}

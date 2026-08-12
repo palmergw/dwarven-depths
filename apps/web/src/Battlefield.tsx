@@ -1486,7 +1486,7 @@ function addDepthTestedBillboard(
   height: number,
   pivotX: number,
   pivotY: number,
-  staticDepth: StaticSceneDepth,
+  _staticDepth: StaticSceneDepth,
   existing?: Phaser.GameObjects.Image
 ): Phaser.GameObjects.Image {
   if (entity.cameraDepth === undefined) {
