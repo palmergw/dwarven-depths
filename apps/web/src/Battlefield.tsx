@@ -1503,13 +1503,6 @@ function addDepthTestedBillboard(
   const frameTop = Math.round(entity.y) - pivotY;
   if (existing !== undefined) existing.setTexture(sourceKey);
   const outputKey = `subject-depth-${entity.id}-${sourceKey}`;
-  for (const staleKey of scene.textures
-    .getTextureKeys()
-    .filter(
-      (key) =>
-        key.startsWith(`subject-depth-${entity.id}-`) && key !== outputKey
-    ))
-    scene.textures.remove(staleKey);
   const texture = createDepthClippedPresentationTexture(
     scene,
     sourceKey,
