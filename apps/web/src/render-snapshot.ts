@@ -623,6 +623,11 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
   )
     return undefined;
   const entityIds = new Set(entities.map((entity) => entity.id));
+  const enemyEntityIds = new Set(
+    entities
+      .filter((entity) => entity.faction === "enemy")
+      .map(({ id }) => id)
+  );
   const departedEntityIds = new Set(
     transitions
       .filter(
@@ -647,7 +652,7 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
           entity.action.abilityId !== "ability.iron_warden.shield_slam" ||
           entity.action.phase !== "impact" ||
           impactTargetEntityIds.some(
-            (id) => !entityIds.has(id) && !departedEntityIds.has(id)
+            (id) => !enemyEntityIds.has(id) && !departedEntityIds.has(id)
           ))
       );
     }) ||

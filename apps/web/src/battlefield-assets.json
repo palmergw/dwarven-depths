@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "manifest.web.shuttergate_battlefield",
   "budgetBytes": 4718592,
-  "totalBytes": 2714799,
+  "totalBytes": 2908580,
   "layerOrder": [
     "terrain",
     "ground-foreground",
@@ -71,12 +71,92 @@
       "sha256": "1cafe2fd1603e839e9528e484d35888f40fd8779bf0705f236c70068fffd2226"
     },
     {
+      "key": "warden-basic-attack-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-windup.png",
+      "bytes": 7345,
+      "sha256": "c385d43ec7eef7daccfcc5729798170852720659424656a9d19c89a2a23431c7"
+    },
+    {
+      "key": "warden-basic-attack-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-committed.png",
+      "bytes": 9646,
+      "sha256": "317828d9570257c50241151cc4f9c06f1065e0216f1e0521e375eb45195f0ff8"
+    },
+    {
+      "key": "warden-basic-attack-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-impact.png",
+      "bytes": 8814,
+      "sha256": "c1e504197c306eedaedc2596caa92a74a75032d5f90d67ce34671a480d92301e"
+    },
+    {
+      "key": "warden-basic-attack-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-recoil.png",
+      "bytes": 7877,
+      "sha256": "9497bd2cb018eb3f0610410c875cbbc207daa8b7a2c3ba41967db76648c88c05"
+    },
+    {
+      "key": "warden-basic-attack-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-recovery.png",
+      "bytes": 8806,
+      "sha256": "d47b3c3a42b481e41ff4889dd8df944820b36cedd88bc284f031960f608e9336"
+    },
+    {
       "key": "warden-shield-slam-source",
       "kind": "image",
       "layer": "world-entities",
       "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam.png",
       "bytes": 11199,
       "sha256": "e2fc189c09f145857d5ff28b49966aa8d7d504c227d9cf0e3d6624fa1fd9511d"
+    },
+    {
+      "key": "warden-shield-slam-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam-windup.png",
+      "bytes": 9071,
+      "sha256": "5f480442b12d9ff0d55d8a4110863a357417557bda5132ce7999005e8a52c879"
+    },
+    {
+      "key": "warden-shield-slam-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam-committed.png",
+      "bytes": 10304,
+      "sha256": "3eeb1a8c84695089753d305822288761c7fbad571581257215e5da00752f6b97"
+    },
+    {
+      "key": "warden-shield-slam-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam-impact.png",
+      "bytes": 8149,
+      "sha256": "d3c1e11743ba0273fcc0512fc57977e5f295066fce4ed24c87bc6058d1ff4007"
+    },
+    {
+      "key": "warden-shield-slam-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam-recoil.png",
+      "bytes": 7134,
+      "sha256": "faa71d4487a425f4b878206e26c6724d1f20b81ffc83c980bef69cae3274e39b"
+    },
+    {
+      "key": "warden-shield-slam-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/iron-warden-shield-slam-recovery.png",
+      "bytes": 8800,
+      "sha256": "1409b1dc692481ba56e7a88f8db19d2d0e5adea068cb37739cefae66b8623bf0"
     },
     {
       "key": "warden-hit-source",
@@ -293,6 +373,166 @@
       "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-downed.png",
       "bytes": 5127,
       "sha256": "decb479fbbe35d9903778c3aaafb6ef016c2925d3ab2ca485c0eeee89f713f42"
+    },
+    {
+      "key": "raider-attack-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack-windup.png",
+      "bytes": 6620,
+      "sha256": "f6b00b761ee902c469d38fc71dec2afcd8e93e635d2c6022c016cfeddfa1be1a"
+    },
+    {
+      "key": "raider-attack-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack-committed.png",
+      "bytes": 4366,
+      "sha256": "a35e67528adeac96251c62253390b51002e7e8764ff67c59ad057e2a000ab580"
+    },
+    {
+      "key": "raider-attack-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack-impact.png",
+      "bytes": 5050,
+      "sha256": "5d3971f7b4b801de5c76c97ad9f422afdf90db97637ca9800babb391c890387e"
+    },
+    {
+      "key": "raider-attack-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack-recoil.png",
+      "bytes": 4424,
+      "sha256": "6afcf4d55ba8fbdefa266e06e3e36979ff21c679d8326b75dcb93b967ef63b34"
+    },
+    {
+      "key": "raider-attack-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-cutter-attack-recovery.png",
+      "bytes": 4907,
+      "sha256": "c9560db4ba7da9af4d9ec45bd6adf7d2c7b92cf3b6d56395490e0286ef7aed05"
+    },
+    {
+      "key": "slinger-attack-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-windup.png",
+      "bytes": 3004,
+      "sha256": "f763c22b06a6aa5014f54bc9db35af5a31bb3720808e5cc7bd8b75762501e2d8"
+    },
+    {
+      "key": "slinger-attack-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-committed.png",
+      "bytes": 4122,
+      "sha256": "4052093002c86e53abe9033ab00851eeb72c99e4cb8f26d50cb34898ea7ab081"
+    },
+    {
+      "key": "slinger-attack-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-impact.png",
+      "bytes": 3800,
+      "sha256": "33e22373c472263e1bff906bea9c189611ee837d217d1ae2998837b2bf50917c"
+    },
+    {
+      "key": "slinger-attack-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-recoil.png",
+      "bytes": 4166,
+      "sha256": "e833a2d27d8613622585693f7dfeadd4b90f833a0032aaf5344603c4c491c514"
+    },
+    {
+      "key": "slinger-attack-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-recovery.png",
+      "bytes": 4031,
+      "sha256": "77d300a56a90ed235494180321af0a15e7c951f58c2f1500c85572937646a074"
+    },
+    {
+      "key": "bulwark-attack-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-bulwark-attack-windup.png",
+      "bytes": 4406,
+      "sha256": "1c976b9f308175dc3701bdc35433384a756f2fb3755878622c964cf1a919cb11"
+    },
+    {
+      "key": "bulwark-attack-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-bulwark-attack-committed.png",
+      "bytes": 5009,
+      "sha256": "73f27339d51bd5c6f10887d024ad52568d529f06022f39298aeb999b2698dbc3"
+    },
+    {
+      "key": "bulwark-attack-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-bulwark-attack-impact.png",
+      "bytes": 5424,
+      "sha256": "97180324127f960e7cb4ee7b44ea2a107e3cfe22661a40672e4b8007cc8590a2"
+    },
+    {
+      "key": "bulwark-attack-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-bulwark-attack-recoil.png",
+      "bytes": 5245,
+      "sha256": "3e50389d116435033f92e5fabdf0b174e004ff1f1b450b80cf342fc8888ef146"
+    },
+    {
+      "key": "bulwark-attack-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-bulwark-attack-recovery.png",
+      "bytes": 4980,
+      "sha256": "4630a6def8677b6c8b06b6ca80be543b7a45f4e3a94c09ef26ca9e216d41e8df"
+    },
+    {
+      "key": "captain-attack-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-windup.png",
+      "bytes": 7998,
+      "sha256": "5f6100504e234aa07a24bca8b619eda437430370fbea9d555f057e96b2f0bf87"
+    },
+    {
+      "key": "captain-attack-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-committed.png",
+      "bytes": 7577,
+      "sha256": "29dd4aa791b3bb5876deefbc5584a721ebc92bca5a6324aafaa56c2e690ab8ff"
+    },
+    {
+      "key": "captain-attack-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-impact.png",
+      "bytes": 7166,
+      "sha256": "5a4abe008e81209ad2e71601615d5c724b999e0ee87508efd50622ae9146beea"
+    },
+    {
+      "key": "captain-attack-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-recoil.png",
+      "bytes": 7850,
+      "sha256": "84772a08245f51f81718ed4ef6be54ec828a0d66e6c9a39bab8982b956c5d908"
+    },
+    {
+      "key": "captain-attack-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-recovery.png",
+      "bytes": 7690,
+      "sha256": "8d45e835d1706d4c8c4811eaa145e1b5f4dc8a5ce0a2939385b0c512fa5c54f6"
     },
     {
       "key": "warm-light-overlay",
