@@ -19,6 +19,11 @@ export const BATTLEFIELD_RUNTIME_ASSET_KEYS = [
   "entrance-route-foreground",
   "warden-source",
   "warden-basic-attack-source",
+  "warden-basic-attack-windup-source",
+  "warden-basic-attack-committed-source",
+  "warden-basic-attack-impact-source",
+  "warden-basic-attack-recoil-source",
+  "warden-basic-attack-recovery-source",
   "warden-shield-slam-source",
   "warden-hit-source",
   "warden-guard-source",
@@ -47,6 +52,11 @@ export const BATTLEFIELD_RUNTIME_ASSET_KEYS = [
   "captain-west-source",
   "captain-attack-source",
   "captain-downed-source",
+  ...(["raider", "slinger", "bulwark", "captain"] as const).flatMap((role) =>
+    (["windup", "committed", "impact", "recoil", "recovery"] as const).map(
+      (phase) => `${role}-attack-${phase}-source`
+    )
+  ),
   "warm-light-overlay",
   "hostile-faction-ring",
   "shield-slam-impact",
