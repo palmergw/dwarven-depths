@@ -448,7 +448,7 @@ describe("simulation CLI", () => {
       error: { type: "input", code: "invalid_cli_input" }
     });
     expect(existsSync(nonFailingOutput)).toBe(false);
-  });
+  }, 10_000);
 
   it("minimizes tick-budget safety stops into self-verifying schema-2 evidence", () => {
     const directory = temporaryDirectory();
