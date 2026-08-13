@@ -1796,14 +1796,14 @@ describe("simulation CLI", () => {
       comparison: {
         baselineAttemptNumber: 1,
         upgradedAttemptNumber: 3,
-        terminalTickDelta: 2667,
-        defeatedEnemyDelta: 13,
-        observation: "terminal_result_changed"
+        terminalTickDelta: 2400,
+        defeatedEnemyDelta: 12,
+        observation: "deeper_wave_reached"
       }
     });
     expect(JSON.parse(first.stdout)).toMatchObject({
       calibrationReportChecksum:
-        "596e800356cb70b746e66cb468e00ac0016dc4ebbf9c3cd8a7b3394ca1bb693c"
+        "0b467f42ab6f9e13a84b8dc7c41249f892e3d7a8f48ffc5ea87222efa4971375"
     });
 
     const replaced = runCli(
@@ -1844,13 +1844,13 @@ describe("simulation CLI", () => {
     expect(JSON.parse(readFileSync(manifestPath, "utf8"))).toMatchObject({
       schemaVersion: 2,
       calibrationReportChecksum:
-        "596e800356cb70b746e66cb468e00ac0016dc4ebbf9c3cd8a7b3394ca1bb693c"
+        "0b467f42ab6f9e13a84b8dc7c41249f892e3d7a8f48ffc5ea87222efa4971375"
     });
     expect(readFileSync(calibrationPath, "utf8")).toBe(calibrationText);
 
     const originalManifestText = readFileSync(manifestPath, "utf8");
     const forgedCalibration = JSON.parse(calibrationText);
-    forgedCalibration.comparison.terminalTickDelta = 2_668;
+    forgedCalibration.comparison.terminalTickDelta = 2_401;
     writeFileSync(
       calibrationPath,
       `${JSON.stringify(forgedCalibration, null, 2)}\n`
@@ -1874,7 +1874,7 @@ describe("simulation CLI", () => {
       ).status
     ).toBe(3);
     expect(readFileSync(calibrationPath, "utf8")).toContain(
-      '"terminalTickDelta": 2668'
+      '"terminalTickDelta": 2401'
     );
     writeFileSync(calibrationPath, calibrationText);
     writeFileSync(manifestPath, originalManifestText);
