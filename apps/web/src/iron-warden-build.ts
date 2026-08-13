@@ -1,6 +1,5 @@
 import type { StableId } from "@dwarven-depths/contracts";
 import {
-  deriveCharacterSkillModifiers,
   ironWardenSkillTree,
   type ProfileState,
   purchasedUpgradeCatalog
@@ -31,27 +30,29 @@ function add(left: number, right: number, description: string): number {
 export function deriveIronWardenBuildSummary(
   profile: ProfileState
 ): IronWardenBuildSummary {
-  const authoredProfile = {
-    ...profile,
-    purchasedUpgrades: profile.purchasedUpgrades.filter((purchase) =>
-      purchasedUpgradeCatalog.upgrades.some(
-        (upgrade) => upgrade.upgradeId === purchase.upgradeId
-      )
-    ),
-    selectedSkillNodes: profile.selectedSkillNodes.filter(
-      (selection) =>
-        selection.characterId !== ironWardenSkillTree.characterId ||
-        ironWardenSkillTree.nodes.some(
-          (node) => node.nodeId === selection.nodeId
-        )
-    )
+  const totals = {
+    maximumHealthAdd: 0,
+    attackDamageAdd: 0,
+    attackRangeAdd: 0,
+    futureCooldownReductionTicks: 0
   };
-  let purchasedMaximumHealthAdd = 0;
-  let purchasedAttackDamageAdd = 0;
-  let purchasedAttackRangeAdd = 0;
-  let purchasedCooldownReductionTicks = 0;
-  const purchasedSourceIds: StableId[] = [];
-  for (const purchase of authoredProfile.purchasedUpgrades) {
+  const sourceIds: StableId[] = [];
+  const applyEffects = (
+    effects: (typeof ironWardenSkillTree.nodes)[number]["effects"]
+  ) => {
+    for (const effect of effects) {
+      const field =
+        effect.kind === "maximum_health_add"
+          ? "maximumHealthAdd"
+          : effect.kind === "attack_damage_add"
+            ? "attackDamageAdd"
+            : effect.kind === "attack_range_add"
+              ? "attackRangeAdd"
+              : "futureCooldownReductionTicks";
+      totals[field] = add(totals[field], effect.value, field);
+    }
+  };
+  for (const purchase of profile.purchasedUpgrades) {
     const definition = purchasedUpgradeCatalog.upgrades.find(
       (upgrade) => upgrade.upgradeId === purchase.upgradeId
     );
@@ -64,70 +65,25 @@ export function deriveIronWardenBuildSummary(
       throw new RangeError(
         `purchased upgrade rank exceeds authored maximum (${purchase.upgradeId})`
       );
-    for (let rankIndex = 0; rankIndex < purchase.rank; rankIndex += 1) {
-      const effects = definition.passiveEffectsByRank[rankIndex];
-      if (effects === undefined)
-        throw new RangeError(
-          `purchased upgrade rank has no authored passive effects (${purchase.upgradeId})`
-        );
-      for (const effect of effects) {
-        if (effect.kind === "maximum_health_add")
-          purchasedMaximumHealthAdd = add(
-            purchasedMaximumHealthAdd,
-            effect.value,
-            "purchased maximum health"
-          );
-        else if (effect.kind === "attack_damage_add")
-          purchasedAttackDamageAdd = add(
-            purchasedAttackDamageAdd,
-            effect.value,
-            "purchased attack damage"
-          );
-        else if (effect.kind === "attack_range_add")
-          purchasedAttackRangeAdd = add(
-            purchasedAttackRangeAdd,
-            effect.value,
-            "purchased attack range"
-          );
-        else
-          purchasedCooldownReductionTicks = add(
-            purchasedCooldownReductionTicks,
-            effect.value,
-            "purchased cooldown reduction"
-          );
-      }
-    }
-    purchasedSourceIds.push(purchase.upgradeId);
+    for (const effects of definition.passiveEffectsByRank.slice(
+      0,
+      purchase.rank
+    ))
+      applyEffects(effects);
+    sourceIds.push(purchase.upgradeId);
   }
-  const skills = deriveCharacterSkillModifiers({
-    schemaVersion: 1,
-    profile: authoredProfile,
-    tree: ironWardenSkillTree
-  });
+  for (const selection of profile.selectedSkillNodes) {
+    if (selection.characterId !== ironWardenSkillTree.characterId) continue;
+    const node = ironWardenSkillTree.nodes.find(
+      (candidate) => candidate.nodeId === selection.nodeId
+    );
+    if (node === undefined) continue;
+    applyEffects(node.effects);
+    sourceIds.push(selection.nodeId);
+  }
   return Object.freeze({
-    maximumHealthAdd: add(
-      purchasedMaximumHealthAdd,
-      skills.maximumHealthAdd,
-      "maximum health"
-    ),
-    attackDamageAdd: add(
-      purchasedAttackDamageAdd,
-      skills.attackDamageAdd,
-      "attack damage"
-    ),
-    attackRangeAdd: add(
-      purchasedAttackRangeAdd,
-      skills.attackRangeAdd,
-      "attack range"
-    ),
-    futureCooldownReductionTicks: add(
-      purchasedCooldownReductionTicks,
-      skills.futureCooldownReductionTicks,
-      "cooldown reduction"
-    ),
-    sourceIds: Object.freeze(
-      [...purchasedSourceIds, ...skills.sourceNodeIds].sort()
-    )
+    ...totals,
+    sourceIds: Object.freeze(sourceIds.sort())
   });
 }
 
