@@ -61,6 +61,24 @@ describe("Iron Warden build summary", () => {
     expect(profile).toEqual(before);
   });
 
+  it("rejects an over-ranked purchase instead of displaying clamped totals", () => {
+    const profile = {
+      ...createInitialProfile(characterId),
+      purchasedUpgrades: [
+        {
+          schemaVersion: 1 as const,
+          upgradeId: "upgrade.ability.shield_slam" as StableId,
+          rank: 3,
+          forgeOreSpent: 60
+        }
+      ]
+    };
+
+    expect(() => deriveIronWardenBuildSummary(profile)).toThrow(
+      "purchased upgrade rank exceeds authored maximum"
+    );
+  });
+
   it("combines purchased and selected effects in canonical source order", () => {
     const purchased = purchaseUpgradeRank({
       schemaVersion: 1,
