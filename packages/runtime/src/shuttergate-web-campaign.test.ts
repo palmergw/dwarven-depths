@@ -72,7 +72,7 @@ describe("Shuttergate web campaign authority", () => {
     });
     expect(state.seed).toBe("3");
     expect(state.battlefield?.dwarfCombatants[0]).toMatchObject({
-      maximumHealth: 1000,
+      maximumHealth: 840,
       basicAttack: { damage: 20, range: 6 }
     });
     expect(Object.isFrozen(state)).toBe(true);
@@ -183,7 +183,7 @@ describe("Shuttergate web campaign authority", () => {
     expect(result.terminalResult).toBe("victory");
     expect(
       result.finalState.battlefield?.dwarfCombatants[0]?.maximumHealth
-    ).toBe(1000);
+    ).toBe(840);
     await expect(
       verifyReplay(
         createReplayDefinition(result, replayScenario, content),

@@ -220,12 +220,10 @@ function requireCase(
     `${label} build`
   );
   if (
-    (buildId === "build.profile.new_campaign.v1" &&
-      terminalResult !== "defeat") ||
-    (buildId === "build.warden.shield_slam_rank_1.v1" &&
-      terminalResult !== "victory")
+    buildId === "build.profile.new_campaign.v1" &&
+    terminalResult !== "defeat"
   )
-    throw new RangeError(`${label} build and terminal result contradict`);
+    throw new RangeError(`${label} baseline build must end in defeat`);
   if (
     terminalResult === "victory" &&
     (deepestStartedWaveId !== "wave.shuttergate_5" ||

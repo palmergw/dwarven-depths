@@ -84,7 +84,7 @@ describe("Shuttergate Level 1 balance matrix", () => {
     expect(Object.isFrozen(matrix.cases[0]?.ranges)).toBe(true);
   }, 360_000);
 
-  it("characterizes the pre-tuning upgrade cliff and policy-insensitive outcomes", async () => {
+  it("locks the calibrated progression and tactical victory routes", async () => {
     const matrix = requireShuttergateLevel1BalanceMatrix(matrixInput);
     const content = await compileContent(shuttergateInput);
     const evidence = await Promise.all(
@@ -111,27 +111,33 @@ describe("Shuttergate Level 1 balance matrix", () => {
       unupgraded.every(({ terminalResult }) => terminalResult === "defeat")
     ).toBe(true);
     expect(
-      upgraded.every(({ terminalResult }) => terminalResult === "victory")
+      unupgraded.every(
+        ({ deepestStartedWaveId }) =>
+          deepestStartedWaveId === "wave.shuttergate_3"
+      )
     ).toBe(true);
-    for (const placementPointId of [
-      "placement.shuttergate_north_guard",
-      "placement.shuttergate_keep_guard"
-    ]) {
-      expect(
-        new Set(
-          unupgraded
-            .filter((entry) => entry.placementPointId === placementPointId)
-            .map(outcomeSignature)
+    expect(
+      upgraded.every(
+        ({ deepestStartedWaveId }) =>
+          deepestStartedWaveId === "wave.shuttergate_5"
+      )
+    ).toBe(true);
+    expect(
+      upgraded
+        .filter(
+          ({ placementPointId }) =>
+            placementPointId === "placement.shuttergate_keep_guard"
         )
-      ).toHaveProperty("size", 1);
-      expect(
-        new Set(
-          upgraded
-            .filter((entry) => entry.placementPointId === placementPointId)
-            .map(outcomeSignature)
-        )
-      ).toHaveProperty("size", 1);
-    }
+        .filter(({ terminalResult }) => terminalResult === "victory")
+        .map(({ targetPolicy }) => targetPolicy)
+    ).toEqual([
+      "nearest",
+      "highest_health",
+      "highest_armor",
+      "fastest",
+      "boss_or_elite_first"
+    ]);
+    expect(new Set(upgraded.map(outcomeSignature)).size).toBeGreaterThan(1);
   }, 360_000);
 
   it("rejects unknown, unsupported, duplicate, and incomplete cases", () => {
@@ -184,7 +190,7 @@ describe("Shuttergate Level 1 balance matrix", () => {
           matrixInput.cases[0],
           {
             ...matrixInput.cases[1],
-            terminalReason: "all_dwarves_downed"
+            terminalReason: "victory_conditions_met"
           },
           ...matrixInput.cases.slice(2)
         ]

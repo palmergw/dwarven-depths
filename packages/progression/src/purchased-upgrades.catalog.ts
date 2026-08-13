@@ -16,7 +16,7 @@ export const purchasedUpgradeCatalog: PurchasedUpgradeCatalog = Object.freeze({
           Object.freeze({
             schemaVersion: 1,
             kind: "maximum_health_add",
-            value: 760
+            value: 600
           }),
           Object.freeze({
             schemaVersion: 1,

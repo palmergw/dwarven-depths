@@ -35,9 +35,9 @@ describe("Shuttergate campaign calibration report", () => {
       comparison: {
         baselineAttemptNumber: 1,
         upgradedAttemptNumber: 3,
-        terminalTickDelta: 2667,
-        defeatedEnemyDelta: 13,
-        observation: "terminal_result_changed"
+        terminalTickDelta: 2400,
+        defeatedEnemyDelta: 12,
+        observation: "deeper_wave_reached"
       }
     });
     expect(report.attempts).toEqual([
@@ -57,15 +57,15 @@ describe("Shuttergate campaign calibration report", () => {
       expect.objectContaining({
         attemptNumber: 3,
         buildId: "build.warden.shield_slam_rank_1.v1",
-        terminalTick: 4500,
-        terminalResult: "victory"
+        terminalTick: 4233,
+        terminalResult: "defeat"
       })
     ]);
     expect(Object.isFrozen(report)).toBe(true);
     expect(Object.isFrozen(report.attempts)).toBe(true);
     expect(Object.isFrozen(report.attempts[0])).toBe(true);
     expect(await canonicalHash(report)).toBe(
-      "596e800356cb70b746e66cb468e00ac0016dc4ebbf9c3cd8a7b3394ca1bb693c"
+      "0b467f42ab6f9e13a84b8dc7c41249f892e3d7a8f48ffc5ea87222efa4971375"
     );
   }, 45_000);
 
@@ -104,7 +104,7 @@ describe("Shuttergate release-candidate Markdown", () => {
 
     expect(second).toBe(first);
     expect(first).toContain("| 3 | 3 | `build.warden.shield_slam_rank_1.v1`");
-    expect(first).toContain("Recorded observation: `terminal_result_changed`");
+    expect(first).toContain("Recorded observation: `deeper_wave_reached`");
     expect(first.endsWith("\n")).toBe(true);
   }, 45_000);
 

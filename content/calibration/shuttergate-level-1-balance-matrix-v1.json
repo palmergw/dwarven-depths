@@ -25,14 +25,14 @@
       "placementPointId": "placement.shuttergate_north_guard",
       "targetPolicy": "nearest",
       "buildId": "build.warden.shield_slam_rank_1.v1",
-      "terminalResult": "victory",
-      "terminalReason": "victory_conditions_met",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
       "deepestStartedWaveId": "wave.shuttergate_5",
       "ranges": {
-        "terminalTick": { "minimum": 4500, "maximum": 4500 },
+        "terminalTick": { "minimum": 4200, "maximum": 4320 },
         "firedSpawns": { "minimum": 18, "maximum": 18 },
-        "defeatedEnemies": { "minimum": 18, "maximum": 18 },
-        "survivingEnemies": { "minimum": 0, "maximum": 0 }
+        "defeatedEnemies": { "minimum": 17, "maximum": 17 },
+        "survivingEnemies": { "minimum": 1, "maximum": 1 }
       }
     },
     {
@@ -53,14 +53,14 @@
       "placementPointId": "placement.shuttergate_north_guard",
       "targetPolicy": "lowest_health",
       "buildId": "build.warden.shield_slam_rank_1.v1",
-      "terminalResult": "victory",
-      "terminalReason": "victory_conditions_met",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
       "deepestStartedWaveId": "wave.shuttergate_5",
       "ranges": {
-        "terminalTick": { "minimum": 4500, "maximum": 4500 },
+        "terminalTick": { "minimum": 4200, "maximum": 4320 },
         "firedSpawns": { "minimum": 18, "maximum": 18 },
-        "defeatedEnemies": { "minimum": 18, "maximum": 18 },
-        "survivingEnemies": { "minimum": 0, "maximum": 0 }
+        "defeatedEnemies": { "minimum": 17, "maximum": 17 },
+        "survivingEnemies": { "minimum": 1, "maximum": 1 }
       }
     },
     {
@@ -81,14 +81,14 @@
       "placementPointId": "placement.shuttergate_north_guard",
       "targetPolicy": "highest_health",
       "buildId": "build.warden.shield_slam_rank_1.v1",
-      "terminalResult": "victory",
-      "terminalReason": "victory_conditions_met",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
       "deepestStartedWaveId": "wave.shuttergate_5",
       "ranges": {
-        "terminalTick": { "minimum": 4500, "maximum": 4500 },
+        "terminalTick": { "minimum": 4200, "maximum": 4320 },
         "firedSpawns": { "minimum": 18, "maximum": 18 },
-        "defeatedEnemies": { "minimum": 18, "maximum": 18 },
-        "survivingEnemies": { "minimum": 0, "maximum": 0 }
+        "defeatedEnemies": { "minimum": 17, "maximum": 17 },
+        "survivingEnemies": { "minimum": 1, "maximum": 1 }
       }
     },
     {
@@ -109,14 +109,14 @@
       "placementPointId": "placement.shuttergate_north_guard",
       "targetPolicy": "highest_armor",
       "buildId": "build.warden.shield_slam_rank_1.v1",
-      "terminalResult": "victory",
-      "terminalReason": "victory_conditions_met",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
       "deepestStartedWaveId": "wave.shuttergate_5",
       "ranges": {
-        "terminalTick": { "minimum": 4500, "maximum": 4500 },
+        "terminalTick": { "minimum": 4200, "maximum": 4320 },
         "firedSpawns": { "minimum": 18, "maximum": 18 },
-        "defeatedEnemies": { "minimum": 18, "maximum": 18 },
-        "survivingEnemies": { "minimum": 0, "maximum": 0 }
+        "defeatedEnemies": { "minimum": 17, "maximum": 17 },
+        "survivingEnemies": { "minimum": 1, "maximum": 1 }
       }
     },
     {
@@ -137,14 +137,14 @@
       "placementPointId": "placement.shuttergate_north_guard",
       "targetPolicy": "fastest",
       "buildId": "build.warden.shield_slam_rank_1.v1",
-      "terminalResult": "victory",
-      "terminalReason": "victory_conditions_met",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
       "deepestStartedWaveId": "wave.shuttergate_5",
       "ranges": {
-        "terminalTick": { "minimum": 4500, "maximum": 4500 },
+        "terminalTick": { "minimum": 4200, "maximum": 4320 },
         "firedSpawns": { "minimum": 18, "maximum": 18 },
-        "defeatedEnemies": { "minimum": 18, "maximum": 18 },
-        "survivingEnemies": { "minimum": 0, "maximum": 0 }
+        "defeatedEnemies": { "minimum": 17, "maximum": 17 },
+        "survivingEnemies": { "minimum": 1, "maximum": 1 }
       }
     },
     {
@@ -165,14 +165,14 @@
       "placementPointId": "placement.shuttergate_north_guard",
       "targetPolicy": "boss_or_elite_first",
       "buildId": "build.warden.shield_slam_rank_1.v1",
-      "terminalResult": "victory",
-      "terminalReason": "victory_conditions_met",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
       "deepestStartedWaveId": "wave.shuttergate_5",
       "ranges": {
-        "terminalTick": { "minimum": 4500, "maximum": 4500 },
+        "terminalTick": { "minimum": 4200, "maximum": 4320 },
         "firedSpawns": { "minimum": 18, "maximum": 18 },
-        "defeatedEnemies": { "minimum": 18, "maximum": 18 },
-        "survivingEnemies": { "minimum": 0, "maximum": 0 }
+        "defeatedEnemies": { "minimum": 17, "maximum": 17 },
+        "survivingEnemies": { "minimum": 1, "maximum": 1 }
       }
     },
     {
@@ -221,14 +221,14 @@
       "placementPointId": "placement.shuttergate_keep_guard",
       "targetPolicy": "lowest_health",
       "buildId": "build.warden.shield_slam_rank_1.v1",
-      "terminalResult": "victory",
-      "terminalReason": "victory_conditions_met",
+      "terminalResult": "defeat",
+      "terminalReason": "all_dwarves_downed",
       "deepestStartedWaveId": "wave.shuttergate_5",
       "ranges": {
-        "terminalTick": { "minimum": 4500, "maximum": 4500 },
+        "terminalTick": { "minimum": 4300, "maximum": 4400 },
         "firedSpawns": { "minimum": 18, "maximum": 18 },
-        "defeatedEnemies": { "minimum": 18, "maximum": 18 },
-        "survivingEnemies": { "minimum": 0, "maximum": 0 }
+        "defeatedEnemies": { "minimum": 17, "maximum": 17 },
+        "survivingEnemies": { "minimum": 1, "maximum": 1 }
       }
     },
     {

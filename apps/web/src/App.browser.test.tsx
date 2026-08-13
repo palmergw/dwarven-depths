@@ -4826,7 +4826,7 @@ describe("authoritative Shuttergate campaign journey", () => {
       campaign: third.campaign
     }).toMatchObject({
       terminalResult: "victory",
-      maximumHealth: 1000,
+      maximumHealth: 840,
       abilityActivations: expect.any(Number),
       campaign: {
         attemptId: "attempt.shuttergate.web_000003"
