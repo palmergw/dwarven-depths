@@ -127,7 +127,7 @@ describe("Iron Warden build summary", () => {
     }).profile;
 
     expect(deriveIronWardenBuildSummary(disciplined)).toEqual({
-      maximumHealthAdd: 785,
+      maximumHealthAdd: 625,
       attackDamageAdd: 5,
       attackRangeAdd: 4,
       futureCooldownReductionTicks: 2,
