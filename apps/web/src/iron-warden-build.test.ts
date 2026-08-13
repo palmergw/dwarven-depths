@@ -79,6 +79,33 @@ describe("Iron Warden build summary", () => {
     );
   });
 
+  it("rejects a selected branch whose prerequisite is absent", () => {
+    const profile = {
+      ...skillReadyProfile(),
+      selectedSkillNodes: [
+        {
+          schemaVersion: 1 as const,
+          characterId,
+          nodeId: "skill.iron_warden.disciplined_slam" as StableId,
+          spentSkillPointLevel: 3
+        }
+      ],
+      characterExperienceStates: [
+        {
+          schemaVersion: 1 as const,
+          characterId,
+          experience: 260,
+          level: 3,
+          pendingSkillPointLevels: [2]
+        }
+      ]
+    };
+
+    expect(() => deriveIronWardenBuildSummary(profile)).toThrow(
+      "selected skill node has an unselected prerequisite"
+    );
+  });
+
   it("combines purchased and selected effects in canonical source order", () => {
     const purchased = purchaseUpgradeRank({
       schemaVersion: 1,

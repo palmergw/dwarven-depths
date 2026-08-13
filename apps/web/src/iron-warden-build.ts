@@ -1,5 +1,6 @@
 import type { StableId } from "@dwarven-depths/contracts";
 import {
+  deriveCharacterSkillModifiers,
   ironWardenSkillTree,
   type ProfileState,
   purchasedUpgradeCatalog
@@ -72,18 +73,43 @@ export function deriveIronWardenBuildSummary(
       applyEffects(effects);
     sourceIds.push(purchase.upgradeId);
   }
-  for (const selection of profile.selectedSkillNodes) {
-    if (selection.characterId !== ironWardenSkillTree.characterId) continue;
-    const node = ironWardenSkillTree.nodes.find(
-      (candidate) => candidate.nodeId === selection.nodeId
-    );
-    if (node === undefined) continue;
-    applyEffects(node.effects);
-    sourceIds.push(selection.nodeId);
-  }
+  const authoredSkillProfile = {
+    ...profile,
+    selectedSkillNodes: profile.selectedSkillNodes.filter(
+      (selection) =>
+        selection.characterId !== ironWardenSkillTree.characterId ||
+        ironWardenSkillTree.nodes.some(
+          (node) => node.nodeId === selection.nodeId
+        )
+    )
+  };
+  const skills = deriveCharacterSkillModifiers({
+    schemaVersion: 1,
+    profile: authoredSkillProfile,
+    tree: ironWardenSkillTree
+  });
   return Object.freeze({
-    ...totals,
-    sourceIds: Object.freeze(sourceIds.sort())
+    maximumHealthAdd: add(
+      totals.maximumHealthAdd,
+      skills.maximumHealthAdd,
+      "maximumHealthAdd"
+    ),
+    attackDamageAdd: add(
+      totals.attackDamageAdd,
+      skills.attackDamageAdd,
+      "attackDamageAdd"
+    ),
+    attackRangeAdd: add(
+      totals.attackRangeAdd,
+      skills.attackRangeAdd,
+      "attackRangeAdd"
+    ),
+    futureCooldownReductionTicks: add(
+      totals.futureCooldownReductionTicks,
+      skills.futureCooldownReductionTicks,
+      "futureCooldownReductionTicks"
+    ),
+    sourceIds: Object.freeze([...sourceIds, ...skills.sourceNodeIds].sort())
   });
 }
 
