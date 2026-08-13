@@ -37,6 +37,10 @@ import {
   createCombatSoundPlayer
 } from "./combat-feedback.js";
 import {
+  deriveIronWardenBuildSummary,
+  ironWardenChoiceIdentity
+} from "./iron-warden-build.js";
+import {
   parseWorkerMessage,
   type SimulationSpeed,
   type TargetPolicy,
@@ -250,6 +254,44 @@ function describePrerequisites(
   return prerequisiteNodeIds.length === 0
     ? "none."
     : `${prerequisiteNodeIds.map(playerFacingName).join(", ")}.`;
+}
+
+function BuildSummary({ profile }: { readonly profile: ProfileState }) {
+  const build = deriveIronWardenBuildSummary(profile);
+  return (
+    <section className="warden-build" aria-labelledby="warden-build-heading">
+      <div className="warden-build-title">
+        <span aria-hidden="true">♜</span>
+        <div>
+          <p>Equipped next run</p>
+          <h4 id="warden-build-heading">Iron Warden build</h4>
+        </div>
+      </div>
+      <dl aria-label="Applied Iron Warden combat modifiers">
+        <div>
+          <dt>Health</dt>
+          <dd>+{build.maximumHealthAdd}</dd>
+        </div>
+        <div>
+          <dt>Damage</dt>
+          <dd>+{build.attackDamageAdd}</dd>
+        </div>
+        <div>
+          <dt>Range</dt>
+          <dd>+{build.attackRangeAdd}</dd>
+        </div>
+        <div>
+          <dt>Cooldown</dt>
+          <dd>-{build.futureCooldownReductionTicks} ticks</dd>
+        </div>
+      </dl>
+      <p className="warden-build-sources">
+        {build.sourceIds.length === 0
+          ? "No Forge or skill modifiers equipped."
+          : `From ${build.sourceIds.map(playerFacingName).join(", ")}.`}
+      </p>
+    </section>
+  );
 }
 
 function playerFacingName(id: StableId): string {
@@ -1547,6 +1589,12 @@ export function App({
           tree: ironWardenSkillTree
         })
       : undefined;
+  const activeBuildProfile =
+    view.phase === "preparation"
+      ? runConfigurationRef.current?.profile
+      : checkpointProfile.status === "ready"
+        ? checkpointProfile.profile
+        : undefined;
   const shellView =
     view.phase === "checkpoint"
       ? settingsOpen
@@ -1804,6 +1852,9 @@ export function App({
               The Iron Warden deploys automatically at the marked guard post.
               There is no placement choice in this tutorial defence.
             </p>
+            {activeBuildProfile !== undefined && (
+              <BuildSummary profile={activeBuildProfile} />
+            )}
             <dl aria-label="Preparation summary">
               <div>
                 <dt>Defence</dt>
@@ -2023,6 +2074,7 @@ export function App({
                 </p>
               )}
               <h4>Available upgrades</h4>
+              <BuildSummary profile={checkpointProfile.profile} />
               <div className="upgrade-catalog">
                 {purchasedUpgradeCatalog.upgrades.map((definition) => {
                   const state = upgradePurchaseState(
@@ -2203,6 +2255,7 @@ export function App({
                           const effectsId = `${nodeId.replaceAll(".", "-")}-effects`;
                           return (
                             <section key={nodeId}>
+                              <h5>{ironWardenChoiceIdentity(nodeId)}</h5>
                               <p id={effectsId}>
                                 Effects: {describeEffects(node?.effects ?? [])}{" "}
                                 Prerequisites:{" "}

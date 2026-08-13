@@ -834,6 +834,12 @@ describe("run journey guidance", () => {
       "There is no placement choice in this tutorial defence."
     );
     expect(preparation).toHaveTextContent("North approach · locked");
+    expect(preparation).toHaveTextContent(
+      "Iron Warden buildHealth+0Damage+0Range+0Cooldown-0 ticks"
+    );
+    expect(preparation).toHaveTextContent(
+      "No Forge or skill modifiers equipped."
+    );
     expect(preparation?.textContent).not.toContain("placement points");
 
     await userEvent.click(await buttonWithText("Confirm preparation"));

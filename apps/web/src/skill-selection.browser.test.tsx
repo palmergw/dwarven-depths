@@ -147,6 +147,12 @@ describe("checkpoint Iron Warden skill selection", () => {
     );
     expect(await button("Select Long Reach")).toBeEnabled();
     expect(document.querySelector(".upgrades")?.textContent).toContain(
+      "Faster Shield SlamEffects: -2 future cooldown ticks"
+    );
+    expect(document.querySelector(".upgrades")?.textContent).toContain(
+      "Longer melee reachEffects: +1 attack range"
+    );
+    expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Stone Guard selected at level 2. Effects: +25 maximum health; +3 attack damage. Prerequisites: none."
     );
     const second = await button("Select Long Reach");
