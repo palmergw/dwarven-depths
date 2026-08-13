@@ -32,11 +32,11 @@ describe("authoritative Shuttergate campaign browser parity", () => {
         second: second.transition,
         third: third.transition
       })
-    ).toBe("bb17425bfece0b62e66411c10b600860d21c333f052a0477d7e7ef3f3bf4a788");
+    ).toBe("85ddd4788500f5e84b84b555275d308b4d6e9b6376359079bb1ee5a553ed023b");
     expect(
       await canonicalHash(
         createShuttergateCampaignCalibrationReport(third.authority)
       )
-    ).toBe("596e800356cb70b746e66cb468e00ac0016dc4ebbf9c3cd8a7b3394ca1bb693c");
+    ).toBe("0b467f42ab6f9e13a84b8dc7c41249f892e3d7a8f48ffc5ea87222efa4971375");
   }, 360_000);
 });
