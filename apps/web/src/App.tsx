@@ -2246,6 +2246,14 @@ export function App({
                       Pending skill point from level{" "}
                       {ironWardenSkillEligibility?.pendingSkillPointLevel}.
                     </p>
+                    {(ironWardenSkillEligibility?.eligibleNodeIds.length ?? 0) >
+                      1 && (
+                      <p id="iron-warden-branch-commitment">
+                        Choose one branch. This final skill point makes the
+                        other branch unavailable until you recycle the Iron
+                        Warden skill tree.
+                      </p>
+                    )}
                     <div className="upgrade-catalog">
                       {ironWardenSkillEligibility?.eligibleNodeIds.map(
                         (nodeId) => {
@@ -2265,7 +2273,14 @@ export function App({
                               </p>
                               <button
                                 type="button"
-                                aria-describedby={effectsId}
+                                aria-describedby={`${effectsId}${
+                                  (
+                                    ironWardenSkillEligibility?.eligibleNodeIds
+                                      .length ?? 0
+                                  ) > 1
+                                    ? " iron-warden-branch-commitment"
+                                    : ""
+                                }`}
                                 disabled={
                                   upgradePurchaseStatus.kind === "pending"
                                 }

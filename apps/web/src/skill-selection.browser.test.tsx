@@ -157,7 +157,10 @@ describe("checkpoint Iron Warden skill selection", () => {
     );
     const second = await button("Select Long Reach");
     expect(second).toHaveAccessibleDescription(
-      "Effects: +1 attack range. Prerequisites: Stone Guard."
+      "Effects: +1 attack range. Prerequisites: Stone Guard. Choose one branch. This final skill point makes the other branch unavailable until you recycle the Iron Warden skill tree."
+    );
+    expect(await button("Select Disciplined Slam")).toHaveAccessibleDescription(
+      "Effects: -2 future cooldown ticks. Prerequisites: Stone Guard. Choose one branch. This final skill point makes the other branch unavailable until you recycle the Iron Warden skill tree."
     );
     await userEvent.click(second);
     await vi.waitFor(() => expect(writes).toHaveLength(2));
