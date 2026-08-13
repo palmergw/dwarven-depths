@@ -10,11 +10,11 @@
     "writtenAtEpochMs": 1725000000000,
     "profileId": "profile.conformance.shuttergate",
     "profileRevision": 4,
-    "payloadChecksum": "83a75472614553b0d73e6b70636fc83b3779daaef72ab45b686941c2cab9e578",
+    "payloadChecksum": "49e5c9f0ac1c8d8a4006b25ed242d47498e1fb4a55e8d258083ca06b90631d4a",
     "profile": {
       "schemaVersion": 1,
       "revision": 4,
-      "forgeOre": 29,
+      "forgeOre": 28,
       "unlockedCharacterIds": [
         "character.iron_warden"
       ],
@@ -41,17 +41,17 @@
           "upgradeId": "upgrade.ability.shield_slam",
           "rank": 1,
           "forgeOreSpent": 10,
-          "passiveEffectsIdentity": "{\"upgradeId\":\"upgrade.ability.shield_slam\",\"kind\":\"ability_rank\",\"ownerId\":\"character.iron_warden\",\"passiveEffectsByRank\":[[{\"schemaVersion\":1,\"kind\":\"attack_damage_add\",\"value\":2},{\"schemaVersion\":1,\"kind\":\"attack_range_add\",\"value\":4},{\"schemaVersion\":1,\"kind\":\"maximum_health_add\",\"value\":760}]]}"
+          "passiveEffectsIdentity": "{\"upgradeId\":\"upgrade.ability.shield_slam\",\"kind\":\"ability_rank\",\"ownerId\":\"character.iron_warden\",\"passiveEffectsByRank\":[[{\"schemaVersion\":1,\"kind\":\"attack_damage_add\",\"value\":2},{\"schemaVersion\":1,\"kind\":\"attack_range_add\",\"value\":4},{\"schemaVersion\":1,\"kind\":\"maximum_health_add\",\"value\":600}]]}"
         }
       ]
     }
   },
-  "rewardLedgerChecksum": "83dca8bc916f6bce257462eb01dd165ae247766167377bb1722474e3a7edcbc0",
+  "rewardLedgerChecksum": "b53d63d13a6ed96a6325df41999963eab5456a85cc739729e558f274f82de566",
   "attemptChecksums": [
     "c5c2c9ecc87e23b9b7928a178e8bf4d6fd23dd3f9f65064953e201d34daf47f9",
     "471f194a8cde623cbf90b5f357d86fe6528c1273298366b171acebe62a5b6d93",
-    "1fabf9df2839a38f97a35d62fc76103c8e58e56d5b75f60253c44eb8012b951d"
+    "2f5f4f82b574c25bc3507bd377376409c93b166738f9ac2915803b13333e8c01"
   ],
-  "stateChecksum": "40354c71c4b55e25b47a4b54c49626f4ffe5ec7b7f431601cde742087ee87475",
-  "payloadChecksum": "723592194cb6d729f8183905c76347d145d5e59222396abac3ac676f5b399383"
+  "stateChecksum": "08301c138c7f6a0c5c856257da42bb2ecf2447479f31b1aab467084f5d557ad3",
+  "payloadChecksum": "16fc5486406fe460b35a125c47f1709cbe46c9b078c2eaab5a7991fe3754a13d"
 }
