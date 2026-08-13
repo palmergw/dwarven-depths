@@ -21,7 +21,9 @@ const budgets = {
   // Keep the complete offline install bounded while allowing the authored
   // combat-pose selector and authority-bound impact projection. Player startup
   // remains governed by the unchanged main, worker, and stylesheet ceilings.
-  total: 604_160
+  // The equipped-build workflow adds catalog-derived Forge and preparation
+  // guidance; keep its aggregate allowance bounded to one additional KiB.
+  total: 605_184
 };
 const classifications = [
   ["mainJavaScript", /^index-[\w-]+\.js$/],

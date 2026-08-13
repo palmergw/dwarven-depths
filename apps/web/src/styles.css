@@ -939,6 +939,80 @@ main[data-view-phase="checkpoint"] .upgrades .forge-toolbar h3 {
   background: #0b0806b8;
   color: #ddcba7;
 }
+.warden-build {
+  margin: 0 0 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #80683f;
+  background: linear-gradient(110deg, #16100b, #090705);
+  box-shadow: inset 0 0 1.2rem #ad702018;
+}
+.warden-build-title {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+.warden-build-title > span {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 1px solid #9b7139;
+  border-radius: 50%;
+  color: #f4cf7a;
+  font:
+    1.4rem Georgia,
+    serif;
+  place-items: center;
+}
+.warden-build-title :is(p, h4),
+.warden-build-sources {
+  margin: 0;
+}
+.warden-build-title p {
+  color: #c5b695;
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.warden-build dl {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.45rem;
+  margin: 0.65rem 0;
+}
+.warden-build dl div {
+  padding: 0.45rem;
+  border: 1px solid #4e4232;
+  text-align: center;
+}
+.warden-build dt {
+  color: #bbaa8b;
+  font-size: 0.7em;
+  text-transform: uppercase;
+}
+.warden-build dd {
+  margin: 0.15rem 0 0;
+  color: #f2c76c;
+  font-weight: 800;
+}
+.warden-build-sources {
+  color: #ddcba7;
+  font-size: 0.82em;
+}
+.preparation-summary .warden-build {
+  margin: 0.85rem 0;
+}
+.preparation-summary .warden-build-title {
+  display: flex;
+  grid-template-columns: none;
+}
+.preparation-summary .warden-build dl {
+  grid-template-columns: repeat(2, 1fr);
+}
+.preparation-summary .warden-build dl div {
+  display: block;
+  padding: 0.35rem;
+}
 .forge-scroll-hint {
   margin: -0.35rem 0 1rem;
   color: #f0c66f;
@@ -1200,9 +1274,9 @@ main[data-view-phase="result"] .battlefield::after {
 main[data-view-phase="preparation"] .preparation-summary {
   position: absolute;
   z-index: 2;
-  top: 20%;
+  top: 12%;
   right: 5%;
-  width: min(23rem, 35%);
+  width: min(25rem, 38%);
   margin: 0;
   padding: 1.25rem;
   border: 1px solid #8b6236;
@@ -1230,7 +1304,7 @@ main[data-view-phase="preparation"] .preparation-summary dl {
   z-index: 3;
   right: 5%;
   bottom: 10%;
-  width: min(23rem, 35%);
+  width: min(25rem, 38%);
   border-radius: 0.15rem;
   background: linear-gradient(#d99a3a, #8f4e11);
   font-family: Georgia, serif;
