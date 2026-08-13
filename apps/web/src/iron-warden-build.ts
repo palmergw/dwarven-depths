@@ -1,7 +1,6 @@
 import type { StableId } from "@dwarven-depths/contracts";
 import {
   deriveCharacterSkillModifiers,
-  derivePurchasedUpgradeCharacterModifiers,
   ironWardenSkillTree,
   type ProfileState,
   purchasedUpgradeCatalog
@@ -47,13 +46,59 @@ export function deriveIronWardenBuildSummary(
         )
     )
   };
-  const purchased = derivePurchasedUpgradeCharacterModifiers({
-    schemaVersion: 1,
-    profile: authoredProfile,
-    catalog: purchasedUpgradeCatalog
-  }).find(
-    (modifier) => modifier.characterId === ironWardenSkillTree.characterId
-  );
+  let purchasedMaximumHealthAdd = 0;
+  let purchasedAttackDamageAdd = 0;
+  let purchasedAttackRangeAdd = 0;
+  let purchasedCooldownReductionTicks = 0;
+  const purchasedSourceIds: StableId[] = [];
+  for (const purchase of authoredProfile.purchasedUpgrades) {
+    const definition = purchasedUpgradeCatalog.upgrades.find(
+      (upgrade) => upgrade.upgradeId === purchase.upgradeId
+    );
+    if (
+      definition === undefined ||
+      definition.ownerId !== ironWardenSkillTree.characterId
+    )
+      continue;
+    if (purchase.rank > definition.passiveEffectsByRank.length)
+      throw new RangeError(
+        `purchased upgrade rank exceeds authored maximum (${purchase.upgradeId})`
+      );
+    for (let rankIndex = 0; rankIndex < purchase.rank; rankIndex += 1) {
+      const effects = definition.passiveEffectsByRank[rankIndex];
+      if (effects === undefined)
+        throw new RangeError(
+          `purchased upgrade rank has no authored passive effects (${purchase.upgradeId})`
+        );
+      for (const effect of effects) {
+        if (effect.kind === "maximum_health_add")
+          purchasedMaximumHealthAdd = add(
+            purchasedMaximumHealthAdd,
+            effect.value,
+            "purchased maximum health"
+          );
+        else if (effect.kind === "attack_damage_add")
+          purchasedAttackDamageAdd = add(
+            purchasedAttackDamageAdd,
+            effect.value,
+            "purchased attack damage"
+          );
+        else if (effect.kind === "attack_range_add")
+          purchasedAttackRangeAdd = add(
+            purchasedAttackRangeAdd,
+            effect.value,
+            "purchased attack range"
+          );
+        else
+          purchasedCooldownReductionTicks = add(
+            purchasedCooldownReductionTicks,
+            effect.value,
+            "purchased cooldown reduction"
+          );
+      }
+    }
+    purchasedSourceIds.push(purchase.upgradeId);
+  }
   const skills = deriveCharacterSkillModifiers({
     schemaVersion: 1,
     profile: authoredProfile,
@@ -61,27 +106,27 @@ export function deriveIronWardenBuildSummary(
   });
   return Object.freeze({
     maximumHealthAdd: add(
-      purchased?.maximumHealthAdd ?? 0,
+      purchasedMaximumHealthAdd,
       skills.maximumHealthAdd,
       "maximum health"
     ),
     attackDamageAdd: add(
-      purchased?.attackDamageAdd ?? 0,
+      purchasedAttackDamageAdd,
       skills.attackDamageAdd,
       "attack damage"
     ),
     attackRangeAdd: add(
-      purchased?.attackRangeAdd ?? 0,
+      purchasedAttackRangeAdd,
       skills.attackRangeAdd,
       "attack range"
     ),
     futureCooldownReductionTicks: add(
-      purchased?.futureCooldownReductionTicks ?? 0,
+      purchasedCooldownReductionTicks,
       skills.futureCooldownReductionTicks,
       "cooldown reduction"
     ),
     sourceIds: Object.freeze(
-      [...(purchased?.sourceUpgradeIds ?? []), ...skills.sourceNodeIds].sort()
+      [...purchasedSourceIds, ...skills.sourceNodeIds].sort()
     )
   });
 }
