@@ -1002,6 +1002,17 @@ main[data-view-phase="checkpoint"] .upgrades .forge-toolbar h3 {
 .preparation-summary .warden-build {
   margin: 0.85rem 0;
 }
+.preparation-summary .warden-build-title {
+  display: flex;
+  grid-template-columns: none;
+}
+.preparation-summary .warden-build dl {
+  grid-template-columns: repeat(2, 1fr);
+}
+.preparation-summary .warden-build dl div {
+  display: block;
+  padding: 0.35rem;
+}
 .forge-scroll-hint {
   margin: -0.35rem 0 1rem;
   color: #f0c66f;
@@ -1263,9 +1274,9 @@ main[data-view-phase="result"] .battlefield::after {
 main[data-view-phase="preparation"] .preparation-summary {
   position: absolute;
   z-index: 2;
-  top: 20%;
+  top: 12%;
   right: 5%;
-  width: min(23rem, 35%);
+  width: min(25rem, 38%);
   margin: 0;
   padding: 1.25rem;
   border: 1px solid #8b6236;
@@ -1293,7 +1304,7 @@ main[data-view-phase="preparation"] .preparation-summary dl {
   z-index: 3;
   right: 5%;
   bottom: 10%;
-  width: min(23rem, 35%);
+  width: min(25rem, 38%);
   border-radius: 0.15rem;
   background: linear-gradient(#d99a3a, #8f4e11);
   font-family: Georgia, serif;
