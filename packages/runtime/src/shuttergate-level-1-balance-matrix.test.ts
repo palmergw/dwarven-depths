@@ -24,6 +24,17 @@ function combinationKey(value: {
   return `${value.placementPointId}/${value.targetPolicy}/${value.buildId}`;
 }
 
+function outcomeSignature(
+  evidence: ShuttergateBuildCalibrationEvidence
+): string {
+  return [
+    evidence.terminalResult,
+    evidence.deepestStartedWaveId,
+    evidence.defeatedEnemies,
+    evidence.survivingEnemies
+  ].join("/");
+}
+
 describe("Shuttergate Level 1 balance matrix", () => {
   it("covers and accepts all authoritative placement, policy, and build cases", async () => {
     const matrix = requireShuttergateLevel1BalanceMatrix(matrixInput);
@@ -71,6 +82,56 @@ describe("Shuttergate Level 1 balance matrix", () => {
     expect(Object.isFrozen(matrix)).toBe(true);
     expect(Object.isFrozen(matrix.cases)).toBe(true);
     expect(Object.isFrozen(matrix.cases[0]?.ranges)).toBe(true);
+  }, 360_000);
+
+  it("characterizes the pre-tuning upgrade cliff and policy-insensitive outcomes", async () => {
+    const matrix = requireShuttergateLevel1BalanceMatrix(matrixInput);
+    const content = await compileContent(shuttergateInput);
+    const evidence = await Promise.all(
+      matrix.cases.map((balanceCase) =>
+        runShuttergateSeedPlacementControllerBuildCalibration(
+          content,
+          matrix.seed,
+          balanceCase.placementPointId as PlacementPointId,
+          balanceCase.targetPolicy,
+          balanceCase.buildId
+        )
+      )
+    );
+    const unupgraded = evidence.filter(
+      ({ buildId }) => buildId === "build.profile.new_campaign.v1"
+    );
+    const upgraded = evidence.filter(
+      ({ buildId }) => buildId === "build.warden.shield_slam_rank_1.v1"
+    );
+
+    expect(unupgraded).toHaveLength(12);
+    expect(upgraded).toHaveLength(12);
+    expect(
+      unupgraded.every(({ terminalResult }) => terminalResult === "defeat")
+    ).toBe(true);
+    expect(
+      upgraded.every(({ terminalResult }) => terminalResult === "victory")
+    ).toBe(true);
+    for (const placementPointId of [
+      "placement.shuttergate_north_guard",
+      "placement.shuttergate_keep_guard"
+    ]) {
+      expect(
+        new Set(
+          unupgraded
+            .filter((entry) => entry.placementPointId === placementPointId)
+            .map(outcomeSignature)
+        )
+      ).toHaveProperty("size", 1);
+      expect(
+        new Set(
+          upgraded
+            .filter((entry) => entry.placementPointId === placementPointId)
+            .map(outcomeSignature)
+        )
+      ).toHaveProperty("size", 1);
+    }
   }, 360_000);
 
   it("rejects unknown, unsupported, duplicate, and incomplete cases", () => {
