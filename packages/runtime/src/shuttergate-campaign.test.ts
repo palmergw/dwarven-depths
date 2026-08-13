@@ -31,7 +31,7 @@ async function transitionPair() {
 
 describe("authoritative Shuttergate campaign transitions", () => {
   it("derives productive attempts and the first purchase from accepted authority", async () => {
-    const { first, second, third, fourth } = await transitionPair();
+    const { content, first, second, third, fourth } = await transitionPair();
 
     expect(first.transition).toMatchObject({
       schemaVersion: 1,
@@ -86,6 +86,9 @@ describe("authoritative Shuttergate campaign transitions", () => {
     expect(fourth.authority.attempts).toHaveLength(4);
     expect(Object.isFrozen(fourth.authority)).toBe(true);
     expect(Object.isFrozen(fourth.authority.attempts)).toBe(true);
+    await expect(
+      runShuttergateCampaignTransition(content, fourth.authority)
+    ).rejects.toThrow("campaign already ended in victory");
     expect("resolveAttemptProgressRewards" in progressionPublicApi).toBe(false);
     expect(
       await canonicalHash({

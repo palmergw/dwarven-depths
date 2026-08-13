@@ -160,6 +160,11 @@ export async function runShuttergateCampaignTransition(
   content: CompiledContent,
   authority: ShuttergateCampaignAuthority
 ): Promise<ShuttergateCampaignTransitionResult> {
+  if (
+    authority.attempts.at(-1)?.encounter.calibration.terminalResult ===
+    "victory"
+  )
+    throw new RangeError("Shuttergate campaign already ended in victory");
   if (authority.attempts.length >= maximumCampaignAttempts)
     throw new RangeError(
       `Shuttergate campaign cannot exceed ${maximumCampaignAttempts} attempts`
