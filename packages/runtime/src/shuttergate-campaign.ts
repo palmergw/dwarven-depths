@@ -23,6 +23,7 @@ const campaignId = "campaign.shuttergate.v1" as StableId;
 const wardenCharacterId = "character.iron_warden" as StableId;
 const shieldSlamUpgradeId = "upgrade.ability.shield_slam" as StableId;
 const northGuardPlacementId = "placement.shuttergate_north_guard" as never;
+const keepGuardPlacementId = "placement.shuttergate_keep_guard" as never;
 const maximumCampaignAttempts = 100_000;
 
 const rewardPolicy = Object.freeze({
@@ -170,11 +171,17 @@ export async function runShuttergateCampaignTransition(
     const attemptId = campaignAttemptId(attemptNumber);
     const seed = String(attemptNumber);
     const buildId = campaignBuild(authority.profile);
+    // Keep the first upgraded attempt at the fixed tutorial post so the
+    // deeper push remains observable, then use the matrix-backed victory post.
+    const placementPointId =
+      buildId === "build.warden.shield_slam_rank_1.v1" && attemptNumber > 3
+        ? keepGuardPlacementId
+        : northGuardPlacementId;
     const encounter = await runShuttergateAttempt(content, {
       schemaVersion: 1,
       attemptId,
       seed,
-      placementPointId: northGuardPlacementId,
+      placementPointId,
       targetPolicy: "nearest",
       buildId
     });

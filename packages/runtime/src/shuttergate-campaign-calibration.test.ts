@@ -14,10 +14,10 @@ import {
   type ShuttergateCampaignCalibrationReport
 } from "./shuttergate-campaign-calibration.js";
 
-async function threeAttemptReport() {
+async function fourAttemptReport() {
   const content = await compileContent(shuttergateInput);
   let authority = createShuttergateCampaignAuthority();
-  for (let index = 0; index < 3; index += 1) {
+  for (let index = 0; index < 4; index += 1) {
     authority = (await runShuttergateCampaignTransition(content, authority))
       .authority;
   }
@@ -26,12 +26,12 @@ async function threeAttemptReport() {
 
 describe("Shuttergate campaign calibration report", () => {
   it("records ordered attempts and an observed purchased-build delta", async () => {
-    const report = await threeAttemptReport();
+    const report = await fourAttemptReport();
 
     expect(report).toMatchObject({
       schemaVersion: 1,
       campaignId: "campaign.shuttergate.v1",
-      attemptCount: 3,
+      attemptCount: 4,
       comparison: {
         baselineAttemptNumber: 1,
         upgradedAttemptNumber: 3,
@@ -59,13 +59,19 @@ describe("Shuttergate campaign calibration report", () => {
         buildId: "build.warden.shield_slam_rank_1.v1",
         terminalTick: 4233,
         terminalResult: "defeat"
+      }),
+      expect.objectContaining({
+        attemptNumber: 4,
+        buildId: "build.warden.shield_slam_rank_1.v1",
+        terminalTick: 4500,
+        terminalResult: "victory"
       })
     ]);
     expect(Object.isFrozen(report)).toBe(true);
     expect(Object.isFrozen(report.attempts)).toBe(true);
     expect(Object.isFrozen(report.attempts[0])).toBe(true);
     expect(await canonicalHash(report)).toBe(
-      "0b467f42ab6f9e13a84b8dc7c41249f892e3d7a8f48ffc5ea87222efa4971375"
+      "8566b76f2c82066b9faa423aad25134e1fe8b689ec3379d594d7b3fbc32ad320"
     );
   }, 45_000);
 
@@ -84,7 +90,7 @@ describe("Shuttergate campaign calibration report", () => {
 
 describe("Shuttergate release-candidate Markdown", () => {
   it("renders byte-identical identified attempt and comparison evidence", async () => {
-    const report = await threeAttemptReport();
+    const report = await fourAttemptReport();
     const identity = {
       scenarioId: "campaign_scenario.shuttergate.v1",
       scenarioHash: "a".repeat(64),
@@ -109,7 +115,7 @@ describe("Shuttergate release-candidate Markdown", () => {
   }, 45_000);
 
   it("rejects malformed or inconsistent source evidence", async () => {
-    const report = await threeAttemptReport();
+    const report = await fourAttemptReport();
     const identity = {
       scenarioId: "campaign_scenario.shuttergate.v1",
       scenarioHash: "a".repeat(64),

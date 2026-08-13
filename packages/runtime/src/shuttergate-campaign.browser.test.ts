@@ -11,7 +11,7 @@ import {
 import { createShuttergateCampaignCalibrationReport } from "./shuttergate-campaign-calibration.js";
 
 describe("authoritative Shuttergate campaign browser parity", () => {
-  it("matches three literal campaign transitions", async () => {
+  it("matches four literal campaign transitions through victory", async () => {
     const content = await compileContent(shuttergateInput);
     const first = await runShuttergateCampaignTransition(
       content,
@@ -25,18 +25,28 @@ describe("authoritative Shuttergate campaign browser parity", () => {
       content,
       second.authority
     );
+    const fourth = await runShuttergateCampaignTransition(
+      content,
+      third.authority
+    );
 
     expect(
       await canonicalHash({
         first: first.transition,
         second: second.transition,
-        third: third.transition
+        third: third.transition,
+        fourth: fourth.transition
       })
-    ).toBe("85ddd4788500f5e84b84b555275d308b4d6e9b6376359079bb1ee5a553ed023b");
+    ).toBe("991b5b3ed50311a68904bad712bb43d64afd189d08491e8d71b62138b05ba4cc");
+    expect(fourth.transition.encounter.calibration).toMatchObject({
+      terminalResult: "victory",
+      bossRewardClaimed: true,
+      deepRangerUnlocked: true
+    });
     expect(
       await canonicalHash(
-        createShuttergateCampaignCalibrationReport(third.authority)
+        createShuttergateCampaignCalibrationReport(fourth.authority)
       )
-    ).toBe("0b467f42ab6f9e13a84b8dc7c41249f892e3d7a8f48ffc5ea87222efa4971375");
+    ).toBe("8566b76f2c82066b9faa423aad25134e1fe8b689ec3379d594d7b3fbc32ad320");
   }, 360_000);
 });

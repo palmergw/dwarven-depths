@@ -84,14 +84,15 @@ describe("Shuttergate Level 1 reference policy replay", () => {
       content,
       policyReplayInput
     );
-    expect(restored.attempts).toHaveLength(3);
+    expect(restored.attempts).toHaveLength(4);
     expect(restored.profile).toMatchObject({
-      revision: 4,
-      forgeOre: 28,
+      revision: 5,
+      forgeOre: 51,
       claimedRewardIds: [
         "reward.attempt.shuttergate.campaign_000001",
         "reward.attempt.shuttergate.campaign_000002",
-        "reward.attempt.shuttergate.campaign_000003"
+        "reward.attempt.shuttergate.campaign_000003",
+        "reward.attempt.shuttergate.campaign_000004"
       ],
       purchasedUpgrades: [
         expect.objectContaining({

@@ -9,12 +9,12 @@
     "applicationBuild": "phase-4-conformance",
     "writtenAtEpochMs": 1725000000000,
     "profileId": "profile.conformance.shuttergate",
-    "profileRevision": 4,
-    "payloadChecksum": "49e5c9f0ac1c8d8a4006b25ed242d47498e1fb4a55e8d258083ca06b90631d4a",
+    "profileRevision": 5,
+    "payloadChecksum": "99086d311eeadbb18e644a24c7ca9fc742aa2c7100b8c2b54c783f464f6fb27e",
     "profile": {
       "schemaVersion": 1,
-      "revision": 4,
-      "forgeOre": 28,
+      "revision": 5,
+      "forgeOre": 51,
       "unlockedCharacterIds": [
         "character.iron_warden"
       ],
@@ -22,7 +22,8 @@
       "claimedRewardIds": [
         "reward.attempt.shuttergate.campaign_000001",
         "reward.attempt.shuttergate.campaign_000002",
-        "reward.attempt.shuttergate.campaign_000003"
+        "reward.attempt.shuttergate.campaign_000003",
+        "reward.attempt.shuttergate.campaign_000004"
       ],
       "characterExperienceStates": [
         {
@@ -46,12 +47,13 @@
       ]
     }
   },
-  "rewardLedgerChecksum": "b53d63d13a6ed96a6325df41999963eab5456a85cc739729e558f274f82de566",
+  "rewardLedgerChecksum": "ac1d7693d441c7bfa30db956b38823ecc7155d64c6a66f9ac898938e6103ceb3",
   "attemptChecksums": [
     "c5c2c9ecc87e23b9b7928a178e8bf4d6fd23dd3f9f65064953e201d34daf47f9",
     "471f194a8cde623cbf90b5f357d86fe6528c1273298366b171acebe62a5b6d93",
-    "2f5f4f82b574c25bc3507bd377376409c93b166738f9ac2915803b13333e8c01"
+    "2f5f4f82b574c25bc3507bd377376409c93b166738f9ac2915803b13333e8c01",
+    "e521ddc69636b73c5189a012069b31269380d70a35c23f9377cb4eac0419498c"
   ],
-  "stateChecksum": "08301c138c7f6a0c5c856257da42bb2ecf2447479f31b1aab467084f5d557ad3",
-  "payloadChecksum": "16fc5486406fe460b35a125c47f1709cbe46c9b078c2eaab5a7991fe3754a13d"
+  "stateChecksum": "737bb9810932953d06c74406bbf2fb7dcdb47e57f24f98230589fc70a6895022",
+  "payloadChecksum": "6508c58a62970f665dc3ae483e559669b1560c5ec452015ab5378ff79dee1e45"
 }
