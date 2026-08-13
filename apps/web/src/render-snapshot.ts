@@ -52,8 +52,15 @@ export interface RenderEntityV2 extends RenderEntity {
   readonly facing: "north" | "east" | "south" | "west";
   readonly action: {
     readonly kind: "idle" | "moving" | "basic_attack" | "ability";
-    readonly phase: "idle" | "windup" | "committed" | "impact" | "recovery";
+    readonly phase:
+      | "idle"
+      | "windup"
+      | "committed"
+      | "impact"
+      | "recoil"
+      | "recovery";
     readonly abilityId: string | null;
+    readonly impactTargetEntityIds?: readonly string[];
   };
   readonly targetEntityId: string | null;
   readonly statuses: readonly RenderStatus[];
@@ -417,7 +424,13 @@ function parseV2Entity(
       (status) => status.appliedAtTick > tick || status.expiresAtTick < tick
     ) ||
     !isRecord(value.action) ||
-    !hasExactKeys(value.action, ["abilityId", "kind", "phase"]) ||
+    (!hasExactKeys(value.action, ["abilityId", "kind", "phase"]) &&
+      !hasExactKeys(value.action, [
+        "abilityId",
+        "impactTargetEntityIds",
+        "kind",
+        "phase"
+      ])) ||
     (value.action.kind !== "idle" &&
       value.action.kind !== "moving" &&
       value.action.kind !== "basic_attack" &&
@@ -426,8 +439,22 @@ function parseV2Entity(
       value.action.phase !== "windup" &&
       value.action.phase !== "committed" &&
       value.action.phase !== "impact" &&
+      value.action.phase !== "recoil" &&
       value.action.phase !== "recovery") ||
-    (value.action.abilityId !== null && !isIdentifier(value.action.abilityId))
+    (value.action.abilityId !== null &&
+      !isIdentifier(value.action.abilityId)) ||
+    (value.action["impactTargetEntityIds"] !== undefined &&
+      !Array.isArray(value.action["impactTargetEntityIds"])) ||
+    (Array.isArray(value.action["impactTargetEntityIds"]) &&
+      value.action["impactTargetEntityIds"].length > 4096) ||
+    (Array.isArray(value.action["impactTargetEntityIds"]) &&
+      !value.action["impactTargetEntityIds"].every(isIdentifier)) ||
+    !hasCanonicalUniqueIds(
+      (Array.isArray(value.action["impactTargetEntityIds"])
+        ? value.action["impactTargetEntityIds"]
+        : []
+      ).map((id) => ({ id }))
+    )
   )
     return undefined;
   const moved =
@@ -446,6 +473,9 @@ function parseV2Entity(
     ((value.action.kind === "basic_attack" ||
       value.action.kind === "ability") &&
       value.action.phase === "idle") ||
+    (value.action.phase !== "impact" &&
+      Array.isArray(value.action["impactTargetEntityIds"]) &&
+      value.action["impactTargetEntityIds"].length > 0) ||
     (value.transition === "spawned") !== (previousPosition === null) ||
     (value.transition === "moving") !== moved ||
     (value.transition === "active" && (previousPosition === null || moved))
@@ -465,7 +495,14 @@ function parseV2Entity(
     action: {
       kind: value.action.kind,
       phase: value.action.phase,
-      abilityId: value.action.abilityId
+      abilityId: value.action.abilityId,
+      ...(Array.isArray(value.action["impactTargetEntityIds"])
+        ? {
+            impactTargetEntityIds: value.action[
+              "impactTargetEntityIds"
+            ] as string[]
+          }
+        : {})
     },
     targetEntityId: value.targetEntityId,
     statuses,
@@ -593,13 +630,40 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
   )
     return undefined;
   const entityIds = new Set(entities.map((entity) => entity.id));
+  const enemyEntityIds = new Set(
+    entities.filter((entity) => entity.faction === "enemy").map(({ id }) => id)
+  );
+  const departedEntityIds = new Set(
+    transitions
+      .filter(
+        (transition) =>
+          transition.kind === "downed" || transition.kind === "destroyed"
+      )
+      .map(({ entityId }) => entityId)
+  );
   if (
     entities.some(
       (entity) =>
         entity.targetEntityId !== null &&
         (entity.targetEntityId === entity.id ||
-          !entityIds.has(entity.targetEntityId))
+          (!entityIds.has(entity.targetEntityId) &&
+            !departedEntityIds.has(entity.targetEntityId)))
     ) ||
+    entities.some((entity) => {
+      const impactTargetEntityIds = entity.action.impactTargetEntityIds ?? [];
+      return (
+        impactTargetEntityIds.length > 0 &&
+        (entity.faction !== "dwarf" ||
+          entity.action.kind !== "ability" ||
+          entity.action.abilityId !== "ability.iron_warden.shield_slam" ||
+          entity.action.phase !== "impact" ||
+          impactTargetEntityIds.some(
+            (id) =>
+              !enemyEntityIds.has(id) &&
+              (!departedEntityIds.has(id) || !id.startsWith("entity.enemy."))
+          ))
+      );
+    }) ||
     transitions.some((transition) =>
       transition.kind === "spawned"
         ? !entityIds.has(transition.entityId) ||

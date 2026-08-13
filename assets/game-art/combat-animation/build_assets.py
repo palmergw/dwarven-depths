@@ -16,12 +16,24 @@ PACKAGE = ROOT / "assets/game-art/combat-animation"
 EXPORTS = PACKAGE / "exports/entities"
 MANIFEST = PACKAGE / "metadata/manifest.json"
 WARDEN_SOURCE = ROOT / "assets/game-art/visual-direction/sources/iron-warden-master.png"
+WARDEN_ATTACK_CYCLE_SOURCE = (
+    PACKAGE / "sources/iron-warden-basic-attack-cycle-master.png"
+)
+WARDEN_SHIELD_SLAM_CYCLE_SOURCE = (
+    PACKAGE / "sources/iron-warden-shield-slam-cycle-master.png"
+)
 HOSTILE_SOURCE = PACKAGE / "sources/shuttergate-hostile-role-atlas-master.png"
 FACING_SOURCE = PACKAGE / "sources/shuttergate-hostile-facing-atlas-master.png"
+HOSTILE_ATTACK_CYCLE_SOURCE = (
+    PACKAGE / "sources/shuttergate-hostile-attack-cycle-master.png"
+)
 
 SOURCE_DIGESTS = {
     "assets/game-art/combat-animation/sources/shuttergate-hostile-role-atlas-master.png": "8f27d5e80b9adcbcab6d3b05435fda8777c81326d2a1f8e590673c04d14ed660",
     "assets/game-art/combat-animation/sources/shuttergate-hostile-facing-atlas-master.png": "7e70295ef8eee65e100bbfecda451501ae1a1de041835e7570aa204cfc397953",
+    "assets/game-art/combat-animation/sources/shuttergate-hostile-attack-cycle-master.png": "ad465196d3a473e904a477588d31bce835dc37ef993eed3afdcb5f904a948b52",
+    "assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png": "226aa23dea6cabfc04403cc93343e8122dd297615037911245b74750d8e279a2",
+    "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "bbf7c4fd3090f767ca8a187befc495a46303ad9934a57cd0cf6a28bdfda2d6c4",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
 }
 
@@ -41,6 +53,13 @@ HOSTILE_ROLES = (
 )
 HOSTILE_ACTION_ROWS = (("attack", 1), ("downed", 2))
 HOSTILE_FACINGS = ("n", "e", "s", "w")
+HOSTILE_ATTACK_PHASES = (
+    "windup",
+    "committed",
+    "impact",
+    "recoil",
+    "recovery",
+)
 HOSTILE_COLUMN_BOUNDS = (
     (0, 350),
     (350, 730),
@@ -204,6 +223,46 @@ def build_outputs() -> dict[str, bytes]:
             outputs[f"{name}.png"] = encode_png(
                 miniature(cell, (112, 72), (56, 66), (104, 56))
             )
+    with Image.open(WARDEN_ATTACK_CYCLE_SOURCE) as master:
+        column_edges = [round(index * master.width / 5) for index in range(6)]
+        for column, phase in enumerate(HOSTILE_ATTACK_PHASES):
+            cell = trim(
+                remove_alpha_fragments(
+                    keyed_alpha(
+                        master.crop(
+                            (
+                                column_edges[column],
+                                0,
+                                column_edges[column + 1],
+                                master.height,
+                            )
+                        )
+                    )
+                )
+            )
+            outputs[f"iron-warden-basic-attack-{phase}.png"] = encode_png(
+                miniature(cell, (112, 72), (56, 66), (104, 56))
+            )
+    with Image.open(WARDEN_SHIELD_SLAM_CYCLE_SOURCE) as master:
+        column_edges = [round(index * master.width / 5) for index in range(6)]
+        for column, phase in enumerate(HOSTILE_ATTACK_PHASES):
+            cell = trim(
+                remove_alpha_fragments(
+                    keyed_alpha(
+                        master.crop(
+                            (
+                                column_edges[column],
+                                0,
+                                column_edges[column + 1],
+                                master.height,
+                            )
+                        )
+                    )
+                )
+            )
+            outputs[f"iron-warden-shield-slam-{phase}.png"] = encode_png(
+                miniature(cell, (112, 72), (56, 66), (104, 56))
+            )
     with Image.open(HOSTILE_SOURCE) as master:
         row_edges = [round(index * master.height / 3) for index in range(4)]
         for column, role in enumerate(HOSTILE_ROLES):
@@ -246,6 +305,28 @@ def build_outputs() -> dict[str, bytes]:
                     )
                 )
                 outputs[f"{role}-idle-{facing}.png"] = encode_png(
+                    miniature(cell, (80, 60), (40, 54), (72, 44))
+                )
+    with Image.open(HOSTILE_ATTACK_CYCLE_SOURCE) as master:
+        column_edges = [round(index * master.width / 4) for index in range(5)]
+        row_edges = [round(index * master.height / 5) for index in range(6)]
+        for column, role in enumerate(HOSTILE_ROLES):
+            for row, phase in enumerate(HOSTILE_ATTACK_PHASES):
+                cell = trim(
+                    remove_alpha_fragments(
+                        keyed_alpha(
+                            master.crop(
+                                (
+                                    column_edges[column],
+                                    row_edges[row],
+                                    column_edges[column + 1],
+                                    row_edges[row + 1],
+                                )
+                            )
+                        )
+                    )
+                )
+                outputs[f"{role}-attack-{phase}.png"] = encode_png(
                     miniature(cell, (80, 60), (40, 54), (72, 44))
                 )
     return dict(sorted(outputs.items()))

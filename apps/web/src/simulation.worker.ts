@@ -246,7 +246,8 @@ async function executePreparedScenario(): Promise<void> {
             preparedScenario,
             step.state,
             step.state.phase === "TERMINAL" ? "terminal" : "running",
-            previousPresentationSnapshot
+            previousPresentationSnapshot,
+            step.events
           )
         : createLegacyRenderSnapshot(
             preparedContent,

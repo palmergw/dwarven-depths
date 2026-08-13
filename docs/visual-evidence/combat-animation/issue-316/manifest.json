@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "issue": 316,
+  "sourceHead": "674edabb60228ae948c0832f74c250e08fd998d9",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [1440, 900],
+  "decision": "Approve the strengthened authored Shield Slam silhouettes replacing the rejected subtle cycle while preserving the authored basic-attack frames and restrained warm effects.",
+  "changedRegion": "Iron Warden Shield Slam anticipation, commitment, contact, recoil, and recovery silhouette at the north guard post",
+  "normalPlayIntervalSeconds": [0, 7],
+  "actionComparisonIntervalSeconds": [0, 2.48],
+  "beforeActionSourceIntervalSeconds": [2.15, 4.63],
+  "afterActionSourceIntervalSeconds": [2.15, 4.63],
+  "actionCrop": [430, 230, 620, 390],
+  "before": {
+    "head": "8d7be886382c931959d4b2c9eef028cf94b75096",
+    "video": "before-approved-baseline.webm",
+    "videoSha256": "266d1a92967dd1546f8c735f5c1c16feb87eece09e77cba7675115ded55440ba",
+    "sidecar": "before-approved-baseline.json",
+    "sidecarSha256": "1b53094b139c1413eab0c0d1712a76b91db6ac02b962eb0cc7a5a8f8060b8bf1",
+    "startingTick": 2,
+    "endingTick": 170,
+    "attackPhases": ["committed", "recovery", "windup"]
+  },
+  "after": {
+    "head": "674edabb60228ae948c0832f74c250e08fd998d9",
+    "video": "after-authored-frames.webm",
+    "videoSha256": "af08bcfa8b456769f02b21c8abfb66044e88d5edd578a27afcd7e896bbdc1ab1",
+    "sidecar": "after-authored-frames.json",
+    "sidecarSha256": "f00d3ad78644cdba93cd19519bb24f52fcaa4a4cf877b53c2db5bcc97e141a85",
+    "startingTick": 2,
+    "endingTick": 169,
+    "attackPhases": ["committed", "recovery", "windup"]
+  },
+  "comparisons": [
+    {
+      "file": "adjacent-action-crop.webm",
+      "sha256": "92a9e27427aebd3ba045de56c2f19c43062552b3ccdb45249b3f470055d58df1"
+    },
+    {
+      "file": "adjacent-full-frame.webm",
+      "sha256": "d998eabe354e13ef5fe996259d8f9c4ad8fa7edb76fbfc464d0d30f475c986ad"
+    },
+    {
+      "file": "adjacent-action-still.png",
+      "sha256": "ba3447c22c0cb0182c448801ac0eb6d65fa85dfee422cadcf47b092680ed5eb9"
+    }
+  ],
+  "integrity": {
+    "fixedUnitScalePreserved": true,
+    "gameplayAuthorityUnchanged": true,
+    "greenMissingTextureFrames": 0,
+    "cyanDebugOverlays": 0,
+    "internalNormalScaleReview": "passed: complete 1440x900 normal-play clip and synchronized action crop reviewed for planted authored silhouettes, warm restrained effects, ground contact, and combat legibility",
+    "actionCropPixelDiff": {
+      "comparison": "synchronized 380x320 before/after action crops",
+      "averagePsnrDb": 33.642929,
+      "minimumPsnrDb": 30.23494,
+      "maximumPsnrDb": 40.764511
+    }
+  }
+}

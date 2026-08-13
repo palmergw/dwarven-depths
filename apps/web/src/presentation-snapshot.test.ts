@@ -52,7 +52,8 @@ async function buildFixtureSnapshots(): Promise<readonly RenderSnapshotV2[]> {
         scenario,
         step.state,
         step.state.phase === "TERMINAL" ? "terminal" : "running",
-        previous
+        previous,
+        step.events
       )
     );
     shieldSlamCommitted ||= (step.state.committedAbilities?.length ?? 0) > 0;
@@ -87,6 +88,58 @@ describe("presentation snapshot v2", () => {
     for (const snapshot of snapshots)
       expect(parseRenderSnapshot(snapshot)).toEqual(snapshot);
 
+    const shieldSlamImpactIndex = snapshots.findIndex((snapshot) =>
+      snapshot.entities.some(
+        (entity) =>
+          entity.action.kind === "ability" &&
+          entity.action.abilityId === "ability.iron_warden.shield_slam" &&
+          entity.action.phase === "impact"
+      )
+    );
+    expect(shieldSlamImpactIndex).toBeGreaterThan(0);
+    const shieldSlamImpact = snapshots[shieldSlamImpactIndex];
+    const beforeShieldSlamImpact = snapshots[shieldSlamImpactIndex - 1];
+    if (shieldSlamImpact === undefined || beforeShieldSlamImpact === undefined)
+      throw new Error("missing Shield Slam impact snapshots");
+    const priorHealthById = new Map(
+      beforeShieldSlamImpact.entities.map((entity) => [
+        entity.id,
+        entity.currentHealth
+      ])
+    );
+    expect(
+      shieldSlamImpact.entities.some(
+        (entity) =>
+          entity.faction === "enemy" &&
+          entity.currentHealth < (priorHealthById.get(entity.id) ?? 0)
+      ) ||
+        shieldSlamImpact.entityTransitions.some(
+          (transition) =>
+            transition.kind === "downed" || transition.kind === "destroyed"
+        )
+    ).toBe(true);
+    expect(
+      beforeShieldSlamImpact.entities.find(
+        (entity) => entity.faction === "dwarf"
+      )?.action
+    ).toMatchObject({ kind: "ability", phase: "committed" });
+    const afterShieldSlamImpact = snapshots[shieldSlamImpactIndex + 1];
+    if (afterShieldSlamImpact === undefined)
+      throw new Error("missing post-impact Shield Slam snapshot");
+    expect(
+      afterShieldSlamImpact.entities.find(
+        (entity) => entity.faction === "dwarf"
+      )?.action
+    ).toMatchObject({ kind: "ability", phase: "recoil" });
+    const afterShieldSlamRecoil = snapshots[shieldSlamImpactIndex + 2];
+    if (afterShieldSlamRecoil === undefined)
+      throw new Error("missing Shield Slam recovery snapshot");
+    expect(
+      afterShieldSlamRecoil.entities.find(
+        (entity) => entity.faction === "dwarf"
+      )?.action
+    ).toMatchObject({ kind: "ability", phase: "recovery" });
+
     const running = snapshots.find(
       (snapshot) =>
         snapshot.phase === "running" &&
@@ -115,6 +168,17 @@ describe("presentation snapshot v2", () => {
         snapshot.entities.some((entity) => entity.action.kind === "ability")
       )
     ).toBe(true);
+    for (const phase of ["windup", "committed", "impact", "recoil"] as const)
+      expect(
+        snapshots.some((snapshot) =>
+          snapshot.entities.some(
+            (entity) =>
+              entity.action.kind === "basic_attack" &&
+              entity.action.phase === phase
+          )
+        ),
+        `missing authoritative basic-attack ${phase} presentation`
+      ).toBe(true);
     expect(
       snapshots.some((snapshot) =>
         snapshot.entities.some((entity) => entity.statuses.length > 0)
@@ -244,7 +308,57 @@ describe("presentation snapshot v2", () => {
       active.entities.find((entity) => entity.faction === "dwarf")?.action
     ).toMatchObject({
       kind: "ability",
-      phase: "committed"
+      phase: "windup"
+    });
+    const activeBattlefield = activeState.battlefield;
+    if (activeBattlefield === undefined)
+      throw new Error("missing active battlefield");
+    const dwarf = activeBattlefield.dwarfCombatants[0];
+    const enemy = activeBattlefield.enemyCombatants[0];
+    if (dwarf === undefined || enemy === undefined)
+      throw new Error("missing facing fixture combatants");
+    const committedFacing = createPresentationSnapshot(
+      content,
+      scenario,
+      {
+        ...activeState,
+        battlefield: {
+          ...activeBattlefield,
+          dwarfCombatants: [
+            {
+              ...dwarf,
+              actionState: {
+                ...dwarf.actionState,
+                currentTargetEntityId: null,
+                activeBasicAttack: null
+              }
+            }
+          ],
+          pendingCommittedAttacks: [
+            {
+              schemaVersion: 1,
+              attackId: "attack.fixture.facing" as never,
+              sourceEntityId: dwarf.entityId,
+              targetEntityId: enemy.entityId,
+              committedAtTick: activeState.tick,
+              impactAtTick: activeState.tick + 1,
+              cooldownCompleteAtTick: activeState.tick + 2,
+              damage: 1,
+              range: 3
+            }
+          ]
+        },
+        committedAbilities: []
+      },
+      "running",
+      initial
+    );
+    expect(
+      committedFacing.entities.find((entity) => entity.id === dwarf.entityId)
+    ).toMatchObject({
+      targetEntityId: enemy.entityId,
+      facing: "west",
+      action: { kind: "basic_attack", phase: "committed" }
     });
     expect(
       parseRenderSnapshot({
@@ -269,9 +383,6 @@ describe("presentation snapshot v2", () => {
       })
     ).toBeUndefined();
 
-    const activeBattlefield = activeState.battlefield;
-    if (activeBattlefield === undefined)
-      throw new Error("missing active battlefield");
     const destroyedState: SimulationState = {
       ...activeState,
       tick: activeState.tick + 1,

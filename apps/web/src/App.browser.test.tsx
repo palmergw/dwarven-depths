@@ -13,6 +13,7 @@ import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import {
   Battlefield,
+  battlefieldEffectLifetime,
   buildBattlefieldPrimitives,
   buildDepartureFeedbackPrimitives,
   buildInterpolationOrigins,
@@ -22,10 +23,14 @@ import {
   deriveCombatPresentationState,
   deriveShieldSlamImpactIds,
   deriveSlingerProjectilePaths,
+  hasRenderedInitialFeedback,
   interpolationDistanceForFrame,
+  locomotionCadenceOffset,
+  markInitialFeedbackRendered,
   renderedFactionForSourceKey,
   selectCombatPoseAsset,
   selectCombatPoseTreatment,
+  slingerProjectileHead,
   statusSignalKind
 } from "./Battlefield.js";
 import { CombatControls } from "./CombatControls.js";
@@ -2970,6 +2975,67 @@ describe("authoritative web worker", () => {
     expect(interpolationDistanceForFrame(-1, 2)).toBe(0);
   });
 
+  it("adds bounded locomotion cadence without weakening reduced motion", () => {
+    expect(locomotionCadenceOffset(90, 1, true, false)).toBeCloseTo(1.5);
+    expect(locomotionCadenceOffset(90, 2, true, false)).toBeCloseTo(0);
+    expect(locomotionCadenceOffset(90, 1, false, false)).toBe(0);
+    expect(locomotionCadenceOffset(90, 1, true, true)).toBe(0);
+    expect(locomotionCadenceOffset(-90, 1, true, false)).toBe(0);
+    expect(battlefieldEffectLifetime(false)).toBe(1_680);
+    expect(battlefieldEffectLifetime(true)).toBe(420);
+  });
+
+  it("consumes initial arrival feedback only after a renderer frame", () => {
+    const entity = {
+      id: "entity.dwarf.warden",
+      nodeId: "node.gate",
+      faction: "dwarf" as const,
+      visualId: "character.iron_warden",
+      archetype: "character" as const,
+      position: { nodeId: "node.gate", x: 0, y: 0 },
+      previousPosition: null,
+      currentHealth: 10,
+      maximumHealth: 10,
+      facing: "east" as const,
+      action: {
+        kind: "idle" as const,
+        phase: "idle" as const,
+        abilityId: null
+      },
+      targetEntityId: null,
+      statuses: [],
+      transition: "spawned" as const,
+      elite: false,
+      boss: false
+    };
+    const snapshot = {
+      schemaVersion: 2,
+      scenarioId: "scenario.deployment",
+      levelId: "level.shuttergate_hall",
+      mapId: "map.shuttergate_hall",
+      tick: 1,
+      previousTick: null,
+      phase: "running",
+      nodes: [{ id: "node.gate", x: 0, y: 0 }],
+      connections: [],
+      entities: [entity],
+      entityTransitions: [{ entityId: entity.id, kind: "spawned", atTick: 1 }],
+      encounter: {
+        startedWaveIds: [],
+        activeWaveId: null,
+        pendingSpawnCount: 0,
+        livingHostileCount: 0,
+        terminalResult: null
+      }
+    } as const satisfies RenderSnapshot;
+    const feedback = deriveCombatFeedback(undefined, snapshot);
+    expect(hasRenderedInitialFeedback(snapshot)).toBe(false);
+    markInitialFeedbackRendered(snapshot, undefined);
+    expect(hasRenderedInitialFeedback(snapshot)).toBe(false);
+    markInitialFeedbackRendered(snapshot, feedback);
+    expect(hasRenderedInitialFeedback(snapshot)).toBe(true);
+  });
+
   it("binds authored combat poses to authoritative snapshot-v2 action phases", () => {
     const entity = {
       id: "entity.dwarf.warden",
@@ -2985,7 +3051,8 @@ describe("authoritative web worker", () => {
       action: {
         kind: "ability",
         phase: "impact",
-        abilityId: "ability.iron_warden.shield_slam"
+        abilityId: "ability.iron_warden.shield_slam",
+        impactTargetEntityIds: ["entity.enemy.alpha", "entity.enemy.beta"]
       },
       targetEntityId: null,
       statuses: [],
@@ -3014,7 +3081,7 @@ describe("authoritative web worker", () => {
       }
     } as const satisfies RenderSnapshot;
     expect(selectCombatPoseAsset(snapshot, entity.id)).toBe(
-      "warden-shield-slam-source"
+      "warden-shield-slam-impact-source"
     );
     expect(
       selectCombatPoseTreatment(
@@ -3030,7 +3097,7 @@ describe("authoritative web worker", () => {
         },
         entity.id
       )
-    ).toMatchObject({ state: "moving", angle: 3 });
+    ).toMatchObject({ state: "moving", angle: 0 });
     expect(
       selectCombatPoseAsset(
         {
@@ -3046,7 +3113,7 @@ describe("authoritative web worker", () => {
         },
         entity.id
       )
-    ).toBe("raider-attack-source");
+    ).toBe("raider-attack-windup-source");
     expect(
       selectCombatPoseTreatment(
         {
@@ -3069,11 +3136,37 @@ describe("authoritative web worker", () => {
         entity.id
       )
     ).toMatchObject({
-      source: "slinger-attack-source",
+      source: "slinger-attack-committed-source",
       state: "committed",
-      angle: 86,
-      flipX: false
+      angle: 0,
+      flipX: true
     });
+    expect(
+      ["north", "east", "south", "west"].map((facing) =>
+        selectCombatPoseTreatment(
+          {
+            ...snapshot,
+            entities: [
+              {
+                ...entity,
+                facing: facing as typeof entity.facing,
+                action: {
+                  kind: "basic_attack",
+                  phase: "committed",
+                  abilityId: null
+                }
+              }
+            ]
+          },
+          entity.id
+        )
+      )
+    ).toMatchObject([
+      { angle: 0, flipX: false },
+      { angle: 0, flipX: false },
+      { angle: 0, flipX: true },
+      { angle: 0, flipX: true }
+    ]);
     expect(
       selectCombatPoseAsset(
         {
@@ -3084,7 +3177,21 @@ describe("authoritative web worker", () => {
         },
         entity.id
       )
-    ).toBe("warden-guard-source");
+    ).toBe("warden-shield-slam-recovery-source");
+    expect(
+      selectCombatPoseAsset(
+        {
+          ...snapshot,
+          tick: 5,
+          previousTick: 4,
+          entities: [
+            { ...entity, action: { ...entity.action, phase: "recoil" } }
+          ]
+        },
+        entity.id,
+        snapshot
+      )
+    ).toBe("warden-shield-slam-recoil-source");
     const damaged = {
       ...snapshot,
       entities: [
@@ -3111,6 +3218,9 @@ describe("authoritative web worker", () => {
     expect(
       deriveCombatPresentationState(damaged, previous, entity.id)
     ).toMatchObject({ healthRatio: 0.7, damaged: true, status: true });
+    expect(selectCombatPoseAsset(damaged, entity.id, previous)).toBe(
+      "warden-shield-slam-impact-source"
+    );
     expect(
       deriveCombatPresentationState(
         damaged,
@@ -3150,6 +3260,67 @@ describe("authoritative web worker", () => {
     expect(deriveShieldSlamImpactIds(multiTarget, multiTargetPrevious)).toEqual(
       ["entity.enemy.alpha", "entity.enemy.beta"]
     );
+    expect(deriveShieldSlamImpactIds(multiTarget, undefined)).toEqual([]);
+    expect(
+      deriveShieldSlamImpactIds(multiTarget, {
+        ...multiTargetPrevious,
+        tick: multiTargetPrevious.tick - 1
+      })
+    ).toEqual([]);
+    expect(
+      deriveShieldSlamImpactIds(
+        {
+          ...multiTarget,
+          entities: [
+            entity,
+            hostile,
+            elite,
+            {
+              ...hostile,
+              id: "entity.enemy.concurrent",
+              currentHealth: 1
+            }
+          ]
+        },
+        {
+          ...multiTargetPrevious,
+          entities: [
+            entity,
+            { ...hostile, currentHealth: 10 },
+            { ...elite, currentHealth: 10 },
+            {
+              ...hostile,
+              id: "entity.enemy.concurrent",
+              currentHealth: 10
+            }
+          ]
+        }
+      )
+    ).toEqual(["entity.enemy.alpha", "entity.enemy.beta"]);
+    expect(
+      deriveShieldSlamImpactIds(
+        {
+          ...snapshot,
+          entities: [
+            {
+              ...entity,
+              targetEntityId: hostile.id,
+              action: { ...entity.action, impactTargetEntityIds: [] }
+            }
+          ]
+        },
+        {
+          ...previous,
+          entities: [
+            {
+              ...entity,
+              targetEntityId: hostile.id,
+              action: { ...entity.action, impactTargetEntityIds: [] }
+            }
+          ]
+        }
+      )
+    ).toEqual([]);
     expect(
       deriveShieldSlamImpactIds(
         {
@@ -3211,10 +3382,10 @@ describe("authoritative web worker", () => {
       )
     );
     expect(directionalAttackTreatments.map(({ source }) => source)).toEqual([
-      "raider-attack-source",
-      "raider-attack-source",
-      "raider-attack-source",
-      "raider-attack-source"
+      "raider-attack-committed-source",
+      "raider-attack-committed-source",
+      "raider-attack-committed-source",
+      "raider-attack-committed-source"
     ]);
     expect(
       new Set(
@@ -3222,8 +3393,8 @@ describe("authoritative web worker", () => {
           ({ angle, flipX }) => `${angle}:${String(flipX)}`
         )
       ).size
-    ).toBe(4);
-    const attackPhaseAngles = (["windup", "committed", "impact"] as const).map(
+    ).toBe(2);
+    const attackPhaseSources = (["windup", "committed", "impact"] as const).map(
       (phase) =>
         selectCombatPoseTreatment(
           {
@@ -3237,9 +3408,9 @@ describe("authoritative web worker", () => {
             ]
           },
           hostile.id
-        ).angle
+        ).source
     );
-    expect(new Set(attackPhaseAngles).size).toBe(3);
+    expect(new Set(attackPhaseSources).size).toBe(3);
     expect(
       selectCombatPoseTreatment(
         {
@@ -3259,9 +3430,9 @@ describe("authoritative web worker", () => {
         hostile.id
       )
     ).toMatchObject({
-      source: "raider-attack-source",
+      source: "raider-attack-windup-source",
       state: "windup",
-      angle: 6,
+      angle: 0,
       flipX: false
     });
     expect(
@@ -3283,9 +3454,9 @@ describe("authoritative web worker", () => {
         hostile.id
       )
     ).toMatchObject({
-      source: "raider-attack-source",
+      source: "raider-attack-impact-source",
       state: "impact",
-      angle: 8,
+      angle: 0,
       flipX: true
     });
     const slinger = {
@@ -3305,6 +3476,50 @@ describe("authoritative web worker", () => {
         projectilePrimitives
       ).map(({ sourceId, targetId }) => [sourceId, targetId])
     ).toEqual([[slinger.id, entity.id]]);
+    const committedPath = deriveSlingerProjectilePaths(
+      projectileSnapshot,
+      projectilePrimitives
+    )[0];
+    if (committedPath === undefined) throw new Error("missing projectile path");
+    expect(slingerProjectileHead(committedPath)).not.toEqual({
+      x: committedPath.target.x,
+      y: committedPath.target.y - 34
+    });
+    const lethalImpact = {
+      ...projectileSnapshot,
+      tick: projectileSnapshot.tick + 1,
+      previousTick: projectileSnapshot.tick,
+      entities: [
+        {
+          ...slinger,
+          action: { ...slinger.action, phase: "impact" }
+        }
+      ],
+      entityTransitions: [
+        {
+          entityId: entity.id,
+          kind: "downed",
+          atTick: projectileSnapshot.tick + 1
+        }
+      ]
+    } as const satisfies RenderSnapshot;
+    expect(
+      deriveSlingerProjectilePaths(
+        lethalImpact,
+        buildBattlefieldPrimitives(lethalImpact),
+        projectileSnapshot
+      ).map(({ sourceId, targetId }) => [sourceId, targetId])
+    ).toEqual([[slinger.id, entity.id]]);
+    const impactPath = deriveSlingerProjectilePaths(
+      lethalImpact,
+      buildBattlefieldPrimitives(lethalImpact),
+      projectileSnapshot
+    )[0];
+    if (impactPath === undefined) throw new Error("missing impact path");
+    expect(slingerProjectileHead(impactPath)).toEqual({
+      x: impactPath.target.x,
+      y: impactPath.target.y - 34
+    });
     expect(
       deriveSlingerProjectilePaths(
         {
@@ -3571,7 +3786,7 @@ describe("authoritative web worker", () => {
       ).toBeLessThanOrEqual(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
-        cycle % 2 === 0 ? 34 : 32
+        cycle % 2 === 0 ? 62 : 61
       );
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects

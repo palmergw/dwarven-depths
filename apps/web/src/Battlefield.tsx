@@ -40,8 +40,27 @@ const PADDING = 96;
 const INTERPOLATION_SPEED_PIXELS_PER_MILLISECOND = 0.9;
 const DEPARTURE_DURATION_MS = 720;
 const DAMAGE_SIGNAL_DURATION_MS = 280;
+const EFFECT_DURATION_MS = 1_680;
+const REDUCED_MOTION_EFFECT_DURATION_MS = 420;
 const MAX_POOLED_EFFECTS = 64;
 const FIXTURE_ID = "scenarios/conformance/shuttergate-web-truth.json";
+const renderedInitialFeedbackSnapshots = new WeakSet<RenderSnapshot>();
+
+export function hasRenderedInitialFeedback(snapshot: RenderSnapshot): boolean {
+  return renderedInitialFeedbackSnapshots.has(snapshot);
+}
+
+export function markInitialFeedbackRendered(
+  snapshot: RenderSnapshot,
+  feedback: CombatFeedback | undefined
+): void {
+  if (feedback !== undefined && feedback.arrivals.length > 0)
+    renderedInitialFeedbackSnapshots.add(snapshot);
+}
+
+export function battlefieldEffectLifetime(reduceMotion: boolean): number {
+  return reduceMotion ? REDUCED_MOTION_EFFECT_DURATION_MS : EFFECT_DURATION_MS;
+}
 
 export function interpolationDistanceForFrame(
   deltaMilliseconds: number,
@@ -51,6 +70,20 @@ export function interpolationDistanceForFrame(
     Math.max(0, deltaMilliseconds) *
     INTERPOLATION_SPEED_PIXELS_PER_MILLISECOND *
     simulationSpeed
+  );
+}
+
+export function locomotionCadenceOffset(
+  elapsedMilliseconds: number,
+  simulationSpeed: 1 | 2,
+  moving: boolean,
+  reduceMotion: boolean
+): number {
+  if (!moving || reduceMotion) return 0;
+  return (
+    Math.sin(
+      (Math.max(0, elapsedMilliseconds) * simulationSpeed * Math.PI) / 180
+    ) * 1.5
   );
 }
 const textureAlphaMetricsCache = new Map<string, TextureAlphaMetrics>();
@@ -106,6 +139,37 @@ const hostileDirectionalAssetUrls = Object.fromEntries(
     ])
   )
 );
+const hostileAttackCycleAssetUrls = Object.fromEntries(
+  [
+    ["raider", "goblin-cutter"],
+    ["slinger", "goblin-slinger"],
+    ["bulwark", "goblin-bulwark"],
+    ["captain", "gatebreaker-captain"]
+  ].flatMap(([key, filename]) =>
+    (["windup", "committed", "impact", "recoil", "recovery"] as const).map(
+      (phase) => [
+        `${key}-attack-${phase}-source`,
+        combatAnimationAssetUrl(`${filename}-attack-${phase}.png`)
+      ]
+    )
+  )
+);
+const wardenAttackCycleAssetUrls = Object.fromEntries(
+  (["windup", "committed", "impact", "recoil", "recovery"] as const).map(
+    (phase) => [
+      `warden-basic-attack-${phase}-source`,
+      combatAnimationAssetUrl(`iron-warden-basic-attack-${phase}.png`)
+    ]
+  )
+);
+const wardenShieldSlamCycleAssetUrls = Object.fromEntries(
+  (["windup", "committed", "impact", "recoil", "recovery"] as const).map(
+    (phase) => [
+      `warden-shield-slam-${phase}-source`,
+      combatAnimationAssetUrl(`iron-warden-shield-slam-${phase}.png`)
+    ]
+  )
+);
 const warmLightOverlayUrl = new URL(
   "../../../assets/game-art/production-scene/exports/lighting/warm-light-overlay.png",
   import.meta.url
@@ -159,6 +223,9 @@ const battlefieldAssetUrls: Readonly<Record<string, string>> = {
     "gatebreaker-captain-downed.png"
   ),
   ...hostileDirectionalAssetUrls,
+  ...hostileAttackCycleAssetUrls,
+  ...wardenAttackCycleAssetUrls,
+  ...wardenShieldSlamCycleAssetUrls,
   "warm-light-overlay": warmLightOverlayUrl,
   "hostile-faction-ring": hostileFactionRingUrl,
   "shield-slam-impact": shieldSlamImpactUrl,
@@ -463,7 +530,9 @@ export function buildInterpolationOrigins(
 type CombatPoseAssetKey =
   | "warden-source"
   | "warden-basic-attack-source"
+  | `warden-basic-attack-${"windup" | "committed" | "impact" | "recoil" | "recovery"}-source`
   | "warden-shield-slam-source"
+  | `warden-shield-slam-${"windup" | "committed" | "impact" | "recoil" | "recovery"}-source`
   | "warden-hit-source"
   | "warden-guard-source"
   | "warden-downed-source"
@@ -479,6 +548,7 @@ type CombatPoseAssetKey =
   | "captain-source"
   | "captain-attack-source"
   | "captain-downed-source"
+  | `${"raider" | "slinger" | "bulwark" | "captain"}-attack-${"windup" | "committed" | "impact" | "recoil" | "recovery"}-source`
   | `${"raider" | "slinger" | "bulwark" | "captain"}-${"north" | "east" | "west"}-source`;
 
 function hostilePosePrefix(
@@ -520,25 +590,36 @@ export function selectCombatPoseAsset(
     previousSnapshot,
     entity.id
   );
-  if (dwarf && presentation?.damaged === true) return "warden-hit-source";
-  const activePose =
+  if (
+    dwarf &&
+    presentation?.damaged === true &&
+    entity.action.kind !== "basic_attack" &&
+    entity.action.kind !== "ability"
+  )
+    return "warden-hit-source";
+  const authoredPhase =
     entity.action.phase === "windup" ||
     entity.action.phase === "committed" ||
-    entity.action.phase === "impact";
+    entity.action.phase === "impact" ||
+    entity.action.phase === "recoil"
+      ? entity.action.phase
+      : "recovery";
   if (
     dwarf &&
     entity.action.kind === "ability" &&
     entity.action.abilityId === "ability.iron_warden.shield_slam" &&
-    activePose
+    entity.action.phase !== "idle"
   )
-    return "warden-shield-slam-source";
-  if (dwarf && entity.action.kind === "basic_attack" && activePose)
-    return "warden-basic-attack-source";
+    return `warden-shield-slam-${authoredPhase}-source`;
+  if (dwarf && entity.action.kind === "basic_attack") {
+    return `warden-basic-attack-${authoredPhase}-source`;
+  }
   if (dwarf && entity.action.phase === "recovery") return "warden-guard-source";
   if (dwarf) return "warden-source";
   const prefix = hostilePosePrefix(entity.visualId);
-  if (entity.action.kind === "basic_attack" && entity.action.phase !== "idle")
-    return `${prefix}-attack-source`;
+  if (entity.action.kind === "basic_attack" && entity.action.phase !== "idle") {
+    return `${prefix}-attack-${authoredPhase}-source`;
+  }
   return hostileIdlePoseAsset(prefix, entity.facing);
 }
 
@@ -552,6 +633,7 @@ export interface CombatPoseTreatment {
     | "windup"
     | "committed"
     | "impact"
+    | "recoil"
     | "recovery";
 }
 
@@ -570,43 +652,18 @@ export function selectCombatPoseTreatment(
     entity.action.kind === "moving" || entity.transition === "moving"
       ? "moving"
       : entity.action.phase;
-  const facingSign =
-    entity.facing === "north" || entity.facing === "west" ? -1 : 1;
-  const facingAngle =
-    source.endsWith("-attack-source") && entity.faction === "enemy"
-      ? entity.facing === "north"
-        ? 90
-        : entity.facing === "east"
-          ? 0
-          : entity.facing === "south"
-            ? -90
-            : 0
-      : entity.facing === "north"
-        ? -3
-        : entity.facing === "east"
-          ? 1
-          : entity.facing === "south"
-            ? 3
-            : -1;
-  const phaseAngle =
-    state === "moving"
-      ? 2
-      : state === "windup"
-        ? -6
-        : state === "committed"
-          ? 4
-          : state === "impact"
-            ? 8
-            : state === "recovery"
-              ? -2
-              : 0;
+  const authoredAttack =
+    entity.action.kind === "basic_attack" || entity.action.kind === "ability";
+  const sourceFacesEast = entity.faction === "dwarf";
   return {
     source,
-    angle: state === "idle" ? 0 : phaseAngle * facingSign + facingAngle,
+    angle: 0,
     flipX:
-      entity.faction === "enemy" &&
-      entity.action.kind === "basic_attack" &&
-      entity.facing === "east",
+      authoredAttack &&
+      ((sourceFacesEast &&
+        (entity.facing === "west" || entity.facing === "south")) ||
+        (!sourceFacesEast &&
+          (entity.facing === "east" || entity.facing === "north"))),
     state
   };
 }
@@ -667,6 +724,12 @@ export function deriveShieldSlamImpactIds(
   previousSnapshot: RenderSnapshot | undefined
 ): readonly string[] {
   if (snapshot.schemaVersion !== 2) return [];
+  if (
+    previousSnapshot?.schemaVersion !== 2 ||
+    previousSnapshot.scenarioId !== snapshot.scenarioId ||
+    previousSnapshot.tick !== snapshot.previousTick
+  )
+    return [];
   const shieldSlam = snapshot.entities.find(
     (entity) =>
       entity.faction === "dwarf" &&
@@ -675,53 +738,45 @@ export function deriveShieldSlamImpactIds(
       entity.action.phase === "impact"
   );
   if (shieldSlam === undefined) return [];
-  const damagedHostileIds = snapshot.entities
-    .filter(
-      (entity) =>
-        entity.faction === "enemy" &&
-        deriveCombatPresentationState(snapshot, previousSnapshot, entity.id)
-          ?.damaged === true
-    )
-    .map(({ id }) => id)
-    .sort(compareRenderIds);
-  const departedHostileIds =
-    previousSnapshot?.schemaVersion === 2 &&
-    previousSnapshot.scenarioId === snapshot.scenarioId &&
-    previousSnapshot.tick === snapshot.previousTick
-      ? snapshot.entityTransitions
-          .filter(
-            (transition) =>
-              transition.atTick === snapshot.tick &&
-              (transition.kind === "downed" || transition.kind === "destroyed")
-          )
-          .flatMap((transition) => {
-            const previous = previousSnapshot.entities.find(
-              ({ id }) => id === transition.entityId
-            );
-            return previous?.faction === "enemy" ? [transition.entityId] : [];
-          })
-      : [];
-  const authoritativeImpactIds = [...damagedHostileIds, ...departedHostileIds]
-    .filter((id, index, ids) => ids.indexOf(id) === index)
-    .sort(compareRenderIds);
-  if (authoritativeImpactIds.length > 0) return authoritativeImpactIds;
-  return shieldSlam.targetEntityId === null ? [] : [shieldSlam.targetEntityId];
+  return shieldSlam.action.impactTargetEntityIds ?? [];
 }
 
 export interface SlingerProjectilePath {
   readonly sourceId: string;
   readonly targetId: string;
+  readonly phase: "committed" | "impact";
   readonly source: RenderPrimitive;
   readonly target: RenderPrimitive;
 }
 
+export function slingerProjectileHead(path: SlingerProjectilePath): {
+  readonly x: number;
+  readonly y: number;
+} {
+  return path.phase === "impact"
+    ? { x: path.target.x, y: path.target.y - 34 }
+    : {
+        x: path.source.x + (path.target.x - path.source.x) * 0.58,
+        y: path.source.y - 28 + (path.target.y - 6 - path.source.y) * 0.58
+      };
+}
+
 export function deriveSlingerProjectilePaths(
   snapshot: RenderSnapshot,
-  primitives: BattlefieldPrimitives
+  primitives: BattlefieldPrimitives,
+  previousSnapshot?: RenderSnapshot
 ): readonly SlingerProjectilePath[] {
   if (snapshot.schemaVersion !== 2) return [];
+  const previousPrimitives =
+    previousSnapshot?.schemaVersion === 2 &&
+    previousSnapshot.scenarioId === snapshot.scenarioId &&
+    previousSnapshot.tick === snapshot.previousTick
+      ? buildBattlefieldPrimitives(previousSnapshot)
+      : undefined;
   const positions = new Map(
-    primitives.entities.map((entity) => [entity.id, entity])
+    [...(previousPrimitives?.entities ?? []), ...primitives.entities].map(
+      (entity) => [entity.id, entity]
+    )
   );
   return snapshot.entities
     .filter(
@@ -742,6 +797,7 @@ export function deriveSlingerProjectilePaths(
             {
               sourceId: entity.id,
               targetId: entity.targetEntityId as string,
+              phase: entity.action.phase as "committed" | "impact",
               source,
               target
             }
@@ -1189,8 +1245,9 @@ function createDepthClippedPresentationTexture(
   const source = scene.textures.get(sourceKey).getSourceImage() as
     | HTMLImageElement
     | HTMLCanvasElement;
-  if (scene.textures.exists(outputKey)) scene.textures.remove(outputKey);
-  const texture = scene.textures.createCanvas(outputKey, width, height);
+  const texture = scene.textures.exists(outputKey)
+    ? (scene.textures.get(outputKey) as Phaser.Textures.CanvasTexture)
+    : scene.textures.createCanvas(outputKey, width, height);
   if (texture === null)
     throw new Error(`unable to create depth-clipped texture: ${outputKey}`);
   const context = texture.context;
@@ -1249,6 +1306,14 @@ function createDepthVisibilityMask(
     }
   }
   return shape.createGeometryMask();
+}
+
+function clearDepthVisibilityMask(
+  object: Phaser.GameObjects.Components.Mask
+): void {
+  const geometry = object.mask?.geometryMask;
+  object.clearMask(true);
+  geometry?.destroy();
 }
 
 function addDepthTestedRing(
@@ -1318,7 +1383,7 @@ function updateEntitySignal(
   presentation: CombatPresentationState | undefined,
   staticDepth: StaticSceneDepth
 ): void {
-  signal.clearMask(true);
+  clearDepthVisibilityMask(signal);
   signal.clear();
   signal.setPosition(0, 0);
   if (presentation === undefined) return;
@@ -1413,7 +1478,7 @@ function addDepthTestedEffect(
   const frameLeft = Math.round(entity.x) - pivotX;
   const frameTop = Math.round(entity.y) - pivotY;
   const effect = existing ?? scene.add.graphics();
-  effect.clearMask(true);
+  clearDepthVisibilityMask(effect);
   effect.clear();
   effect.setAlpha(1);
   if (kind === "arrival") {
@@ -1477,6 +1542,7 @@ function addDepthTestedBillboard(
 ): Phaser.GameObjects.Image {
   if (entity.cameraDepth === undefined) {
     const image = existing ?? scene.add.image(entity.x, entity.y, sourceKey);
+    clearDepthVisibilityMask(image);
     image
       .setTexture(sourceKey)
       .setPosition(entity.x, entity.y)
@@ -1485,33 +1551,31 @@ function addDepthTestedBillboard(
     image.setData("renderSourceKey", sourceKey);
     return image;
   }
-  const frameLeft = Math.round(entity.x) - pivotX;
-  const frameTop = Math.round(entity.y) - pivotY;
-  if (existing !== undefined) existing.setTexture(sourceKey);
-  const texture = createDepthClippedPresentationTexture(
-    scene,
-    sourceKey,
-    `subject-depth-${entity.id}`,
-    width,
-    height,
-    {
-      kind: "upright-billboard",
-      cameraDepth: entity.cameraDepth,
-      cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
-      depthEdgeGuardPixels: 1,
-      frameLeft,
-      frameTop,
-      pivotY
-    },
-    staticDepth
-  );
-  const image = existing ?? scene.add.image(entity.x, entity.y, texture);
+  const image = existing ?? scene.add.image(entity.x, entity.y, sourceKey);
+  clearDepthVisibilityMask(image);
   image
-    .setTexture(texture)
+    .setTexture(sourceKey)
     .setPosition(entity.x, entity.y)
     .setOrigin(pivotX / width, pivotY / height);
   image.setData("renderEntityId", entity.id);
   image.setData("renderSourceKey", sourceKey);
+  image.setMask(
+    createDepthVisibilityMask(
+      scene,
+      width,
+      height,
+      {
+        kind: "upright-billboard",
+        cameraDepth: entity.cameraDepth,
+        cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
+        depthEdgeGuardPixels: 1,
+        frameLeft: Math.round(entity.x) - pivotX,
+        frameTop: Math.round(entity.y) - pivotY,
+        pivotY
+      },
+      staticDepth
+    )
+  );
   return image;
 }
 
@@ -1537,6 +1601,8 @@ interface PersistentEntityObjects {
   signalDamaged: boolean;
   signalEntity: RenderPrimitive | undefined;
   signalPresentation: CombatPresentationState | undefined;
+  motionX: number;
+  motionY: number;
   targetX: number;
   targetY: number;
 }
@@ -1571,6 +1637,7 @@ class PersistentBattlefieldScene {
   readonly terminalText: Phaser.GameObjects.Text;
   updateCount = 0;
   activeEffects = 0;
+  effectsExpireAt = 0;
   lastInterpolatedTick: string | undefined;
   lastAbilityEffectTick: string | undefined;
   lastSnapshot: RenderSnapshot | undefined;
@@ -1637,29 +1704,53 @@ class PersistentBattlefieldScene {
     const offsetY = origin.y - destination.y;
     objects.targetX = destination.x;
     objects.targetY = destination.y;
+    objects.motionX = origin.x;
+    objects.motionY = origin.y;
     objects.ring.setPosition(origin.x, origin.y);
     objects.subject.setPosition(origin.x, origin.y);
+    objects.subject.mask?.geometryMask?.setPosition(offsetX, offsetY);
     objects.signal.setPosition(offsetX, offsetY);
     const signalMask = objects.signal.mask?.geometryMask;
     signalMask?.setPosition(offsetX, offsetY);
   }
 
-  updateMotion(deltaMilliseconds: number, simulationSpeed: 1 | 2): void {
+  updateMotion(
+    deltaMilliseconds: number,
+    simulationSpeed: 1 | 2,
+    reduceMotion: boolean
+  ): void {
+    if (this.activeEffects > 0 && this.scene.time.now >= this.effectsExpireAt) {
+      for (const effect of this.effects) {
+        clearDepthVisibilityMask(effect);
+        effect.setVisible(false);
+      }
+      this.activeEffects = 0;
+      this.effectsExpireAt = 0;
+    }
     const maximumStep = interpolationDistanceForFrame(
       deltaMilliseconds,
       simulationSpeed
     );
     for (const objects of this.entities.values()) {
-      const deltaX = objects.targetX - objects.subject.x;
-      const deltaY = objects.targetY - objects.subject.y;
+      const deltaX = objects.targetX - objects.motionX;
+      const deltaY = objects.targetY - objects.motionY;
       const distance = Math.hypot(deltaX, deltaY);
       const ratio = distance === 0 ? 1 : Math.min(1, maximumStep / distance);
-      const x = objects.subject.x + deltaX * ratio;
-      const y = objects.subject.y + deltaY * ratio;
-      objects.subject.setPosition(x, y);
+      const x = objects.motionX + deltaX * ratio;
+      const y = objects.motionY + deltaY * ratio;
+      const locomotionCadence = locomotionCadenceOffset(
+        this.scene.time.now,
+        simulationSpeed,
+        distance > 0,
+        reduceMotion
+      );
+      objects.motionX = x;
+      objects.motionY = y;
+      objects.subject.setPosition(x, y + locomotionCadence);
       objects.ring.setPosition(x, y);
       const offsetX = x - objects.targetX;
-      const offsetY = y - objects.targetY;
+      const offsetY = y + locomotionCadence - objects.targetY;
+      objects.subject.mask?.geometryMask?.setPosition(offsetX, offsetY);
       objects.signal.setPosition(offsetX, offsetY);
       objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
       if (
@@ -1691,11 +1782,12 @@ class PersistentBattlefieldScene {
     this.layers["world-entities"].delete(objects.subject);
     this.layers["world-effects"].delete(objects.signal);
     objects.ring.destroy();
-    objects.signal.clearMask(true);
+    clearDepthVisibilityMask(objects.subject);
+    clearDepthVisibilityMask(objects.signal);
     objects.signal.destroy();
     objects.subject.setTexture("warden-runtime");
     objects.subject.destroy();
-    for (const textureKey of [`ring-depth-${id}`, `subject-depth-${id}`])
+    for (const textureKey of [`ring-depth-${id}`])
       if (this.scene.textures.exists(textureKey))
         this.scene.textures.remove(textureKey);
   }
@@ -1735,6 +1827,7 @@ class PersistentBattlefieldScene {
           .setY(departure.originY + 28 * progress)
           .setTint(0xff5c4d);
       }
+      subject.mask?.geometryMask?.setPosition(0, subject.y - departure.originY);
       if (progress < 1) continue;
       this.destroyEntityObjects(id, departure.objects);
       this.departures.delete(id);
@@ -1863,7 +1956,13 @@ class PersistentBattlefieldScene {
     const poseSourceKeys: readonly CombatPoseAssetKey[] = [
       "warden-source",
       "warden-basic-attack-source",
+      ...(["windup", "committed", "impact", "recoil", "recovery"] as const).map(
+        (phase) => `warden-basic-attack-${phase}-source` as const
+      ),
       "warden-shield-slam-source",
+      ...(["windup", "committed", "impact", "recoil", "recovery"] as const).map(
+        (phase) => `warden-shield-slam-${phase}-source` as const
+      ),
       "warden-hit-source",
       "warden-guard-source",
       "warden-downed-source",
@@ -1890,7 +1989,13 @@ class PersistentBattlefieldScene {
       "captain-east-source",
       "captain-west-source",
       "captain-attack-source",
-      "captain-downed-source"
+      "captain-downed-source",
+      ...(["raider", "slinger", "bulwark", "captain"] as const).flatMap(
+        (role) =>
+          (
+            ["windup", "committed", "impact", "recoil", "recovery"] as const
+          ).map((phase) => `${role}-attack-${phase}-source` as const)
+      )
     ];
     const poseTextures = new Map<CombatPoseAssetKey, string>(
       poseSourceKeys.map((source) => [
@@ -1909,7 +2014,7 @@ class PersistentBattlefieldScene {
       const displayedOrigin =
         existing === undefined
           ? undefined
-          : { id: entity.id, x: existing.subject.x, y: existing.subject.y };
+          : { id: entity.id, x: existing.motionX, y: existing.motionY };
       const presentation = deriveCombatPresentationState(
         snapshot,
         previousSnapshot,
@@ -1964,6 +2069,8 @@ class PersistentBattlefieldScene {
           signalDamaged: false,
           signalEntity: undefined,
           signalPresentation: undefined,
+          motionX: entity.x,
+          motionY: entity.y,
           targetX: entity.x,
           targetY: entity.y
         });
@@ -2006,6 +2113,8 @@ class PersistentBattlefieldScene {
       )
         this.interpolateEntity(objects, origin, entity);
       else if (objects !== undefined) {
+        objects.motionX = entity.x;
+        objects.motionY = entity.y;
         objects.targetX = entity.x;
         objects.targetY = entity.y;
       }
@@ -2013,9 +2122,12 @@ class PersistentBattlefieldScene {
     if (interpolationTick !== undefined)
       this.lastInterpolatedTick = interpolationTick;
 
-    this.scene.tweens.killTweensOf(this.effects);
-    this.activeEffects = 0;
-    if (feedback !== undefined) {
+    if (
+      feedback !== undefined &&
+      (feedback.arrivals.length > 0 || feedback.departures.length > 0)
+    ) {
+      this.scene.tweens.killTweensOf(this.effects);
+      this.activeEffects = 0;
       const arrivalIds = new Set(feedback.arrivals.map(({ id }) => id));
       const effectEntities = [
         ...orderedEntities
@@ -2043,33 +2155,53 @@ class PersistentBattlefieldScene {
           this.activeEffects += 1;
         }
       }
+      for (
+        let index = this.activeEffects;
+        index < this.effects.length;
+        index += 1
+      ) {
+        const effect = this.effects[index];
+        if (effect !== undefined) {
+          clearDepthVisibilityMask(effect);
+          effect.setVisible(false);
+        }
+      }
+      const active = this.effects.slice(0, this.activeEffects);
+      this.effectsExpireAt =
+        active.length === 0
+          ? 0
+          : this.scene.time.now + battlefieldEffectLifetime(reduceMotion);
+      if (
+        active.length > 0 &&
+        !reduceMotion &&
+        evidenceEffectAlpha === undefined
+      )
+        this.scene.tweens.add({
+          targets: active,
+          alpha: 0.15,
+          duration: 420,
+          yoyo: true,
+          repeat: 1
+        });
+      else if (active.length > 0 && evidenceEffectAlpha === undefined)
+        for (const effect of active) effect.setAlpha(1);
+      else if (evidenceEffectAlpha !== undefined)
+        for (const effect of active) effect.setAlpha(evidenceEffectAlpha);
     }
-    for (
-      let index = this.activeEffects;
-      index < this.effects.length;
-      index += 1
-    ) {
-      this.effects[index]?.clearMask(true);
-      this.effects[index]?.setVisible(false);
-    }
-    const active = this.effects.slice(0, this.activeEffects);
-    if (active.length > 0 && !reduceMotion && evidenceEffectAlpha === undefined)
-      this.scene.tweens.add({
-        targets: active,
-        alpha: 0.15,
-        duration: 420,
-        yoyo: true,
-        repeat: 1
-      });
-    else if (active.length > 0 && evidenceEffectAlpha === undefined)
-      for (const effect of active) effect.setAlpha(1);
-    else if (evidenceEffectAlpha !== undefined)
-      for (const effect of active) effect.setAlpha(evidenceEffectAlpha);
 
-    const projectilePaths = deriveSlingerProjectilePaths(snapshot, primitives);
+    const projectilePaths = deriveSlingerProjectilePaths(
+      snapshot,
+      primitives,
+      previousSnapshot
+    );
+    const abilityImpactIds = deriveShieldSlamImpactIds(
+      snapshot,
+      previousSnapshot
+    );
     const liveProjectileIds = new Set(
       projectilePaths.map(({ sourceId }) => sourceId)
     );
+    if (abilityImpactIds.length > 0) liveProjectileIds.add("shield-slam-area");
     for (const [id, effect] of this.projectileEffects)
       if (!liveProjectileIds.has(id)) {
         this.layers["world-effects"].delete(effect);
@@ -2080,21 +2212,18 @@ class PersistentBattlefieldScene {
       const effect =
         this.projectileEffects.get(path.sourceId) ?? this.scene.add.graphics();
       effect.clear();
-      effect.lineStyle(3, 0xf0aa52, 0.9);
+      effect.lineStyle(2, 0xc88942, 0.72);
+      const { x: projectileX, y: projectileY } = slingerProjectileHead(path);
       effect.lineBetween(
         path.source.x,
         path.source.y - 28,
-        path.target.x,
-        path.target.y - 34
+        projectileX,
+        projectileY
       );
       effect.fillStyle(0xffd17a, 1);
-      effect.fillCircle(
-        path.target.x,
-        path.target.y - 34,
-        reduceMotion ? 4 : 6
-      );
-      effect.lineStyle(2, 0xd8eef5, 0.95);
-      effect.strokeCircle(path.source.x, path.source.y - 28, 5);
+      effect.fillCircle(projectileX, projectileY, reduceMotion ? 3 : 4);
+      effect.lineStyle(1, 0xe9b762, 0.75);
+      effect.strokeCircle(path.source.x, path.source.y - 28, 3);
       effect.setAlpha(reduceMotion ? 0.82 : 1);
       if (!this.projectileEffects.has(path.sourceId)) {
         this.projectileEffects.set(path.sourceId, effect);
@@ -2102,14 +2231,78 @@ class PersistentBattlefieldScene {
       }
     }
 
-    const abilityImpactIds = deriveShieldSlamImpactIds(
-      snapshot,
-      previousSnapshot
-    );
     const impactKey =
       snapshot.schemaVersion === 2
         ? `${snapshot.scenarioId}:${snapshot.tick}:${abilityImpactIds.join(",")}`
         : undefined;
+    if (abilityImpactIds.length > 0 && snapshot.schemaVersion === 2) {
+      const sourceId = snapshot.entities.find(
+        (entity) =>
+          entity.action.kind === "ability" &&
+          entity.action.abilityId === "ability.iron_warden.shield_slam" &&
+          entity.action.phase === "impact"
+      )?.id;
+      const source = primitives.entities.find(({ id }) => id === sourceId);
+      const sourceEntity = snapshot.entities.find(({ id }) => id === sourceId);
+      const targets = abilityImpactIds.flatMap((id) => {
+        const target = primitives.entities.find((entity) => entity.id === id);
+        return target === undefined ? [] : [target];
+      });
+      if (
+        source !== undefined &&
+        sourceEntity !== undefined &&
+        targets.length > 0
+      ) {
+        const area =
+          this.projectileEffects.get("shield-slam-area") ??
+          this.scene.add.graphics();
+        const distance = Math.max(
+          72,
+          ...targets.map((target) =>
+            Math.hypot(target.x - source.x, target.y - source.y)
+          )
+        );
+        const facingDelta =
+          sourceEntity.facing === "east"
+            ? { x: 1, y: 0 }
+            : sourceEntity.facing === "west"
+              ? { x: -1, y: 0 }
+              : sourceEntity.facing === "north"
+                ? { x: 0, y: -1 }
+                : { x: 0, y: 1 };
+        const targetX = source.x + facingDelta.x * distance;
+        const targetY = source.y + facingDelta.y * distance;
+        const deltaX = targetX - source.x;
+        const deltaY = targetY - source.y;
+        const perpendicularX = (-deltaY / distance) * 28;
+        const perpendicularY = (deltaX / distance) * 28;
+        if (Number.isFinite(targetX) && Number.isFinite(targetY)) {
+          area.clear();
+          area.fillStyle(0xd89b45, reduceMotion ? 0.14 : 0.22);
+          area.fillTriangle(
+            source.x,
+            source.y - 18,
+            targetX + perpendicularX,
+            targetY + perpendicularY,
+            targetX - perpendicularX,
+            targetY - perpendicularY
+          );
+          area.lineStyle(2, 0xf2c16f, 0.55);
+          area.strokeTriangle(
+            source.x,
+            source.y - 18,
+            targetX + perpendicularX,
+            targetY + perpendicularY,
+            targetX - perpendicularX,
+            targetY - perpendicularY
+          );
+          if (!this.projectileEffects.has("shield-slam-area")) {
+            this.projectileEffects.set("shield-slam-area", area);
+            this.layers["world-effects"].add(area);
+          }
+        }
+      }
+    }
     const previousPrimitivesById = new Map(
       previousSnapshot === undefined
         ? []
@@ -2155,15 +2348,15 @@ class PersistentBattlefieldScene {
       effect
         .setTexture(texture)
         .setPosition(effectX, effectY)
-        .setAlpha(0.82)
-        .setScale(0.78);
+        .setAlpha(0.7)
+        .setScale(0.56);
       this.abilityEffects.set(id, effect);
       this.layers["world-effects"].add(effect);
       if (!reduceMotion && impactKey !== this.lastAbilityEffectTick)
         this.scene.tweens.add({
           targets: effect,
           alpha: 0.35,
-          scale: 0.9,
+          scale: 0.64,
           duration: 180,
           yoyo: true
         });
@@ -2190,7 +2383,8 @@ class PersistentBattlefieldScene {
       const objects = this.entities.get(entity.id);
       if (objects !== undefined) this.scene.children.bringToTop(objects.ring);
     }
-    for (const effect of active) this.scene.children.bringToTop(effect);
+    for (const effect of this.effects.slice(0, this.activeEffects))
+      this.scene.children.bringToTop(effect);
     for (const effect of this.projectileEffects.values())
       this.scene.children.bringToTop(effect);
     for (const entity of orderedEntities) {
@@ -2199,7 +2393,8 @@ class PersistentBattlefieldScene {
         this.scene.children.bringToTop(objects.subject);
     }
     this.scene.children.bringToTop(this.lighting);
-    for (const effect of active) this.scene.children.bringToTop(effect);
+    for (const effect of this.effects.slice(0, this.activeEffects))
+      this.scene.children.bringToTop(effect);
     for (const effect of this.abilityEffects.values())
       this.scene.children.bringToTop(effect);
     for (const objects of this.entities.values())
@@ -2340,12 +2535,13 @@ class PersistentBattlefieldScene {
     this.scene.tweens.killTweensOf(this.effects);
     for (const objects of this.entities.values()) {
       this.scene.tweens.killTweensOf([objects.ring, objects.subject]);
-      objects.signal.clearMask(true);
+      clearDepthVisibilityMask(objects.signal);
+      clearDepthVisibilityMask(objects.subject);
       objects.subject.setTexture("warden-runtime");
     }
     for (const [id, departure] of this.departures)
       this.destroyEntityObjects(id, departure.objects);
-    for (const effect of this.effects) effect.clearMask(true);
+    for (const effect of this.effects) clearDepthVisibilityMask(effect);
     for (const effect of this.projectileEffects.values()) effect.destroy();
     this.projectileEffects.clear();
     for (const effect of this.abilityEffects.values()) effect.destroy();
@@ -2376,6 +2572,10 @@ function createBattlefieldRenderer(
   initialReduceMotion: boolean,
   initialSimulationSpeed: 1 | 2,
   initialEvidenceEffectAlpha: number | undefined,
+  onInitialPresentationRendered: (
+    snapshot: RenderSnapshot,
+    feedback: CombatFeedback | undefined
+  ) => void,
   onTerminalPresentationStarted: (snapshot: RenderSnapshot) => void,
   onTerminalPresentationCompleted: (snapshot: RenderSnapshot) => void
 ): BattlefieldRenderer {
@@ -2460,13 +2660,14 @@ function createBattlefieldRenderer(
           undefined,
           evidenceEffectAlpha
         );
+        onInitialPresentationRendered(snapshot, feedback);
         if (snapshot.schemaVersion === 2 && snapshot.phase === "terminal")
           onTerminalPresentationStarted(snapshot);
         if (persistentScene.terminalPresentationComplete())
           onTerminalPresentationCompleted(snapshot);
       },
       update(_time: number, delta: number) {
-        persistentScene?.updateMotion(delta, simulationSpeed);
+        persistentScene?.updateMotion(delta, simulationSpeed, reduceMotion);
         persistentScene?.updateDepartures();
         if (
           persistentScene?.terminalPresentationComplete() === true &&
@@ -2601,6 +2802,7 @@ export function Battlefield({
         latestReduceMotionRef.current,
         latestSimulationSpeedRef.current,
         latestEvidenceEffectAlphaRef.current,
+        markInitialFeedbackRendered,
         (terminalSnapshot) =>
           latestTerminalPresentationStartedRef.current(terminalSnapshot),
         (terminalSnapshot) =>
@@ -2617,7 +2819,10 @@ export function Battlefield({
 
   useEffect(() => {
     const previousSnapshot = previousSnapshotRef.current;
-    const nextFeedback = deriveCombatFeedback(previousSnapshot, snapshot);
+    const nextFeedback =
+      previousSnapshot === undefined && hasRenderedInitialFeedback(snapshot)
+        ? undefined
+        : deriveCombatFeedback(previousSnapshot, snapshot);
     const renderedFeedback =
       evidenceEffectAlpha !== undefined && nextFeedback === undefined
         ? latestFeedbackRef.current
