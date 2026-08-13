@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "issue": 318,
+  "baselineHead": "1b4df864bae9a932aa9f3ea4b521922db39abb2f",
+  "candidateHead": "c18006866e31fefeeae41c315286e65ca3db8b61",
+  "viewport": [1440, 900],
+  "deviceScaleFactor": 1,
+  "browser": "chromium",
+  "reducedMotion": true,
+  "fixture": "fresh local profile",
+  "captures": [
+    {
+      "state": "forge",
+      "before": "before-forge.png",
+      "beforeSha256": "0ed032be17cd07a82a26360d69702e54084e178ce4a06f95966ced972782556e",
+      "after": "after-forge.png",
+      "afterSha256": "b86500fdfb1cf783a6b5c5d1ad29ee66a82b57e30f73860d02135239c3e1e377",
+      "adjacent": "adjacent-forge.png",
+      "adjacentSha256": "8047b98d0e00e967ed1d7795f23908931341cfa827ad52eb66c4c22a83bc078c",
+      "changedRegion": "Available upgrades area: equipped next-run Iron Warden modifier summary"
+    },
+    {
+      "state": "preparation",
+      "before": "before-preparation.png",
+      "beforeSha256": "d8dcd93e1373c43525f47aa818b8630e241eb543297b63cee7c34f3612575a65",
+      "after": "after-preparation.png",
+      "afterSha256": "fa05126aa0cec67bb73f1260db77ff337c38c4ec86c67d28d06fc0c30d72961a",
+      "adjacent": "adjacent-preparation.png",
+      "adjacentSha256": "0f93c4e7305eb7f25209d2be7edab1891530b0823cdf53cffc53d29a048f69fd",
+      "changedRegion": "Right preparation panel: equipped build identity and four exact modifiers"
+    }
+  ],
+  "decision": "Approve the new equipped Iron Warden build summary in the Forge and preparation panel, including the denser preparation-panel hierarchy."
+}
