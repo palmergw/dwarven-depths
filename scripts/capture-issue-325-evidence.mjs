@@ -266,7 +266,11 @@ try {
   await capture(
     page,
     "preparation-loadout",
-    () => document.querySelector('[data-shell-view="preparation"]') !== null
+    () =>
+      document.querySelector('[data-shell-view="preparation"]') !== null &&
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady === true &&
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "preparation" &&
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.alignment.valid === true
   );
   await page.getByRole("button", { name: "Confirm preparation" }).click();
   await waitForPausedCombat(page);
