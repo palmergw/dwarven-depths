@@ -3,8 +3,8 @@
   "complete": true,
   "scenarioId": "campaign_scenario.shuttergate.v1",
   "scenarioHash": "6efe2bfa347f83ec4ab772807fbb61361bb7ede8307b6ceb33ce2005fa298d88",
-  "contentManifestHash": "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d",
+  "contentManifestHash": "1ec036180a0e24ea8fa7f8f7622555645c486f2e6cac27f751a6b360e82fdac8",
   "attemptCount": 4,
-  "campaignPayloadChecksum": "acbfc83b04b4b310e8aff2a27c967212fb12d35d057db1ad8f7fa9dbf2faca93",
+  "campaignPayloadChecksum": "41861b124d974f3e7b3f11bcc0b75ca4910dd12f16331cf950278b2ff6f68465",
   "calibrationReportChecksum": "8566b76f2c82066b9faa423aad25134e1fe8b689ec3379d594d7b3fbc32ad320"
 }

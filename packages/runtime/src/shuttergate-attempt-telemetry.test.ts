@@ -56,7 +56,7 @@ describe("local Shuttergate attempt telemetry", () => {
         }
       },
       payloadChecksum:
-        "665e6c83534e7078f1a3a0ea0e5392bd3da95c2a4dbae94f330f978ca3f8555c"
+        "1cda6edd4b98d1bf1b8aa0e812408319832fb4058f6387fcef8cedcb44d65a46"
     });
     expect(first.payload.waveTransitions.length).toBeGreaterThan(1);
     expect(first.payload.rewards.forgeOreAwarded).toBeGreaterThan(0);

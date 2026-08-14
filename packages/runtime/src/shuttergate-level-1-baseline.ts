@@ -1,7 +1,7 @@
 import type { ShuttergateBuildCalibrationEvidence } from "./shuttergate-reference-calibration.js";
 
 const shuttergateReferenceManifestHash =
-  "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d";
+  "1ec036180a0e24ea8fa7f8f7622555645c486f2e6cac27f751a6b360e82fdac8";
 
 interface IntegerRange {
   readonly minimum: number;

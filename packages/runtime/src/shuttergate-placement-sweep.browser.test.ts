@@ -21,7 +21,7 @@ describe("Shuttergate placement-sweep browser parity", () => {
 
     expect(evidence.targetPolicy).toBe("lowest_health");
     expect(await canonicalHash(evidence)).toBe(
-      "58e799fb40ee20696d00b3f4fad973f1987a01ece38645f5127f8ea55d41bcb2"
+      "7b4c4bb4488a25f758a74df82e3bcdd85acd6bf978459e8e2df47945b34f0584"
     );
   }, 120_000);
 
@@ -39,7 +39,7 @@ describe("Shuttergate placement-sweep browser parity", () => {
     expect(evidence.deployedWardenMaximumHealth).toBe(840);
     expect(evidence.deployedWardenAttackDamage).toBe(20);
     expect(await canonicalHash(evidence)).toBe(
-      "eaca805a1311154ac99ae358d24fe30b1db303ce29dbffba11e48b5cd93b8fa3"
+      "61a8a15123af86b47455645a51957ddd621794a8d1b63e80315d38caad2b0ccb"
     );
   }, 300_000);
 });

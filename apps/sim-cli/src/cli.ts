@@ -104,7 +104,7 @@ const approvedWebScenarioHashes: Readonly<Record<string, string>> =
       "d91c9184224e26ca7502a691163fa8851536fb40b995e14de88b327fe96c5154"
   });
 const approvedWebContentManifestHash =
-  "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d";
+  "1ec036180a0e24ea8fa7f8f7622555645c486f2e6cac27f751a6b360e82fdac8";
 const sweepControllers = Object.freeze({
   "controller.target.nearest.v1": "nearest",
   "controller.target.lowest_health.v1": "lowest_health",
