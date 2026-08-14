@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "license": "Original project asset generated for Dwarven Depths; project-owned output under the repository license.",
+  "provider": "openai-codex",
+  "model": "gpt-image-2-medium",
+  "generatedAt": "2026-08-14",
+  "settings": {
+    "aspectRatio": "square",
+    "sourceSize": [1254, 1254],
+    "backgroundRemoval": "rembg 2.0.72 u2net; rallying-roar neutral checker cleanup threshold max(rgb)-min(rgb)<18 and min(rgb)>210"
+  },
+  "assets": [
+    {
+      "id": "effect.iron_warden.linebreaker_impact",
+      "source": "../sources/effects/linebreaker-impact-isolated-source.png",
+      "sourceSha256": "c918c9dcd45edd87ff8545a0e597aa4d423bbf1f0f6fc6724d3b749cab6a1418",
+      "originalSource": "../sources/effects/linebreaker-impact-source.png",
+      "originalSourceSha256": "2c7976c17ea052598f70fc52c2eb66aa6bbaa4f8921af8af650780980982a7d5",
+      "export": "../exports/effects/linebreaker-impact.png",
+      "exportSha256": "1fa4f0a9b5bc0ca462ea4934043c41248a25b01b6a77f3f2985cfa76ea64721e",
+      "exportDimensions": [140, 96],
+      "prompt": "Original game VFX sprite asset for Dwarven Depths, transparent RGBA background. A restrained warm amber-orange Linebreaker impact: low forward-facing wedge shockwave, chipped stone dust, a few tiny ember sparks, broad base and narrow directionality, painterly dark-fantasy 2.5D isometric game style, no character, no weapon, no text, no cyan, no border, no ground plane, no scenery. Fully isolated effect with clean alpha edges, centered with generous transparent margin, readable at 140 pixels."
+    },
+    {
+      "id": "effect.iron_warden.rallying_roar_aura",
+      "source": "../sources/effects/rallying-roar-aura-isolated-source.png",
+      "sourceSha256": "db24b7cbbfa11e4942b62b25fa56a1f75708ba3cf2ea33d6c7577af4a6c579e0",
+      "originalSource": "../sources/effects/rallying-roar-aura-source.png",
+      "originalSourceSha256": "4946a119e1c967d0de1908241b68d1d3fbc1cfe7e296d71506405b9edabe6338",
+      "export": "../exports/effects/rallying-roar-aura.png",
+      "exportSha256": "d81290ac568b8f9b4dc5e9e5835d59e2d419bf399ce1063673a521305b27ab6b",
+      "exportDimensions": [140, 96],
+      "prompt": "Original game VFX sprite asset for Dwarven Depths, transparent RGBA background. A restrained warm gold Rallying Roar protection aura: compact circular dwarven rune pulse with two broken concentric rings and subtle upward ember motes, painterly dark-fantasy 2.5D isometric game style, defensive and steady rather than explosive, no character, no weapon, no text, no cyan, no border, no ground plane, no scenery. Fully isolated effect with clean alpha edges, centered with generous transparent margin, readable at 140 pixels."
+    }
+  ]
+}

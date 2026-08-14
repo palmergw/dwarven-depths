@@ -24,6 +24,7 @@ import {
   buildTruthScreenAlignment,
   comparePresentationPrimitives,
   decodeBattlefieldDepthAsset,
+  deriveActiveAbilityImpact,
   deriveCombatPresentationState,
   deriveShieldSlamImpactIds,
   deriveSlingerProjectilePaths,
@@ -3343,6 +3344,37 @@ describe("authoritative web worker", () => {
     expect(deriveShieldSlamImpactIds(multiTarget, multiTargetPrevious)).toEqual(
       ["entity.enemy.alpha", "entity.enemy.beta"]
     );
+    expect(deriveActiveAbilityImpact(multiTarget, multiTargetPrevious)).toEqual(
+      {
+        abilityId: "ability.iron_warden.shield_slam",
+        sourceEntityId: entity.id,
+        targetEntityIds: ["entity.enemy.alpha", "entity.enemy.beta"]
+      }
+    );
+    for (const abilityId of [
+      "ability.iron_warden.linebreaker",
+      "ability.iron_warden.rallying_roar"
+    ])
+      expect(
+        deriveActiveAbilityImpact(
+          {
+            ...multiTarget,
+            entities: [
+              {
+                ...entity,
+                action: { ...entity.action, abilityId }
+              },
+              hostile,
+              elite
+            ]
+          },
+          multiTargetPrevious
+        )
+      ).toEqual({
+        abilityId,
+        sourceEntityId: entity.id,
+        targetEntityIds: ["entity.enemy.alpha", "entity.enemy.beta"]
+      });
     expect(deriveShieldSlamImpactIds(multiTarget, undefined)).toEqual([]);
     expect(
       deriveShieldSlamImpactIds(multiTarget, {

@@ -8,7 +8,7 @@
     "mine-raider": 1
   },
   "contractDigests": {
-    "provenance.json": "3d5a04ca7da39c3607b88cf4f8495d654164b39e2d6e48e98d860672247b59bc",
+    "provenance.json": "6dfa82cf56fac264d44f0c09fa044be356729eb0488180b8ecec0ea19215472c",
     "reconstruction.json": "3ab3e0d74cca2e35415f243675c5a411f8b25b11a5239fd069dd82e1f221b36a",
     "scene-contract.json": "9d015cc40703b52f21d707f04a9c46a8b18726ed39f9fad306c6084424ebad06"
   },
@@ -112,6 +112,26 @@
       "alphaSemantics": "straight-alpha",
       "contributesTo": ["world-effects"],
       "sha256": "19e2c3a9c1961a48b4552c50f52c317af799b7b71bdbd533e00bbd31a559eb3c"
+    },
+    {
+      "id": "linebreaker-impact",
+      "path": "assets/game-art/production-scene/exports/effects/linebreaker-impact.png",
+      "category": "effect",
+      "dimensions": [140, 96],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha",
+      "contributesTo": ["world-effects"],
+      "sha256": "1fa4f0a9b5bc0ca462ea4934043c41248a25b01b6a77f3f2985cfa76ea64721e"
+    },
+    {
+      "id": "rallying-roar-aura",
+      "path": "assets/game-art/production-scene/exports/effects/rallying-roar-aura.png",
+      "category": "effect",
+      "dimensions": [140, 96],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha",
+      "contributesTo": ["world-effects"],
+      "sha256": "d81290ac568b8f9b4dc5e9e5835d59e2d419bf399ce1063673a521305b27ab6b"
     },
     {
       "id": "shield-slam-impact",
@@ -639,11 +659,11 @@
       "id": "selection-and-combat-effect-isolation",
       "path": "docs/visual-evidence/production-scene/selection-and-combat-effect-isolation.png",
       "category": "evidence",
-      "dimensions": [1280, 720],
+      "dimensions": [1664, 720],
       "mode": "RGBA",
       "alphaSemantics": "review-only",
       "contributesTo": ["review"],
-      "sha256": "0d4495bf420a57309f34442a9313778258a8a3e44296f6b79461fb3cbf48c735"
+      "sha256": "4738d763a9ccd89c4f4707337e2da75b0c3d86259a4e03732a2a375bc7610abf"
     },
     {
       "id": "shield-slam-effect-proof",

@@ -2185,7 +2185,9 @@ export function stepSimulation(
         impact.targetEntityIds.includes(application.ownerEntityId)
       );
       if (sourceImpact === undefined)
-        throw new Error("ability status application has no authoritative impact");
+        throw new Error(
+          "ability status application has no authoritative impact"
+        );
       const sequence = state.eventSequence + events.length;
       events.push(
         Object.freeze({

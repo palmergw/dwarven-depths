@@ -655,7 +655,11 @@ function parseV2(value: UnknownRecord): RenderSnapshotV2 | undefined {
         impactTargetEntityIds.length > 0 &&
         (entity.faction !== "dwarf" ||
           entity.action.kind !== "ability" ||
-          entity.action.abilityId !== "ability.iron_warden.shield_slam" ||
+          ![
+            "ability.iron_warden.linebreaker",
+            "ability.iron_warden.rallying_roar",
+            "ability.iron_warden.shield_slam"
+          ].includes(entity.action.abilityId ?? "") ||
           entity.action.phase !== "impact" ||
           impactTargetEntityIds.some(
             (id) =>
