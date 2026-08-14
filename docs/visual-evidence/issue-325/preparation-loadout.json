@@ -7,24 +7,15 @@
   "screenshot": "preparation-loadout.png",
   "screenshotSha256": "fa05126aa0cec67bb73f1260db77ff337c38c4ec86c67d28d06fc0c30d72961a",
   "state": {
-    "viewport": [
-      1440,
-      900
-    ],
+    "viewport": [1440, 900],
     "shellView": "preparation",
     "phase": "preparation",
     "truth": {
       "schemaVersion": 1,
       "captureReady": true,
       "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-      "viewport": [
-        1440,
-        900
-      ],
-      "frame": [
-        1280,
-        720
-      ],
+      "viewport": [1440, 900],
+      "frame": [1280, 720],
       "snapshot": {
         "levelId": "level.shuttergate_hall",
         "mapId": "map.shuttergate_hall",
@@ -58,18 +49,8 @@
             "x": 605,
             "y": 320,
             "nominalHeight": 56,
-            "canvasBounds": [
-              549,
-              254,
-              112,
-              72
-            ],
-            "alphaBounds": [
-              573,
-              264,
-              64,
-              56
-            ],
+            "canvasBounds": [549, 254, 112, 72],
+            "alphaBounds": [573, 264, 64, 56],
             "nonzeroAlphaPixels": 2354,
             "fullAlphaPixels": 2157,
             "partialAlphaPixels": 197,
@@ -87,15 +68,8 @@
           "depth-tested-world-focus",
           "hud"
         ],
-        "clips": [
-          "world-ring",
-          "world-effect",
-          "world-subject",
-          "world-focus"
-        ],
-        "exempts": [
-          "hud"
-        ],
+        "clips": ["world-ring", "world-effect", "world-subject", "world-focus"],
+        "exempts": ["hud"],
         "witness": {
           "entityId": "",
           "subjectAlphaPixels": 1025,
@@ -107,10 +81,7 @@
         },
         "depthResolution": {
           "intent": "rear-visible-and-foreground-occluded",
-          "actualAnchor": [
-            0,
-            0
-          ],
+          "actualAnchor": [0, 0],
           "rearOverlapPixels": 0,
           "subjectGroundOverlapPixels": 0,
           "foregroundOcclusionPixels": 0,

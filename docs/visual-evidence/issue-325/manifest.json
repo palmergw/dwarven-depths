@@ -3,10 +3,7 @@
   "issue": 325,
   "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-  "viewport": [
-    1440,
-    900
-  ],
+  "viewport": [1440, 900],
   "deviceScaleFactor": 1,
   "browser": "chromium",
   "captures": [

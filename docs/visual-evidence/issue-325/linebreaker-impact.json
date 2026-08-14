@@ -7,24 +7,15 @@
   "screenshot": "linebreaker-impact.png",
   "screenshotSha256": "426d1a51824e6a2927ef297c1100ecd7c43d95501b0ea238ba01b0b1576399bf",
   "state": {
-    "viewport": [
-      1440,
-      900
-    ],
+    "viewport": [1440, 900],
     "shellView": "running",
     "phase": "running",
     "truth": {
       "schemaVersion": 1,
       "captureReady": true,
       "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-      "viewport": [
-        1440,
-        900
-      ],
-      "frame": [
-        1280,
-        720
-      ],
+      "viewport": [1440, 900],
+      "frame": [1280, 720],
       "snapshot": {
         "levelId": "level.shuttergate_hall",
         "mapId": "map.shuttergate_hall",
@@ -48,9 +39,7 @@
               "kind": "ability",
               "phase": "impact",
               "abilityId": "ability.iron_warden.linebreaker",
-              "impactTargetEntityIds": [
-                "entity.enemy.shuttergate_001"
-              ]
+              "impactTargetEntityIds": ["entity.enemy.shuttergate_001"]
             },
             "targetEntityId": null,
             "statusIds": [],
@@ -60,18 +49,8 @@
             "x": 605,
             "y": 320,
             "nominalHeight": 56,
-            "canvasBounds": [
-              549,
-              254,
-              112,
-              72
-            ],
-            "alphaBounds": [
-              574,
-              264,
-              63,
-              56
-            ],
+            "canvasBounds": [549, 254, 112, 72],
+            "alphaBounds": [574, 264, 63, 56],
             "nonzeroAlphaPixels": 2416,
             "fullAlphaPixels": 2198,
             "partialAlphaPixels": 218,
@@ -92,27 +71,15 @@
               "impactTargetEntityIds": []
             },
             "targetEntityId": "entity.dwarf.warden",
-            "statusIds": [
-              "status.staggered"
-            ],
+            "statusIds": ["status.staggered"],
             "transition": "active",
             "elite": false,
             "boss": false,
             "x": 838,
             "y": 330,
             "nominalHeight": 44,
-            "canvasBounds": [
-              798,
-              276,
-              80,
-              60
-            ],
-            "alphaBounds": [
-              810,
-              286,
-              55,
-              44
-            ],
+            "canvasBounds": [798, 276, 80, 60],
+            "alphaBounds": [810, 286, 55, 44],
             "nonzeroAlphaPixels": 1278,
             "fullAlphaPixels": 1059,
             "partialAlphaPixels": 219,
@@ -130,15 +97,8 @@
           "depth-tested-world-focus",
           "hud"
         ],
-        "clips": [
-          "world-ring",
-          "world-effect",
-          "world-subject",
-          "world-focus"
-        ],
-        "exempts": [
-          "hud"
-        ],
+        "clips": ["world-ring", "world-effect", "world-subject", "world-focus"],
+        "exempts": ["hud"],
         "witness": {
           "entityId": "entity.enemy.shuttergate_001",
           "subjectAlphaPixels": 1025,
@@ -150,10 +110,7 @@
         },
         "depthResolution": {
           "intent": "rear-visible-and-foreground-occluded",
-          "actualAnchor": [
-            838,
-            330
-          ],
+          "actualAnchor": [838, 330],
           "rearOverlapPixels": 0,
           "subjectGroundOverlapPixels": 0,
           "foregroundOcclusionPixels": 0,

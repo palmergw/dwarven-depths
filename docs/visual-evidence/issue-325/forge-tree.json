@@ -7,10 +7,7 @@
   "screenshot": "forge-tree.png",
   "screenshotSha256": "4452794d13281ef580a369cdb4ad3fe62636cd6daf8d60550b1e02db57581a7c",
   "state": {
-    "viewport": [
-      1440,
-      900
-    ],
+    "viewport": [1440, 900],
     "shellView": "forge",
     "phase": "checkpoint",
     "truth": null,
