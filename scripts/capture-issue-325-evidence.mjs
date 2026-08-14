@@ -211,7 +211,6 @@ async function armAbilityImpactPause(page, abilityId) {
 }
 
 async function captureAbility(page, { id, abilityId, label, key, input }) {
-  await page.getByRole("button", { name: "Resume combat" }).click();
   await page.waitForFunction(
     (requestedLabel) => {
       const button = [...document.querySelectorAll("button")].find(
@@ -225,6 +224,7 @@ async function captureAbility(page, { id, abilityId, label, key, input }) {
   await armAbilityImpactPause(page, abilityId);
   if (input === "keyboard") await page.keyboard.press(key);
   else await page.getByRole("button", { name: label }).click();
+  await page.getByRole("button", { name: "Resume combat" }).click();
   await page.waitForFunction(
     (requestedAbilityId) => {
       const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
