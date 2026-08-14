@@ -391,6 +391,191 @@ button:focus-visible {
   font-size: 1em;
   overflow-wrap: anywhere;
 }
+.skill-paths {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0.55rem 0 0.65rem;
+}
+.skill-path:first-child {
+  position: relative;
+  grid-column: 1 / -1;
+  padding-bottom: 0.7rem;
+}
+.skill-path:first-child::before {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 66.666%;
+  height: 0.16rem;
+  background: linear-gradient(90deg, #49351f, #a8793f 50%, #49351f);
+  content: "";
+  transform: translateX(-50%);
+}
+.skill-path:first-child::after {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0.18rem;
+  height: 0.7rem;
+  background: linear-gradient(#a8793f, #49351f);
+  content: "";
+  transform: translateX(-50%);
+}
+.skill-path:first-child ol {
+  width: calc((100% - 2rem) / 3);
+  margin: 0 auto 0.45rem;
+}
+.skill-path > h5 {
+  position: relative;
+  margin: 0 0 0.35rem;
+  color: #e7bd68;
+  font-size: 0.78em;
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.skill-path:not(:first-child) > h5::before {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 0.18rem;
+  height: 0.7rem;
+  background: linear-gradient(#49351f, #a8793f);
+  content: "";
+  transform: translateX(-50%);
+}
+.skill-path ol {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.skill-path li {
+  position: relative;
+}
+.skill-path li:not(:last-child)::after {
+  position: absolute;
+  z-index: 0;
+  top: 100%;
+  left: 50%;
+  width: 0.18rem;
+  height: 0.35rem;
+  background: linear-gradient(#a8793f, #49351f);
+  content: "";
+  transform: translateX(-50%);
+}
+.skill-node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 0.1rem 0.55rem;
+  width: 100%;
+  min-height: 2.65rem;
+  margin: 0;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid #514530;
+  border-radius: 0.2rem;
+  background:
+    radial-gradient(circle at 15% 50%, #79512035, transparent 35%), #17140f;
+  color: #ead8b2;
+  text-align: left;
+  scroll-margin-block: 7rem 8rem;
+}
+.skill-node-icon {
+  grid-row: 1 / 3;
+  display: grid;
+  width: 2.05rem;
+  height: 2.05rem;
+  border: 1px solid #9b7139;
+  border-radius: 50%;
+  background: radial-gradient(circle, #6f4b21, #1a1008 72%);
+  color: #f4cf7a;
+  font:
+    1.25rem Georgia,
+    serif;
+  place-items: center;
+}
+.skill-node strong {
+  align-self: end;
+  font-family: Georgia, serif;
+  font-size: 0.82em;
+  line-height: 1.1;
+}
+.skill-node-state {
+  align-self: start;
+  color: #c9b990;
+  font-size: 0.64em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.skill-node[data-skill-state="available"] {
+  border-color: #b48238;
+  box-shadow:
+    inset 0 0 0.7rem #b4823822,
+    0 0 0.65rem #b4823822;
+}
+.skill-node[data-skill-state="selected"] {
+  border-color: #789765;
+  background: #1c2819;
+}
+.skill-node[data-skill-state="excluded"] {
+  border-style: dashed;
+  opacity: 0.58;
+}
+.skill-node[data-skill-state="locked"] {
+  filter: saturate(0.55);
+  opacity: 0.76;
+}
+.skill-node:is(:hover, :focus-visible, [data-active="true"]) {
+  border-color: #f0c66f;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.skill-detail {
+  display: grid;
+  grid-template-columns: 3.4rem 1fr;
+  gap: 0.75rem;
+  min-height: 6.25rem;
+  margin: 0.55rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #a8793f;
+  border-left-width: 0.3rem;
+  background: linear-gradient(110deg, #1b130c, #090705);
+  box-shadow: inset 0 0 1.5rem #ad702018;
+}
+.skill-detail-icon {
+  display: grid;
+  width: 3.2rem;
+  height: 3.2rem;
+  border: 1px solid #b48238;
+  border-radius: 50%;
+  color: #f4cf7a;
+  font:
+    1.7rem Georgia,
+    serif;
+  place-items: center;
+}
+.skill-detail :is(h5, p) {
+  margin: 0 0 0.25rem;
+}
+.skill-detail h5 {
+  color: #f0c66f;
+  font:
+    700 1.15em Georgia,
+    serif;
+}
+.skill-detail div > p:first-child,
+.skill-selection-hint {
+  color: #c9b990;
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .purchase-success {
   color: #bdeba7;
 }
@@ -487,57 +672,6 @@ code {
 .upgrade-inventory-list code {
   overflow-wrap: anywhere;
 }
-body:has(main[data-contrast-preference="high"]),
-main[data-contrast-preference="high"] {
-  background: #000;
-  color: #fff;
-}
-main[data-contrast-preference="high"] .eyebrow,
-main[data-contrast-preference="high"] .battlefield figcaption,
-main[data-contrast-preference="high"] .status,
-main[data-contrast-preference="high"] .settings-help,
-main[data-contrast-preference="high"] .run-journey-step-state,
-main[data-contrast-preference="high"] .combat-feedback,
-main[data-contrast-preference="high"] .control-entity-id,
-main[data-contrast-preference="high"] dt,
-main[data-contrast-preference="high"] code {
-  color: #fff;
-}
-main[data-contrast-preference="high"] .panel,
-main[data-contrast-preference="high"] .game-masthead,
-main[data-contrast-preference="high"] .checkpoint-hero,
-main[data-contrast-preference="high"] .inspection-surface,
-main[data-contrast-preference="high"] .battlefield-canvas,
-main[data-contrast-preference="high"] .run-journey,
-main[data-contrast-preference="high"] .run-journey-step,
-main[data-contrast-preference="high"] .settings,
-main[data-contrast-preference="high"] .upgrades,
-main[data-contrast-preference="high"] .combat-controls fieldset {
-  border-color: #fff;
-  background: #000;
-  box-shadow: none;
-}
-main[data-contrast-preference="high"] button {
-  border-color: #fff;
-  background: #fff;
-  color: #000;
-}
-main[data-contrast-preference="high"] button:hover {
-  background: #ddd;
-}
-main[data-contrast-preference="high"] .settings select {
-  border-color: #fff;
-  background: #000;
-  color: #fff;
-}
-main[data-contrast-preference="high"] .checkpoint-context div,
-main[data-contrast-preference="high"] .preparation-summary div,
-main[data-contrast-preference="high"] .combat-hud dl div,
-main[data-contrast-preference="high"] .evidence div,
-main[data-contrast-preference="high"] .upgrade-inventory-list div {
-  border-color: #fff;
-}
-
 /* Company checkpoint: an authored game frame over the approved Shuttergate plate. */
 body:has(main[data-view-phase="checkpoint"]) {
   min-height: 100vh;
@@ -797,27 +931,6 @@ main[data-view-phase="checkpoint"] .profile-summary-row {
   padding: 0.55rem 0 0;
   border: 0;
 }
-main[data-view-phase="checkpoint"][data-contrast-preference="high"]
-  .checkpoint-backdrop::after {
-  background: #0009;
-}
-main[data-view-phase="checkpoint"][data-contrast-preference="high"]
-  .checkpoint-menu
-  button,
-main[data-view-phase="checkpoint"][data-contrast-preference="high"]
-  .checkpoint-menu-current,
-main[data-view-phase="checkpoint"][data-contrast-preference="high"]
-  .profile-summary,
-main[data-view-phase="checkpoint"][data-contrast-preference="high"]
-  .game-masthead {
-  border-color: #fff;
-  background: #000;
-  color: #fff;
-}
-main[data-view-phase="checkpoint"][data-contrast-preference="high"] > .panel {
-  border-color: #fff;
-  background: #000;
-}
 main[data-view-phase="checkpoint"] .status {
   position: absolute;
   width: 1px;
@@ -847,6 +960,10 @@ main[data-view-phase="checkpoint"] .settings {
   bottom: 3%;
   left: 42%;
   padding: clamp(1.2rem, 2vw, 1.75rem);
+}
+main[data-view-phase="checkpoint"] .upgrades {
+  inset: 3% 7%;
+  padding-top: 0;
 }
 main[data-view-phase="checkpoint"] .settings h3,
 main[data-view-phase="checkpoint"] .upgrades h3 {
@@ -1127,26 +1244,6 @@ main[data-view-phase="checkpoint"] .upgrades h4 {
   color: #d9ad60;
   font-family: Georgia, serif;
   letter-spacing: 0.05em;
-}
-main[data-view-phase="checkpoint"][data-contrast-preference="high"]
-  :is(.settings, .upgrades) {
-  border-color: #fff;
-  background: #000;
-  box-shadow: none;
-  color: #fff;
-}
-main[data-view-phase="checkpoint"][data-contrast-preference="high"]
-  .settings
-  select {
-  border-color: #fff;
-  background: #000;
-  color: #fff;
-}
-main[data-view-phase="checkpoint"][data-contrast-preference="high"]
-  .upgrades
-  > .primary-action {
-  border: 3px double #fff;
-  box-shadow: none;
 }
 body:has(
   main[data-view-phase="preparation"],
@@ -2026,6 +2123,16 @@ main[data-view-phase="running"] .panel {
 .ability-slot {
   width: 76px;
   height: 76px;
+}
+.ability-rune {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: #f1c66f;
+  background: radial-gradient(circle, #624225 0%, #201811 72%);
+  font-size: 2rem;
+  text-shadow: 0 2px 0 #070504;
 }
 .ability-slot:disabled img {
   filter: grayscale(0.75) brightness(0.55);

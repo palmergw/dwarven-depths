@@ -2095,6 +2095,21 @@ export function stepSimulation(
 
   if (state.phase === "PREPARATION") return { state, events: [] };
 
+  const activeAbilityRuleId = (
+    abilityId: StableId,
+    boundary: "IMPACT" | "DAMAGE" | "STATUS"
+  ): string => {
+    const family =
+      abilityId === "ability.iron_warden.shield_slam"
+        ? "SHIELD-SLAM"
+        : abilityId === "ability.iron_warden.linebreaker"
+          ? "LINEBREAKER"
+          : abilityId === "ability.iron_warden.rallying_roar"
+            ? "RALLYING-ROAR"
+            : "ACTIVE-ABILITY";
+    return `SIM-${family}-${boundary}-001`;
+  };
+
   const hasActiveAbilityAuthority =
     commands.some(({ command }) => command.type === "activateAbility") ||
     state.activeCooldowns !== undefined ||
@@ -2148,7 +2163,7 @@ export function stepSimulation(
           tick: state.tick,
           sequence,
           type: "ability.impact",
-          ruleId: "SIM-SHIELD-SLAM-IMPACT-001",
+          ruleId: activeAbilityRuleId(impact.abilityId, "IMPACT"),
           sourceEntityId: impact.sourceEntityId,
           abilityId: impact.abilityId,
           targetEntityIds: impact.targetEntityIds,
@@ -2167,12 +2182,15 @@ export function stepSimulation(
             tick: state.tick,
             sequence: damageSequence,
             type: "ability.damage",
-            ruleId: "SIM-SHIELD-SLAM-DAMAGE-001",
+            ruleId: activeAbilityRuleId(impact.abilityId, "DAMAGE"),
             sourceEntityId: impact.sourceEntityId,
             targetEntityId,
             abilityId: impact.abilityId,
             damage: impact.damage,
-            reasonCode: "shield_slam_damage_applied"
+            reasonCode:
+              impact.abilityId === "ability.iron_warden.shield_slam"
+                ? "shield_slam_damage_applied"
+                : "iron_warden_ability_damage_applied"
           })
         );
       }
@@ -2188,9 +2206,10 @@ export function stepSimulation(
             application.status === "applied"
               ? "ability.status.applied"
               : "ability.status.refreshed",
-          ruleId: "SIM-SHIELD-SLAM-STATUS-001",
+          ruleId: activeAbilityRuleId(application.abilityId, "STATUS"),
+          sourceEntityId: application.sourceEntityId,
           ownerEntityId: application.ownerEntityId,
-          abilityId: "ability.iron_warden.shield_slam" as StableId,
+          abilityId: application.abilityId,
           statusId: application.statusId,
           expiresAtTick: application.expiresAtTick,
           reasonCode: application.reason

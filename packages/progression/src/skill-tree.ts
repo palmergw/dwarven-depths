@@ -28,6 +28,7 @@ export interface CharacterSkillNodeDefinition {
   readonly schemaVersion: 1;
   readonly nodeId: StableId;
   readonly prerequisiteNodeIds: readonly StableId[];
+  readonly exclusiveNodeIds?: readonly StableId[];
   readonly effects: readonly CharacterSkillEffect[];
 }
 
@@ -109,9 +110,21 @@ function normalizeTree(value: unknown): CharacterSkillTreeDefinition {
     .map((entry, index): CharacterSkillNodeDefinition => {
       authoredRecordCount += 1;
       const description = `character skill tree node ${index}`;
+      const hasExclusions =
+        entry !== null &&
+        typeof entry === "object" &&
+        Reflect.has(entry, "exclusiveNodeIds");
       const nodeSource = requireProfileRecord(
         entry,
-        ["schemaVersion", "nodeId", "prerequisiteNodeIds", "effects"],
+        hasExclusions
+          ? [
+              "schemaVersion",
+              "nodeId",
+              "prerequisiteNodeIds",
+              "exclusiveNodeIds",
+              "effects"
+            ]
+          : ["schemaVersion", "nodeId", "prerequisiteNodeIds", "effects"],
         description
       );
       if (nodeSource.schemaVersion !== 1)
@@ -141,6 +154,25 @@ function normalizeTree(value: unknown): CharacterSkillTreeDefinition {
         throw new RangeError(`${description} contains duplicate prerequisites`);
       if (prerequisiteNodeIds.includes(nodeId))
         throw new RangeError(`${description} cannot require itself`);
+      const exclusiveNodeIds = hasExclusions
+        ? requireProfileArray(
+            nodeSource.exclusiveNodeIds,
+            `${description} exclusiveNodeIds`
+          )
+            .map((exclusive, exclusiveIndex) =>
+              requireProfileId(
+                exclusive,
+                skillNodeIdPattern,
+                `${description} exclusiveNodeIds[${exclusiveIndex}]`
+              )
+            )
+            .sort(compareText)
+        : [];
+      authoredRecordCount += exclusiveNodeIds.length;
+      if (new Set(exclusiveNodeIds).size !== exclusiveNodeIds.length)
+        throw new RangeError(`${description} contains duplicate exclusions`);
+      if (exclusiveNodeIds.includes(nodeId))
+        throw new RangeError(`${description} cannot exclude itself`);
       const seenKinds = new Set<CharacterSkillEffectKind>();
       const effects = requireProfileArray(
         nodeSource.effects,
@@ -192,6 +224,9 @@ function normalizeTree(value: unknown): CharacterSkillTreeDefinition {
         schemaVersion: 1,
         nodeId,
         prerequisiteNodeIds: Object.freeze(prerequisiteNodeIds),
+        ...(hasExclusions
+          ? { exclusiveNodeIds: Object.freeze(exclusiveNodeIds) }
+          : {}),
         effects: Object.freeze(effects)
       });
     })
@@ -204,6 +239,17 @@ function normalizeTree(value: unknown): CharacterSkillTreeDefinition {
       if (!nodeById.has(prerequisiteId))
         throw new RangeError(
           `character skill node has unknown prerequisite (${node.nodeId} -> ${prerequisiteId})`
+        );
+    }
+    for (const exclusiveId of node.exclusiveNodeIds ?? []) {
+      const peer = nodeById.get(exclusiveId);
+      if (peer === undefined)
+        throw new RangeError(
+          `character skill node has unknown exclusion (${node.nodeId} -> ${exclusiveId})`
+        );
+      if (!(peer.exclusiveNodeIds ?? []).includes(node.nodeId))
+        throw new RangeError(
+          `character skill node exclusion must be symmetric (${node.nodeId} -> ${exclusiveId})`
         );
     }
   }
@@ -291,6 +337,10 @@ function validateCharacterSelection(
       throw new RangeError(
         `selected skill node prerequisite was not selected earlier (${entry.nodeId})`
       );
+    if ((node.exclusiveNodeIds ?? []).some((nodeId) => selectedIds.has(nodeId)))
+      throw new RangeError(
+        `selected skill node conflicts with an exclusive selection (${entry.nodeId})`
+      );
   }
   return {
     selectedIds,
@@ -315,6 +365,9 @@ function eligibilityFromNormalized(
               !selectedIds.has(node.nodeId) &&
               node.prerequisiteNodeIds.every((prerequisiteId) =>
                 selectedIds.has(prerequisiteId)
+              ) &&
+              !(node.exclusiveNodeIds ?? []).some((exclusiveId) =>
+                selectedIds.has(exclusiveId)
               )
           )
           .map((node) => node.nodeId);

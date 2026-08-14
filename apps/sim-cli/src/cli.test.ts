@@ -2499,13 +2499,13 @@ describe("simulation CLI", () => {
         "build.profile.new_campaign.v1",
         240,
         18,
-        "d9c405406faaf57b474cc17404b21aef95f0a4ac6ccf10cd66bfb9ae61570e82"
+        "44744720516fe5578995f62931d4ce795d077e1b6d9cd6f70c39ff302005854c"
       ],
       [
         "build.warden.shield_slam_rank_1.v1",
         840,
         20,
-        "eaca805a1311154ac99ae358d24fe30b1db303ce29dbffba11e48b5cd93b8fa3"
+        "61a8a15123af86b47455645a51957ddd621794a8d1b63e80315d38caad2b0ccb"
       ]
     ]);
 

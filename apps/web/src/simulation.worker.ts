@@ -11,6 +11,7 @@ import type {
 import {
   createLiveScenarioHost,
   createShuttergateWebLiveScenarioHost,
+  createShuttergateWebRunContent,
   createShuttergateWebScenario,
   type LiveScenarioHost,
   resolveShuttergateWebAttemptReward,
@@ -386,6 +387,10 @@ self.addEventListener("message", async (event: MessageEvent<unknown>) => {
           );
         preparedScenario = createShuttergateWebScenario(
           preparedScenario,
+          initializationConfiguration
+        );
+        preparedContent = createShuttergateWebRunContent(
+          preparedContent,
           initializationConfiguration
         );
         liveHost = createShuttergateWebLiveScenarioHost(

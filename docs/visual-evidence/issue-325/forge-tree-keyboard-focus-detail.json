@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "issue": 325,
+  "id": "forge-tree-keyboard-focus-detail",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
+  "fixtureId": null,
+  "screenshot": "forge-tree-keyboard-focus-detail.png",
+  "screenshotSha256": "bff6900975c96b5e2ea3b4c173f92cebec79a7239936e42986a18bbacffe388d",
+  "state": {
+    "viewport": [1440, 900],
+    "shellView": "forge",
+    "phase": "checkpoint",
+    "truth": null,
+    "focus": "Executioner's Mark, locked, Offense path",
+    "preferences": {
+      "textScale": "default",
+      "motion": "reduce",
+      "reducedMotion": true
+    },
+    "abilities": [],
+    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCurrent stepReview company progression and upgrades, then begin preparation.Prepare the companyUpcomingReview the roster and placement summary, then confirm preparation.Follow the combatUpcomingUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Upgrade inventory is open.Company workshopAncestral ForgeAvailable Forge Ore: 0Close upgrade inventoryDefend Shuttergate to earn Forge Ore. Spend it here on permanent company training. Item reinforcements unlock only after that item joins the company inventory.Scroll for skills and recycle options ↓No upgrades purchased.Available upgrades♜Equipped next runIron Warden buildHealth+0Damage+0Range+0Cooldown-0 ticksNo Forge or skill modifiers equipped.♜Rank 0/210 Forge OreUnavailableShield Slam TrainingRequires 10 Forge Ore.Owned effects: none.Rank 1 effects: +600 maximum health; +2 attack damage; +4 attack range.Purchase✹Rank 0/115 Forge OreUnavailablePowder Cask ReinforcementRequires Powder Cask.Owned effects: none.Rank 1 effects: No passive battlefield modifiers.PurchaseIron Warden skillsFollow the forged links into Control, Offense, or Guard & tempo. Focus a tile for its full contract; only one capstone can be selected.Foundation◆Stone GuardlockedEffects: +25 maximum health; +3 attack damage. Requires none. Not a capstone.Control◉Disciplined SlamlockedEffects: -2 future cooldown ticks. Requires Stone Guard. Not a capstone.◉Concussive ForcelockedEffects: +1 attack range. Requires Disciplined Slam. Not a capstone.✦Rolling QuakelockedEffects: -3 future cooldown ticks. Requires Concussive Force. Not a capstone.✦Unyielding CommandlockedEffects: +2 attack range; +40 maximum health. Requires Rolling Quake. Capstone; excludes Bastion Oath, Executioner's Mark.Offense➶Long ReachlockedEffects: +1 attack range. Requires Stone Guard. Not a capstone.➶Sundering EdgelockedEffects: +5 attack damage. Requires Long Reach. Not a capstone.⚔LinebreakerlockedEffects: +8 attack damage. Requires Sundering Edge. Not a capstone.⚔Executioner's MarklockedEffects: +12 attack damage; +1 attack range. Requires Linebreaker. Capstone; excludes Bastion Oath, Unyielding Command.Guard & tempo♜Battle RhythmlockedEffects: -1 future cooldown ticks; +15 maximum health. Requires Stone Guard. Not a capstone.♜Rallying GuardlockedEffects: +35 maximum health. Requires Battle Rhythm. Not a capstone.♛War CrylockedEffects: -4 future cooldown ticks. Requires Rallying Guard. Not a capstone.♛Bastion OathlockedEffects: +75 maximum health; -2 future cooldown ticks. Requires War Cry. Capstone; excludes Executioner's Mark, Unyielding Command.⚔Offense pathExecutioner's MarkLocked — +12 attack damage; +1 attack range.Requires Linebreaker. Capstone; excludes Bastion Oath, Unyielding Command.No pending Iron Warden skill points."
+  }
+}

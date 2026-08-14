@@ -182,6 +182,14 @@ const shieldSlamImpactUrl = new URL(
   "../../../assets/game-art/production-scene/exports/effects/shield-slam-impact.png",
   import.meta.url
 ).href;
+const linebreakerImpactUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/effects/linebreaker-impact.png",
+  import.meta.url
+).href;
+const rallyingRoarAuraUrl = new URL(
+  "../../../assets/game-art/production-scene/exports/effects/rallying-roar-aura.png",
+  import.meta.url
+).href;
 const wardenSelectionRingUrl = new URL(
   "../../../assets/game-art/production-scene/exports/effects/warden-selection-ring.png",
   import.meta.url
@@ -229,6 +237,8 @@ const battlefieldAssetUrls: Readonly<Record<string, string>> = {
   "warm-light-overlay": warmLightOverlayUrl,
   "hostile-faction-ring": hostileFactionRingUrl,
   "shield-slam-impact": shieldSlamImpactUrl,
+  "linebreaker-impact": linebreakerImpactUrl,
+  "rallying-roar-aura": rallyingRoarAuraUrl,
   "warden-selection-ring": wardenSelectionRingUrl,
   "static-scene-depth": staticSceneDepthUrl
 };
@@ -611,6 +621,19 @@ export function selectCombatPoseAsset(
     entity.action.phase !== "idle"
   )
     return `warden-shield-slam-${authoredPhase}-source`;
+  if (
+    dwarf &&
+    entity.action.kind === "ability" &&
+    entity.action.abilityId === "ability.iron_warden.linebreaker" &&
+    entity.action.phase !== "idle"
+  )
+    return `warden-basic-attack-${authoredPhase}-source`;
+  if (
+    dwarf &&
+    entity.action.kind === "ability" &&
+    entity.action.abilityId === "ability.iron_warden.rallying_roar"
+  )
+    return "warden-guard-source";
   if (dwarf && entity.action.kind === "basic_attack") {
     return `warden-basic-attack-${authoredPhase}-source`;
   }
@@ -723,22 +746,58 @@ export function deriveShieldSlamImpactIds(
   snapshot: RenderSnapshot,
   previousSnapshot: RenderSnapshot | undefined
 ): readonly string[] {
-  if (snapshot.schemaVersion !== 2) return [];
+  const impact = deriveActiveAbilityImpact(snapshot, previousSnapshot);
+  return impact?.abilityId === "ability.iron_warden.shield_slam"
+    ? impact.targetEntityIds
+    : [];
+}
+
+export interface ActiveAbilityImpact {
+  readonly abilityId: string;
+  readonly sourceEntityId: string;
+  readonly targetEntityIds: readonly string[];
+}
+
+export function deriveActiveAbilityImpact(
+  snapshot: RenderSnapshot,
+  previousSnapshot: RenderSnapshot | undefined
+): ActiveAbilityImpact | undefined {
+  if (snapshot.schemaVersion !== 2) return undefined;
   if (
     previousSnapshot?.schemaVersion !== 2 ||
     previousSnapshot.scenarioId !== snapshot.scenarioId ||
     previousSnapshot.tick !== snapshot.previousTick
   )
-    return [];
-  const shieldSlam = snapshot.entities.find(
+    return undefined;
+  const ability = snapshot.entities.find(
     (entity) =>
       entity.faction === "dwarf" &&
       entity.action.kind === "ability" &&
-      entity.action.abilityId === "ability.iron_warden.shield_slam" &&
       entity.action.phase === "impact"
   );
-  if (shieldSlam === undefined) return [];
-  return shieldSlam.action.impactTargetEntityIds ?? [];
+  if (
+    ability === undefined ||
+    ability.action.kind !== "ability" ||
+    ability.action.abilityId === null
+  )
+    return undefined;
+  return {
+    abilityId: ability.action.abilityId,
+    sourceEntityId: ability.id,
+    targetEntityIds: ability.action.impactTargetEntityIds ?? []
+  };
+}
+
+export function deriveRallyingRoarPresentationSourceId(
+  snapshot: RenderSnapshot
+): string | undefined {
+  if (snapshot.schemaVersion !== 2) return undefined;
+  return snapshot.entities.find(
+    (entity) =>
+      entity.action.kind === "ability" &&
+      entity.action.abilityId === "ability.iron_warden.rallying_roar" &&
+      (entity.action.phase === "committed" || entity.action.phase === "impact")
+  )?.id;
 }
 
 export interface SlingerProjectilePath {
@@ -2194,14 +2253,19 @@ class PersistentBattlefieldScene {
       primitives,
       previousSnapshot
     );
-    const abilityImpactIds = deriveShieldSlamImpactIds(
+    const activeAbilityImpact = deriveActiveAbilityImpact(
       snapshot,
       previousSnapshot
     );
+    const abilityImpactIds = activeAbilityImpact?.targetEntityIds ?? [];
     const liveProjectileIds = new Set(
       projectilePaths.map(({ sourceId }) => sourceId)
     );
-    if (abilityImpactIds.length > 0) liveProjectileIds.add("shield-slam-area");
+    if (
+      activeAbilityImpact?.abilityId === "ability.iron_warden.shield_slam" &&
+      abilityImpactIds.length > 0
+    )
+      liveProjectileIds.add("shield-slam-area");
     for (const [id, effect] of this.projectileEffects)
       if (!liveProjectileIds.has(id)) {
         this.layers["world-effects"].delete(effect);
@@ -2232,16 +2296,15 @@ class PersistentBattlefieldScene {
     }
 
     const impactKey =
-      snapshot.schemaVersion === 2
-        ? `${snapshot.scenarioId}:${snapshot.tick}:${abilityImpactIds.join(",")}`
+      snapshot.schemaVersion === 2 && activeAbilityImpact !== undefined
+        ? `${snapshot.scenarioId}:${snapshot.tick}:${activeAbilityImpact.abilityId}:${activeAbilityImpact.sourceEntityId}:${abilityImpactIds.join(",")}`
         : undefined;
-    if (abilityImpactIds.length > 0 && snapshot.schemaVersion === 2) {
-      const sourceId = snapshot.entities.find(
-        (entity) =>
-          entity.action.kind === "ability" &&
-          entity.action.abilityId === "ability.iron_warden.shield_slam" &&
-          entity.action.phase === "impact"
-      )?.id;
+    if (
+      activeAbilityImpact?.abilityId === "ability.iron_warden.shield_slam" &&
+      abilityImpactIds.length > 0 &&
+      snapshot.schemaVersion === 2
+    ) {
+      const sourceId = activeAbilityImpact.sourceEntityId;
       const source = primitives.entities.find(({ id }) => id === sourceId);
       const sourceEntity = snapshot.entities.find(({ id }) => id === sourceId);
       const targets = abilityImpactIds.flatMap((id) => {
@@ -2310,25 +2373,76 @@ class PersistentBattlefieldScene {
             (entity) => [entity.id, entity]
           )
     );
+    const rallyingRoarSourceId =
+      deriveRallyingRoarPresentationSourceId(snapshot);
+    const abilityEffectPlacements =
+      rallyingRoarSourceId !== undefined
+        ? [
+            {
+              id: `ability.iron_warden.rallying_roar:${rallyingRoarSourceId}`,
+              entityId: rallyingRoarSourceId,
+              textureKey: "rallying-roar-aura",
+              xOffset: 0,
+              yOffset: 2,
+              scale: 0.82,
+              tweenScale: 0.9
+            }
+          ]
+        : activeAbilityImpact === undefined
+          ? []
+          : activeAbilityImpact.abilityId ===
+                "ability.iron_warden.linebreaker" ||
+              activeAbilityImpact.abilityId ===
+                "ability.iron_warden.shield_slam"
+            ? activeAbilityImpact.targetEntityIds.map((entityId) => ({
+                id: `${activeAbilityImpact.abilityId}:${entityId}`,
+                entityId,
+                textureKey:
+                  activeAbilityImpact.abilityId ===
+                  "ability.iron_warden.linebreaker"
+                    ? "linebreaker-impact"
+                    : "shield-slam-impact",
+                xOffset:
+                  activeAbilityImpact.abilityId ===
+                  "ability.iron_warden.linebreaker"
+                    ? 0
+                    : -34,
+                yOffset: -12,
+                scale:
+                  activeAbilityImpact.abilityId ===
+                  "ability.iron_warden.linebreaker"
+                    ? 0.82
+                    : 0.56,
+                tweenScale:
+                  activeAbilityImpact.abilityId ===
+                  "ability.iron_warden.linebreaker"
+                    ? 0.9
+                    : 0.64
+              }))
+            : [];
+    const liveAbilityEffectIds = new Set(
+      abilityEffectPlacements.map(({ id }) => id)
+    );
     for (const [id, effect] of this.abilityEffects)
-      if (!abilityImpactIds.includes(id)) {
+      if (!liveAbilityEffectIds.has(id)) {
         effect.destroy();
         this.abilityEffects.delete(id);
         const textureKey = `ability-effect-depth-${id}`;
         if (this.scene.textures.exists(textureKey))
           this.scene.textures.remove(textureKey);
       }
-    for (const id of abilityImpactIds) {
+    for (const placement of abilityEffectPlacements) {
       const entity =
-        orderedEntities.find((candidate) => candidate.id === id) ??
-        previousPrimitivesById.get(id);
+        orderedEntities.find(
+          (candidate) => candidate.id === placement.entityId
+        ) ?? previousPrimitivesById.get(placement.entityId);
       if (entity?.cameraDepth === undefined) continue;
-      const effectX = entity.x - 34;
-      const effectY = entity.y - 12;
+      const effectX = entity.x + placement.xOffset;
+      const effectY = entity.y + placement.yOffset;
       const texture = createDepthClippedPresentationTexture(
         this.scene,
-        "shield-slam-impact",
-        `ability-effect-depth-${id}`,
+        placement.textureKey,
+        `ability-effect-depth-${placement.id}`,
         140,
         96,
         {
@@ -2343,20 +2457,20 @@ class PersistentBattlefieldScene {
         this.staticDepth
       );
       const effect =
-        this.abilityEffects.get(id) ??
+        this.abilityEffects.get(placement.id) ??
         this.scene.add.image(effectX, effectY, texture).setOrigin(0.5, 76 / 96);
       effect
         .setTexture(texture)
         .setPosition(effectX, effectY)
         .setAlpha(0.7)
-        .setScale(0.56);
-      this.abilityEffects.set(id, effect);
+        .setScale(placement.scale);
+      this.abilityEffects.set(placement.id, effect);
       this.layers["world-effects"].add(effect);
       if (!reduceMotion && impactKey !== this.lastAbilityEffectTick)
         this.scene.tweens.add({
           targets: effect,
           alpha: 0.35,
-          scale: 0.64,
+          scale: placement.tweenScale,
           duration: 180,
           yoyo: true
         });

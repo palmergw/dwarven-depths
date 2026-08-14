@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "campaignId": "campaign.shuttergate.v1",
-  "contentManifestHash": "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d",
+  "contentManifestHash": "1ec036180a0e24ea8fa7f8f7622555645c486f2e6cac27f751a6b360e82fdac8",
   "profileSave": {
     "schemaVersion": 1,
     "contentVersion": "phase-5-shuttergate-shield-slam-v2",
@@ -51,11 +51,11 @@
   },
   "rewardLedgerChecksum": "ac1d7693d441c7bfa30db956b38823ecc7155d64c6a66f9ac898938e6103ceb3",
   "attemptChecksums": [
-    "c5c2c9ecc87e23b9b7928a178e8bf4d6fd23dd3f9f65064953e201d34daf47f9",
-    "471f194a8cde623cbf90b5f357d86fe6528c1273298366b171acebe62a5b6d93",
-    "2f5f4f82b574c25bc3507bd377376409c93b166738f9ac2915803b13333e8c01",
-    "e521ddc69636b73c5189a012069b31269380d70a35c23f9377cb4eac0419498c"
+    "12fbb8dc6c215e2e59a426aea7d5284050a7b53dfad9b17c13c2047512d4c9e0",
+    "b8b053000d86421c691d6c44d22159fc105eba0dc80def918ffcb722d77749aa",
+    "aa6871d18578e67682559cc2476dd12fd9119627d46c066ead88a895dee73fd5",
+    "f5c7db4cf2bff022fdb269b62ce454019b010ab1b1461e487387791fbe31c069"
   ],
-  "stateChecksum": "61f05f3449d74d246ec6bf9a4d4a9daa16e03dc9c0b839e416383d9521015ec8",
-  "payloadChecksum": "acbfc83b04b4b310e8aff2a27c967212fb12d35d057db1ad8f7fa9dbf2faca93"
+  "stateChecksum": "21d992bd2861a0a35c92f04bc3bbb0dae673593a15ec8ddb12e7f2b99531e7da",
+  "payloadChecksum": "41861b124d974f3e7b3f11bcc0b75ca4910dd12f16331cf950278b2ff6f68465"
 }

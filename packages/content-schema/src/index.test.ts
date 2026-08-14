@@ -370,7 +370,7 @@ describe("content validation", () => {
     expect(waves.flatMap((wave) => wave.spawnEvents)).toHaveLength(18);
   });
 
-  it("strictly validates Shield Slam fields and ownership", () => {
+  it("strictly validates the Iron Warden ability roster fields and ownership", () => {
     const unknownField = structuredClone(shuttergateInput) as unknown as {
       definitions: Array<{
         kind: string;
@@ -403,7 +403,7 @@ describe("content validation", () => {
       throw new Error("missing Iron Warden fixture");
     unsupportedWarden.id = "character.foreign";
     expect(() => validateContentBundle(unsupportedOwner)).toThrow(
-      /only ability.*owned by character\.iron_warden/
+      /only the authored Iron Warden ability roster is supported/
     );
   });
 

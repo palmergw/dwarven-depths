@@ -15,7 +15,7 @@ import {
 } from "./shuttergate-reference-calibration.js";
 
 export const shuttergateCalibrationChecksum =
-  "6ab8bd8643a045d1d8b25969107ad3275a533ca66f421d018d59205f2a143bf2";
+  "ed2368b0bc367f6546ee1fe58135180e08863918d80594458f2b42350ea5424f";
 
 describe("Shuttergate reference balance calibration", () => {
   it("records the bounded unupgraded one-Warden defeat", async () => {
@@ -81,7 +81,7 @@ describe("Shuttergate reference balance calibration", () => {
     const forgedManifest = {
       ...content,
       manifestHash:
-        "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d"
+        "1ec036180a0e24ea8fa7f8f7622555645c486f2e6cac27f751a6b360e82fdac8"
     };
 
     await expect(
@@ -114,7 +114,7 @@ describe("Shuttergate reference balance calibration", () => {
     expect(Object.isFrozen(keepGuard)).toBe(true);
     expect(Object.isFrozen(keepGuard.milestones)).toBe(true);
     expect(await canonicalHash(keepGuard)).toBe(
-      "510ec9b3a35b245a6901f4963fbd5cd0106c400064f95c01c50d65d882f9b904"
+      "d39c14c28d8dea60bd00200c9e54a0bfaf56a38cb45b4a881188ce7151cfa078"
     );
   }, 15_000);
 
@@ -133,7 +133,7 @@ describe("Shuttergate reference balance calibration", () => {
       terminalTick: 1_833
     });
     expect(await canonicalHash(evidence)).toBe(
-      "c82c9d931afcc6d17a9b71b6b776acad4f8d41690e7529fb50315bc2c119a671"
+      "4dec22e6b902a99b670ca3a3a497fe23da4d00d8eb0a8c947264328b7124f7bb"
     );
     await expect(
       runShuttergateSeedPlacementCalibration(
@@ -160,7 +160,7 @@ describe("Shuttergate reference balance calibration", () => {
       terminalResult: "defeat"
     });
     expect(await canonicalHash(evidence)).toBe(
-      "58e799fb40ee20696d00b3f4fad973f1987a01ece38645f5127f8ea55d41bcb2"
+      "7b4c4bb4488a25f758a74df82e3bcdd85acd6bf978459e8e2df47945b34f0584"
     );
   }, 15_000);
 
@@ -208,10 +208,10 @@ describe("Shuttergate reference balance calibration", () => {
     expect(upgraded.terminalTick).toBeGreaterThan(unupgraded.terminalTick);
     expect(Object.isFrozen(upgraded.purchasedModifiers)).toBe(true);
     expect(await canonicalHash(unupgraded)).toBe(
-      "d9c405406faaf57b474cc17404b21aef95f0a4ac6ccf10cd66bfb9ae61570e82"
+      "44744720516fe5578995f62931d4ce795d077e1b6d9cd6f70c39ff302005854c"
     );
     expect(await canonicalHash(upgraded)).toBe(
-      "eaca805a1311154ac99ae358d24fe30b1db303ce29dbffba11e48b5cd93b8fa3"
+      "61a8a15123af86b47455645a51957ddd621794a8d1b63e80315d38caad2b0ccb"
     );
   }, 60_000);
 

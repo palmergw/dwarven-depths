@@ -31,6 +31,7 @@ import {
 import { createBattlefieldTerminalEvaluationRequest } from "./authoritative-combat-checkpoint.js";
 import {
   createShuttergateWebPreparationAuthority,
+  createShuttergateWebRunContent,
   type ShuttergateWebRunConfiguration
 } from "./shuttergate-web-campaign.js";
 import { evaluateTerminalState } from "./terminal-evaluation.js";
@@ -140,6 +141,7 @@ export {
 } from "./shuttergate-reference-calibration.js";
 export {
   createShuttergateWebPreparationState,
+  createShuttergateWebRunContent,
   createShuttergateWebScenario,
   resolveShuttergateWebAttemptReward,
   type ShuttergateWebRewardResolution,
@@ -1038,14 +1040,15 @@ export function createShuttergateWebLiveScenarioHost(
   content: CompiledContent,
   configuration: ShuttergateWebRunConfiguration
 ): LiveScenarioHost {
+  const runContent = createShuttergateWebRunContent(content, configuration);
   const preparation = createShuttergateWebPreparationAuthority(
-    content,
+    runContent,
     scenario,
     configuration
   );
   return new LiveScenarioHost(
     scenario,
-    content,
+    runContent,
     preparation.state,
     trustedShuttergateWebConfiguration,
     preparation.authority

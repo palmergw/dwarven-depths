@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "issue": 325,
+  "id": "rallying-roar-commitment",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "screenshot": "rallying-roar-commitment.png",
+  "screenshotSha256": "329eeb9d8d7e352598edb208ac9558a932d8b7c3044a4fd15274a62fc91ebf40",
+  "state": {
+    "viewport": [1440, 900],
+    "shellView": "running",
+    "phase": "running",
+    "truth": {
+      "schemaVersion": 1,
+      "captureReady": true,
+      "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+      "viewport": [1440, 900],
+      "frame": [1280, 720],
+      "snapshot": {
+        "levelId": "level.shuttergate_hall",
+        "mapId": "map.shuttergate_hall",
+        "tick": 4,
+        "phase": "running"
+      },
+      "registry": {
+        "dwarfCount": 1,
+        "hostileCount": 1,
+        "totalCount": 2,
+        "entities": [
+          {
+            "id": "entity.dwarf.warden",
+            "faction": "dwarf",
+            "nodeId": "node.shuttergate_north_guard",
+            "visualId": "character.iron_warden",
+            "archetype": "character",
+            "currentHealth": 240,
+            "maximumHealth": 240,
+            "action": {
+              "kind": "ability",
+              "phase": "committed",
+              "abilityId": "ability.iron_warden.rallying_roar",
+              "impactTargetEntityIds": []
+            },
+            "targetEntityId": null,
+            "statusIds": [],
+            "transition": "active",
+            "elite": false,
+            "boss": false,
+            "x": 605,
+            "y": 320,
+            "nominalHeight": 56,
+            "canvasBounds": [549, 254, 112, 72],
+            "alphaBounds": [570, 264, 71, 56],
+            "nonzeroAlphaPixels": 2036,
+            "fullAlphaPixels": 1792,
+            "partialAlphaPixels": 244,
+            "intersectsUnobscuredWorldViewport": true
+          },
+          {
+            "id": "entity.enemy.shuttergate_001",
+            "faction": "enemy",
+            "nodeId": "node.shuttergate_west_entry",
+            "visualId": "enemy.goblin_cutter",
+            "archetype": "basic",
+            "currentHealth": 50,
+            "maximumHealth": 50,
+            "action": {
+              "kind": "idle",
+              "phase": "idle",
+              "abilityId": null,
+              "impactTargetEntityIds": []
+            },
+            "targetEntityId": "entity.dwarf.warden",
+            "statusIds": [],
+            "transition": "active",
+            "elite": false,
+            "boss": false,
+            "x": 1054,
+            "y": 302,
+            "nominalHeight": 44,
+            "canvasBounds": [1014, 248, 80, 60],
+            "alphaBounds": [1032, 258, 44, 44],
+            "nonzeroAlphaPixels": 1201,
+            "fullAlphaPixels": 1017,
+            "partialAlphaPixels": 184,
+            "intersectsUnobscuredWorldViewport": true
+          }
+        ]
+      },
+      "occlusion": {
+        "artifactId": "authored-entrance-depth",
+        "layerOrder": [
+          "complete-static-scene-color",
+          "depth-tested-world-rings",
+          "depth-tested-world-effects",
+          "depth-tested-world-subjects",
+          "depth-tested-world-focus",
+          "hud"
+        ],
+        "clips": ["world-ring", "world-effect", "world-subject", "world-focus"],
+        "exempts": ["hud"],
+        "witness": {
+          "entityId": "entity.enemy.shuttergate_001",
+          "subjectAlphaPixels": 1025,
+          "subjectPixelsOverRearArtifact": 0,
+          "subjectPixelsOverGroundArtifact": 0,
+          "subjectPixelsBehindForegroundArtifact": 1022,
+          "worldRingPixelsBehindForegroundArtifact": 298,
+          "transientEffectPixelsBehindForegroundArtifact": 313
+        },
+        "depthResolution": {
+          "intent": "rear-visible-and-foreground-occluded",
+          "actualAnchor": [1054, 302],
+          "rearOverlapPixels": 0,
+          "subjectGroundOverlapPixels": 0,
+          "foregroundOcclusionPixels": 1022,
+          "worldRingOcclusionPixels": 298,
+          "transientEffectOcclusionPixels": 313
+        }
+      },
+      "alignment": {
+        "snapshotCount": 2,
+        "registryCount": 2,
+        "renderedCount": 2,
+        "registryEntitiesMatch": true,
+        "renderedEntitiesMatch": true,
+        "authoritativeEntitiesMatch": true,
+        "valid": true
+      }
+    },
+    "focus": "Resume combat",
+    "preferences": {
+      "textScale": "default",
+      "motion": "reduce",
+      "reducedMotion": true
+    },
+    "abilities": [
+      {
+        "label": null,
+        "shortcut": null,
+        "state": "ready",
+        "text": "Linebreaker⚒2Ready"
+      },
+      {
+        "label": null,
+        "shortcut": null,
+        "state": "cooldown",
+        "text": "Rallying Roar◆3Recharging · 148 ticks"
+      },
+      {
+        "label": null,
+        "shortcut": null,
+        "state": "ready",
+        "text": "Shield Slam1Ready"
+      }
+    ],
+    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Shuttergate battlefield, running; 2 entities.The ShuttergateFortressHoldingWave1Hostiles1 active0 approachingCombat paused. Fortress holding. Wave 1. 1 hostiles active. Iron Warden health 240 of 240.Combat controlsIron Warden◆Iron WardenNearest240 / 240Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesLinebreaker⚒2ReadyRallying Roar◆3Recharging · 148 ticksShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
+  }
+}

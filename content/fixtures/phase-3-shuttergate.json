@@ -393,6 +393,28 @@
           "range": 3,
           "frontalHalfAngleDegrees": 60,
           "staggerTicks": 18
+        },
+        {
+          "schemaVersion": 1,
+          "id": "ability.iron_warden.linebreaker",
+          "windupTicks": 9,
+          "impactDelayTicks": 2,
+          "cooldownTicks": 120,
+          "damage": 48,
+          "range": 5,
+          "frontalHalfAngleDegrees": 30,
+          "staggerTicks": 4
+        },
+        {
+          "schemaVersion": 1,
+          "id": "ability.iron_warden.rallying_roar",
+          "windupTicks": 3,
+          "impactDelayTicks": 1,
+          "cooldownTicks": 150,
+          "damage": 8,
+          "range": 7,
+          "frontalHalfAngleDegrees": 90,
+          "staggerTicks": 30
         }
       ]
     },

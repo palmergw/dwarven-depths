@@ -13,7 +13,7 @@ import {
 } from "./skill-tree.js";
 
 const checksum =
-  "fb9ab3f8b4c914715ae71401f87dcec4a1318577c977b2ceac1568bcfe12724b";
+  "fc724dccfbcad3c38ad038dd1a6bbd3a94ccab0ef9095efc7eed756e72083033";
 
 describe("authored character skill trees", () => {
   it("consumes ordered points, persists choices, and derives effects", async () => {
@@ -36,6 +36,7 @@ describe("authored character skill trees", () => {
       pendingSkillPointLevels: [3]
     });
     expect(evidence.reopenedEligibility.eligibleNodeIds).toEqual([
+      "skill.iron_warden.battle_rhythm",
       "skill.iron_warden.disciplined_slam",
       "skill.iron_warden.long_reach"
     ]);
@@ -90,6 +91,73 @@ describe("authored character skill trees", () => {
     expect(request).toEqual(before);
     expect(Object.isFrozen(eligibility)).toBe(true);
     expect(Object.isFrozen(eligibility.eligibleNodeIds)).toBe(true);
+  });
+
+  it("enforces symmetric late-tree exclusions deterministically", () => {
+    const root = ironWardenSkillTree.nodes.find(
+      (node) => node.nodeId === "skill.iron_warden.stone_guard"
+    );
+    if (root === undefined) throw new Error("missing skill root");
+    const leftId = "skill.iron_warden.test_left" as never;
+    const rightId = "skill.iron_warden.test_right" as never;
+    const tree = {
+      schemaVersion: 1 as const,
+      characterId: ironWardenSkillTree.characterId,
+      nodes: [
+        root,
+        {
+          schemaVersion: 1 as const,
+          nodeId: leftId,
+          prerequisiteNodeIds: [root.nodeId],
+          exclusiveNodeIds: [rightId],
+          effects: root.effects
+        },
+        {
+          schemaVersion: 1 as const,
+          nodeId: rightId,
+          prerequisiteNodeIds: [root.nodeId],
+          exclusiveNodeIds: [leftId],
+          effects: root.effects
+        }
+      ]
+    };
+    const foundation = characterSkillTreeParityEvidence().first.profile;
+    const selected = selectCharacterSkillNode({
+      schemaVersion: 1,
+      profile: foundation,
+      tree,
+      nodeId: leftId
+    }).profile;
+    const withAnotherPoint = {
+      ...selected,
+      characterExperienceStates: selected.characterExperienceStates.map(
+        (state) => ({
+          ...state,
+          experience: 600,
+          level: 4,
+          pendingSkillPointLevels: [4]
+        })
+      )
+    };
+    expect(
+      deriveCharacterSkillEligibility({
+        schemaVersion: 1,
+        profile: withAnotherPoint,
+        tree
+      }).eligibleNodeIds
+    ).toEqual([]);
+    expect(() =>
+      deriveCharacterSkillEligibility({
+        schemaVersion: 1,
+        profile: foundation,
+        tree: {
+          ...tree,
+          nodes: tree.nodes.map((node) =>
+            node.nodeId === rightId ? { ...node, exclusiveNodeIds: [] } : node
+          )
+        }
+      })
+    ).toThrow("exclusion must be symmetric");
   });
 
   it("rejects unknown, selected, ineligible, and no-pending choices atomically", () => {

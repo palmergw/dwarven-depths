@@ -4,6 +4,7 @@ import type {
   AbilityActivationReason,
   AbilityImpactDecision,
   ActivateAbilityCommand,
+  ActiveAbilityStatusApplicationDecision,
   ActiveAbilityTickRequest,
   ActiveAbilityTickResolution,
   ActiveCooldown,
@@ -14,8 +15,7 @@ import type {
   CommittedActiveAbility,
   EntityId,
   NavigationNodeDefinition,
-  StableId,
-  StatusApplicationDecision
+  StableId
 } from "@dwarven-depths/contracts";
 import {
   authorizeActiveAbilityEnemyHealth,
@@ -28,7 +28,6 @@ import {
   resolveCombatTimers
 } from "./combat-timers.js";
 
-const SHIELD_SLAM_ID = "ability.iron_warden.shield_slam";
 const STAGGER_STATUS_ID = "status.staggered";
 
 function compareText(left: string, right: string): number {
@@ -190,7 +189,8 @@ export function resolveActiveAbilityTick(
   ];
   const activations: AbilityActivationDecision[] = [];
   const impacts: AbilityImpactDecision[] = [];
-  const statusApplicationDecisions: StatusApplicationDecision[] = [];
+  const statusApplicationDecisions: ActiveAbilityStatusApplicationDecision[] =
+    [];
   let battlefield = request.battlefield;
   const map = content.maps.get(battlefield.mapId);
   if (map === undefined)
@@ -256,7 +256,7 @@ export function resolveActiveAbilityTick(
     const ability = character?.activeAbilities?.find(
       ({ id }) => id === command.abilityId
     );
-    if (ability === undefined || ability.id !== SHIELD_SLAM_ID) {
+    if (ability === undefined) {
       activations.push(
         activationDecision(envelope, "rejected", "ability_unsupported")
       );
@@ -350,7 +350,21 @@ export function resolveActiveAbilityTick(
     );
     const impactAtTick =
       request.currentTick + ability.windupTicks + ability.impactDelayTicks;
-    const cooldownCompleteAtTick = request.currentTick + ability.cooldownTicks;
+    const authoredBasicAttack = character?.basicAttack;
+    const buildCooldownReduction =
+      authoredBasicAttack === undefined
+        ? 0
+        : Math.max(
+            0,
+            authoredBasicAttack.cooldownTicks - dwarf.basicAttack.cooldownTicks
+          );
+    const buildRangeAdd =
+      authoredBasicAttack === undefined
+        ? 0
+        : Math.max(0, dwarf.basicAttack.range - authoredBasicAttack.range);
+    const cooldownCompleteAtTick =
+      request.currentTick +
+      Math.max(1, ability.cooldownTicks - buildCooldownReduction);
     if (
       !Number.isSafeInteger(impactAtTick) ||
       !Number.isSafeInteger(cooldownCompleteAtTick)
@@ -369,7 +383,7 @@ export function resolveActiveAbilityTick(
         aimDeltaX: targetNode.x - sourceNode.x,
         aimDeltaY: targetNode.y - sourceNode.y,
         damage: ability.damage,
-        range: ability.range,
+        range: ability.range + buildRangeAdd,
         frontalHalfAngleDegrees: ability.frontalHalfAngleDegrees,
         staggerTicks: ability.staggerTicks
       })
@@ -463,7 +477,15 @@ export function resolveActiveAbilityTick(
       }))
     });
     statuses = statusApplication.statuses;
-    statusApplicationDecisions.push(...statusApplication.decisions);
+    statusApplicationDecisions.push(
+      ...statusApplication.decisions.map((decision) =>
+        Object.freeze({
+          ...decision,
+          abilityId: ability.abilityId,
+          sourceEntityId: ability.sourceEntityId
+        })
+      )
+    );
     const living = new Set(
       enemyCombatants
         .filter(({ lifecycleState }) => lifecycleState === "active")
@@ -495,7 +517,10 @@ export function resolveActiveAbilityTick(
         statusId: STAGGER_STATUS_ID as never,
         damage: ability.damage,
         staggerExpiresAtTick: request.currentTick + ability.staggerTicks,
-        reason: "shield_slam_impacted"
+        reason:
+          ability.abilityId === "ability.iron_warden.shield_slam"
+            ? "shield_slam_impacted"
+            : "iron_warden_ability_impacted"
       })
     );
   }

@@ -187,9 +187,9 @@ describe("checkpoint Iron Warden skill recycle", () => {
     await userEvent.keyboard("{Escape}");
     expect(await button("Recycle Iron Warden skill tree")).toHaveFocus();
     expect((await button("Recycle all shared upgrades")).inert).toBe(false);
-    expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "Stone Guard selected at level 2"
-    );
+    expect(
+      document.getElementById("skill-iron_warden-stone_guard-skill-node")
+    ).toHaveAttribute("aria-pressed", "true");
 
     await userEvent.click(await button("Recycle Iron Warden skill tree"));
     await userEvent.click(await button("Confirm skill recycle"));

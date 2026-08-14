@@ -215,6 +215,22 @@ def fit_height(image: Image.Image, height: int) -> Image.Image:
     return image.resize((width, height), Image.Resampling.LANCZOS)
 
 
+def fit_effect_canvas(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+    rgba = image.convert("RGBA")
+    bounds = rgba.getchannel("A").getbbox()
+    if bounds is None:
+        raise ValueError("Effect source has no visible alpha")
+    visible = rgba.crop(bounds)
+    maximum = (size[0] - 8, size[1] - 8)
+    visible.thumbnail(maximum, Image.Resampling.LANCZOS)
+    canvas = Image.new("RGBA", size, (0, 0, 0, 0))
+    canvas.alpha_composite(
+        visible,
+        ((size[0] - visible.width) // 2, (size[1] - visible.height) // 2),
+    )
+    return canvas
+
+
 def fit_miniature_height(image: Image.Image, height: int) -> Image.Image:
     """Downsample once from an approved master and restore bounded edge clarity."""
     resized = fit_height(image, height)
@@ -2387,6 +2403,24 @@ def build(output_root: Path = ROOT) -> None:
         "warden-selection-ring": ring((94, 42), (84, 178, 196, 210)),
         "hostile-faction-ring": ring((78, 36), (184, 79, 47, 210)),
         "shield-slam-impact": shield_impact(),
+        "linebreaker-impact": fit_effect_canvas(
+            Image.open(
+                package
+                / "sources"
+                / "effects"
+                / "linebreaker-impact-isolated-source.png"
+            ),
+            (140, 96),
+        ),
+        "rallying-roar-aura": fit_effect_canvas(
+            Image.open(
+                package
+                / "sources"
+                / "effects"
+                / "rallying-roar-aura-isolated-source.png"
+            ),
+            (140, 96),
+        ),
     }
     for name, image in effects.items():
         png(image, exports / "effects" / f"{name}.png")
@@ -2625,9 +2659,56 @@ def verify(root: Path = ROOT) -> None:
     scene = json.loads((metadata / "scene-contract.json").read_text(encoding="utf-8"))
     recipe = json.loads((metadata / "reconstruction.json").read_text(encoding="utf-8"))
     manifest = json.loads((metadata / "layer-manifest.json").read_text(encoding="utf-8"))
+    ability_vfx = json.loads(
+        (metadata / "iron-warden-ability-vfx.json").read_text(encoding="utf-8")
+    )
     _assert_strict_v2(scene, {"schemaVersion", "package", "authority", "coordinateSpace", "safeAreas", "camera", "route", "entityAnchors", "entityStates", "occlusion", "lighting", "hudRegions", "hudDynamicState", "cropPolicy"}, "scene-contract")
     _assert_strict_v2(recipe, {"schemaVersion", "frame", "output", "entityCounts", "layersBackToFront", "isolationProofs"}, "reconstruction")
     _assert_strict_v2(manifest, {"schemaVersion", "package", "logicalFrame", "reviewFrame", "entityLayerCounts", "contractDigests", "files", "evidence"}, "manifest")
+    _assert_strict_v2(
+        ability_vfx,
+        {"schemaVersion", "license", "provider", "model", "generatedAt", "settings", "assets"},
+        "ability-vfx",
+    )
+    _assert_strict_v2(
+        ability_vfx["settings"],
+        {"aspectRatio", "sourceSize", "backgroundRemoval"},
+        "ability-vfx.settings",
+    )
+    if ability_vfx["schemaVersion"] != 1 or [
+        record.get("id") for record in ability_vfx["assets"]
+    ] != [
+        "effect.iron_warden.linebreaker_impact",
+        "effect.iron_warden.rallying_roar_aura",
+    ]:
+        raise ValueError("Ability VFX provenance identity is not canonical")
+    for index, record in enumerate(ability_vfx["assets"]):
+        _assert_strict_v2(
+            record,
+            {
+                "id",
+                "source",
+                "sourceSha256",
+                "originalSource",
+                "originalSourceSha256",
+                "export",
+                "exportSha256",
+                "exportDimensions",
+                "prompt",
+            },
+            f"ability-vfx.assets[{index}]",
+        )
+        for path_key, digest_key in (
+            ("source", "sourceSha256"),
+            ("originalSource", "originalSourceSha256"),
+            ("export", "exportSha256"),
+        ):
+            path = (metadata / record[path_key]).resolve()
+            if not path.is_relative_to(package.resolve()) or sha256(path) != record[digest_key]:
+                raise ValueError(f"Ability VFX provenance drifted: {record['id']} {path_key}")
+        with Image.open((metadata / record["export"]).resolve()) as image:
+            if list(image.size) != record["exportDimensions"] or image.mode != "RGBA":
+                raise ValueError(f"Ability VFX export metadata drifted: {record['id']}")
     if scene["schemaVersion"] != 5 or recipe["schemaVersion"] != 2 or manifest["schemaVersion"] != 2:
         raise ValueError("Scene contract must use schema 5; recipe and manifest must use schema 2")
     if scene["package"] != "dwarven-depths-issue-286-production-scene" or manifest["package"] != scene["package"]:
@@ -2767,6 +2848,8 @@ def verify(root: Path = ROOT) -> None:
         "solid-warden-proxy",
         "warden-calibration-card",
         "hostile-faction-ring",
+        "linebreaker-impact",
+        "rallying-roar-aura",
         "shield-slam-impact",
         "warden-selection-ring",
         "warm-light-overlay",
@@ -3607,7 +3690,20 @@ def verify(root: Path = ROOT) -> None:
     require_same_pixels(isolation_board([assets["iron-warden-idle"], assets["iron-warden-shield-slam"]], 4), evidence_root / "iron-warden-alpha-states-4x.png", "4x Warden alpha proof")
     require_same_pixels(isolation_board([assets["mine-raider-idle"], assets["mine-raider-attack"]], 1), evidence_root / "mine-raider-alpha-states-native.png", "Native mine-raider alpha proof")
     require_same_pixels(isolation_board([assets["mine-raider-idle"], assets["mine-raider-attack"]], 4), evidence_root / "mine-raider-alpha-states-4x.png", "4x mine-raider alpha proof")
-    require_same_pixels(isolation_board([assets["warden-selection-ring"], assets["hostile-faction-ring"], assets["shield-slam-impact"]], 2), evidence_root / "selection-and-combat-effect-isolation.png", "Effect-isolation proof")
+    require_same_pixels(
+        isolation_board(
+            [
+                assets["warden-selection-ring"],
+                assets["hostile-faction-ring"],
+                assets["shield-slam-impact"],
+                assets["linebreaker-impact"],
+                assets["rallying-roar-aura"],
+            ],
+            2,
+        ),
+        evidence_root / "selection-and-combat-effect-isolation.png",
+        "Effect-isolation proof",
+    )
     reconstruction = _compose_v2(recipe, assets)
     require_same_pixels(
         _scale_board_v2(
@@ -3840,7 +3936,12 @@ def reproducibility_check() -> None:
         (temp_direction / "sources").mkdir(parents=True)
         (temp_direction / "exports").mkdir(parents=True)
         (temp_package / "metadata").mkdir(parents=True)
-        for name in ("scene-contract.json", "reconstruction.json", "provenance.json"):
+        for name in (
+            "scene-contract.json",
+            "reconstruction.json",
+            "provenance.json",
+            "iron-warden-ability-vfx.json",
+        ):
             shutil.copy2(METADATA / name, temp_package / "metadata" / name)
         provenance = json.loads((METADATA / "provenance.json").read_text(encoding="utf-8"))
         for input_record in provenance["inputs"]:

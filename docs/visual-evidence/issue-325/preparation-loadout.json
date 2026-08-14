@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "issue": 325,
+  "id": "preparation-loadout",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "screenshot": "preparation-loadout.png",
+  "screenshotSha256": "fa05126aa0cec67bb73f1260db77ff337c38c4ec86c67d28d06fc0c30d72961a",
+  "state": {
+    "viewport": [1440, 900],
+    "shellView": "preparation",
+    "phase": "preparation",
+    "truth": {
+      "schemaVersion": 1,
+      "captureReady": true,
+      "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+      "viewport": [1440, 900],
+      "frame": [1280, 720],
+      "snapshot": {
+        "levelId": "level.shuttergate_hall",
+        "mapId": "map.shuttergate_hall",
+        "tick": 0,
+        "phase": "preparation"
+      },
+      "registry": {
+        "dwarfCount": 1,
+        "hostileCount": 0,
+        "totalCount": 1,
+        "entities": [
+          {
+            "id": "entity.dwarf.warden",
+            "faction": "dwarf",
+            "nodeId": "node.shuttergate_north_guard",
+            "visualId": "character.iron_warden",
+            "archetype": "character",
+            "currentHealth": 240,
+            "maximumHealth": 240,
+            "action": {
+              "kind": "idle",
+              "phase": "idle",
+              "abilityId": null,
+              "impactTargetEntityIds": []
+            },
+            "targetEntityId": null,
+            "statusIds": [],
+            "transition": "spawned",
+            "elite": false,
+            "boss": false,
+            "x": 605,
+            "y": 320,
+            "nominalHeight": 56,
+            "canvasBounds": [549, 254, 112, 72],
+            "alphaBounds": [573, 264, 64, 56],
+            "nonzeroAlphaPixels": 2354,
+            "fullAlphaPixels": 2157,
+            "partialAlphaPixels": 197,
+            "intersectsUnobscuredWorldViewport": true
+          }
+        ]
+      },
+      "occlusion": {
+        "artifactId": "authored-entrance-depth",
+        "layerOrder": [
+          "complete-static-scene-color",
+          "depth-tested-world-rings",
+          "depth-tested-world-effects",
+          "depth-tested-world-subjects",
+          "depth-tested-world-focus",
+          "hud"
+        ],
+        "clips": ["world-ring", "world-effect", "world-subject", "world-focus"],
+        "exempts": ["hud"],
+        "witness": {
+          "entityId": "",
+          "subjectAlphaPixels": 1025,
+          "subjectPixelsOverRearArtifact": 0,
+          "subjectPixelsOverGroundArtifact": 0,
+          "subjectPixelsBehindForegroundArtifact": 0,
+          "worldRingPixelsBehindForegroundArtifact": 0,
+          "transientEffectPixelsBehindForegroundArtifact": 0
+        },
+        "depthResolution": {
+          "intent": "rear-visible-and-foreground-occluded",
+          "actualAnchor": [0, 0],
+          "rearOverlapPixels": 0,
+          "subjectGroundOverlapPixels": 0,
+          "foregroundOcclusionPixels": 0,
+          "worldRingOcclusionPixels": 0,
+          "transientEffectOcclusionPixels": 0
+        }
+      },
+      "alignment": {
+        "snapshotCount": 1,
+        "registryCount": 1,
+        "renderedCount": 1,
+        "registryEntitiesMatch": true,
+        "renderedEntitiesMatch": true,
+        "authoritativeEntitiesMatch": true,
+        "valid": true
+      }
+    },
+    "focus": null,
+    "preferences": {
+      "textScale": "default",
+      "motion": "reduce",
+      "reducedMotion": true
+    },
+    "abilities": [],
+    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCurrent stepReview the roster and placement summary, then confirm preparation.Follow the combatUpcomingUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Level ID: level.shuttergate_hallShuttergate battlefield, preparation; 1 entity. Combat update at tick 0: 1 combatant arrived.Fixed tutorial deploymentHold the north guard postThe Iron Warden deploys automatically at the marked guard post. There is no placement choice in this tutorial defence.♜Equipped next runIron Warden buildHealth+0Damage+0Range+0Cooldown-0 ticksNo Forge or skill modifiers equipped.DefenceShuttergate HallCompanyIron Warden readyGuard postNorth approach · lockedPreparation is ready. Confirm when your company is prepared.Confirm preparation"
+  }
+}

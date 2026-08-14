@@ -22,7 +22,11 @@ beforeAll(async () => {
   content = await compileContent(shuttergateInput);
 });
 
-function command(sequence = 0, atTick = 0): CommandEnvelope {
+function command(
+  sequence = 0,
+  atTick = 0,
+  abilityId = "ability.iron_warden.shield_slam"
+): CommandEnvelope {
   return {
     tick: atTick,
     sequence,
@@ -30,7 +34,7 @@ function command(sequence = 0, atTick = 0): CommandEnvelope {
       atTick,
       type: "activateAbility",
       dwarfEntityId: "entity.dwarf.warden" as never,
-      abilityId: "ability.iron_warden.shield_slam" as never
+      abilityId: abilityId as never
     }
   };
 }
@@ -162,7 +166,119 @@ function request(
   };
 }
 
-describe("Shield Slam active ability", () => {
+describe("Iron Warden active abilities", () => {
+  it.each([
+    ["ability.iron_warden.shield_slam", 24, 3, 18, 90],
+    ["ability.iron_warden.linebreaker", 48, 5, 4, 120],
+    ["ability.iron_warden.rallying_roar", 8, 7, 30, 150]
+  ] as const)(
+    "commits the authored tactical contract for %s",
+    (abilityId, damage, range, staggerTicks, cooldownTicks) => {
+      const resolved = resolveActiveAbilityTick(
+        request(0, battlefield(), { commands: [command(0, 0, abilityId)] }),
+        content
+      );
+      expect(resolved.activations).toMatchObject([
+        {
+          abilityId,
+          status: "accepted",
+          cooldownCompleteAtTick: cooldownTicks
+        }
+      ]);
+      expect(resolved.committedAbilities).toMatchObject([
+        { abilityId, damage, range, staggerTicks }
+      ]);
+    }
+  );
+
+  it("binds overlapping status evidence and rule IDs to each source ability", () => {
+    const linebreaker = resolveActiveAbilityTick(
+      request(0, battlefield({ enemyHealth: 100 }), {
+        commands: [command(0, 0, "ability.iron_warden.linebreaker")]
+      }),
+      content
+    ).committedAbilities[0];
+    const rallyingRoar = resolveActiveAbilityTick(
+      request(0, battlefield({ enemyHealth: 100 }), {
+        commands: [command(1, 0, "ability.iron_warden.rallying_roar")]
+      }),
+      content
+    ).committedAbilities[0];
+    if (linebreaker === undefined || rallyingRoar === undefined)
+      throw new Error("missing committed Iron Warden ability");
+    const state: SimulationState = {
+      schemaVersion: 1,
+      contentVersion: content.bundle.contentVersion,
+      tick: 0,
+      seed: "1",
+      rngState: 1,
+      levelId: "level.shuttergate" as never,
+      phase: "COMBAT_RUNNING",
+      eventSequence: 0,
+      battlefield: battlefield({ enemyHealth: 100 }),
+      committedAbilities: [
+        { ...linebreaker, impactAtTick: 0 },
+        {
+          ...rallyingRoar,
+          sourceEntityId: "entity.dwarf.warden.rally" as never,
+          impactAtTick: 0
+        }
+      ]
+    };
+
+    const events = stepSimulation(state, [], content).events.filter((event) =>
+      event.type.startsWith("ability.")
+    );
+    expect(events.map(({ type, ruleId }) => ({ type, ruleId }))).toEqual([
+      { type: "ability.impact", ruleId: "SIM-LINEBREAKER-IMPACT-001" },
+      { type: "ability.damage", ruleId: "SIM-LINEBREAKER-DAMAGE-001" },
+      { type: "ability.damage", ruleId: "SIM-LINEBREAKER-DAMAGE-001" },
+      { type: "ability.impact", ruleId: "SIM-RALLYING-ROAR-IMPACT-001" },
+      { type: "ability.damage", ruleId: "SIM-RALLYING-ROAR-DAMAGE-001" },
+      { type: "ability.damage", ruleId: "SIM-RALLYING-ROAR-DAMAGE-001" },
+      { type: "ability.status.applied", ruleId: "SIM-LINEBREAKER-STATUS-001" },
+      { type: "ability.status.applied", ruleId: "SIM-LINEBREAKER-STATUS-001" },
+      {
+        type: "ability.status.refreshed",
+        ruleId: "SIM-RALLYING-ROAR-STATUS-001"
+      },
+      {
+        type: "ability.status.refreshed",
+        ruleId: "SIM-RALLYING-ROAR-STATUS-001"
+      }
+    ]);
+    expect(
+      events
+        .filter((event) => event.type.startsWith("ability.status."))
+        .map((event) =>
+          "abilityId" in event
+            ? {
+                abilityId: event.abilityId,
+                sourceEntityId:
+                  "sourceEntityId" in event ? event.sourceEntityId : undefined
+              }
+            : undefined
+        )
+    ).toEqual([
+      {
+        abilityId: "ability.iron_warden.linebreaker",
+        sourceEntityId: "entity.dwarf.warden"
+      },
+      {
+        abilityId: "ability.iron_warden.linebreaker",
+        sourceEntityId: "entity.dwarf.warden"
+      },
+      {
+        abilityId: "ability.iron_warden.rallying_roar",
+        sourceEntityId: "entity.dwarf.warden.rally"
+      },
+      {
+        abilityId: "ability.iron_warden.rallying_roar",
+        sourceEntityId: "entity.dwarf.warden.rally"
+      }
+    ]);
+  });
+
   it.each(["PREPARATION", "TERMINAL"] as const)(
     "emits a stable rejection without advancing %s gameplay",
     (phase) => {

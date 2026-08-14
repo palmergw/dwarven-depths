@@ -65,6 +65,8 @@ export const BATTLEFIELD_RUNTIME_ASSET_KEYS = [
   "warm-light-overlay",
   "hostile-faction-ring",
   "shield-slam-impact",
+  "linebreaker-impact",
+  "rallying-roar-aura",
   "warden-selection-ring",
   "static-scene-depth"
 ] as const;

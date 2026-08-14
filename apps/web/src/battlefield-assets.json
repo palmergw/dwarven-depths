@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "manifest.web.shuttergate_battlefield",
   "budgetBytes": 4718592,
-  "totalBytes": 2908580,
+  "totalBytes": 2946246,
   "layerOrder": [
     "terrain",
     "ground-foreground",
@@ -557,6 +557,22 @@
       "path": "assets/game-art/production-scene/exports/effects/shield-slam-impact.png",
       "bytes": 875,
       "sha256": "b108174f8bd5145af09267ceea68c845256271a479795db04318652c65cb0ee0"
+    },
+    {
+      "key": "linebreaker-impact",
+      "kind": "image",
+      "layer": "world-effects",
+      "path": "assets/game-art/production-scene/exports/effects/linebreaker-impact.png",
+      "bytes": 20892,
+      "sha256": "1fa4f0a9b5bc0ca462ea4934043c41248a25b01b6a77f3f2985cfa76ea64721e"
+    },
+    {
+      "key": "rallying-roar-aura",
+      "kind": "image",
+      "layer": "world-effects",
+      "path": "assets/game-art/production-scene/exports/effects/rallying-roar-aura.png",
+      "bytes": 16774,
+      "sha256": "d81290ac568b8f9b4dc5e9e5835d59e2d419bf399ce1063673a521305b27ab6b"
     },
     {
       "key": "warden-selection-ring",

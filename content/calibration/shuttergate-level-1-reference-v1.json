@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineId": "baseline.shuttergate.level_1.reference.v1",
-  "contentManifestHash": "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d",
+  "contentManifestHash": "1ec036180a0e24ea8fa7f8f7622555645c486f2e6cac27f751a6b360e82fdac8",
   "calibrationId": "calibration.shuttergate.warden_build.v1",
   "seed": "1",
   "levelId": "level.shuttergate_hall",

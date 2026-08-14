@@ -93,6 +93,45 @@ describe("presentation snapshot browser parity", () => {
     );
     const enemy = active.entities.find((entity) => entity.id === enemyId);
     expect(parseRenderSnapshot(active)).toEqual(active);
+    for (const abilityId of [
+      "ability.iron_warden.linebreaker",
+      "ability.iron_warden.rallying_roar"
+    ]) {
+      const impact = {
+        ...active,
+        entities: active.entities.map((entity) =>
+          entity.faction === "dwarf"
+            ? {
+                ...entity,
+                action: {
+                  kind: "ability" as const,
+                  phase: "impact" as const,
+                  abilityId,
+                  impactTargetEntityIds: [enemyId]
+                }
+              }
+            : entity
+        )
+      };
+      expect(parseRenderSnapshot(impact)).toEqual(impact);
+    }
+    const unknownImpact = {
+      ...active,
+      entities: active.entities.map((entity) =>
+        entity.faction === "dwarf"
+          ? {
+              ...entity,
+              action: {
+                kind: "ability" as const,
+                phase: "impact" as const,
+                abilityId: "ability.iron_warden.unknown",
+                impactTargetEntityIds: [enemyId]
+              }
+            }
+          : entity
+      )
+    };
+    expect(parseRenderSnapshot(unknownImpact)).toBeUndefined();
     expect(enemy).toMatchObject({
       transition: "moving",
       currentHealth: authoritativeEnemy.currentHealth - 1,

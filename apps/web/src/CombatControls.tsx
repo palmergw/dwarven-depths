@@ -36,6 +36,29 @@ const shieldSlamIconUrl = new URL(
   import.meta.url
 ).href;
 
+const ABILITY_PRESENTATION: Readonly<
+  Record<
+    string,
+    { readonly label: string; readonly key: string; readonly rune: string }
+  >
+> = {
+  "ability.iron_warden.linebreaker": {
+    label: "Linebreaker",
+    key: "2",
+    rune: "⚒"
+  },
+  "ability.iron_warden.rallying_roar": {
+    label: "Rallying Roar",
+    key: "3",
+    rune: "◆"
+  },
+  "ability.iron_warden.shield_slam": {
+    label: "Shield Slam",
+    key: "1",
+    rune: ""
+  }
+};
+
 interface CombatControlsProps {
   readonly dwarves: readonly CombatControlDwarf[];
   readonly pendingAbilityKeys?: ReadonlySet<string>;
@@ -198,6 +221,13 @@ export function CombatControls({
                       Iron Warden abilities
                     </span>
                     {(dwarf.activeAbilities ?? []).map((ability) => {
+                      const presentation = ABILITY_PRESENTATION[
+                        ability.abilityId
+                      ] ?? {
+                        label: "Iron Warden ability",
+                        key: "?",
+                        rune: "◆"
+                      };
                       const feedbackId = `${dwarf.entityId}-${ability.abilityId}-feedback`;
                       const pending = pendingAbilityKeys.has(
                         `${dwarf.entityId}\u0000${ability.abilityId}`
@@ -236,7 +266,7 @@ export function CombatControls({
                             type="button"
                             disabled={disabled}
                             aria-describedby={feedbackId}
-                            aria-label="Shield Slam"
+                            aria-label={presentation.label}
                             onClick={() =>
                               onActivateAbility?.(
                                 dwarf.entityId,
@@ -244,14 +274,23 @@ export function CombatControls({
                               )
                             }
                           >
-                            <span className="visually-hidden">Shield Slam</span>
-                            <img
-                              src={shieldSlamIconUrl}
-                              alt=""
-                              aria-hidden="true"
-                            />
+                            <span className="visually-hidden">
+                              {presentation.label}
+                            </span>
+                            {ability.abilityId ===
+                            "ability.iron_warden.shield_slam" ? (
+                              <img
+                                src={shieldSlamIconUrl}
+                                alt=""
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <span className="ability-rune" aria-hidden="true">
+                                {presentation.rune}
+                              </span>
+                            )}
                             <span className="ability-key" aria-hidden="true">
-                              1
+                              {presentation.key}
                             </span>
                           </button>
                           <span

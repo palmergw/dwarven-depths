@@ -26,7 +26,10 @@ const budgets = {
   // Finite calibrated victory adds terminal reward, persistence-race, and
   // campaign-integrity guards while retaining every per-asset startup cap;
   // bound that aggregate authority cost to three additional KiB.
-  total: 608_256
+  // Profile-bound active abilities add immutable run-content filtering and
+  // Worker-side loadout authority while retaining every per-asset ceiling;
+  // bound that aggregate authority cost to four additional KiB.
+  total: 612_352
 };
 const classifications = [
   ["mainJavaScript", /^index-[\w-]+\.js$/],

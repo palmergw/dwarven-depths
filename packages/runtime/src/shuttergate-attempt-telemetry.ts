@@ -7,7 +7,7 @@ import type { ShuttergateCampaignAttemptEvidence } from "./shuttergate-campaign.
 
 const telemetryId = "telemetry.shuttergate.attempt.v1" as const;
 const shuttergateManifestHash =
-  "431bf145c82caf64f6c544c7516fafef6b50319ecb8277a748123dc3da6bb60d";
+  "1ec036180a0e24ea8fa7f8f7622555645c486f2e6cac27f751a6b360e82fdac8";
 const wardenCharacterId = "character.iron_warden" as StableId;
 const wardenEntityId = "entity.dwarf.warden" as StableId;
 const shieldSlamUpgradeId = "upgrade.ability.shield_slam" as StableId;

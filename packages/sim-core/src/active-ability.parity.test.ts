@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { shieldSlamCanonicalEvidence } from "./active-ability.fixture.js";
 
 const SHIELD_SLAM_CHECKSUM =
-  "bcb07abf1be4f191561bc5ca0c7aecb721cec4479b0c4b6e2c566d54c6932aa0";
+  "2b1fcf0e06b467c9aff7f6b8d10a315eac9c0e3bfa97bb5ba3347fcee353f78a";
 
 describe("Shield Slam canonical Node parity", () => {
   it("matches the literal cross-engine checksum", async () => {

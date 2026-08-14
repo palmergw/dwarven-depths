@@ -77,8 +77,12 @@ function renderWithStore(store: CheckpointProfileStore): void {
 
 async function button(text: string): Promise<HTMLButtonElement> {
   return vi.waitFor(() => {
+    const skillName = text.startsWith("Select ") ? text.slice(7) : undefined;
     const candidate = Array.from(document.querySelectorAll("button")).find(
-      (entry) => entry.textContent === text
+      (entry) =>
+        entry.textContent === text ||
+        (skillName !== undefined &&
+          entry.getAttribute("aria-label")?.startsWith(`${skillName},`))
     );
     expect(candidate).toBeInstanceOf(HTMLButtonElement);
     return candidate as HTMLButtonElement;
@@ -113,12 +117,16 @@ describe("checkpoint Iron Warden skill selection", () => {
     );
     const select = await button("Select Stone Guard");
     expect(select).toHaveAccessibleDescription(
-      "Effects: +25 maximum health; +3 attack damage. Prerequisites: none."
+      "Effects: +25 maximum health; +3 attack damage. Requires none. Not a capstone."
     );
     select.focus();
     await userEvent.keyboard("{Enter}");
     await vi.waitFor(() => expect(writes).toHaveLength(1));
-    (await button("Saving skill selection…")).click();
+    const pendingSelection = document.getElementById(
+      "skill-iron_warden-stone_guard-skill-node"
+    );
+    expect(pendingSelection).toBeDisabled();
+    pendingSelection?.click();
     expect(writes).toHaveLength(1);
     expect(writes[0]?.expectedRevision).toBe(initial.profile.revision);
     const written = writes[0]?.envelope as ProfileSaveEnvelope;
@@ -135,40 +143,35 @@ describe("checkpoint Iron Warden skill selection", () => {
     ).toEqual([3]);
     releaseWrite?.(written);
 
-    await vi.waitFor(() =>
-      expect(
-        document.getElementById(
-          "skill-iron_warden-stone_guard-selected-heading"
-        )
-      ).toHaveFocus()
-    );
+    await vi.waitFor(() => {
+      const selectedNode = document.getElementById(
+        "skill-iron_warden-stone_guard-skill-node"
+      );
+      expect(selectedNode).toHaveAttribute("aria-pressed", "true");
+      expect(selectedNode).toHaveFocus();
+    });
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Pending skill point from level 3"
     );
+    expect(document.getElementById("iron-warden-branch-commitment")).toBeNull();
     expect(await button("Select Long Reach")).toBeEnabled();
-    expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "Faster Shield SlamEffects: -2 future cooldown ticks"
-    );
-    expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "Longer melee reachEffects: +1 attack range"
-    );
-    expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "Stone Guard selected at level 2. Effects: +25 maximum health; +3 attack damage. Prerequisites: none."
+    expect(document.querySelector(".skill-detail")?.textContent).toContain(
+      "Stone GuardSelected — +25 maximum health; +3 attack damage.Requires none."
     );
     const second = await button("Select Long Reach");
     expect(second).toHaveAccessibleDescription(
-      "Effects: +1 attack range. Prerequisites: Stone Guard. Choose one branch. This final skill point makes the other branch unavailable until you recycle the Iron Warden skill tree."
+      "Effects: +1 attack range. Requires Stone Guard. Not a capstone."
     );
     expect(await button("Select Disciplined Slam")).toHaveAccessibleDescription(
-      "Effects: -2 future cooldown ticks. Prerequisites: Stone Guard. Choose one branch. This final skill point makes the other branch unavailable until you recycle the Iron Warden skill tree."
+      "Effects: -2 future cooldown ticks. Requires Stone Guard. Not a capstone."
     );
     await userEvent.click(second);
     await vi.waitFor(() => expect(writes).toHaveLength(2));
     const secondWritten = writes[1]?.envelope as ProfileSaveEnvelope;
     releaseWrite?.(secondWritten);
     await vi.waitFor(() =>
-      expect(document.querySelector(".upgrades")?.textContent).toContain(
-        "Long Reach selected at level 3. Effects: +1 attack range. Prerequisites: Stone Guard."
+      expect(document.querySelector(".skill-detail")?.textContent).toContain(
+        "Long ReachSelected — +1 attack range.Requires Stone Guard."
       )
     );
   });
@@ -188,22 +191,21 @@ describe("checkpoint Iron Warden skill selection", () => {
 
     const heading = await vi.waitFor(() => {
       const selectedHeading = document.getElementById(
-        "skill-iron_warden-stone_guard-selected-heading"
+        "skill-iron_warden-stone_guard-skill-node"
       );
       expect(selectedHeading).toHaveFocus();
       return selectedHeading;
     });
-    expect(heading?.parentElement?.textContent).toContain(
-      "selected at level 2. Effects: +25 maximum health; +3 attack damage. Prerequisites: none."
+    expect(heading).toHaveAttribute("aria-pressed", "true");
+    expect(document.querySelector(".skill-detail")?.textContent).toContain(
+      "Stone GuardSelected — +25 maximum health; +3 attack damage.Requires none."
     );
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "No pending Iron Warden skill points."
     );
     expect(
-      Array.from(document.querySelectorAll("button")).some((candidate) =>
-        candidate.textContent?.startsWith("Select ")
-      )
-    ).toBe(false);
+      document.querySelector('li[data-skill-state="available"]')
+    ).toBeNull();
   });
 
   it("preserves confirmed progression when mouse selection cannot be saved", async () => {
@@ -223,9 +225,9 @@ describe("checkpoint Iron Warden skill selection", () => {
         document.querySelector(".purchase-failure")?.textContent
       ).toContain("last confirmed progression is unchanged")
     );
-    expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "No Iron Warden skills selected"
-    );
+    expect(
+      document.querySelector('.skill-node[aria-pressed="true"]')
+    ).toBeNull();
     expect(await button("Select Stone Guard")).toBeEnabled();
   });
 
@@ -271,9 +273,9 @@ describe("checkpoint Iron Warden skill selection", () => {
       ).toContain("latest saved progression is loaded")
     );
     expect(document.getElementById("iron-warden-skills-heading")).toHaveFocus();
-    expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "Stone Guard selected at level 2"
-    );
+    expect(
+      document.getElementById("skill-iron_warden-stone_guard-skill-node")
+    ).toHaveAttribute("aria-pressed", "true");
     expect(await button("Select Disciplined Slam")).toBeEnabled();
   });
 });
