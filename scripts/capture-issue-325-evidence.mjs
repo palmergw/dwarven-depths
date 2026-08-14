@@ -173,6 +173,7 @@ async function waitForPausedCombat(page) {
     (expectedFixture) =>
       window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady === true &&
       window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.fixtureId === expectedFixture &&
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "running" &&
       document.querySelector(".combat-pause-banner") !== null,
     fixtureId,
     { timeout: 90_000 }
@@ -183,7 +184,7 @@ async function armAbilityImpactPause(page, abilityId) {
   await page.evaluate((requestedAbilityId) => {
     window.__DD_ISSUE_325_CAPTURE_INTERVAL__ = window.setInterval(() => {
       const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
-      const warden = truth?.snapshot.entities.find(
+      const warden = truth?.registry.entities.find(
         (entity) => entity.faction === "dwarf"
       );
       if (
@@ -219,7 +220,7 @@ async function captureAbility(page, { id, abilityId, label, key, input }) {
   await page.waitForFunction(
     (requestedAbilityId) => {
       const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
-      const warden = truth?.snapshot.entities.find(
+      const warden = truth?.registry.entities.find(
         (entity) => entity.faction === "dwarf"
       );
       return (
@@ -236,7 +237,7 @@ async function captureAbility(page, { id, abilityId, label, key, input }) {
     page,
     id,
     (requestedAbilityId) => {
-      const warden = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.entities.find(
+      const warden = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.find(
         (entity) => entity.faction === "dwarf"
       );
       return (
