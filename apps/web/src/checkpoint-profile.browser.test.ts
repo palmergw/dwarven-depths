@@ -285,4 +285,52 @@ describe("checkpoint profile loading", () => {
       unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"]
     });
   });
+
+  it("merges boss and victory claims after the attempt reward races", async () => {
+    const store = new MemoryProfileStore();
+    const initial = createInitialProfile("character.iron_warden" as never);
+    await loadCheckpointProfile(store, () => 1_725_000_000_000, false);
+    if (store.envelope === undefined)
+      throw new Error("missing profile envelope");
+    const rewardId = "reward.attempt.shuttergate.web_000001";
+    store.envelope = {
+      ...store.envelope,
+      profile: normalizeProfileState({
+        ...initial,
+        revision: 1,
+        forgeOre: 8,
+        claimedRewardIds: [rewardId]
+      })
+    };
+    const authoritative = normalizeProfileState({
+      ...initial,
+      revision: 3,
+      forgeOre: 28,
+      claimedRewardIds: [
+        rewardId,
+        "reward.boss.gatebreaker_captain",
+        "reward.campaign.shuttergate.victory"
+      ],
+      unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"]
+    });
+
+    await expect(
+      applyCheckpointAttemptResult(store, initial, {
+        schemaVersion: 1,
+        attemptId: "attempt.shuttergate.web_000001",
+        rewardId,
+        forgeOreAwarded: 28,
+        profile: authoritative
+      })
+    ).resolves.toMatchObject({
+      revision: 3,
+      forgeOre: 28,
+      claimedRewardIds: [
+        rewardId,
+        "reward.boss.gatebreaker_captain",
+        "reward.campaign.shuttergate.victory"
+      ],
+      unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"]
+    });
+  });
 });
