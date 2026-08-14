@@ -1506,6 +1506,7 @@ describe("presentation settings", () => {
     expect(document.querySelector(".skill-detail")).toHaveTextContent(
       "Concussive Force"
     );
+    expect(concussive).toHaveAttribute("data-active", "true");
     expect(concussive).toHaveAccessibleDescription(
       /Effects: \+1 attack range.*Requires Disciplined Slam/
     );
@@ -1521,6 +1522,7 @@ describe("presentation settings", () => {
       )
     );
     expect(document.activeElement).toBe(executioner);
+    expect(executioner).toHaveAttribute("data-active", "true");
   });
 });
 

@@ -2277,6 +2277,9 @@ export function App({
                                       !eligible ||
                                       upgradePurchaseStatus.kind === "pending"
                                     }
+                                    data-active={
+                                      activeSkillNodeId === node.nodeId
+                                    }
                                     data-skill-state={state}
                                     onFocus={() =>
                                       setActiveSkillNodeId(node.nodeId)

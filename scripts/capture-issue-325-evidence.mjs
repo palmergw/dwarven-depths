@@ -318,6 +318,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   const page = await newPage(browser);
   await page.getByRole("button", { name: "Upgrade inventory" }).click();
+  await page.mouse.move(20, 20);
   await page.evaluate(() => {
     const scroller = document.querySelector(".upgrades");
     const heading = document.querySelector("#iron-warden-skills-heading");
@@ -338,8 +339,8 @@ try {
       document.querySelectorAll(".skill-node").length >= 12 &&
       document.querySelectorAll(".skill-detail").length === 1
   );
-  await page.getByRole("button", { name: /^Concussive Force,/ }).hover();
   await page.locator(".skill-detail").scrollIntoViewIfNeeded();
+  await page.getByRole("button", { name: /^Concussive Force,/ }).hover();
   await capture(
     page,
     "forge-tree-hover-detail",
@@ -347,8 +348,8 @@ try {
       document.querySelector(".skill-detail h5")?.textContent ===
       "Concussive Force"
   );
-  await page.getByRole("button", { name: /^Executioner's Mark,/ }).focus();
   await page.locator(".skill-detail").scrollIntoViewIfNeeded();
+  await page.getByRole("button", { name: /^Executioner's Mark,/ }).focus();
   await capture(
     page,
     "forge-tree-keyboard-focus-detail",
