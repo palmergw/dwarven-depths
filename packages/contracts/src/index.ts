@@ -1343,6 +1343,7 @@ export interface AbilityDamageSimulationEvent extends SimulationEventBase {
 
 export interface AbilityStatusSimulationEvent extends SimulationEventBase {
   readonly type: "ability.status.applied" | "ability.status.refreshed";
+  readonly sourceEntityId: EntityId;
   readonly ownerEntityId: EntityId;
   readonly abilityId: StableId;
   readonly statusId: StatusId;

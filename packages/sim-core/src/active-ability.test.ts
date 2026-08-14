@@ -218,7 +218,11 @@ describe("Iron Warden active abilities", () => {
       battlefield: battlefield({ enemyHealth: 100 }),
       committedAbilities: [
         { ...linebreaker, impactAtTick: 0 },
-        { ...rallyingRoar, impactAtTick: 0 }
+        {
+          ...rallyingRoar,
+          sourceEntityId: "entity.dwarf.warden.rally" as never,
+          impactAtTick: 0
+        }
       ]
     };
 
@@ -246,12 +250,32 @@ describe("Iron Warden active abilities", () => {
     expect(
       events
         .filter((event) => event.type.startsWith("ability.status."))
-        .map((event) => "abilityId" in event && event.abilityId)
+        .map((event) =>
+          "abilityId" in event
+            ? {
+                abilityId: event.abilityId,
+                sourceEntityId:
+                  "sourceEntityId" in event ? event.sourceEntityId : undefined
+              }
+            : undefined
+        )
     ).toEqual([
-      "ability.iron_warden.linebreaker",
-      "ability.iron_warden.linebreaker",
-      "ability.iron_warden.rallying_roar",
-      "ability.iron_warden.rallying_roar"
+      {
+        abilityId: "ability.iron_warden.linebreaker",
+        sourceEntityId: "entity.dwarf.warden"
+      },
+      {
+        abilityId: "ability.iron_warden.linebreaker",
+        sourceEntityId: "entity.dwarf.warden"
+      },
+      {
+        abilityId: "ability.iron_warden.rallying_roar",
+        sourceEntityId: "entity.dwarf.warden.rally"
+      },
+      {
+        abilityId: "ability.iron_warden.rallying_roar",
+        sourceEntityId: "entity.dwarf.warden.rally"
+      }
     ]);
   });
 

@@ -2207,6 +2207,7 @@ export function stepSimulation(
               ? "ability.status.applied"
               : "ability.status.refreshed",
           ruleId: activeAbilityRuleId(application.abilityId, "STATUS"),
+          sourceEntityId: application.sourceEntityId,
           ownerEntityId: application.ownerEntityId,
           abilityId: application.abilityId,
           statusId: application.statusId,
