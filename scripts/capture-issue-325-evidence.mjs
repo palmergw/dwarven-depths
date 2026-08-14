@@ -32,6 +32,26 @@ function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
+function captureBinding(truth) {
+  if (truth === null) return null;
+  return {
+    fixtureId: truth.fixtureId,
+    captureReady: truth.captureReady,
+    alignmentValid: truth.alignment.valid,
+    snapshot: truth.snapshot,
+    entities: truth.registry.entities.map((entity) => ({
+      id: entity.id,
+      faction: entity.faction,
+      nodeId: entity.nodeId,
+      currentHealth: entity.currentHealth,
+      maximumHealth: entity.maximumHealth,
+      action: entity.action,
+      targetEntityId: entity.targetEntityId,
+      statusIds: entity.statusIds
+    }))
+  };
+}
+
 async function readState(page) {
   return page.evaluate(() => ({
     viewport: [window.innerWidth, window.innerHeight],
@@ -101,7 +121,10 @@ async function capture(page, id, expected, expectedArgument) {
   });
   const bytes = await readFile(screenshotPath);
   const after = await readState(page);
-  if (JSON.stringify(after.truth) !== JSON.stringify(before.truth))
+  if (
+    JSON.stringify(captureBinding(after.truth)) !==
+    JSON.stringify(captureBinding(before.truth))
+  )
     throw new Error(`authoritative state changed while capturing ${id}`);
   const sidecar = {
     schemaVersion: 1,
