@@ -7,6 +7,7 @@ import {
   purchasedUpgradeCatalog,
   purchaseUpgradeRank,
   recycleProgression,
+  resolveBossDeathRewards,
   selectCharacterSkillNode
 } from "@dwarven-depths/progression";
 import {
@@ -40,6 +41,55 @@ export interface CheckpointAttemptResult {
   readonly rewardId: string;
   readonly forgeOreAwarded: number;
   readonly profile: ProfileState;
+}
+
+function applyAuthoritativeAttemptProfileDelta(
+  startingProfile: ProfileState,
+  campaign: Pick<
+    CheckpointAttemptResult,
+    "forgeOreAwarded" | "rewardId" | "profile"
+  >
+): ProfileState {
+  const claimsBossReward = campaign.profile.claimedRewardIds.includes(
+    "reward.boss.gatebreaker_captain" as StableId
+  );
+  const attemptForgeOre =
+    campaign.forgeOreAwarded - (claimsBossReward ? 20 : 0);
+  if (!Number.isSafeInteger(attemptForgeOre) || attemptForgeOre < 0)
+    throw new RangeError(
+      "authoritative attempt result has invalid reward totals"
+    );
+  let profile = normalizeProfileState({
+    ...startingProfile,
+    revision: startingProfile.revision + 1,
+    forgeOre: startingProfile.forgeOre + attemptForgeOre,
+    claimedRewardIds: [
+      ...startingProfile.claimedRewardIds,
+      campaign.rewardId as StableId
+    ]
+  });
+  if (claimsBossReward)
+    profile = resolveBossDeathRewards({
+      schemaVersion: 1,
+      profile,
+      bossDeaths: [
+        {
+          schemaVersion: 1,
+          eventId: "death.shuttergate.web.gatebreaker_captain" as StableId,
+          bossEntityId: "entity.enemy.shuttergate_010" as never
+        }
+      ],
+      rewards: [
+        {
+          schemaVersion: 1,
+          rewardId: "reward.boss.gatebreaker_captain" as StableId,
+          bossEntityId: "entity.enemy.shuttergate_010" as never,
+          characterUnlockId: "character.deep_ranger" as StableId,
+          forgeOre: 20
+        }
+      ]
+    }).profile;
+  return profile;
 }
 
 export function createCheckpointProfileStore(): CheckpointProfileStore {
@@ -242,15 +292,10 @@ export function validateCheckpointAttemptResult(
   campaign: CheckpointAttemptResult
 ): ProfileState {
   const profile = normalizeProfileState(campaign.profile);
-  const expectedProfile = normalizeProfileState({
-    ...startingProfile,
-    revision: startingProfile.revision + 1,
-    forgeOre: startingProfile.forgeOre + campaign.forgeOreAwarded,
-    claimedRewardIds: [
-      ...startingProfile.claimedRewardIds,
-      campaign.rewardId as StableId
-    ]
-  });
+  const expectedProfile = applyAuthoritativeAttemptProfileDelta(
+    startingProfile,
+    campaign
+  );
   if (
     campaign.schemaVersion !== 1 ||
     !/^attempt\.shuttergate\.web_[0-9]{6}$/.test(campaign.attemptId) ||
@@ -299,15 +344,10 @@ export async function applyCheckpointAttemptResult(
         concurrentProfile.claimedRewardIds.includes(campaign.rewardId as never)
       )
         return concurrentProfile;
-      candidate = normalizeProfileState({
-        ...concurrentProfile,
-        revision: concurrentProfile.revision + 1,
-        forgeOre: concurrentProfile.forgeOre + campaign.forgeOreAwarded,
-        claimedRewardIds: [
-          ...concurrentProfile.claimedRewardIds,
-          campaign.rewardId as StableId
-        ]
-      });
+      candidate = applyAuthoritativeAttemptProfileDelta(
+        concurrentProfile,
+        campaign
+      );
       expectedRevision = concurrentProfile.revision;
     }
   }

@@ -462,7 +462,32 @@ class ControlledJourneyWorker {
     if (runConfiguration === undefined)
       throw new Error("journey worker was not initialized");
     const rewardId = `reward.${runConfiguration.attemptId}`;
-    const forgeOreAwarded = 8;
+    const bossForgeOre = terminalResult === "victory" ? 20 : 0;
+    const forgeOreAwarded = 8 + bossForgeOre;
+    const profile = {
+      ...runConfiguration.profile,
+      revision:
+        runConfiguration.profile.revision +
+        (terminalResult === "victory" ? 2 : 1),
+      forgeOre:
+        runConfiguration.profile.forgeOre +
+        profileForgeOreAwarded +
+        bossForgeOre,
+      unlockedCharacterIds:
+        terminalResult === "victory"
+          ? [
+              "character.deep_ranger",
+              ...runConfiguration.profile.unlockedCharacterIds
+            ]
+          : runConfiguration.profile.unlockedCharacterIds,
+      claimedRewardIds: [
+        ...runConfiguration.profile.claimedRewardIds,
+        rewardId,
+        ...(terminalResult === "victory"
+          ? ["reward.boss.gatebreaker_captain"]
+          : [])
+      ]
+    };
     this.emit({
       protocolVersion: 4,
       type: "result",
@@ -475,15 +500,7 @@ class ControlledJourneyWorker {
         attemptId: runConfiguration.attemptId,
         rewardId,
         forgeOreAwarded,
-        profile: {
-          ...runConfiguration.profile,
-          revision: runConfiguration.profile.revision + 1,
-          forgeOre: runConfiguration.profile.forgeOre + profileForgeOreAwarded,
-          claimedRewardIds: [
-            ...runConfiguration.profile.claimedRewardIds,
-            rewardId
-          ]
-        }
+        profile
       },
       commands: [
         {
@@ -4777,14 +4794,16 @@ describe("authoritative Shuttergate campaign journey", () => {
     workers.at(-1)?.finish(8, "victory");
     await resultHeading("Victory results");
     expect(document.querySelector(".result-summary")).toHaveTextContent(
-      "Forge Ore earned+8New balance14 Forge Ore"
+      "Forge Ore earned+28New balance34 Forge Ore"
     );
     expect(store.envelope?.profile).toMatchObject({
-      forgeOre: 14,
+      forgeOre: 34,
+      unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"],
       claimedRewardIds: [
         "reward.attempt.shuttergate.web_000001",
         "reward.attempt.shuttergate.web_000002",
-        "reward.attempt.shuttergate.web_000003"
+        "reward.attempt.shuttergate.web_000003",
+        "reward.boss.gatebreaker_captain"
       ],
       purchasedUpgrades: [{ upgradeId: "upgrade.ability.shield_slam", rank: 1 }]
     });

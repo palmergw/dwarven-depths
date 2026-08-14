@@ -184,6 +184,25 @@ describe("Shuttergate web campaign authority", () => {
     expect(
       result.finalState.battlefield?.dwarfCombatants[0]?.maximumHealth
     ).toBe(840);
+    const reward = resolveShuttergateWebAttemptReward({
+      schemaVersion: 1,
+      configuration,
+      terminalResult: "victory",
+      finalState: result.finalState
+    });
+    expect(reward).toMatchObject({
+      forgeOreAwarded: 43,
+      profile: {
+        forgeOre: 49,
+        unlockedCharacterIds: [
+          "character.deep_ranger",
+          "character.iron_warden"
+        ],
+        claimedRewardIds: expect.arrayContaining([
+          "reward.boss.gatebreaker_captain"
+        ])
+      }
+    });
     await expect(
       verifyReplay(
         createReplayDefinition(result, replayScenario, content),

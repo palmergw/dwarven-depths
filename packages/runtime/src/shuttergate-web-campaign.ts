@@ -8,7 +8,8 @@ import {
   ironWardenSkillTree,
   normalizeProfileState,
   type ProfileState,
-  purchasedUpgradeCatalog
+  purchasedUpgradeCatalog,
+  resolveBossDeathRewards
 } from "@dwarven-depths/progression";
 import {
   type BattlefieldDwarfDeploymentAuthority,
@@ -249,17 +250,39 @@ export function resolveShuttergateWebAttemptReward(input: {
     run.profile.revision === Number.MAX_SAFE_INTEGER
   )
     throw new RangeError("Shuttergate web reward exceeds profile limits");
-  const profile = normalizeProfileState({
+  let profile = normalizeProfileState({
     ...run.profile,
     revision: run.profile.revision + 1,
     forgeOre,
     claimedRewardIds: [...run.profile.claimedRewardIds, rewardId]
   });
+  if (input.terminalResult === "victory") {
+    profile = resolveBossDeathRewards({
+      schemaVersion: 1,
+      profile,
+      bossDeaths: [
+        {
+          schemaVersion: 1,
+          eventId: `death.${run.attemptId}.gatebreaker_captain` as StableId,
+          bossEntityId: "entity.enemy.shuttergate_010" as never
+        }
+      ],
+      rewards: [
+        {
+          schemaVersion: 1,
+          rewardId: "reward.boss.gatebreaker_captain" as StableId,
+          bossEntityId: "entity.enemy.shuttergate_010" as never,
+          characterUnlockId: "character.deep_ranger" as StableId,
+          forgeOre: 20
+        }
+      ]
+    }).profile;
+  }
   return Object.freeze({
     schemaVersion: 1,
     attemptId: run.attemptId,
     rewardId,
-    forgeOreAwarded,
+    forgeOreAwarded: profile.forgeOre - run.profile.forgeOre,
     profile
   });
 }
