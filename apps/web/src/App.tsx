@@ -514,8 +514,7 @@ export function App({
   const [checkpointProfile, setCheckpointProfile] = useState<
     CheckpointProfileResult | { readonly status: "loading" }
   >({ status: "loading" });
-  const [campaignCompletedThisSession, setCampaignCompletedThisSession] =
-    useState(false);
+  const [campaignComplete, setCampaignComplete] = useState(false);
   const [motionPreference, setMotionPreference] =
     useState<MotionPreference>(readMotionPreference);
   const [textScale, setTextScale] = useState<TextScale>(readTextScale);
@@ -1234,7 +1233,7 @@ export function App({
   function returnToCheckpoint(): void {
     if (view.phase !== "result" && view.phase !== "failure") return;
     if (view.phase === "result" && view.result.terminalResult === "victory")
-      setCampaignCompletedThisSession(true);
+      setCampaignComplete(true);
     workerRef.current?.terminate();
     workerRef.current = undefined;
     workerFailureRef.current = undefined;
@@ -1609,12 +1608,6 @@ export function App({
       : view.phase;
   const inspectionEnabled =
     new URLSearchParams(window.location.search).get("inspection") === "1";
-  const campaignComplete =
-    campaignCompletedThisSession ||
-    (checkpointProfile.status === "ready" &&
-      checkpointProfile.profile.claimedRewardIds.includes(
-        "reward.boss.gatebreaker_captain" as never
-      ));
 
   return (
     <main

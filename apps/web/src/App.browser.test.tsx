@@ -1,10 +1,14 @@
 import {
   createInitialProfile,
+  normalizeProfileState,
   type ProfileState,
   purchasedUpgradeCatalog,
   purchaseUpgradeRank
 } from "@dwarven-depths/progression";
-import type { ProfileSaveEnvelope } from "@dwarven-depths/save";
+import {
+  createProfileSaveEnvelope,
+  type ProfileSaveEnvelope
+} from "@dwarven-depths/save";
 import { IndexedDbProfileStoreError } from "@dwarven-depths/save/indexed-db";
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -4165,6 +4169,44 @@ describe("authoritative web worker", () => {
     expect(workers).toHaveLength(1);
   });
 
+  it("keeps preparation available after a boss-kill defeat", async () => {
+    const worker = new ControlledResultWorker(
+      "defeat",
+      "attempt.shuttergate.web_000004"
+    );
+    const profileStore = new PersistentJourneyProfileStore();
+    const initial = createInitialProfile("character.iron_warden" as never);
+    profileStore.envelope = await createProfileSaveEnvelope({
+      contentVersion: "content.shuttergate.level_1.v1",
+      applicationBuild: "phase-6-web",
+      writtenAtEpochMs: 1_725_000_000_000,
+      profileId: "profile.local",
+      profile: normalizeProfileState({
+        ...initial,
+        revision: 4,
+        forgeOre: 48,
+        claimedRewardIds: [
+          "reward.attempt.shuttergate.web_000001",
+          "reward.attempt.shuttergate.web_000002",
+          "reward.attempt.shuttergate.web_000003",
+          "reward.boss.gatebreaker_captain"
+        ],
+        unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"]
+      })
+    });
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => profileStore}
+      />
+    );
+
+    expect(await buttonWithText("Begin preparation")).toBeEnabled();
+  });
+
   it("recovers from authoritative failures by keyboard and mouse", async () => {
     const workers: ControlledFailureWorker[] = [];
     const createWorker = (): Worker => {
@@ -4805,9 +4847,6 @@ describe("authoritative Shuttergate campaign journey", () => {
     const completed = await buttonWithText("Defence complete");
     expect(completed).toBeDisabled();
     completed.click();
-    expect(workers).toHaveLength(workerCountAtVictory);
-    await reloadApp();
-    expect(await buttonWithText("Defence complete")).toBeDisabled();
     expect(workers).toHaveLength(workerCountAtVictory);
     expect(store.writes).toBeGreaterThanOrEqual(5);
   }, 30_000);
