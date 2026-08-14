@@ -153,6 +153,7 @@ describe("checkpoint Iron Warden skill selection", () => {
     expect(document.querySelector(".upgrades")?.textContent).toContain(
       "Pending skill point from level 3"
     );
+    expect(document.getElementById("iron-warden-branch-commitment")).toBeNull();
     expect(await button("Select Long Reach")).toBeEnabled();
     expect(document.querySelector(".skill-detail")?.textContent).toContain(
       "Stone GuardSelected — +25 maximum health; +3 attack damage.Requires none."

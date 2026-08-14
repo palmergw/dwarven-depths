@@ -438,6 +438,12 @@ export interface ActiveAbilityTickRequest {
   readonly committedAbilities: readonly CommittedActiveAbility[];
 }
 
+export interface ActiveAbilityStatusApplicationDecision
+  extends StatusApplicationDecision {
+  readonly abilityId: StableId;
+  readonly sourceEntityId: EntityId;
+}
+
 export interface ActiveAbilityTickResolution {
   readonly schemaVersion: 1;
   readonly battlefield: BattlefieldState;
@@ -448,7 +454,7 @@ export interface ActiveAbilityTickResolution {
   readonly impacts: readonly AbilityImpactDecision[];
   readonly cooldownDecisions: readonly CooldownTimerDecision[];
   readonly statusDecisions: readonly StatusTimerDecision[];
-  readonly statusApplicationDecisions: readonly StatusApplicationDecision[];
+  readonly statusApplicationDecisions: readonly ActiveAbilityStatusApplicationDecision[];
 }
 
 export interface DwarfActionPhaseRequest {

@@ -190,6 +190,71 @@ describe("Iron Warden active abilities", () => {
       ]);
     }
   );
+
+  it("binds overlapping status evidence and rule IDs to each source ability", () => {
+    const linebreaker = resolveActiveAbilityTick(
+      request(0, battlefield({ enemyHealth: 100 }), {
+        commands: [command(0, 0, "ability.iron_warden.linebreaker")]
+      }),
+      content
+    ).committedAbilities[0];
+    const rallyingRoar = resolveActiveAbilityTick(
+      request(0, battlefield({ enemyHealth: 100 }), {
+        commands: [command(1, 0, "ability.iron_warden.rallying_roar")]
+      }),
+      content
+    ).committedAbilities[0];
+    if (linebreaker === undefined || rallyingRoar === undefined)
+      throw new Error("missing committed Iron Warden ability");
+    const state: SimulationState = {
+      schemaVersion: 1,
+      contentVersion: content.bundle.contentVersion,
+      tick: 0,
+      seed: "1",
+      rngState: 1,
+      levelId: "level.shuttergate" as never,
+      phase: "COMBAT_RUNNING",
+      eventSequence: 0,
+      battlefield: battlefield({ enemyHealth: 100 }),
+      committedAbilities: [
+        { ...linebreaker, impactAtTick: 0 },
+        { ...rallyingRoar, impactAtTick: 0 }
+      ]
+    };
+
+    const events = stepSimulation(state, [], content).events.filter((event) =>
+      event.type.startsWith("ability.")
+    );
+    expect(events.map(({ type, ruleId }) => ({ type, ruleId }))).toEqual([
+      { type: "ability.impact", ruleId: "SIM-LINEBREAKER-IMPACT-001" },
+      { type: "ability.damage", ruleId: "SIM-LINEBREAKER-DAMAGE-001" },
+      { type: "ability.damage", ruleId: "SIM-LINEBREAKER-DAMAGE-001" },
+      { type: "ability.impact", ruleId: "SIM-RALLYING-ROAR-IMPACT-001" },
+      { type: "ability.damage", ruleId: "SIM-RALLYING-ROAR-DAMAGE-001" },
+      { type: "ability.damage", ruleId: "SIM-RALLYING-ROAR-DAMAGE-001" },
+      { type: "ability.status.applied", ruleId: "SIM-LINEBREAKER-STATUS-001" },
+      { type: "ability.status.applied", ruleId: "SIM-LINEBREAKER-STATUS-001" },
+      {
+        type: "ability.status.refreshed",
+        ruleId: "SIM-RALLYING-ROAR-STATUS-001"
+      },
+      {
+        type: "ability.status.refreshed",
+        ruleId: "SIM-RALLYING-ROAR-STATUS-001"
+      }
+    ]);
+    expect(
+      events
+        .filter((event) => event.type.startsWith("ability.status."))
+        .map((event) => "abilityId" in event && event.abilityId)
+    ).toEqual([
+      "ability.iron_warden.linebreaker",
+      "ability.iron_warden.linebreaker",
+      "ability.iron_warden.rallying_roar",
+      "ability.iron_warden.rallying_roar"
+    ]);
+  });
+
   it.each(["PREPARATION", "TERMINAL"] as const)(
     "emits a stable rejection without advancing %s gameplay",
     (phase) => {

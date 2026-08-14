@@ -2095,6 +2095,21 @@ export function stepSimulation(
 
   if (state.phase === "PREPARATION") return { state, events: [] };
 
+  const activeAbilityRuleId = (
+    abilityId: StableId,
+    boundary: "IMPACT" | "DAMAGE" | "STATUS"
+  ): string => {
+    const family =
+      abilityId === "ability.iron_warden.shield_slam"
+        ? "SHIELD-SLAM"
+        : abilityId === "ability.iron_warden.linebreaker"
+          ? "LINEBREAKER"
+          : abilityId === "ability.iron_warden.rallying_roar"
+            ? "RALLYING-ROAR"
+            : "ACTIVE-ABILITY";
+    return `SIM-${family}-${boundary}-001`;
+  };
+
   const hasActiveAbilityAuthority =
     commands.some(({ command }) => command.type === "activateAbility") ||
     state.activeCooldowns !== undefined ||
@@ -2148,7 +2163,7 @@ export function stepSimulation(
           tick: state.tick,
           sequence,
           type: "ability.impact",
-          ruleId: "SIM-SHIELD-SLAM-IMPACT-001",
+          ruleId: activeAbilityRuleId(impact.abilityId, "IMPACT"),
           sourceEntityId: impact.sourceEntityId,
           abilityId: impact.abilityId,
           targetEntityIds: impact.targetEntityIds,
@@ -2167,7 +2182,7 @@ export function stepSimulation(
             tick: state.tick,
             sequence: damageSequence,
             type: "ability.damage",
-            ruleId: "SIM-SHIELD-SLAM-DAMAGE-001",
+            ruleId: activeAbilityRuleId(impact.abilityId, "DAMAGE"),
             sourceEntityId: impact.sourceEntityId,
             targetEntityId,
             abilityId: impact.abilityId,
@@ -2181,13 +2196,6 @@ export function stepSimulation(
       }
     }
     for (const application of ability.statusApplicationDecisions) {
-      const sourceImpact = ability.impacts.find((impact) =>
-        impact.targetEntityIds.includes(application.ownerEntityId)
-      );
-      if (sourceImpact === undefined)
-        throw new Error(
-          "ability status application has no authoritative impact"
-        );
       const sequence = state.eventSequence + events.length;
       events.push(
         Object.freeze({
@@ -2198,9 +2206,9 @@ export function stepSimulation(
             application.status === "applied"
               ? "ability.status.applied"
               : "ability.status.refreshed",
-          ruleId: "SIM-SHIELD-SLAM-STATUS-001",
+          ruleId: activeAbilityRuleId(application.abilityId, "STATUS"),
           ownerEntityId: application.ownerEntityId,
-          abilityId: sourceImpact.abilityId,
+          abilityId: application.abilityId,
           statusId: application.statusId,
           expiresAtTick: application.expiresAtTick,
           reasonCode: application.reason

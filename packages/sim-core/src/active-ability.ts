@@ -4,6 +4,7 @@ import type {
   AbilityActivationReason,
   AbilityImpactDecision,
   ActivateAbilityCommand,
+  ActiveAbilityStatusApplicationDecision,
   ActiveAbilityTickRequest,
   ActiveAbilityTickResolution,
   ActiveCooldown,
@@ -14,8 +15,7 @@ import type {
   CommittedActiveAbility,
   EntityId,
   NavigationNodeDefinition,
-  StableId,
-  StatusApplicationDecision
+  StableId
 } from "@dwarven-depths/contracts";
 import {
   authorizeActiveAbilityEnemyHealth,
@@ -189,7 +189,8 @@ export function resolveActiveAbilityTick(
   ];
   const activations: AbilityActivationDecision[] = [];
   const impacts: AbilityImpactDecision[] = [];
-  const statusApplicationDecisions: StatusApplicationDecision[] = [];
+  const statusApplicationDecisions: ActiveAbilityStatusApplicationDecision[] =
+    [];
   let battlefield = request.battlefield;
   const map = content.maps.get(battlefield.mapId);
   if (map === undefined)
@@ -476,7 +477,15 @@ export function resolveActiveAbilityTick(
       }))
     });
     statuses = statusApplication.statuses;
-    statusApplicationDecisions.push(...statusApplication.decisions);
+    statusApplicationDecisions.push(
+      ...statusApplication.decisions.map((decision) =>
+        Object.freeze({
+          ...decision,
+          abilityId: ability.abilityId,
+          sourceEntityId: ability.sourceEntityId
+        })
+      )
+    );
     const living = new Set(
       enemyCombatants
         .filter(({ lifecycleState }) => lifecycleState === "active")

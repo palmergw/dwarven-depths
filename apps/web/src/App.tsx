@@ -2410,11 +2410,15 @@ export function App({
                       Pending skill point from level{" "}
                       {ironWardenSkillEligibility?.pendingSkillPointLevel}.
                     </p>
-                    {(ironWardenSkillEligibility?.eligibleNodeIds.length ?? 0) >
-                      1 && (
+                    {ironWardenSkillTree.nodes.some(
+                      (node) =>
+                        ironWardenSkillEligibility?.eligibleNodeIds.includes(
+                          node.nodeId
+                        ) === true && (node.exclusiveNodeIds?.length ?? 0) > 0
+                    ) && (
                       <p id="iron-warden-branch-commitment">
-                        Choose one branch. This final skill point makes the
-                        other branch unavailable until you recycle the Iron
+                        Choose one capstone. This final skill point makes the
+                        other capstones unavailable until you recycle the Iron
                         Warden skill tree.
                       </p>
                     )}
