@@ -197,8 +197,8 @@ const evidencePins = Object.freeze([
   pin(
     "Full-recycle",
     "packages/progression/src/recycle-transactions.test.ts",
-    "5239eb2233653c3ec3c36cc563d42f282afbff19a37637e673c82adbc2701c10",
-    "Pinned after the calibrated Shield Slam purchase retained full-recycle conservation and declared state: 5239eb2233653c3ec3c36cc563d42f282afbff19a37637e673c82adbc2701c10"
+    "9da0970183c122f663fec57deab382185e8d1452a7493dcfe589704f90dd6c31",
+    "Pinned after Shield Slam rank 1 maximum-health calibration retained full-recycle conservation and declared state: 9da0970183c122f663fec57deab382185e8d1452a7493dcfe589704f90dd6c31"
   )
 ]);
 
