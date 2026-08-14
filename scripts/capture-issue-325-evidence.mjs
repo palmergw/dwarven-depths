@@ -111,11 +111,12 @@ async function capture(page, id, expected, expectedArgument) {
   });
   const bytes = await readFile(screenshotPath);
   const after = await readState(page);
-  if (
-    JSON.stringify(captureBinding(after.truth)) !==
-    JSON.stringify(captureBinding(before.truth))
-  )
-    throw new Error(`authoritative state changed while capturing ${id}`);
+  const beforeBinding = JSON.stringify(captureBinding(before.truth));
+  const afterBinding = JSON.stringify(captureBinding(after.truth));
+  if (afterBinding !== beforeBinding)
+    throw new Error(
+      `authoritative state changed while capturing ${id}: ${beforeBinding} -> ${afterBinding}`
+    );
   const sidecar = {
     schemaVersion: 1,
     issue: 325,
