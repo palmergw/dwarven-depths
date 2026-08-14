@@ -23,7 +23,10 @@ const budgets = {
   // remains governed by the unchanged main, worker, and stylesheet ceilings.
   // The equipped-build workflow adds catalog-derived Forge and preparation
   // guidance; keep its aggregate allowance bounded to one additional KiB.
-  total: 605_184
+  // Finite calibrated victory adds terminal reward, persistence-race, and
+  // campaign-integrity guards while retaining every per-asset startup cap;
+  // bound that aggregate authority cost to three additional KiB.
+  total: 608_256
 };
 const classifications = [
   ["mainJavaScript", /^index-[\w-]+\.js$/],
