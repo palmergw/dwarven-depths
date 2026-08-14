@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "issue": 325,
+  "id": "forge-tree",
+  "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
+  "fixtureId": null,
+  "screenshot": "forge-tree.png",
+  "screenshotSha256": "4452794d13281ef580a369cdb4ad3fe62636cd6daf8d60550b1e02db57581a7c",
+  "state": {
+    "viewport": [
+      1440,
+      900
+    ],
+    "shellView": "forge",
+    "phase": "checkpoint",
+    "truth": null,
+    "focus": null,
+    "preferences": {
+      "contrast": "standard",
+      "textScale": "default",
+      "motion": "reduce",
+      "reducedMotion": true
+    },
+    "abilities": [],
+    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCurrent stepReview company progression and upgrades, then begin preparation.Prepare the companyUpcomingReview the roster and placement summary, then confirm preparation.Follow the combatUpcomingUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Upgrade inventory is open.Company workshopAncestral ForgeAvailable Forge Ore: 0Close upgrade inventoryDefend Shuttergate to earn Forge Ore. Spend it here on permanent company training. Item reinforcements unlock only after that item joins the company inventory.Scroll for skills and recycle options ↓No upgrades purchased.Available upgrades♜Equipped next runIron Warden buildHealth+0Damage+0Range+0Cooldown-0 ticksNo Forge or skill modifiers equipped.♜Rank 0/210 Forge OreUnavailableShield Slam TrainingRequires 10 Forge Ore.Owned effects: none.Rank 1 effects: +600 maximum health; +2 attack damage; +4 attack range.Purchase✹Rank 0/115 Forge OreUnavailablePowder Cask ReinforcementRequires Powder Cask.Owned effects: none.Rank 1 effects: No passive battlefield modifiers.PurchaseIron Warden skillsBuild paths modify the authoritative next-run combat values. Select only one late-tree capstone.FoundationStone GuardLocked+25 maximum health; +3 attack damage.Requires none.ControlDisciplined SlamLocked-2 future cooldown ticks.Requires Stone Guard.Concussive ForceLocked+1 attack range.Requires Disciplined Slam.Rolling QuakeLocked-3 future cooldown ticks.Requires Concussive Force.Unyielding CommandLocked+2 attack range; +40 maximum health.Requires Rolling Quake.Capstone — excludes Bastion Oath, Executioner's Mark.OffenseLong ReachLocked+1 attack range.Requires Stone Guard.Sundering EdgeLocked+5 attack damage.Requires Long Reach.LinebreakerLocked+8 attack damage.Requires Sundering Edge.Executioner's MarkLocked+12 attack damage; +1 attack range.Requires Linebreaker.Capstone — excludes Bastion Oath, Unyielding Command.Guard & tempoBattle RhythmLocked-1 future cooldown ticks; +15 maximum health.Requires Stone Guard.Rallying GuardLocked+35 maximum health.Requires Battle Rhythm.War CryLocked-4 future cooldown ticks.Requires Rallying Guard.Bastion OathLocked+75 maximum health; -2 future cooldown ticks.Requires War Cry.Capstone — excludes Executioner's Mark, Unyielding Command.No Iron Warden skills selected.No pending Iron Warden skill points."
+  }
+}

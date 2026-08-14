@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "issue": 325,
+  "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [
+    1440,
+    900
+  ],
+  "deviceScaleFactor": 1,
+  "browser": "chromium",
+  "captures": [
+    {
+      "id": "forge-tree",
+      "screenshot": "forge-tree.png",
+      "screenshotSha256": "4452794d13281ef580a369cdb4ad3fe62636cd6daf8d60550b1e02db57581a7c",
+      "sidecar": "forge-tree.json",
+      "phase": "checkpoint",
+      "preferences": {
+        "contrast": "standard",
+        "textScale": "default",
+        "motion": "reduce",
+        "reducedMotion": true
+      }
+    },
+    {
+      "id": "preparation-loadout",
+      "screenshot": "preparation-loadout.png",
+      "screenshotSha256": "fa05126aa0cec67bb73f1260db77ff337c38c4ec86c67d28d06fc0c30d72961a",
+      "sidecar": "preparation-loadout.json",
+      "phase": "preparation",
+      "preferences": {
+        "contrast": "standard",
+        "textScale": "default",
+        "motion": "reduce",
+        "reducedMotion": true
+      }
+    },
+    {
+      "id": "combat-ability-bar-keyboard",
+      "screenshot": "combat-ability-bar-keyboard.png",
+      "screenshotSha256": "875bd5092b6c9e87b97043d1d24623fe7dbee9d5c74ce40b30700b58a6ae12d8",
+      "sidecar": "combat-ability-bar-keyboard.json",
+      "phase": "running",
+      "preferences": {
+        "contrast": "standard",
+        "textScale": "default",
+        "motion": "reduce",
+        "reducedMotion": true
+      }
+    },
+    {
+      "id": "shield-slam-impact",
+      "screenshot": "shield-slam-impact.png",
+      "screenshotSha256": "190f746e3b4cbd10f0ce64328ebbe628fcaf1694cb97756d152cf7af228a1dd4",
+      "sidecar": "shield-slam-impact.json",
+      "phase": "running",
+      "preferences": {
+        "contrast": "standard",
+        "textScale": "default",
+        "motion": "reduce",
+        "reducedMotion": true
+      }
+    },
+    {
+      "id": "linebreaker-impact",
+      "screenshot": "linebreaker-impact.png",
+      "screenshotSha256": "426d1a51824e6a2927ef297c1100ecd7c43d95501b0ea238ba01b0b1576399bf",
+      "sidecar": "linebreaker-impact.json",
+      "phase": "running",
+      "preferences": {
+        "contrast": "standard",
+        "textScale": "default",
+        "motion": "reduce",
+        "reducedMotion": true
+      }
+    },
+    {
+      "id": "rallying-roar-commitment",
+      "screenshot": "rallying-roar-commitment.png",
+      "screenshotSha256": "5a351682decb384cff15d2f00ecc4ca1f9d9f5948bc06af1f989006fe3819a15",
+      "sidecar": "rallying-roar-commitment.json",
+      "phase": "running",
+      "preferences": {
+        "contrast": "standard",
+        "textScale": "default",
+        "motion": "reduce",
+        "reducedMotion": true
+      }
+    },
+    {
+      "id": "combat-high-contrast-large-text-reduced-motion",
+      "screenshot": "combat-high-contrast-large-text-reduced-motion.png",
+      "screenshotSha256": "93efa951b6658ca52ca3b9f3181f5669c3f56b3aa2774539eb5e9fcc1911a9e6",
+      "sidecar": "combat-high-contrast-large-text-reduced-motion.json",
+      "phase": "running",
+      "preferences": {
+        "contrast": "high",
+        "textScale": "large",
+        "motion": "reduce",
+        "reducedMotion": true
+      }
+    }
+  ],
+  "decision": "Approve the expanded Iron Warden Forge/loadout hierarchy, three-ability combat bar, and restrained warm Shield Slam, Linebreaker, and Rallying Roar combat effects."
+}
