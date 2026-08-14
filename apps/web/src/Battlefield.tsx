@@ -611,6 +611,19 @@ export function selectCombatPoseAsset(
     entity.action.phase !== "idle"
   )
     return `warden-shield-slam-${authoredPhase}-source`;
+  if (
+    dwarf &&
+    entity.action.kind === "ability" &&
+    entity.action.abilityId === "ability.iron_warden.linebreaker" &&
+    entity.action.phase !== "idle"
+  )
+    return `warden-basic-attack-${authoredPhase}-source`;
+  if (
+    dwarf &&
+    entity.action.kind === "ability" &&
+    entity.action.abilityId === "ability.iron_warden.rallying_roar"
+  )
+    return "warden-guard-source";
   if (dwarf && entity.action.kind === "basic_attack") {
     return `warden-basic-attack-${authoredPhase}-source`;
   }

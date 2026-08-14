@@ -2011,7 +2011,9 @@ describe("semantic combat controls", () => {
     expect(worker.speedCommands).toEqual([2, 1, 2]);
     expect(
       document.querySelector(".combat-keyboard-hints")?.textContent
-    ).toContain("Esc pause · 1 Shield Slam · −/+ speed · portrait targeting");
+    ).toContain(
+      "Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targeting"
+    );
   });
 
   it("binds speed controls to one pending authoritative acknowledgement", async () => {
@@ -2571,7 +2573,7 @@ describe("authoritative web worker", () => {
     }
   });
 
-  it("publishes authoritative Shield Slam availability", async () => {
+  it("publishes the canonical authoritative Iron Warden ability roster", async () => {
     const worker = new Worker(
       new URL("./simulation.worker.ts", import.meta.url),
       { type: "module" }
@@ -2594,6 +2596,16 @@ describe("authoritative web worker", () => {
           {
             entityId: "entity.dwarf.warden",
             activeAbilities: [
+              {
+                abilityId: "ability.iron_warden.linebreaker",
+                cooldownCompleteAtTick: null,
+                rejectionReason: "phase_unavailable"
+              },
+              {
+                abilityId: "ability.iron_warden.rallying_roar",
+                cooldownCompleteAtTick: null,
+                rejectionReason: "phase_unavailable"
+              },
               {
                 abilityId: "ability.iron_warden.shield_slam",
                 cooldownCompleteAtTick: null,
@@ -2702,8 +2714,9 @@ describe("authoritative web worker", () => {
         (message) =>
           message.type === "combat_controls" &&
           message.protocolVersion === 4 &&
-          message.dwarves[0]?.activeAbilities?.[0]?.cooldownCompleteAtTick !==
-            null
+          typeof message.dwarves[0]?.activeAbilities?.find(
+            (ability) => ability.abilityId === "ability.iron_warden.shield_slam"
+          )?.cooldownCompleteAtTick === "number"
       );
       worker.postMessage({
         protocolVersion: 4,
@@ -2724,7 +2737,10 @@ describe("authoritative web worker", () => {
         dwarves: [
           {
             activeAbilities: [
+              { abilityId: "ability.iron_warden.linebreaker" },
+              { abilityId: "ability.iron_warden.rallying_roar" },
               {
+                abilityId: "ability.iron_warden.shield_slam",
                 cooldownCompleteAtTick: expect.any(Number),
                 rejectionReason: null
               }

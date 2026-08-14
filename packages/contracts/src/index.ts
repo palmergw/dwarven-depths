@@ -424,7 +424,7 @@ export interface AbilityImpactDecision {
   readonly statusId: StatusId;
   readonly damage: number;
   readonly staggerExpiresAtTick: number;
-  readonly reason: "shield_slam_impacted";
+  readonly reason: "shield_slam_impacted" | "iron_warden_ability_impacted";
 }
 
 export interface ActiveAbilityTickRequest {
@@ -1330,7 +1330,9 @@ export interface AbilityDamageSimulationEvent extends SimulationEventBase {
   readonly targetEntityId: EntityId;
   readonly abilityId: StableId;
   readonly damage: number;
-  readonly reasonCode: "shield_slam_damage_applied";
+  readonly reasonCode:
+    | "shield_slam_damage_applied"
+    | "iron_warden_ability_damage_applied";
 }
 
 export interface AbilityStatusSimulationEvent extends SimulationEventBase {

@@ -38,7 +38,8 @@ import {
 } from "./combat-feedback.js";
 import {
   deriveIronWardenBuildSummary,
-  ironWardenChoiceIdentity
+  ironWardenChoiceIdentity,
+  ironWardenPathIdentity
 } from "./iron-warden-build.js";
 import {
   parseWorkerMessage,
@@ -2241,6 +2242,78 @@ export function App({
                 >
                   Iron Warden skills
                 </h4>
+                <p>
+                  Build paths modify the authoritative next-run combat values.
+                  Select only one late-tree capstone.
+                </p>
+                <div className="skill-paths">
+                  {["Foundation", "Control", "Offense", "Guard & tempo"].map(
+                    (path) => (
+                      <section key={path} className="skill-path">
+                        <h5>{path}</h5>
+                        <ol>
+                          {ironWardenSkillTree.nodes
+                            .filter(
+                              (node) =>
+                                ironWardenPathIdentity(node.nodeId) === path
+                            )
+                            .map((node) => {
+                              const selected =
+                                checkpointProfile.profile.selectedSkillNodes.some(
+                                  (selection) =>
+                                    selection.nodeId === node.nodeId
+                                );
+                              const eligible =
+                                ironWardenSkillEligibility?.eligibleNodeIds.includes(
+                                  node.nodeId
+                                ) ?? false;
+                              return (
+                                <li
+                                  key={node.nodeId}
+                                  data-skill-state={
+                                    selected
+                                      ? "selected"
+                                      : eligible
+                                        ? "available"
+                                        : "locked"
+                                  }
+                                >
+                                  <strong>
+                                    {playerFacingName(node.nodeId)}
+                                  </strong>
+                                  <span>
+                                    {selected
+                                      ? "Selected"
+                                      : eligible
+                                        ? "Available"
+                                        : "Locked"}
+                                  </span>
+                                  <small className="skill-path-detail">
+                                    {describeEffects(node.effects)}
+                                  </small>
+                                  <small className="skill-path-detail">
+                                    Requires{" "}
+                                    {describePrerequisites(
+                                      node.prerequisiteNodeIds
+                                    )}
+                                  </small>
+                                  {(node.exclusiveNodeIds?.length ?? 0) > 0 && (
+                                    <small className="skill-path-detail">
+                                      Capstone — excludes{" "}
+                                      {node.exclusiveNodeIds
+                                        ?.map(playerFacingName)
+                                        .join(", ")}
+                                      .
+                                    </small>
+                                  )}
+                                </li>
+                              );
+                            })}
+                        </ol>
+                      </section>
+                    )
+                  )}
+                </div>
                 {checkpointProfile.profile.selectedSkillNodes.some(
                   (selection) =>
                     selection.characterId === "character.iron_warden"

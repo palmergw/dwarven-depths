@@ -58,7 +58,10 @@ function actionFor(
   combatant: BattlefieldDwarfCombatant | BattlefieldEnemyCombatant,
   moved: boolean,
   previousAction: RenderEntityV2["action"] | undefined,
-  shieldSlamImpactTargetsBySource: ReadonlyMap<string, readonly string[]>,
+  abilityImpactsBySource: ReadonlyMap<
+    string,
+    { readonly abilityId: string; readonly targetEntityIds: readonly string[] }
+  >,
   previousIsAdjacent: boolean,
   basicAttackImpacted: boolean
 ): RenderEntityV2["action"] {
@@ -72,18 +75,17 @@ function actionFor(
       abilityId: ability.abilityId,
       impactTargetEntityIds: []
     };
-  if (shieldSlamImpactTargetsBySource.has(combatant.entityId))
+  const impact = abilityImpactsBySource.get(combatant.entityId);
+  if (impact !== undefined)
     return {
       kind: "ability",
       phase: "impact",
-      abilityId: "ability.iron_warden.shield_slam",
-      impactTargetEntityIds:
-        shieldSlamImpactTargetsBySource.get(combatant.entityId) ?? []
+      abilityId: impact.abilityId,
+      impactTargetEntityIds: impact.targetEntityIds
     };
   if (
     previousIsAdjacent &&
     previousAction?.kind === "ability" &&
-    previousAction.abilityId === "ability.iron_warden.shield_slam" &&
     (previousAction.phase === "impact" || previousAction.phase === "recoil")
   )
     return {
@@ -213,14 +215,18 @@ export function createPresentationSnapshot(
       boss: combatant.classification === "boss"
     }))
   ];
-  const shieldSlamImpactTargetsBySource = new Map(
+  const abilityImpactsBySource = new Map(
     events.flatMap((event) =>
-      event.type === "ability.impact" &&
-      event.abilityId === "ability.iron_warden.shield_slam"
+      event.type === "ability.impact"
         ? [
             [
               event.sourceEntityId,
-              [...event.targetEntityIds].sort(compareRenderIds)
+              {
+                abilityId: event.abilityId,
+                targetEntityIds: [...event.targetEntityIds].sort(
+                  compareRenderIds
+                )
+              }
             ] as const
           ]
         : []
@@ -291,7 +297,7 @@ export function createPresentationSnapshot(
       entry.combatant,
       moved,
       previousById.get(entry.combatant.entityId)?.action,
-      shieldSlamImpactTargetsBySource,
+      abilityImpactsBySource,
       previousIsAdjacent,
       basicAttackImpactSources.has(entry.combatant.entityId)
     );
@@ -304,9 +310,7 @@ export function createPresentationSnapshot(
             committedAbility.aimDeltaX,
             committedAbility.aimDeltaY
           )
-        : action.kind === "ability" &&
-            action.abilityId === "ability.iron_warden.shield_slam" &&
-            previousIsAdjacent
+        : action.kind === "ability" && previousIsAdjacent
           ? (previousById.get(entry.combatant.entityId)?.facing ??
             facingFrom(position, targetPosition, previousPosition))
           : facingFrom(position, targetPosition, previousPosition);

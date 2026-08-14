@@ -135,3 +135,22 @@ export function ironWardenChoiceIdentity(nodeId: StableId): string {
       return "Iron Warden training";
   }
 }
+
+export function ironWardenPathIdentity(nodeId: StableId): string {
+  if (nodeId === "skill.iron_warden.stone_guard") return "Foundation";
+  if (
+    nodeId.includes("slam") ||
+    nodeId.includes("concussive") ||
+    nodeId.includes("quake") ||
+    nodeId.includes("unyielding")
+  )
+    return "Control";
+  if (
+    nodeId.includes("reach") ||
+    nodeId.includes("sundering") ||
+    nodeId.includes("linebreaker") ||
+    nodeId.includes("executioner")
+  )
+    return "Offense";
+  return "Guard & tempo";
+}

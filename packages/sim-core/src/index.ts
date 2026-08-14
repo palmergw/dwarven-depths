@@ -2172,12 +2172,20 @@ export function stepSimulation(
             targetEntityId,
             abilityId: impact.abilityId,
             damage: impact.damage,
-            reasonCode: "shield_slam_damage_applied"
+            reasonCode:
+              impact.abilityId === "ability.iron_warden.shield_slam"
+                ? "shield_slam_damage_applied"
+                : "iron_warden_ability_damage_applied"
           })
         );
       }
     }
     for (const application of ability.statusApplicationDecisions) {
+      const sourceImpact = ability.impacts.find((impact) =>
+        impact.targetEntityIds.includes(application.ownerEntityId)
+      );
+      if (sourceImpact === undefined)
+        throw new Error("ability status application has no authoritative impact");
       const sequence = state.eventSequence + events.length;
       events.push(
         Object.freeze({
@@ -2190,7 +2198,7 @@ export function stepSimulation(
               : "ability.status.refreshed",
           ruleId: "SIM-SHIELD-SLAM-STATUS-001",
           ownerEntityId: application.ownerEntityId,
-          abilityId: "ability.iron_warden.shield_slam" as StableId,
+          abilityId: sourceImpact.abilityId,
           statusId: application.statusId,
           expiresAtTick: application.expiresAtTick,
           reasonCode: application.reason

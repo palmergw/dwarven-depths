@@ -508,7 +508,10 @@ export function resolveActiveAbilityTick(
         statusId: STAGGER_STATUS_ID as never,
         damage: ability.damage,
         staggerExpiresAtTick: request.currentTick + ability.staggerTicks,
-        reason: "shield_slam_impacted"
+        reason:
+          ability.abilityId === "ability.iron_warden.shield_slam"
+            ? "shield_slam_impacted"
+            : "iron_warden_ability_impacted"
       })
     );
   }
