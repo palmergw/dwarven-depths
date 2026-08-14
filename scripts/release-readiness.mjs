@@ -99,9 +99,12 @@ export const phase6AcceptanceEntries = Object.freeze([
   entry(
     "boss-progression",
     "The intermediary boss can be defeated after sufficient progression and mastery.",
-    blocked,
-    [],
-    "Overlapping Gatebreaker Captain behavior and a terminating web encounter remain contract-blocked; no victory is inferred."
+    implemented,
+    [
+      "packages/runtime/src/shuttergate-web-campaign.test.ts",
+      "apps/web/src/App.browser.test.tsx"
+    ],
+    "The calibrated purchased build defeats the Gatebreaker Captain and the Worker-bound web campaign persists terminal victory."
   ),
   entry(
     "boss-unlock",
@@ -176,11 +179,7 @@ const identityFields = Object.freeze([
   "campaignPayloadChecksum",
   "calibrationReportChecksum"
 ]);
-const blockedIds = new Set([
-  "boss-progression",
-  "reduced-repeat-reward",
-  "save-reload"
-]);
+const blockedIds = new Set(["reduced-repeat-reward", "save-reload"]);
 const evidencePins = Object.freeze([
   pin(
     "Boss-unlock",
@@ -502,8 +501,8 @@ export function renderPhase6ReleaseReadinessMarkdown(entries, identity) {
   lines.push(
     "## Contract-blocked release boundaries",
     "",
-    "A reference human replay remains blocked until an approved terminating web encounter contract exists.",
-    "Terminal client/CLI parity remains blocked by the same nonterminating Phase 5 web boundary.",
+    "A reference human replay has not yet been published for the implemented terminating web encounter.",
+    "Terminal client/CLI parity is not implemented and remains outside this desktop proof-of-concept closeout.",
     ""
   );
   lines.push(
