@@ -97,8 +97,7 @@ async function capture(page, id, expected, expectedArgument) {
   const screenshotPath = fileURLToPath(new URL(screenshot, outputDirectory));
   await page.screenshot({
     path: screenshotPath,
-    fullPage: false,
-    animations: "disabled"
+    fullPage: false
   });
   const bytes = await readFile(screenshotPath);
   const after = await readState(page);
