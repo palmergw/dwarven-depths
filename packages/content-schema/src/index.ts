@@ -671,13 +671,17 @@ export function validateContentBundle(input: unknown): ContentBundle {
         definition.activeAbilities.forEach((ability, abilityIndex) => {
           if (
             definition.id !== "character.iron_warden" ||
-            ability.id !== "ability.iron_warden.shield_slam"
+            ![
+              "ability.iron_warden.linebreaker",
+              "ability.iron_warden.rallying_roar",
+              "ability.iron_warden.shield_slam"
+            ].includes(ability.id)
           )
             issues.push({
               path: `$/definitions/${definitionIndex}/activeAbilities/${abilityIndex}/id`,
               code: "unsupported_ownership",
               message:
-                "only ability.iron_warden.shield_slam owned by character.iron_warden is supported"
+                "only the authored Iron Warden ability roster is supported"
             });
         });
       }

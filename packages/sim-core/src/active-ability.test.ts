@@ -22,7 +22,11 @@ beforeAll(async () => {
   content = await compileContent(shuttergateInput);
 });
 
-function command(sequence = 0, atTick = 0): CommandEnvelope {
+function command(
+  sequence = 0,
+  atTick = 0,
+  abilityId = "ability.iron_warden.shield_slam"
+): CommandEnvelope {
   return {
     tick: atTick,
     sequence,
@@ -30,7 +34,7 @@ function command(sequence = 0, atTick = 0): CommandEnvelope {
       atTick,
       type: "activateAbility",
       dwarfEntityId: "entity.dwarf.warden" as never,
-      abilityId: "ability.iron_warden.shield_slam" as never
+      abilityId: abilityId as never
     }
   };
 }
@@ -162,7 +166,30 @@ function request(
   };
 }
 
-describe("Shield Slam active ability", () => {
+describe("Iron Warden active abilities", () => {
+  it.each([
+    ["ability.iron_warden.shield_slam", 24, 3, 18, 90],
+    ["ability.iron_warden.linebreaker", 48, 5, 4, 120],
+    ["ability.iron_warden.rallying_roar", 8, 7, 30, 150]
+  ] as const)(
+    "commits the authored tactical contract for %s",
+    (abilityId, damage, range, staggerTicks, cooldownTicks) => {
+      const resolved = resolveActiveAbilityTick(
+        request(0, battlefield(), { commands: [command(0, 0, abilityId)] }),
+        content
+      );
+      expect(resolved.activations).toMatchObject([
+        {
+          abilityId,
+          status: "accepted",
+          cooldownCompleteAtTick: cooldownTicks
+        }
+      ]);
+      expect(resolved.committedAbilities).toMatchObject([
+        { abilityId, damage, range, staggerTicks }
+      ]);
+    }
+  );
   it.each(["PREPARATION", "TERMINAL"] as const)(
     "emits a stable rejection without advancing %s gameplay",
     (phase) => {

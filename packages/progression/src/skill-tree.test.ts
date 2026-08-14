@@ -13,7 +13,7 @@ import {
 } from "./skill-tree.js";
 
 const checksum =
-  "fb9ab3f8b4c914715ae71401f87dcec4a1318577c977b2ceac1568bcfe12724b";
+  "fc724dccfbcad3c38ad038dd1a6bbd3a94ccab0ef9095efc7eed756e72083033";
 
 describe("authored character skill trees", () => {
   it("consumes ordered points, persists choices, and derives effects", async () => {
@@ -36,6 +36,7 @@ describe("authored character skill trees", () => {
       pendingSkillPointLevels: [3]
     });
     expect(evidence.reopenedEligibility.eligibleNodeIds).toEqual([
+      "skill.iron_warden.battle_rhythm",
       "skill.iron_warden.disciplined_slam",
       "skill.iron_warden.long_reach"
     ]);

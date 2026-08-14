@@ -28,7 +28,6 @@ import {
   resolveCombatTimers
 } from "./combat-timers.js";
 
-const SHIELD_SLAM_ID = "ability.iron_warden.shield_slam";
 const STAGGER_STATUS_ID = "status.staggered";
 
 function compareText(left: string, right: string): number {
@@ -256,7 +255,7 @@ export function resolveActiveAbilityTick(
     const ability = character?.activeAbilities?.find(
       ({ id }) => id === command.abilityId
     );
-    if (ability === undefined || ability.id !== SHIELD_SLAM_ID) {
+    if (ability === undefined) {
       activations.push(
         activationDecision(envelope, "rejected", "ability_unsupported")
       );
@@ -350,7 +349,21 @@ export function resolveActiveAbilityTick(
     );
     const impactAtTick =
       request.currentTick + ability.windupTicks + ability.impactDelayTicks;
-    const cooldownCompleteAtTick = request.currentTick + ability.cooldownTicks;
+    const authoredBasicAttack = character?.basicAttack;
+    const buildCooldownReduction =
+      authoredBasicAttack === undefined
+        ? 0
+        : Math.max(
+            0,
+            authoredBasicAttack.cooldownTicks - dwarf.basicAttack.cooldownTicks
+          );
+    const buildRangeAdd =
+      authoredBasicAttack === undefined
+        ? 0
+        : Math.max(0, dwarf.basicAttack.range - authoredBasicAttack.range);
+    const cooldownCompleteAtTick =
+      request.currentTick +
+      Math.max(1, ability.cooldownTicks - buildCooldownReduction);
     if (
       !Number.isSafeInteger(impactAtTick) ||
       !Number.isSafeInteger(cooldownCompleteAtTick)
@@ -369,7 +382,7 @@ export function resolveActiveAbilityTick(
         aimDeltaX: targetNode.x - sourceNode.x,
         aimDeltaY: targetNode.y - sourceNode.y,
         damage: ability.damage,
-        range: ability.range,
+        range: ability.range + buildRangeAdd,
         frontalHalfAngleDegrees: ability.frontalHalfAngleDegrees,
         staggerTicks: ability.staggerTicks
       })

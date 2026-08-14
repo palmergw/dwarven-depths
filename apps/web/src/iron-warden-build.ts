@@ -121,6 +121,16 @@ export function ironWardenChoiceIdentity(nodeId: StableId): string {
       return "Faster Shield Slam";
     case "skill.iron_warden.long_reach":
       return "Longer melee reach";
+    case "skill.iron_warden.battle_rhythm":
+      return "Guard and tempo path";
+    case "skill.iron_warden.concussive_force":
+      return "Control path";
+    case "skill.iron_warden.sundering_edge":
+      return "Offense path";
+    case "skill.iron_warden.bastion_oath":
+    case "skill.iron_warden.executioners_mark":
+    case "skill.iron_warden.unyielding_command":
+      return "Late-tree capstone";
     default:
       return "Iron Warden training";
   }

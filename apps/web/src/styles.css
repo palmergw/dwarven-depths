@@ -2027,6 +2027,16 @@ main[data-view-phase="running"] .panel {
   width: 76px;
   height: 76px;
 }
+.ability-rune {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: #f1c66f;
+  background: radial-gradient(circle, #624225 0%, #201811 72%);
+  font-size: 2rem;
+  text-shadow: 0 2px 0 #070504;
+}
 .ability-slot:disabled img {
   filter: grayscale(0.75) brightness(0.55);
 }

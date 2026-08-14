@@ -310,6 +310,26 @@ function playerFacingName(id: StableId): string {
       return "Long Reach";
     case "skill.iron_warden.stone_guard":
       return "Stone Guard";
+    case "skill.iron_warden.battle_rhythm":
+      return "Battle Rhythm";
+    case "skill.iron_warden.rallying_guard":
+      return "Rallying Guard";
+    case "skill.iron_warden.war_cry":
+      return "War Cry";
+    case "skill.iron_warden.bastion_oath":
+      return "Bastion Oath";
+    case "skill.iron_warden.concussive_force":
+      return "Concussive Force";
+    case "skill.iron_warden.rolling_quake":
+      return "Rolling Quake";
+    case "skill.iron_warden.unyielding_command":
+      return "Unyielding Command";
+    case "skill.iron_warden.sundering_edge":
+      return "Sundering Edge";
+    case "skill.iron_warden.linebreaker":
+      return "Linebreaker";
+    case "skill.iron_warden.executioners_mark":
+      return "Executioner's Mark";
     default:
       return "Locked company training";
   }
@@ -1419,7 +1439,7 @@ export function App({
         target instanceof HTMLElement &&
         (target.isContentEditable || target.matches("input, select, textarea"));
       if (
-        event.key === "1" &&
+        ["1", "2", "3"].includes(event.key) &&
         !event.altKey &&
         !event.ctrlKey &&
         !event.metaKey
@@ -1428,7 +1448,14 @@ export function App({
         const dwarf = combatControls?.dwarves.find(
           (candidate) => candidate.activeAbilities?.length
         );
-        const ability = dwarf?.activeAbilities?.[0];
+        const abilityIdByKey: Readonly<Record<string, string>> = {
+          "1": "ability.iron_warden.shield_slam",
+          "2": "ability.iron_warden.linebreaker",
+          "3": "ability.iron_warden.rallying_roar"
+        };
+        const ability = dwarf?.activeAbilities?.find(
+          (candidate) => candidate.abilityId === abilityIdByKey[event.key]
+        );
         if (dwarf === undefined || ability === undefined) return;
         event.preventDefault();
         activateAbility(dwarf.entityId, ability.abilityId);
@@ -1833,7 +1860,8 @@ export function App({
               ))}
             </fieldset>
             <p className="combat-keyboard-hints">
-              <kbd>Esc</kbd> pause · <kbd>1</kbd> Shield Slam · <kbd>−</kbd>/
+              <kbd>Esc</kbd> pause · <kbd>1</kbd> Shield Slam · <kbd>2</kbd>{" "}
+              Linebreaker · <kbd>3</kbd> Rallying Roar · <kbd>−</kbd>/
               <kbd>+</kbd> speed · portrait targeting
             </p>
             {view.manualPaused && (
