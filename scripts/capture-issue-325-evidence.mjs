@@ -95,7 +95,9 @@ async function capture(page, id, expected, expectedArgument) {
   await waitForStableTruth(page);
   const before = await readState(page);
   if (JSON.stringify(before.viewport) !== JSON.stringify([1440, 900]))
-    throw new Error(`invalid viewport for ${id}: ${JSON.stringify(before.viewport)}`);
+    throw new Error(
+      `invalid viewport for ${id}: ${JSON.stringify(before.viewport)}`
+    );
   if (
     before.truth !== null &&
     (before.truth.fixtureId !== fixtureId ||
@@ -188,33 +190,39 @@ async function waitForPausedCombat(page) {
   );
 }
 
-async function armAbilityImpactPause(page, abilityId) {
-  await page.evaluate((requestedAbilityId) => {
-    window.__DD_ISSUE_325_CAPTURE_TRACE__ = [];
-    window.__DD_ISSUE_325_CAPTURE_INTERVAL__ = window.setInterval(() => {
-      const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
-      const warden = truth?.registry.entities.find(
-        (entity) => entity.faction === "dwarf"
-      );
-      const traceEntry = `${truth?.snapshot.tick ?? "none"}:${warden?.action?.abilityId ?? "none"}:${warden?.action?.phase ?? "none"}`;
-      if (window.__DD_ISSUE_325_CAPTURE_TRACE__.at(-1) !== traceEntry)
-        window.__DD_ISSUE_325_CAPTURE_TRACE__.push(traceEntry);
-      if (
-        warden?.action.kind !== "ability" ||
-        warden.action.abilityId !== requestedAbilityId ||
-        warden.action.phase !== "impact"
-      )
-        return;
-      const pause = [...document.querySelectorAll("button")].find(
-        (button) => button.getAttribute("aria-label") === "Pause combat"
-      );
-      pause?.click();
-      window.clearInterval(window.__DD_ISSUE_325_CAPTURE_INTERVAL__);
-    }, 1);
-  }, abilityId);
+async function armAbilityImpactPause(page, abilityId, expectedPhase) {
+  await page.evaluate(
+    ({ requestedAbilityId, requestedPhase }) => {
+      window.__DD_ISSUE_325_CAPTURE_TRACE__ = [];
+      window.__DD_ISSUE_325_CAPTURE_INTERVAL__ = window.setInterval(() => {
+        const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+        const warden = truth?.registry.entities.find(
+          (entity) => entity.faction === "dwarf"
+        );
+        const traceEntry = `${truth?.snapshot.tick ?? "none"}:${warden?.action?.abilityId ?? "none"}:${warden?.action?.phase ?? "none"}`;
+        if (window.__DD_ISSUE_325_CAPTURE_TRACE__.at(-1) !== traceEntry)
+          window.__DD_ISSUE_325_CAPTURE_TRACE__.push(traceEntry);
+        if (
+          warden?.action.kind !== "ability" ||
+          warden.action.abilityId !== requestedAbilityId ||
+          warden.action.phase !== requestedPhase
+        )
+          return;
+        const pause = [...document.querySelectorAll("button")].find(
+          (button) => button.getAttribute("aria-label") === "Pause combat"
+        );
+        pause?.click();
+        window.clearInterval(window.__DD_ISSUE_325_CAPTURE_INTERVAL__);
+      }, 1);
+    },
+    { requestedAbilityId: abilityId, requestedPhase: expectedPhase }
+  );
 }
 
-async function captureAbility(page, { id, abilityId, label, key, input }) {
+async function captureAbility(
+  page,
+  { id, abilityId, label, key, input, expectedPhase = "impact" }
+) {
   await page.waitForFunction(
     (requestedLabel) => {
       const button = [...document.querySelectorAll("button")].find(
@@ -225,13 +233,13 @@ async function captureAbility(page, { id, abilityId, label, key, input }) {
     label,
     { timeout: 90_000 }
   );
-  await armAbilityImpactPause(page, abilityId);
+  await armAbilityImpactPause(page, abilityId, expectedPhase);
   if (input === "keyboard") await page.keyboard.press(key);
   else await page.getByRole("button", { name: label }).click();
   await page.getByRole("button", { name: "Resume combat" }).click();
   try {
     await page.waitForFunction(
-      (requestedAbilityId) => {
+      ({ requestedAbilityId, requestedPhase }) => {
         const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
         const warden = truth?.registry.entities.find(
           (entity) => entity.faction === "dwarf"
@@ -240,16 +248,18 @@ async function captureAbility(page, { id, abilityId, label, key, input }) {
           document.querySelector(".combat-pause-banner") !== null &&
           warden?.action.kind === "ability" &&
           warden.action.abilityId === requestedAbilityId &&
-          warden.action.phase === "impact"
+          warden.action.phase === requestedPhase
         );
       },
-      abilityId,
+      { requestedAbilityId: abilityId, requestedPhase: expectedPhase },
       { timeout: 15_000 }
     );
   } catch (error) {
     const diagnostics = await page.evaluate(() => ({
       trace: window.__DD_ISSUE_325_CAPTURE_TRACE__,
-      shellView: document.querySelector("main")?.getAttribute("data-shell-view"),
+      shellView: document
+        .querySelector("main")
+        ?.getAttribute("data-shell-view"),
       phase: document.querySelector("main")?.getAttribute("data-view-phase")
     }));
     throw new Error(
@@ -260,18 +270,19 @@ async function captureAbility(page, { id, abilityId, label, key, input }) {
   await capture(
     page,
     id,
-    (requestedAbilityId) => {
-      const warden = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.find(
-        (entity) => entity.faction === "dwarf"
-      );
+    ({ requestedAbilityId, requestedPhase }) => {
+      const warden =
+        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.find(
+          (entity) => entity.faction === "dwarf"
+        );
       return (
         document.querySelector(".combat-pause-banner") !== null &&
         warden?.action.kind === "ability" &&
         warden.action.abilityId === requestedAbilityId &&
-        warden.action.phase === "impact"
+        warden.action.phase === requestedPhase
       );
     },
-    abilityId
+    { requestedAbilityId: abilityId, requestedPhase: expectedPhase }
   );
 }
 
@@ -294,7 +305,8 @@ try {
     () =>
       document.querySelector('[data-shell-view="preparation"]') !== null &&
       window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.captureReady === true &&
-      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase === "preparation" &&
+      window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.phase ===
+        "preparation" &&
       window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.alignment.valid === true
   );
   await page.getByRole("button", { name: "Confirm preparation" }).click();
@@ -329,11 +341,12 @@ try {
 
   const rallyingRoarPage = await newPausedCombatPage(browser);
   await captureAbility(rallyingRoarPage, {
-    id: "rallying-roar-impact",
+    id: "rallying-roar-commitment",
     abilityId: "ability.iron_warden.rallying_roar",
     label: "Rallying Roar",
     key: "3",
-    input: "pointer"
+    input: "pointer",
+    expectedPhase: "committed"
   });
   await rallyingRoarPage.close();
 

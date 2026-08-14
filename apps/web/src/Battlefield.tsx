@@ -788,6 +788,18 @@ export function deriveActiveAbilityImpact(
   };
 }
 
+export function deriveRallyingRoarPresentationSourceId(
+  snapshot: RenderSnapshot
+): string | undefined {
+  if (snapshot.schemaVersion !== 2) return undefined;
+  return snapshot.entities.find(
+    (entity) =>
+      entity.action.kind === "ability" &&
+      entity.action.abilityId === "ability.iron_warden.rallying_roar" &&
+      (entity.action.phase === "committed" || entity.action.phase === "impact")
+  )?.id;
+}
+
 export interface SlingerProjectilePath {
   readonly sourceId: string;
   readonly targetId: string;
@@ -2361,21 +2373,23 @@ class PersistentBattlefieldScene {
             (entity) => [entity.id, entity]
           )
     );
+    const rallyingRoarSourceId =
+      deriveRallyingRoarPresentationSourceId(snapshot);
     const abilityEffectPlacements =
-      activeAbilityImpact === undefined
-        ? []
-        : activeAbilityImpact.abilityId === "ability.iron_warden.rallying_roar"
-          ? [
-              {
-                id: `${activeAbilityImpact.abilityId}:${activeAbilityImpact.sourceEntityId}`,
-                entityId: activeAbilityImpact.sourceEntityId,
-                textureKey: "rallying-roar-aura",
-                xOffset: 0,
-                yOffset: 2,
-                scale: 0.82,
-                tweenScale: 0.9
-              }
-            ]
+      rallyingRoarSourceId !== undefined
+        ? [
+            {
+              id: `ability.iron_warden.rallying_roar:${rallyingRoarSourceId}`,
+              entityId: rallyingRoarSourceId,
+              textureKey: "rallying-roar-aura",
+              xOffset: 0,
+              yOffset: 2,
+              scale: 0.82,
+              tweenScale: 0.9
+            }
+          ]
+        : activeAbilityImpact === undefined
+          ? []
           : activeAbilityImpact.abilityId ===
                 "ability.iron_warden.linebreaker" ||
               activeAbilityImpact.abilityId ===

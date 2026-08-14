@@ -26,6 +26,7 @@ import {
   decodeBattlefieldDepthAsset,
   deriveActiveAbilityImpact,
   deriveCombatPresentationState,
+  deriveRallyingRoarPresentationSourceId,
   deriveShieldSlamImpactIds,
   deriveSlingerProjectilePaths,
   hasRenderedInitialFeedback,
@@ -3375,6 +3376,24 @@ describe("authoritative web worker", () => {
         sourceEntityId: entity.id,
         targetEntityIds: ["entity.enemy.alpha", "entity.enemy.beta"]
       });
+    expect(
+      deriveRallyingRoarPresentationSourceId({
+        ...multiTarget,
+        entities: multiTarget.entities.map((candidate) =>
+          candidate.id === entity.id
+            ? {
+                ...candidate,
+                action: {
+                  kind: "ability",
+                  phase: "committed",
+                  abilityId: "ability.iron_warden.rallying_roar",
+                  impactTargetEntityIds: []
+                } as const
+              }
+            : candidate
+        )
+      })
+    ).toBe(entity.id);
     expect(deriveShieldSlamImpactIds(multiTarget, undefined)).toEqual([]);
     expect(
       deriveShieldSlamImpactIds(multiTarget, {
