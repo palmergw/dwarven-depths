@@ -143,6 +143,24 @@ const characterDefinitionSchema = z
     activeAbilities: z.array(authoredActiveAbilitySchema).nonempty().optional()
   })
   .strict();
+const enemyBehaviorSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    roleId: domainIdSchema("enemy_role"),
+    strategy: z.enum([
+      "advance",
+      "hold_range",
+      "guard",
+      "command",
+      "skirmish",
+      "disrupt",
+      "support",
+      "priority_hunt"
+    ]),
+    tellId: domainIdSchema("enemy_tell"),
+    tellTicks: positiveCombatIntegerSchema
+  })
+  .strict();
 const enemyDefinitionSchema = z
   .object({
     kind: z.literal("enemy"),
@@ -151,7 +169,8 @@ const enemyDefinitionSchema = z
     maximumHealth: positiveCombatIntegerSchema,
     armor: boundedCombatIntegerSchema,
     movementIntervalTicks: positiveCombatIntegerSchema,
-    basicAttack: authoredBasicAttackSchema
+    basicAttack: authoredBasicAttackSchema,
+    behavior: enemyBehaviorSchema.optional()
   })
   .strict();
 
@@ -896,15 +915,26 @@ export function validateContentBundle(input: unknown): ContentBundle {
               })
         };
       }
-      if (definition.kind === "enemy")
+      if (definition.kind === "enemy") {
+        const { behavior, ...enemy } = definition;
         return {
-          ...definition,
+          ...enemy,
           id: definition.id as StableId,
           basicAttack: {
             ...definition.basicAttack,
             id: definition.basicAttack.id as StableId
-          }
+          },
+          ...(behavior === undefined
+            ? {}
+            : {
+                behavior: {
+                  ...behavior,
+                  roleId: behavior.roleId as StableId,
+                  tellId: behavior.tellId as StableId
+                }
+              })
         };
+      }
       return {
         kind: "map",
         id: definition.id as StableId,

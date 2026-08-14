@@ -8,6 +8,9 @@ import referenceCombatantsInput from "../../../content/fixtures/phase-3-referenc
 import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
   type: "json"
 };
+import enemyRosterInput from "../../../content/fixtures/shuttergate-enemy-roster-v1.json" with {
+  type: "json"
+};
 import {
   ContentValidationError,
   validateContentBundle,
@@ -368,6 +371,49 @@ describe("content validation", () => {
     });
     expect(waves).toHaveLength(5);
     expect(waves.flatMap((wave) => wave.spawnEvents)).toHaveLength(18);
+  });
+
+  it("strictly validates the versioned Shuttergate enemy-role contract", () => {
+    const result = validateContentBundle(enemyRosterInput);
+    const nonBossRoles = result.definitions.flatMap((definition) =>
+      definition.kind === "enemy" && definition.classification !== "boss"
+        ? [definition.behavior?.roleId]
+        : []
+    );
+    expect(nonBossRoles).toHaveLength(8);
+    expect(new Set(nonBossRoles).size).toBe(8);
+
+    const unknownField = structuredClone(enemyRosterInput) as unknown as {
+      definitions: Array<{
+        kind: string;
+        behavior?: { unexpected?: unknown };
+      }>;
+    };
+    const behavior = unknownField.definitions.find(
+      (definition) => definition.kind === "enemy"
+    )?.behavior;
+    if (behavior === undefined)
+      throw new Error("missing enemy behavior fixture");
+    behavior.unexpected = true;
+    expect(() => validateContentBundle(unknownField)).toThrow(
+      /Unrecognized key/
+    );
+
+    const wrongDomain = structuredClone(enemyRosterInput) as unknown as {
+      definitions: Array<{
+        kind: string;
+        behavior?: { roleId: string };
+      }>;
+    };
+    const wrongRole = wrongDomain.definitions.find(
+      (definition) => definition.kind === "enemy"
+    )?.behavior;
+    if (wrongRole === undefined)
+      throw new Error("missing enemy behavior fixture");
+    wrongRole.roleId = "role.not_enemy_scoped";
+    expect(() => validateContentBundle(wrongDomain)).toThrow(
+      /must be a enemy_role\.\* stable ID/
+    );
   });
 
   it("strictly validates the Iron Warden ability roster fields and ownership", () => {

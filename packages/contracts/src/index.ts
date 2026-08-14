@@ -112,6 +112,24 @@ export interface EnemyDefinition {
   readonly armor: number;
   readonly movementIntervalTicks: number;
   readonly basicAttack: AuthoredBasicAttackDefinition;
+  /** Optional only for compatibility with pre-campaign content. */
+  readonly behavior?: AuthoredEnemyBehaviorDefinition;
+}
+
+export interface AuthoredEnemyBehaviorDefinition {
+  readonly schemaVersion: 1;
+  readonly roleId: StableId;
+  readonly strategy:
+    | "advance"
+    | "hold_range"
+    | "guard"
+    | "command"
+    | "skirmish"
+    | "disrupt"
+    | "support"
+    | "priority_hunt";
+  readonly tellId: StableId;
+  readonly tellTicks: number;
 }
 
 export interface NavigationNodeDefinition {
