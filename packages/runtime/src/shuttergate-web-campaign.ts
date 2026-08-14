@@ -283,6 +283,15 @@ export function resolveShuttergateWebAttemptReward(input: {
       ]
     }).profile;
   }
+  if (input.terminalResult === "victory")
+    profile = normalizeProfileState({
+      ...profile,
+      revision: profile.revision + 1,
+      claimedRewardIds: [
+        ...profile.claimedRewardIds,
+        "reward.campaign.shuttergate.victory" as StableId
+      ]
+    });
   return Object.freeze({
     schemaVersion: 1,
     attemptId: run.attemptId,

@@ -196,8 +196,6 @@ const contrastPreferenceStorageKey =
   "dwarven-depths.presentation.contrast-preference.v1";
 const soundPreferenceStorageKey =
   "dwarven-depths.presentation.sound-preference.v1";
-const campaignVictoryStorageKey =
-  "dwarven-depths.campaign.shuttergate-victory-attempt.v1";
 
 function freshWorkerRunConfiguration() {
   return {
@@ -228,7 +226,7 @@ afterEach(async () => {
   window.localStorage.removeItem(textScaleStorageKey);
   window.localStorage.removeItem(contrastPreferenceStorageKey);
   window.localStorage.removeItem(soundPreferenceStorageKey);
-  window.localStorage.removeItem(campaignVictoryStorageKey);
+
   window.history.replaceState(null, "", "/");
   vi.restoreAllMocks();
   await page.viewport(1280, 720);
@@ -324,13 +322,20 @@ class ControlledResultWorker {
                 forgeOreAwarded: 8,
                 profile: {
                   ...createInitialProfile("character.iron_warden" as never),
-                  revision: campaignAttemptNumber,
+                  revision:
+                    campaignAttemptNumber +
+                    (this.terminalResult === "victory" ? 1 : 0),
                   forgeOre: campaignAttemptNumber * 8,
-                  claimedRewardIds: Array.from(
-                    { length: campaignAttemptNumber },
-                    (_, index) =>
-                      `reward.attempt.shuttergate.web_${String(index + 1).padStart(6, "0")}`
-                  )
+                  claimedRewardIds: [
+                    ...Array.from(
+                      { length: campaignAttemptNumber },
+                      (_, index) =>
+                        `reward.attempt.shuttergate.web_${String(index + 1).padStart(6, "0")}`
+                    ),
+                    ...(this.terminalResult === "victory"
+                      ? ["reward.campaign.shuttergate.victory"]
+                      : [])
+                  ]
                 }
               }
             }),
@@ -485,7 +490,7 @@ class ControlledJourneyWorker {
       ...runConfiguration.profile,
       revision:
         runConfiguration.profile.revision +
-        (terminalResult === "victory" ? 2 : 1),
+        (terminalResult === "victory" ? 3 : 1),
       forgeOre:
         runConfiguration.profile.forgeOre +
         profileForgeOreAwarded +
@@ -501,7 +506,10 @@ class ControlledJourneyWorker {
         ...runConfiguration.profile.claimedRewardIds,
         rewardId,
         ...(terminalResult === "victory"
-          ? ["reward.boss.gatebreaker_captain"]
+          ? [
+              "reward.boss.gatebreaker_captain",
+              "reward.campaign.shuttergate.victory"
+            ]
           : [])
       ]
     };
@@ -4454,9 +4462,12 @@ describe("authoritative web worker", () => {
         rewardId: "reward.attempt.shuttergate.web_000001",
         forgeOreAwarded: 8,
         profile: {
-          revision: 1,
+          revision: 2,
           forgeOre: 8,
-          claimedRewardIds: ["reward.attempt.shuttergate.web_000001"]
+          claimedRewardIds: [
+            "reward.attempt.shuttergate.web_000001",
+            "reward.campaign.shuttergate.victory"
+          ]
         }
       },
       replay: {
@@ -4841,7 +4852,8 @@ describe("authoritative Shuttergate campaign journey", () => {
         "reward.attempt.shuttergate.web_000001",
         "reward.attempt.shuttergate.web_000002",
         "reward.attempt.shuttergate.web_000003",
-        "reward.boss.gatebreaker_captain"
+        "reward.boss.gatebreaker_captain",
+        "reward.campaign.shuttergate.victory"
       ],
       purchasedUpgrades: [{ upgradeId: "upgrade.ability.shield_slam", rank: 1 }]
     });

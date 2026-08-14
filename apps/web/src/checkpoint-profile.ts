@@ -49,7 +49,8 @@ function applyAuthoritativeAttemptProfileDelta(
     CheckpointAttemptResult,
     "forgeOreAwarded" | "rewardId" | "profile"
   >,
-  campaignClaimsBossReward = false
+  campaignClaimsBossReward = false,
+  campaignClaimsVictory = false
 ): ProfileState {
   const bossRewardId = "reward.boss.gatebreaker_captain" as StableId;
   const attemptForgeOre =
@@ -91,6 +92,20 @@ function applyAuthoritativeAttemptProfileDelta(
         }
       ]
     }).profile;
+  if (
+    campaignClaimsVictory &&
+    !startingProfile.claimedRewardIds.includes(
+      "reward.campaign.shuttergate.victory" as StableId
+    )
+  )
+    profile = normalizeProfileState({
+      ...profile,
+      revision: profile.revision + 1,
+      claimedRewardIds: [
+        ...profile.claimedRewardIds,
+        "reward.campaign.shuttergate.victory" as StableId
+      ]
+    });
   return profile;
 }
 
@@ -298,10 +313,15 @@ export function validateCheckpointAttemptResult(
   const campaignClaimsBossReward =
     !startingProfile.claimedRewardIds.includes(bossRewardId) &&
     profile.claimedRewardIds.includes(bossRewardId);
+  const victoryRewardId = "reward.campaign.shuttergate.victory" as StableId;
+  const campaignClaimsVictory =
+    !startingProfile.claimedRewardIds.includes(victoryRewardId) &&
+    profile.claimedRewardIds.includes(victoryRewardId);
   const expectedProfile = applyAuthoritativeAttemptProfileDelta(
     startingProfile,
     campaign,
-    campaignClaimsBossReward
+    campaignClaimsBossReward,
+    campaignClaimsVictory
   );
   if (
     campaign.schemaVersion !== 1 ||
@@ -329,6 +349,10 @@ export async function applyCheckpointAttemptResult(
   const campaignClaimsBossReward =
     !startingProfile.claimedRewardIds.includes(bossRewardId) &&
     profile.claimedRewardIds.includes(bossRewardId);
+  const victoryRewardId = "reward.campaign.shuttergate.victory" as StableId;
+  const campaignClaimsVictory =
+    !startingProfile.claimedRewardIds.includes(victoryRewardId) &&
+    profile.claimedRewardIds.includes(victoryRewardId);
   let candidate = profile;
   let expectedRevision = startingProfile.revision;
   let lastConflict: unknown;
@@ -358,7 +382,8 @@ export async function applyCheckpointAttemptResult(
       candidate = applyAuthoritativeAttemptProfileDelta(
         concurrentProfile,
         campaign,
-        campaignClaimsBossReward
+        campaignClaimsBossReward,
+        campaignClaimsVictory
       );
       expectedRevision = concurrentProfile.revision;
     }
