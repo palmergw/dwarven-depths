@@ -245,6 +245,13 @@ export function resolveShuttergateWebAttemptReward(input: {
     throw new RangeError(
       "Shuttergate victory did not defeat the Gatebreaker Captain"
     );
+  if (
+    input.terminalResult === "victory" &&
+    battlefield.enemyCombatants.some(
+      (enemy) => enemy.lifecycleState !== "destroyed"
+    )
+  )
+    throw new RangeError("Shuttergate victory has surviving enemies");
 
   const rewardId = `reward.${run.attemptId}` as StableId;
   if (run.profile.claimedRewardIds.includes(rewardId))

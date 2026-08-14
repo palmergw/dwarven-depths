@@ -240,6 +240,31 @@ describe("Shuttergate web campaign authority", () => {
         ])
       }
     });
+    const battlefield = result.finalState.battlefield;
+    if (battlefield === undefined) throw new Error("missing battlefield");
+    const survivingEnemy = battlefield.enemyCombatants.find(
+      (enemy) => enemy.entityId !== "entity.enemy.shuttergate_010"
+    );
+    if (survivingEnemy === undefined)
+      throw new Error("missing non-boss enemy combatant");
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "victory",
+        finalState: {
+          ...result.finalState,
+          battlefield: {
+            ...battlefield,
+            enemyCombatants: battlefield.enemyCombatants.map((enemy) =>
+              enemy.entityId === survivingEnemy.entityId
+                ? { ...enemy, lifecycleState: "active", currentHealth: 1 }
+                : enemy
+            )
+          }
+        }
+      })
+    ).toThrow("surviving enemies");
     const bossDefeatReward = resolveShuttergateWebAttemptReward({
       schemaVersion: 1,
       configuration,
