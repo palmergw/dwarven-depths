@@ -4218,6 +4218,66 @@ describe("authoritative web worker", () => {
     expect(await buttonWithText("Begin preparation")).toBeEnabled();
   });
 
+  it("rejects a defeat that claims campaign victory", async () => {
+    const worker = new ControlledResultWorker(
+      "defeat",
+      "attempt.shuttergate.web_000001"
+    );
+    const originalPostMessage = worker.postMessage.bind(worker);
+    worker.postMessage = (message) => {
+      const isConfirmation =
+        typeof message === "object" &&
+        message !== null &&
+        (message as { command?: { type?: string } }).command?.type ===
+          "confirmPreparation";
+      if (!isConfirmation) originalPostMessage(message);
+      else
+        worker.emit({
+          protocolVersion: 4,
+          type: "result",
+          terminalResult: "defeat",
+          terminalTick: 1,
+          finalStateChecksum: expected.finalStateChecksum,
+          eventStreamChecksum: expected.eventStreamChecksum,
+          campaign: {
+            schemaVersion: 1,
+            attemptId: "attempt.shuttergate.web_000001",
+            rewardId: "reward.attempt.shuttergate.web_000001",
+            forgeOreAwarded: 8,
+            profile: normalizeProfileState({
+              ...createInitialProfile("character.iron_warden" as never),
+              revision: 2,
+              forgeOre: 8,
+              claimedRewardIds: [
+                "reward.attempt.shuttergate.web_000001",
+                "reward.campaign.shuttergate.victory"
+              ]
+            })
+          },
+          commands: []
+        });
+    };
+    const store = new PersistentJourneyProfileStore();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => store}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain(
+        "The expedition could not continue. Return to the checkpoint and try again."
+      )
+    );
+    expect(store.envelope?.profile.claimedRewardIds).toEqual([]);
+  });
+
   it("recovers from authoritative failures by keyboard and mouse", async () => {
     const workers: ControlledFailureWorker[] = [];
     const createWorker = (): Worker => {

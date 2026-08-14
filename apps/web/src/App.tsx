@@ -1132,6 +1132,14 @@ export function App({
           failWorker("Terminal progression did not match the active attempt.");
           return;
         }
+        const claimsCampaignVictory =
+          campaign.profile.claimedRewardIds.includes(
+            "reward.campaign.shuttergate.victory" as never
+          );
+        if (claimsCampaignVictory !== (message.terminalResult === "victory")) {
+          failWorker("Terminal progression contradicted the active attempt.");
+          return;
+        }
         try {
           validateCheckpointAttemptResult(runConfiguration.profile, campaign);
         } catch {
