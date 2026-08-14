@@ -7,7 +7,8 @@ import {
   createInitialProfile,
   type ForgeOrePurchaseDecision,
   type ProfileState,
-  purchaseUpgradeRank
+  purchaseUpgradeRank,
+  resolveBossDeathRewards
 } from "@dwarven-depths/progression";
 // This is an intentionally package-private workspace integration. The raw
 // event resolver is not exposed by the progression package's export map.
@@ -24,6 +25,7 @@ const wardenCharacterId = "character.iron_warden" as StableId;
 const shieldSlamUpgradeId = "upgrade.ability.shield_slam" as StableId;
 const northGuardPlacementId = "placement.shuttergate_north_guard" as never;
 const keepGuardPlacementId = "placement.shuttergate_keep_guard" as never;
+const gatebreakerEntityId = "entity.enemy.shuttergate_010" as never;
 const maximumCampaignAttempts = 100_000;
 
 const rewardPolicy = Object.freeze({
@@ -204,6 +206,29 @@ export async function runShuttergateCampaignTransition(
       );
 
     let profile = rewards.profile;
+    if (encounter.calibration.bossRewardClaimed) {
+      profile = resolveBossDeathRewards({
+        schemaVersion: 1,
+        profile,
+        bossDeaths: [
+          {
+            schemaVersion: 1,
+            eventId:
+              `death.shuttergate.campaign_${String(attemptNumber).padStart(6, "0")}.gatebreaker_captain` as StableId,
+            bossEntityId: gatebreakerEntityId
+          }
+        ],
+        rewards: [
+          {
+            schemaVersion: 1,
+            rewardId: "reward.boss.gatebreaker_captain" as StableId,
+            bossEntityId: gatebreakerEntityId,
+            characterUnlockId: "character.deep_ranger" as StableId,
+            forgeOre: 20
+          }
+        ]
+      }).profile;
+    }
     let purchaseDecision: ForgeOrePurchaseDecision | null = null;
     if (buildId === "build.profile.new_campaign.v1" && profile.forgeOre >= 10) {
       const purchase = purchaseUpgradeRank({

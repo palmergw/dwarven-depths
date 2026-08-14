@@ -9,13 +9,14 @@
     "applicationBuild": "phase-4-conformance",
     "writtenAtEpochMs": 1725000000000,
     "profileId": "profile.conformance.shuttergate",
-    "profileRevision": 5,
-    "payloadChecksum": "99086d311eeadbb18e644a24c7ca9fc742aa2c7100b8c2b54c783f464f6fb27e",
+    "profileRevision": 6,
+    "payloadChecksum": "cbdda1583f19011597690a1e41c4720545d84fa5165fc4c8e22d549da1c1c04c",
     "profile": {
       "schemaVersion": 1,
-      "revision": 5,
-      "forgeOre": 51,
+      "revision": 6,
+      "forgeOre": 71,
       "unlockedCharacterIds": [
+        "character.deep_ranger",
         "character.iron_warden"
       ],
       "unlockedItemIds": [],
@@ -23,7 +24,8 @@
         "reward.attempt.shuttergate.campaign_000001",
         "reward.attempt.shuttergate.campaign_000002",
         "reward.attempt.shuttergate.campaign_000003",
-        "reward.attempt.shuttergate.campaign_000004"
+        "reward.attempt.shuttergate.campaign_000004",
+        "reward.boss.gatebreaker_captain"
       ],
       "characterExperienceStates": [
         {
@@ -54,6 +56,6 @@
     "2f5f4f82b574c25bc3507bd377376409c93b166738f9ac2915803b13333e8c01",
     "e521ddc69636b73c5189a012069b31269380d70a35c23f9377cb4eac0419498c"
   ],
-  "stateChecksum": "737bb9810932953d06c74406bbf2fb7dcdb47e57f24f98230589fc70a6895022",
-  "payloadChecksum": "6508c58a62970f665dc3ae483e559669b1560c5ec452015ab5378ff79dee1e45"
+  "stateChecksum": "61f05f3449d74d246ec6bf9a4d4a9daa16e03dc9c0b839e416383d9521015ec8",
+  "payloadChecksum": "acbfc83b04b4b310e8aff2a27c967212fb12d35d057db1ad8f7fa9dbf2faca93"
 }

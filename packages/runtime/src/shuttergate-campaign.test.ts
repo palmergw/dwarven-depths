@@ -71,6 +71,13 @@ describe("authoritative Shuttergate campaign transitions", () => {
       terminalResult: "defeat",
       deepestStartedWaveId: "wave.shuttergate_5"
     });
+    expect(third.authority.profile).toMatchObject({
+      forgeOre: 48,
+      claimedRewardIds: expect.arrayContaining([
+        "reward.boss.gatebreaker_captain"
+      ]),
+      unlockedCharacterIds: expect.arrayContaining(["character.deep_ranger"])
+    });
     expect(fourth.transition).toMatchObject({
       attemptNumber: 4,
       attemptId: "attempt.shuttergate.campaign_000004",
@@ -82,6 +89,13 @@ describe("authoritative Shuttergate campaign transitions", () => {
       terminalResult: "victory",
       bossRewardClaimed: true,
       deepRangerUnlocked: true
+    });
+    expect(fourth.authority.profile).toMatchObject({
+      forgeOre: 71,
+      claimedRewardIds: expect.arrayContaining([
+        "reward.boss.gatebreaker_captain"
+      ]),
+      unlockedCharacterIds: expect.arrayContaining(["character.deep_ranger"])
     });
     expect(fourth.authority.attempts).toHaveLength(4);
     expect(Object.isFrozen(fourth.authority)).toBe(true);

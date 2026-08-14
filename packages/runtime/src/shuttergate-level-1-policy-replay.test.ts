@@ -86,13 +86,15 @@ describe("Shuttergate Level 1 reference policy replay", () => {
     );
     expect(restored.attempts).toHaveLength(4);
     expect(restored.profile).toMatchObject({
-      revision: 5,
-      forgeOre: 51,
+      revision: 6,
+      forgeOre: 71,
+      unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"],
       claimedRewardIds: [
         "reward.attempt.shuttergate.campaign_000001",
         "reward.attempt.shuttergate.campaign_000002",
         "reward.attempt.shuttergate.campaign_000003",
-        "reward.attempt.shuttergate.campaign_000004"
+        "reward.attempt.shuttergate.campaign_000004",
+        "reward.boss.gatebreaker_captain"
       ],
       purchasedUpgrades: [
         expect.objectContaining({
