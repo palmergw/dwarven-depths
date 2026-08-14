@@ -264,7 +264,22 @@ describe("Shuttergate web campaign authority", () => {
           }
         }
       })
-    ).toThrow("surviving enemies");
+    ).toThrow("cleared authored enemy roster");
+    for (const enemyCombatants of [
+      battlefield.enemyCombatants.slice(1),
+      [...battlefield.enemyCombatants, survivingEnemy]
+    ])
+      expect(() =>
+        resolveShuttergateWebAttemptReward({
+          schemaVersion: 1,
+          configuration,
+          terminalResult: "victory",
+          finalState: {
+            ...result.finalState,
+            battlefield: { ...battlefield, enemyCombatants }
+          }
+        })
+      ).toThrow("cleared authored enemy roster");
     const bossDefeatReward = resolveShuttergateWebAttemptReward({
       schemaVersion: 1,
       configuration,

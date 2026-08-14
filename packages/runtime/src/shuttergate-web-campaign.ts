@@ -26,6 +26,22 @@ const attemptIdPattern = /^attempt\.shuttergate\.web_[0-9]{6}$/;
 const authoredWaveIds = Object.freeze(
   [1, 2, 3, 4, 5].map((wave) => `wave.shuttergate_${wave}` as StableId)
 );
+const authoredSpawnIds = Object.freeze(
+  Array.from(
+    { length: 18 },
+    (_, index) =>
+      `spawn.shuttergate_${(index + 1).toString().padStart(3, "0")}` as StableId
+  )
+);
+const authoredEnemyEntityIds = Object.freeze(
+  Array.from(
+    { length: 18 },
+    (_, index) =>
+      `entity.enemy.shuttergate_${(index + 1)
+        .toString()
+        .padStart(3, "0")}` as StableId
+  )
+);
 
 export interface ShuttergateWebRunConfiguration {
   readonly schemaVersion: 1;
@@ -247,11 +263,26 @@ export function resolveShuttergateWebAttemptReward(input: {
     );
   if (
     input.terminalResult === "victory" &&
-    battlefield.enemyCombatants.some(
-      (enemy) => enemy.lifecycleState !== "destroyed"
-    )
+    (battlefield.firedSpawnIds.length !== authoredSpawnIds.length ||
+      battlefield.firedSpawnIds.some(
+        (spawnId, index) => spawnId !== authoredSpawnIds[index]
+      ) ||
+      battlefield.enemyAdmissions.length !== authoredEnemyEntityIds.length ||
+      battlefield.enemyAdmissions.some(
+        (admission, index) =>
+          admission.spawnId !== authoredSpawnIds[index] ||
+          admission.entityId !== authoredEnemyEntityIds[index]
+      ) ||
+      battlefield.enemyCombatants.length !== authoredEnemyEntityIds.length ||
+      battlefield.enemyCombatants.some(
+        (enemy, index) =>
+          enemy.entityId !== authoredEnemyEntityIds[index] ||
+          enemy.lifecycleState !== "destroyed"
+      ))
   )
-    throw new RangeError("Shuttergate victory has surviving enemies");
+    throw new RangeError(
+      "Shuttergate victory does not bind the cleared authored enemy roster"
+    );
 
   const rewardId = `reward.${run.attemptId}` as StableId;
   if (run.profile.claimedRewardIds.includes(rewardId))
