@@ -22,12 +22,16 @@ async function transitionPair() {
     content,
     second.authority
   );
-  return { content, initial, first, second, third };
+  const fourth = await runShuttergateCampaignTransition(
+    content,
+    third.authority
+  );
+  return { content, initial, first, second, third, fourth };
 }
 
 describe("authoritative Shuttergate campaign transitions", () => {
   it("derives productive attempts and the first purchase from accepted authority", async () => {
-    const { first, second, third } = await transitionPair();
+    const { content, first, second, third, fourth } = await transitionPair();
 
     expect(first.transition).toMatchObject({
       schemaVersion: 1,
@@ -62,18 +66,53 @@ describe("authoritative Shuttergate campaign transitions", () => {
       seed: "3",
       buildId: "build.warden.shield_slam_rank_1.v1"
     });
-    expect(third.authority.attempts).toHaveLength(3);
-    expect(Object.isFrozen(third.authority)).toBe(true);
-    expect(Object.isFrozen(third.authority.attempts)).toBe(true);
+    expect(third.transition.encounter.calibration).toMatchObject({
+      placementPointId: "placement.shuttergate_north_guard",
+      terminalResult: "defeat",
+      deepestStartedWaveId: "wave.shuttergate_5"
+    });
+    expect(third.authority.profile).toMatchObject({
+      forgeOre: 48,
+      claimedRewardIds: expect.arrayContaining([
+        "reward.boss.gatebreaker_captain"
+      ]),
+      unlockedCharacterIds: expect.arrayContaining(["character.deep_ranger"])
+    });
+    expect(fourth.transition).toMatchObject({
+      attemptNumber: 4,
+      attemptId: "attempt.shuttergate.campaign_000004",
+      seed: "4",
+      placementPointId: "placement.shuttergate_keep_guard",
+      buildId: "build.warden.shield_slam_rank_1.v1"
+    });
+    expect(fourth.transition.encounter.calibration).toMatchObject({
+      terminalResult: "victory",
+      bossRewardClaimed: true,
+      deepRangerUnlocked: true
+    });
+    expect(fourth.authority.profile).toMatchObject({
+      forgeOre: 71,
+      claimedRewardIds: expect.arrayContaining([
+        "reward.boss.gatebreaker_captain"
+      ]),
+      unlockedCharacterIds: expect.arrayContaining(["character.deep_ranger"])
+    });
+    expect(fourth.authority.attempts).toHaveLength(4);
+    expect(Object.isFrozen(fourth.authority)).toBe(true);
+    expect(Object.isFrozen(fourth.authority.attempts)).toBe(true);
+    await expect(
+      runShuttergateCampaignTransition(content, fourth.authority)
+    ).rejects.toThrow("campaign already ended in victory");
     expect("resolveAttemptProgressRewards" in progressionPublicApi).toBe(false);
     expect(
       await canonicalHash({
         first: first.transition,
         second: second.transition,
-        third: third.transition
+        third: third.transition,
+        fourth: fourth.transition
       })
-    ).toBe("bb17425bfece0b62e66411c10b600860d21c333f052a0477d7e7ef3f3bf4a788");
-  }, 45_000);
+    ).toBe("991b5b3ed50311a68904bad712bb43d64afd189d08491e8d71b62138b05ba4cc");
+  }, 120_000);
 
   it("consumes accepted authority exactly once and rejects clones", async () => {
     const content = await compileContent(shuttergateInput);

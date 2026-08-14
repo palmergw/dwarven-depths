@@ -334,8 +334,6 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
     );
   if (normalized.levelId !== "level.shuttergate_hall")
     throw new RangeError("telemetry level ID is unsupported");
-  if (normalized.placementPointId !== "placement.shuttergate_north_guard")
-    throw new RangeError("telemetry placement point ID is unsupported");
   if (normalized.targetPolicy !== "nearest")
     throw new RangeError("telemetry target policy is unsupported");
   const attemptMatch = /^attempt\.shuttergate\.campaign_(\d{6})$/.exec(
@@ -346,7 +344,7 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
     attemptMatch === null ||
     !Number.isSafeInteger(attemptNumber) ||
     attemptNumber < 1 ||
-    attemptNumber > 64 ||
+    attemptNumber > 4 ||
     normalized.seed !== String(attemptNumber)
   )
     throw new RangeError("telemetry attempt ID and seed are contradictory");
@@ -356,6 +354,14 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
     throw new RangeError("telemetry build ID is unsupported");
   if (upgraded !== attemptNumber >= 3)
     throw new RangeError("telemetry build contradicts the campaign attempt");
+  const expectedPlacementPointId =
+    attemptNumber === 4
+      ? "placement.shuttergate_keep_guard"
+      : "placement.shuttergate_north_guard";
+  if (normalized.placementPointId !== expectedPlacementPointId)
+    throw new RangeError(
+      "telemetry placement contradicts the campaign attempt"
+    );
   const rosterEntry = normalized.build.roster[0];
   const expectedUpgradeIds = upgraded ? [shieldSlamUpgradeId] : [];
   if (
@@ -426,18 +432,24 @@ function normalizePayload(value: unknown): ShuttergateAttemptTelemetryPayload {
     (normalized.combat.wardenHealth === 0)
   )
     throw new RangeError("telemetry Warden state is contradictory");
+  const expectedVictory = attemptNumber === 4;
   if (
-    normalized.outcome.terminalResult !== "defeat" ||
-    normalized.outcome.terminalReason !== "all_dwarves_downed" ||
-    normalized.combat.wardenLifecycle !== "downed"
+    (normalized.outcome.terminalResult === "victory") !== expectedVictory ||
+    normalized.outcome.terminalReason !==
+      (expectedVictory ? "victory_conditions_met" : "all_dwarves_downed") ||
+    (normalized.combat.wardenLifecycle === "downed") === expectedVictory
   )
     throw new RangeError("telemetry terminal result is contradictory");
+  const expectedBossReward = attemptNumber >= 3;
   if (
     normalized.rewards.forgeOreAwarded !==
       normalized.combat.defeatedEnemies +
         terminalTransition.startedWaveIds.length ||
-    normalized.rewards.bossRewardClaimed ||
-    normalized.rewards.unlockedCharacterIds.length !== 0
+    normalized.rewards.bossRewardClaimed !== expectedBossReward ||
+    normalized.rewards.unlockedCharacterIds.length !==
+      (expectedBossReward ? 1 : 0) ||
+    (expectedBossReward &&
+      normalized.rewards.unlockedCharacterIds[0] !== "character.deep_ranger")
   )
     throw new RangeError(
       "telemetry rewards contradict the authoritative policy"

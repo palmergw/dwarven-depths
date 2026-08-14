@@ -24,6 +24,17 @@ function combinationKey(value: {
   return `${value.placementPointId}/${value.targetPolicy}/${value.buildId}`;
 }
 
+function outcomeSignature(
+  evidence: ShuttergateBuildCalibrationEvidence
+): string {
+  return [
+    evidence.terminalResult,
+    evidence.deepestStartedWaveId,
+    evidence.defeatedEnemies,
+    evidence.survivingEnemies
+  ].join("/");
+}
+
 describe("Shuttergate Level 1 balance matrix", () => {
   it("covers and accepts all authoritative placement, policy, and build cases", async () => {
     const matrix = requireShuttergateLevel1BalanceMatrix(matrixInput);
@@ -71,6 +82,62 @@ describe("Shuttergate Level 1 balance matrix", () => {
     expect(Object.isFrozen(matrix)).toBe(true);
     expect(Object.isFrozen(matrix.cases)).toBe(true);
     expect(Object.isFrozen(matrix.cases[0]?.ranges)).toBe(true);
+  }, 360_000);
+
+  it("locks the calibrated progression and tactical victory routes", async () => {
+    const matrix = requireShuttergateLevel1BalanceMatrix(matrixInput);
+    const content = await compileContent(shuttergateInput);
+    const evidence = await Promise.all(
+      matrix.cases.map((balanceCase) =>
+        runShuttergateSeedPlacementControllerBuildCalibration(
+          content,
+          matrix.seed,
+          balanceCase.placementPointId as PlacementPointId,
+          balanceCase.targetPolicy,
+          balanceCase.buildId
+        )
+      )
+    );
+    const unupgraded = evidence.filter(
+      ({ buildId }) => buildId === "build.profile.new_campaign.v1"
+    );
+    const upgraded = evidence.filter(
+      ({ buildId }) => buildId === "build.warden.shield_slam_rank_1.v1"
+    );
+
+    expect(unupgraded).toHaveLength(12);
+    expect(upgraded).toHaveLength(12);
+    expect(
+      unupgraded.every(({ terminalResult }) => terminalResult === "defeat")
+    ).toBe(true);
+    expect(
+      unupgraded.every(
+        ({ deepestStartedWaveId }) =>
+          deepestStartedWaveId === "wave.shuttergate_3"
+      )
+    ).toBe(true);
+    expect(
+      upgraded.every(
+        ({ deepestStartedWaveId }) =>
+          deepestStartedWaveId === "wave.shuttergate_5"
+      )
+    ).toBe(true);
+    expect(
+      upgraded
+        .filter(
+          ({ placementPointId }) =>
+            placementPointId === "placement.shuttergate_keep_guard"
+        )
+        .filter(({ terminalResult }) => terminalResult === "victory")
+        .map(({ targetPolicy }) => targetPolicy)
+    ).toEqual([
+      "nearest",
+      "highest_health",
+      "highest_armor",
+      "fastest",
+      "boss_or_elite_first"
+    ]);
+    expect(new Set(upgraded.map(outcomeSignature)).size).toBeGreaterThan(1);
   }, 360_000);
 
   it("rejects unknown, unsupported, duplicate, and incomplete cases", () => {
@@ -123,7 +190,7 @@ describe("Shuttergate Level 1 balance matrix", () => {
           matrixInput.cases[0],
           {
             ...matrixInput.cases[1],
-            terminalReason: "all_dwarves_downed"
+            terminalReason: "victory_conditions_met"
           },
           ...matrixInput.cases.slice(2)
         ]
@@ -141,6 +208,16 @@ describe("Shuttergate Level 1 balance matrix", () => {
         cases: matrixInput.cases.slice(1)
       })
     ).toThrow("matrix is incomplete");
+    expect(() =>
+      requireShuttergateLevel1BalanceMatrix({
+        ...matrixInput,
+        cases: [
+          matrixInput.cases[1],
+          matrixInput.cases[0],
+          ...matrixInput.cases.slice(2)
+        ]
+      })
+    ).toThrow("not in canonical order");
 
     const accessorCases = [...matrixInput.cases];
     Object.defineProperty(accessorCases, "0", {

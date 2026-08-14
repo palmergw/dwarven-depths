@@ -1,10 +1,14 @@
 import {
   createInitialProfile,
+  normalizeProfileState,
   type ProfileState,
   purchasedUpgradeCatalog,
   purchaseUpgradeRank
 } from "@dwarven-depths/progression";
-import type { ProfileSaveEnvelope } from "@dwarven-depths/save";
+import {
+  createProfileSaveEnvelope,
+  type ProfileSaveEnvelope
+} from "@dwarven-depths/save";
 import { IndexedDbProfileStoreError } from "@dwarven-depths/save/indexed-db";
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -208,10 +212,21 @@ afterEach(async () => {
   root?.unmount();
   root = undefined;
   document.body.replaceChildren();
+  await new Promise<void>((resolve, reject) => {
+    const request = window.indexedDB.deleteDatabase(
+      "dwarven-depths-profile-v1"
+    );
+    request.addEventListener("success", () => resolve());
+    request.addEventListener("error", () => reject(request.error));
+    request.addEventListener("blocked", () =>
+      reject(new Error("profile database cleanup was blocked"))
+    );
+  });
   window.localStorage.removeItem(motionPreferenceStorageKey);
   window.localStorage.removeItem(textScaleStorageKey);
   window.localStorage.removeItem(contrastPreferenceStorageKey);
   window.localStorage.removeItem(soundPreferenceStorageKey);
+
   window.history.replaceState(null, "", "/");
   vi.restoreAllMocks();
   await page.viewport(1280, 720);
@@ -304,16 +319,32 @@ class ControlledResultWorker {
                 schemaVersion: 1,
                 attemptId: this.campaignAttemptId,
                 rewardId: `reward.${this.campaignAttemptId}`,
-                forgeOreAwarded: 8,
+                forgeOreAwarded: this.terminalResult === "victory" ? 28 : 8,
                 profile: {
                   ...createInitialProfile("character.iron_warden" as never),
-                  revision: campaignAttemptNumber,
-                  forgeOre: campaignAttemptNumber * 8,
-                  claimedRewardIds: Array.from(
-                    { length: campaignAttemptNumber },
-                    (_, index) =>
-                      `reward.attempt.shuttergate.web_${String(index + 1).padStart(6, "0")}`
-                  )
+                  revision:
+                    campaignAttemptNumber +
+                    (this.terminalResult === "victory" ? 2 : 0),
+                  forgeOre:
+                    campaignAttemptNumber * 8 +
+                    (this.terminalResult === "victory" ? 20 : 0),
+                  unlockedCharacterIds:
+                    this.terminalResult === "victory"
+                      ? ["character.deep_ranger", "character.iron_warden"]
+                      : ["character.iron_warden"],
+                  claimedRewardIds: [
+                    ...Array.from(
+                      { length: campaignAttemptNumber },
+                      (_, index) =>
+                        `reward.attempt.shuttergate.web_${String(index + 1).padStart(6, "0")}`
+                    ),
+                    ...(this.terminalResult === "victory"
+                      ? [
+                          "reward.boss.gatebreaker_captain",
+                          "reward.campaign.shuttergate.victory"
+                        ]
+                      : [])
+                  ]
                 }
               }
             }),
@@ -462,7 +493,35 @@ class ControlledJourneyWorker {
     if (runConfiguration === undefined)
       throw new Error("journey worker was not initialized");
     const rewardId = `reward.${runConfiguration.attemptId}`;
-    const forgeOreAwarded = 8;
+    const bossForgeOre = terminalResult === "victory" ? 20 : 0;
+    const forgeOreAwarded = 8 + bossForgeOre;
+    const profile = {
+      ...runConfiguration.profile,
+      revision:
+        runConfiguration.profile.revision +
+        (terminalResult === "victory" ? 3 : 1),
+      forgeOre:
+        runConfiguration.profile.forgeOre +
+        profileForgeOreAwarded +
+        bossForgeOre,
+      unlockedCharacterIds:
+        terminalResult === "victory"
+          ? [
+              "character.deep_ranger",
+              ...runConfiguration.profile.unlockedCharacterIds
+            ]
+          : runConfiguration.profile.unlockedCharacterIds,
+      claimedRewardIds: [
+        ...runConfiguration.profile.claimedRewardIds,
+        rewardId,
+        ...(terminalResult === "victory"
+          ? [
+              "reward.boss.gatebreaker_captain",
+              "reward.campaign.shuttergate.victory"
+            ]
+          : [])
+      ]
+    };
     this.emit({
       protocolVersion: 4,
       type: "result",
@@ -475,15 +534,7 @@ class ControlledJourneyWorker {
         attemptId: runConfiguration.attemptId,
         rewardId,
         forgeOreAwarded,
-        profile: {
-          ...runConfiguration.profile,
-          revision: runConfiguration.profile.revision + 1,
-          forgeOre: runConfiguration.profile.forgeOre + profileForgeOreAwarded,
-          claimedRewardIds: [
-            ...runConfiguration.profile.claimedRewardIds,
-            rewardId
-          ]
-        }
+        profile
       },
       commands: [
         {
@@ -879,10 +930,10 @@ describe("run journey guidance", () => {
     const summary = document.querySelector(".result-summary");
     expect(summary).toHaveAccessibleName("Expedition summary");
     expect(summary).toHaveTextContent("OutcomeFortress held");
-    expect(summary).toHaveTextContent("Forge Ore earned+8");
-    expect(summary).toHaveTextContent("New balance8 Forge Ore");
+    expect(summary).toHaveTextContent("Forge Ore earned+28");
+    expect(summary).toHaveTextContent("New balance28 Forge Ore");
     expect(document.querySelector(".results")).toHaveTextContent(
-      "spend your reward and muster the next defence"
+      "spend your reward. This defence is complete"
     );
   });
 
@@ -1049,7 +1100,7 @@ describe("run journey guidance", () => {
 
     await resultHeading("Victory results");
     const results = document.querySelector(".results");
-    expect(results).toHaveTextContent("Run balance8 Forge Ore");
+    expect(results).toHaveTextContent("Run balance28 Forge Ore");
     expect(results).toHaveTextContent("ProgressionReward not saved");
     expect(results).toHaveTextContent(
       "Local progression is unavailable. Return to the checkpoint and retry when storage is available; this run's reward cannot be spent."
@@ -1094,8 +1145,8 @@ describe("run journey guidance", () => {
     const results = document.querySelector(".results");
     expect(results).toHaveTextContent("OutcomeFortress held");
     expect(results).toHaveTextContent("Waves faced5");
-    expect(results).toHaveTextContent("Forge Ore earned+8");
-    expect(results).toHaveTextContent("Run balance8 Forge Ore");
+    expect(results).toHaveTextContent("Forge Ore earned+28");
+    expect(results).toHaveTextContent("Run balance28 Forge Ore");
     expect(results).toHaveTextContent("ProgressionReward not saved");
     expect(results).toHaveTextContent("this run's reward cannot be spent");
     expect(results).toHaveTextContent("Progression saveIndexedDB write failed");
@@ -1141,12 +1192,12 @@ describe("run journey guidance", () => {
 
     await resultHeading("Victory results");
     const results = document.querySelector(".results");
-    expect(results).toHaveTextContent("Forge Ore earned+8");
-    expect(results).toHaveTextContent("New balance8 Forge Ore");
+    expect(results).toHaveTextContent("Forge Ore earned+28");
+    expect(results).toHaveTextContent("New balance28 Forge Ore");
     expect(results).toHaveTextContent("ProgressionReward saved");
     expect(results).not.toHaveTextContent("No reward was applied");
     expect(document.querySelector("#failure-heading")).toBeNull();
-    expect(store.envelope.profile.forgeOre).toBe(8);
+    expect(store.envelope.profile.forgeOre).toBe(28);
   });
 
   it("adapts terminal guidance to failure details", async () => {
@@ -4075,14 +4126,13 @@ describe("authoritative web worker", () => {
     expect(animated.eventStreamChecksum).toBe(idle.eventStreamChecksum);
   });
 
-  it("returns from terminal evidence to a fresh deterministic checkpoint", async () => {
+  it("ends the campaign after persisted terminal victory evidence", async () => {
     const workers: ControlledResultWorker[] = [];
     const profileStore = new PersistentJourneyProfileStore();
-    const outcomes = ["victory", "defeat"] as const;
     const createWorker = (): Worker => {
       const attemptNumber = workers.length + 1;
       const worker = new ControlledResultWorker(
-        outcomes[workers.length],
+        "victory",
         `attempt.shuttergate.web_${String(attemptNumber).padStart(6, "0")}`
       );
       workers.push(worker);
@@ -4109,11 +4159,7 @@ describe("authoritative web worker", () => {
     returnButton.focus();
     await userEvent.keyboard("{Enter}");
 
-    await vi.waitFor(() =>
-      expect(document.querySelector("button")?.textContent).toBe(
-        "Begin preparation"
-      )
-    );
+    expect(await buttonWithText("Defence complete")).toBeDisabled();
     expect(document.querySelector(".evidence")).toBeNull();
     expect(document.querySelector(".results")).toBeNull();
     expect(document.querySelector("figcaption")).toBeNull();
@@ -4139,20 +4185,106 @@ describe("authoritative web worker", () => {
       expect(document.querySelector(".results")).toBeNull();
     });
 
-    const secondEvidence = await completeAppAttempt();
-    expect(secondEvidence.replace("defeat", "victory")).toBe(firstEvidence);
-    const defeatHeading = await resultHeading("Defeat results");
-    expect(document.activeElement).toBe(defeatHeading);
-    await userEvent.click(
-      Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "Return to checkpoint"
-      ) as HTMLButtonElement
+    expect(firstEvidence).toContain("victory");
+    expect(workers).toHaveLength(1);
+  });
+
+  it("keeps preparation available after a boss-kill defeat", async () => {
+    const worker = new ControlledResultWorker(
+      "defeat",
+      "attempt.shuttergate.web_000004"
     );
+    const profileStore = new PersistentJourneyProfileStore();
+    const initial = createInitialProfile("character.iron_warden" as never);
+    profileStore.envelope = await createProfileSaveEnvelope({
+      contentVersion: "content.shuttergate.level_1.v1",
+      applicationBuild: "phase-6-web",
+      writtenAtEpochMs: 1_725_000_000_000,
+      profileId: "profile.local",
+      profile: normalizeProfileState({
+        ...initial,
+        revision: 4,
+        forgeOre: 48,
+        claimedRewardIds: [
+          "reward.attempt.shuttergate.web_000001",
+          "reward.attempt.shuttergate.web_000002",
+          "reward.attempt.shuttergate.web_000003",
+          "reward.boss.gatebreaker_captain"
+        ],
+        unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"]
+      })
+    });
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => profileStore}
+      />
+    );
+
+    expect(await buttonWithText("Begin preparation")).toBeEnabled();
+  });
+
+  it("rejects a defeat that claims campaign victory", async () => {
+    const worker = new ControlledResultWorker(
+      "defeat",
+      "attempt.shuttergate.web_000001"
+    );
+    const originalPostMessage = worker.postMessage.bind(worker);
+    worker.postMessage = (message) => {
+      const isConfirmation =
+        typeof message === "object" &&
+        message !== null &&
+        (message as { command?: { type?: string } }).command?.type ===
+          "confirmPreparation";
+      if (!isConfirmation) originalPostMessage(message);
+      else
+        worker.emit({
+          protocolVersion: 4,
+          type: "result",
+          terminalResult: "defeat",
+          terminalTick: 1,
+          finalStateChecksum: expected.finalStateChecksum,
+          eventStreamChecksum: expected.eventStreamChecksum,
+          campaign: {
+            schemaVersion: 1,
+            attemptId: "attempt.shuttergate.web_000001",
+            rewardId: "reward.attempt.shuttergate.web_000001",
+            forgeOreAwarded: 8,
+            profile: normalizeProfileState({
+              ...createInitialProfile("character.iron_warden" as never),
+              revision: 2,
+              forgeOre: 8,
+              claimedRewardIds: [
+                "reward.attempt.shuttergate.web_000001",
+                "reward.campaign.shuttergate.victory"
+              ]
+            })
+          },
+          commands: []
+        });
+    };
+    const store = new PersistentJourneyProfileStore();
+    const container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    root.render(
+      <App
+        createWorker={() => worker as unknown as Worker}
+        createProfileStore={() => store}
+      />
+    );
+
+    await userEvent.click(await buttonWithText("Begin preparation"));
+    await userEvent.click(await buttonWithText("Confirm preparation"));
     await vi.waitFor(() =>
-      expect(document.body.textContent).toContain("Checkpoint ready")
+      expect(document.body.textContent).toContain(
+        "The expedition could not continue. Return to the checkpoint and try again."
+      )
     );
-    expect(workers).toHaveLength(2);
-    expect(workers[1]?.terminated).toBe(true);
+    expect(store.envelope?.profile.claimedRewardIds).toEqual([]);
   });
 
   it("recovers from authoritative failures by keyboard and mouse", async () => {
@@ -4397,11 +4529,19 @@ describe("authoritative web worker", () => {
         schemaVersion: 1,
         attemptId: "attempt.shuttergate.web_000001",
         rewardId: "reward.attempt.shuttergate.web_000001",
-        forgeOreAwarded: 8,
+        forgeOreAwarded: 28,
         profile: {
-          revision: 1,
-          forgeOre: 8,
-          claimedRewardIds: ["reward.attempt.shuttergate.web_000001"]
+          revision: 3,
+          forgeOre: 28,
+          unlockedCharacterIds: [
+            "character.deep_ranger",
+            "character.iron_warden"
+          ],
+          claimedRewardIds: [
+            "reward.attempt.shuttergate.web_000001",
+            "reward.boss.gatebreaker_captain",
+            "reward.campaign.shuttergate.victory"
+          ]
         }
       },
       replay: {
@@ -4777,17 +4917,29 @@ describe("authoritative Shuttergate campaign journey", () => {
     workers.at(-1)?.finish(8, "victory");
     await resultHeading("Victory results");
     expect(document.querySelector(".result-summary")).toHaveTextContent(
-      "Forge Ore earned+8New balance14 Forge Ore"
+      "Forge Ore earned+28New balance34 Forge Ore"
     );
     expect(store.envelope?.profile).toMatchObject({
-      forgeOre: 14,
+      forgeOre: 34,
+      unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"],
       claimedRewardIds: [
         "reward.attempt.shuttergate.web_000001",
         "reward.attempt.shuttergate.web_000002",
-        "reward.attempt.shuttergate.web_000003"
+        "reward.attempt.shuttergate.web_000003",
+        "reward.boss.gatebreaker_captain",
+        "reward.campaign.shuttergate.victory"
       ],
       purchasedUpgrades: [{ upgradeId: "upgrade.ability.shield_slam", rank: 1 }]
     });
+    const workerCountAtVictory = workers.length;
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
+    const completed = await buttonWithText("Defence complete");
+    expect(completed).toBeDisabled();
+    completed.click();
+    expect(workers).toHaveLength(workerCountAtVictory);
+    await reloadApp();
+    expect(await buttonWithText("Defence complete")).toBeDisabled();
+    expect(workers).toHaveLength(workerCountAtVictory);
     expect(store.writes).toBeGreaterThanOrEqual(5);
   }, 30_000);
 
@@ -4826,7 +4978,7 @@ describe("authoritative Shuttergate campaign journey", () => {
       campaign: third.campaign
     }).toMatchObject({
       terminalResult: "victory",
-      maximumHealth: 1000,
+      maximumHealth: 840,
       abilityActivations: expect.any(Number),
       campaign: {
         attemptId: "attempt.shuttergate.web_000003"

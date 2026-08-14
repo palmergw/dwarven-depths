@@ -7,7 +7,8 @@ import {
   createInitialProfile,
   type ForgeOrePurchaseDecision,
   type ProfileState,
-  purchaseUpgradeRank
+  purchaseUpgradeRank,
+  resolveBossDeathRewards
 } from "@dwarven-depths/progression";
 // This is an intentionally package-private workspace integration. The raw
 // event resolver is not exposed by the progression package's export map.
@@ -23,6 +24,8 @@ const campaignId = "campaign.shuttergate.v1" as StableId;
 const wardenCharacterId = "character.iron_warden" as StableId;
 const shieldSlamUpgradeId = "upgrade.ability.shield_slam" as StableId;
 const northGuardPlacementId = "placement.shuttergate_north_guard" as never;
+const keepGuardPlacementId = "placement.shuttergate_keep_guard" as never;
+const gatebreakerEntityId = "entity.enemy.shuttergate_010" as never;
 const maximumCampaignAttempts = 100_000;
 
 const rewardPolicy = Object.freeze({
@@ -159,6 +162,11 @@ export async function runShuttergateCampaignTransition(
   content: CompiledContent,
   authority: ShuttergateCampaignAuthority
 ): Promise<ShuttergateCampaignTransitionResult> {
+  if (
+    authority.attempts.at(-1)?.encounter.calibration.terminalResult ===
+    "victory"
+  )
+    throw new RangeError("Shuttergate campaign already ended in victory");
   if (authority.attempts.length >= maximumCampaignAttempts)
     throw new RangeError(
       `Shuttergate campaign cannot exceed ${maximumCampaignAttempts} attempts`
@@ -170,11 +178,17 @@ export async function runShuttergateCampaignTransition(
     const attemptId = campaignAttemptId(attemptNumber);
     const seed = String(attemptNumber);
     const buildId = campaignBuild(authority.profile);
+    // Keep the first upgraded attempt at the fixed tutorial post so the
+    // deeper push remains observable, then use the matrix-backed victory post.
+    const placementPointId =
+      buildId === "build.warden.shield_slam_rank_1.v1" && attemptNumber > 3
+        ? keepGuardPlacementId
+        : northGuardPlacementId;
     const encounter = await runShuttergateAttempt(content, {
       schemaVersion: 1,
       attemptId,
       seed,
-      placementPointId: northGuardPlacementId,
+      placementPointId,
       targetPolicy: "nearest",
       buildId
     });
@@ -192,6 +206,29 @@ export async function runShuttergateCampaignTransition(
       );
 
     let profile = rewards.profile;
+    if (encounter.calibration.bossRewardClaimed) {
+      profile = resolveBossDeathRewards({
+        schemaVersion: 1,
+        profile,
+        bossDeaths: [
+          {
+            schemaVersion: 1,
+            eventId:
+              `death.shuttergate.campaign_${String(attemptNumber).padStart(6, "0")}.gatebreaker_captain` as StableId,
+            bossEntityId: gatebreakerEntityId
+          }
+        ],
+        rewards: [
+          {
+            schemaVersion: 1,
+            rewardId: "reward.boss.gatebreaker_captain" as StableId,
+            bossEntityId: gatebreakerEntityId,
+            characterUnlockId: "character.deep_ranger" as StableId,
+            forgeOre: 20
+          }
+        ]
+      }).profile;
+    }
     let purchaseDecision: ForgeOrePurchaseDecision | null = null;
     if (buildId === "build.profile.new_campaign.v1" && profile.forgeOre >= 10) {
       const purchase = purchaseUpgradeRank({

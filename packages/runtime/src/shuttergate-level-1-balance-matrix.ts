@@ -220,12 +220,10 @@ function requireCase(
     `${label} build`
   );
   if (
-    (buildId === "build.profile.new_campaign.v1" &&
-      terminalResult !== "defeat") ||
-    (buildId === "build.warden.shield_slam_rank_1.v1" &&
-      terminalResult !== "victory")
+    buildId === "build.profile.new_campaign.v1" &&
+    terminalResult !== "defeat"
   )
-    throw new RangeError(`${label} build and terminal result contradict`);
+    throw new RangeError(`${label} baseline build must end in defeat`);
   if (
     terminalResult === "victory" &&
     (deepestStartedWaveId !== "wave.shuttergate_5" ||
@@ -330,6 +328,10 @@ export function requireShuttergateLevel1BalanceMatrix(
     expectedKeys.some((key) => !actualKeys.has(key))
   )
     throw new RangeError("Shuttergate Level 1 balance matrix is incomplete");
+  if (cases.some((entry, index) => caseKey(entry) !== expectedKeys[index]))
+    throw new RangeError(
+      "Shuttergate Level 1 balance matrix cases are not in canonical order"
+    );
   return Object.freeze({
     schemaVersion: 1,
     matrixId: record.matrixId,

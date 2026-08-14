@@ -72,7 +72,7 @@ describe("Shuttergate web campaign authority", () => {
     });
     expect(state.seed).toBe("3");
     expect(state.battlefield?.dwarfCombatants[0]).toMatchObject({
-      maximumHealth: 1000,
+      maximumHealth: 840,
       basicAttack: { damage: 20, range: 6 }
     });
     expect(Object.isFrozen(state)).toBe(true);
@@ -100,6 +100,24 @@ describe("Shuttergate web campaign authority", () => {
         [Symbol("unexpected")]: true
       } as never)
     ).toThrow("invalid shape");
+    class Configuration {
+      schemaVersion = configuration.schemaVersion;
+      attemptId = configuration.attemptId;
+      seed = configuration.seed;
+      placementPointId = configuration.placementPointId;
+      profile = configuration.profile;
+    }
+    expect(() =>
+      createShuttergateWebScenario(scenario, new Configuration())
+    ).toThrow("invalid shape");
+    const accessorConfiguration = { ...configuration };
+    Object.defineProperty(accessorConfiguration, "seed", {
+      enumerable: true,
+      get: () => configuration.seed
+    });
+    expect(() =>
+      createShuttergateWebScenario(scenario, accessorConfiguration)
+    ).toThrow("invalid shape");
     expect(() =>
       createShuttergateWebPreparationState(content, scenario, {
         ...configuration,
@@ -112,11 +130,26 @@ describe("Shuttergate web campaign authority", () => {
         seed: "2"
       })
     ).toThrow("profile history");
+    expect(() =>
+      createShuttergateWebScenario(scenario, {
+        ...configuration,
+        profile: {
+          ...configuration.profile,
+          revision: configuration.profile.revision + 1,
+          claimedRewardIds: [
+            ...configuration.profile.claimedRewardIds,
+            "reward.campaign.shuttergate.victory"
+          ] as never
+        }
+      })
+    ).toThrow("already ended in victory");
     const state = createShuttergateWebPreparationState(
       content,
       scenario,
       configuration
     );
+    const battlefield = state.battlefield;
+    if (battlefield === undefined) throw new Error("missing battlefield");
     expect(() =>
       resolveShuttergateWebAttemptReward({
         schemaVersion: 1,
@@ -137,6 +170,28 @@ describe("Shuttergate web campaign authority", () => {
         }
       })
     ).toThrow("terminal-bound");
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "victory",
+        finalState: {
+          ...state,
+          phase: "TERMINAL",
+          terminalResult: "victory",
+          battlefield: {
+            ...battlefield,
+            startedWaveIds: [
+              "wave.shuttergate_1",
+              "wave.shuttergate_2",
+              "wave.shuttergate_3",
+              "wave.shuttergate_4",
+              "wave.shuttergate_5"
+            ] as never
+          }
+        }
+      })
+    ).toThrow("authored schedule");
   });
 
   it("replays purchased campaign preparation through the same authority", async () => {
@@ -183,7 +238,164 @@ describe("Shuttergate web campaign authority", () => {
     expect(result.terminalResult).toBe("victory");
     expect(
       result.finalState.battlefield?.dwarfCombatants[0]?.maximumHealth
-    ).toBe(1000);
+    ).toBe(840);
+    const reward = resolveShuttergateWebAttemptReward({
+      schemaVersion: 1,
+      configuration,
+      terminalResult: "victory",
+      finalState: result.finalState
+    });
+    expect(reward).toMatchObject({
+      forgeOreAwarded: 43,
+      profile: {
+        forgeOre: 49,
+        unlockedCharacterIds: [
+          "character.deep_ranger",
+          "character.iron_warden"
+        ],
+        claimedRewardIds: expect.arrayContaining([
+          "reward.boss.gatebreaker_captain"
+        ])
+      }
+    });
+    const battlefield = result.finalState.battlefield;
+    if (battlefield === undefined) throw new Error("missing battlefield");
+    const survivingEnemy = battlefield.enemyCombatants.find(
+      (enemy) => enemy.entityId !== "entity.enemy.shuttergate_010"
+    );
+    if (survivingEnemy === undefined)
+      throw new Error("missing non-boss enemy combatant");
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "victory",
+        finalState: {
+          ...result.finalState,
+          battlefield: {
+            ...battlefield,
+            enemyCombatants: battlefield.enemyCombatants.map((enemy) =>
+              enemy.entityId === survivingEnemy.entityId
+                ? { ...enemy, lifecycleState: "active", currentHealth: 1 }
+                : enemy
+            )
+          }
+        }
+      })
+    ).toThrow("authored enemy roster");
+    for (const enemyCombatants of [
+      battlefield.enemyCombatants.slice(1),
+      [...battlefield.enemyCombatants, survivingEnemy]
+    ])
+      expect(() =>
+        resolveShuttergateWebAttemptReward({
+          schemaVersion: 1,
+          configuration,
+          terminalResult: "victory",
+          finalState: {
+            ...result.finalState,
+            battlefield: { ...battlefield, enemyCombatants }
+          }
+        })
+      ).toThrow("authored enemy roster");
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "victory",
+        finalState: {
+          ...result.finalState,
+          battlefield: {
+            ...battlefield,
+            enemyAdmissions: battlefield.enemyAdmissions.map(
+              (admission, index) =>
+                index === 9
+                  ? {
+                      ...admission,
+                      enemyDefinitionId: "enemy.goblin_cutter" as never
+                    }
+                  : admission
+            )
+          }
+        }
+      })
+    ).toThrow("authored enemy roster");
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "defeat",
+        finalState: {
+          ...result.finalState,
+          tick: 6000,
+          terminalResult: "defeat"
+        }
+      })
+    ).toThrow("defeat contradicts the cleared authored enemy roster");
+    const bossDefeatReward = resolveShuttergateWebAttemptReward({
+      schemaVersion: 1,
+      configuration,
+      terminalResult: "defeat",
+      finalState: {
+        ...result.finalState,
+        terminalResult: "defeat",
+        battlefield: {
+          ...battlefield,
+          dwarfCombatants: battlefield.dwarfCombatants.map((dwarf) => ({
+            ...dwarf,
+            lifecycleState: "downed",
+            currentHealth: 0
+          }))
+        }
+      }
+    });
+    expect(bossDefeatReward.profile).toMatchObject({
+      forgeOre: 49,
+      unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"],
+      claimedRewardIds: expect.arrayContaining([
+        "reward.boss.gatebreaker_captain"
+      ])
+    });
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "defeat",
+        finalState: {
+          ...result.finalState,
+          tick: 1834,
+          terminalResult: "defeat",
+          battlefield: {
+            ...battlefield,
+            dwarfCombatants: battlefield.dwarfCombatants.map((dwarf) => ({
+              ...dwarf,
+              lifecycleState: "downed",
+              currentHealth: 0
+            }))
+          }
+        }
+      })
+    ).toThrow("authored schedule");
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "defeat",
+        finalState: {
+          ...result.finalState,
+          terminalResult: "defeat",
+          battlefield: {
+            ...battlefield,
+            dwarfCombatants: battlefield.dwarfCombatants.map((dwarf) => ({
+              ...dwarf,
+              lifecycleState: "downed",
+              currentHealth: 0
+            })),
+            enemyCombatants: [...battlefield.enemyCombatants, survivingEnemy]
+          }
+        }
+      })
+    ).toThrow("authored enemy roster");
     await expect(
       verifyReplay(
         createReplayDefinition(result, replayScenario, content),

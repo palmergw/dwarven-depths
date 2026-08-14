@@ -67,6 +67,79 @@ describe("local Shuttergate attempt telemetry", () => {
     ).toEqual(first);
   }, 45_000);
 
+  it("serializes the calibrated deeper push and victory route", async () => {
+    const content = await compileContent(shuttergateInput);
+    let authority = createShuttergateCampaignAuthority();
+    const attempts = [];
+    for (let index = 0; index < 4; index += 1) {
+      const result = await runShuttergateCampaignTransition(content, authority);
+      authority = result.authority;
+      attempts.push(await createShuttergateAttemptTelemetry(result.transition));
+    }
+
+    expect(attempts[2]?.payload).toMatchObject({
+      attemptId: "attempt.shuttergate.campaign_000003",
+      placementPointId: "placement.shuttergate_north_guard",
+      outcome: {
+        terminalResult: "defeat",
+        terminalReason: "all_dwarves_downed"
+      },
+      rewards: {
+        bossRewardClaimed: true,
+        unlockedCharacterIds: ["character.deep_ranger"]
+      }
+    });
+    expect(attempts[3]?.payload).toMatchObject({
+      attemptId: "attempt.shuttergate.campaign_000004",
+      placementPointId: "placement.shuttergate_keep_guard",
+      outcome: {
+        terminalResult: "victory",
+        terminalReason: "victory_conditions_met"
+      },
+      rewards: {
+        bossRewardClaimed: true,
+        unlockedCharacterIds: ["character.deep_ranger"]
+      }
+    });
+    await expect(
+      Promise.all(
+        attempts.map((attempt) => requireShuttergateAttemptTelemetry(attempt))
+      )
+    ).resolves.toEqual(attempts);
+    const third = attempts[2];
+    const fourth = attempts[3];
+    if (third === undefined || fourth === undefined)
+      throw new Error("missing calibrated telemetry");
+    for (const [telemetry, payload] of [
+      [
+        third,
+        {
+          ...third.payload,
+          rewards: {
+            ...third.payload.rewards,
+            bossRewardClaimed: false,
+            unlockedCharacterIds: []
+          }
+        }
+      ],
+      [
+        fourth,
+        {
+          ...fourth.payload,
+          placementPointId: "placement.shuttergate_north_guard"
+        }
+      ]
+    ] as const) {
+      await expect(
+        requireShuttergateAttemptTelemetry({
+          ...telemetry,
+          payload,
+          payloadChecksum: await canonicalHash(payload)
+        })
+      ).rejects.toThrow("contradict");
+    }
+  }, 180_000);
+
   it("rejects extra fields and checksum tampering", async () => {
     const telemetry = await createTelemetry();
     await expect(

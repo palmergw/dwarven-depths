@@ -59,7 +59,7 @@ export const shuttergateReferenceBuildCatalog: PurchasedUpgradeCatalog =
             Object.freeze({
               schemaVersion: 1,
               kind: "maximum_health_add" as const,
-              value: 760
+              value: 600
             }),
             Object.freeze({
               schemaVersion: 1,

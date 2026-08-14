@@ -7,6 +7,7 @@ import {
   purchasedUpgradeCatalog,
   purchaseUpgradeRank,
   recycleProgression,
+  resolveBossDeathRewards,
   selectCharacterSkillNode
 } from "@dwarven-depths/progression";
 import {
@@ -40,6 +41,81 @@ export interface CheckpointAttemptResult {
   readonly rewardId: string;
   readonly forgeOreAwarded: number;
   readonly profile: ProfileState;
+}
+
+function applyAuthoritativeTerminalRewards(
+  startingProfile: ProfileState,
+  campaignClaimsBossReward: boolean,
+  campaignClaimsVictory: boolean
+): ProfileState {
+  const bossRewardId = "reward.boss.gatebreaker_captain" as StableId;
+  const victoryRewardId = "reward.campaign.shuttergate.victory" as StableId;
+  let profile = startingProfile;
+  if (
+    campaignClaimsBossReward &&
+    !profile.claimedRewardIds.includes(bossRewardId)
+  )
+    profile = resolveBossDeathRewards({
+      schemaVersion: 1,
+      profile,
+      bossDeaths: [
+        {
+          schemaVersion: 1,
+          eventId: "death.shuttergate.web.gatebreaker_captain" as StableId,
+          bossEntityId: "entity.enemy.shuttergate_010" as never
+        }
+      ],
+      rewards: [
+        {
+          schemaVersion: 1,
+          rewardId: bossRewardId,
+          bossEntityId: "entity.enemy.shuttergate_010" as never,
+          characterUnlockId: "character.deep_ranger" as StableId,
+          forgeOre: 20
+        }
+      ]
+    }).profile;
+  if (
+    campaignClaimsVictory &&
+    !profile.claimedRewardIds.includes(victoryRewardId)
+  )
+    profile = normalizeProfileState({
+      ...profile,
+      revision: profile.revision + 1,
+      claimedRewardIds: [...profile.claimedRewardIds, victoryRewardId]
+    });
+  return profile;
+}
+
+function applyAuthoritativeAttemptProfileDelta(
+  startingProfile: ProfileState,
+  campaign: Pick<
+    CheckpointAttemptResult,
+    "forgeOreAwarded" | "rewardId" | "profile"
+  >,
+  campaignClaimsBossReward = false,
+  campaignClaimsVictory = false
+): ProfileState {
+  const attemptForgeOre =
+    campaign.forgeOreAwarded - (campaignClaimsBossReward ? 20 : 0);
+  if (!Number.isSafeInteger(attemptForgeOre) || attemptForgeOre < 0)
+    throw new RangeError(
+      "authoritative attempt result has invalid reward totals"
+    );
+  const profile = normalizeProfileState({
+    ...startingProfile,
+    revision: startingProfile.revision + 1,
+    forgeOre: startingProfile.forgeOre + attemptForgeOre,
+    claimedRewardIds: [
+      ...startingProfile.claimedRewardIds,
+      campaign.rewardId as StableId
+    ]
+  });
+  return applyAuthoritativeTerminalRewards(
+    profile,
+    campaignClaimsBossReward,
+    campaignClaimsVictory
+  );
 }
 
 export function createCheckpointProfileStore(): CheckpointProfileStore {
@@ -242,21 +318,33 @@ export function validateCheckpointAttemptResult(
   campaign: CheckpointAttemptResult
 ): ProfileState {
   const profile = normalizeProfileState(campaign.profile);
-  const expectedProfile = normalizeProfileState({
-    ...startingProfile,
-    revision: startingProfile.revision + 1,
-    forgeOre: startingProfile.forgeOre + campaign.forgeOreAwarded,
-    claimedRewardIds: [
-      ...startingProfile.claimedRewardIds,
-      campaign.rewardId as StableId
-    ]
-  });
+  const bossRewardId = "reward.boss.gatebreaker_captain" as StableId;
+  const campaignClaimsBossReward =
+    !startingProfile.claimedRewardIds.includes(bossRewardId) &&
+    profile.claimedRewardIds.includes(bossRewardId);
+  const victoryRewardId = "reward.campaign.shuttergate.victory" as StableId;
+  const campaignClaimsVictory =
+    !startingProfile.claimedRewardIds.includes(victoryRewardId) &&
+    profile.claimedRewardIds.includes(victoryRewardId);
+  const victoryRewardsContradict =
+    profile.claimedRewardIds.includes(victoryRewardId) &&
+    (!profile.claimedRewardIds.includes(bossRewardId) ||
+      !profile.unlockedCharacterIds.includes(
+        "character.deep_ranger" as StableId
+      ));
+  const expectedProfile = applyAuthoritativeAttemptProfileDelta(
+    startingProfile,
+    campaign,
+    campaignClaimsBossReward,
+    campaignClaimsVictory
+  );
   if (
     campaign.schemaVersion !== 1 ||
     !/^attempt\.shuttergate\.web_[0-9]{6}$/.test(campaign.attemptId) ||
     campaign.rewardId !== `reward.${campaign.attemptId}` ||
     !Number.isSafeInteger(campaign.forgeOreAwarded) ||
     campaign.forgeOreAwarded < 0 ||
+    victoryRewardsContradict ||
     startingProfile.claimedRewardIds.includes(campaign.rewardId as never) ||
     canonicalStringify(profile) !== canonicalStringify(expectedProfile)
   )
@@ -273,6 +361,14 @@ export async function applyCheckpointAttemptResult(
   now: () => number = Date.now
 ): Promise<ProfileState> {
   const profile = validateCheckpointAttemptResult(startingProfile, campaign);
+  const bossRewardId = "reward.boss.gatebreaker_captain" as StableId;
+  const campaignClaimsBossReward =
+    !startingProfile.claimedRewardIds.includes(bossRewardId) &&
+    profile.claimedRewardIds.includes(bossRewardId);
+  const victoryRewardId = "reward.campaign.shuttergate.victory" as StableId;
+  const campaignClaimsVictory =
+    !startingProfile.claimedRewardIds.includes(victoryRewardId) &&
+    profile.claimedRewardIds.includes(victoryRewardId);
   let candidate = profile;
   let expectedRevision = startingProfile.revision;
   let lastConflict: unknown;
@@ -297,17 +393,21 @@ export async function applyCheckpointAttemptResult(
       );
       if (
         concurrentProfile.claimedRewardIds.includes(campaign.rewardId as never)
-      )
-        return concurrentProfile;
-      candidate = normalizeProfileState({
-        ...concurrentProfile,
-        revision: concurrentProfile.revision + 1,
-        forgeOre: concurrentProfile.forgeOre + campaign.forgeOreAwarded,
-        claimedRewardIds: [
-          ...concurrentProfile.claimedRewardIds,
-          campaign.rewardId as StableId
-        ]
-      });
+      ) {
+        const supplementalProfile = applyAuthoritativeTerminalRewards(
+          concurrentProfile,
+          campaignClaimsBossReward,
+          campaignClaimsVictory
+        );
+        if (supplementalProfile === concurrentProfile) return concurrentProfile;
+        candidate = supplementalProfile;
+      } else
+        candidate = applyAuthoritativeAttemptProfileDelta(
+          concurrentProfile,
+          campaign,
+          campaignClaimsBossReward,
+          campaignClaimsVictory
+        );
       expectedRevision = concurrentProfile.revision;
     }
   }

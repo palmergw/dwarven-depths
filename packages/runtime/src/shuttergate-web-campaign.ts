@@ -8,7 +8,8 @@ import {
   ironWardenSkillTree,
   normalizeProfileState,
   type ProfileState,
-  purchasedUpgradeCatalog
+  purchasedUpgradeCatalog,
+  resolveBossDeathRewards
 } from "@dwarven-depths/progression";
 import {
   type BattlefieldDwarfDeploymentAuthority,
@@ -25,6 +26,51 @@ const attemptIdPattern = /^attempt\.shuttergate\.web_[0-9]{6}$/;
 const authoredWaveIds = Object.freeze(
   [1, 2, 3, 4, 5].map((wave) => `wave.shuttergate_${wave}` as StableId)
 );
+const authoredWaveStartTicks = Object.freeze([0, 900, 1800, 2700, 3600]);
+const authoredSpawnIds = Object.freeze(
+  Array.from(
+    { length: 18 },
+    (_, index) =>
+      `spawn.shuttergate_${(index + 1).toString().padStart(3, "0")}` as StableId
+  )
+);
+const authoredEnemyEntityIds = Object.freeze(
+  Array.from(
+    { length: 18 },
+    (_, index) =>
+      `entity.enemy.shuttergate_${(index + 1)
+        .toString()
+        .padStart(3, "0")}` as StableId
+  )
+);
+const authoredEnemyDefinitions = Object.freeze([
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_slinger",
+  "enemy.goblin_bulwark",
+  "enemy.goblin_cutter",
+  "enemy.goblin_slinger",
+  "enemy.gatebreaker_captain",
+  "enemy.goblin_cutter",
+  "enemy.goblin_slinger",
+  "enemy.goblin_bulwark",
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_slinger",
+  "enemy.goblin_cutter",
+  "enemy.goblin_bulwark"
+] as const);
+const authoredAdmissionTicks = Object.freeze([
+  1, 300, 600, 900, 1200, 1500, 1800, 1950, 2250, 2700, 2820, 3000, 3180, 3600,
+  3750, 3900, 4050, 4200
+]);
+const authoredSpawnTicks = Object.freeze([
+  0,
+  ...authoredAdmissionTicks.slice(1)
+]);
 
 export interface ShuttergateWebRunConfiguration {
   readonly schemaVersion: 1;
@@ -62,33 +108,61 @@ export function createShuttergateWebScenario(
 function requireConfiguration(
   value: ShuttergateWebRunConfiguration
 ): ShuttergateWebRunConfiguration {
+  const expectedKeys = [
+    "attemptId",
+    "placementPointId",
+    "profile",
+    "schemaVersion",
+    "seed"
+  ] as const;
   if (
     value === null ||
     typeof value !== "object" ||
     Array.isArray(value) ||
-    Reflect.ownKeys(value).map(String).sort().join("\u0000") !==
-      ["attemptId", "placementPointId", "profile", "schemaVersion", "seed"]
-        .sort()
-        .join("\u0000")
+    (Object.getPrototypeOf(value) !== Object.prototype &&
+      Object.getPrototypeOf(value) !== null)
   )
     throw new TypeError(
       "Shuttergate web run configuration has an invalid shape"
     );
-  if (value.schemaVersion !== 1)
+  const ownKeys = Reflect.ownKeys(value);
+  const actualKeys = ownKeys
+    .filter((key): key is string => typeof key === "string")
+    .sort();
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  if (
+    actualKeys.length !== ownKeys.length ||
+    actualKeys.length !== expectedKeys.length ||
+    actualKeys.some((key, index) => key !== [...expectedKeys].sort()[index]) ||
+    expectedKeys.some((key) => {
+      const descriptor = descriptors[key];
+      return descriptor?.enumerable !== true || !("value" in descriptor);
+    })
+  )
+    throw new TypeError(
+      "Shuttergate web run configuration has an invalid shape"
+    );
+  const configuration = Object.fromEntries(
+    expectedKeys.map((key) => [key, descriptors[key]?.value])
+  ) as unknown as ShuttergateWebRunConfiguration;
+  if (configuration.schemaVersion !== 1)
     throw new RangeError(
       "Shuttergate web run configuration has unsupported schemaVersion"
     );
-  if (!attemptIdPattern.test(value.attemptId))
+  if (!attemptIdPattern.test(configuration.attemptId))
     throw new RangeError(
       "Shuttergate web run configuration has invalid attemptId"
     );
-  if (!/^[1-9]\d{0,9}$/.test(value.seed) || BigInt(value.seed) > 0xffff_ffffn)
+  if (
+    !/^[1-9]\d{0,9}$/.test(configuration.seed) ||
+    BigInt(configuration.seed) > 0xffff_ffffn
+  )
     throw new RangeError("Shuttergate web run configuration has invalid seed");
-  if (value.placementPointId !== placementPointId)
+  if (configuration.placementPointId !== placementPointId)
     throw new RangeError(
       "Shuttergate tutorial deployment must use the north guard"
     );
-  const profile = normalizeProfileState(value.profile);
+  const profile = normalizeProfileState(configuration.profile);
   const webRewardPrefix = "reward.attempt.shuttergate.web_";
   const claimedAttemptNumbers = profile.claimedRewardIds
     .filter((rewardId) => rewardId.startsWith(webRewardPrefix))
@@ -101,21 +175,27 @@ function requireConfiguration(
     throw new RangeError(
       "Shuttergate web run configuration requires contiguous campaign rewards"
     );
+  if (
+    profile.claimedRewardIds.includes(
+      "reward.campaign.shuttergate.victory" as StableId
+    )
+  )
+    throw new RangeError("Shuttergate web campaign already ended in victory");
   const expectedAttemptNumber = claimedAttemptNumbers.length + 1;
   const expectedAttemptId = `attempt.shuttergate.web_${expectedAttemptNumber
     .toString()
     .padStart(6, "0")}`;
   if (
-    value.attemptId !== expectedAttemptId ||
-    value.seed !== String(expectedAttemptNumber)
+    configuration.attemptId !== expectedAttemptId ||
+    configuration.seed !== String(expectedAttemptNumber)
   )
     throw new RangeError(
       "Shuttergate web run configuration attempt and seed must follow profile history"
     );
   return Object.freeze({
     schemaVersion: 1,
-    attemptId: value.attemptId,
-    seed: value.seed,
+    attemptId: configuration.attemptId,
+    seed: configuration.seed,
     placementPointId,
     profile
   });
@@ -222,12 +302,102 @@ export function resolveShuttergateWebAttemptReward(input: {
     throw new RangeError(
       "Shuttergate web reward waves are not an authored prefix"
     );
+  const expectedStartedWaveCount = authoredWaveStartTicks.filter(
+    (tick) => tick <= state.tick
+  ).length;
+  if (battlefield.startedWaveIds.length !== expectedStartedWaveCount)
+    throw new RangeError(
+      "Shuttergate terminal waves do not match the authored schedule"
+    );
   if (
     input.terminalResult === "victory" &&
     battlefield.startedWaveIds.length !== authoredWaveIds.length
   )
     throw new RangeError(
       "Shuttergate victory did not start every authored wave"
+    );
+  const warden = battlefield.dwarfCombatants[0];
+  if (
+    battlefield.dwarfCombatants.length !== 1 ||
+    warden === undefined ||
+    warden.schemaVersion !== 1 ||
+    warden.entityId !== entityId ||
+    warden.characterDefinitionId !== characterId ||
+    warden.placementPointId !== run.placementPointId ||
+    (warden.lifecycleState === "downed"
+      ? warden.currentHealth !== 0
+      : warden.currentHealth <= 0) ||
+    (input.terminalResult === "victory" &&
+      warden.lifecycleState !== "active") ||
+    (input.terminalResult === "defeat" &&
+      warden.lifecycleState !== "downed" &&
+      state.tick < 6000)
+  )
+    throw new RangeError(
+      "Shuttergate terminal result does not bind the authored Warden state"
+    );
+  const firedSpawnCount = battlefield.firedSpawnIds.length;
+  const expectedFiredSpawnCount = authoredSpawnTicks.filter(
+    (tick) => tick <= state.tick
+  ).length;
+  if (
+    firedSpawnCount !== expectedFiredSpawnCount ||
+    battlefield.firedSpawnIds.some(
+      (spawnId, index) => spawnId !== authoredSpawnIds[index]
+    ) ||
+    battlefield.enemyAdmissions.length !== firedSpawnCount ||
+    battlefield.enemyAdmissions.some(
+      (admission, index) =>
+        admission.schemaVersion !== 1 ||
+        admission.spawnId !== authoredSpawnIds[index] ||
+        admission.entityId !== authoredEnemyEntityIds[index] ||
+        admission.enemyDefinitionId !== authoredEnemyDefinitions[index] ||
+        admission.admittedAtTick !== authoredAdmissionTicks[index]
+    ) ||
+    battlefield.enemyCombatants.length !== firedSpawnCount ||
+    battlefield.enemyCombatants.some(
+      (enemy, index) =>
+        enemy.schemaVersion !== 1 ||
+        enemy.entityId !== authoredEnemyEntityIds[index] ||
+        enemy.enemyDefinitionId !== authoredEnemyDefinitions[index] ||
+        enemy.admittedAtTick !== authoredAdmissionTicks[index] ||
+        (enemy.lifecycleState === "destroyed"
+          ? enemy.currentHealth !== 0
+          : enemy.currentHealth <= 0)
+    )
+  )
+    throw new RangeError(
+      "Shuttergate terminal result does not bind the authored enemy roster"
+    );
+  const gatebreakerDefeated = battlefield.enemyCombatants.some(
+    (enemy) =>
+      enemy.entityId === "entity.enemy.shuttergate_010" &&
+      enemy.lifecycleState === "destroyed"
+  );
+  if (input.terminalResult === "victory" && !gatebreakerDefeated)
+    throw new RangeError(
+      "Shuttergate victory did not defeat the Gatebreaker Captain"
+    );
+  if (
+    input.terminalResult === "victory" &&
+    (firedSpawnCount !== authoredSpawnIds.length ||
+      battlefield.enemyCombatants.some(
+        (enemy) => enemy.lifecycleState !== "destroyed"
+      ))
+  )
+    throw new RangeError(
+      "Shuttergate victory does not bind the cleared authored enemy roster"
+    );
+  if (
+    input.terminalResult === "defeat" &&
+    warden.lifecycleState === "active" &&
+    firedSpawnCount === authoredSpawnIds.length &&
+    battlefield.enemyCombatants.every(
+      (enemy) => enemy.lifecycleState === "destroyed"
+    )
+  )
+    throw new RangeError(
+      "Shuttergate defeat contradicts the cleared authored enemy roster"
     );
 
   const rewardId = `reward.${run.attemptId}` as StableId;
@@ -249,17 +419,48 @@ export function resolveShuttergateWebAttemptReward(input: {
     run.profile.revision === Number.MAX_SAFE_INTEGER
   )
     throw new RangeError("Shuttergate web reward exceeds profile limits");
-  const profile = normalizeProfileState({
+  let profile = normalizeProfileState({
     ...run.profile,
     revision: run.profile.revision + 1,
     forgeOre,
     claimedRewardIds: [...run.profile.claimedRewardIds, rewardId]
   });
+  if (gatebreakerDefeated) {
+    profile = resolveBossDeathRewards({
+      schemaVersion: 1,
+      profile,
+      bossDeaths: [
+        {
+          schemaVersion: 1,
+          eventId: `death.${run.attemptId}.gatebreaker_captain` as StableId,
+          bossEntityId: "entity.enemy.shuttergate_010" as never
+        }
+      ],
+      rewards: [
+        {
+          schemaVersion: 1,
+          rewardId: "reward.boss.gatebreaker_captain" as StableId,
+          bossEntityId: "entity.enemy.shuttergate_010" as never,
+          characterUnlockId: "character.deep_ranger" as StableId,
+          forgeOre: 20
+        }
+      ]
+    }).profile;
+  }
+  if (input.terminalResult === "victory")
+    profile = normalizeProfileState({
+      ...profile,
+      revision: profile.revision + 1,
+      claimedRewardIds: [
+        ...profile.claimedRewardIds,
+        "reward.campaign.shuttergate.victory" as StableId
+      ]
+    });
   return Object.freeze({
     schemaVersion: 1,
     attemptId: run.attemptId,
     rewardId,
-    forgeOreAwarded,
+    forgeOreAwarded: profile.forgeOre - run.profile.forgeOre,
     profile
   });
 }

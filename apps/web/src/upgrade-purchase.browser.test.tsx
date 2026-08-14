@@ -136,7 +136,7 @@ describe("checkpoint upgrade purchasing", () => {
     );
     expect(purchase).toHaveAccessibleDescription(
       expect.stringContaining(
-        "Rank 1 effects: +760 maximum health; +2 attack damage; +4 attack range."
+        "Rank 1 effects: +600 maximum health; +2 attack damage; +4 attack range."
       )
     );
     purchase.focus();
@@ -169,7 +169,7 @@ describe("checkpoint upgrade purchasing", () => {
       }
     ]);
     expect(document.querySelector(".upgrades")?.textContent).toContain(
-      "Rank 1: +760 maximum health; +2 attack damage; +4 attack range."
+      "Rank 1: +600 maximum health; +2 attack damage; +4 attack range."
     );
     expect(await button("Purchase")).toHaveAccessibleDescription(
       expect.stringContaining("Rank 2 effects: +30 maximum health.")

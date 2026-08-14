@@ -9,20 +9,23 @@
     "applicationBuild": "phase-4-conformance",
     "writtenAtEpochMs": 1725000000000,
     "profileId": "profile.conformance.shuttergate",
-    "profileRevision": 4,
-    "payloadChecksum": "83a75472614553b0d73e6b70636fc83b3779daaef72ab45b686941c2cab9e578",
+    "profileRevision": 6,
+    "payloadChecksum": "cbdda1583f19011597690a1e41c4720545d84fa5165fc4c8e22d549da1c1c04c",
     "profile": {
       "schemaVersion": 1,
-      "revision": 4,
-      "forgeOre": 29,
+      "revision": 6,
+      "forgeOre": 71,
       "unlockedCharacterIds": [
+        "character.deep_ranger",
         "character.iron_warden"
       ],
       "unlockedItemIds": [],
       "claimedRewardIds": [
         "reward.attempt.shuttergate.campaign_000001",
         "reward.attempt.shuttergate.campaign_000002",
-        "reward.attempt.shuttergate.campaign_000003"
+        "reward.attempt.shuttergate.campaign_000003",
+        "reward.attempt.shuttergate.campaign_000004",
+        "reward.boss.gatebreaker_captain"
       ],
       "characterExperienceStates": [
         {
@@ -41,17 +44,18 @@
           "upgradeId": "upgrade.ability.shield_slam",
           "rank": 1,
           "forgeOreSpent": 10,
-          "passiveEffectsIdentity": "{\"upgradeId\":\"upgrade.ability.shield_slam\",\"kind\":\"ability_rank\",\"ownerId\":\"character.iron_warden\",\"passiveEffectsByRank\":[[{\"schemaVersion\":1,\"kind\":\"attack_damage_add\",\"value\":2},{\"schemaVersion\":1,\"kind\":\"attack_range_add\",\"value\":4},{\"schemaVersion\":1,\"kind\":\"maximum_health_add\",\"value\":760}]]}"
+          "passiveEffectsIdentity": "{\"upgradeId\":\"upgrade.ability.shield_slam\",\"kind\":\"ability_rank\",\"ownerId\":\"character.iron_warden\",\"passiveEffectsByRank\":[[{\"schemaVersion\":1,\"kind\":\"attack_damage_add\",\"value\":2},{\"schemaVersion\":1,\"kind\":\"attack_range_add\",\"value\":4},{\"schemaVersion\":1,\"kind\":\"maximum_health_add\",\"value\":600}]]}"
         }
       ]
     }
   },
-  "rewardLedgerChecksum": "83dca8bc916f6bce257462eb01dd165ae247766167377bb1722474e3a7edcbc0",
+  "rewardLedgerChecksum": "ac1d7693d441c7bfa30db956b38823ecc7155d64c6a66f9ac898938e6103ceb3",
   "attemptChecksums": [
     "c5c2c9ecc87e23b9b7928a178e8bf4d6fd23dd3f9f65064953e201d34daf47f9",
     "471f194a8cde623cbf90b5f357d86fe6528c1273298366b171acebe62a5b6d93",
-    "1fabf9df2839a38f97a35d62fc76103c8e58e56d5b75f60253c44eb8012b951d"
+    "2f5f4f82b574c25bc3507bd377376409c93b166738f9ac2915803b13333e8c01",
+    "e521ddc69636b73c5189a012069b31269380d70a35c23f9377cb4eac0419498c"
   ],
-  "stateChecksum": "40354c71c4b55e25b47a4b54c49626f4ffe5ec7b7f431601cde742087ee87475",
-  "payloadChecksum": "723592194cb6d729f8183905c76347d145d5e59222396abac3ac676f5b399383"
+  "stateChecksum": "61f05f3449d74d246ec6bf9a4d4a9daa16e03dc9c0b839e416383d9521015ec8",
+  "payloadChecksum": "acbfc83b04b4b310e8aff2a27c967212fb12d35d057db1ad8f7fa9dbf2faca93"
 }

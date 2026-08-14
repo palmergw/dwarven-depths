@@ -514,6 +514,7 @@ export function App({
   const [checkpointProfile, setCheckpointProfile] = useState<
     CheckpointProfileResult | { readonly status: "loading" }
   >({ status: "loading" });
+
   const [motionPreference, setMotionPreference] =
     useState<MotionPreference>(readMotionPreference);
   const [textScale, setTextScale] = useState<TextScale>(readTextScale);
@@ -1131,6 +1132,14 @@ export function App({
           failWorker("Terminal progression did not match the active attempt.");
           return;
         }
+        const claimsCampaignVictory =
+          campaign.profile.claimedRewardIds.includes(
+            "reward.campaign.shuttergate.victory" as never
+          );
+        if (claimsCampaignVictory !== (message.terminalResult === "victory")) {
+          failWorker("Terminal progression contradicted the active attempt.");
+          return;
+        }
         try {
           validateCheckpointAttemptResult(runConfiguration.profile, campaign);
         } catch {
@@ -1605,6 +1614,11 @@ export function App({
       : view.phase;
   const inspectionEnabled =
     new URLSearchParams(window.location.search).get("inspection") === "1";
+  const campaignComplete =
+    checkpointProfile.status === "ready" &&
+    checkpointProfile.profile.claimedRewardIds.includes(
+      "reward.campaign.shuttergate.victory" as never
+    );
 
   return (
     <main
@@ -1649,15 +1663,19 @@ export function App({
                 <p className="checkpoint-kicker">Company Muster</p>
                 <h3>Shuttergate Hall</h3>
                 <p className="checkpoint-readiness">
-                  The road is clear. Muster the company.
+                  {campaignComplete
+                    ? "Shuttergate stands. This defence is complete."
+                    : "The road is clear. Muster the company."}
                 </p>
                 <button
                   className="primary-action"
                   type="button"
-                  disabled={checkpointProfile.status === "loading"}
+                  disabled={
+                    checkpointProfile.status === "loading" || campaignComplete
+                  }
                   onClick={startPreparation}
                 >
-                  Begin preparation
+                  {campaignComplete ? "Defence complete" : "Begin preparation"}
                 </button>
               </div>
               <nav className="checkpoint-menu" aria-label="Company checkpoint">
@@ -2530,7 +2548,7 @@ export function App({
               view.savedProfile === undefined
                 ? "Local progression is unavailable. Return to the checkpoint and retry when storage is available; this run's reward cannot be spent."
                 : view.result.terminalResult === "victory"
-                  ? "Return to the checkpoint to spend your reward and muster the next defence."
+                  ? "Return to the checkpoint to spend your reward. This defence is complete."
                   : "Return to the checkpoint, strengthen the Warden at the Forge, and try again."}
             </p>
             <div className="result-actions">

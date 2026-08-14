@@ -14,10 +14,10 @@ import {
   type ShuttergateCampaignCalibrationReport
 } from "./shuttergate-campaign-calibration.js";
 
-async function threeAttemptReport() {
+async function fourAttemptReport() {
   const content = await compileContent(shuttergateInput);
   let authority = createShuttergateCampaignAuthority();
-  for (let index = 0; index < 3; index += 1) {
+  for (let index = 0; index < 4; index += 1) {
     authority = (await runShuttergateCampaignTransition(content, authority))
       .authority;
   }
@@ -26,18 +26,18 @@ async function threeAttemptReport() {
 
 describe("Shuttergate campaign calibration report", () => {
   it("records ordered attempts and an observed purchased-build delta", async () => {
-    const report = await threeAttemptReport();
+    const report = await fourAttemptReport();
 
     expect(report).toMatchObject({
       schemaVersion: 1,
       campaignId: "campaign.shuttergate.v1",
-      attemptCount: 3,
+      attemptCount: 4,
       comparison: {
         baselineAttemptNumber: 1,
         upgradedAttemptNumber: 3,
-        terminalTickDelta: 2667,
-        defeatedEnemyDelta: 13,
-        observation: "terminal_result_changed"
+        terminalTickDelta: 2400,
+        defeatedEnemyDelta: 12,
+        observation: "deeper_wave_reached"
       }
     });
     expect(report.attempts).toEqual([
@@ -57,6 +57,12 @@ describe("Shuttergate campaign calibration report", () => {
       expect.objectContaining({
         attemptNumber: 3,
         buildId: "build.warden.shield_slam_rank_1.v1",
+        terminalTick: 4233,
+        terminalResult: "defeat"
+      }),
+      expect.objectContaining({
+        attemptNumber: 4,
+        buildId: "build.warden.shield_slam_rank_1.v1",
         terminalTick: 4500,
         terminalResult: "victory"
       })
@@ -65,9 +71,9 @@ describe("Shuttergate campaign calibration report", () => {
     expect(Object.isFrozen(report.attempts)).toBe(true);
     expect(Object.isFrozen(report.attempts[0])).toBe(true);
     expect(await canonicalHash(report)).toBe(
-      "596e800356cb70b746e66cb468e00ac0016dc4ebbf9c3cd8a7b3394ca1bb693c"
+      "8566b76f2c82066b9faa423aad25134e1fe8b689ec3379d594d7b3fbc32ad320"
     );
-  }, 45_000);
+  }, 120_000);
 
   it("does not invent a comparison before a purchased build is attempted", async () => {
     const content = await compileContent(shuttergateInput);
@@ -84,7 +90,7 @@ describe("Shuttergate campaign calibration report", () => {
 
 describe("Shuttergate release-candidate Markdown", () => {
   it("renders byte-identical identified attempt and comparison evidence", async () => {
-    const report = await threeAttemptReport();
+    const report = await fourAttemptReport();
     const identity = {
       scenarioId: "campaign_scenario.shuttergate.v1",
       scenarioHash: "a".repeat(64),
@@ -104,12 +110,12 @@ describe("Shuttergate release-candidate Markdown", () => {
 
     expect(second).toBe(first);
     expect(first).toContain("| 3 | 3 | `build.warden.shield_slam_rank_1.v1`");
-    expect(first).toContain("Recorded observation: `terminal_result_changed`");
+    expect(first).toContain("Recorded observation: `deeper_wave_reached`");
     expect(first.endsWith("\n")).toBe(true);
-  }, 45_000);
+  }, 120_000);
 
   it("rejects malformed or inconsistent source evidence", async () => {
-    const report = await threeAttemptReport();
+    const report = await fourAttemptReport();
     const identity = {
       scenarioId: "campaign_scenario.shuttergate.v1",
       scenarioHash: "a".repeat(64),
@@ -186,5 +192,5 @@ describe("Shuttergate release-candidate Markdown", () => {
         calibrationReportChecksum: "wrong"
       })
     ).rejects.toThrow("Shuttergate release-candidate identity mismatch");
-  }, 45_000);
+  }, 120_000);
 });
