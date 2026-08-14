@@ -417,6 +417,7 @@ export interface EnemyActionPhaseDecision {
   readonly reason: EnemyActionPhaseReason;
   readonly targetLock: EnemyTargetLockDecision;
   readonly attackId?: StableId;
+  readonly behaviorIntent?: EnemyBehaviorIntentDecision;
 }
 
 export interface EnemyActionPhaseResolution {

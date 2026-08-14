@@ -7,6 +7,7 @@ import type {
   EnemyActionPhaseDecision,
   EnemyActionPhaseRequest,
   EnemyActionPhaseResolution,
+  EnemyBehaviorIntentDecision,
   EnemyMovementPlanningEntry,
   EnemyTargetLockDecision,
   EntityId,
@@ -23,6 +24,7 @@ import {
 import { normalizePendingCommittedAttacks } from "./battlefield-committed-attacks.js";
 import { orderFiredSpawnIds } from "./battlefield-ordering.js";
 import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
+import { resolveEnemyBehaviorIntent } from "./enemy-behavior.js";
 import { planEnemyMovement } from "./enemy-movement-planning.js";
 import { hasLineOfSight, isAimPointInRange } from "./range-line-of-sight.js";
 
@@ -63,7 +65,8 @@ function decision(
   status: EnemyActionPhaseDecision["status"],
   reason: EnemyActionPhaseDecision["reason"],
   targetLock: EnemyTargetLockDecision,
-  attackId?: StableId
+  attackId?: StableId,
+  behaviorIntent?: EnemyBehaviorIntentDecision
 ): EnemyActionPhaseDecision {
   return Object.freeze({
     schemaVersion: 1,
@@ -71,7 +74,8 @@ function decision(
     status,
     reason,
     targetLock,
-    ...(attackId === undefined ? {} : { attackId })
+    ...(attackId === undefined ? {} : { attackId }),
+    ...(behaviorIntent === undefined ? {} : { behaviorIntent })
   });
 }
 
@@ -147,6 +151,51 @@ export function resolveEnemyActionPhase(
     const planned = planningByEnemy.get(combatant.entityId);
     if (entry === undefined || planned === undefined)
       throw new Error("validated active enemy planning evidence is missing");
+
+    const definition = content.enemies.get(combatant.enemyDefinitionId);
+    if (definition === undefined)
+      throw new Error("validated enemy definition is missing");
+    const behaviorIntent =
+      definition.behavior === undefined
+        ? undefined
+        : resolveEnemyBehaviorIntent({
+            schemaVersion: 1,
+            currentTick,
+            admittedAtTick: combatant.admittedAtTick,
+            enemyEntityId: combatant.entityId,
+            behavior: definition.behavior,
+            targets: entry.candidates.flatMap((candidate) => {
+              const dwarf = request.battlefield.dwarfCombatants.find(
+                (item) => item.entityId === candidate.entityId
+              );
+              return dwarf === undefined
+                ? []
+                : [
+                    {
+                      entityId: dwarf.entityId,
+                      currentHealth: dwarf.currentHealth,
+                      maximumHealth: dwarf.maximumHealth,
+                      pathCost: candidate.pathCost
+                    }
+                  ];
+            }),
+            allies: request.battlefield.enemyCombatants.map((ally) => {
+              const sourceNode = nodesById.get(
+                occupancyByEntity.get(combatant.entityId)?.nodeId as never
+              );
+              const allyNode = nodesById.get(
+                occupancyByEntity.get(ally.entityId)?.nodeId as never
+              );
+              const deltaX = (sourceNode?.x ?? 0) - (allyNode?.x ?? 0);
+              const deltaY = (sourceNode?.y ?? 0) - (allyNode?.y ?? 0);
+              return {
+                entityId: ally.entityId,
+                currentHealth: ally.currentHealth,
+                maximumHealth: ally.maximumHealth,
+                pathCost: deltaX * deltaX + deltaY * deltaY
+              };
+            })
+          });
 
     const selectedTargetId = planned.targetLock.targetEntityId ?? null;
     const baseAction = {
@@ -225,7 +274,8 @@ export function resolveEnemyActionPhase(
             "committed",
             "basic_attack_committed",
             targetLock,
-            committed.attackId
+            committed.attackId,
+            behaviorIntent
           )
         );
         continue;
@@ -245,7 +295,8 @@ export function resolveEnemyActionPhase(
             "cancelled",
             "basic_attack_cancelled",
             targetLock,
-            combatant.actionState.activeBasicAttack.attackId
+            combatant.actionState.activeBasicAttack.attackId,
+            behaviorIntent
           )
         );
         continue;
@@ -267,7 +318,8 @@ export function resolveEnemyActionPhase(
           "winding_up",
           "basic_attack_winding_up",
           targetLock,
-          combatant.actionState.activeBasicAttack.attackId
+          combatant.actionState.activeBasicAttack.attackId,
+          behaviorIntent
         )
       );
       continue;
@@ -284,7 +336,9 @@ export function resolveEnemyActionPhase(
           combatant.entityId,
           "cooling_down",
           "cooldown_in_progress",
-          planned.targetLock
+          planned.targetLock,
+          undefined,
+          behaviorIntent
         )
       );
       continue;
@@ -302,7 +356,9 @@ export function resolveEnemyActionPhase(
           combatant.entityId,
           "unlocked",
           "no_eligible_target",
-          planned.targetLock
+          planned.targetLock,
+          undefined,
+          behaviorIntent
         )
       );
       continue;
@@ -320,7 +376,9 @@ export function resolveEnemyActionPhase(
           combatant.entityId,
           "tracking",
           "target_acquired_for_movement",
-          planned.targetLock
+          planned.targetLock,
+          undefined,
+          behaviorIntent
         )
       );
       continue;
@@ -376,7 +434,8 @@ export function resolveEnemyActionPhase(
           "committed",
           "basic_attack_committed",
           planned.targetLock,
-          attackId
+          attackId,
+          behaviorIntent
         )
       );
       continue;
@@ -394,7 +453,8 @@ export function resolveEnemyActionPhase(
         "winding_up",
         "basic_attack_started",
         planned.targetLock,
-        attackId
+        attackId,
+        behaviorIntent
       )
     );
   }

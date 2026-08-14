@@ -126,6 +126,61 @@ describe("enemy action phase", () => {
     });
   });
 
+  it("binds authored role, tell, effect cadence, and recipient into action evidence", async () => {
+    const behaviorContent = await compileContent({
+      ...enemyMovementPlanningContent,
+      contentVersion: "enemy-action-authored-behavior-v1",
+      definitions: enemyMovementPlanningContent.definitions.map((definition) =>
+        definition.id === "enemy.goblin_cutter"
+          ? {
+              ...(definition as unknown as EnemyDefinition),
+              behavior: {
+                schemaVersion: 1,
+                roleId: "enemy_role.melee_pressure",
+                strategy: "advance",
+                tellId: "enemy_tell.cutter_lunge",
+                tellTicks: 6,
+                purposeId: "enemy_purpose.close_pressure",
+                counterplayId: "enemy_counterplay.control_before_contact",
+                mechanic: "direct_pressure",
+                effectId: "enemy_effect.cutter_pressure",
+                effectMagnitude: 1,
+                effectDurationTicks: 6,
+                effectCooldownTicks: 20
+              }
+            }
+          : definition
+      )
+    } as unknown as ContentBundle);
+    const enemy = combatant("entity.enemy.already", 6, null);
+    const result = resolveEnemyActionPhase(
+      {
+        schemaVersion: 1,
+        currentTick: 6,
+        levelId: "level.conformance_map" as never,
+        battlefield: battlefield(enemy, "node.south" as never),
+        entries: [entry(enemy.entityId)]
+      },
+      behaviorContent
+    );
+    expect(result.decisions[0]?.behaviorIntent).toEqual({
+      schemaVersion: 1,
+      enemyEntityId: "entity.enemy.already",
+      roleId: "enemy_role.melee_pressure",
+      strategy: "advance",
+      mechanic: "direct_pressure",
+      purposeId: "enemy_purpose.close_pressure",
+      counterplayId: "enemy_counterplay.control_before_contact",
+      tellId: "enemy_tell.cutter_lunge",
+      effectId: "enemy_effect.cutter_pressure",
+      phase: "active",
+      phaseStartedAtTick: 6,
+      phaseCompletesAtTick: 12,
+      targetEntityId: "entity.dwarf.warden",
+      reason: "nearest_target"
+    });
+  });
+
   it("waits, cancels, commits, blocks on cooldown, and creates a repeated instance", async () => {
     const evidence = await enemyActionPhaseParityEvidence();
     expect(evidence.winding.decisions[0]?.reason).toBe(
