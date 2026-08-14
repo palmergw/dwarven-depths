@@ -196,6 +196,8 @@ const contrastPreferenceStorageKey =
   "dwarven-depths.presentation.contrast-preference.v1";
 const soundPreferenceStorageKey =
   "dwarven-depths.presentation.sound-preference.v1";
+const campaignVictoryStorageKey =
+  "dwarven-depths.campaign.shuttergate-victory-attempt.v1";
 
 function freshWorkerRunConfiguration() {
   return {
@@ -226,6 +228,7 @@ afterEach(async () => {
   window.localStorage.removeItem(textScaleStorageKey);
   window.localStorage.removeItem(contrastPreferenceStorageKey);
   window.localStorage.removeItem(soundPreferenceStorageKey);
+  window.localStorage.removeItem(campaignVictoryStorageKey);
   window.history.replaceState(null, "", "/");
   vi.restoreAllMocks();
   await page.viewport(1280, 720);
@@ -4847,6 +4850,9 @@ describe("authoritative Shuttergate campaign journey", () => {
     const completed = await buttonWithText("Defence complete");
     expect(completed).toBeDisabled();
     completed.click();
+    expect(workers).toHaveLength(workerCountAtVictory);
+    await reloadApp();
+    expect(await buttonWithText("Defence complete")).toBeDisabled();
     expect(workers).toHaveLength(workerCountAtVictory);
     expect(store.writes).toBeGreaterThanOrEqual(5);
   }, 30_000);

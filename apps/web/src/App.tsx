@@ -50,6 +50,8 @@ import {
 import type { RenderSnapshot } from "./render-snapshot.js";
 
 const TERMINAL_PRESENTATION_DURATION_MS = 720;
+const campaignVictoryStorageKey =
+  "dwarven-depths.campaign.shuttergate-victory-attempt.v1";
 
 const checkpointBackdropUrl = new URL(
   "../../../assets/game-art/layered-map-poc/blender/outputs/environment-base.png",
@@ -379,6 +381,26 @@ function createRunConfiguration(profile: ProfileState) {
   });
 }
 
+function readCampaignVictoryAttemptId(): string | undefined {
+  try {
+    const attemptId = window.localStorage.getItem(campaignVictoryStorageKey);
+    return attemptId !== null &&
+      /^attempt\.shuttergate\.web_[0-9]{6}$/.test(attemptId)
+      ? attemptId
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function storeCampaignVictoryAttemptId(attemptId: string): void {
+  try {
+    window.localStorage.setItem(campaignVictoryStorageKey, attemptId);
+  } catch {
+    // The authoritative victory still terminates the current session.
+  }
+}
+
 function isMotionPreference(value: unknown): value is MotionPreference {
   return motionPreferences.some((preference) => preference === value);
 }
@@ -514,7 +536,9 @@ export function App({
   const [checkpointProfile, setCheckpointProfile] = useState<
     CheckpointProfileResult | { readonly status: "loading" }
   >({ status: "loading" });
-  const [campaignComplete, setCampaignComplete] = useState(false);
+  const [campaignVictoryAttemptId, setCampaignVictoryAttemptId] = useState(
+    readCampaignVictoryAttemptId
+  );
   const [motionPreference, setMotionPreference] =
     useState<MotionPreference>(readMotionPreference);
   const [textScale, setTextScale] = useState<TextScale>(readTextScale);
@@ -1149,6 +1173,10 @@ export function App({
         void applyCheckpointAttemptResult(store, startingProfile, campaign)
           .then((profile) => {
             if (workerRef.current !== worker) return;
+            if (message.terminalResult === "victory") {
+              storeCampaignVictoryAttemptId(campaign.attemptId);
+              setCampaignVictoryAttemptId(campaign.attemptId);
+            }
             setCheckpointProfile({ status: "ready", profile });
             presentAfterTerminal({
               phase: "result",
@@ -1232,8 +1260,6 @@ export function App({
 
   function returnToCheckpoint(): void {
     if (view.phase !== "result" && view.phase !== "failure") return;
-    if (view.phase === "result" && view.result.terminalResult === "victory")
-      setCampaignComplete(true);
     workerRef.current?.terminate();
     workerRef.current = undefined;
     workerFailureRef.current = undefined;
@@ -1608,6 +1634,12 @@ export function App({
       : view.phase;
   const inspectionEnabled =
     new URLSearchParams(window.location.search).get("inspection") === "1";
+  const campaignComplete =
+    campaignVictoryAttemptId !== undefined &&
+    checkpointProfile.status === "ready" &&
+    checkpointProfile.profile.claimedRewardIds.includes(
+      `reward.${campaignVictoryAttemptId}` as never
+    );
 
   return (
     <main
