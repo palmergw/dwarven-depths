@@ -337,7 +337,7 @@ try {
       !(toolbar instanceof HTMLElement)
     )
       throw new Error("Forge evidence scroll anchors are unavailable");
-    scroller.scrollTop = heading.offsetTop - toolbar.offsetHeight - 12;
+    scroller.scrollTop = heading.offsetTop - toolbar.offsetHeight - 8;
   });
   await capture(
     page,
@@ -345,19 +345,55 @@ try {
     () =>
       document.querySelector(".skill-paths") !== null &&
       document.querySelectorAll(".skill-node").length >= 12 &&
-      document.querySelectorAll(".skill-detail").length === 1
+      document.querySelectorAll(".skill-detail").length === 1 &&
+      (() => {
+        const dialog = document
+          .querySelector(".upgrades")
+          ?.getBoundingClientRect();
+        const toolbar = document
+          .querySelector(".forge-toolbar")
+          ?.getBoundingClientRect();
+        const heading = document
+          .querySelector("#iron-warden-skills-heading")
+          ?.getBoundingClientRect();
+        const detail = document
+          .querySelector(".skill-detail")
+          ?.getBoundingClientRect();
+        return Boolean(
+          dialog &&
+            toolbar &&
+            heading &&
+            detail &&
+            heading.top >= toolbar.bottom &&
+            heading.top - toolbar.bottom <= 12 &&
+            detail.bottom <= dialog.bottom
+        );
+      })()
   );
-  await page.locator(".skill-detail").scrollIntoViewIfNeeded();
   await page.getByRole("button", { name: /^Concussive Force,/ }).hover();
   await capture(
     page,
     "forge-tree-hover-detail",
     () =>
       document.querySelector(".skill-detail h5")?.textContent ===
-      "Concussive Force"
+        "Concussive Force" &&
+      document
+        .querySelector("#iron-warden-skills-heading")
+        ?.getBoundingClientRect().top >=
+        document.querySelector(".forge-toolbar")?.getBoundingClientRect()
+          .bottom &&
+      document
+        .querySelector("#iron-warden-skills-heading")
+        ?.getBoundingClientRect().top -
+        document.querySelector(".forge-toolbar")?.getBoundingClientRect()
+          .bottom <=
+        12 &&
+      document.querySelector(".skill-detail")?.getBoundingClientRect().bottom <=
+        document.querySelector(".upgrades")?.getBoundingClientRect().bottom
   );
-  await page.locator(".skill-detail").scrollIntoViewIfNeeded();
-  await page.getByRole("button", { name: /^Executioner's Mark,/ }).focus();
+  await page
+    .getByRole("button", { name: /^Executioner's Mark,/ })
+    .evaluate((element) => element.focus({ preventScroll: true }));
   await page.mouse.move(20, 20);
   await capture(
     page,
@@ -365,7 +401,9 @@ try {
     () =>
       document.querySelector(".skill-detail h5")?.textContent ===
         "Executioner's Mark" &&
-      document.activeElement?.classList.contains("skill-node") === true
+      document.activeElement?.classList.contains("skill-node") === true &&
+      document.querySelector(".skill-detail")?.getBoundingClientRect().bottom <=
+        document.querySelector(".upgrades")?.getBoundingClientRect().bottom
   );
   await page.reload({ waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Begin preparation" }).click();

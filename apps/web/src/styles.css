@@ -394,13 +394,13 @@ button:focus-visible {
 .skill-paths {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.8rem;
-  margin: 0.75rem 0 1rem;
+  gap: 0.65rem;
+  margin: 0.55rem 0 0.65rem;
 }
 .skill-path:first-child {
   position: relative;
   grid-column: 1 / -1;
-  padding-bottom: 1rem;
+  padding-bottom: 0.7rem;
 }
 .skill-path:first-child::before {
   position: absolute;
@@ -417,7 +417,7 @@ button:focus-visible {
   bottom: 0;
   left: 50%;
   width: 0.18rem;
-  height: 1rem;
+  height: 0.7rem;
   background: linear-gradient(#a8793f, #49351f);
   content: "";
   transform: translateX(-50%);
@@ -428,7 +428,7 @@ button:focus-visible {
 }
 .skill-path > h5 {
   position: relative;
-  margin: 0 0 0.55rem;
+  margin: 0 0 0.35rem;
   color: #e7bd68;
   font-size: 0.78em;
   letter-spacing: 0.1em;
@@ -440,14 +440,14 @@ button:focus-visible {
   bottom: 100%;
   left: 50%;
   width: 0.18rem;
-  height: 1rem;
+  height: 0.7rem;
   background: linear-gradient(#49351f, #a8793f);
   content: "";
   transform: translateX(-50%);
 }
 .skill-path ol {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.35rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -461,7 +461,7 @@ button:focus-visible {
   top: 100%;
   left: 50%;
   width: 0.18rem;
-  height: 0.55rem;
+  height: 0.35rem;
   background: linear-gradient(#a8793f, #49351f);
   content: "";
   transform: translateX(-50%);
@@ -473,21 +473,22 @@ button:focus-visible {
   grid-template-columns: 2.5rem 1fr;
   gap: 0.1rem 0.55rem;
   width: 100%;
-  min-height: 3rem;
+  min-height: 2.65rem;
   margin: 0;
-  padding: 0.45rem 0.55rem;
+  padding: 0.3rem 0.55rem;
   border: 1px solid #514530;
   border-radius: 0.2rem;
   background:
     radial-gradient(circle at 15% 50%, #79512035, transparent 35%), #17140f;
   color: #ead8b2;
   text-align: left;
+  scroll-margin-block: 7rem 8rem;
 }
 .skill-node-icon {
   grid-row: 1 / 3;
   display: grid;
-  width: 2.3rem;
-  height: 2.3rem;
+  width: 2.05rem;
+  height: 2.05rem;
   border: 1px solid #9b7139;
   border-radius: 50%;
   background: radial-gradient(circle, #6f4b21, #1a1008 72%);
@@ -538,9 +539,9 @@ button:focus-visible {
   display: grid;
   grid-template-columns: 3.4rem 1fr;
   gap: 0.75rem;
-  min-height: 7.5rem;
-  margin: 0.75rem 0;
-  padding: 0.8rem 1rem;
+  min-height: 6.25rem;
+  margin: 0.55rem 0;
+  padding: 0.6rem 0.8rem;
   border: 1px solid #a8793f;
   border-left-width: 0.3rem;
   background: linear-gradient(110deg, #1b130c, #090705);
@@ -959,6 +960,10 @@ main[data-view-phase="checkpoint"] .settings {
   bottom: 3%;
   left: 42%;
   padding: clamp(1.2rem, 2vw, 1.75rem);
+}
+main[data-view-phase="checkpoint"] .upgrades {
+  inset: 3% 7%;
+  padding-top: 0;
 }
 main[data-view-phase="checkpoint"] .settings h3,
 main[data-view-phase="checkpoint"] .upgrades h3 {
