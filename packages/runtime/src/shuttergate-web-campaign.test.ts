@@ -280,6 +280,28 @@ describe("Shuttergate web campaign authority", () => {
           }
         })
       ).toThrow("cleared authored enemy roster");
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "victory",
+        finalState: {
+          ...result.finalState,
+          battlefield: {
+            ...battlefield,
+            enemyAdmissions: battlefield.enemyAdmissions.map(
+              (admission, index) =>
+                index === 9
+                  ? {
+                      ...admission,
+                      enemyDefinitionId: "enemy.goblin_cutter" as never
+                    }
+                  : admission
+            )
+          }
+        }
+      })
+    ).toThrow("cleared authored enemy roster");
     const bossDefeatReward = resolveShuttergateWebAttemptReward({
       schemaVersion: 1,
       configuration,

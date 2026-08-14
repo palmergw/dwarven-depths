@@ -42,6 +42,30 @@ const authoredEnemyEntityIds = Object.freeze(
         .padStart(3, "0")}` as StableId
   )
 );
+const authoredEnemyDefinitions = Object.freeze([
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_slinger",
+  "enemy.goblin_bulwark",
+  "enemy.goblin_cutter",
+  "enemy.goblin_slinger",
+  "enemy.gatebreaker_captain",
+  "enemy.goblin_cutter",
+  "enemy.goblin_slinger",
+  "enemy.goblin_bulwark",
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_slinger",
+  "enemy.goblin_cutter",
+  "enemy.goblin_bulwark"
+] as const);
+const authoredAdmissionTicks = Object.freeze([
+  1, 300, 600, 900, 1200, 1500, 1800, 1950, 2250, 2700, 2820, 3000, 3180, 3600,
+  3750, 3900, 4050, 4200
+]);
 
 export interface ShuttergateWebRunConfiguration {
   readonly schemaVersion: 1;
@@ -270,14 +294,21 @@ export function resolveShuttergateWebAttemptReward(input: {
       battlefield.enemyAdmissions.length !== authoredEnemyEntityIds.length ||
       battlefield.enemyAdmissions.some(
         (admission, index) =>
+          admission.schemaVersion !== 1 ||
           admission.spawnId !== authoredSpawnIds[index] ||
-          admission.entityId !== authoredEnemyEntityIds[index]
+          admission.entityId !== authoredEnemyEntityIds[index] ||
+          admission.enemyDefinitionId !== authoredEnemyDefinitions[index] ||
+          admission.admittedAtTick !== authoredAdmissionTicks[index]
       ) ||
       battlefield.enemyCombatants.length !== authoredEnemyEntityIds.length ||
       battlefield.enemyCombatants.some(
         (enemy, index) =>
+          enemy.schemaVersion !== 1 ||
           enemy.entityId !== authoredEnemyEntityIds[index] ||
-          enemy.lifecycleState !== "destroyed"
+          enemy.enemyDefinitionId !== authoredEnemyDefinitions[index] ||
+          enemy.admittedAtTick !== authoredAdmissionTicks[index] ||
+          enemy.lifecycleState !== "destroyed" ||
+          enemy.currentHealth !== 0
       ))
   )
     throw new RangeError(
