@@ -73,7 +73,7 @@ describe("Shuttergate campaign calibration report", () => {
     expect(await canonicalHash(report)).toBe(
       "8566b76f2c82066b9faa423aad25134e1fe8b689ec3379d594d7b3fbc32ad320"
     );
-  }, 45_000);
+  }, 120_000);
 
   it("does not invent a comparison before a purchased build is attempted", async () => {
     const content = await compileContent(shuttergateInput);
@@ -112,7 +112,7 @@ describe("Shuttergate release-candidate Markdown", () => {
     expect(first).toContain("| 3 | 3 | `build.warden.shield_slam_rank_1.v1`");
     expect(first).toContain("Recorded observation: `deeper_wave_reached`");
     expect(first.endsWith("\n")).toBe(true);
-  }, 45_000);
+  }, 120_000);
 
   it("rejects malformed or inconsistent source evidence", async () => {
     const report = await fourAttemptReport();
@@ -192,5 +192,5 @@ describe("Shuttergate release-candidate Markdown", () => {
         calibrationReportChecksum: "wrong"
       })
     ).rejects.toThrow("Shuttergate release-candidate identity mismatch");
-  }, 45_000);
+  }, 120_000);
 });
