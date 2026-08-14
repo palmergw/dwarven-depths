@@ -52,7 +52,8 @@ import type { RenderSnapshot } from "./render-snapshot.js";
 
 async function runCampaignAttempt(
   profile: ProfileState,
-  attemptNumber: number
+  attemptNumber: number,
+  simulationSpeed: 1 | 2
 ): Promise<{
   readonly result: Extract<
     WorkerMessage,
@@ -154,7 +155,7 @@ async function runCampaignAttempt(
       protocolVersion: 4,
       type: "command",
       requestId: `speed-${attemptNumber}`,
-      command: { type: "setSimulationSpeed", speed: 2 }
+      command: { type: "setSimulationSpeed", speed: simulationSpeed }
     });
     const resumeRequestId = `resume-${attemptNumber}`;
     worker.postMessage({
@@ -4943,9 +4944,9 @@ describe("authoritative Shuttergate campaign journey", () => {
     expect(store.writes).toBeGreaterThanOrEqual(5);
   }, 30_000);
 
-  it("rewards fresh defeats, applies a purchased build, and reaches victory", async () => {
+  it("rewards fresh defeats and reaches purchased victory at both combat speeds", async () => {
     let profile = createInitialProfile("character.iron_warden" as never);
-    const firstRun = await runCampaignAttempt(profile, 1);
+    const firstRun = await runCampaignAttempt(profile, 1, 1);
     const first = firstRun.result;
     expect(first).toMatchObject({
       terminalResult: "defeat",
@@ -4954,7 +4955,7 @@ describe("authoritative Shuttergate campaign journey", () => {
     if (first.campaign === undefined) throw new Error("missing first reward");
     profile = first.campaign.profile;
 
-    const secondRun = await runCampaignAttempt(profile, 2);
+    const secondRun = await runCampaignAttempt(profile, 2, 2);
     const second = secondRun.result;
     expect(second.terminalResult).toBe("defeat");
     if (second.campaign === undefined) throw new Error("missing second reward");
@@ -4968,8 +4969,16 @@ describe("authoritative Shuttergate campaign journey", () => {
       { upgradeId: "upgrade.ability.shield_slam", rank: 1 }
     ]);
 
-    const thirdRun = await runCampaignAttempt(profile, 3);
+    const thirdRunAtNormalSpeed = await runCampaignAttempt(profile, 3, 1);
+    const thirdRun = await runCampaignAttempt(profile, 3, 2);
     const third = thirdRun.result;
+    expect(thirdRunAtNormalSpeed.result).toMatchObject({
+      terminalResult: third.terminalResult,
+      terminalTick: third.terminalTick,
+      campaign: third.campaign
+    });
+    expect(thirdRunAtNormalSpeed.maximumHealth).toBe(thirdRun.maximumHealth);
+    expect(thirdRunAtNormalSpeed.abilityActivations).toBeGreaterThan(0);
     expect(thirdRun.abilityActivations).toBeGreaterThan(0);
     expect({
       terminalResult: third.terminalResult,
@@ -4981,9 +4990,17 @@ describe("authoritative Shuttergate campaign journey", () => {
       maximumHealth: 840,
       abilityActivations: expect.any(Number),
       campaign: {
-        attemptId: "attempt.shuttergate.web_000003"
+        attemptId: "attempt.shuttergate.web_000003",
+        forgeOreAwarded: 43,
+        profile: {
+          forgeOre: 49,
+          unlockedCharacterIds: [
+            "character.deep_ranger",
+            "character.iron_warden"
+          ]
+        }
       }
     });
-    expect(third.terminalTick).toBeLessThan(6000);
+    expect(third.terminalTick).toBe(4501);
   }, 300_000);
 });
