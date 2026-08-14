@@ -151,12 +151,21 @@ async function runCampaignAttempt(
       command: { type: "confirmPreparation" }
     });
     await paused;
+    const speedApplied = waitForMessage(
+      worker,
+      (message) =>
+        message.type === "snapshot" &&
+        message.phase === "running" &&
+        message.protocolVersion === 4 &&
+        message.simulationSpeed === simulationSpeed
+    );
     worker.postMessage({
       protocolVersion: 4,
       type: "command",
       requestId: `speed-${attemptNumber}`,
       command: { type: "setSimulationSpeed", speed: simulationSpeed }
     });
+    await speedApplied;
     const resumeRequestId = `resume-${attemptNumber}`;
     worker.postMessage({
       protocolVersion: 4,
