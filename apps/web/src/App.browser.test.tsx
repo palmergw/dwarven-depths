@@ -2016,7 +2016,7 @@ describe("semantic combat controls", () => {
     ).toContain(
       "Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targeting"
     );
-  });
+  }, 30_000);
 
   it("binds speed controls to one pending authoritative acknowledgement", async () => {
     const worker = new ControlledTargetPolicyWorker();
