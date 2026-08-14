@@ -319,13 +319,19 @@ class ControlledResultWorker {
                 schemaVersion: 1,
                 attemptId: this.campaignAttemptId,
                 rewardId: `reward.${this.campaignAttemptId}`,
-                forgeOreAwarded: 8,
+                forgeOreAwarded: this.terminalResult === "victory" ? 28 : 8,
                 profile: {
                   ...createInitialProfile("character.iron_warden" as never),
                   revision:
                     campaignAttemptNumber +
-                    (this.terminalResult === "victory" ? 1 : 0),
-                  forgeOre: campaignAttemptNumber * 8,
+                    (this.terminalResult === "victory" ? 2 : 0),
+                  forgeOre:
+                    campaignAttemptNumber * 8 +
+                    (this.terminalResult === "victory" ? 20 : 0),
+                  unlockedCharacterIds:
+                    this.terminalResult === "victory"
+                      ? ["character.deep_ranger", "character.iron_warden"]
+                      : ["character.iron_warden"],
                   claimedRewardIds: [
                     ...Array.from(
                       { length: campaignAttemptNumber },
@@ -333,7 +339,10 @@ class ControlledResultWorker {
                         `reward.attempt.shuttergate.web_${String(index + 1).padStart(6, "0")}`
                     ),
                     ...(this.terminalResult === "victory"
-                      ? ["reward.campaign.shuttergate.victory"]
+                      ? [
+                          "reward.boss.gatebreaker_captain",
+                          "reward.campaign.shuttergate.victory"
+                        ]
                       : [])
                   ]
                 }
@@ -4520,12 +4529,17 @@ describe("authoritative web worker", () => {
         schemaVersion: 1,
         attemptId: "attempt.shuttergate.web_000001",
         rewardId: "reward.attempt.shuttergate.web_000001",
-        forgeOreAwarded: 8,
+        forgeOreAwarded: 28,
         profile: {
-          revision: 2,
-          forgeOre: 8,
+          revision: 3,
+          forgeOre: 28,
+          unlockedCharacterIds: [
+            "character.deep_ranger",
+            "character.iron_warden"
+          ],
           claimedRewardIds: [
             "reward.attempt.shuttergate.web_000001",
+            "reward.boss.gatebreaker_captain",
             "reward.campaign.shuttergate.victory"
           ]
         }
