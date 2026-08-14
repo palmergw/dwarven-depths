@@ -190,11 +190,15 @@ async function waitForPausedCombat(page) {
 
 async function armAbilityImpactPause(page, abilityId) {
   await page.evaluate((requestedAbilityId) => {
+    window.__DD_ISSUE_325_CAPTURE_TRACE__ = [];
     window.__DD_ISSUE_325_CAPTURE_INTERVAL__ = window.setInterval(() => {
       const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
       const warden = truth?.registry.entities.find(
         (entity) => entity.faction === "dwarf"
       );
+      const traceEntry = `${truth?.snapshot.tick ?? "none"}:${warden?.action?.abilityId ?? "none"}:${warden?.action?.phase ?? "none"}`;
+      if (window.__DD_ISSUE_325_CAPTURE_TRACE__.at(-1) !== traceEntry)
+        window.__DD_ISSUE_325_CAPTURE_TRACE__.push(traceEntry);
       if (
         warden?.action.kind !== "ability" ||
         warden.action.abilityId !== requestedAbilityId ||
@@ -225,22 +229,34 @@ async function captureAbility(page, { id, abilityId, label, key, input }) {
   if (input === "keyboard") await page.keyboard.press(key);
   else await page.getByRole("button", { name: label }).click();
   await page.getByRole("button", { name: "Resume combat" }).click();
-  await page.waitForFunction(
-    (requestedAbilityId) => {
-      const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
-      const warden = truth?.registry.entities.find(
-        (entity) => entity.faction === "dwarf"
-      );
-      return (
-        document.querySelector(".combat-pause-banner") !== null &&
-        warden?.action.kind === "ability" &&
-        warden.action.abilityId === requestedAbilityId &&
-        warden.action.phase === "impact"
-      );
-    },
-    abilityId,
-    { timeout: 90_000 }
-  );
+  try {
+    await page.waitForFunction(
+      (requestedAbilityId) => {
+        const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+        const warden = truth?.registry.entities.find(
+          (entity) => entity.faction === "dwarf"
+        );
+        return (
+          document.querySelector(".combat-pause-banner") !== null &&
+          warden?.action.kind === "ability" &&
+          warden.action.abilityId === requestedAbilityId &&
+          warden.action.phase === "impact"
+        );
+      },
+      abilityId,
+      { timeout: 15_000 }
+    );
+  } catch (error) {
+    const diagnostics = await page.evaluate(() => ({
+      trace: window.__DD_ISSUE_325_CAPTURE_TRACE__,
+      shellView: document.querySelector("main")?.getAttribute("data-shell-view"),
+      phase: document.querySelector("main")?.getAttribute("data-view-phase")
+    }));
+    throw new Error(
+      `ability capture failed for ${abilityId}: ${JSON.stringify(diagnostics)}`,
+      { cause: error }
+    );
+  }
   await capture(
     page,
     id,
