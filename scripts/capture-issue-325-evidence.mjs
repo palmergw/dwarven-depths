@@ -290,6 +290,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   const page = await newPage(browser);
   await page.getByRole("button", { name: "Upgrade inventory" }).click();
+  await page.locator(".skill-paths").scrollIntoViewIfNeeded();
   await capture(
     page,
     "forge-tree",
