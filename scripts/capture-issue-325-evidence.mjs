@@ -233,8 +233,8 @@ try {
     page,
     "forge-tree",
     () =>
-      document.querySelector(".skill-tree") !== null &&
-      document.querySelectorAll(".skill-node").length >= 12
+      document.querySelector(".skill-paths") !== null &&
+      document.querySelectorAll(".skill-path li").length >= 12
   );
   await page.reload({ waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Begin preparation" }).click();
