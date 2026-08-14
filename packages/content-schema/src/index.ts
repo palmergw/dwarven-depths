@@ -158,7 +158,24 @@ const enemyBehaviorSchema = z
       "priority_hunt"
     ]),
     tellId: domainIdSchema("enemy_tell"),
-    tellTicks: positiveCombatIntegerSchema
+    tellTicks: positiveCombatIntegerSchema,
+    purposeId: domainIdSchema("enemy_purpose"),
+    counterplayId: domainIdSchema("enemy_counterplay"),
+    mechanic: z.enum([
+      "direct_pressure",
+      "standoff_fire",
+      "ally_guard",
+      "formation_command",
+      "flank_reposition",
+      "armor_sunder",
+      "attack_slow",
+      "ally_haste",
+      "target_mark"
+    ]),
+    effectId: domainIdSchema("enemy_effect"),
+    effectMagnitude: positiveCombatIntegerSchema,
+    effectDurationTicks: positiveCombatIntegerSchema,
+    effectCooldownTicks: positiveCombatIntegerSchema
   })
   .strict();
 const enemyDefinitionSchema = z
@@ -930,7 +947,10 @@ export function validateContentBundle(input: unknown): ContentBundle {
                 behavior: {
                   ...behavior,
                   roleId: behavior.roleId as StableId,
-                  tellId: behavior.tellId as StableId
+                  tellId: behavior.tellId as StableId,
+                  purposeId: behavior.purposeId as StableId,
+                  counterplayId: behavior.counterplayId as StableId,
+                  effectId: behavior.effectId as StableId
                 }
               })
         };

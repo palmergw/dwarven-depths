@@ -382,6 +382,23 @@ describe("content validation", () => {
     );
     expect(nonBossRoles).toHaveLength(8);
     expect(new Set(nonBossRoles).size).toBe(8);
+    const authoredBehaviors = result.definitions.flatMap((definition) =>
+      definition.kind === "enemy" && definition.behavior !== undefined
+        ? [definition.behavior]
+        : []
+    );
+    expect(new Set(authoredBehaviors.map(({ tellId }) => tellId)).size).toBe(9);
+    expect(
+      new Set(authoredBehaviors.map(({ mechanic }) => mechanic)).size
+    ).toBe(9);
+    expect(
+      authoredBehaviors.every(
+        ({ purposeId, counterplayId, effectId }) =>
+          purposeId.startsWith("enemy_purpose.") &&
+          counterplayId.startsWith("enemy_counterplay.") &&
+          effectId.startsWith("enemy_effect.")
+      )
+    ).toBe(true);
 
     const unknownField = structuredClone(enemyRosterInput) as unknown as {
       definitions: Array<{

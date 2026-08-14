@@ -130,6 +130,68 @@ export interface AuthoredEnemyBehaviorDefinition {
     | "priority_hunt";
   readonly tellId: StableId;
   readonly tellTicks: number;
+  readonly purposeId: StableId;
+  readonly counterplayId: StableId;
+  readonly mechanic:
+    | "direct_pressure"
+    | "standoff_fire"
+    | "ally_guard"
+    | "formation_command"
+    | "flank_reposition"
+    | "armor_sunder"
+    | "attack_slow"
+    | "ally_haste"
+    | "target_mark";
+  readonly effectId: StableId;
+  readonly effectMagnitude: number;
+  readonly effectDurationTicks: number;
+  readonly effectCooldownTicks: number;
+}
+
+export interface EnemyBehaviorTargetCandidate {
+  readonly entityId: EntityId;
+  readonly currentHealth: number;
+  readonly maximumHealth: number;
+  readonly pathCost: number;
+}
+
+export interface EnemyBehaviorAllyCandidate {
+  readonly entityId: EntityId;
+  readonly currentHealth: number;
+  readonly maximumHealth: number;
+  readonly pathCost: number;
+}
+
+export interface EnemyBehaviorIntentRequest {
+  readonly schemaVersion: 1;
+  readonly currentTick: number;
+  readonly admittedAtTick: number;
+  readonly enemyEntityId: EntityId;
+  readonly behavior: AuthoredEnemyBehaviorDefinition;
+  readonly targets: readonly EnemyBehaviorTargetCandidate[];
+  readonly allies: readonly EnemyBehaviorAllyCandidate[];
+}
+
+export interface EnemyBehaviorIntentDecision {
+  readonly schemaVersion: 1;
+  readonly enemyEntityId: EntityId;
+  readonly roleId: StableId;
+  readonly strategy: AuthoredEnemyBehaviorDefinition["strategy"];
+  readonly mechanic: AuthoredEnemyBehaviorDefinition["mechanic"];
+  readonly purposeId: StableId;
+  readonly counterplayId: StableId;
+  readonly tellId: StableId;
+  readonly effectId: StableId;
+  readonly phase: "telling" | "active" | "cooldown";
+  readonly phaseStartedAtTick: number;
+  readonly phaseCompletesAtTick: number;
+  readonly targetEntityId?: EntityId;
+  readonly reason:
+    | "nearest_target"
+    | "lowest_health_target"
+    | "lowest_health_ally"
+    | "stable_formation_anchor"
+    | "no_eligible_recipient";
 }
 
 export interface NavigationNodeDefinition {

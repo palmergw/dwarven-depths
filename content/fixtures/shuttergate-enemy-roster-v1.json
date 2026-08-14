@@ -23,7 +23,14 @@
         "roleId": "enemy_role.melee_pressure",
         "strategy": "advance",
         "tellId": "enemy_tell.cutter_lunge",
-        "tellTicks": 6
+        "tellTicks": 6,
+        "purposeId": "enemy_purpose.close_pressure",
+        "counterplayId": "enemy_counterplay.control_before_contact",
+        "mechanic": "direct_pressure",
+        "effectId": "enemy_effect.cutter_pressure",
+        "effectMagnitude": 1,
+        "effectDurationTicks": 6,
+        "effectCooldownTicks": 20
       }
     },
     {
@@ -47,7 +54,14 @@
         "roleId": "enemy_role.ranged_harrier",
         "strategy": "hold_range",
         "tellId": "enemy_tell.slinger_draw",
-        "tellTicks": 10
+        "tellTicks": 10,
+        "purposeId": "enemy_purpose.ranged_positioning",
+        "counterplayId": "enemy_counterplay.break_line_of_sight",
+        "mechanic": "standoff_fire",
+        "effectId": "enemy_effect.slinger_standoff",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 10,
+        "effectCooldownTicks": 28
       }
     },
     {
@@ -71,7 +85,14 @@
         "roleId": "enemy_role.armored_vanguard",
         "strategy": "guard",
         "tellId": "enemy_tell.bulwark_brace",
-        "tellTicks": 10
+        "tellTicks": 10,
+        "purposeId": "enemy_purpose.frontline_protection",
+        "counterplayId": "enemy_counterplay.retarget_around_guard",
+        "mechanic": "ally_guard",
+        "effectId": "enemy_effect.bulwark_guard",
+        "effectMagnitude": 25,
+        "effectDurationTicks": 20,
+        "effectCooldownTicks": 40
       }
     },
     {
@@ -95,7 +116,14 @@
         "roleId": "enemy_role.formation_commander",
         "strategy": "command",
         "tellId": "enemy_tell.captain_command",
-        "tellTicks": 14
+        "tellTicks": 14,
+        "purposeId": "enemy_purpose.formation_command",
+        "counterplayId": "enemy_counterplay.interrupt_command",
+        "mechanic": "formation_command",
+        "effectId": "enemy_effect.captain_command",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 24,
+        "effectCooldownTicks": 48
       }
     },
     {
@@ -119,7 +147,14 @@
         "roleId": "enemy_role.flanking_skirmisher",
         "strategy": "skirmish",
         "tellId": "enemy_tell.skirmisher_feint",
-        "tellTicks": 4
+        "tellTicks": 4,
+        "purposeId": "enemy_purpose.flanking_pressure",
+        "counterplayId": "enemy_counterplay.deny_flank_route",
+        "mechanic": "flank_reposition",
+        "effectId": "enemy_effect.skirmisher_flank",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 8,
+        "effectCooldownTicks": 18
       }
     },
     {
@@ -143,7 +178,14 @@
         "roleId": "enemy_role.demolition_sapper",
         "strategy": "disrupt",
         "tellId": "enemy_tell.sapper_fuse",
-        "tellTicks": 12
+        "tellTicks": 12,
+        "purposeId": "enemy_purpose.armor_disruption",
+        "counterplayId": "enemy_counterplay.interrupt_fuse",
+        "mechanic": "armor_sunder",
+        "effectId": "enemy_effect.sapper_sunder",
+        "effectMagnitude": 10,
+        "effectDurationTicks": 30,
+        "effectCooldownTicks": 42
       }
     },
     {
@@ -167,7 +209,14 @@
         "roleId": "enemy_role.debilitating_hexer",
         "strategy": "disrupt",
         "tellId": "enemy_tell.hexer_channel",
-        "tellTicks": 11
+        "tellTicks": 11,
+        "purposeId": "enemy_purpose.tempo_disruption",
+        "counterplayId": "enemy_counterplay.interrupt_channel",
+        "mechanic": "attack_slow",
+        "effectId": "enemy_effect.hexer_slow",
+        "effectMagnitude": 4,
+        "effectDurationTicks": 36,
+        "effectCooldownTicks": 44
       }
     },
     {
@@ -191,7 +240,14 @@
         "roleId": "enemy_role.formation_support",
         "strategy": "support",
         "tellId": "enemy_tell.banner_rally",
-        "tellTicks": 8
+        "tellTicks": 8,
+        "purposeId": "enemy_purpose.formation_support",
+        "counterplayId": "enemy_counterplay.focus_banner_bearer",
+        "mechanic": "ally_haste",
+        "effectId": "enemy_effect.banner_haste",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 32,
+        "effectCooldownTicks": 46
       }
     },
     {
@@ -215,7 +271,14 @@
         "roleId": "enemy_role.warden_hunter",
         "strategy": "priority_hunt",
         "tellId": "enemy_tell.warden_hunter_mark",
-        "tellTicks": 9
+        "tellTicks": 9,
+        "purposeId": "enemy_purpose.priority_threat",
+        "counterplayId": "enemy_counterplay.break_hunter_mark",
+        "mechanic": "target_mark",
+        "effectId": "enemy_effect.warden_hunter_mark",
+        "effectMagnitude": 25,
+        "effectDurationTicks": 30,
+        "effectCooldownTicks": 45
       }
     }
   ]
