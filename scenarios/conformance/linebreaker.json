@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "scenario.conformance.linebreaker",
+  "levelId": "level.shuttergate_hall",
+  "seed": "1",
+  "maximumTicks": 200,
+  "commands": [
+    {
+      "atTick": 0,
+      "type": "confirmPreparation"
+    },
+    {
+      "atTick": 1,
+      "type": "activateAbility",
+      "dwarfEntityId": "entity.dwarf.warden",
+      "abilityId": "ability.iron_warden.linebreaker"
+    }
+  ]
+}

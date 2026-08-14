@@ -3,6 +3,7 @@ import {
   type CharacterSkillEffect,
   createInitialProfile,
   deriveCharacterSkillEligibility,
+  deriveIronWardenActiveAbilityIds,
   ironWardenSkillTree,
   type ProfileState,
   type PurchasedUpgradeDefinition,
@@ -267,6 +268,8 @@ function skillNodeIcon(nodeId: StableId): string {
 
 function BuildSummary({ profile }: { readonly profile: ProfileState }) {
   const build = deriveIronWardenBuildSummary(profile);
+  const activeAbilityNames =
+    deriveIronWardenActiveAbilityIds(profile).map(playerFacingName);
   return (
     <section className="warden-build" aria-labelledby="warden-build-heading">
       <div className="warden-build-title">
@@ -295,6 +298,9 @@ function BuildSummary({ profile }: { readonly profile: ProfileState }) {
         </div>
       </dl>
       <p className="warden-build-sources">
+        <strong>Active loadout:</strong> {activeAbilityNames.join(" · ")}
+      </p>
+      <p className="warden-build-sources">
         {build.sourceIds.length === 0
           ? "No Forge or skill modifiers equipped."
           : `From ${build.sourceIds.map(playerFacingName).join(", ")}.`}
@@ -313,6 +319,12 @@ function playerFacingName(id: StableId): string {
       return "Shield Slam Training";
     case "upgrade.item.powder_cask":
       return "Powder Cask Reinforcement";
+    case "ability.iron_warden.shield_slam":
+      return "Shield Slam";
+    case "ability.iron_warden.linebreaker":
+      return "Linebreaker";
+    case "ability.iron_warden.rallying_roar":
+      return "Rallying Roar";
     case "skill.iron_warden.disciplined_slam":
       return "Disciplined Slam";
     case "skill.iron_warden.long_reach":

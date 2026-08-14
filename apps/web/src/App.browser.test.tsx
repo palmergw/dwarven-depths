@@ -2563,7 +2563,7 @@ describe("authoritative web worker", () => {
     }
   });
 
-  it("publishes the canonical authoritative Iron Warden ability roster", async () => {
+  it("publishes the canonical profile-bound Iron Warden ability roster", async () => {
     const worker = new Worker(
       new URL("./simulation.worker.ts", import.meta.url),
       { type: "module" }
@@ -2586,16 +2586,6 @@ describe("authoritative web worker", () => {
           {
             entityId: "entity.dwarf.warden",
             activeAbilities: [
-              {
-                abilityId: "ability.iron_warden.linebreaker",
-                cooldownCompleteAtTick: null,
-                rejectionReason: "phase_unavailable"
-              },
-              {
-                abilityId: "ability.iron_warden.rallying_roar",
-                cooldownCompleteAtTick: null,
-                rejectionReason: "phase_unavailable"
-              },
               {
                 abilityId: "ability.iron_warden.shield_slam",
                 cooldownCompleteAtTick: null,
@@ -2727,8 +2717,6 @@ describe("authoritative web worker", () => {
         dwarves: [
           {
             activeAbilities: [
-              { abilityId: "ability.iron_warden.linebreaker" },
-              { abilityId: "ability.iron_warden.rallying_roar" },
               {
                 abilityId: "ability.iron_warden.shield_slam",
                 cooldownCompleteAtTick: expect.any(Number),

@@ -1,10 +1,12 @@
 import type { CompiledContent } from "@dwarven-depths/content-runtime";
 import type {
+  CharacterDefinition,
   ScenarioDefinition,
   SimulationState,
   StableId
 } from "@dwarven-depths/contracts";
 import {
+  deriveIronWardenActiveAbilityIds,
   ironWardenSkillTree,
   normalizeProfileState,
   type ProfileState,
@@ -72,6 +74,57 @@ const authoredSpawnTicks = Object.freeze([
   ...authoredAdmissionTicks.slice(1)
 ]);
 
+class ReadonlyCharacterMap
+  implements ReadonlyMap<StableId, CharacterDefinition>
+{
+  readonly #source: Map<StableId, CharacterDefinition>;
+
+  constructor(entries: Iterable<readonly [StableId, CharacterDefinition]>) {
+    this.#source = new Map(entries);
+    Object.freeze(this);
+  }
+
+  get size(): number {
+    return this.#source.size;
+  }
+
+  get(key: StableId): CharacterDefinition | undefined {
+    return this.#source.get(key);
+  }
+
+  has(key: StableId): boolean {
+    return this.#source.has(key);
+  }
+
+  entries(): MapIterator<[StableId, CharacterDefinition]> {
+    return this.#source.entries();
+  }
+
+  keys(): MapIterator<StableId> {
+    return this.#source.keys();
+  }
+
+  values(): MapIterator<CharacterDefinition> {
+    return this.#source.values();
+  }
+
+  forEach(
+    callback: (
+      value: CharacterDefinition,
+      key: StableId,
+      map: ReadonlyMap<StableId, CharacterDefinition>
+    ) => void,
+    thisArg?: unknown
+  ): void {
+    for (const [key, value] of this.#source)
+      callback.call(thisArg, value, key, this);
+  }
+
+  [Symbol.iterator](): MapIterator<[StableId, CharacterDefinition]> {
+    return this.entries();
+  }
+}
+
 export interface ShuttergateWebRunConfiguration {
   readonly schemaVersion: 1;
   readonly attemptId: StableId;
@@ -86,6 +139,39 @@ export interface ShuttergateWebRewardResolution {
   readonly rewardId: StableId;
   readonly forgeOreAwarded: number;
   readonly profile: ProfileState;
+}
+
+/** Binds authored active abilities to the persisted profile's skill loadout. */
+export function createShuttergateWebRunContent(
+  content: CompiledContent,
+  configuration: ShuttergateWebRunConfiguration
+): CompiledContent {
+  const run = requireConfiguration(configuration);
+  const character = content.characters.get(characterId);
+  if (character === undefined || character.activeAbilities === undefined)
+    throw new Error("Shuttergate web content is missing Iron Warden abilities");
+  const abilityIds = deriveIronWardenActiveAbilityIds(run.profile);
+  const activeAbilities = Object.freeze(
+    character.activeAbilities.filter((ability) =>
+      abilityIds.includes(ability.id)
+    )
+  );
+  if (activeAbilities.length !== abilityIds.length)
+    throw new RangeError(
+      "Shuttergate web loadout references an unauthored active ability"
+    );
+  const characters = new ReadonlyCharacterMap(
+    [...content.characters].map(
+      ([id, definition]) =>
+        [
+          id,
+          id === characterId
+            ? Object.freeze({ ...character, activeAbilities })
+            : definition
+        ] as const
+    )
+  );
+  return Object.freeze({ ...content, characters });
 }
 
 /** Derives the exact bounded scenario used by configured browser attempts. */
