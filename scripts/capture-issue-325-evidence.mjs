@@ -38,17 +38,7 @@ function captureBinding(truth) {
     fixtureId: truth.fixtureId,
     captureReady: truth.captureReady,
     alignmentValid: truth.alignment.valid,
-    snapshot: truth.snapshot,
-    entities: truth.registry.entities.map((entity) => ({
-      id: entity.id,
-      faction: entity.faction,
-      nodeId: entity.nodeId,
-      currentHealth: entity.currentHealth,
-      maximumHealth: entity.maximumHealth,
-      action: entity.action,
-      targetEntityId: entity.targetEntityId,
-      statusIds: entity.statusIds
-    }))
+    snapshot: truth.snapshot
   };
 }
 
