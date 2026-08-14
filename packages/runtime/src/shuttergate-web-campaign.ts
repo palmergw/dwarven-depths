@@ -256,7 +256,12 @@ export function resolveShuttergateWebAttemptReward(input: {
     forgeOre,
     claimedRewardIds: [...run.profile.claimedRewardIds, rewardId]
   });
-  if (input.terminalResult === "victory") {
+  const gatebreakerDefeated = battlefield.enemyCombatants.some(
+    (enemy) =>
+      enemy.entityId === "entity.enemy.shuttergate_010" &&
+      enemy.lifecycleState === "destroyed"
+  );
+  if (gatebreakerDefeated) {
     profile = resolveBossDeathRewards({
       schemaVersion: 1,
       profile,

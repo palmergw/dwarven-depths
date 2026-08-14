@@ -208,6 +208,16 @@ afterEach(async () => {
   root?.unmount();
   root = undefined;
   document.body.replaceChildren();
+  await new Promise<void>((resolve, reject) => {
+    const request = window.indexedDB.deleteDatabase(
+      "dwarven-depths-profile-v1"
+    );
+    request.addEventListener("success", () => resolve());
+    request.addEventListener("error", () => reject(request.error));
+    request.addEventListener("blocked", () =>
+      reject(new Error("profile database cleanup was blocked"))
+    );
+  });
   window.localStorage.removeItem(motionPreferenceStorageKey);
   window.localStorage.removeItem(textScaleStorageKey);
   window.localStorage.removeItem(contrastPreferenceStorageKey);
@@ -896,10 +906,10 @@ describe("run journey guidance", () => {
     const summary = document.querySelector(".result-summary");
     expect(summary).toHaveAccessibleName("Expedition summary");
     expect(summary).toHaveTextContent("OutcomeFortress held");
-    expect(summary).toHaveTextContent("Forge Ore earned+8");
-    expect(summary).toHaveTextContent("New balance8 Forge Ore");
+    expect(summary).toHaveTextContent("Forge Ore earned+28");
+    expect(summary).toHaveTextContent("New balance28 Forge Ore");
     expect(document.querySelector(".results")).toHaveTextContent(
-      "spend your reward and muster the next defence"
+      "spend your reward. This defence is complete"
     );
   });
 
@@ -1066,7 +1076,7 @@ describe("run journey guidance", () => {
 
     await resultHeading("Victory results");
     const results = document.querySelector(".results");
-    expect(results).toHaveTextContent("Run balance8 Forge Ore");
+    expect(results).toHaveTextContent("Run balance28 Forge Ore");
     expect(results).toHaveTextContent("ProgressionReward not saved");
     expect(results).toHaveTextContent(
       "Local progression is unavailable. Return to the checkpoint and retry when storage is available; this run's reward cannot be spent."
@@ -1111,8 +1121,8 @@ describe("run journey guidance", () => {
     const results = document.querySelector(".results");
     expect(results).toHaveTextContent("OutcomeFortress held");
     expect(results).toHaveTextContent("Waves faced5");
-    expect(results).toHaveTextContent("Forge Ore earned+8");
-    expect(results).toHaveTextContent("Run balance8 Forge Ore");
+    expect(results).toHaveTextContent("Forge Ore earned+28");
+    expect(results).toHaveTextContent("Run balance28 Forge Ore");
     expect(results).toHaveTextContent("ProgressionReward not saved");
     expect(results).toHaveTextContent("this run's reward cannot be spent");
     expect(results).toHaveTextContent("Progression saveIndexedDB write failed");
@@ -1158,12 +1168,12 @@ describe("run journey guidance", () => {
 
     await resultHeading("Victory results");
     const results = document.querySelector(".results");
-    expect(results).toHaveTextContent("Forge Ore earned+8");
-    expect(results).toHaveTextContent("New balance8 Forge Ore");
+    expect(results).toHaveTextContent("Forge Ore earned+28");
+    expect(results).toHaveTextContent("New balance28 Forge Ore");
     expect(results).toHaveTextContent("ProgressionReward saved");
     expect(results).not.toHaveTextContent("No reward was applied");
     expect(document.querySelector("#failure-heading")).toBeNull();
-    expect(store.envelope.profile.forgeOre).toBe(8);
+    expect(store.envelope.profile.forgeOre).toBe(28);
   });
 
   it("adapts terminal guidance to failure details", async () => {
@@ -4092,14 +4102,13 @@ describe("authoritative web worker", () => {
     expect(animated.eventStreamChecksum).toBe(idle.eventStreamChecksum);
   });
 
-  it("returns from terminal evidence to a fresh deterministic checkpoint", async () => {
+  it("ends the campaign after persisted terminal victory evidence", async () => {
     const workers: ControlledResultWorker[] = [];
     const profileStore = new PersistentJourneyProfileStore();
-    const outcomes = ["victory", "defeat"] as const;
     const createWorker = (): Worker => {
       const attemptNumber = workers.length + 1;
       const worker = new ControlledResultWorker(
-        outcomes[workers.length],
+        "victory",
         `attempt.shuttergate.web_${String(attemptNumber).padStart(6, "0")}`
       );
       workers.push(worker);
@@ -4126,11 +4135,7 @@ describe("authoritative web worker", () => {
     returnButton.focus();
     await userEvent.keyboard("{Enter}");
 
-    await vi.waitFor(() =>
-      expect(document.querySelector("button")?.textContent).toBe(
-        "Begin preparation"
-      )
-    );
+    expect(await buttonWithText("Defence complete")).toBeDisabled();
     expect(document.querySelector(".evidence")).toBeNull();
     expect(document.querySelector(".results")).toBeNull();
     expect(document.querySelector("figcaption")).toBeNull();
@@ -4156,20 +4161,8 @@ describe("authoritative web worker", () => {
       expect(document.querySelector(".results")).toBeNull();
     });
 
-    const secondEvidence = await completeAppAttempt();
-    expect(secondEvidence.replace("defeat", "victory")).toBe(firstEvidence);
-    const defeatHeading = await resultHeading("Defeat results");
-    expect(document.activeElement).toBe(defeatHeading);
-    await userEvent.click(
-      Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "Return to checkpoint"
-      ) as HTMLButtonElement
-    );
-    await vi.waitFor(() =>
-      expect(document.body.textContent).toContain("Checkpoint ready")
-    );
-    expect(workers).toHaveLength(2);
-    expect(workers[1]?.terminated).toBe(true);
+    expect(firstEvidence).toContain("victory");
+    expect(workers).toHaveLength(1);
   });
 
   it("recovers from authoritative failures by keyboard and mouse", async () => {
@@ -4807,6 +4800,15 @@ describe("authoritative Shuttergate campaign journey", () => {
       ],
       purchasedUpgrades: [{ upgradeId: "upgrade.ability.shield_slam", rank: 1 }]
     });
+    const workerCountAtVictory = workers.length;
+    await userEvent.click(await buttonWithText("Return to checkpoint"));
+    const completed = await buttonWithText("Defence complete");
+    expect(completed).toBeDisabled();
+    completed.click();
+    expect(workers).toHaveLength(workerCountAtVictory);
+    await reloadApp();
+    expect(await buttonWithText("Defence complete")).toBeDisabled();
+    expect(workers).toHaveLength(workerCountAtVictory);
     expect(store.writes).toBeGreaterThanOrEqual(5);
   }, 30_000);
 

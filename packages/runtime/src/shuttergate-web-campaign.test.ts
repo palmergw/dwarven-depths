@@ -203,6 +203,22 @@ describe("Shuttergate web campaign authority", () => {
         ])
       }
     });
+    const bossDefeatReward = resolveShuttergateWebAttemptReward({
+      schemaVersion: 1,
+      configuration,
+      terminalResult: "defeat",
+      finalState: {
+        ...result.finalState,
+        terminalResult: "defeat"
+      }
+    });
+    expect(bossDefeatReward.profile).toMatchObject({
+      forgeOre: 49,
+      unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"],
+      claimedRewardIds: expect.arrayContaining([
+        "reward.boss.gatebreaker_captain"
+      ])
+    });
     await expect(
       verifyReplay(
         createReplayDefinition(result, replayScenario, content),

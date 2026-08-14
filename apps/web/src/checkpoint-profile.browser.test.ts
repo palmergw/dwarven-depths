@@ -245,4 +245,44 @@ describe("checkpoint profile loading", () => {
       claimedRewardIds: [rewardId]
     });
   });
+
+  it("does not duplicate a concurrently claimed boss reward", async () => {
+    const store = new MemoryProfileStore();
+    const initial = createInitialProfile("character.iron_warden" as never);
+    await loadCheckpointProfile(store, () => 1_725_000_000_000, false);
+    if (store.envelope === undefined)
+      throw new Error("missing profile envelope");
+    const bossRewardId = "reward.boss.gatebreaker_captain";
+    const concurrent = normalizeProfileState({
+      ...initial,
+      revision: 1,
+      forgeOre: 20,
+      claimedRewardIds: [bossRewardId],
+      unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"]
+    });
+    store.envelope = { ...store.envelope, profile: concurrent };
+    const rewardId = "reward.attempt.shuttergate.web_000001";
+    const authoritative = normalizeProfileState({
+      ...initial,
+      revision: 2,
+      forgeOre: 48,
+      claimedRewardIds: [rewardId, bossRewardId],
+      unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"]
+    });
+
+    await expect(
+      applyCheckpointAttemptResult(store, initial, {
+        schemaVersion: 1,
+        attemptId: "attempt.shuttergate.web_000001",
+        rewardId,
+        forgeOreAwarded: 48,
+        profile: authoritative
+      })
+    ).resolves.toMatchObject({
+      revision: 2,
+      forgeOre: 48,
+      claimedRewardIds: [rewardId, bossRewardId],
+      unlockedCharacterIds: ["character.deep_ranger", "character.iron_warden"]
+    });
+  });
 });

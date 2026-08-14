@@ -48,13 +48,12 @@ function applyAuthoritativeAttemptProfileDelta(
   campaign: Pick<
     CheckpointAttemptResult,
     "forgeOreAwarded" | "rewardId" | "profile"
-  >
+  >,
+  campaignClaimsBossReward = false
 ): ProfileState {
-  const claimsBossReward = campaign.profile.claimedRewardIds.includes(
-    "reward.boss.gatebreaker_captain" as StableId
-  );
+  const bossRewardId = "reward.boss.gatebreaker_captain" as StableId;
   const attemptForgeOre =
-    campaign.forgeOreAwarded - (claimsBossReward ? 20 : 0);
+    campaign.forgeOreAwarded - (campaignClaimsBossReward ? 20 : 0);
   if (!Number.isSafeInteger(attemptForgeOre) || attemptForgeOre < 0)
     throw new RangeError(
       "authoritative attempt result has invalid reward totals"
@@ -68,7 +67,10 @@ function applyAuthoritativeAttemptProfileDelta(
       campaign.rewardId as StableId
     ]
   });
-  if (claimsBossReward)
+  if (
+    campaignClaimsBossReward &&
+    !startingProfile.claimedRewardIds.includes(bossRewardId)
+  )
     profile = resolveBossDeathRewards({
       schemaVersion: 1,
       profile,
@@ -292,9 +294,14 @@ export function validateCheckpointAttemptResult(
   campaign: CheckpointAttemptResult
 ): ProfileState {
   const profile = normalizeProfileState(campaign.profile);
+  const bossRewardId = "reward.boss.gatebreaker_captain" as StableId;
+  const campaignClaimsBossReward =
+    !startingProfile.claimedRewardIds.includes(bossRewardId) &&
+    profile.claimedRewardIds.includes(bossRewardId);
   const expectedProfile = applyAuthoritativeAttemptProfileDelta(
     startingProfile,
-    campaign
+    campaign,
+    campaignClaimsBossReward
   );
   if (
     campaign.schemaVersion !== 1 ||
@@ -318,6 +325,10 @@ export async function applyCheckpointAttemptResult(
   now: () => number = Date.now
 ): Promise<ProfileState> {
   const profile = validateCheckpointAttemptResult(startingProfile, campaign);
+  const bossRewardId = "reward.boss.gatebreaker_captain" as StableId;
+  const campaignClaimsBossReward =
+    !startingProfile.claimedRewardIds.includes(bossRewardId) &&
+    profile.claimedRewardIds.includes(bossRewardId);
   let candidate = profile;
   let expectedRevision = startingProfile.revision;
   let lastConflict: unknown;
@@ -346,7 +357,8 @@ export async function applyCheckpointAttemptResult(
         return concurrentProfile;
       candidate = applyAuthoritativeAttemptProfileDelta(
         concurrentProfile,
-        campaign
+        campaign,
+        campaignClaimsBossReward
       );
       expectedRevision = concurrentProfile.revision;
     }
