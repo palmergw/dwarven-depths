@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "combat-ability-bar-keyboard",
-  "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
+  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "combat-ability-bar-keyboard.png",
   "screenshotSha256": "875bd5092b6c9e87b97043d1d24623fe7dbee9d5c74ce40b30700b58a6ae12d8",
@@ -130,7 +130,6 @@
     },
     "focus": "Linebreaker",
     "preferences": {
-      "contrast": "standard",
       "textScale": "default",
       "motion": "reduce",
       "reducedMotion": true

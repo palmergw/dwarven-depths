@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "shield-slam-impact",
-  "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
+  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "shield-slam-impact.png",
   "screenshotSha256": "190f746e3b4cbd10f0ce64328ebbe628fcaf1694cb97756d152cf7af228a1dd4",
@@ -130,7 +130,6 @@
     },
     "focus": "Resume combat",
     "preferences": {
-      "contrast": "standard",
       "textScale": "default",
       "motion": "reduce",
       "reducedMotion": true

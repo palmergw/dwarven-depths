@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "linebreaker-impact",
-  "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
+  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "linebreaker-impact.png",
-  "screenshotSha256": "426d1a51824e6a2927ef297c1100ecd7c43d95501b0ea238ba01b0b1576399bf",
+  "screenshotSha256": "c5dd36f910d61ae03a468ef4c6a4c3f025f1a1d9ccddc86902bd95d4202d7439",
   "state": {
     "viewport": [1440, 900],
     "shellView": "running",
@@ -130,7 +130,6 @@
     },
     "focus": "Resume combat",
     "preferences": {
-      "contrast": "standard",
       "textScale": "default",
       "motion": "reduce",
       "reducedMotion": true

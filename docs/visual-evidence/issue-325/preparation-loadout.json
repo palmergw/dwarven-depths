@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "preparation-loadout",
-  "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
+  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "preparation-loadout.png",
   "screenshotSha256": "fa05126aa0cec67bb73f1260db77ff337c38c4ec86c67d28d06fc0c30d72961a",
@@ -101,7 +101,6 @@
     },
     "focus": null,
     "preferences": {
-      "contrast": "standard",
       "textScale": "default",
       "motion": "reduce",
       "reducedMotion": true

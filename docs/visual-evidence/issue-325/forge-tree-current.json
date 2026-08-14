@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "issue": 325,
-  "id": "forge-tree",
+  "id": "forge-tree-current",
   "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
   "fixtureId": null,
-  "screenshot": "forge-tree.png",
+  "screenshot": "forge-tree-current.png",
   "screenshotSha256": "4452794d13281ef580a369cdb4ad3fe62636cd6daf8d60550b1e02db57581a7c",
   "state": {
     "viewport": [1440, 900],
@@ -13,7 +13,6 @@
     "truth": null,
     "focus": null,
     "preferences": {
-      "contrast": "standard",
       "textScale": "default",
       "motion": "reduce",
       "reducedMotion": true

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "rallying-roar-commitment",
-  "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
+  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "rallying-roar-commitment.png",
   "screenshotSha256": "5a351682decb384cff15d2f00ecc4ca1f9d9f5948bc06af1f989006fe3819a15",
@@ -130,7 +130,6 @@
     },
     "focus": "Resume combat",
     "preferences": {
-      "contrast": "standard",
       "textScale": "default",
       "motion": "reduce",
       "reducedMotion": true

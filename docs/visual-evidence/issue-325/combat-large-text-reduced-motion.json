@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "issue": 325,
-  "id": "combat-high-contrast-large-text-reduced-motion",
-  "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
+  "id": "combat-large-text-reduced-motion",
+  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-  "screenshot": "combat-high-contrast-large-text-reduced-motion.png",
-  "screenshotSha256": "93efa951b6658ca52ca3b9f3181f5669c3f56b3aa2774539eb5e9fcc1911a9e6",
+  "screenshot": "combat-large-text-reduced-motion.png",
+  "screenshotSha256": "05e7223e6b9594c6e2b9e5e0dba263658dbd4ca7b1eda7ad285faecea4cb4844",
   "state": {
     "viewport": [1440, 900],
     "shellView": "running",
@@ -130,7 +130,6 @@
     },
     "focus": null,
     "preferences": {
-      "contrast": "high",
       "textScale": "large",
       "motion": "reduce",
       "reducedMotion": true

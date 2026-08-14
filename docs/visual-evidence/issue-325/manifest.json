@@ -1,20 +1,43 @@
 {
   "schemaVersion": 1,
   "issue": 325,
-  "sourceHead": "3ba0f48b07c409a4cb775fa581a5562b9478eb17",
+  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [1440, 900],
   "deviceScaleFactor": 1,
   "browser": "chromium",
   "captures": [
     {
-      "id": "forge-tree",
-      "screenshot": "forge-tree.png",
-      "screenshotSha256": "4452794d13281ef580a369cdb4ad3fe62636cd6daf8d60550b1e02db57581a7c",
-      "sidecar": "forge-tree.json",
+      "id": "forge-tree-replacement",
+      "screenshot": "forge-tree-replacement.png",
+      "screenshotSha256": "2f07ddfe132afe58ced44544b5104ec770a7a981bfbe61b0f8f7a3ec2af38028",
+      "sidecar": "forge-tree-replacement.json",
       "phase": "checkpoint",
       "preferences": {
-        "contrast": "standard",
+        "textScale": "default",
+        "motion": "reduce",
+        "reducedMotion": true
+      }
+    },
+    {
+      "id": "forge-tree-hover-detail",
+      "screenshot": "forge-tree-hover-detail.png",
+      "screenshotSha256": "cf23d713b9e2942dfae9699350f0c7603bf54ceb3e9633856ae191994446b382",
+      "sidecar": "forge-tree-hover-detail.json",
+      "phase": "checkpoint",
+      "preferences": {
+        "textScale": "default",
+        "motion": "reduce",
+        "reducedMotion": true
+      }
+    },
+    {
+      "id": "forge-tree-keyboard-focus-detail",
+      "screenshot": "forge-tree-keyboard-focus-detail.png",
+      "screenshotSha256": "4aea1921a75777ccc226ba3fd45c1fdedae71961b1af2b153bfc357475535574",
+      "sidecar": "forge-tree-keyboard-focus-detail.json",
+      "phase": "checkpoint",
+      "preferences": {
         "textScale": "default",
         "motion": "reduce",
         "reducedMotion": true
@@ -27,7 +50,6 @@
       "sidecar": "preparation-loadout.json",
       "phase": "preparation",
       "preferences": {
-        "contrast": "standard",
         "textScale": "default",
         "motion": "reduce",
         "reducedMotion": true
@@ -40,7 +62,6 @@
       "sidecar": "combat-ability-bar-keyboard.json",
       "phase": "running",
       "preferences": {
-        "contrast": "standard",
         "textScale": "default",
         "motion": "reduce",
         "reducedMotion": true
@@ -53,7 +74,6 @@
       "sidecar": "shield-slam-impact.json",
       "phase": "running",
       "preferences": {
-        "contrast": "standard",
         "textScale": "default",
         "motion": "reduce",
         "reducedMotion": true
@@ -62,11 +82,10 @@
     {
       "id": "linebreaker-impact",
       "screenshot": "linebreaker-impact.png",
-      "screenshotSha256": "426d1a51824e6a2927ef297c1100ecd7c43d95501b0ea238ba01b0b1576399bf",
+      "screenshotSha256": "c5dd36f910d61ae03a468ef4c6a4c3f025f1a1d9ccddc86902bd95d4202d7439",
       "sidecar": "linebreaker-impact.json",
       "phase": "running",
       "preferences": {
-        "contrast": "standard",
         "textScale": "default",
         "motion": "reduce",
         "reducedMotion": true
@@ -79,25 +98,35 @@
       "sidecar": "rallying-roar-commitment.json",
       "phase": "running",
       "preferences": {
-        "contrast": "standard",
         "textScale": "default",
         "motion": "reduce",
         "reducedMotion": true
       }
     },
     {
-      "id": "combat-high-contrast-large-text-reduced-motion",
-      "screenshot": "combat-high-contrast-large-text-reduced-motion.png",
-      "screenshotSha256": "93efa951b6658ca52ca3b9f3181f5669c3f56b3aa2774539eb5e9fcc1911a9e6",
-      "sidecar": "combat-high-contrast-large-text-reduced-motion.json",
+      "id": "combat-large-text-reduced-motion",
+      "screenshot": "combat-large-text-reduced-motion.png",
+      "screenshotSha256": "05e7223e6b9594c6e2b9e5e0dba263658dbd4ca7b1eda7ad285faecea4cb4844",
+      "sidecar": "combat-large-text-reduced-motion.json",
       "phase": "running",
       "preferences": {
-        "contrast": "high",
         "textScale": "large",
         "motion": "reduce",
         "reducedMotion": true
       }
     }
   ],
-  "decision": "Approve the expanded Iron Warden Forge/loadout hierarchy, three-ability combat bar, and restrained warm Shield Slam, Linebreaker, and Rallying Roar combat effects."
+  "comparison": {
+    "current": "forge-tree-current.png",
+    "currentSha256": "4452794d13281ef580a369cdb4ad3fe62636cd6daf8d60550b1e02db57581a7c",
+    "replacement": "forge-tree-replacement.png",
+    "replacementSha256": "2f07ddfe132afe58ced44544b5104ec770a7a981bfbe61b0f8f7a3ec2af38028",
+    "board": "forge-tree-current-vs-replacement.png",
+    "boardSha256": "0efc3a633908837f959b50eb6da0aad115efd994d56e540119fc8e163ee4b4e2",
+    "viewport": [1440, 900],
+    "changedPixelCount": 423085,
+    "totalPixelCount": 1296000,
+    "changedPixelRatio": 0.32645447530864197
+  },
+  "decision": "Approve the compact icon-led Iron Warden Forge tree, branch links, and single hover/focus detail surface while retaining the three-ability combat presentation."
 }
