@@ -360,6 +360,17 @@ export function resolveShuttergateWebAttemptReward(input: {
     throw new RangeError(
       "Shuttergate victory does not bind the cleared authored enemy roster"
     );
+  if (
+    input.terminalResult === "defeat" &&
+    warden.lifecycleState === "active" &&
+    firedSpawnCount === authoredSpawnIds.length &&
+    battlefield.enemyCombatants.every(
+      (enemy) => enemy.lifecycleState === "destroyed"
+    )
+  )
+    throw new RangeError(
+      "Shuttergate defeat contradicts the cleared authored enemy roster"
+    );
 
   const rewardId = `reward.${run.attemptId}` as StableId;
   if (run.profile.claimedRewardIds.includes(rewardId))

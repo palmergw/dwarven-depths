@@ -302,6 +302,18 @@ describe("Shuttergate web campaign authority", () => {
         }
       })
     ).toThrow("authored enemy roster");
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "defeat",
+        finalState: {
+          ...result.finalState,
+          tick: 6000,
+          terminalResult: "defeat"
+        }
+      })
+    ).toThrow("defeat contradicts the cleared authored enemy roster");
     const bossDefeatReward = resolveShuttergateWebAttemptReward({
       schemaVersion: 1,
       configuration,
