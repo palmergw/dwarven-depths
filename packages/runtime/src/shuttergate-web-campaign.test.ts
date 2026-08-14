@@ -117,6 +117,8 @@ describe("Shuttergate web campaign authority", () => {
       scenario,
       configuration
     );
+    const battlefield = state.battlefield;
+    if (battlefield === undefined) throw new Error("missing battlefield");
     expect(() =>
       resolveShuttergateWebAttemptReward({
         schemaVersion: 1,
@@ -137,6 +139,28 @@ describe("Shuttergate web campaign authority", () => {
         }
       })
     ).toThrow("terminal-bound");
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "victory",
+        finalState: {
+          ...state,
+          phase: "TERMINAL",
+          terminalResult: "victory",
+          battlefield: {
+            ...battlefield,
+            startedWaveIds: [
+              "wave.shuttergate_1",
+              "wave.shuttergate_2",
+              "wave.shuttergate_3",
+              "wave.shuttergate_4",
+              "wave.shuttergate_5"
+            ] as never
+          }
+        }
+      })
+    ).toThrow("did not defeat the Gatebreaker Captain");
   });
 
   it("replays purchased campaign preparation through the same authority", async () => {

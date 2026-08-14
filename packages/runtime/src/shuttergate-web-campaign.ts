@@ -230,6 +230,15 @@ export function resolveShuttergateWebAttemptReward(input: {
     throw new RangeError(
       "Shuttergate victory did not start every authored wave"
     );
+  const gatebreakerDefeated = battlefield.enemyCombatants.some(
+    (enemy) =>
+      enemy.entityId === "entity.enemy.shuttergate_010" &&
+      enemy.lifecycleState === "destroyed"
+  );
+  if (input.terminalResult === "victory" && !gatebreakerDefeated)
+    throw new RangeError(
+      "Shuttergate victory did not defeat the Gatebreaker Captain"
+    );
 
   const rewardId = `reward.${run.attemptId}` as StableId;
   if (run.profile.claimedRewardIds.includes(rewardId))
@@ -256,11 +265,6 @@ export function resolveShuttergateWebAttemptReward(input: {
     forgeOre,
     claimedRewardIds: [...run.profile.claimedRewardIds, rewardId]
   });
-  const gatebreakerDefeated = battlefield.enemyCombatants.some(
-    (enemy) =>
-      enemy.entityId === "entity.enemy.shuttergate_010" &&
-      enemy.lifecycleState === "destroyed"
-  );
   if (gatebreakerDefeated) {
     profile = resolveBossDeathRewards({
       schemaVersion: 1,
