@@ -108,33 +108,61 @@ export function createShuttergateWebScenario(
 function requireConfiguration(
   value: ShuttergateWebRunConfiguration
 ): ShuttergateWebRunConfiguration {
+  const expectedKeys = [
+    "attemptId",
+    "placementPointId",
+    "profile",
+    "schemaVersion",
+    "seed"
+  ] as const;
   if (
     value === null ||
     typeof value !== "object" ||
     Array.isArray(value) ||
-    Reflect.ownKeys(value).map(String).sort().join("\u0000") !==
-      ["attemptId", "placementPointId", "profile", "schemaVersion", "seed"]
-        .sort()
-        .join("\u0000")
+    (Object.getPrototypeOf(value) !== Object.prototype &&
+      Object.getPrototypeOf(value) !== null)
   )
     throw new TypeError(
       "Shuttergate web run configuration has an invalid shape"
     );
-  if (value.schemaVersion !== 1)
+  const ownKeys = Reflect.ownKeys(value);
+  const actualKeys = ownKeys
+    .filter((key): key is string => typeof key === "string")
+    .sort();
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  if (
+    actualKeys.length !== ownKeys.length ||
+    actualKeys.length !== expectedKeys.length ||
+    actualKeys.some((key, index) => key !== [...expectedKeys].sort()[index]) ||
+    expectedKeys.some((key) => {
+      const descriptor = descriptors[key];
+      return descriptor?.enumerable !== true || !("value" in descriptor);
+    })
+  )
+    throw new TypeError(
+      "Shuttergate web run configuration has an invalid shape"
+    );
+  const configuration = Object.fromEntries(
+    expectedKeys.map((key) => [key, descriptors[key]?.value])
+  ) as unknown as ShuttergateWebRunConfiguration;
+  if (configuration.schemaVersion !== 1)
     throw new RangeError(
       "Shuttergate web run configuration has unsupported schemaVersion"
     );
-  if (!attemptIdPattern.test(value.attemptId))
+  if (!attemptIdPattern.test(configuration.attemptId))
     throw new RangeError(
       "Shuttergate web run configuration has invalid attemptId"
     );
-  if (!/^[1-9]\d{0,9}$/.test(value.seed) || BigInt(value.seed) > 0xffff_ffffn)
+  if (
+    !/^[1-9]\d{0,9}$/.test(configuration.seed) ||
+    BigInt(configuration.seed) > 0xffff_ffffn
+  )
     throw new RangeError("Shuttergate web run configuration has invalid seed");
-  if (value.placementPointId !== placementPointId)
+  if (configuration.placementPointId !== placementPointId)
     throw new RangeError(
       "Shuttergate tutorial deployment must use the north guard"
     );
-  const profile = normalizeProfileState(value.profile);
+  const profile = normalizeProfileState(configuration.profile);
   const webRewardPrefix = "reward.attempt.shuttergate.web_";
   const claimedAttemptNumbers = profile.claimedRewardIds
     .filter((rewardId) => rewardId.startsWith(webRewardPrefix))
@@ -158,16 +186,16 @@ function requireConfiguration(
     .toString()
     .padStart(6, "0")}`;
   if (
-    value.attemptId !== expectedAttemptId ||
-    value.seed !== String(expectedAttemptNumber)
+    configuration.attemptId !== expectedAttemptId ||
+    configuration.seed !== String(expectedAttemptNumber)
   )
     throw new RangeError(
       "Shuttergate web run configuration attempt and seed must follow profile history"
     );
   return Object.freeze({
     schemaVersion: 1,
-    attemptId: value.attemptId,
-    seed: value.seed,
+    attemptId: configuration.attemptId,
+    seed: configuration.seed,
     placementPointId,
     profile
   });

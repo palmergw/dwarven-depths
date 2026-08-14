@@ -208,6 +208,16 @@ describe("Shuttergate Level 1 balance matrix", () => {
         cases: matrixInput.cases.slice(1)
       })
     ).toThrow("matrix is incomplete");
+    expect(() =>
+      requireShuttergateLevel1BalanceMatrix({
+        ...matrixInput,
+        cases: [
+          matrixInput.cases[1],
+          matrixInput.cases[0],
+          ...matrixInput.cases.slice(2)
+        ]
+      })
+    ).toThrow("not in canonical order");
 
     const accessorCases = [...matrixInput.cases];
     Object.defineProperty(accessorCases, "0", {

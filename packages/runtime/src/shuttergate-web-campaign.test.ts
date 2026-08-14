@@ -100,6 +100,24 @@ describe("Shuttergate web campaign authority", () => {
         [Symbol("unexpected")]: true
       } as never)
     ).toThrow("invalid shape");
+    class Configuration {
+      schemaVersion = configuration.schemaVersion;
+      attemptId = configuration.attemptId;
+      seed = configuration.seed;
+      placementPointId = configuration.placementPointId;
+      profile = configuration.profile;
+    }
+    expect(() =>
+      createShuttergateWebScenario(scenario, new Configuration())
+    ).toThrow("invalid shape");
+    const accessorConfiguration = { ...configuration };
+    Object.defineProperty(accessorConfiguration, "seed", {
+      enumerable: true,
+      get: () => configuration.seed
+    });
+    expect(() =>
+      createShuttergateWebScenario(scenario, accessorConfiguration)
+    ).toThrow("invalid shape");
     expect(() =>
       createShuttergateWebPreparationState(content, scenario, {
         ...configuration,

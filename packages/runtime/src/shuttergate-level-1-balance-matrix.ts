@@ -328,6 +328,10 @@ export function requireShuttergateLevel1BalanceMatrix(
     expectedKeys.some((key) => !actualKeys.has(key))
   )
     throw new RangeError("Shuttergate Level 1 balance matrix is incomplete");
+  if (cases.some((entry, index) => caseKey(entry) !== expectedKeys[index]))
+    throw new RangeError(
+      "Shuttergate Level 1 balance matrix cases are not in canonical order"
+    );
   return Object.freeze({
     schemaVersion: 1,
     matrixId: record.matrixId,
