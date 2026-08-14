@@ -20,12 +20,13 @@ The production web release enforces gzip-9 payload budgets of 512,000 bytes for 
 
 Observed calibration evidence and balance recommendations remain separate. Satisfying the matrix proves that the approved combinations remain inside broad evidence ranges and that the first persistent upgrade extends survival for each placement/policy pair. It does not claim equal strategy strength, victory balance, or recommend future tuning.
 
+The calibrated desktop campaign now has an authoritative terminating web encounter. The supported unupgraded route preserves productive early defeat, while the purchased Iron Warden build can defeat the Gatebreaker Captain and persist victory rewards through the same Worker-owned campaign path. The pinned placement, policy, and build matrix records the approved defeat, deeper-push, and victory bands without moving gameplay truth into the client.
+
 ## Explicitly not implemented
 
-- Level 1 mechanics or content-statistic tuning beyond the approved evidence ranges;
 - a reference human replay;
 - telemetry categories that the current authoritative attempt does not produce, including aggregate basic-attack damage, healing, blocking time, and player-entered command timing; these are not inferred;
-- a terminating Phase 5 web encounter or terminal client/CLI parity;
+- terminal client/CLI parity;
 - new mechanics, report/replay formats, minimization schemas, or divergence classes.
 
 ## Executable check

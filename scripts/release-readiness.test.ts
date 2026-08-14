@@ -45,13 +45,18 @@ describe("Phase 6 release readiness", () => {
     expect(
       first.match(/^\| .* \| `(?:implemented|contract-blocked)` \|/gm)
     ).toHaveLength(18);
-    expect(first.match(/`contract-blocked`/g)).toHaveLength(3);
+    expect(first.match(/`contract-blocked`/g)).toHaveLength(2);
     expect(first).toContain("duplicate-claim prevention only");
     expect(first).toContain(
       "partial persistence is not presented as acceptance"
     );
-    expect(first).toContain("reference human replay remains blocked");
-    expect(first).toContain("Terminal client/CLI parity remains blocked");
+    expect(first).toContain(
+      "calibrated purchased build defeats the Gatebreaker Captain"
+    );
+    expect(first).toContain(
+      "reference human replay has not yet been published"
+    );
+    expect(first).toContain("Terminal client/CLI parity is not implemented");
     expect(first).toContain(identity.campaignPayloadChecksum);
     expect(first.endsWith("\n")).toBe(true);
   });
@@ -178,11 +183,11 @@ describe("Phase 6 release readiness", () => {
     );
     expect(criterionReads).toBe(0);
 
-    const falselyPassing = mutableEntries();
-    entryAt(falselyPassing, 11).status = "implemented";
-    entryAt(falselyPassing, 11).evidence = ["docs/phase-6.md"];
+    const falselyBlocked = mutableEntries();
+    entryAt(falselyBlocked, 11).status = "contract-blocked";
+    entryAt(falselyBlocked, 11).evidence = [];
     expect(() =>
-      requirePhase6AcceptanceEntries(falselyPassing, { checkFiles: false })
+      requirePhase6AcceptanceEntries(falselyBlocked, { checkFiles: false })
     ).toThrow("status is not approved");
 
     const partialSavePassing = mutableEntries();
