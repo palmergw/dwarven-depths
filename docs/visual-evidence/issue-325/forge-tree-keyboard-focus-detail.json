@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "forge-tree-keyboard-focus-detail",
-  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
   "fixtureId": null,
   "screenshot": "forge-tree-keyboard-focus-detail.png",
-  "screenshotSha256": "4aea1921a75777ccc226ba3fd45c1fdedae71961b1af2b153bfc357475535574",
+  "screenshotSha256": "bff6900975c96b5e2ea3b4c173f92cebec79a7239936e42986a18bbacffe388d",
   "state": {
     "viewport": [1440, 900],
     "shellView": "forge",

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "preparation-loadout",
-  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "preparation-loadout.png",
   "screenshotSha256": "fa05126aa0cec67bb73f1260db77ff337c38c4ec86c67d28d06fc0c30d72961a",
@@ -106,6 +106,6 @@
       "reducedMotion": true
     },
     "abilities": [],
-    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCurrent stepReview the roster and placement summary, then confirm preparation.Follow the combatUpcomingUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Level ID: level.shuttergate_hallShuttergate battlefield, preparation; 1 entity.Fixed tutorial deploymentHold the north guard postThe Iron Warden deploys automatically at the marked guard post. There is no placement choice in this tutorial defence.♜Equipped next runIron Warden buildHealth+0Damage+0Range+0Cooldown-0 ticksNo Forge or skill modifiers equipped.DefenceShuttergate HallCompanyIron Warden readyGuard postNorth approach · lockedPreparation is ready. Confirm when your company is prepared.Confirm preparation"
+    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCurrent stepReview the roster and placement summary, then confirm preparation.Follow the combatUpcomingUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Level ID: level.shuttergate_hallShuttergate battlefield, preparation; 1 entity. Combat update at tick 0: 1 combatant arrived.Fixed tutorial deploymentHold the north guard postThe Iron Warden deploys automatically at the marked guard post. There is no placement choice in this tutorial defence.♜Equipped next runIron Warden buildHealth+0Damage+0Range+0Cooldown-0 ticksNo Forge or skill modifiers equipped.DefenceShuttergate HallCompanyIron Warden readyGuard postNorth approach · lockedPreparation is ready. Confirm when your company is prepared.Confirm preparation"
   }
 }

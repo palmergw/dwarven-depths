@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "forge-tree-hover-detail",
-  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
   "fixtureId": null,
   "screenshot": "forge-tree-hover-detail.png",
-  "screenshotSha256": "cf23d713b9e2942dfae9699350f0c7603bf54ceb3e9633856ae191994446b382",
+  "screenshotSha256": "4bd11ddfe5fa8b4865c6dadcf41ec3c660a80b5c7fe4cc8d8f41a3cb1f04c483",
   "state": {
     "viewport": [1440, 900],
     "shellView": "forge",

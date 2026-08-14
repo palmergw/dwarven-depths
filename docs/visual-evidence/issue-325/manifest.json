@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "issue": 325,
-  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [1440, 900],
   "deviceScaleFactor": 1,
@@ -10,7 +10,7 @@
     {
       "id": "forge-tree-replacement",
       "screenshot": "forge-tree-replacement.png",
-      "screenshotSha256": "2f07ddfe132afe58ced44544b5104ec770a7a981bfbe61b0f8f7a3ec2af38028",
+      "screenshotSha256": "82484fd21e838adec259a2135af40f1b5e9d154e996a6fc3ef7684f214529325",
       "sidecar": "forge-tree-replacement.json",
       "phase": "checkpoint",
       "preferences": {
@@ -22,7 +22,7 @@
     {
       "id": "forge-tree-hover-detail",
       "screenshot": "forge-tree-hover-detail.png",
-      "screenshotSha256": "cf23d713b9e2942dfae9699350f0c7603bf54ceb3e9633856ae191994446b382",
+      "screenshotSha256": "4bd11ddfe5fa8b4865c6dadcf41ec3c660a80b5c7fe4cc8d8f41a3cb1f04c483",
       "sidecar": "forge-tree-hover-detail.json",
       "phase": "checkpoint",
       "preferences": {
@@ -34,7 +34,7 @@
     {
       "id": "forge-tree-keyboard-focus-detail",
       "screenshot": "forge-tree-keyboard-focus-detail.png",
-      "screenshotSha256": "4aea1921a75777ccc226ba3fd45c1fdedae71961b1af2b153bfc357475535574",
+      "screenshotSha256": "bff6900975c96b5e2ea3b4c173f92cebec79a7239936e42986a18bbacffe388d",
       "sidecar": "forge-tree-keyboard-focus-detail.json",
       "phase": "checkpoint",
       "preferences": {
@@ -58,7 +58,7 @@
     {
       "id": "combat-ability-bar-keyboard",
       "screenshot": "combat-ability-bar-keyboard.png",
-      "screenshotSha256": "875bd5092b6c9e87b97043d1d24623fe7dbee9d5c74ce40b30700b58a6ae12d8",
+      "screenshotSha256": "5fa818220313eccaa627c54c3e1753a091b4010e2955c0e213d74c3e447b7ea4",
       "sidecar": "combat-ability-bar-keyboard.json",
       "phase": "running",
       "preferences": {
@@ -82,7 +82,7 @@
     {
       "id": "linebreaker-impact",
       "screenshot": "linebreaker-impact.png",
-      "screenshotSha256": "c5dd36f910d61ae03a468ef4c6a4c3f025f1a1d9ccddc86902bd95d4202d7439",
+      "screenshotSha256": "cc924a8b828a6169ecdcf95ee98da7395a77c00f329d61cd48d33ac83ec13cc0",
       "sidecar": "linebreaker-impact.json",
       "phase": "running",
       "preferences": {
@@ -94,7 +94,7 @@
     {
       "id": "rallying-roar-commitment",
       "screenshot": "rallying-roar-commitment.png",
-      "screenshotSha256": "5a351682decb384cff15d2f00ecc4ca1f9d9f5948bc06af1f989006fe3819a15",
+      "screenshotSha256": "329eeb9d8d7e352598edb208ac9558a932d8b7c3044a4fd15274a62fc91ebf40",
       "sidecar": "rallying-roar-commitment.json",
       "phase": "running",
       "preferences": {
@@ -106,7 +106,7 @@
     {
       "id": "combat-large-text-reduced-motion",
       "screenshot": "combat-large-text-reduced-motion.png",
-      "screenshotSha256": "05e7223e6b9594c6e2b9e5e0dba263658dbd4ca7b1eda7ad285faecea4cb4844",
+      "screenshotSha256": "b09100844d830ebe4adf632c3bff77c63ba237efcd78b70f975d7ad4b9c3e9c0",
       "sidecar": "combat-large-text-reduced-motion.json",
       "phase": "running",
       "preferences": {
@@ -120,13 +120,13 @@
     "current": "forge-tree-current.png",
     "currentSha256": "4452794d13281ef580a369cdb4ad3fe62636cd6daf8d60550b1e02db57581a7c",
     "replacement": "forge-tree-replacement.png",
-    "replacementSha256": "2f07ddfe132afe58ced44544b5104ec770a7a981bfbe61b0f8f7a3ec2af38028",
+    "replacementSha256": "82484fd21e838adec259a2135af40f1b5e9d154e996a6fc3ef7684f214529325",
     "board": "forge-tree-current-vs-replacement.png",
-    "boardSha256": "0efc3a633908837f959b50eb6da0aad115efd994d56e540119fc8e163ee4b4e2",
+    "boardSha256": "e9b3c7427eccb32826e506b547d423f3cc914edef655403de3aae5923cab6b50",
     "viewport": [1440, 900],
-    "changedPixelCount": 423085,
+    "changedPixelCount": 801359,
     "totalPixelCount": 1296000,
-    "changedPixelRatio": 0.32645447530864197
+    "changedPixelRatio": 0.618332561728395
   },
   "decision": "Approve the compact icon-led Iron Warden Forge tree, branch links, and single hover/focus detail surface while retaining the three-ability combat presentation."
 }

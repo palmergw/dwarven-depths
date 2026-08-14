@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "forge-tree-replacement",
-  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
   "fixtureId": null,
   "screenshot": "forge-tree-replacement.png",
-  "screenshotSha256": "2f07ddfe132afe58ced44544b5104ec770a7a981bfbe61b0f8f7a3ec2af38028",
+  "screenshotSha256": "82484fd21e838adec259a2135af40f1b5e9d154e996a6fc3ef7684f214529325",
   "state": {
     "viewport": [1440, 900],
     "shellView": "forge",

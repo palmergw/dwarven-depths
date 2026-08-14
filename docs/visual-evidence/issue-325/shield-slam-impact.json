@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "shield-slam-impact",
-  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "shield-slam-impact.png",
   "screenshotSha256": "190f746e3b4cbd10f0ce64328ebbe628fcaf1694cb97756d152cf7af228a1dd4",

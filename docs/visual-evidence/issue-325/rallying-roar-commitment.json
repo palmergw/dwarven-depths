@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "rallying-roar-commitment",
-  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "rallying-roar-commitment.png",
-  "screenshotSha256": "5a351682decb384cff15d2f00ecc4ca1f9d9f5948bc06af1f989006fe3819a15",
+  "screenshotSha256": "329eeb9d8d7e352598edb208ac9558a932d8b7c3044a4fd15274a62fc91ebf40",
   "state": {
     "viewport": [1440, 900],
     "shellView": "running",

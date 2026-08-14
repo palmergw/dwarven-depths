@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 325,
   "id": "linebreaker-impact",
-  "sourceHead": "2363fa8ef8ec634bfa22ce247e4ab77665d0f528",
+  "sourceHead": "5bab67ce9502fda1a712bf172d10f1c4aa23b09c",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "linebreaker-impact.png",
-  "screenshotSha256": "c5dd36f910d61ae03a468ef4c6a4c3f025f1a1d9ccddc86902bd95d4202d7439",
+  "screenshotSha256": "cc924a8b828a6169ecdcf95ee98da7395a77c00f329d61cd48d33ac83ec13cc0",
   "state": {
     "viewport": [1440, 900],
     "shellView": "running",
