@@ -60,7 +60,15 @@ await writeFile(
       ...priorForgeSidecar,
       id: "forge-tree-current",
       screenshot: "forge-tree-current.png",
-      screenshotSha256: sha256(priorForgeScreenshot)
+      screenshotSha256: sha256(priorForgeScreenshot),
+      state: {
+        ...priorForgeSidecar.state,
+        preferences: {
+          textScale: priorForgeSidecar.state.preferences.textScale,
+          motion: priorForgeSidecar.state.preferences.motion,
+          reducedMotion: priorForgeSidecar.state.preferences.reducedMotion
+        }
+      }
     },
     null,
     2
@@ -350,6 +358,7 @@ try {
   );
   await page.locator(".skill-detail").scrollIntoViewIfNeeded();
   await page.getByRole("button", { name: /^Executioner's Mark,/ }).focus();
+  await page.mouse.move(20, 20);
   await capture(
     page,
     "forge-tree-keyboard-focus-detail",
@@ -536,6 +545,7 @@ await execFile(
     ...captures.map(({ id }) =>
       fileURLToPath(new URL(`${id}.json`, outputDirectory))
     ),
+    fileURLToPath(new URL("forge-tree-current.json", outputDirectory)),
     fileURLToPath(new URL("manifest.json", outputDirectory))
   ],
   { cwd: repositoryRoot }
