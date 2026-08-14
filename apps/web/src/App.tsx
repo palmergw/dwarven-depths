@@ -38,7 +38,6 @@ import {
 } from "./combat-feedback.js";
 import {
   deriveIronWardenBuildSummary,
-  ironWardenChoiceIdentity,
   ironWardenPathIdentity
 } from "./iron-warden-build.js";
 import {
@@ -173,8 +172,6 @@ const textScales = ["default", "large", "extra-large"] as const;
 type TextScale = (typeof textScales)[number];
 const contrastPreferenceStorageKey =
   "dwarven-depths.presentation.contrast-preference.v1";
-const contrastPreferences = ["standard", "high"] as const;
-type ContrastPreference = (typeof contrastPreferences)[number];
 const soundPreferenceStorageKey =
   "dwarven-depths.presentation.sound-preference.v1";
 const soundPreferences = ["off", "quiet", "on"] as const;
@@ -255,6 +252,17 @@ function describePrerequisites(
   return prerequisiteNodeIds.length === 0
     ? "none."
     : `${prerequisiteNodeIds.map(playerFacingName).join(", ")}.`;
+}
+
+function skillNodeIcon(nodeId: StableId): string {
+  if (nodeId === "skill.iron_warden.stone_guard") return "◆";
+  if (nodeId.includes("slam") || nodeId.includes("concussive")) return "◉";
+  if (nodeId.includes("quake") || nodeId.includes("unyielding")) return "✦";
+  if (nodeId.includes("reach") || nodeId.includes("sundering")) return "➶";
+  if (nodeId.includes("linebreaker") || nodeId.includes("executioner"))
+    return "⚔";
+  if (nodeId.includes("rhythm") || nodeId.includes("rallying")) return "♜";
+  return "♛";
 }
 
 function BuildSummary({ profile }: { readonly profile: ProfileState }) {
@@ -442,24 +450,11 @@ function storeTextScale(scale: TextScale): void {
   }
 }
 
-function isContrastPreference(value: unknown): value is ContrastPreference {
-  return contrastPreferences.some((preference) => preference === value);
-}
-
-function readContrastPreference(): ContrastPreference {
+function retireContrastPreference(): void {
   try {
-    const stored = window.localStorage.getItem(contrastPreferenceStorageKey);
-    return isContrastPreference(stored) ? stored : "standard";
+    window.localStorage.removeItem(contrastPreferenceStorageKey);
   } catch {
-    return "standard";
-  }
-}
-
-function storeContrastPreference(preference: ContrastPreference): void {
-  try {
-    window.localStorage.setItem(contrastPreferenceStorageKey, preference);
-  } catch {
-    // The in-memory presentation preference remains usable without storage.
+    // A blocked store cannot expose the retired preference to presentation.
   }
 }
 
@@ -539,10 +534,12 @@ export function App({
   const [motionPreference, setMotionPreference] =
     useState<MotionPreference>(readMotionPreference);
   const [textScale, setTextScale] = useState<TextScale>(readTextScale);
-  const [contrastPreference, setContrastPreference] =
-    useState<ContrastPreference>(readContrastPreference);
   const [soundPreference, setSoundPreference] =
     useState<SoundPreference>(readSoundPreference);
+  const [activeSkillNodeId, setActiveSkillNodeId] = useState<StableId>(
+    ironWardenSkillTree.nodes[0]?.nodeId ??
+      ("skill.iron_warden.stone_guard" as StableId)
+  );
   const [deviceReducedMotion, setDeviceReducedMotion] =
     useState(readsReducedMotion);
   const workerRef = useRef<Worker | undefined>(undefined);
@@ -607,6 +604,8 @@ export function App({
   const skillRecycleButtonRef = useRef<HTMLButtonElement>(null);
   const skillRecycleHeadingRef = useRef<HTMLHeadingElement>(null);
   const skillRecycleConfirmationWasOpenRef = useRef(false);
+
+  useEffect(retireContrastPreference, []);
   const skillTreeHeadingRef = useRef<HTMLHeadingElement>(null);
   const focusSkillTreeAfterSelectionRef = useRef(false);
   const focusSkillAfterSelectionRef = useRef<StableId | undefined>(undefined);
@@ -1608,7 +1607,7 @@ export function App({
     if (nodeId === undefined) return;
     focusSkillAfterSelectionRef.current = undefined;
     document
-      .getElementById(`${nodeId.replaceAll(".", "-")}-selected-heading`)
+      .getElementById(`${nodeId.replaceAll(".", "-")}-skill-node`)
       ?.focus();
   });
 
@@ -1651,7 +1650,6 @@ export function App({
   return (
     <main
       aria-labelledby="app-heading"
-      data-contrast-preference={contrastPreference}
       data-motion-preference={motionPreference}
       data-sound-preference={soundPreference}
       data-text-scale={textScale}
@@ -2013,25 +2011,6 @@ export function App({
                 <option value="large">Large</option>
                 <option value="extra-large">Extra large</option>
               </select>
-              <label htmlFor="contrast-preference">
-                <span className="settings-label-title">Contrast</span>
-                <small className="settings-label-help">
-                  Strengthen borders and remove decorative shading.
-                </small>
-              </label>
-              <select
-                id="contrast-preference"
-                value={contrastPreference}
-                onChange={(event) => {
-                  const preference = event.currentTarget.value;
-                  if (!isContrastPreference(preference)) return;
-                  setContrastPreference(preference);
-                  storeContrastPreference(preference);
-                }}
-              >
-                <option value="standard">Standard</option>
-                <option value="high">High contrast</option>
-              </select>
               <label htmlFor="sound-preference">
                 <span className="settings-label-title">Sound mix</span>
                 <small className="settings-label-help">
@@ -2243,8 +2222,9 @@ export function App({
                   Iron Warden skills
                 </h4>
                 <p>
-                  Build paths modify the authoritative next-run combat values.
-                  Select only one late-tree capstone.
+                  Follow the forged links into Control, Offense, or Guard &amp;
+                  tempo. Focus a tile for its full contract; only one capstone
+                  can be selected.
                 </p>
                 <div className="skill-paths">
                   {["Foundation", "Control", "Offense", "Guard & tempo"].map(
@@ -2267,45 +2247,78 @@ export function App({
                                 ironWardenSkillEligibility?.eligibleNodeIds.includes(
                                   node.nodeId
                                 ) ?? false;
+                              const excluded =
+                                !selected &&
+                                (node.exclusiveNodeIds?.some((exclusiveId) =>
+                                  checkpointProfile.profile.selectedSkillNodes.some(
+                                    (selection) =>
+                                      selection.nodeId === exclusiveId
+                                  )
+                                ) ??
+                                  false);
+                              const state = selected
+                                ? "selected"
+                                : excluded
+                                  ? "excluded"
+                                  : eligible
+                                    ? "available"
+                                    : "locked";
+                              const detailId = `${node.nodeId.replaceAll(".", "-")}-accessible-detail`;
                               return (
-                                <li
-                                  key={node.nodeId}
-                                  data-skill-state={
-                                    selected
-                                      ? "selected"
-                                      : eligible
-                                        ? "available"
-                                        : "locked"
-                                  }
-                                >
-                                  <strong>
-                                    {playerFacingName(node.nodeId)}
-                                  </strong>
-                                  <span>
-                                    {selected
-                                      ? "Selected"
-                                      : eligible
-                                        ? "Available"
-                                        : "Locked"}
-                                  </span>
-                                  <small className="skill-path-detail">
-                                    {describeEffects(node.effects)}
-                                  </small>
-                                  <small className="skill-path-detail">
+                                <li key={node.nodeId} data-skill-state={state}>
+                                  <button
+                                    type="button"
+                                    id={`${node.nodeId.replaceAll(".", "-")}-skill-node`}
+                                    className="skill-node"
+                                    aria-label={`${playerFacingName(node.nodeId)}, ${state}, ${path} path`}
+                                    aria-describedby={detailId}
+                                    aria-pressed={selected}
+                                    aria-disabled={
+                                      !eligible ||
+                                      upgradePurchaseStatus.kind === "pending"
+                                    }
+                                    data-skill-state={state}
+                                    onFocus={() =>
+                                      setActiveSkillNodeId(node.nodeId)
+                                    }
+                                    onPointerEnter={() =>
+                                      setActiveSkillNodeId(node.nodeId)
+                                    }
+                                    onClick={() => {
+                                      setActiveSkillNodeId(node.nodeId);
+                                      if (
+                                        eligible &&
+                                        upgradePurchaseStatus.kind !== "pending"
+                                      )
+                                        void selectIronWardenSkill(node.nodeId);
+                                    }}
+                                  >
+                                    <span
+                                      className="skill-node-icon"
+                                      aria-hidden="true"
+                                    >
+                                      {skillNodeIcon(node.nodeId)}
+                                    </span>
+                                    <strong>
+                                      {playerFacingName(node.nodeId)}
+                                    </strong>
+                                    <span className="skill-node-state">
+                                      {state}
+                                    </span>
+                                  </button>
+                                  <span
+                                    id={detailId}
+                                    className="visually-hidden"
+                                  >
+                                    Effects: {describeEffects(node.effects)}{" "}
                                     Requires{" "}
                                     {describePrerequisites(
                                       node.prerequisiteNodeIds
-                                    )}
-                                  </small>
-                                  {(node.exclusiveNodeIds?.length ?? 0) > 0 && (
-                                    <small className="skill-path-detail">
-                                      Capstone — excludes{" "}
-                                      {node.exclusiveNodeIds
-                                        ?.map(playerFacingName)
-                                        .join(", ")}
-                                      .
-                                    </small>
-                                  )}
+                                    )}{" "}
+                                    {(node.exclusiveNodeIds?.length ?? 0) > 0
+                                      ? `Capstone; excludes ${node.exclusiveNodeIds?.map(playerFacingName).join(", ")}.`
+                                      : "Not a capstone."}
+                                  </span>
                                 </li>
                               );
                             })}
@@ -2314,49 +2327,66 @@ export function App({
                     )
                   )}
                 </div>
-                {checkpointProfile.profile.selectedSkillNodes.some(
-                  (selection) =>
-                    selection.characterId === "character.iron_warden"
-                ) ? (
-                  <ul>
-                    {checkpointProfile.profile.selectedSkillNodes
-                      .filter(
-                        (selection) =>
-                          selection.characterId === "character.iron_warden"
+                {(() => {
+                  const node =
+                    ironWardenSkillTree.nodes.find(
+                      (candidate) => candidate.nodeId === activeSkillNodeId
+                    ) ?? ironWardenSkillTree.nodes[0];
+                  if (node === undefined) return null;
+                  const selected =
+                    checkpointProfile.profile.selectedSkillNodes.some(
+                      (selection) => selection.nodeId === node.nodeId
+                    );
+                  const eligible =
+                    ironWardenSkillEligibility?.eligibleNodeIds.includes(
+                      node.nodeId
+                    ) ?? false;
+                  const excluded =
+                    !selected &&
+                    (node.exclusiveNodeIds?.some((exclusiveId) =>
+                      checkpointProfile.profile.selectedSkillNodes.some(
+                        (selection) => selection.nodeId === exclusiveId
                       )
-                      .map((selection) => (
-                        <li key={selection.nodeId}>
-                          <section
-                            aria-labelledby={`${selection.nodeId.replaceAll(".", "-")}-selected-heading`}
-                          >
-                            <h5
-                              id={`${selection.nodeId.replaceAll(".", "-")}-selected-heading`}
-                              tabIndex={-1}
-                            >
-                              {playerFacingName(selection.nodeId)} selected at
-                              level {selection.spentSkillPointLevel}.
-                            </h5>{" "}
-                            <p>
-                              Effects:{" "}
-                              {describeEffects(
-                                ironWardenSkillTree.nodes.find(
-                                  (node) => node.nodeId === selection.nodeId
-                                )?.effects ?? []
-                              )}{" "}
-                              Prerequisites:{" "}
-                              {describePrerequisites(
-                                ironWardenSkillTree.nodes.find(
-                                  (node) => node.nodeId === selection.nodeId
-                                )?.prerequisiteNodeIds ?? []
-                              )}
-                            </p>
-                          </section>
-                        </li>
-                      ))}
-                  </ul>
-                ) : (
-                  <p>No Iron Warden skills selected.</p>
-                )}
+                    ) ??
+                      false);
+                  return (
+                    <aside className="skill-detail" aria-live="polite">
+                      <span className="skill-detail-icon" aria-hidden="true">
+                        {skillNodeIcon(node.nodeId)}
+                      </span>
+                      <div>
+                        <p>{ironWardenPathIdentity(node.nodeId)} path</p>
+                        <h5>{playerFacingName(node.nodeId)}</h5>
+                        <p>
+                          <strong>
+                            {selected
+                              ? "Selected"
+                              : excluded
+                                ? "Excluded"
+                                : eligible
+                                  ? "Available"
+                                  : "Locked"}
+                          </strong>{" "}
+                          — {describeEffects(node.effects)}
+                        </p>
+                        <p>
+                          Requires{" "}
+                          {describePrerequisites(node.prerequisiteNodeIds)}
+                          {(node.exclusiveNodeIds?.length ?? 0) > 0 && (
+                            <>
+                              {" "}
+                              Capstone; excludes{" "}
+                              {node.exclusiveNodeIds
+                                ?.map(playerFacingName)
+                                .join(", ")}
+                              .
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </aside>
+                  );
+                })()}
                 {ironWardenSkillEligibility?.pendingSkillPointLevel === null ? (
                   <p>No pending Iron Warden skill points.</p>
                 ) : (
@@ -2373,50 +2403,9 @@ export function App({
                         Warden skill tree.
                       </p>
                     )}
-                    <div className="upgrade-catalog">
-                      {ironWardenSkillEligibility?.eligibleNodeIds.map(
-                        (nodeId) => {
-                          const node = ironWardenSkillTree.nodes.find(
-                            (candidate) => candidate.nodeId === nodeId
-                          );
-                          const effectsId = `${nodeId.replaceAll(".", "-")}-effects`;
-                          return (
-                            <section key={nodeId}>
-                              <h5>{ironWardenChoiceIdentity(nodeId)}</h5>
-                              <p id={effectsId}>
-                                Effects: {describeEffects(node?.effects ?? [])}{" "}
-                                Prerequisites:{" "}
-                                {describePrerequisites(
-                                  node?.prerequisiteNodeIds ?? []
-                                )}
-                              </p>
-                              <button
-                                type="button"
-                                aria-describedby={`${effectsId}${
-                                  (
-                                    ironWardenSkillEligibility?.eligibleNodeIds
-                                      .length ?? 0
-                                  ) > 1
-                                    ? " iron-warden-branch-commitment"
-                                    : ""
-                                }`}
-                                disabled={
-                                  upgradePurchaseStatus.kind === "pending"
-                                }
-                                onClick={() =>
-                                  void selectIronWardenSkill(nodeId)
-                                }
-                              >
-                                {upgradePurchaseStatus.kind === "pending" &&
-                                upgradePurchaseStatus.upgradeId === nodeId
-                                  ? "Saving skill selection…"
-                                  : `Select ${playerFacingName(nodeId)}`}
-                              </button>
-                            </section>
-                          );
-                        }
-                      )}
-                    </div>
+                    <p className="skill-selection-hint">
+                      Activate an available skill tile to spend this point.
+                    </p>
                   </>
                 )}
               </section>

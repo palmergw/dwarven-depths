@@ -25,12 +25,47 @@ const { stdout: statusOutput } = await execFile(
 if (statusOutput.trim() !== "")
   throw new Error("Issue #325 capture requires a clean source head");
 
+let priorForgeScreenshot;
+let priorForgeSidecar;
+try {
+  priorForgeScreenshot = await readFile(
+    new URL("forge-tree-current.png", outputDirectory)
+  );
+  priorForgeSidecar = JSON.parse(
+    await readFile(new URL("forge-tree-current.json", outputDirectory), "utf8")
+  );
+} catch {
+  priorForgeScreenshot = await readFile(
+    new URL("forge-tree.png", outputDirectory)
+  );
+  priorForgeSidecar = JSON.parse(
+    await readFile(new URL("forge-tree.json", outputDirectory), "utf8")
+  );
+}
 await rm(outputDirectory, { recursive: true, force: true });
 await mkdir(outputDirectory, { recursive: true });
 
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
+
+await writeFile(
+  new URL("forge-tree-current.png", outputDirectory),
+  priorForgeScreenshot
+);
+await writeFile(
+  new URL("forge-tree-current.json", outputDirectory),
+  `${JSON.stringify(
+    {
+      ...priorForgeSidecar,
+      id: "forge-tree-current",
+      screenshot: "forge-tree-current.png",
+      screenshotSha256: sha256(priorForgeScreenshot)
+    },
+    null,
+    2
+  )}\n`
+);
 
 function captureBinding(truth) {
   if (truth === null) return null;
@@ -50,9 +85,6 @@ async function readState(page) {
     truth: window.__DWARVEN_DEPTHS_TRUTH_SCREEN__ ?? null,
     focus: document.activeElement?.getAttribute("aria-label") ?? null,
     preferences: {
-      contrast: localStorage.getItem(
-        "dwarven-depths.presentation.contrast-preference.v1"
-      ),
       textScale: localStorage.getItem(
         "dwarven-depths.presentation.text-scale.v1"
       ),
@@ -140,10 +172,6 @@ function installPreferences(page, preferences) {
   return page.addInitScript((requested) => {
     localStorage.clear();
     localStorage.setItem(
-      "dwarven-depths.presentation.contrast-preference.v1",
-      requested.contrast
-    );
-    localStorage.setItem(
       "dwarven-depths.presentation.text-scale.v1",
       requested.textScale
     );
@@ -162,7 +190,6 @@ async function newPage(browser, preferences = {}) {
     reducedMotion: reduced ? "reduce" : "no-preference"
   });
   await installPreferences(page, {
-    contrast: preferences.contrast ?? "standard",
     textScale: preferences.textScale ?? "default",
     motion: preferences.motion ?? "reduce"
   });
@@ -293,10 +320,28 @@ try {
   await page.locator(".skill-paths").scrollIntoViewIfNeeded();
   await capture(
     page,
-    "forge-tree",
+    "forge-tree-replacement",
     () =>
       document.querySelector(".skill-paths") !== null &&
-      document.querySelectorAll(".skill-path li").length >= 12
+      document.querySelectorAll(".skill-node").length >= 12 &&
+      document.querySelectorAll(".skill-detail").length === 1
+  );
+  await page.getByRole("button", { name: /^Concussive Force,/ }).hover();
+  await capture(
+    page,
+    "forge-tree-hover-detail",
+    () =>
+      document.querySelector(".skill-detail h5")?.textContent ===
+      "Concussive Force"
+  );
+  await page.getByRole("button", { name: /^Executioner's Mark,/ }).focus();
+  await capture(
+    page,
+    "forge-tree-keyboard-focus-detail",
+    () =>
+      document.querySelector(".skill-detail h5")?.textContent ===
+        "Executioner's Mark" &&
+      document.activeElement?.classList.contains("skill-node") === true
   );
   await page.reload({ waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Begin preparation" }).click();
@@ -352,13 +397,12 @@ try {
   await rallyingRoarPage.close();
 
   const accessibilityPage = await newPausedCombatPage(browser, {
-    contrast: "high",
     textScale: "large",
     motion: "reduce"
   });
   await capture(
     accessibilityPage,
-    "combat-high-contrast-large-text-reduced-motion",
+    "combat-large-text-reduced-motion",
     () =>
       document.querySelector(".combat-pause-banner") !== null &&
       document.querySelectorAll(".ability-control").length === 3
@@ -384,8 +428,13 @@ const manifest = {
     phase: state.phase,
     preferences: state.preferences
   })),
+  comparison: {
+    current: "forge-tree-current.png",
+    replacement: "forge-tree-replacement.png",
+    viewport: [1440, 900]
+  },
   decision:
-    "Approve the expanded Iron Warden Forge/loadout hierarchy, three-ability combat bar, and restrained warm Shield Slam, Linebreaker, and Rallying Roar combat effects."
+    "Approve the compact icon-led Iron Warden Forge tree, branch links, and single hover/focus detail surface while retaining the three-ability combat presentation."
 };
 await writeFile(
   new URL("manifest.json", outputDirectory),

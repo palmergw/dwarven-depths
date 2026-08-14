@@ -827,13 +827,6 @@ function appliedTextScale(): string | null {
   );
 }
 
-function appliedContrastPreference(): string | null {
-  return (
-    document.querySelector("main")?.getAttribute("data-contrast-preference") ??
-    null
-  );
-}
-
 function appliedSoundPreference(): string | null {
   return (
     document.querySelector("main")?.getAttribute("data-sound-preference") ??
@@ -1242,10 +1235,9 @@ describe("run journey guidance", () => {
     ).not.toHaveTextContent("download");
   });
 
-  it("keeps diagnostics out of the enlarged high-contrast player frame at 320 pixels", async () => {
+  it("keeps diagnostics out of the enlarged reduced-motion player frame at 320 pixels", async () => {
     await page.viewport(320, 720);
     window.localStorage.setItem(textScaleStorageKey, "extra-large");
-    window.localStorage.setItem(contrastPreferenceStorageKey, "high");
     window.localStorage.setItem(motionPreferenceStorageKey, "reduce");
     renderApp();
 
@@ -1291,7 +1283,6 @@ describe("run journey guidance", () => {
       expect(document.activeElement).toBe(settingsHeading)
     );
     expect(main).toHaveAttribute("data-text-scale", "extra-large");
-    expect(main).toHaveAttribute("data-contrast-preference", "high");
     expect(main).toHaveAttribute("data-motion-preference", "reduce");
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
       window.innerWidth
@@ -1479,62 +1470,57 @@ describe("presentation settings", () => {
     }
   });
 
-  it("applies keyboard-selected high contrast to the current shell", async () => {
-    renderApp();
-    await userEvent.click(await buttonWithText("Settings"));
-    const select = document.querySelector("#contrast-preference");
-    expect(select).toBeInstanceOf(HTMLSelectElement);
-    (select as HTMLSelectElement).focus();
-    await userEvent.keyboard("{ArrowDown}");
-
-    await vi.waitFor(() => expect(appliedContrastPreference()).toBe("high"));
-    expect(window.localStorage.getItem(contrastPreferenceStorageKey)).toBe(
-      "high"
-    );
-    const panel = document.querySelector(".panel");
-    const settings = document.querySelector(".settings");
-    const button = await buttonWithText("Close settings");
-    expect(getComputedStyle(panel as Element).backgroundColor).toBe(
-      "rgb(0, 0, 0)"
-    );
-    expect(getComputedStyle(settings as Element).borderTopColor).toBe(
-      "rgb(255, 255, 255)"
-    );
-    expect(getComputedStyle(button).color).toBe("rgb(0, 0, 0)");
-  });
-
-  it("persists mouse-selected high contrast across remounts", async () => {
-    renderApp();
-    await userEvent.click(await buttonWithText("Settings"));
-    const select = document.querySelector("#contrast-preference");
-    expect(select).toBeInstanceOf(HTMLSelectElement);
-    await userEvent.selectOptions(select as HTMLSelectElement, "high");
-    expect(appliedContrastPreference()).toBe("high");
-
-    root?.unmount();
-    root = undefined;
-    document.body.replaceChildren();
-    renderApp();
-    await vi.waitFor(() => expect(appliedContrastPreference()).toBe("high"));
-  });
-
-  it("falls back to standard contrast for malformed or unavailable storage", async () => {
-    window.localStorage.setItem(contrastPreferenceStorageKey, "unexpected");
+  it("retires stored high contrast without exposing alternate UI state", async () => {
+    window.localStorage.setItem(contrastPreferenceStorageKey, "high");
     renderApp();
     await vi.waitFor(() =>
-      expect(appliedContrastPreference()).toBe("standard")
+      expect(
+        window.localStorage.getItem(contrastPreferenceStorageKey)
+      ).toBeNull()
     );
+    expect(document.querySelector("main")).not.toHaveAttribute(
+      "data-contrast-preference"
+    );
+    await userEvent.click(await buttonWithText("Settings"));
+    expect(document.querySelector("#contrast-preference")).toBeNull();
+    expect(document.body).not.toHaveTextContent("High contrast");
+  });
 
-    root?.unmount();
-    root = undefined;
-    document.body.replaceChildren();
-    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new DOMException("blocked", "SecurityError");
+  it("discloses one compact skill contract from pointer hover and keyboard focus", async () => {
+    renderApp();
+    await userEvent.click(await buttonWithText("Upgrade inventory"));
+    const nodes = await vi.waitFor(() => {
+      const candidates =
+        document.querySelectorAll<HTMLButtonElement>(".skill-node");
+      expect(candidates).toHaveLength(13);
+      return candidates;
     });
-    renderApp();
-    await vi.waitFor(() =>
-      expect(appliedContrastPreference()).toBe("standard")
+    expect(document.querySelectorAll(".skill-detail")).toHaveLength(1);
+    expect(document.querySelectorAll(".skill-path-detail")).toHaveLength(0);
+
+    const concussive = Array.from(nodes).find((node) =>
+      node.getAttribute("aria-label")?.startsWith("Concussive Force,")
     );
+    expect(concussive).toBeInstanceOf(HTMLButtonElement);
+    await userEvent.hover(concussive as HTMLButtonElement);
+    expect(document.querySelector(".skill-detail")).toHaveTextContent(
+      "Concussive Force"
+    );
+    expect(concussive).toHaveAccessibleDescription(
+      /Effects: \+1 attack range.*Requires Disciplined Slam/
+    );
+
+    const executioner = Array.from(nodes).find((node) =>
+      node.getAttribute("aria-label")?.startsWith("Executioner's Mark,")
+    );
+    expect(executioner).toBeInstanceOf(HTMLButtonElement);
+    (executioner as HTMLButtonElement).focus();
+    await vi.waitFor(() =>
+      expect(document.querySelector(".skill-detail")).toHaveTextContent(
+        "Capstone; excludes Bastion Oath, Unyielding Command."
+      )
+    );
+    expect(document.activeElement).toBe(executioner);
   });
 });
 

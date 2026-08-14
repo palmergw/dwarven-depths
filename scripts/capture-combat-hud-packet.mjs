@@ -262,10 +262,6 @@ async function startAccessibilityPage(browser, preferences) {
       "reduce"
     );
     localStorage.setItem(
-      "dwarven-depths.presentation.contrast-preference.v1",
-      requestedPreferences.contrast
-    );
-    localStorage.setItem(
       "dwarven-depths.presentation.text-scale.v1",
       requestedPreferences.textScale
     );
@@ -423,24 +419,7 @@ try {
   );
   await page.close();
 
-  const highContrastPage = await startAccessibilityPage(browser, {
-    contrast: "high",
-    textScale: "default"
-  });
-  captures.push(
-    await capture(
-      highContrastPage,
-      "wip-high-contrast-paused",
-      () =>
-        document
-          .querySelector("main")
-          ?.getAttribute("data-contrast-preference") === "high"
-    )
-  );
-  await highContrastPage.close();
-
   const largeTextPage = await startAccessibilityPage(browser, {
-    contrast: "standard",
     textScale: "extra-large"
   });
   captures.push(
