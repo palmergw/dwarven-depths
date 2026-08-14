@@ -173,7 +173,7 @@ describe("Shuttergate web campaign authority", () => {
           }
         }
       })
-    ).toThrow("did not defeat the Gatebreaker Captain");
+    ).toThrow("authored schedule");
   });
 
   it("replays purchased campaign preparation through the same authority", async () => {
@@ -326,6 +326,26 @@ describe("Shuttergate web campaign authority", () => {
         "reward.boss.gatebreaker_captain"
       ])
     });
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "defeat",
+        finalState: {
+          ...result.finalState,
+          tick: 1834,
+          terminalResult: "defeat",
+          battlefield: {
+            ...battlefield,
+            dwarfCombatants: battlefield.dwarfCombatants.map((dwarf) => ({
+              ...dwarf,
+              lifecycleState: "downed",
+              currentHealth: 0
+            }))
+          }
+        }
+      })
+    ).toThrow("authored schedule");
     expect(() =>
       resolveShuttergateWebAttemptReward({
         schemaVersion: 1,

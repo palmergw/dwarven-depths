@@ -26,6 +26,7 @@ const attemptIdPattern = /^attempt\.shuttergate\.web_[0-9]{6}$/;
 const authoredWaveIds = Object.freeze(
   [1, 2, 3, 4, 5].map((wave) => `wave.shuttergate_${wave}` as StableId)
 );
+const authoredWaveStartTicks = Object.freeze([0, 900, 1800, 2700, 3600]);
 const authoredSpawnIds = Object.freeze(
   Array.from(
     { length: 18 },
@@ -65,6 +66,10 @@ const authoredEnemyDefinitions = Object.freeze([
 const authoredAdmissionTicks = Object.freeze([
   1, 300, 600, 900, 1200, 1500, 1800, 1950, 2250, 2700, 2820, 3000, 3180, 3600,
   3750, 3900, 4050, 4200
+]);
+const authoredSpawnTicks = Object.freeze([
+  0,
+  ...authoredAdmissionTicks.slice(1)
 ]);
 
 export interface ShuttergateWebRunConfiguration {
@@ -269,6 +274,13 @@ export function resolveShuttergateWebAttemptReward(input: {
     throw new RangeError(
       "Shuttergate web reward waves are not an authored prefix"
     );
+  const expectedStartedWaveCount = authoredWaveStartTicks.filter(
+    (tick) => tick <= state.tick
+  ).length;
+  if (battlefield.startedWaveIds.length !== expectedStartedWaveCount)
+    throw new RangeError(
+      "Shuttergate terminal waves do not match the authored schedule"
+    );
   if (
     input.terminalResult === "victory" &&
     battlefield.startedWaveIds.length !== authoredWaveIds.length
@@ -297,8 +309,11 @@ export function resolveShuttergateWebAttemptReward(input: {
       "Shuttergate terminal result does not bind the authored Warden state"
     );
   const firedSpawnCount = battlefield.firedSpawnIds.length;
+  const expectedFiredSpawnCount = authoredSpawnTicks.filter(
+    (tick) => tick <= state.tick
+  ).length;
   if (
-    firedSpawnCount > authoredSpawnIds.length ||
+    firedSpawnCount !== expectedFiredSpawnCount ||
     battlefield.firedSpawnIds.some(
       (spawnId, index) => spawnId !== authoredSpawnIds[index]
     ) ||
