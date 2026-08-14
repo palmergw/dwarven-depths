@@ -326,6 +326,12 @@ export function validateCheckpointAttemptResult(
   const campaignClaimsVictory =
     !startingProfile.claimedRewardIds.includes(victoryRewardId) &&
     profile.claimedRewardIds.includes(victoryRewardId);
+  const victoryRewardsContradict =
+    profile.claimedRewardIds.includes(victoryRewardId) &&
+    (!profile.claimedRewardIds.includes(bossRewardId) ||
+      !profile.unlockedCharacterIds.includes(
+        "character.deep_ranger" as StableId
+      ));
   const expectedProfile = applyAuthoritativeAttemptProfileDelta(
     startingProfile,
     campaign,
@@ -338,6 +344,7 @@ export function validateCheckpointAttemptResult(
     campaign.rewardId !== `reward.${campaign.attemptId}` ||
     !Number.isSafeInteger(campaign.forgeOreAwarded) ||
     campaign.forgeOreAwarded < 0 ||
+    victoryRewardsContradict ||
     startingProfile.claimedRewardIds.includes(campaign.rewardId as never) ||
     canonicalStringify(profile) !== canonicalStringify(expectedProfile)
   )

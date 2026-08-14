@@ -286,6 +286,61 @@ describe("checkpoint profile loading", () => {
     });
   });
 
+  it("rejects victory ownership without the Gatebreaker reward", async () => {
+    const store = new MemoryProfileStore();
+    const initial = createInitialProfile("character.iron_warden" as never);
+    await loadCheckpointProfile(store, () => 1_725_000_000_000, false);
+    const rewardId = "reward.attempt.shuttergate.web_000001";
+
+    await expect(
+      applyCheckpointAttemptResult(store, initial, {
+        schemaVersion: 1,
+        attemptId: "attempt.shuttergate.web_000001",
+        rewardId,
+        forgeOreAwarded: 8,
+        profile: normalizeProfileState({
+          ...initial,
+          revision: 2,
+          forgeOre: 8,
+          claimedRewardIds: [rewardId, "reward.campaign.shuttergate.victory"]
+        })
+      })
+    ).rejects.toThrow("contradicts the profile");
+    expect(store.writes).toBe(1);
+  });
+
+  it("rejects victory ownership when Gatebreaker did not unlock Deep Ranger", async () => {
+    const store = new MemoryProfileStore();
+    const initial = normalizeProfileState({
+      ...createInitialProfile("character.iron_warden" as never),
+      revision: 1,
+      forgeOre: 20,
+      claimedRewardIds: ["reward.boss.gatebreaker_captain"]
+    });
+    await loadCheckpointProfile(store, () => 1_725_000_000_000, false);
+    const rewardId = "reward.attempt.shuttergate.web_000001";
+
+    await expect(
+      applyCheckpointAttemptResult(store, initial, {
+        schemaVersion: 1,
+        attemptId: "attempt.shuttergate.web_000001",
+        rewardId,
+        forgeOreAwarded: 8,
+        profile: normalizeProfileState({
+          ...initial,
+          revision: 3,
+          forgeOre: 28,
+          claimedRewardIds: [
+            rewardId,
+            "reward.boss.gatebreaker_captain",
+            "reward.campaign.shuttergate.victory"
+          ]
+        })
+      })
+    ).rejects.toThrow("contradicts the profile");
+    expect(store.writes).toBe(1);
+  });
+
   it("merges boss and victory claims after the attempt reward races", async () => {
     const store = new MemoryProfileStore();
     const initial = createInitialProfile("character.iron_warden" as never);
