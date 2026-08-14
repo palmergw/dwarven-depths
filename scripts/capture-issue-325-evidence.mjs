@@ -111,6 +111,7 @@ async function readState(page) {
 }
 
 const captures = [];
+let forgeComparison;
 async function waitForStableTruth(page) {
   let previous;
   for (let attempt = 0; attempt < 50; attempt += 1) {
@@ -317,7 +318,18 @@ const browser = await chromium.launch({ headless: true });
 try {
   const page = await newPage(browser);
   await page.getByRole("button", { name: "Upgrade inventory" }).click();
-  await page.locator(".skill-paths").scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const scroller = document.querySelector(".upgrades");
+    const heading = document.querySelector("#iron-warden-skills-heading");
+    const toolbar = document.querySelector(".forge-toolbar");
+    if (
+      !(scroller instanceof HTMLElement) ||
+      !(heading instanceof HTMLElement) ||
+      !(toolbar instanceof HTMLElement)
+    )
+      throw new Error("Forge evidence scroll anchors are unavailable");
+    scroller.scrollTop = heading.offsetTop - toolbar.offsetHeight - 12;
+  });
   await capture(
     page,
     "forge-tree-replacement",
@@ -327,6 +339,7 @@ try {
       document.querySelectorAll(".skill-detail").length === 1
   );
   await page.getByRole("button", { name: /^Concussive Force,/ }).hover();
+  await page.locator(".skill-detail").scrollIntoViewIfNeeded();
   await capture(
     page,
     "forge-tree-hover-detail",
@@ -335,6 +348,7 @@ try {
       "Concussive Force"
   );
   await page.getByRole("button", { name: /^Executioner's Mark,/ }).focus();
+  await page.locator(".skill-detail").scrollIntoViewIfNeeded();
   await capture(
     page,
     "forge-tree-keyboard-focus-detail",
@@ -408,6 +422,81 @@ try {
       document.querySelectorAll(".ability-control").length === 3
   );
   await accessibilityPage.close();
+
+  const replacementScreenshot = await readFile(
+    new URL("forge-tree-replacement.png", outputDirectory)
+  );
+  const comparisonPage = await browser.newPage({
+    viewport: { width: 2880, height: 900 },
+    deviceScaleFactor: 1
+  });
+  const currentData = `data:image/png;base64,${priorForgeScreenshot.toString("base64")}`;
+  const replacementData = `data:image/png;base64,${replacementScreenshot.toString("base64")}`;
+  await comparisonPage.setContent(`
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 2880px; height: 900px; overflow: hidden; background: #080604; }
+      main { display: grid; grid-template-columns: 1440px 1440px; }
+      figure { position: relative; margin: 0; width: 1440px; height: 900px; }
+      img { display: block; width: 1440px; height: 900px; }
+      figcaption { position: absolute; z-index: 2; top: 14px; left: 50%; padding: 8px 18px;
+        border: 1px solid #d4a650; background: #080604ee; color: #f4cf7a;
+        font: 700 22px Georgia, serif; letter-spacing: .08em; transform: translateX(-50%); }
+    </style>
+    <main>
+      <figure><figcaption>CURRENT — DENSE COPY</figcaption><img src="${currentData}"></figure>
+      <figure><figcaption>REPLACEMENT — ICON TREE</figcaption><img src="${replacementData}"></figure>
+    </main>
+  `);
+  await comparisonPage.waitForFunction(() =>
+    [...document.images].every(
+      (image) => image.complete && image.naturalWidth === 1440
+    )
+  );
+  const pixelDiff = await comparisonPage.evaluate(() => {
+    const canvases = [...document.images].map((image) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1440;
+      canvas.height = 900;
+      canvas.getContext("2d")?.drawImage(image, 0, 0);
+      return canvas;
+    });
+    const current = canvases[0]
+      ?.getContext("2d")
+      ?.getImageData(0, 0, 1440, 900).data;
+    const replacement = canvases[1]
+      ?.getContext("2d")
+      ?.getImageData(0, 0, 1440, 900).data;
+    if (current === undefined || replacement === undefined)
+      throw new Error("Forge comparison pixels are unavailable");
+    let changedPixelCount = 0;
+    for (let index = 0; index < current.length; index += 4) {
+      if (
+        current[index] !== replacement[index] ||
+        current[index + 1] !== replacement[index + 1] ||
+        current[index + 2] !== replacement[index + 2] ||
+        current[index + 3] !== replacement[index + 3]
+      )
+        changedPixelCount += 1;
+    }
+    return { changedPixelCount, totalPixelCount: 1440 * 900 };
+  });
+  const board = "forge-tree-current-vs-replacement.png";
+  await comparisonPage.screenshot({
+    path: fileURLToPath(new URL(board, outputDirectory))
+  });
+  await comparisonPage.close();
+  forgeComparison = {
+    current: "forge-tree-current.png",
+    currentSha256: sha256(priorForgeScreenshot),
+    replacement: "forge-tree-replacement.png",
+    replacementSha256: sha256(replacementScreenshot),
+    board,
+    boardSha256: sha256(await readFile(new URL(board, outputDirectory))),
+    viewport: [1440, 900],
+    ...pixelDiff,
+    changedPixelRatio: pixelDiff.changedPixelCount / pixelDiff.totalPixelCount
+  };
 } finally {
   await browser.close();
 }
@@ -428,11 +517,7 @@ const manifest = {
     phase: state.phase,
     preferences: state.preferences
   })),
-  comparison: {
-    current: "forge-tree-current.png",
-    replacement: "forge-tree-replacement.png",
-    viewport: [1440, 900]
-  },
+  comparison: forgeComparison,
   decision:
     "Approve the compact icon-led Iron Warden Forge tree, branch links, and single hover/focus detail surface while retaining the three-ability combat presentation."
 };
