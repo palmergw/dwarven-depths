@@ -69,8 +69,20 @@ async function readState(page) {
 }
 
 const captures = [];
+async function waitForStableTruth(page) {
+  let previous;
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const current = JSON.stringify((await readState(page)).truth);
+    if (current === previous) return;
+    previous = current;
+    await page.waitForTimeout(100);
+  }
+  throw new Error("authoritative capture state did not stabilize");
+}
+
 async function capture(page, id, expected, expectedArgument) {
   await page.waitForFunction(expected, expectedArgument, { timeout: 90_000 });
+  await waitForStableTruth(page);
   const before = await readState(page);
   if (JSON.stringify(before.viewport) !== JSON.stringify([1440, 900]))
     throw new Error(`invalid viewport for ${id}: ${JSON.stringify(before.viewport)}`);
