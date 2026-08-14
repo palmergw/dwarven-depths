@@ -112,6 +112,19 @@ describe("Shuttergate web campaign authority", () => {
         seed: "2"
       })
     ).toThrow("profile history");
+    expect(() =>
+      createShuttergateWebScenario(scenario, {
+        ...configuration,
+        profile: {
+          ...configuration.profile,
+          revision: configuration.profile.revision + 1,
+          claimedRewardIds: [
+            ...configuration.profile.claimedRewardIds,
+            "reward.campaign.shuttergate.victory"
+          ] as never
+        }
+      })
+    ).toThrow("already ended in victory");
     const state = createShuttergateWebPreparationState(
       content,
       scenario,

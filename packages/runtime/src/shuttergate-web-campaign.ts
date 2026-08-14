@@ -102,6 +102,12 @@ function requireConfiguration(
     throw new RangeError(
       "Shuttergate web run configuration requires contiguous campaign rewards"
     );
+  if (
+    profile.claimedRewardIds.includes(
+      "reward.campaign.shuttergate.victory" as StableId
+    )
+  )
+    throw new RangeError("Shuttergate web campaign already ended in victory");
   const expectedAttemptNumber = claimedAttemptNumbers.length + 1;
   const expectedAttemptId = `attempt.shuttergate.web_${expectedAttemptNumber
     .toString()
