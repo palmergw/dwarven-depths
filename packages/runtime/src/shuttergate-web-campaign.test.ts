@@ -264,7 +264,7 @@ describe("Shuttergate web campaign authority", () => {
           }
         }
       })
-    ).toThrow("cleared authored enemy roster");
+    ).toThrow("authored enemy roster");
     for (const enemyCombatants of [
       battlefield.enemyCombatants.slice(1),
       [...battlefield.enemyCombatants, survivingEnemy]
@@ -279,7 +279,7 @@ describe("Shuttergate web campaign authority", () => {
             battlefield: { ...battlefield, enemyCombatants }
           }
         })
-      ).toThrow("cleared authored enemy roster");
+      ).toThrow("authored enemy roster");
     expect(() =>
       resolveShuttergateWebAttemptReward({
         schemaVersion: 1,
@@ -301,14 +301,22 @@ describe("Shuttergate web campaign authority", () => {
           }
         }
       })
-    ).toThrow("cleared authored enemy roster");
+    ).toThrow("authored enemy roster");
     const bossDefeatReward = resolveShuttergateWebAttemptReward({
       schemaVersion: 1,
       configuration,
       terminalResult: "defeat",
       finalState: {
         ...result.finalState,
-        terminalResult: "defeat"
+        terminalResult: "defeat",
+        battlefield: {
+          ...battlefield,
+          dwarfCombatants: battlefield.dwarfCombatants.map((dwarf) => ({
+            ...dwarf,
+            lifecycleState: "downed",
+            currentHealth: 0
+          }))
+        }
       }
     });
     expect(bossDefeatReward.profile).toMatchObject({
@@ -318,6 +326,26 @@ describe("Shuttergate web campaign authority", () => {
         "reward.boss.gatebreaker_captain"
       ])
     });
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "defeat",
+        finalState: {
+          ...result.finalState,
+          terminalResult: "defeat",
+          battlefield: {
+            ...battlefield,
+            dwarfCombatants: battlefield.dwarfCombatants.map((dwarf) => ({
+              ...dwarf,
+              lifecycleState: "downed",
+              currentHealth: 0
+            })),
+            enemyCombatants: [...battlefield.enemyCombatants, survivingEnemy]
+          }
+        }
+      })
+    ).toThrow("authored enemy roster");
     await expect(
       verifyReplay(
         createReplayDefinition(result, replayScenario, content),

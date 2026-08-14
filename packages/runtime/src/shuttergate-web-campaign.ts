@@ -276,6 +276,56 @@ export function resolveShuttergateWebAttemptReward(input: {
     throw new RangeError(
       "Shuttergate victory did not start every authored wave"
     );
+  const warden = battlefield.dwarfCombatants[0];
+  if (
+    battlefield.dwarfCombatants.length !== 1 ||
+    warden === undefined ||
+    warden.schemaVersion !== 1 ||
+    warden.entityId !== entityId ||
+    warden.characterDefinitionId !== characterId ||
+    warden.placementPointId !== run.placementPointId ||
+    (warden.lifecycleState === "downed"
+      ? warden.currentHealth !== 0
+      : warden.currentHealth <= 0) ||
+    (input.terminalResult === "victory" &&
+      warden.lifecycleState !== "active") ||
+    (input.terminalResult === "defeat" &&
+      warden.lifecycleState !== "downed" &&
+      state.tick < 6000)
+  )
+    throw new RangeError(
+      "Shuttergate terminal result does not bind the authored Warden state"
+    );
+  const firedSpawnCount = battlefield.firedSpawnIds.length;
+  if (
+    firedSpawnCount > authoredSpawnIds.length ||
+    battlefield.firedSpawnIds.some(
+      (spawnId, index) => spawnId !== authoredSpawnIds[index]
+    ) ||
+    battlefield.enemyAdmissions.length !== firedSpawnCount ||
+    battlefield.enemyAdmissions.some(
+      (admission, index) =>
+        admission.schemaVersion !== 1 ||
+        admission.spawnId !== authoredSpawnIds[index] ||
+        admission.entityId !== authoredEnemyEntityIds[index] ||
+        admission.enemyDefinitionId !== authoredEnemyDefinitions[index] ||
+        admission.admittedAtTick !== authoredAdmissionTicks[index]
+    ) ||
+    battlefield.enemyCombatants.length !== firedSpawnCount ||
+    battlefield.enemyCombatants.some(
+      (enemy, index) =>
+        enemy.schemaVersion !== 1 ||
+        enemy.entityId !== authoredEnemyEntityIds[index] ||
+        enemy.enemyDefinitionId !== authoredEnemyDefinitions[index] ||
+        enemy.admittedAtTick !== authoredAdmissionTicks[index] ||
+        (enemy.lifecycleState === "destroyed"
+          ? enemy.currentHealth !== 0
+          : enemy.currentHealth <= 0)
+    )
+  )
+    throw new RangeError(
+      "Shuttergate terminal result does not bind the authored enemy roster"
+    );
   const gatebreakerDefeated = battlefield.enemyCombatants.some(
     (enemy) =>
       enemy.entityId === "entity.enemy.shuttergate_010" &&
@@ -287,28 +337,9 @@ export function resolveShuttergateWebAttemptReward(input: {
     );
   if (
     input.terminalResult === "victory" &&
-    (battlefield.firedSpawnIds.length !== authoredSpawnIds.length ||
-      battlefield.firedSpawnIds.some(
-        (spawnId, index) => spawnId !== authoredSpawnIds[index]
-      ) ||
-      battlefield.enemyAdmissions.length !== authoredEnemyEntityIds.length ||
-      battlefield.enemyAdmissions.some(
-        (admission, index) =>
-          admission.schemaVersion !== 1 ||
-          admission.spawnId !== authoredSpawnIds[index] ||
-          admission.entityId !== authoredEnemyEntityIds[index] ||
-          admission.enemyDefinitionId !== authoredEnemyDefinitions[index] ||
-          admission.admittedAtTick !== authoredAdmissionTicks[index]
-      ) ||
-      battlefield.enemyCombatants.length !== authoredEnemyEntityIds.length ||
+    (firedSpawnCount !== authoredSpawnIds.length ||
       battlefield.enemyCombatants.some(
-        (enemy, index) =>
-          enemy.schemaVersion !== 1 ||
-          enemy.entityId !== authoredEnemyEntityIds[index] ||
-          enemy.enemyDefinitionId !== authoredEnemyDefinitions[index] ||
-          enemy.admittedAtTick !== authoredAdmissionTicks[index] ||
-          enemy.lifecycleState !== "destroyed" ||
-          enemy.currentHealth !== 0
+        (enemy) => enemy.lifecycleState !== "destroyed"
       ))
   )
     throw new RangeError(
