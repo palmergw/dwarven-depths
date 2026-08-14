@@ -168,6 +168,14 @@ async function newPage(browser, preferences = {}) {
   return page;
 }
 
+async function newPausedCombatPage(browser, preferences = {}) {
+  const page = await newPage(browser, preferences);
+  await page.getByRole("button", { name: "Begin preparation" }).click();
+  await page.getByRole("button", { name: "Confirm preparation" }).click();
+  await waitForPausedCombat(page);
+  return page;
+}
+
 async function waitForPausedCombat(page) {
   await page.waitForFunction(
     (expectedFixture) =>
@@ -291,34 +299,33 @@ try {
     key: "1",
     input: "pointer"
   });
-  await captureAbility(page, {
+  await page.close();
+
+  const linebreakerPage = await newPausedCombatPage(browser);
+  await captureAbility(linebreakerPage, {
     id: "linebreaker-impact",
     abilityId: "ability.iron_warden.linebreaker",
     label: "Linebreaker",
     key: "2",
     input: "keyboard"
   });
-  await captureAbility(page, {
+  await linebreakerPage.close();
+
+  const rallyingRoarPage = await newPausedCombatPage(browser);
+  await captureAbility(rallyingRoarPage, {
     id: "rallying-roar-impact",
     abilityId: "ability.iron_warden.rallying_roar",
     label: "Rallying Roar",
     key: "3",
     input: "pointer"
   });
-  await page.close();
+  await rallyingRoarPage.close();
 
-  const accessibilityPage = await newPage(browser, {
+  const accessibilityPage = await newPausedCombatPage(browser, {
     contrast: "high",
     textScale: "large",
     motion: "reduce"
   });
-  await accessibilityPage
-    .getByRole("button", { name: "Begin preparation" })
-    .click();
-  await accessibilityPage
-    .getByRole("button", { name: "Confirm preparation" })
-    .click();
-  await waitForPausedCombat(accessibilityPage);
   await capture(
     accessibilityPage,
     "combat-high-contrast-large-text-reduced-motion",
