@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import {
+  animatedEnemyIntentAlpha,
   authoredEnemyIntentAssets,
   authoredEnemyIntentEffectAlpha,
   authoredEnemyIntentEffectLayout,
@@ -1779,6 +1780,14 @@ describe("player-facing combat HUD", () => {
         phase: "committed"
       })
     ).toBe(0.82);
+    expect(animatedEnemyIntentAlpha(0.98, "telling", true, 1)).toBe(0.98);
+    expect(animatedEnemyIntentAlpha(0.94, "telling", false, 1)).toBe(1);
+    expect(animatedEnemyIntentAlpha(0.82, "committed", false, -1)).toBe(
+      0.82
+    );
+    expect(animatedEnemyIntentAlpha(0.96, "cancelled", false, 1)).toBe(
+      0.58
+    );
     expect(
       authoredEnemyIntentTargetPoint(
         { mechanic: "attack_slow", phase: "committed" },

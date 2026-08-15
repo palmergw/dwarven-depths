@@ -925,6 +925,17 @@ export function authoredEnemyIntentEffectAlpha(
   return 0.82;
 }
 
+export function animatedEnemyIntentAlpha(
+  baseAlpha: number,
+  phase: EnemyIntentPhase,
+  reduceMotion: boolean,
+  cadence: number
+): number {
+  if (phase === "cancelled") return Math.min(baseAlpha, 0.58);
+  if (reduceMotion) return baseAlpha;
+  return Math.min(1, baseAlpha + Math.max(0, cadence) * 0.08);
+}
+
 export function authoredEnemyIntentTargetPoint(
   intent: EnemyIntentPresentation,
   source: Readonly<{ x: number; y: number }>,
@@ -2159,11 +2170,12 @@ class PersistentBattlefieldScene {
         Number(presentation.getData("baseScaleY")) * pulse
       );
       presentation.setAlpha(
-        phase === "cancelled"
-          ? 0.58
-          : reduceMotion
-            ? 0.92
-            : 0.88 + Math.max(0, cadence) * 0.12
+        animatedEnemyIntentAlpha(
+          Number(presentation.getData("baseAlpha")),
+          phase,
+          reduceMotion,
+          cadence
+        )
       );
     }
     for (const objects of this.entities.values()) {
@@ -2787,6 +2799,7 @@ class PersistentBattlefieldScene {
           .setRotation(angle);
       effect.setData("baseScaleX", effect.scaleX);
       effect.setData("baseScaleY", effect.scaleY);
+      effect.setData("baseAlpha", effect.alpha);
       effect.setData("phase", intent.phase);
       if (!this.behaviorEffects.has(sourceEntity.id)) {
         this.behaviorEffects.set(sourceEntity.id, effect);
@@ -2811,6 +2824,7 @@ class PersistentBattlefieldScene {
           .setRotation(0);
         endpoint.setData("baseScaleX", endpoint.scaleX);
         endpoint.setData("baseScaleY", endpoint.scaleY);
+        endpoint.setData("baseAlpha", endpoint.alpha);
         endpoint.setData("phase", intent.phase);
         if (!this.behaviorEndpoints.has(sourceEntity.id)) {
           this.behaviorEndpoints.set(sourceEntity.id, endpoint);
@@ -2827,6 +2841,7 @@ class PersistentBattlefieldScene {
         .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
       crest.setData("baseScaleX", crest.scaleX);
       crest.setData("baseScaleY", crest.scaleY);
+      crest.setData("baseAlpha", crest.alpha);
       crest.setData("phase", intent.phase);
       if (!this.behaviorCrests.has(sourceEntity.id)) {
         this.behaviorCrests.set(sourceEntity.id, crest);
