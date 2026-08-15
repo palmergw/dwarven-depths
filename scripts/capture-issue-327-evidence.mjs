@@ -609,6 +609,8 @@ try {
         '.battlefield-entity-inspector[data-intent-mechanic="attack_slow"]'
       );
       await inspector.focus();
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Shift+Tab");
       const inspectorEntityId = await inspector.getAttribute("data-entity-id");
       await capture(page, "hexer-keyboard-mechanic-detail", {
         ...roleCapture,
