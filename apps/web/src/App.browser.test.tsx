@@ -1719,6 +1719,16 @@ describe("player-facing combat HUD", () => {
     expect(
       authoredEnemyIntentAssets("enemy.goblin_hexer", {
         mechanic: "attack_slow",
+        phase: "committed"
+      })
+    ).toEqual({
+      crest: "hexer-intent-crest",
+      world: "hexer-rune-channel",
+      endpoint: "hexer-target-tether"
+    });
+    expect(
+      authoredEnemyIntentAssets("enemy.goblin_hexer", {
+        mechanic: "attack_slow",
         phase: "cancelled"
       })
     ).toEqual({
@@ -1740,6 +1750,12 @@ describe("player-facing combat HUD", () => {
     expect(
       authoredEnemyIntentEffectLayout({
         mechanic: "attack_slow",
+        phase: "committed"
+      })
+    ).toBe("span");
+    expect(
+      authoredEnemyIntentEffectLayout({
+        mechanic: "attack_disrupt",
         phase: "committed"
       })
     ).toBe("endpoint");

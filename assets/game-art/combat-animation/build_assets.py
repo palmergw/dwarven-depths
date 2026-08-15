@@ -76,11 +76,11 @@ EXPANDED_HOSTILE_ROLES = (
     "goblin-warden-hunter",
 )
 ENEMY_INTENT_ASSETS = (
-    ("sapper-intent-crest", (64, 64)),
+    ("sapper-intent-crest", (32, 32)),
     ("sapper-fuse-tell", (176, 112)),
     ("sapper-blast-impact", (176, 112)),
     ("sapper-fracture-cancel", (176, 112)),
-    ("hexer-intent-crest", (64, 64)),
+    ("hexer-intent-crest", (32, 32)),
     ("hexer-rune-channel", (176, 112)),
     ("hexer-target-tether", (176, 112)),
     ("hexer-fracture-cancel", (176, 112)),
@@ -405,9 +405,10 @@ def build_outputs() -> dict[str, bytes]:
     with Image.open(ENEMY_INTENT_SOURCE) as master:
         column_edges = [round(index * master.width / 4) for index in range(5)]
         row_edges = [round(index * master.height / 2) for index in range(3)]
+        intent_cells: dict[str, Image.Image] = {}
         for index, (name, canvas) in enumerate(ENEMY_INTENT_ASSETS):
             row, column = divmod(index, 4)
-            cell = trim(
+            intent_cells[name] = trim(
                 keyed_alpha(
                     master.crop(
                         (
@@ -422,6 +423,24 @@ def build_outputs() -> dict[str, bytes]:
                 ),
                 padding=8,
             )
+        for name, canvas in ENEMY_INTENT_ASSETS:
+            if name.endswith("intent-crest"):
+                # Runtime identity belongs on the source health-frame endcap. Derive
+                # its pictogram from the plaque-free world source rather than shrinking
+                # the broad presentation plaque authored in the atlas.
+                source_name = (
+                    "sapper-fuse-tell"
+                    if name.startswith("sapper-")
+                    else "hexer-rune-channel"
+                )
+                source = intent_cells[source_name]
+                right_ratio = 0.30 if name.startswith("sapper-") else 0.25
+                cell = trim(
+                    source.crop((0, 0, round(source.width * right_ratio), source.height)),
+                    padding=3,
+                )
+            else:
+                cell = intent_cells[name]
             outputs[f"{name}.png"] = encode_png(centered_miniature(cell, canvas))
     return dict(sorted(outputs.items()))
 

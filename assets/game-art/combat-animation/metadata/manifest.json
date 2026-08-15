@@ -817,10 +817,10 @@
     {
       "id": "hexer-intent-crest",
       "path": "assets/game-art/combat-animation/exports/entities/hexer-intent-crest.png",
-      "dimensions": [64, 64],
+      "dimensions": [32, 32],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "63174e1074d2fc9906773ec631c8536d9f37a19a011d11a50f2e8c644326c663"
+      "sha256": "bf2964d81ccbe7f8bbf6c53c487a96dabb4be08434f6579076d52c4d4320aa6f"
     },
     {
       "id": "hexer-rune-channel",
@@ -993,10 +993,10 @@
     {
       "id": "sapper-intent-crest",
       "path": "assets/game-art/combat-animation/exports/entities/sapper-intent-crest.png",
-      "dimensions": [64, 64],
+      "dimensions": [32, 32],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "ad39bf0777146e0b9c4d70dbc96e60518b26e339cf4e58cc39ea2a14d75ea1ee"
+      "sha256": "5a98e4aac13669dd13a6f46a3144a0c865123784ebd81de01a643aada4cc2075"
     }
   ]
 }

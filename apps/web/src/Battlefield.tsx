@@ -872,6 +872,7 @@ interface AuthoredEnemyIntentAssets {
     | "hexer-rune-channel"
     | "hexer-target-tether"
     | "hexer-fracture-cancel";
+  readonly endpoint?: "hexer-target-tether";
 }
 
 export function authoredEnemyIntentAssets(
@@ -898,8 +899,11 @@ export function authoredEnemyIntentAssets(
         intent.phase === "telling"
           ? "hexer-rune-channel"
           : intent.phase === "committed"
-            ? "hexer-target-tether"
-            : "hexer-fracture-cancel"
+            ? "hexer-rune-channel"
+            : "hexer-fracture-cancel",
+      ...(intent.phase === "committed"
+        ? { endpoint: "hexer-target-tether" as const }
+        : {})
     };
   return undefined;
 }
@@ -907,7 +911,9 @@ export function authoredEnemyIntentAssets(
 export function authoredEnemyIntentEffectLayout(
   intent: EnemyIntentPresentation
 ): "span" | "endpoint" {
-  return intent.phase === "committed" ? "endpoint" : "span";
+  return intent.mechanic === "attack_disrupt" && intent.phase === "committed"
+    ? "endpoint"
+    : "span";
 }
 
 export function statusSignalKind(
@@ -1674,7 +1680,7 @@ function updateEntitySignal(
   const width = dwarf ? 46 : 38;
   const top = entity.y - (dwarf ? 72 : 60);
   if (presentation.elite || presentation.boss) {
-    signal.fillStyle(presentation.boss ? 0x76512e : 0x5d3d22, 1);
+    signal.fillStyle(presentation.boss ? 0x76512e : 0x34271d, 1);
     signal.fillRoundedRect(
       entity.x - width / 2 - 6,
       top - 6,
@@ -1700,8 +1706,8 @@ function updateEntitySignal(
   );
   signal.strokeRoundedRect(entity.x - width / 2 - 3, top - 3, width + 6, 10, 2);
   if (presentation.elite || presentation.boss) {
-    const frameColor = presentation.boss ? 0xd2a866 : 0xb98b45;
-    signal.lineStyle(presentation.boss ? 3 : 2.5, frameColor, 0.95);
+    const frameColor = presentation.boss ? 0xd2a866 : 0x9a7140;
+    signal.lineStyle(presentation.boss ? 3 : 3, frameColor, 0.95);
     signal.strokeRoundedRect(
       entity.x - width / 2 - 5,
       top - 5,
@@ -1710,6 +1716,8 @@ function updateEntitySignal(
       3
     );
     signal.fillStyle(0x3b2818, 1);
+    signal.fillRoundedRect(entity.x - width / 2 - 8, top - 5, 7, 14, 2);
+    signal.fillRoundedRect(entity.x + width / 2 + 1, top - 5, 7, 14, 2);
     signal.fillTriangle(
       entity.x - width / 2 - 8,
       top - 3,
@@ -1726,7 +1734,7 @@ function updateEntitySignal(
       entity.x + width / 2 + 8,
       top + 7
     );
-    signal.lineStyle(1, 0xf0d394, 0.82);
+    signal.lineStyle(1, 0xc79b5a, 0.88);
     signal.lineBetween(
       entity.x - width / 2 - 7,
       top + 2,
@@ -1739,6 +1747,9 @@ function updateEntitySignal(
       entity.x + width / 2 + 7,
       top + 2
     );
+    signal.fillStyle(0x17100b, 1);
+    signal.fillCircle(entity.x - width / 2 - 4.5, top + 2, 1.5);
+    signal.fillCircle(entity.x + width / 2 + 4.5, top + 2, 1.5);
   }
   signal.fillStyle(
     presentation.healthRatio > 0.5
@@ -1994,6 +2005,7 @@ class PersistentBattlefieldScene {
   readonly effects: Phaser.GameObjects.Graphics[] = [];
   readonly projectileEffects = new Map<string, Phaser.GameObjects.Graphics>();
   readonly behaviorEffects = new Map<string, Phaser.GameObjects.Image>();
+  readonly behaviorEndpoints = new Map<string, Phaser.GameObjects.Image>();
   readonly behaviorCrests = new Map<string, Phaser.GameObjects.Image>();
   readonly abilityEffects = new Map<string, Phaser.GameObjects.Image>();
   readonly lighting: Phaser.GameObjects.Image;
@@ -2097,6 +2109,7 @@ class PersistentBattlefieldScene {
     );
     for (const presentation of [
       ...this.behaviorEffects.values(),
+      ...this.behaviorEndpoints.values(),
       ...this.behaviorCrests.values()
     ]) {
       const phase = presentation.getData("phase") as EnemyIntentPhase;
@@ -2677,6 +2690,12 @@ class PersistentBattlefieldScene {
         effect.destroy();
         this.behaviorEffects.delete(id);
       }
+    for (const [id, endpoint] of this.behaviorEndpoints)
+      if (!liveBehaviorEffectIds.has(id)) {
+        this.layers["world-effects"].delete(endpoint);
+        endpoint.destroy();
+        this.behaviorEndpoints.delete(id);
+      }
     for (const [id, crest] of this.behaviorCrests)
       if (!liveBehaviorEffectIds.has(id)) {
         this.layers["world-focus"].delete(crest);
@@ -2707,29 +2726,23 @@ class PersistentBattlefieldScene {
       const effect =
         this.behaviorEffects.get(sourceEntity.id) ??
         this.scene.add.image(midpointX, midpointY, assets.world);
-      effect.setTexture(assets.world).setOrigin(0.5).setAlpha(0.76);
+      effect.setTexture(assets.world).setOrigin(0.5).setAlpha(0.82);
       if (authoredEnemyIntentEffectLayout(intent) === "endpoint")
         effect
-          .setPosition(destination.x, destination.y + 4)
-          .setDisplaySize(
-            intent.mechanic === "attack_disrupt" ? 108 : 88,
-            intent.mechanic === "attack_disrupt" ? 66 : 58
-          )
+          .setPosition(destination.x, destination.y + 15)
+          .setDisplaySize(98, 50)
           .setRotation(0);
       else if (intent.mechanic === "attack_disrupt")
         effect
-          .setPosition(midpointX, midpointY - 4)
-          .setDisplaySize(Math.max(92, Math.min(154, distance + 38)), 58)
+          .setPosition(midpointX, midpointY + 8)
+          .setDisplaySize(Math.max(82, Math.min(142, distance + 24)), 32)
           .setRotation(angle);
       else
         effect
-          .setPosition(midpointX, midpointY - 8)
+          .setPosition(midpointX, midpointY + 10)
           .setDisplaySize(
-            Math.max(
-              98,
-              Math.min(164, distance + (intent.phase === "telling" ? 42 : 50))
-            ),
-            intent.phase === "telling" ? 54 : 58
+            Math.max(74, Math.min(146, distance + 20)),
+            intent.phase === "telling" ? 22 : 24
           )
           .setRotation(angle);
       effect.setData("baseScaleX", effect.scaleX);
@@ -2739,13 +2752,42 @@ class PersistentBattlefieldScene {
         this.behaviorEffects.set(sourceEntity.id, effect);
         this.layers["world-effects"].add(effect);
       }
+      if (assets.endpoint === undefined) {
+        const staleEndpoint = this.behaviorEndpoints.get(sourceEntity.id);
+        if (staleEndpoint !== undefined) {
+          this.layers["world-effects"].delete(staleEndpoint);
+          staleEndpoint.destroy();
+          this.behaviorEndpoints.delete(sourceEntity.id);
+        }
+      } else {
+        const endpoint =
+          this.behaviorEndpoints.get(sourceEntity.id) ??
+          this.scene.add.image(
+            destination.x,
+            destination.y + 13,
+            assets.endpoint
+          );
+        endpoint
+          .setTexture(assets.endpoint)
+          .setPosition(destination.x, destination.y + 13)
+          .setDisplaySize(64, 36)
+          .setAlpha(0.82)
+          .setRotation(0);
+        endpoint.setData("baseScaleX", endpoint.scaleX);
+        endpoint.setData("baseScaleY", endpoint.scaleY);
+        endpoint.setData("phase", intent.phase);
+        if (!this.behaviorEndpoints.has(sourceEntity.id)) {
+          this.behaviorEndpoints.set(sourceEntity.id, endpoint);
+          this.layers["world-effects"].add(endpoint);
+        }
+      }
       const crest =
         this.behaviorCrests.get(sourceEntity.id) ??
-        this.scene.add.image(source.x + 31, source.y - 58, assets.crest);
+        this.scene.add.image(source.x + 27, source.y - 58, assets.crest);
       crest
         .setTexture(assets.crest)
-        .setPosition(source.x + 31, source.y - 58)
-        .setDisplaySize(intent.phase === "committed" ? 34 : 31, 18)
+        .setPosition(source.x + 27, source.y - 58)
+        .setDisplaySize(intent.phase === "committed" ? 20 : 18, 18)
         .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
       crest.setData("baseScaleX", crest.scaleX);
       crest.setData("baseScaleY", crest.scaleY);
