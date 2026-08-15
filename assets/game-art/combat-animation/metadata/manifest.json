@@ -10,7 +10,8 @@
     "assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png": "226aa23dea6cabfc04403cc93343e8122dd297615037911245b74750d8e279a2",
     "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "bbf7c4fd3090f767ca8a187befc495a46303ad9934a57cd0cf6a28bdfda2d6c4",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
-    "assets/game-art/combat-animation/sources/shuttergate-expanded-hostile-role-atlas-master.png": "8b88de6fe432b54f8b8821a90c10948bc0d37ae85f9c3c8f2630ea8fbe9cab5d"
+    "assets/game-art/combat-animation/sources/shuttergate-expanded-hostile-role-atlas-master.png": "8b88de6fe432b54f8b8821a90c10948bc0d37ae85f9c3c8f2630ea8fbe9cab5d",
+    "assets/game-art/combat-animation/sources/shuttergate-sapper-hexer-intent-atlas-master.png": "ce2106d3d3c57c5325f81890834ba616d62847fdfea0903d3c41681a6305132d"
   },
   "files": [
     {
@@ -806,6 +807,38 @@
       "sha256": "901fe826994a18ac734d5661e63bb98c2650b12e7e7e0aceed4dbe7ac5e4f127"
     },
     {
+      "id": "hexer-fracture-cancel",
+      "path": "assets/game-art/combat-animation/exports/entities/hexer-fracture-cancel.png",
+      "dimensions": [176, 112],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "1b5934c9b4aac8a20965397fbe61c757bc48d7274fb7d6ac8db3cbb785a15277"
+    },
+    {
+      "id": "hexer-intent-crest",
+      "path": "assets/game-art/combat-animation/exports/entities/hexer-intent-crest.png",
+      "dimensions": [64, 64],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "9f05fe80cf93b3d02e2456844bd145d2c5e2e1396fdb6620966aec746ef859f8"
+    },
+    {
+      "id": "hexer-rune-channel",
+      "path": "assets/game-art/combat-animation/exports/entities/hexer-rune-channel.png",
+      "dimensions": [176, 112],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f4df4f6154fbeaa895296052d5c3e22c28815263986ad67c3fb510fbf3543cf1"
+    },
+    {
+      "id": "hexer-target-tether",
+      "path": "assets/game-art/combat-animation/exports/entities/hexer-target-tether.png",
+      "dimensions": [176, 112],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "4e538cbc1a2dabcfc1f542e456b193d4df230c7c7b36e132bd0142e66c872745"
+    },
+    {
       "id": "iron-warden-basic-attack-committed",
       "path": "assets/game-art/combat-animation/exports/entities/iron-warden-basic-attack-committed.png",
       "dimensions": [112, 72],
@@ -932,6 +965,38 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
       "sha256": "e2fc189c09f145857d5ff28b49966aa8d7d504c227d9cf0e3d6624fa1fd9511d"
+    },
+    {
+      "id": "sapper-blast-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/sapper-blast-impact.png",
+      "dimensions": [176, 112],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "507ecce2fe0d4fe2cb49d06eca4d02a97318905da680b5d5046d69f6ad0cea37"
+    },
+    {
+      "id": "sapper-fracture-cancel",
+      "path": "assets/game-art/combat-animation/exports/entities/sapper-fracture-cancel.png",
+      "dimensions": [176, 112],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "6f48cf0019c4286673017dbe91784834d6bd7e87b9d79a36820de587d79137b4"
+    },
+    {
+      "id": "sapper-fuse-tell",
+      "path": "assets/game-art/combat-animation/exports/entities/sapper-fuse-tell.png",
+      "dimensions": [176, 112],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "3bba95c3eecc6a7ac7fe773ab19434544ad314448506d474beffbab00a35c8ec"
+    },
+    {
+      "id": "sapper-intent-crest",
+      "path": "assets/game-art/combat-animation/exports/entities/sapper-intent-crest.png",
+      "dimensions": [64, 64],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "ab0c7be3b4ba9e4cd184ada3d2b1e3d935c13beca72bfd661ecf23861c415d93"
     }
   ]
 }

@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import {
+  authoredEnemyIntentAssets,
   Battlefield,
   battlefieldEffectLifetime,
   buildBattlefieldPrimitives,
@@ -1695,6 +1696,39 @@ describe("player-facing combat HUD", () => {
       deriveEnemyIntentPresentation([
         "status.enemy_behavior.attack_slow.cooling_down"
       ])
+    ).toBeUndefined();
+    expect(
+      authoredEnemyIntentAssets("enemy.goblin_sapper", {
+        mechanic: "attack_disrupt",
+        phase: "telling"
+      })
+    ).toEqual({
+      crest: "sapper-intent-crest",
+      world: "sapper-fuse-tell"
+    });
+    expect(
+      authoredEnemyIntentAssets("enemy.goblin_sapper", {
+        mechanic: "attack_disrupt",
+        phase: "committed"
+      })
+    ).toEqual({
+      crest: "sapper-intent-crest",
+      world: "sapper-blast-impact"
+    });
+    expect(
+      authoredEnemyIntentAssets("enemy.goblin_hexer", {
+        mechanic: "attack_slow",
+        phase: "cancelled"
+      })
+    ).toEqual({
+      crest: "hexer-intent-crest",
+      world: "hexer-fracture-cancel"
+    });
+    expect(
+      authoredEnemyIntentAssets("enemy.goblin_slinger", {
+        mechanic: "standoff_fire",
+        phase: "telling"
+      })
     ).toBeUndefined();
     expect(
       enemyIntentDetail({

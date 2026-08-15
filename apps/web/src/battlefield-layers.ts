@@ -74,6 +74,14 @@ export const BATTLEFIELD_RUNTIME_ASSET_KEYS = [
       )
     ]
   ),
+  "sapper-intent-crest",
+  "sapper-fuse-tell",
+  "sapper-blast-impact",
+  "sapper-fracture-cancel",
+  "hexer-intent-crest",
+  "hexer-rune-channel",
+  "hexer-target-tether",
+  "hexer-fracture-cancel",
   "warm-light-overlay",
   "hostile-faction-ring",
   "shield-slam-impact",

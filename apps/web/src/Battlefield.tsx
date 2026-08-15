@@ -180,6 +180,18 @@ const wardenShieldSlamCycleAssetUrls = Object.fromEntries(
     ]
   )
 );
+const enemyIntentAssetUrls = Object.fromEntries(
+  [
+    "sapper-intent-crest",
+    "sapper-fuse-tell",
+    "sapper-blast-impact",
+    "sapper-fracture-cancel",
+    "hexer-intent-crest",
+    "hexer-rune-channel",
+    "hexer-target-tether",
+    "hexer-fracture-cancel"
+  ].map((key) => [key, combatAnimationAssetUrl(`${key}.png`)])
+);
 const warmLightOverlayUrl = new URL(
   "../../../assets/game-art/production-scene/exports/lighting/warm-light-overlay.png",
   import.meta.url
@@ -260,6 +272,7 @@ const battlefieldAssetUrls: Readonly<Record<string, string>> = {
   ...hostileAttackCycleAssetUrls,
   ...wardenAttackCycleAssetUrls,
   ...wardenShieldSlamCycleAssetUrls,
+  ...enemyIntentAssetUrls,
   "warm-light-overlay": warmLightOverlayUrl,
   "hostile-faction-ring": hostileFactionRingUrl,
   "shield-slam-impact": shieldSlamImpactUrl,
@@ -848,6 +861,47 @@ export function enemyIntentDetail(entity: RenderEntityV2): string | undefined {
           ? "Cancelled"
           : "Watching";
   return `${detail.role} — ${detail.mechanic} · ${phase} · ${detail.counterplay}.`;
+}
+
+interface AuthoredEnemyIntentAssets {
+  readonly crest: "sapper-intent-crest" | "hexer-intent-crest";
+  readonly world:
+    | "sapper-fuse-tell"
+    | "sapper-blast-impact"
+    | "sapper-fracture-cancel"
+    | "hexer-rune-channel"
+    | "hexer-target-tether"
+    | "hexer-fracture-cancel";
+}
+
+export function authoredEnemyIntentAssets(
+  visualId: string,
+  intent: EnemyIntentPresentation
+): AuthoredEnemyIntentAssets | undefined {
+  if (
+    visualId === "enemy.goblin_sapper" &&
+    intent.mechanic === "attack_disrupt"
+  )
+    return {
+      crest: "sapper-intent-crest",
+      world:
+        intent.phase === "telling"
+          ? "sapper-fuse-tell"
+          : intent.phase === "committed"
+            ? "sapper-blast-impact"
+            : "sapper-fracture-cancel"
+    };
+  if (visualId === "enemy.goblin_hexer" && intent.mechanic === "attack_slow")
+    return {
+      crest: "hexer-intent-crest",
+      world:
+        intent.phase === "telling"
+          ? "hexer-rune-channel"
+          : intent.phase === "committed"
+            ? "hexer-target-tether"
+            : "hexer-fracture-cancel"
+    };
+  return undefined;
 }
 
 export function statusSignalKind(
@@ -1662,18 +1716,14 @@ function updateEntitySignal(
   }
   const groundedStatuses = presentation.statusIds.filter((statusId) => {
     const kind = statusSignalKind(statusId);
-    return kind === "stagger" || kind === "slow" || kind === "haste";
+    return kind === "slow" || kind === "haste";
   });
   for (const [index, statusId] of groundedStatuses.entries()) {
     signal.lineStyle(2, 0xc8b089, 0.9);
     const centerX = entity.x - 9 + index * 9;
     const centerY = entity.y + 3;
     const kind = statusSignalKind(statusId);
-    if (kind === "stagger") {
-      signal.lineBetween(centerX - 7, centerY, centerX - 2, centerY - 4);
-      signal.lineBetween(centerX - 2, centerY - 4, centerX + 1, centerY + 3);
-      signal.lineBetween(centerX + 1, centerY + 3, centerX + 7, centerY - 2);
-    } else if (kind === "slow") {
+    if (kind === "slow") {
       signal.strokeEllipse(centerX, centerY, 18, 7);
       signal.lineBetween(centerX - 4, centerY - 3, centerX + 4, centerY + 3);
     } else if (kind === "haste") {
@@ -1681,56 +1731,7 @@ function updateEntitySignal(
       signal.lineBetween(centerX, centerY + 2, centerX + 7, centerY - 2);
     }
   }
-  const intent = deriveEnemyIntentPresentation(presentation.statusIds);
-  if (intent !== undefined) {
-    const crestX = entity.x + width / 2 + 10;
-    const crestY = top + 1;
-    signal.lineStyle(
-      intent.phase === "committed" ? 3 : 2,
-      0xe2c391,
-      intent.phase === "cancelled" ? 0.5 : 0.95
-    );
-    signal.fillStyle(
-      intent.phase === "committed" ? 0xd4a657 : 0xb07838,
-      intent.phase === "telling" ? 0.28 : 0.78
-    );
-    if (intent.mechanic === "target_intercept") {
-      signal.fillRoundedRect(crestX - 5, crestY - 6, 10, 11, 3);
-      signal.strokeRoundedRect(crestX - 5, crestY - 6, 10, 11, 3);
-    } else if (intent.mechanic === "attack_disrupt") {
-      signal.fillCircle(crestX, crestY, intent.phase === "committed" ? 5 : 2);
-      signal.strokeCircle(crestX, crestY, 6);
-      signal.lineBetween(crestX, crestY - 8, crestX + 3, crestY - 5);
-      if (intent.phase === "committed") {
-        signal.lineBetween(crestX - 9, crestY, crestX - 6, crestY);
-        signal.lineBetween(crestX + 6, crestY, crestX + 9, crestY);
-      }
-    } else if (intent.mechanic === "attack_slow") {
-      signal.strokeCircle(crestX, crestY, 6);
-      signal.lineBetween(crestX - 4, crestY + 4, crestX + 4, crestY - 4);
-    } else if (
-      intent.mechanic === "ally_haste" ||
-      intent.mechanic === "formation_command"
-    ) {
-      signal.lineBetween(crestX, crestY - 7, crestX, crestY + 6);
-      signal.lineBetween(crestX, crestY - 6, crestX + 6, crestY - 3);
-      signal.lineBetween(crestX + 6, crestY - 3, crestX, crestY);
-    } else if (intent.mechanic === "target_mark") {
-      signal.strokeCircle(crestX, crestY, 6);
-      signal.lineBetween(crestX - 8, crestY, crestX + 8, crestY);
-      signal.lineBetween(crestX, crestY - 8, crestX, crestY + 8);
-    } else {
-      signal.beginPath();
-      signal.moveTo(crestX - 6, crestY + 5);
-      signal.lineTo(crestX + 6, crestY);
-      signal.lineTo(crestX - 6, crestY - 5);
-      signal.strokePath();
-    }
-    if (intent.phase === "cancelled") {
-      signal.lineBetween(crestX - 7, crestY - 7, crestX - 1, crestY - 1);
-      signal.lineBetween(crestX + 1, crestY + 1, crestX + 7, crestY + 7);
-    }
-  }
+
   if (entity.cameraDepth !== undefined)
     signal.setMask(
       createDepthVisibilityMask(
@@ -1927,7 +1928,8 @@ class PersistentBattlefieldScene {
   readonly departures = new Map<string, DepartingEntityObjects>();
   readonly effects: Phaser.GameObjects.Graphics[] = [];
   readonly projectileEffects = new Map<string, Phaser.GameObjects.Graphics>();
-  readonly behaviorEffects = new Map<string, Phaser.GameObjects.Graphics>();
+  readonly behaviorEffects = new Map<string, Phaser.GameObjects.Image>();
+  readonly behaviorCrests = new Map<string, Phaser.GameObjects.Image>();
   readonly abilityEffects = new Map<string, Phaser.GameObjects.Image>();
   readonly lighting: Phaser.GameObjects.Image;
   readonly terminalFrame: Phaser.GameObjects.Graphics;
@@ -2028,6 +2030,31 @@ class PersistentBattlefieldScene {
       deltaMilliseconds,
       simulationSpeed
     );
+    for (const presentation of [
+      ...this.behaviorEffects.values(),
+      ...this.behaviorCrests.values()
+    ]) {
+      const phase = presentation.getData("phase") as EnemyIntentPhase;
+      const cadence =
+        reduceMotion || phase === "cancelled"
+          ? 0
+          : Math.sin(
+              (this.scene.time.now * simulationSpeed * Math.PI) /
+                (phase === "committed" ? 260 : 520)
+            );
+      const pulse = 1 + cadence * (phase === "committed" ? 0.055 : 0.035);
+      presentation.setScale(
+        Number(presentation.getData("baseScaleX")) * pulse,
+        Number(presentation.getData("baseScaleY")) * pulse
+      );
+      presentation.setAlpha(
+        phase === "cancelled"
+          ? 0.58
+          : reduceMotion
+            ? 0.92
+            : 0.88 + Math.max(0, cadence) * 0.12
+      );
+    }
     for (const objects of this.entities.values()) {
       const deltaX = objects.targetX - objects.motionX;
       const deltaY = objects.targetY - objects.motionY;
@@ -2041,12 +2068,20 @@ class PersistentBattlefieldScene {
         distance > 0,
         reduceMotion
       );
+      const staggered = objects.signalPresentation?.statusIds.some(
+        (statusId) => statusSignalKind(statusId) === "stagger"
+      );
+      const recoilX = staggered ? -5 : 0;
+      const recoilAngle = staggered ? -8 : 0;
       objects.motionX = x;
       objects.motionY = y;
-      objects.subject.setPosition(x, y + locomotionCadence);
+      objects.subject
+        .setPosition(x + recoilX, y + locomotionCadence + (staggered ? 3 : 0))
+        .setAngle(recoilAngle);
       objects.ring.setPosition(x, y);
-      const offsetX = x - objects.targetX;
-      const offsetY = y + locomotionCadence - objects.targetY;
+      const offsetX = x + recoilX - objects.targetX;
+      const offsetY =
+        y + locomotionCadence + (staggered ? 3 : 0) - objects.targetY;
       objects.subject.mask?.geometryMask?.setPosition(offsetX, offsetY);
       objects.signal.setPosition(offsetX, offsetY);
       objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
@@ -2561,173 +2596,96 @@ class PersistentBattlefieldScene {
               : [{ entity, intent, source }];
           })
         : [];
+    const authoredBehaviorTells = behaviorTells.flatMap((tell) => {
+      const assets = authoredEnemyIntentAssets(
+        tell.entity.visualId,
+        tell.intent
+      );
+      return assets === undefined ? [] : [{ ...tell, assets }];
+    });
     const liveBehaviorEffectIds = new Set(
-      behaviorTells.map(({ entity }) => entity.id)
+      authoredBehaviorTells.map(({ entity }) => entity.id)
     );
     for (const [id, effect] of this.behaviorEffects)
       if (!liveBehaviorEffectIds.has(id)) {
-        clearDepthVisibilityMask(effect);
         this.layers["world-effects"].delete(effect);
         effect.destroy();
         this.behaviorEffects.delete(id);
       }
-    for (const { entity: sourceEntity, intent, source } of behaviorTells) {
-      const effect =
-        this.behaviorEffects.get(sourceEntity.id) ?? this.scene.add.graphics();
-      clearDepthVisibilityMask(effect);
-      effect.clear();
+    for (const [id, crest] of this.behaviorCrests)
+      if (!liveBehaviorEffectIds.has(id)) {
+        this.layers["world-focus"].delete(crest);
+        crest.destroy();
+        this.behaviorCrests.delete(id);
+      }
+    for (const {
+      entity: sourceEntity,
+      intent,
+      source,
+      assets
+    } of authoredBehaviorTells) {
       const target =
         sourceEntity.targetEntityId === null
           ? undefined
           : primitiveById.get(sourceEntity.targetEntityId);
-      const committed = intent.phase === "committed";
-      const cancelled = intent.phase === "cancelled";
-      effect.lineStyle(
-        committed ? 3 : 2,
-        0xc99a5b,
-        cancelled ? 0.36 : committed ? 0.82 : 0.56
+      const destination = target ?? source;
+      const midpointX = (source.x + destination.x) / 2;
+      const midpointY = (source.y + destination.y) / 2;
+      const distance = Math.hypot(
+        destination.x - source.x,
+        destination.y - source.y
       );
-      effect.fillStyle(0xa96b35, committed ? 0.2 : 0.11);
+      const angle = Math.atan2(
+        destination.y - source.y,
+        destination.x - source.x
+      );
+      const effect =
+        this.behaviorEffects.get(sourceEntity.id) ??
+        this.scene.add.image(midpointX, midpointY, assets.world);
+      effect.setTexture(assets.world).setOrigin(0.5).setAlpha(0.92);
       if (intent.mechanic === "attack_disrupt") {
-        const x = target?.x ?? source.x;
-        const y = target?.y ?? source.y;
-        if (committed) effect.fillEllipse(x, y + 1, 96, 40);
-        effect.strokeEllipse(x, y + 1, 84, 34);
-        effect.lineBetween(source.x, source.y - 19, x, y - 2);
-        if (committed) {
-          effect.lineBetween(x - 58, y + 1, x - 43, y + 1);
-          effect.lineBetween(x + 43, y + 1, x + 58, y + 1);
-          effect.lineBetween(x, y - 27, x, y - 19);
-          effect.lineBetween(x, y + 20, x, y + 28);
-        } else {
-          for (const progress of [0.2, 0.4, 0.6, 0.8])
-            effect.fillCircle(
-              source.x + (x - source.x) * progress,
-              source.y - 19 + (y + 17 - source.y) * progress,
-              progress < 0.8 ? 2 : 4
-            );
-        }
-      } else if (intent.mechanic === "target_intercept") {
-        effect.beginPath();
-        effect.arc(source.x, source.y - 12, 34, 3.55, 5.88);
-        effect.strokePath();
-        if (target !== undefined)
-          effect.lineBetween(source.x, source.y - 18, target.x, target.y - 14);
-      } else if (
-        intent.mechanic === "attack_slow" ||
-        intent.mechanic === "target_mark"
-      ) {
-        if (target !== undefined) {
-          effect.lineBetween(source.x, source.y - 25, target.x, target.y - 24);
-          effect.strokeCircle(
-            target.x,
-            target.y - 24,
-            intent.mechanic === "target_mark" ? 13 : 9
-          );
-          if (intent.mechanic === "target_mark") {
-            effect.lineBetween(
-              target.x - 17,
-              target.y - 24,
-              target.x + 17,
-              target.y - 24
-            );
-            effect.lineBetween(target.x, target.y - 41, target.x, target.y - 7);
-          }
-        }
-      } else if (
-        intent.mechanic === "ally_haste" ||
-        intent.mechanic === "formation_command"
-      ) {
-        effect.strokeEllipse(source.x, source.y + 1, 104, 42);
-        if (target !== undefined)
-          effect.lineBetween(source.x, source.y - 6, target.x, target.y - 6);
-      } else {
-        const destination = target ?? {
-          x:
-            source.x +
-            (sourceEntity.facing === "east"
-              ? 72
-              : sourceEntity.facing === "west"
-                ? -72
-                : 0),
-          y:
-            source.y +
-            (sourceEntity.facing === "south"
-              ? 48
-              : sourceEntity.facing === "north"
-                ? -48
-                : 0)
-        };
-        effect.lineBetween(
-          source.x,
-          source.y - 10,
-          destination.x,
-          destination.y - 10
-        );
-        const direction = Math.atan2(
-          destination.y - source.y,
-          destination.x - source.x
-        );
-        effect.fillTriangle(
-          destination.x,
-          destination.y - 10,
-          destination.x - Math.cos(direction - 0.55) * 11,
-          destination.y - 10 - Math.sin(direction - 0.55) * 11,
-          destination.x - Math.cos(direction + 0.55) * 11,
-          destination.y - 10 - Math.sin(direction + 0.55) * 11
-        );
-      }
-      if (cancelled) {
-        effect.lineBetween(
-          source.x - 14,
-          source.y - 32,
-          source.x + 14,
-          source.y - 4
-        );
-        effect.lineBetween(
-          source.x + 14,
-          source.y - 32,
-          source.x - 14,
-          source.y - 4
-        );
-      }
-      effect.setAlpha(reduceMotion ? 0.9 : 1);
-      if (source.cameraDepth !== undefined) {
-        const effectLeft = Math.floor(
-          Math.min(source.x, target?.x ?? source.x) - 64
-        );
-        const effectTop = Math.floor(
-          Math.min(source.y, target?.y ?? source.y) - 64
-        );
-        const effectWidth = Math.ceil(
-          Math.abs((target?.x ?? source.x) - source.x) + 128
-        );
-        const effectHeight = Math.ceil(
-          Math.abs((target?.y ?? source.y) - source.y) + 128
-        );
-        effect.setMask(
-          createDepthVisibilityMask(
-            this.scene,
-            effectWidth,
-            effectHeight,
-            {
-              kind: "ground-plane",
-              cameraDepth: source.cameraDepth,
-              cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
-              cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
-              depthEdgeGuardPixels: 0,
-              frameLeft: effectLeft,
-              frameTop: effectTop,
-              pivotX: source.x - effectLeft,
-              pivotY: source.y - effectTop
-            },
-            this.staticDepth
-          )
-        );
-      }
+        if (intent.phase === "committed")
+          effect
+            .setPosition(destination.x, destination.y + 4)
+            .setDisplaySize(142, 90)
+            .setRotation(0);
+        else
+          effect
+            .setPosition(midpointX, midpointY - 10)
+            .setDisplaySize(Math.max(112, Math.min(176, distance + 52)), 88)
+            .setRotation(angle);
+      } else if (intent.phase === "telling")
+        effect
+          .setPosition(source.x + 26, source.y - 28)
+          .setDisplaySize(112, 92)
+          .setRotation(0);
+      else
+        effect
+          .setPosition(midpointX, midpointY - 22)
+          .setDisplaySize(Math.max(126, distance + 70), 66)
+          .setRotation(angle);
+      effect.setData("baseScaleX", effect.scaleX);
+      effect.setData("baseScaleY", effect.scaleY);
+      effect.setData("phase", intent.phase);
       if (!this.behaviorEffects.has(sourceEntity.id)) {
         this.behaviorEffects.set(sourceEntity.id, effect);
         this.layers["world-effects"].add(effect);
+      }
+      const crest =
+        this.behaviorCrests.get(sourceEntity.id) ??
+        this.scene.add.image(source.x + 39, source.y - 58, assets.crest);
+      const crestSize = intent.phase === "committed" ? 52 : 46;
+      crest
+        .setTexture(assets.crest)
+        .setPosition(source.x + 39, source.y - 58)
+        .setDisplaySize(crestSize, crestSize)
+        .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
+      crest.setData("baseScaleX", crest.scaleX);
+      crest.setData("baseScaleY", crest.scaleY);
+      crest.setData("phase", intent.phase);
+      if (!this.behaviorCrests.has(sourceEntity.id)) {
+        this.behaviorCrests.set(sourceEntity.id, crest);
+        this.layers["world-focus"].add(crest);
       }
     }
 
@@ -2951,6 +2909,8 @@ class PersistentBattlefieldScene {
       this.scene.children.bringToTop(effect);
     for (const objects of this.entities.values())
       this.scene.children.bringToTop(objects.signal);
+    for (const crest of this.behaviorCrests.values())
+      this.scene.children.bringToTop(crest);
     for (const { objects } of this.departures.values()) {
       this.scene.children.bringToTop(objects.subject);
       this.scene.children.bringToTop(objects.signal);
@@ -3097,10 +3057,11 @@ class PersistentBattlefieldScene {
     for (const effect of this.projectileEffects.values()) effect.destroy();
     this.projectileEffects.clear();
     for (const effect of this.behaviorEffects.values()) {
-      clearDepthVisibilityMask(effect);
       effect.destroy();
     }
     this.behaviorEffects.clear();
+    for (const crest of this.behaviorCrests.values()) crest.destroy();
+    this.behaviorCrests.clear();
     for (const effect of this.abilityEffects.values()) effect.destroy();
     this.abilityEffects.clear();
     this.entities.clear();

@@ -143,3 +143,31 @@ Create an ORIGINAL production sprite atlas for the Dwarven Depths project, using
 ### Bounded QA and export semantics
 
 The source contains exactly fifteen separated figures in a regular 5×3 layout. Each role preserves its equipment and silhouette across idle, committed action, and downed rows. The exporter creates separate straight-alpha 80×60 role files at the fixed 44-pixel hostile baseline. The source authors one elevated-orthographic facing and one committed action per new role; directional and attack-phase filenames deliberately reuse those authored pixels rather than claiming generated intermediate animation. Runtime tell/effect signals remain separate presentation layers. No concept-mockup pixels were supplied, cropped, traced, or composited.
+
+## `shuttergate-sapper-hexer-intent-atlas-master.png`
+
+- Provider: `openai-codex`
+- Model: `gpt-image-2-medium`
+- Aspect ratio: `landscape`
+- Requested and saved dimensions: `1536x1024`
+- Quality: `medium`
+- Modality: image-to-image consistency reference
+- Input image: `assets/game-art/combat-animation/sources/shuttergate-expanded-hostile-role-atlas-master.png`
+- Source SHA-256: `ce2106d3d3c57c5325f81890834ba616d62847fdfea0903d3c41681a6305132d`
+- License: project MIT license (`LICENSE`)
+
+### Exact prompt
+
+Create an ORIGINAL production sprite-source atlas for the Dwarven Depths game, matching the referenced dark painterly pixel-art / hand-painted fantasy game asset style, warm amber firelight, blackened iron, soot, worn leather, and occult bronze. This is NOT a UI mockup and must contain NO characters, NO words, NO letters, NO numbers, NO captions, NO circles-with-slashes, NO crosshair symbols, NO generic chevrons, and NO thin geometric line icons.
+
+Canvas: 1536x1024 landscape, uniform near-black navy matte background (#03111f), exactly 4 equal columns x 2 equal rows with generous separation and every object centered fully inside its cell. Do not draw cell dividers.
+
+TOP ROW — Goblin Sapper authored visual language: (1) pictorial intent crest: a weighty engraved black-iron shield-shaped badge with thick riveted bronze endcaps, showing a clearly recognizable round black-powder bomb with a thick burning rope fuse and orange sparks; strong silhouette readable when reduced to about 44x44. (2) fuse/channel tell: a large isolated coiled rope fuse burning progressively toward a squat powder charge, chunky painterly ember beads and smoke wisps, diagonal sense of travel, no thin lines. (3) blast-area/impact: a broad ground-plane burst asset viewed in game-like isometric perspective, cracked stone wedge and smoky orange blast petals radiating from a dark powder charge; clear area/consequence, painterly texture, transparent-ready isolated footprint. (4) cancellation: the same fuse and charge visibly fractured into several authored irregular chunks, embers dying into ash and smoke, dissolving from right to left; it must read as broken/dissolved material, not a prohibition symbol.
+
+BOTTOM ROW — Goblin Hexer authored visual language: (1) pictorial intent crest: a weighty engraved black-iron shield-shaped badge with thick hooked bronze endcaps, showing a recognizable crooked ritual staff and hanging amber rune-lantern with smoky violet magic; strong silhouette readable at 44x44, no letter-like rune. (2) rune-channel tell: an isolated crooked staff/lantern conjuring a textured cluster of irregular occult stone sigils and smoky violet-amber wisps, visibly gathering power; pictorial, no clean geometric ring. (3) target-tether/resolve: an isolated broad braided ribbon of smoky violet magic with chunky amber rune-knots at both ends, curving horizontally from caster side to recipient side, substantial width and texture, clear directional recipient relationship, no one-pixel line. (4) cancellation: the rune cluster and smoky ribbon visibly shattering into irregular stone fragments and dissolving violet ash, authored fracture progression, no X and no prohibition symbol.
+
+Keep all assets separate and non-overlapping. High contrast silhouettes at gameplay reduction. Painterly surface texture, substantial chunky forms, restrained warm glow. No environment, no HUD, no frame around the entire sheet, no baked characters.
+
+### Bounded QA and export semantics
+
+The source contains exactly eight isolated assets in a regular 4×2 atlas. The deterministic exporter binds the keyed-alpha source digest, fixed crop ordering, straight-alpha export dimensions, file digests, and web asset manifest. Crests, fuse/blast/channel/tether effects, and fracture/dissolve cancellations remain separate alpha layers; no environment pixels or character figures are present. Runtime compositing is limited to the rejected-direction replacement prototype for Sapper and Hexer.

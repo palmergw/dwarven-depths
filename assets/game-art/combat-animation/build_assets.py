@@ -30,6 +30,9 @@ HOSTILE_ATTACK_CYCLE_SOURCE = (
 EXPANDED_HOSTILE_SOURCE = (
     PACKAGE / "sources/shuttergate-expanded-hostile-role-atlas-master.png"
 )
+ENEMY_INTENT_SOURCE = (
+    PACKAGE / "sources/shuttergate-sapper-hexer-intent-atlas-master.png"
+)
 
 SOURCE_DIGESTS = {
     "assets/game-art/combat-animation/sources/shuttergate-hostile-role-atlas-master.png": "8f27d5e80b9adcbcab6d3b05435fda8777c81326d2a1f8e590673c04d14ed660",
@@ -39,6 +42,7 @@ SOURCE_DIGESTS = {
     "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "bbf7c4fd3090f767ca8a187befc495a46303ad9934a57cd0cf6a28bdfda2d6c4",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
     "assets/game-art/combat-animation/sources/shuttergate-expanded-hostile-role-atlas-master.png": "8b88de6fe432b54f8b8821a90c10948bc0d37ae85f9c3c8f2630ea8fbe9cab5d",
+    "assets/game-art/combat-animation/sources/shuttergate-sapper-hexer-intent-atlas-master.png": "ce2106d3d3c57c5325f81890834ba616d62847fdfea0903d3c41681a6305132d",
 }
 
 WARDEN_CROPS = {
@@ -70,6 +74,16 @@ EXPANDED_HOSTILE_ROLES = (
     "goblin-hexer",
     "goblin-banner-bearer",
     "goblin-warden-hunter",
+)
+ENEMY_INTENT_ASSETS = (
+    ("sapper-intent-crest", (64, 64)),
+    ("sapper-fuse-tell", (176, 112)),
+    ("sapper-blast-impact", (176, 112)),
+    ("sapper-fracture-cancel", (176, 112)),
+    ("hexer-intent-crest", (64, 64)),
+    ("hexer-rune-channel", (176, 112)),
+    ("hexer-target-tether", (176, 112)),
+    ("hexer-fracture-cancel", (176, 112)),
 )
 HOSTILE_COLUMN_BOUNDS = (
     (0, 350),
@@ -210,6 +224,23 @@ def miniature(
     output = Image.new("RGBA", canvas, (0, 0, 0, 0))
     output.alpha_composite(
         sharpened, (pivot[0] - sharpened.width // 2, pivot[1] - sharpened.height)
+    )
+    return output
+
+
+def centered_miniature(image: Image.Image, canvas: tuple[int, int]) -> Image.Image:
+    scale = min(canvas[0] / image.width, canvas[1] / image.height)
+    size = (max(1, round(image.width * scale)), max(1, round(image.height * scale)))
+    resized = image.resize(size, Image.Resampling.LANCZOS)
+    alpha = resized.getchannel("A")
+    sharpened = resized.filter(
+        ImageFilter.UnsharpMask(radius=0.6, percent=75, threshold=3)
+    )
+    sharpened.putalpha(alpha)
+    output = Image.new("RGBA", canvas, (0, 0, 0, 0))
+    output.alpha_composite(
+        sharpened,
+        ((canvas[0] - sharpened.width) // 2, (canvas[1] - sharpened.height) // 2),
     )
     return output
 
@@ -371,6 +402,27 @@ def build_outputs() -> dict[str, bytes]:
             outputs[f"{role}-downed.png"] = downed
             for phase in HOSTILE_ATTACK_PHASES:
                 outputs[f"{role}-attack-{phase}.png"] = attack
+    with Image.open(ENEMY_INTENT_SOURCE) as master:
+        column_edges = [round(index * master.width / 4) for index in range(5)]
+        row_edges = [round(index * master.height / 2) for index in range(3)]
+        for index, (name, canvas) in enumerate(ENEMY_INTENT_ASSETS):
+            row, column = divmod(index, 4)
+            cell = trim(
+                keyed_alpha(
+                    master.crop(
+                        (
+                            column_edges[column],
+                            row_edges[row],
+                            column_edges[column + 1],
+                            row_edges[row + 1],
+                        )
+                    ),
+                    threshold=8,
+                    feather=24,
+                ),
+                padding=8,
+            )
+            outputs[f"{name}.png"] = encode_png(centered_miniature(cell, canvas))
     return dict(sorted(outputs.items()))
 
 
@@ -385,9 +437,14 @@ def expected_manifest(outputs: dict[str, bytes]) -> dict[str, object]:
             {
                 "id": filename.removesuffix(".png"),
                 "path": f"assets/game-art/combat-animation/exports/entities/{filename}",
-                "dimensions": [112, 72]
-                if filename.startswith("iron-warden-")
-                else [80, 60],
+                "dimensions": list(
+                    dict(ENEMY_INTENT_ASSETS).get(
+                        filename.removesuffix(".png"),
+                        (112, 72)
+                        if filename.startswith("iron-warden-")
+                        else (80, 60),
+                    )
+                ),
                 "mode": "RGBA",
                 "alphaSemantics": "straight-alpha-padded-pivot",
                 "sha256": sha256_bytes(content),
