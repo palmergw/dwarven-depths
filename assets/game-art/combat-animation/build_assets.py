@@ -434,7 +434,10 @@ def build_outputs() -> dict[str, bytes]:
                     else "hexer-rune-channel"
                 )
                 source = intent_cells[source_name]
-                right_ratio = 0.30 if name.startswith("sapper-") else 0.25
+                # Keep the bomb/lantern and its first authored spark/rune, but not
+                # enough of the directional trail to turn the compact endcap into
+                # a second world tell when rendered beside the health frame.
+                right_ratio = 0.22 if name.startswith("sapper-") else 0.18
                 cell = trim(
                     source.crop((0, 0, round(source.width * right_ratio), source.height)),
                     padding=3,

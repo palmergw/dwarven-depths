@@ -820,7 +820,7 @@
       "dimensions": [32, 32],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "bf2964d81ccbe7f8bbf6c53c487a96dabb4be08434f6579076d52c4d4320aa6f"
+      "sha256": "4f973895e7d060262520255bd8fc3c148ccc28538f70038cee5c8515d144831f"
     },
     {
       "id": "hexer-rune-channel",
@@ -996,7 +996,7 @@
       "dimensions": [32, 32],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "5a98e4aac13669dd13a6f46a3144a0c865123784ebd81de01a643aada4cc2075"
+      "sha256": "9403ea5146aac48febdda9409b5cdb47aad564620b15a4956924e4803fedb914"
     }
   ]
 }

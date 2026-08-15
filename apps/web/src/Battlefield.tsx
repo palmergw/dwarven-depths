@@ -2739,10 +2739,10 @@ class PersistentBattlefieldScene {
           .setRotation(angle);
       else
         effect
-          .setPosition(midpointX, midpointY + 10)
+          .setPosition(midpointX, midpointY + 14)
           .setDisplaySize(
             Math.max(74, Math.min(146, distance + 20)),
-            intent.phase === "telling" ? 22 : 24
+            intent.phase === "telling" ? 26 : 28
           )
           .setRotation(angle);
       effect.setData("baseScaleX", effect.scaleX);
@@ -2764,14 +2764,14 @@ class PersistentBattlefieldScene {
           this.behaviorEndpoints.get(sourceEntity.id) ??
           this.scene.add.image(
             destination.x,
-            destination.y + 13,
+            destination.y + 25,
             assets.endpoint
           );
         endpoint
           .setTexture(assets.endpoint)
-          .setPosition(destination.x, destination.y + 13)
-          .setDisplaySize(64, 36)
-          .setAlpha(0.82)
+          .setPosition(destination.x, destination.y + 25)
+          .setDisplaySize(60, 34)
+          .setAlpha(0.88)
           .setRotation(0);
         endpoint.setData("baseScaleX", endpoint.scaleX);
         endpoint.setData("baseScaleY", endpoint.scaleY);
@@ -2787,7 +2787,7 @@ class PersistentBattlefieldScene {
       crest
         .setTexture(assets.crest)
         .setPosition(source.x + 27, source.y - 58)
-        .setDisplaySize(intent.phase === "committed" ? 20 : 18, 18)
+        .setDisplaySize(intent.phase === "committed" ? 22 : 20, 20)
         .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
       crest.setData("baseScaleX", crest.scaleX);
       crest.setData("baseScaleY", crest.scaleY);
