@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-3-hexer-channel",
-  "sourceHead": "94c53080b15140b86e7d775db0f8bb97d05f4014",
+  "sourceHead": "6ffe75c62e83f1b4002e8bbc26b03dd4551820e3",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-3-hexer-channel.png",
-  "screenshotSha256": "3b04239b7d971bb402555c54d673365226385a40f0946de06ac822869454a933",
+  "screenshotSha256": "ee83993f2a9334ef2512ffc8761d328104c6b19dc946d3d333dad0533e860ef4",
   "expected": {
     "id": "wave-3-hexer-channel",
     "visualId": "enemy.goblin_hexer",
