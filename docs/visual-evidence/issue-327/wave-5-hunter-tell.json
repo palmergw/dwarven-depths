@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-5-hunter-tell",
-  "sourceHead": "f8cbe77218daed38cb857dcb99cd277d97034e8f",
+  "sourceHead": "f568582b4603a0eaf104d2594d5ab6dc5c5271e5",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-5-hunter-tell.png",
-  "screenshotSha256": "fa8319dbb9ae5a23d8ec82d711880dd105970d144d780de8abfa02a65ef8d599",
+  "screenshotSha256": "70696d83e949f0bf3eafef837639dec2f548001fa3e033e5e192057e2f300e37",
   "expected": {
     "id": "wave-5-hunter-tell",
     "visualId": "enemy.goblin_warden_hunter",
@@ -77,6 +77,6 @@
     "textScale": "default",
     "motion": "reduce",
     "reducedMotion": true,
-    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Shuttergate battlefield, running; 4 entities.The ShuttergateFortressHoldingWave5Hostiles3 active0 approachingCombat paused. Fortress holding. Wave 5. 3 hostiles active. Iron Warden health 149 of 840. Elite enemy is telegraphing: ally haste, source authoritative enemy intent, strength 2, from tick 3594 through tick 3602. Enemy is cooling down: standoff fire, source authoritative enemy intent, strength 2, from tick 3596 through tick 3624. Elite enemy is telegraphing: target mark, source authoritative enemy intent, strength 25, from tick 3600 through tick 3609.Combat controlsIron Warden◆Iron WardenNearest149 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
+    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Enemy detailsBanner Bearer — Rallying banner · Preparing · Focus the banner bearer.Slinger — Standoff shot · Watching · Break line of sight.Warden Hunter — Hunt mark · Preparing · Break the hunter mark.Shuttergate battlefield, running; 4 entities.The ShuttergateFortressHoldingWave5Hostiles3 active0 approachingCombat paused. Fortress holding. Wave 5. 3 hostiles active. Iron Warden health 149 of 840. Elite enemy is telegraphing: ally haste, source authoritative enemy intent, strength 2, from tick 3594 through tick 3602. Enemy is cooling down: standoff fire, source authoritative enemy intent, strength 2, from tick 3596 through tick 3624. Elite enemy is telegraphing: target mark, source authoritative enemy intent, strength 25, from tick 3600 through tick 3609.Combat controlsIron Warden◆Iron WardenNearest149 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
   }
 }

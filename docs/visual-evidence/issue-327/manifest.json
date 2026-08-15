@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
   "issue": 327,
-  "sourceHead": "f8cbe77218daed38cb857dcb99cd277d97034e8f",
+  "sourceHead": "f568582b4603a0eaf104d2594d5ab6dc5c5271e5",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [1440, 900],
   "deviceScaleFactor": 1,
   "reducedMotion": true,
-  "captureCount": 6,
+  "captureCount": 7,
   "captures": [
     {
       "id": "wave-1-skirmisher-tell",
       "screenshot": "wave-1-skirmisher-tell.png",
-      "screenshotSha256": "be0c01007b20602bcdcdfa9ddefcfc88dd82f198bae8a825271f42dbc7877aae",
+      "screenshotSha256": "ecfed2d054c9b40400742f400f0e67a1460eb3f716fad52381c630a8fda9ebd9",
       "sidecar": "wave-1-skirmisher-tell.json",
-      "tick": 301,
+      "tick": 302,
       "expected": {
         "id": "wave-1-skirmisher-tell",
         "visualId": "enemy.goblin_skirmisher",
@@ -21,23 +21,36 @@
       }
     },
     {
+      "id": "wave-2-sapper-preparation",
+      "screenshot": "wave-2-sapper-preparation.png",
+      "screenshotSha256": "8805019eb8c72a9eba9595ffaf84c8a4739b4724b6d376837e4e76e8d3d5cd53",
+      "sidecar": "wave-2-sapper-preparation.json",
+      "tick": 1203,
+      "expected": {
+        "id": "wave-2-sapper-preparation",
+        "visualId": "enemy.goblin_sapper",
+        "effectStatus": "telling"
+      }
+    },
+    {
       "id": "wave-2-sapper-commit",
       "screenshot": "wave-2-sapper-commit.png",
-      "screenshotSha256": "d241ce2dab46dfb950f4ec2c79c0e7232b6a883b587d29c93b6ee892092f27f7",
+      "screenshotSha256": "bb3826586a9307b9b40be7bb208beb748c46bef425581a821c57f01dec526a62",
       "sidecar": "wave-2-sapper-commit.json",
       "tick": 1214,
       "expected": {
         "id": "wave-2-sapper-commit",
         "visualId": "enemy.goblin_sapper",
-        "effectStatus": "committed"
+        "effectStatus": "committed",
+        "recipientStatusContains": "stagger"
       }
     },
     {
       "id": "wave-3-hexer-commit",
       "screenshot": "wave-3-hexer-commit.png",
-      "screenshotSha256": "d57d0410612a59ab1f74694e9788b9d00de5c6dbc86714e93b603d5ad35b4d54",
+      "screenshotSha256": "161735cd9044ab0dec3e725ce89ec03471f8cb532206b491020035baf8739718",
       "sidecar": "wave-3-hexer-commit.json",
-      "tick": 1962,
+      "tick": 1964,
       "expected": {
         "id": "wave-3-hexer-commit",
         "visualId": "enemy.goblin_hexer",
@@ -47,7 +60,7 @@
     {
       "id": "wave-4-banner-tell",
       "screenshot": "wave-4-banner-tell.png",
-      "screenshotSha256": "d49866d7a3d60b6e8b90b4f05b3e776aa9652fd7068a1543b8f7948790aef5d0",
+      "screenshotSha256": "be40afb8ff36227d2b19ffe30dac74f02cc662577834539edbeb8562bdca5075",
       "sidecar": "wave-4-banner-tell.json",
       "tick": 2822,
       "expected": {
@@ -59,7 +72,7 @@
     {
       "id": "wave-5-hunter-tell",
       "screenshot": "wave-5-hunter-tell.png",
-      "screenshotSha256": "fa8319dbb9ae5a23d8ec82d711880dd105970d144d780de8abfa02a65ef8d599",
+      "screenshotSha256": "70696d83e949f0bf3eafef837639dec2f548001fa3e033e5e192057e2f300e37",
       "sidecar": "wave-5-hunter-tell.json",
       "tick": 3602,
       "expected": {
@@ -71,12 +84,40 @@
     {
       "id": "large-text-reduced-motion-paused",
       "screenshot": "large-text-reduced-motion-paused.png",
-      "screenshotSha256": "fdf54adc0d19333140b05d042d69c7544af72d9f14320c3d052ea68116f3fbc1",
+      "screenshotSha256": "6e2055446ff3683aa784400a4670a1842a77cb1c593c8d7fbb6a78db7ea3a71d",
       "sidecar": "large-text-reduced-motion-paused.json",
       "tick": 2,
       "expected": {
         "textScale": "large"
       }
+    }
+  ],
+  "comparisons": [
+    {
+      "id": "comparison-current-geometric-markers",
+      "source": {
+        "head": "68d2f4ee0a21f9ea9d6b8d8b8766e2ec71567043",
+        "tick": 1213
+      },
+      "screenshot": "comparison-current-geometric-markers.png",
+      "screenshotSha256": "55584f9523ecce5bc706d867d4ca5cc5975c882d13ee3147a0cedb52c839c002",
+      "viewport": [1440, 900],
+      "crop": [520, 275, 600, 260],
+      "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+      "actionInterval": "attack_disrupt.committed"
+    },
+    {
+      "id": "comparison-replacement-world-tells",
+      "source": {
+        "head": "f568582b4603a0eaf104d2594d5ab6dc5c5271e5",
+        "tick": 1214
+      },
+      "screenshot": "comparison-replacement-world-tells.png",
+      "screenshotSha256": "02261baf19768d5dfca7bfb925634bbd6c22f5a2da27a1ba37d0217d68038d96",
+      "viewport": [1440, 900],
+      "crop": [520, 275, 600, 260],
+      "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+      "actionInterval": "attack_disrupt.committed"
     }
   ]
 }

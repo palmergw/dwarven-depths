@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-4-banner-tell",
-  "sourceHead": "f8cbe77218daed38cb857dcb99cd277d97034e8f",
+  "sourceHead": "f568582b4603a0eaf104d2594d5ab6dc5c5271e5",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-4-banner-tell.png",
-  "screenshotSha256": "d49866d7a3d60b6e8b90b4f05b3e776aa9652fd7068a1543b8f7948790aef5d0",
+  "screenshotSha256": "be40afb8ff36227d2b19ffe30dac74f02cc662577834539edbeb8562bdca5075",
   "expected": {
     "id": "wave-4-banner-tell",
     "visualId": "enemy.goblin_banner_bearer",
@@ -65,6 +65,6 @@
     "textScale": "default",
     "motion": "reduce",
     "reducedMotion": true,
-    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Shuttergate battlefield, running; 3 entities.The ShuttergateFortressHoldingWave4Hostiles2 active0 approachingCombat paused. Fortress holding. Wave 4. 2 hostiles active. Iron Warden health 536 of 840. Boss is cancelled: formation command, source authoritative enemy intent, strength 2, from tick 2800 through tick 2824. Elite enemy is telegraphing: ally haste, source authoritative enemy intent, strength 2, from tick 2820 through tick 2828.Combat controlsIron Warden◆Iron WardenNearest536 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
+    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Enemy detailsGatebreaker Captain — Formation command · Cancelled · Interrupt the command.Banner Bearer — Rallying banner · Preparing · Focus the banner bearer.Shuttergate battlefield, running; 3 entities.The ShuttergateFortressHoldingWave4Hostiles2 active0 approachingCombat paused. Fortress holding. Wave 4. 2 hostiles active. Iron Warden health 536 of 840. Boss is cancelled: formation command, source authoritative enemy intent, strength 2, from tick 2800 through tick 2824. Elite enemy is telegraphing: ally haste, source authoritative enemy intent, strength 2, from tick 2820 through tick 2828.Combat controlsIron Warden◆Iron WardenNearest536 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
   }
 }

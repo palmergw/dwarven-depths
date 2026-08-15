@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-3-hexer-commit",
-  "sourceHead": "f8cbe77218daed38cb857dcb99cd277d97034e8f",
+  "sourceHead": "f568582b4603a0eaf104d2594d5ab6dc5c5271e5",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-3-hexer-commit.png",
-  "screenshotSha256": "d57d0410612a59ab1f74694e9788b9d00de5c6dbc86714e93b603d5ad35b4d54",
+  "screenshotSha256": "161735cd9044ab0dec3e725ce89ec03471f8cb532206b491020035baf8739718",
   "expected": {
     "id": "wave-3-hexer-commit",
     "visualId": "enemy.goblin_hexer",
@@ -19,7 +19,7 @@
     "snapshot": {
       "levelId": "level.shuttergate_hall",
       "mapId": "map.shuttergate_hall",
-      "tick": 1962,
+      "tick": 1964,
       "phase": "running"
     },
     "entities": [
@@ -27,7 +27,7 @@
         "id": "entity.dwarf.warden",
         "visualId": "character.iron_warden",
         "faction": "dwarf",
-        "statusIds": [],
+        "statusIds": ["status.enemy_effect.slow"],
         "action": {
           "kind": "basic_attack",
           "phase": "recovery",
@@ -65,6 +65,6 @@
     "textScale": "default",
     "motion": "reduce",
     "reducedMotion": true,
-    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Shuttergate battlefield, running; 3 entities. Combat update at tick 1962: status.The ShuttergateFortressHoldingWave3Hostiles2 active0 approachingCombat paused. Fortress holding. Wave 3. 2 hostiles active. Iron Warden health 625 of 840. Elite enemy is cancelled: target intercept, source authoritative enemy intent, strength 25, from tick 1950 through tick 1970. Elite enemy is committed: attack slow, source authoritative enemy intent, strength 4, from tick 1961 through tick 1997.Combat controlsIron Warden◆Iron WardenNearest625 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
+    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Enemy detailsBulwark — Intercepting guard · Cancelled · Retarget around guard.Hexer — Slowing hex · Committed · Interrupt or break line of sight.Shuttergate battlefield, running; 3 entities.The ShuttergateFortressHoldingWave3Hostiles2 active0 approachingCombat paused. Fortress holding. Wave 3. 2 hostiles active. Iron Warden health 625 of 840. Iron Warden is an unknown effect, source an unknown source, strength 4, from tick 1961 through tick 1997. Elite enemy is cancelled: target intercept, source authoritative enemy intent, strength 25, from tick 1950 through tick 1970. Elite enemy is committed: attack slow, source authoritative enemy intent, strength 4, from tick 1961 through tick 1997.Combat controlsIron Warden◆Iron WardenNearest625 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
   }
 }
