@@ -30,6 +30,7 @@ import {
   deriveRallyingRoarPresentationSourceId,
   deriveShieldSlamImpactIds,
   deriveSlingerProjectilePaths,
+  enemyIntentDetail,
   hasRenderedInitialFeedback,
   interpolationDistanceForFrame,
   locomotionCadenceOffset,
@@ -1695,6 +1696,14 @@ describe("player-facing combat HUD", () => {
         "status.enemy_behavior.attack_slow.cooling_down"
       ])
     ).toBeUndefined();
+    expect(
+      enemyIntentDetail({
+        visualId: "enemy.goblin_hexer",
+        statuses: [{ id: "status.enemy_behavior.attack_slow.committed" }]
+      } as never)
+    ).toBe(
+      "Hexer — Slowing hex · Committed · Interrupt or break line of sight."
+    );
     expect(document.querySelector(".wave-signal")?.textContent).toBe(
       "Entrance watch Wave 1 · 2 approaching"
     );
