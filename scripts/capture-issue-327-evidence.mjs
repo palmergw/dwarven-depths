@@ -123,26 +123,18 @@ async function enterPausedCombat(page) {
 }
 
 async function waitForStableTruth(page) {
-  let previous;
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    const current = JSON.stringify(
-      await page.evaluate(() => {
-        const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
-        return truth === undefined
-          ? null
-          : {
-              fixtureId: truth.fixtureId,
-              captureReady: truth.captureReady,
-              alignmentValid: truth.alignment.valid,
-              snapshot: truth.snapshot
-            };
-      })
+  await page.waitForTimeout(250);
+  const beforeTick = await page.evaluate(
+    () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick
+  );
+  await page.waitForTimeout(250);
+  const afterTick = await page.evaluate(
+    () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick
+  );
+  if (beforeTick === undefined || afterTick !== beforeTick)
+    throw new Error(
+      `authoritative capture tick did not stabilize: ${beforeTick} -> ${afterTick}`
     );
-    if (current === previous) return;
-    previous = current;
-    await page.waitForTimeout(100);
-  }
-  throw new Error("authoritative capture state did not stabilize");
 }
 
 async function armRolePause(page, visualId, effectStatus) {
