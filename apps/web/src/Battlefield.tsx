@@ -958,8 +958,8 @@ export function authoredEnemyIntentSourcePoint(
 ): Readonly<{ x: number; y: number }> {
   const direction = directionBetween(source, target);
   return {
-    x: source.x + direction.x * 34,
-    y: source.y + 32
+    x: source.x + direction.x * 42,
+    y: source.y + 40
   };
 }
 
@@ -984,7 +984,7 @@ export function authoredEnemyIntentTargetPoint(
   const direction = directionBetween(source, target);
   return {
     x: target.x - direction.y * 10,
-    y: target.y + 38 + direction.x * 4
+    y: target.y + 46 + direction.x * 4
   };
 }
 
@@ -2868,7 +2868,7 @@ class PersistentBattlefieldScene {
       crest
         .setTexture(assets.crest)
         .setPosition(crestPoint.x, crestPoint.y)
-        .setDisplaySize(intent.phase === "committed" ? 22 : 20, 20)
+        .setDisplaySize(intent.phase === "committed" ? 26 : 24, 24)
         .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
       crest.setData("baseScaleX", crest.scaleX);
       crest.setData("baseScaleY", crest.scaleY);
