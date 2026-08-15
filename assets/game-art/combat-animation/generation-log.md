@@ -367,3 +367,39 @@ Adversarial runtime-scale review then found that the open source rune collapsed 
 ### Bounded QA and export semantics
 
 The candidate preserves eight isolated alpha-keyable assets and simplifies both mechanic sequences around readable structural silhouettes. The Sapper preparation repeats the bomb at its source, carries one continuous physical fuse toward an open destination footprint, and resolves into a related floor fracture. The Hexer source rune and narrow channel remain wholly contained in their export cell and lead to a separate open recipient mark. The exact running-client WIP board remains the controlling product-quality gate.
+
+## `shuttergate-sapper-hexer-intent-atlas-master.png` — source-to-consequence readability correction
+
+- Provider: `openai-codex`
+- Model: `gpt-image-2-medium`
+- Aspect ratio: `landscape`
+- Requested and saved dimensions: `1536x1024`
+- Quality: `medium`
+- Modality: two image-to-image correction passes
+- Input image: preceding project-owned `shuttergate-sapper-hexer-intent-atlas-master.png`
+- Input SHA-256: `c6c53b558d58fd4497369b5a1d1cb1cc45bff32b59ad7fa679564e44f576eaf8`
+- First-pass output SHA-256: `5e6494db0d4891865a617d864b9ffadc865638b2c80211992ddbae704d00ba11`
+- Final alpha-separated output SHA-256: `c868b6ffa0e8589ca651b5a30359aca50102ebe827d02a31aa38ea2d0042dd1b`
+- License: project MIT license (`LICENSE`)
+
+### Exact readability prompt
+
+Edit this exact 2-row by 4-column production sprite atlas on a pure black background. Preserve the 1536x1024 composition, cell positions, painterly hand-authored dark-fantasy style, warm Shuttergate orange/brass lighting, and transparent-keyable black negative space. Do not add text, UI, actors, plaques, circles, debug glyphs, neon ribbons, or extra objects crossing cell boundaries.
+
+Make only a focused readability refinement to the eight existing isolated assets. TOP ROW SAPPER, left to right: (1) Keep the compact round black-iron bomb crest but simplify it into a clear bomb silhouette with one thick glowing fuse ember; reduce tiny decoration. (2) Replace the long chain/smoke-serpent look with a clear left-to-right fuse action: a small bomb/source socket at the left edge, a short restrained directional trail of three broad warm ember beats and low charcoal smoke wisps, ending in a clear etched fork/arrow scorched into stone. Use chunky readable shapes, not many tiny particles. (3) Make the blast commitment a broad low floor-integrated etched blast footprint: one dark cracked center, 5-6 thick radial scorched fractures, restrained molten-orange edges, broad enough to remain legible at 124x62; no floating explosion. (4) Keep authored fracture cancellation, but simplify to 3-4 large broken bomb-shell pieces and one extinguished fuse curl, with less scattered debris.
+
+BOTTOM ROW HEXER, left to right: (1) Keep the compact brass-bound violet rune lantern crest but simplify to one large unmistakable angular rune with warm brass frame; no tiny ornaments. (2) Replace the thin decorative cable with a clear left-to-right cast: a compact source rune/lantern at far left, a narrow mostly-dark braided channel with two broad violet rune pulses and warm brass edge, ending in a small open target socket at far right. Preserve lots of negative space and make direction unmistakable without becoming bright or oversized. (3) Refine the target endpoint into a compact floor-bound broken-brass hex socket around one dark violet rune, with a notch facing back toward the source; no ring, no floating crystal cluster, no large halo. (4) Keep authored fracture cancellation but simplify to 3-4 large brass casing fragments and a few dim violet shards; remove particle confetti.
+
+Across all cells: silhouettes must survive aggressive downscaling; prefer 4-8 pixel-equivalent broad authored strokes over micro-detail; effects should feel carved, scorched, heavy, and lit by the environment. Keep actor hierarchy by using dark iron/charcoal as the majority value, restrained orange/violet accents, and no saturated glow fields.
+
+### Exact alpha-separation prompt
+
+Make a surgical production correction to this exact 1536x1024 4-column by 2-row black-background VFX atlas. Preserve the canvas, exact 2x4 grid, painterly chunky dark-fantasy style, all cell positions, and every asset identity. Do not add text, UI, actors, scenery, plaques, circles, crosshairs, arrows, neon, or anything crossing a cell boundary.
+
+CRITICAL ALPHA-SEPARATION: Remove every baked stone floor surface, filled dark ground mass, shadow oval, cobblestone texture, and opaque floor patch from TOP ROW COLUMN 3 (Sapper blast footprint) and BOTTOM ROW COLUMN 3 (Hexer target endpoint). Replace all removed ground pixels with the same pure uniform black key background used around the atlas. Preserve only isolated alpha-keyable effect marks: Top row column 3: one compact dark scorched central fracture, 5-6 thick irregular radial charcoal fissure strokes with restrained molten-orange/brass edges, and at most 3 tiny embers. Large pure-black gaps must separate every branch so the real game floor remains visible. No filled disc, slab, floor texture, star, or floating explosion. Bottom row column 3: only three broken asymmetrical brass/black-iron claw segments, open toward the left/source, around one small isolated dark-violet angular rune and at most 2 dim motes. Replace the entire black-stone disc beneath it with pure black. No tablet, floor texture, filled seal, ring, badge, or halo.
+
+Also reduce the smoke loops in TOP ROW COLUMN 2: preserve the bomb, three broad ember beats, braided fuse direction, and etched fork destination, but make smoke a very thin sparse low charcoal wake with clear black gaps—not repeating circles, a cloud, or serpent. Keep every other shape unchanged as much as possible. The result must key cleanly to separate straight-alpha effects, preserve the environment plate, survive downscale, and keep actors visually primary.
+
+### Bounded QA and export semantics
+
+The final source keeps exactly eight isolated canonical cells. The Sapper tell now carries a recognizable bomb through three restrained fuse beats into an open scorched destination; its committed footprint contains only separated fissure marks. The Hexer channel now binds an unmistakable lantern source to a narrow two-pulse cast and open recipient socket. The alpha-separation pass removes generated stone patches from both endpoint cells before deterministic keyed export. Exact running-client capture remains the controlling normal-scale hierarchy and mechanic-readability gate.
