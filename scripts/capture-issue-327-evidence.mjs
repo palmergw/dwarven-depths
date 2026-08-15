@@ -279,9 +279,9 @@ const roleCaptures = [
     effectStatus: "committed"
   },
   {
-    id: "wave-4-banner-commit",
+    id: "wave-4-banner-tell",
     visualId: "enemy.goblin_banner_bearer",
-    effectStatus: "committed"
+    effectStatus: "telling"
   },
   {
     id: "wave-5-hunter-tell",
