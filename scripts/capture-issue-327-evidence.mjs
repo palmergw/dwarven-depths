@@ -19,6 +19,7 @@ const outputDirectory = new URL(
 );
 const baseUrl = process.env.DD_WEB_URL ?? "http://127.0.0.1:5173";
 const fixtureId = "scenarios/conformance/shuttergate-web-truth.json";
+const comparisonSourceHead = "68d2f4ee0a21f9ea9d6b8d8b8766e2ec71567043";
 const { stdout: headOutput } = await execFile("git", ["rev-parse", "HEAD"], {
   cwd: repositoryRoot
 });
@@ -182,6 +183,7 @@ async function enableAutopilot(page) {
 }
 
 const captures = [];
+const comparisons = [];
 async function capture(page, id, expected = {}) {
   await waitForStableTruth(page);
   const state = await page.evaluate(() => {
@@ -286,6 +288,46 @@ async function capture(page, id, expected = {}) {
   captures.push(sidecar);
 }
 
+async function cropComparison(browser, inputUrl, id, source) {
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1
+  });
+  const page = await context.newPage();
+  await page.goto(inputUrl.href, { waitUntil: "load" });
+  await page.evaluate(() => {
+    document.body.style.margin = "0";
+    document.body.style.background = "#000";
+    const image = document.querySelector("img");
+    if (!(image instanceof HTMLImageElement))
+      throw new Error("comparison source is not an image");
+    image.style.position = "fixed";
+    image.style.inset = "0";
+    image.style.width = "1440px";
+    image.style.height = "900px";
+    image.style.maxWidth = "none";
+    image.style.maxHeight = "none";
+  });
+  const screenshot = `${id}.png`;
+  const screenshotUrl = new URL(screenshot, outputDirectory);
+  await page.screenshot({
+    path: fileURLToPath(screenshotUrl),
+    clip: { x: 520, y: 275, width: 600, height: 260 }
+  });
+  const screenshotBytes = await readFile(screenshotUrl);
+  comparisons.push({
+    id,
+    source,
+    screenshot,
+    screenshotSha256: sha256(screenshotBytes),
+    viewport: [1440, 900],
+    crop: [520, 275, 600, 260],
+    fixtureId,
+    actionInterval: "attack_disrupt.committed"
+  });
+  await context.close();
+}
+
 const roleCaptures = [
   {
     id: "wave-1-skirmisher-tell",
@@ -345,6 +387,33 @@ try {
     textScale: "large"
   });
   await accessibilityPage.close();
+
+  const historicalFullFrameUrl = new URL(
+    ".comparison-current-full-frame.png",
+    outputDirectory
+  );
+  const { stdout: historicalFullFrame } = await execFile(
+    "git",
+    [
+      "show",
+      `${comparisonSourceHead}:docs/visual-evidence/issue-327/wave-2-sapper-commit.png`
+    ],
+    { cwd: repositoryRoot, encoding: "buffer", maxBuffer: 4 * 1024 * 1024 }
+  );
+  await writeFile(historicalFullFrameUrl, historicalFullFrame);
+  await cropComparison(
+    browser,
+    historicalFullFrameUrl,
+    "comparison-current-geometric-markers",
+    { head: comparisonSourceHead, tick: 1213 }
+  );
+  await cropComparison(
+    browser,
+    new URL("wave-2-sapper-commit.png", outputDirectory),
+    "comparison-replacement-world-tells",
+    { head: sourceHead, tick: 1214 }
+  );
+  await rm(historicalFullFrameUrl);
 } finally {
   await browser.close();
 }
@@ -365,7 +434,8 @@ const manifest = {
     sidecar: `${capture.id}.json`,
     tick: capture.state.snapshot?.tick ?? null,
     expected: capture.expected
-  }))
+  })),
+  comparisons
 };
 await writeFile(
   new URL("manifest.json", outputDirectory),
