@@ -969,8 +969,8 @@ export function authoredEnemyIntentCrestPoint(
 ): Readonly<{ x: number; y: number }> {
   const direction = directionBetween(source, target);
   return {
-    x: source.x + direction.x * 25,
-    y: source.y - 24 + direction.y * 8
+    x: source.x + direction.x * 18,
+    y: source.y - 12 + direction.y * 6
   };
 }
 
@@ -2814,14 +2814,14 @@ class PersistentBattlefieldScene {
       else if (intent.mechanic === "attack_disrupt")
         effect
           .setPosition(midpointX, midpointY)
-          .setDisplaySize(authoredEnemyIntentSpanLength(distance), 48)
+          .setDisplaySize(authoredEnemyIntentSpanLength(distance), 52)
           .setRotation(angle);
       else
         effect
           .setPosition(midpointX, midpointY)
           .setDisplaySize(
             authoredEnemyIntentSpanLength(distance),
-            intent.mechanic === "attack_slow" ? 46 : 40
+            intent.mechanic === "attack_slow" ? 50 : 40
           )
           .setRotation(angle);
       effect.setData("baseScaleX", effect.scaleX);
@@ -2846,7 +2846,7 @@ class PersistentBattlefieldScene {
         endpoint
           .setTexture(assets.endpoint)
           .setPosition(destination.x, destination.y)
-          .setDisplaySize(60, 38)
+          .setDisplaySize(68, 42)
           .setAlpha(0.96)
           .setRotation(0);
         endpoint.setData("baseScaleX", endpoint.scaleX);
@@ -2864,7 +2864,7 @@ class PersistentBattlefieldScene {
       crest
         .setTexture(assets.crest)
         .setPosition(crestPoint.x, crestPoint.y)
-        .setDisplaySize(intent.phase === "committed" ? 28 : 26, 26)
+        .setDisplaySize(intent.phase === "committed" ? 32 : 30, 30)
         .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
       crest.setData("baseScaleX", crest.scaleX);
       crest.setData("baseScaleY", crest.scaleY);
