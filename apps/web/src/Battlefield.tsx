@@ -2868,7 +2868,7 @@ class PersistentBattlefieldScene {
       crest
         .setTexture(assets.crest)
         .setPosition(crestPoint.x, crestPoint.y)
-        .setDisplaySize(intent.phase === "committed" ? 26 : 24, 24)
+        .setDisplaySize(intent.phase === "committed" ? 30 : 28, 28)
         .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
       crest.setData("baseScaleX", crest.scaleX);
       crest.setData("baseScaleY", crest.scaleY);
