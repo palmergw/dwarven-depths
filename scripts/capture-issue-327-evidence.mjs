@@ -13,8 +13,11 @@ import { createProfileSaveEnvelope } from "../packages/save/dist/index.js";
 
 const execFile = promisify(execFileCallback);
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
+const wipOnly = process.env.DD_ISSUE_327_WIP === "1";
 const outputDirectory = new URL(
-  "../docs/visual-evidence/issue-327/",
+  wipOnly
+    ? "../docs/visual-evidence/issue-327-wip/"
+    : "../docs/visual-evidence/issue-327/",
   import.meta.url
 );
 const baseUrl = process.env.DD_WEB_URL ?? "http://127.0.0.1:5173";
@@ -392,6 +395,8 @@ async function capture(page, id, expected = {}) {
           id: entity.id,
           visualId: entity.visualId,
           faction: entity.faction,
+          x: entity.x,
+          y: entity.y,
           lifecycle: entity.lifecycle,
           statusIds: entity.statusIds,
           action: entity.action
@@ -581,7 +586,7 @@ const roleCaptures = [
 
 const browser = await chromium.launch({ headless: true });
 try {
-  await captureNormalMotionPrototypeClips(browser);
+  if (!wipOnly) await captureNormalMotionPrototypeClips(browser);
   const page = await newPage(browser);
   await enterPausedCombat(page);
   await page.getByRole("button", { name: "2× combat speed" }).click();
@@ -606,7 +611,7 @@ try {
       { timeout: 120_000, polling: 5 }
     );
     await capture(page, roleCapture.id, roleCapture);
-    if (roleCapture.id === "wave-2-sapper-commit") {
+    if (!wipOnly && roleCapture.id === "wave-2-sapper-commit") {
       const inspector = page.locator(
         '.battlefield-entity-inspector[data-intent-mechanic="attack_disrupt"]'
       );
@@ -616,7 +621,7 @@ try {
         inspectorDetailContains: "Sapper"
       });
     }
-    if (roleCapture.id === "wave-3-hexer-commit") {
+    if (!wipOnly && roleCapture.id === "wave-3-hexer-commit") {
       const inspector = page.locator(
         '.battlefield-entity-inspector[data-intent-mechanic="attack_slow"]'
       );
@@ -633,12 +638,42 @@ try {
   }
   await page.close();
 
-  const accessibilityPage = await newPage(browser, { textScale: "large" });
-  await enterPausedCombat(accessibilityPage);
-  await capture(accessibilityPage, "large-text-reduced-motion-paused", {
-    textScale: "large"
-  });
-  await accessibilityPage.close();
+  if (!wipOnly) {
+    const accessibilityPage = await newPage(browser, { textScale: "large" });
+    await enterPausedCombat(accessibilityPage);
+    await capture(accessibilityPage, "large-text-reduced-motion-paused", {
+      textScale: "large"
+    });
+    await accessibilityPage.close();
+  }
+
+  if (wipOnly) {
+    for (const [tellingId, committedId, visualId] of [
+      [
+        "wave-2-sapper-preparation",
+        "wave-2-sapper-commit",
+        "enemy.goblin_sapper"
+      ],
+      ["wave-3-hexer-channel", "wave-3-hexer-commit", "enemy.goblin_hexer"]
+    ]) {
+      const telling = captures
+        .find(({ id }) => id === tellingId)
+        ?.state.entities.find((entity) => entity.visualId === visualId);
+      const committed = captures
+        .find(({ id }) => id === committedId)
+        ?.state.entities.find((entity) => entity.visualId === visualId);
+      if (
+        telling === undefined ||
+        committed === undefined ||
+        telling.id !== committed.id ||
+        telling.x !== committed.x ||
+        telling.y !== committed.y
+      )
+        throw new Error(
+          `Issue #327 WIP phase comparison changed actor placement: ${tellingId} -> ${committedId}`
+        );
+    }
+  }
 
   await cropComparison(
     browser,
@@ -701,136 +736,140 @@ try {
     }))
   });
 
-  const rejectedComparisonDirectory = new URL(
-    "../.ddh/issue-327-rejected-comparison/",
-    import.meta.url
-  );
-  await rm(rejectedComparisonDirectory, { recursive: true, force: true });
-  await mkdir(rejectedComparisonDirectory, { recursive: true });
-  const rejectedComparisons = [
-    {
-      id: "sapper-telling",
-      historicalScreenshot: "wave-2-sapper-preparation.png",
-      replacementScreenshot: "wave-2-sapper-preparation.png",
-      historicalTick: 1209,
-      replacementTick: capturedTick("wave-2-sapper-preparation"),
-      actionInterval: "attack_disrupt.telling"
-    },
-    {
-      id: "hexer-committed",
-      historicalScreenshot: "wave-3-hexer-commit.png",
-      replacementScreenshot: "wave-3-hexer-commit.png",
-      historicalTick: 1964,
-      replacementTick: capturedTick("wave-3-hexer-commit"),
-      actionInterval: "attack_slow.committed"
+  if (!wipOnly) {
+    const rejectedComparisonDirectory = new URL(
+      "../.ddh/issue-327-rejected-comparison/",
+      import.meta.url
+    );
+    await rm(rejectedComparisonDirectory, { recursive: true, force: true });
+    await mkdir(rejectedComparisonDirectory, { recursive: true });
+    const rejectedComparisons = [
+      {
+        id: "sapper-telling",
+        historicalScreenshot: "wave-2-sapper-preparation.png",
+        replacementScreenshot: "wave-2-sapper-preparation.png",
+        historicalTick: 1209,
+        replacementTick: capturedTick("wave-2-sapper-preparation"),
+        actionInterval: "attack_disrupt.telling"
+      },
+      {
+        id: "hexer-committed",
+        historicalScreenshot: "wave-3-hexer-commit.png",
+        replacementScreenshot: "wave-3-hexer-commit.png",
+        historicalTick: 1964,
+        replacementTick: capturedTick("wave-3-hexer-commit"),
+        actionInterval: "attack_slow.committed"
+      }
+    ];
+    for (const comparison of rejectedComparisons) {
+      const { stdout } = await execFile(
+        "git",
+        [
+          "show",
+          `${rejectedEvidenceHead}:docs/visual-evidence/issue-327/${comparison.historicalScreenshot}`
+        ],
+        { cwd: repositoryRoot, encoding: "buffer", maxBuffer: 4 * 1024 * 1024 }
+      );
+      await writeFile(
+        new URL(`${comparison.id}.png`, rejectedComparisonDirectory),
+        stdout
+      );
     }
-  ];
-  for (const comparison of rejectedComparisons) {
-    const { stdout } = await execFile(
-      "git",
-      [
-        "show",
-        `${rejectedEvidenceHead}:docs/visual-evidence/issue-327/${comparison.historicalScreenshot}`
-      ],
-      { cwd: repositoryRoot, encoding: "buffer", maxBuffer: 4 * 1024 * 1024 }
+    const rejectedComparisonSheet = new URL(
+      "rejected-vs-authored-prototype-contact-sheet.png",
+      outputDirectory
     );
-    await writeFile(
-      new URL(`${comparison.id}.png`, rejectedComparisonDirectory),
-      stdout
-    );
-  }
-  const rejectedComparisonSheet = new URL(
-    "rejected-vs-authored-prototype-contact-sheet.png",
-    outputDirectory
-  );
-  const comparisonLabels = [
-    "REJECTED SAPPER TELL",
-    "AUTHORED SAPPER TELL",
-    "REJECTED HEXER COMMIT",
-    "AUTHORED HEXER COMMIT"
-  ];
-  await execFile("ffmpeg", [
-    "-y",
-    "-loglevel",
-    "error",
-    "-i",
-    fileURLToPath(new URL("sapper-telling.png", rejectedComparisonDirectory)),
-    "-i",
-    fileURLToPath(new URL("wave-2-sapper-preparation.png", outputDirectory)),
-    "-i",
-    fileURLToPath(new URL("hexer-committed.png", rejectedComparisonDirectory)),
-    "-i",
-    fileURLToPath(new URL("wave-3-hexer-commit.png", outputDirectory)),
-    "-filter_complex",
-    `${comparisonLabels
-      .map(
-        (label, index) =>
-          `[${index}:v]crop=600:260:520:275,drawtext=text='${label}':fontcolor=white:fontsize=18:box=1:boxcolor=black@0.82:boxborderw=7:x=12:y=12[c${index}]`
-      )
-      .join(
-        ";"
-      )};[c0][c1][c2][c3]xstack=inputs=4:layout=0_0|600_0|0_260|600_260`,
-    fileURLToPath(rejectedComparisonSheet)
-  ]);
-  contactSheets.push({
-    id: "rejected-vs-authored-prototype-contact-sheet",
-    image: "rejected-vs-authored-prototype-contact-sheet.png",
-    imageSha256: sha256(await readFile(rejectedComparisonSheet)),
-    viewport: [1440, 900],
-    crop: [520, 275, 600, 260],
-    fixtureId,
-    historicalHead: rejectedEvidenceHead,
-    replacementHead: sourceHead,
-    comparisons: rejectedComparisons
-  });
-  await rm(rejectedComparisonDirectory, { recursive: true, force: true });
-
-  const authoredSheet = new URL(
-    "sapper-hexer-authored-layer-contact-sheet.png",
-    outputDirectory
-  );
-  const authoredAssets = [
-    "sapper-intent-crest",
-    "sapper-fuse-tell",
-    "sapper-blast-impact",
-    "sapper-fracture-cancel",
-    "hexer-intent-crest",
-    "hexer-rune-channel",
-    "hexer-target-tether",
-    "hexer-fracture-cancel"
-  ];
-  await execFile("ffmpeg", [
-    "-y",
-    "-loglevel",
-    "error",
-    ...authoredAssets.flatMap((id) => [
+    const comparisonLabels = [
+      "REJECTED SAPPER TELL",
+      "AUTHORED SAPPER TELL",
+      "REJECTED HEXER COMMIT",
+      "AUTHORED HEXER COMMIT"
+    ];
+    await execFile("ffmpeg", [
+      "-y",
+      "-loglevel",
+      "error",
+      "-i",
+      fileURLToPath(new URL("sapper-telling.png", rejectedComparisonDirectory)),
+      "-i",
+      fileURLToPath(new URL("wave-2-sapper-preparation.png", outputDirectory)),
       "-i",
       fileURLToPath(
-        new URL(
-          `../assets/game-art/combat-animation/exports/entities/${id}.png`,
-          import.meta.url
+        new URL("hexer-committed.png", rejectedComparisonDirectory)
+      ),
+      "-i",
+      fileURLToPath(new URL("wave-3-hexer-commit.png", outputDirectory)),
+      "-filter_complex",
+      `${comparisonLabels
+        .map(
+          (label, index) =>
+            `[${index}:v]crop=600:260:520:275,drawtext=text='${label}':fontcolor=white:fontsize=18:box=1:boxcolor=black@0.82:boxborderw=7:x=12:y=12[c${index}]`
         )
-      )
-    ]),
-    "-filter_complex",
-    `${authoredAssets
-      .map(
-        (_, index) =>
-          `[${index}:v]scale=220:140:force_original_aspect_ratio=decrease,pad=220:140:(ow-iw)/2:(oh-ih)/2:color=0x03111f[a${index}]`
-      )
-      .join(";")};${authoredAssets
-      .map((_, index) => `[a${index}]`)
-      .join(
-        ""
-      )}xstack=inputs=8:layout=0_0|220_0|440_0|660_0|0_140|220_140|440_140|660_140`,
-    fileURLToPath(authoredSheet)
-  ]);
-  contactSheets.push({
-    id: "sapper-hexer-authored-layer-contact-sheet",
-    image: "sapper-hexer-authored-layer-contact-sheet.png",
-    imageSha256: sha256(await readFile(authoredSheet)),
-    assets: authoredAssets
-  });
+        .join(
+          ";"
+        )};[c0][c1][c2][c3]xstack=inputs=4:layout=0_0|600_0|0_260|600_260`,
+      fileURLToPath(rejectedComparisonSheet)
+    ]);
+    contactSheets.push({
+      id: "rejected-vs-authored-prototype-contact-sheet",
+      image: "rejected-vs-authored-prototype-contact-sheet.png",
+      imageSha256: sha256(await readFile(rejectedComparisonSheet)),
+      viewport: [1440, 900],
+      crop: [520, 275, 600, 260],
+      fixtureId,
+      historicalHead: rejectedEvidenceHead,
+      replacementHead: sourceHead,
+      comparisons: rejectedComparisons
+    });
+    await rm(rejectedComparisonDirectory, { recursive: true, force: true });
+
+    const authoredSheet = new URL(
+      "sapper-hexer-authored-layer-contact-sheet.png",
+      outputDirectory
+    );
+    const authoredAssets = [
+      "sapper-intent-crest",
+      "sapper-fuse-tell",
+      "sapper-blast-impact",
+      "sapper-fracture-cancel",
+      "hexer-intent-crest",
+      "hexer-rune-channel",
+      "hexer-target-tether",
+      "hexer-fracture-cancel"
+    ];
+    await execFile("ffmpeg", [
+      "-y",
+      "-loglevel",
+      "error",
+      ...authoredAssets.flatMap((id) => [
+        "-i",
+        fileURLToPath(
+          new URL(
+            `../assets/game-art/combat-animation/exports/entities/${id}.png`,
+            import.meta.url
+          )
+        )
+      ]),
+      "-filter_complex",
+      `${authoredAssets
+        .map(
+          (_, index) =>
+            `[${index}:v]scale=220:140:force_original_aspect_ratio=decrease,pad=220:140:(ow-iw)/2:(oh-ih)/2:color=0x03111f[a${index}]`
+        )
+        .join(";")};${authoredAssets
+        .map((_, index) => `[a${index}]`)
+        .join(
+          ""
+        )}xstack=inputs=8:layout=0_0|220_0|440_0|660_0|0_140|220_140|440_140|660_140`,
+      fileURLToPath(authoredSheet)
+    ]);
+    contactSheets.push({
+      id: "sapper-hexer-authored-layer-contact-sheet",
+      image: "sapper-hexer-authored-layer-contact-sheet.png",
+      imageSha256: sha256(await readFile(authoredSheet)),
+      assets: authoredAssets
+    });
+  }
 } finally {
   await browser.close();
 }
@@ -838,11 +877,12 @@ try {
 const manifest = {
   schemaVersion: 1,
   issue: 327,
+  packet: wipOnly ? "sapper-hexer-targeted-wip" : "complete",
   sourceHead,
   fixtureId,
   viewport: [1440, 900],
   deviceScaleFactor: 1,
-  motionCoverage: ["allow", "reduce"],
+  motionCoverage: wipOnly ? ["reduce"] : ["allow", "reduce"],
   captureCount: captures.length,
   captures: captures.map((capture) => ({
     id: capture.id,
