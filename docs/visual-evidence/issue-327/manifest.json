@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "issue": 327,
+  "sourceHead": "852568b212752416aaa7eedaa71cf488cbb88631",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [
+    1440,
+    900
+  ],
+  "deviceScaleFactor": 1,
+  "reducedMotion": true,
+  "captureCount": 6,
+  "captures": [
+    {
+      "id": "wave-1-skirmisher-tell",
+      "screenshot": "wave-1-skirmisher-tell.png",
+      "screenshotSha256": "be0c01007b20602bcdcdfa9ddefcfc88dd82f198bae8a825271f42dbc7877aae",
+      "sidecar": "wave-1-skirmisher-tell.json",
+      "tick": 301,
+      "expected": {
+        "id": "wave-1-skirmisher-tell",
+        "visualId": "enemy.goblin_skirmisher",
+        "effectStatus": "telling"
+      }
+    },
+    {
+      "id": "wave-2-sapper-commit",
+      "screenshot": "wave-2-sapper-commit.png",
+      "screenshotSha256": "d241ce2dab46dfb950f4ec2c79c0e7232b6a883b587d29c93b6ee892092f27f7",
+      "sidecar": "wave-2-sapper-commit.json",
+      "tick": 1213,
+      "expected": {
+        "id": "wave-2-sapper-commit",
+        "visualId": "enemy.goblin_sapper",
+        "effectStatus": "committed"
+      }
+    },
+    {
+      "id": "wave-3-hexer-commit",
+      "screenshot": "wave-3-hexer-commit.png",
+      "screenshotSha256": "d57d0410612a59ab1f74694e9788b9d00de5c6dbc86714e93b603d5ad35b4d54",
+      "sidecar": "wave-3-hexer-commit.json",
+      "tick": 1962,
+      "expected": {
+        "id": "wave-3-hexer-commit",
+        "visualId": "enemy.goblin_hexer",
+        "effectStatus": "committed"
+      }
+    },
+    {
+      "id": "wave-4-banner-tell",
+      "screenshot": "wave-4-banner-tell.png",
+      "screenshotSha256": "c70e936b3c28df1667df143909fa1d11c745ab89b2b73061673dc4ba523c6ea8",
+      "sidecar": "wave-4-banner-tell.json",
+      "tick": 2821,
+      "expected": {
+        "id": "wave-4-banner-tell",
+        "visualId": "enemy.goblin_banner_bearer",
+        "effectStatus": "telling"
+      }
+    },
+    {
+      "id": "wave-5-hunter-tell",
+      "screenshot": "wave-5-hunter-tell.png",
+      "screenshotSha256": "fa8319dbb9ae5a23d8ec82d711880dd105970d144d780de8abfa02a65ef8d599",
+      "sidecar": "wave-5-hunter-tell.json",
+      "tick": 3602,
+      "expected": {
+        "id": "wave-5-hunter-tell",
+        "visualId": "enemy.goblin_warden_hunter",
+        "effectStatus": "telling"
+      }
+    },
+    {
+      "id": "large-text-reduced-motion-paused",
+      "screenshot": "large-text-reduced-motion-paused.png",
+      "screenshotSha256": "93184ccef69de30dc0f66e2368957f0a965903cc86c9035b2bc2535fc58e8662",
+      "sidecar": "large-text-reduced-motion-paused.json",
+      "tick": 2,
+      "expected": {
+        "textScale": "large"
+      }
+    }
+  ]
+}
