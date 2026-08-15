@@ -916,6 +916,10 @@ export function authoredEnemyIntentEffectLayout(
     : "span";
 }
 
+export function authoredEnemyIntentSpanLength(distance: number): number {
+  return Math.max(82, Math.min(320, distance + 12));
+}
+
 export function authoredEnemyIntentEffectAlpha(
   intent: EnemyIntentPresentation
 ): number {
@@ -2787,13 +2791,13 @@ class PersistentBattlefieldScene {
       else if (intent.mechanic === "attack_disrupt")
         effect
           .setPosition(midpointX, midpointY + 8)
-          .setDisplaySize(Math.max(82, Math.min(142, distance + 24)), 48)
+          .setDisplaySize(authoredEnemyIntentSpanLength(distance), 48)
           .setRotation(angle);
       else
         effect
           .setPosition(midpointX, midpointY + 18)
           .setDisplaySize(
-            Math.max(74, Math.min(146, distance + 20)),
+            authoredEnemyIntentSpanLength(distance),
             intent.mechanic === "attack_slow" ? 46 : 40
           )
           .setRotation(angle);
