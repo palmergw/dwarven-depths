@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-2-sapper-commit",
-  "sourceHead": "faa124d5f88d2820aab8675a34aa8bf97590dfab",
+  "sourceHead": "94fc0d967b0012b567793428c7845b86cce90707",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-2-sapper-commit.png",
-  "screenshotSha256": "ce3b3601f2b5023c2f729e69f1d18317b0e13d9342868341ced34ab8ed93f3be",
+  "screenshotSha256": "213a9dfe606c324728691caf8558e1f81de6de116c30a8cce9b8e0a7693dff28",
   "expected": {
     "id": "wave-2-sapper-commit",
     "visualId": "enemy.goblin_sapper",
