@@ -166,4 +166,31 @@ Critical correction: remove the large detached hanging shield plaques. The two c
 
 ### Bounded QA and export semantics
 
-The source contains exactly eight isolated assets in a regular 4×2 atlas. The Sapper sequence carries bomb/fuse source, restrained directional embers, etched footprint, and compact impact. The Hexer sequence carries lantern/rune source, narrow channel, target endpoint, and restrained resolve. The prior hanging plaques, smoke serpent, and broad saturated ribbon are absent. The deterministic exporter binds the keyed-alpha source digest, fixed crop ordering, straight-alpha export dimensions, file digests, and web asset manifest; no environment pixels or character figures are present.
+The generated source contains the requested 4×2 sequence and no environment pixels or character figures, but adversarial inspection found that both first-column cells still retained detached plaques. That output is direction-rejected and superseded by the plaque-removal correction below; it must not be used as evidence that the compact source-frame requirement was met.
+
+## `shuttergate-sapper-hexer-intent-atlas-master.png` — plaque-removal correction
+
+- Provider: `openai-codex`
+- Model: `gpt-image-2-medium`
+- Aspect ratio: `landscape`
+- Requested and saved dimensions: `1536x1024`
+- Quality: `medium`
+- Modality: image-to-image correction
+- Input image: preceding project-owned `shuttergate-sapper-hexer-intent-atlas-master.png`
+- Input SHA-256: `b953aca51a36f2de30d6b5504cffe6604d73ada45c321aed119f1b6089811086`
+- Output SHA-256: `c96f62a362266025b702437e3dd5502dc684c354ea6bf1cd4b4448944e320334`
+- License: project MIT license (`LICENSE`)
+
+### Exact prompt
+
+Edit this ORIGINAL project-owned 4-column by 2-row production game-asset atlas. Preserve the exact 1536x1024 canvas, uniform near-black keyable background, painterly hand-authored isometric fantasy material language, and exactly eight clearly separated cells in the same strict grid with generous margins. No text, captions, UI mockups, characters, scenery, cyan, neon, broad ribbons, serpentine smoke, rings, crosshairs, letters, geometric debug symbols, or extra assets.
+
+CRITICAL: completely remove both large rectangular hanging plaques and every plaque border, backing plate, corner ornament, and frame from the first column. The first-column cells must contain ONLY compact isolated pictorial objects on transparent/keyable background: TOP LEFT an unmistakable round blackened-iron Sapper bomb with a short lit fuse, a tiny restrained ember, and one small engraved brass attachment tab suitable for a health-frame endcap; BOTTOM LEFT an unmistakable compact blackened-iron Hexer rune lantern with warm muted plum light and one small engraved brass attachment tab. Neither may be enclosed by any rectangle, shield, badge, plaque, panel, or background.
+
+Cells in exact order. TOP ROW: (1) isolated bomb/fuse endcap object; (2) Sapper TELL, with a clearly visible small bomb at source, short restrained directional amber fuse sparks and thin broken charcoal smoke with generous negative space, terminating in a readable low-contrast etched stone blast footprint; (3) Sapper COMMIT, same footprint receiving a compact grounded amber impact, fractured stone and only a few embers; (4) authored bomb fracture/dissolve cancellation. BOTTOM ROW: (1) isolated rune-lantern endcap object; (2) Hexer TELL, a visible source lantern/rune, narrow directional muted plum-grey channel with generous negative space, and a distinct small target rune endpoint; (3) Hexer COMMIT, same compact target endpoint grounded into etched stone with restrained warm-plum resolve; (4) authored rune fracture/dissolve cancellation.
+
+Make each source, direction, recipient, and consequence pictorially readable when the exported world effects are rendered approximately 140x28 pixels and the endcap objects approximately 20x20 pixels. Keep silhouettes and floor texture visible through effects. Use Shuttergate materials: smoked iron, old brass, ember orange, dusty charcoal, muted plum-violet, rough etched stone. Maintain actors-above-effects hierarchy. No opaque smoke masses, no saturated glow, no particle amplification.
+
+### Bounded QA and export semantics
+
+The correction contains exactly eight isolated assets in the required 4×2 order. The first-column exports are now freestanding bomb and lantern objects with no plaque geometry or backing. The remaining cells retain distinct source, directional, destination, impact/resolve, and cancellation imagery. The keyed background is uniform and no character, UI, text, or environment layer is present. The deterministic exporter uses the first-column cells directly for compact health-frame endcaps and binds the corrected source digest and every exported digest.
