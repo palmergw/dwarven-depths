@@ -124,7 +124,13 @@ describe("Shuttergate enemy roster showcase", () => {
       (event) => event.type === "enemy.behavior.intent"
     );
     expect(new Set(intents.map((event) => event.effectStatus))).toEqual(
-      new Set(["telling", "committed", "cooling_down"])
+      new Set(["telling", "committed", "cancelled", "cooling_down"])
+    );
+    expect(intents).toContainEqual(
+      expect.objectContaining({
+        effectStatus: "cancelled",
+        reasonCode: "no_eligible_recipient"
+      })
     );
     expect(
       new Set(intents.map((event) => event.roleId)).size

@@ -815,6 +815,7 @@ export function delayDwarfActionForEnemyBehavior(
   dwarfEntityId: EntityId,
   currentTick: number,
   delayTicks: number,
+  interruptWindup: boolean,
   content: CompiledContent,
   authority: BattlefieldDwarfDeploymentAuthority
 ): BattlefieldState {
@@ -834,10 +835,11 @@ export function delayDwarfActionForEnemyBehavior(
           actionState: Object.freeze({
             ...combatant.actionState,
             activeBasicAttack:
-              combatant.actionState.activeBasicAttack?.commitAtTick !==
+              !interruptWindup ||
+              (combatant.actionState.activeBasicAttack?.commitAtTick !==
                 undefined &&
-              combatant.actionState.activeBasicAttack.commitAtTick <=
-                currentTick
+                combatant.actionState.activeBasicAttack.commitAtTick <=
+                  currentTick)
                 ? combatant.actionState.activeBasicAttack
                 : null,
             cooldownCompleteAtTick: Math.max(
@@ -848,6 +850,47 @@ export function delayDwarfActionForEnemyBehavior(
         })
       : combatant
   );
+  const target = freezeBattlefield(
+    source,
+    source.occupancy,
+    dwarfCombatants,
+    source.pendingCommittedAttacks
+  );
+  acceptDwarfActionTransition(
+    authority,
+    content,
+    source.dwarfCombatants,
+    target.dwarfCombatants
+  );
+  return target;
+}
+
+/** Redirects uncommitted attacks from a protected ally to its authored guard. */
+export function interceptDwarfTargetForEnemyBehavior(
+  source: BattlefieldState,
+  protectedEnemyEntityId: EntityId,
+  guardEnemyEntityId: EntityId,
+  currentTick: number,
+  content: CompiledContent,
+  authority: BattlefieldDwarfDeploymentAuthority
+): BattlefieldState {
+  requireDeploymentAuthority(authority, source, content);
+  const dwarfCombatants = source.dwarfCombatants.map((combatant) => {
+    const active = combatant.actionState.activeBasicAttack;
+    const canIntercept = active === null || active.commitAtTick > currentTick;
+    return combatant.lifecycleState === "active" &&
+      combatant.actionState.currentTargetEntityId === protectedEnemyEntityId &&
+      canIntercept
+      ? Object.freeze({
+          ...combatant,
+          actionState: Object.freeze({
+            ...combatant.actionState,
+            currentTargetEntityId: guardEnemyEntityId,
+            activeBasicAttack: null
+          })
+        })
+      : combatant;
+  });
   const target = freezeBattlefield(
     source,
     source.occupancy,

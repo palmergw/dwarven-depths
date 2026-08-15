@@ -135,10 +135,10 @@ export interface AuthoredEnemyBehaviorDefinition {
   readonly mechanic:
     | "direct_pressure"
     | "standoff_fire"
-    | "ally_guard"
+    | "target_intercept"
     | "formation_command"
     | "flank_reposition"
-    | "armor_sunder"
+    | "attack_disrupt"
     | "attack_slow"
     | "ally_haste"
     | "target_mark";
@@ -191,7 +191,7 @@ export interface EnemyBehaviorIntentDecision {
   readonly reason:
     | "nearest_target"
     | "lowest_health_target"
-    | "lowest_health_ally"
+    | "stable_ally_recipient"
     | "stable_formation_anchor"
     | "no_eligible_recipient";
   /** Authoritative effect lifecycle at this tick's behavior boundary. */

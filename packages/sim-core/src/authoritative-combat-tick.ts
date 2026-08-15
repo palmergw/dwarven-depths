@@ -12,6 +12,7 @@ import type {
 import {
   type BattlefieldDwarfDeploymentAuthority,
   delayDwarfActionForEnemyBehavior,
+  interceptDwarfTargetForEnemyBehavior,
   resolveBattlefieldAttackImpacts,
   resolveDwarfActionPhase
 } from "./battlefield-attack-impact.js";
@@ -184,7 +185,13 @@ function applyEnemyBehaviorEffects(
   );
   if (committed.length === 0) return battlefield;
   const hastedEnemies = new Set<EntityId>();
-  const slowedDwarves = new Map<EntityId, number>();
+  const slowedDwarves = new Map<
+    EntityId,
+    { readonly delayTicks: number; readonly interruptWindup: boolean }
+  >();
+  const interceptions: Array<
+    readonly [protectedEntityId: EntityId, guardEntityId: EntityId]
+  > = [];
   for (const intent of committed) {
     if (intent.mechanic === "formation_command") {
       for (const enemy of battlefield.enemyCombatants)
@@ -200,14 +207,21 @@ function applyEnemyBehaviorEffects(
     if (targetEntityId === undefined) continue;
     if (intent.mechanic === "ally_haste") {
       hastedEnemies.add(targetEntityId);
+    } else if (intent.mechanic === "target_intercept") {
+      interceptions.push([targetEntityId, intent.enemyEntityId]);
     } else if (
-      intent.mechanic === "ally_guard" ||
-      intent.mechanic === "armor_sunder" ||
+      intent.mechanic === "attack_disrupt" ||
       intent.mechanic === "attack_slow"
     ) {
+      const prior = slowedDwarves.get(targetEntityId);
       slowedDwarves.set(
         targetEntityId,
-        Math.max(slowedDwarves.get(targetEntityId) ?? 0, intent.effectMagnitude)
+        Object.freeze({
+          delayTicks: Math.max(prior?.delayTicks ?? 0, intent.effectMagnitude),
+          interruptWindup:
+            prior?.interruptWindup === true ||
+            intent.mechanic === "attack_disrupt"
+        })
       );
     }
   }
@@ -227,6 +241,26 @@ function applyEnemyBehaviorEffects(
     dwarfCombatants: battlefield.dwarfCombatants
   });
   propagateBattlefieldRoundLineage(battlefield, resolved);
+  for (const [protectedEntityId, guardEntityId] of interceptions.sort(
+    (left, right) =>
+      left[0] < right[0]
+        ? -1
+        : left[0] > right[0]
+          ? 1
+          : left[1] < right[1]
+            ? -1
+            : left[1] > right[1]
+              ? 1
+              : 0
+  ))
+    resolved = interceptDwarfTargetForEnemyBehavior(
+      resolved,
+      protectedEntityId,
+      guardEntityId,
+      currentTick,
+      content,
+      authority
+    );
   for (const [dwarfEntityId, slow] of [...slowedDwarves].sort(
     ([left], [right]) => (left < right ? -1 : left > right ? 1 : 0)
   ))
@@ -234,7 +268,8 @@ function applyEnemyBehaviorEffects(
       resolved,
       dwarfEntityId,
       currentTick,
-      slow,
+      slow.delayTicks,
+      slow.interruptWindup,
       content,
       authority
     );

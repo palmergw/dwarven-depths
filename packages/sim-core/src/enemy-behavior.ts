@@ -23,10 +23,10 @@ const strategies = new Set<AuthoredEnemyBehaviorDefinition["strategy"]>([
 const mechanics = new Set<AuthoredEnemyBehaviorDefinition["mechanic"]>([
   "direct_pressure",
   "standoff_fire",
-  "ally_guard",
+  "target_intercept",
   "formation_command",
   "flank_reposition",
-  "armor_sunder",
+  "attack_disrupt",
   "attack_slow",
   "ally_haste",
   "target_mark"
@@ -244,6 +244,14 @@ function lowestHealth<T extends EnemyBehaviorTargetCandidate>(
   )[0];
 }
 
+function stableEntity<T extends EnemyBehaviorTargetCandidate>(
+  candidates: readonly T[]
+): T | undefined {
+  return [...candidates].sort((left, right) =>
+    compareText(left.entityId, right.entityId)
+  )[0];
+}
+
 /** Resolves one authored role's deterministic tell/effect cadence and recipient. */
 export function resolveEnemyBehaviorIntent(
   request: EnemyBehaviorIntentRequest
@@ -327,18 +335,19 @@ export function resolveEnemyBehaviorIntent(
         ? cycleStartedAtTick + behavior.tellTicks + behavior.effectDurationTicks
         : cycleStartedAtTick + cycleTicks;
   const isAllyMechanic =
+    behavior.mechanic === "target_intercept" ||
     behavior.mechanic === "ally_haste" ||
     behavior.mechanic === "formation_command";
   const unlockedRecipient = isAllyMechanic
     ? behavior.mechanic === "formation_command"
       ? nearest(allies)
-      : lowestHealth(allies)
+      : stableEntity(allies)
     : behavior.strategy === "priority_hunt"
       ? lowestHealth(targets)
       : nearest(targets);
   const recipient =
-    !isAllyMechanic && phase !== "telling" && lockedTargetEntityId !== null
-      ? targets.find(
+    phase !== "telling" && lockedTargetEntityId !== null
+      ? (isAllyMechanic ? allies : targets).find(
           (candidate) =>
             candidate.entityId === lockedTargetEntityId &&
             candidate.currentHealth > 0
@@ -350,7 +359,7 @@ export function resolveEnemyBehaviorIntent(
       : behavior.mechanic === "formation_command"
         ? "stable_formation_anchor"
         : isAllyMechanic
-          ? "lowest_health_ally"
+          ? "stable_ally_recipient"
           : behavior.strategy === "priority_hunt"
             ? "lowest_health_target"
             : "nearest_target";

@@ -146,7 +146,7 @@ describe("enemy behavior intent", () => {
       })
     ).toMatchObject({
       targetEntityId: "entity.enemy.ally",
-      reason: "lowest_health_ally"
+      reason: "stable_ally_recipient"
     });
   });
 
