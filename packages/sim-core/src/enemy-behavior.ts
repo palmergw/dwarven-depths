@@ -255,6 +255,7 @@ export function resolveEnemyBehaviorIntent(
       "currentTick",
       "admittedAtTick",
       "enemyEntityId",
+      "lockedTargetEntityId",
       "behavior",
       "targets",
       "allies"
@@ -278,6 +279,14 @@ export function resolveEnemyBehaviorIntent(
     entityIdPattern,
     "enemyEntityId"
   ) as EntityId;
+  const lockedTargetEntityId =
+    data.lockedTargetEntityId === null
+      ? null
+      : (requireId(
+          data.lockedTargetEntityId,
+          entityIdPattern,
+          "lockedTargetEntityId"
+        ) as EntityId);
   const behavior = normalizeBehavior(data.behavior);
   const targets = normalizeCandidates<EnemyBehaviorTargetCandidate>(
     data.targets,
@@ -318,16 +327,23 @@ export function resolveEnemyBehaviorIntent(
         ? cycleStartedAtTick + behavior.tellTicks + behavior.effectDurationTicks
         : cycleStartedAtTick + cycleTicks;
   const isAllyMechanic =
-    behavior.mechanic === "ally_guard" ||
     behavior.mechanic === "ally_haste" ||
     behavior.mechanic === "formation_command";
-  const recipient = isAllyMechanic
+  const unlockedRecipient = isAllyMechanic
     ? behavior.mechanic === "formation_command"
       ? nearest(allies)
       : lowestHealth(allies)
     : behavior.strategy === "priority_hunt"
       ? lowestHealth(targets)
       : nearest(targets);
+  const recipient =
+    !isAllyMechanic && phase !== "telling" && lockedTargetEntityId !== null
+      ? targets.find(
+          (candidate) =>
+            candidate.entityId === lockedTargetEntityId &&
+            candidate.currentHealth > 0
+        )
+      : unlockedRecipient;
   const reason: EnemyBehaviorIntentDecision["reason"] =
     recipient === undefined
       ? "no_eligible_recipient"

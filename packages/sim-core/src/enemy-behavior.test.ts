@@ -23,6 +23,7 @@ function request(currentTick: number) {
     currentTick,
     admittedAtTick: 10,
     enemyEntityId: "entity.enemy.hunter" as never,
+    lockedTargetEntityId: null,
     behavior,
     targets: [
       {
@@ -102,12 +103,32 @@ describe("enemy behavior intent", () => {
     ).toEqual(resolveEnemyBehaviorIntent(tied));
   });
 
+  it("binds commitment to the telegraphed target and cancels when it becomes ineligible", () => {
+    const telling = resolveEnemyBehaviorIntent(request(10));
+    expect(telling.targetEntityId).toBe("entity.dwarf.wounded");
+    const input = request(13);
+    expect(
+      resolveEnemyBehaviorIntent({
+        ...input,
+        lockedTargetEntityId: telling.targetEntityId ?? null,
+        targets: input.targets.map((target) =>
+          target.entityId === telling.targetEntityId
+            ? { ...target, currentHealth: 0 }
+            : target
+        )
+      })
+    ).toMatchObject({
+      effectStatus: "cancelled",
+      reason: "no_eligible_recipient"
+    });
+  });
+
   it("selects wounded allies for guard/support and excludes self", () => {
     const input = request(10);
     expect(
       resolveEnemyBehaviorIntent({
         ...input,
-        behavior: { ...behavior, strategy: "guard", mechanic: "ally_guard" },
+        behavior: { ...behavior, strategy: "support", mechanic: "ally_haste" },
         allies: [
           {
             entityId: input.enemyEntityId,

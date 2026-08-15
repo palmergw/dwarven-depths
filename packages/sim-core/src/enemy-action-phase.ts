@@ -163,6 +163,7 @@ export function resolveEnemyActionPhase(
             currentTick,
             admittedAtTick: combatant.admittedAtTick,
             enemyEntityId: combatant.entityId,
+            lockedTargetEntityId: combatant.actionState.currentTargetEntityId,
             behavior: definition.behavior,
             targets: entry.candidates.flatMap((candidate) => {
               const dwarf = request.battlefield.dwarfCombatants.find(
@@ -198,7 +199,8 @@ export function resolveEnemyActionPhase(
           });
 
     const behaviorTargetCandidate =
-      behaviorIntent?.effectStatus === "committed" &&
+      (behaviorIntent?.effectStatus === "telling" ||
+        behaviorIntent?.effectStatus === "committed") &&
       behaviorIntent.targetEntityId !== undefined
         ? entry.candidates.find(
             (candidate) => candidate.entityId === behaviorIntent.targetEntityId

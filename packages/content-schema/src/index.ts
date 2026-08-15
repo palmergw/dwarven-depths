@@ -146,7 +146,17 @@ const characterDefinitionSchema = z
 const enemyBehaviorSchema = z
   .object({
     schemaVersion: z.literal(1),
-    roleId: domainIdSchema("enemy_role"),
+    roleId: z.enum([
+      "enemy_role.melee_pressure",
+      "enemy_role.ranged_harrier",
+      "enemy_role.armored_vanguard",
+      "enemy_role.flanking_skirmisher",
+      "enemy_role.demolition_sapper",
+      "enemy_role.debilitating_hexer",
+      "enemy_role.formation_support",
+      "enemy_role.warden_hunter",
+      "enemy_role.formation_commander"
+    ]),
     strategy: z.enum([
       "advance",
       "hold_range",

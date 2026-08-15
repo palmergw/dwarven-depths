@@ -167,6 +167,8 @@ export interface EnemyBehaviorIntentRequest {
   readonly currentTick: number;
   readonly admittedAtTick: number;
   readonly enemyEntityId: EntityId;
+  /** Target locked by the tell; null starts a new deterministic acquisition. */
+  readonly lockedTargetEntityId: EntityId | null;
   readonly behavior: AuthoredEnemyBehaviorDefinition;
   readonly targets: readonly EnemyBehaviorTargetCandidate[];
   readonly allies: readonly EnemyBehaviorAllyCandidate[];
@@ -192,7 +194,7 @@ export interface EnemyBehaviorIntentDecision {
     | "lowest_health_ally"
     | "stable_formation_anchor"
     | "no_eligible_recipient";
-  /** Exact authoritative consequence at this tick's behavior boundary. */
+  /** Authoritative effect lifecycle at this tick's behavior boundary. */
   readonly effectStatus: "telling" | "committed" | "cooling_down" | "cancelled";
   readonly effectMagnitude: number;
 }

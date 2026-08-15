@@ -428,9 +428,16 @@ describe("content validation", () => {
     if (wrongRole === undefined)
       throw new Error("missing enemy behavior fixture");
     wrongRole.roleId = "role.not_enemy_scoped";
-    expect(() => validateContentBundle(wrongDomain)).toThrow(
-      /must be a enemy_role\.\* stable ID/
-    );
+    expect(() => validateContentBundle(wrongDomain)).toThrow(/Invalid option/);
+
+    const unknownRole = structuredClone(enemyRosterInput) as typeof wrongDomain;
+    const unknownBehavior = unknownRole.definitions.find(
+      (definition) => definition.kind === "enemy"
+    )?.behavior;
+    if (unknownBehavior === undefined)
+      throw new Error("missing enemy behavior fixture");
+    unknownBehavior.roleId = "enemy_role.unknown_authored_role";
+    expect(() => validateContentBundle(unknownRole)).toThrow(/Invalid option/);
   });
 
   it("strictly validates the Iron Warden ability roster fields and ownership", () => {

@@ -4,14 +4,18 @@ import type {
   AuthoritativeCombatTickResolution,
   BattlefieldState,
   DwarfActionPhaseEntry,
+  EnemyBehaviorIntentDecision,
+  EntityId,
   SimulationEvent,
   SimulationState
 } from "@dwarven-depths/contracts";
 import {
   type BattlefieldDwarfDeploymentAuthority,
+  delayDwarfActionForEnemyBehavior,
   resolveBattlefieldAttackImpacts,
   resolveDwarfActionPhase
 } from "./battlefield-attack-impact.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import { resolveEnemyActionPhase } from "./enemy-action-phase.js";
 import { deriveEnemyPlanningEntries } from "./enemy-movement-planning.js";
 import {
@@ -166,6 +170,77 @@ function normalizeCombatState(
   });
 }
 
+function applyEnemyBehaviorEffects(
+  battlefield: BattlefieldState,
+  intents: readonly EnemyBehaviorIntentDecision[],
+  currentTick: number,
+  content: CompiledContent,
+  authority: BattlefieldDwarfDeploymentAuthority
+): BattlefieldState {
+  const committed = intents.filter(
+    (intent) =>
+      intent.effectStatus === "committed" &&
+      intent.phaseStartedAtTick === currentTick
+  );
+  if (committed.length === 0) return battlefield;
+  const hastedEnemies = new Set<EntityId>();
+  const slowedDwarves = new Map<EntityId, number>();
+  for (const intent of committed) {
+    if (intent.mechanic === "formation_command") {
+      for (const enemy of battlefield.enemyCombatants)
+        if (
+          enemy.lifecycleState === "active" &&
+          enemy.entityId !== intent.enemyEntityId
+        ) {
+          hastedEnemies.add(enemy.entityId);
+        }
+      continue;
+    }
+    const targetEntityId = intent.targetEntityId;
+    if (targetEntityId === undefined) continue;
+    if (intent.mechanic === "ally_haste") {
+      hastedEnemies.add(targetEntityId);
+    } else if (
+      intent.mechanic === "ally_guard" ||
+      intent.mechanic === "armor_sunder" ||
+      intent.mechanic === "attack_slow"
+    ) {
+      slowedDwarves.set(
+        targetEntityId,
+        Math.max(slowedDwarves.get(targetEntityId) ?? 0, intent.effectMagnitude)
+      );
+    }
+  }
+  const enemyCombatants = battlefield.enemyCombatants.map((enemy) => {
+    if (!hastedEnemies.has(enemy.entityId)) return enemy;
+    return Object.freeze({
+      ...enemy,
+      actionState: Object.freeze({
+        ...enemy.actionState,
+        cooldownCompleteAtTick: null
+      })
+    });
+  });
+  let resolved = Object.freeze({
+    ...battlefield,
+    enemyCombatants: Object.freeze(enemyCombatants),
+    dwarfCombatants: battlefield.dwarfCombatants
+  });
+  propagateBattlefieldRoundLineage(battlefield, resolved);
+  for (const [dwarfEntityId, slow] of [...slowedDwarves].sort(
+    ([left], [right]) => (left < right ? -1 : left > right ? 1 : 0)
+  ))
+    resolved = delayDwarfActionForEnemyBehavior(
+      resolved,
+      dwarfEntityId,
+      currentTick,
+      slow,
+      content,
+      authority
+    );
+  return resolved;
+}
+
 /**
  * Composes the currently implemented authoritative battlefield boundaries in
  * fixed same-step order. Rewards, terminal evaluation, statuses, and death
@@ -222,10 +297,24 @@ export function resolveAuthoritativeCombatTick(
     content,
     dwarfAuthority
   );
+  const behaviorIntents = enemyActions.decisions.flatMap((decision) =>
+    decision.behaviorIntent === undefined ? [] : [decision.behaviorIntent]
+  );
+  const behaviorBattlefield = applyEnemyBehaviorEffects(
+    enemyActions.battlefield,
+    behaviorIntents,
+    scheduled.state.tick,
+    content,
+    dwarfAuthority
+  );
+  propagateBattlefieldRoundLineage(
+    enemyActions.battlefield,
+    behaviorBattlefield
+  );
   const dwarfActions = resolveDwarfActionPhase(
     {
       ...common,
-      battlefield: enemyActions.battlefield,
+      battlefield: behaviorBattlefield,
       entries: dwarfActionEntries
     },
     content,
@@ -244,9 +333,6 @@ export function resolveAuthoritativeCombatTick(
     { ...common, battlefield: enemyMovement.battlefield },
     content,
     dwarfAuthority
-  );
-  const behaviorIntents = enemyActions.decisions.flatMap((decision) =>
-    decision.behaviorIntent === undefined ? [] : [decision.behaviorIntent]
   );
   if (
     behaviorIntents.length + enemyMovement.reservations.decisions.length >

@@ -809,6 +809,60 @@ export function interruptUncommittedDwarfAttackForActiveAbility(
   return target;
 }
 
+/** Applies an authored hostile disruption through the accepted dwarf-action authority. */
+export function delayDwarfActionForEnemyBehavior(
+  source: BattlefieldState,
+  dwarfEntityId: EntityId,
+  currentTick: number,
+  delayTicks: number,
+  content: CompiledContent,
+  authority: BattlefieldDwarfDeploymentAuthority
+): BattlefieldState {
+  requireDeploymentAuthority(authority, source, content);
+  if (!Number.isSafeInteger(delayTicks) || delayTicks <= 0)
+    throw new RangeError(
+      "enemy behavior delay must be a positive safe integer"
+    );
+  const completeAtTick = currentTick + delayTicks;
+  if (!Number.isSafeInteger(completeAtTick))
+    throw new RangeError("enemy behavior delay exceeds safe integer bounds");
+  const dwarfCombatants = source.dwarfCombatants.map((combatant) =>
+    combatant.entityId === dwarfEntityId &&
+    combatant.lifecycleState === "active"
+      ? Object.freeze({
+          ...combatant,
+          actionState: Object.freeze({
+            ...combatant.actionState,
+            activeBasicAttack:
+              combatant.actionState.activeBasicAttack?.commitAtTick !==
+                undefined &&
+              combatant.actionState.activeBasicAttack.commitAtTick <=
+                currentTick
+                ? combatant.actionState.activeBasicAttack
+                : null,
+            cooldownCompleteAtTick: Math.max(
+              combatant.actionState.cooldownCompleteAtTick ?? 0,
+              completeAtTick
+            )
+          })
+        })
+      : combatant
+  );
+  const target = freezeBattlefield(
+    source,
+    source.occupancy,
+    dwarfCombatants,
+    source.pendingCommittedAttacks
+  );
+  acceptDwarfActionTransition(
+    authority,
+    content,
+    source.dwarfCombatants,
+    target.dwarfCombatants
+  );
+  return target;
+}
+
 function sameDwarfActionState(
   left: BattlefieldDwarfCombatant["actionState"],
   right: BattlefieldDwarfCombatant["actionState"]

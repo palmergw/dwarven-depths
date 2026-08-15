@@ -9,6 +9,7 @@ import {
   type ScenarioDefinition,
   type SimulationEvent
 } from "@dwarven-depths/contracts";
+import { resolveEnemyBehaviorIntent } from "@dwarven-depths/sim-core";
 import { describe, expect, it } from "vitest";
 import contentFixture from "../../../content/fixtures/phase-6-shuttergate-enemy-roster.json" with {
   type: "json"
@@ -57,6 +58,58 @@ async function run(fixture: unknown) {
 }
 
 describe("Shuttergate enemy roster showcase", () => {
+  it("exercises every canonical non-boss role through tell and commit", async () => {
+    const content = await compileContent(
+      contentFixture as unknown as ContentBundle
+    );
+    const roles = [...content.enemies.values()]
+      .filter((enemy) => enemy.classification !== "boss")
+      .sort((left, right) => left.id.localeCompare(right.id));
+    const committed = roles.map((enemy, index) => {
+      const behavior = enemy.behavior;
+      if (behavior === undefined)
+        throw new Error(`missing behavior for ${enemy.id}`);
+      const admittedAtTick = index * 100;
+      const common = {
+        schemaVersion: 1 as const,
+        admittedAtTick,
+        enemyEntityId: `entity.enemy.showcase_${index}` as never,
+        lockedTargetEntityId: null,
+        behavior,
+        targets: [
+          {
+            entityId: "entity.dwarf.warden" as never,
+            currentHealth: 200,
+            maximumHealth: 240,
+            pathCost: 1
+          }
+        ],
+        allies: [
+          {
+            entityId: "entity.enemy.showcase_ally" as never,
+            currentHealth: 25,
+            maximumHealth: 50,
+            pathCost: 1
+          }
+        ]
+      };
+      const telling = resolveEnemyBehaviorIntent({
+        ...common,
+        currentTick: admittedAtTick
+      });
+      return resolveEnemyBehaviorIntent({
+        ...common,
+        currentTick: admittedAtTick + behavior.tellTicks,
+        lockedTargetEntityId: telling.targetEntityId ?? null
+      });
+    });
+    expect(new Set(committed.map((intent) => intent.roleId)).size).toBe(8);
+    expect(
+      committed.every((intent) => intent.effectStatus === "committed")
+    ).toBe(true);
+    expect(new Set(committed.map((intent) => intent.mechanic)).size).toBe(8);
+  });
+
   it("binds the eight-role catalog into deterministic mixed encounters", async () => {
     const { content, events } = await run(baselineFixture);
 
