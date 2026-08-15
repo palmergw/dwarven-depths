@@ -26,6 +26,7 @@ import {
   decodeBattlefieldDepthAsset,
   deriveActiveAbilityImpact,
   deriveCombatPresentationState,
+  deriveEnemyIntentPresentation,
   deriveRallyingRoarPresentationSourceId,
   deriveShieldSlamImpactIds,
   deriveSlingerProjectilePaths,
@@ -1683,6 +1684,17 @@ describe("player-facing combat HUD", () => {
     expect(statusSignalKind("status.slow")).toBe("slow");
     expect(statusSignalKind("status.haste")).toBe("haste");
     expect(statusSignalKind("status.unknown")).toBe("unknown");
+    expect(
+      deriveEnemyIntentPresentation([
+        "status.enemy_behavior.attack_slow.telling",
+        "status.slow"
+      ])
+    ).toEqual({ mechanic: "attack_slow", phase: "telling" });
+    expect(
+      deriveEnemyIntentPresentation([
+        "status.enemy_behavior.attack_slow.cooling_down"
+      ])
+    ).toBeUndefined();
     expect(document.querySelector(".wave-signal")?.textContent).toBe(
       "Entrance watch Wave 1 · 2 approaching"
     );

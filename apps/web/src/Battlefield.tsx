@@ -730,6 +730,126 @@ export interface CombatPresentationState {
   readonly shieldSlamImpact: boolean;
 }
 
+export type EnemyIntentMechanic =
+  | "direct_pressure"
+  | "standoff_fire"
+  | "target_intercept"
+  | "formation_command"
+  | "flank_reposition"
+  | "attack_disrupt"
+  | "attack_slow"
+  | "ally_haste"
+  | "target_mark";
+
+export type EnemyIntentPhase = "telling" | "committed" | "cancelled";
+
+export interface EnemyIntentPresentation {
+  readonly mechanic: EnemyIntentMechanic;
+  readonly phase: EnemyIntentPhase;
+}
+
+const enemyIntentMechanics = new Set<EnemyIntentMechanic>([
+  "direct_pressure",
+  "standoff_fire",
+  "target_intercept",
+  "formation_command",
+  "flank_reposition",
+  "attack_disrupt",
+  "attack_slow",
+  "ally_haste",
+  "target_mark"
+]);
+
+export function deriveEnemyIntentPresentation(
+  statusIds: readonly string[]
+): EnemyIntentPresentation | undefined {
+  for (const statusId of statusIds) {
+    const match =
+      /^status\.enemy_behavior\.([a-z_]+)\.(telling|committed|cancelled)$/.exec(
+        statusId
+      );
+    if (match === null) continue;
+    const mechanic = match[1] as EnemyIntentMechanic;
+    if (!enemyIntentMechanics.has(mechanic)) continue;
+    return { mechanic, phase: match[2] as EnemyIntentPhase };
+  }
+  return undefined;
+}
+
+const enemyRoleDetails: Readonly<
+  Record<
+    string,
+    {
+      readonly role: string;
+      readonly mechanic: string;
+      readonly counterplay: string;
+    }
+  >
+> = {
+  "enemy.goblin_cutter": {
+    role: "Cutter",
+    mechanic: "Driving lunge",
+    counterplay: "Control before contact"
+  },
+  "enemy.goblin_slinger": {
+    role: "Slinger",
+    mechanic: "Standoff shot",
+    counterplay: "Break line of sight"
+  },
+  "enemy.goblin_bulwark": {
+    role: "Bulwark",
+    mechanic: "Intercepting guard",
+    counterplay: "Retarget around guard"
+  },
+  "enemy.gatebreaker_captain": {
+    role: "Gatebreaker Captain",
+    mechanic: "Formation command",
+    counterplay: "Interrupt the command"
+  },
+  "enemy.goblin_skirmisher": {
+    role: "Skirmisher",
+    mechanic: "Flanking feint",
+    counterplay: "Deny the flank route"
+  },
+  "enemy.goblin_sapper": {
+    role: "Sapper",
+    mechanic: "Sundering fuse",
+    counterplay: "Interrupt the fuse"
+  },
+  "enemy.goblin_hexer": {
+    role: "Hexer",
+    mechanic: "Slowing hex",
+    counterplay: "Interrupt or break line of sight"
+  },
+  "enemy.goblin_banner_bearer": {
+    role: "Banner Bearer",
+    mechanic: "Rallying banner",
+    counterplay: "Focus the banner bearer"
+  },
+  "enemy.goblin_warden_hunter": {
+    role: "Warden Hunter",
+    mechanic: "Hunt mark",
+    counterplay: "Break the hunter mark"
+  }
+};
+
+export function enemyIntentDetail(entity: RenderEntityV2): string | undefined {
+  const detail = enemyRoleDetails[entity.visualId];
+  if (detail === undefined) return undefined;
+  const intent = deriveEnemyIntentPresentation(
+    entity.statuses.map(({ id }) => id)
+  );
+  const phase =
+    intent?.phase === "telling"
+      ? "Preparing"
+      : intent?.phase === "committed"
+        ? "Committed"
+        : intent?.phase === "cancelled"
+          ? "Cancelled"
+          : "Watching";
+  return `${detail.role} — ${detail.mechanic} · ${phase} · ${detail.counterplay}.`;
+}
+
 export function statusSignalKind(
   statusId: string
 ):
@@ -1493,7 +1613,13 @@ function updateEntitySignal(
   const width = dwarf ? 46 : 38;
   const top = entity.y - (dwarf ? 72 : 60);
   signal.fillStyle(0x090705, 0.9);
-  signal.fillRect(entity.x - width / 2 - 1, top - 1, width + 2, 6);
+  signal.fillRoundedRect(entity.x - width / 2 - 3, top - 3, width + 6, 10, 2);
+  signal.lineStyle(
+    presentation.boss ? 3 : presentation.elite ? 2 : 1,
+    presentation.boss ? 0xd2a866 : presentation.elite ? 0xb98b45 : 0x6c5b44,
+    1
+  );
+  signal.strokeRoundedRect(entity.x - width / 2 - 3, top - 3, width + 6, 10, 2);
   signal.fillStyle(
     presentation.healthRatio > 0.5
       ? 0x69b96b
@@ -1519,63 +1645,98 @@ function updateEntitySignal(
       top - 2
     );
   }
-  for (const [index, statusId] of presentation.statusIds.entries()) {
-    signal.lineStyle(2, 0x73d7ef, 1);
-    const centerX = entity.x + width / 2 + 7 + index * 10;
-    const centerY = top + 2;
+  if (presentation.elite || presentation.boss) {
+    const emblemX = entity.x - width / 2 + 1;
+    signal.lineStyle(1.5, 0xf0d394, 1);
+    signal.strokeTriangle(
+      emblemX,
+      top - 1,
+      emblemX + 4,
+      top + 2,
+      emblemX,
+      top + 5
+    );
+    if (presentation.boss)
+      signal.lineBetween(emblemX + 4, top + 2, emblemX + 7, top - 1);
+  }
+  const groundedStatuses = presentation.statusIds.filter((statusId) => {
+    const kind = statusSignalKind(statusId);
+    return kind === "stagger" || kind === "slow" || kind === "haste";
+  });
+  for (const [index, statusId] of groundedStatuses.entries()) {
+    signal.lineStyle(2, 0xc8b089, 0.9);
+    const centerX = entity.x - 9 + index * 9;
+    const centerY = entity.y + 3;
     const kind = statusSignalKind(statusId);
     if (kind === "stagger") {
-      signal.lineBetween(centerX, centerY - 5, centerX + 5, centerY);
-      signal.lineBetween(centerX + 5, centerY, centerX, centerY + 5);
-      signal.lineBetween(centerX, centerY + 5, centerX - 5, centerY);
-      signal.lineBetween(centerX - 5, centerY, centerX, centerY - 5);
+      signal.lineBetween(centerX - 7, centerY, centerX - 2, centerY - 4);
+      signal.lineBetween(centerX - 2, centerY - 4, centerX + 1, centerY + 3);
+      signal.lineBetween(centerX + 1, centerY + 3, centerX + 7, centerY - 2);
     } else if (kind === "slow") {
-      signal.lineBetween(centerX - 4, centerY - 5, centerX + 4, centerY - 5);
-      signal.lineBetween(centerX - 4, centerY + 5, centerX + 4, centerY + 5);
-      signal.lineBetween(centerX - 4, centerY - 5, centerX + 4, centerY + 5);
-      signal.lineBetween(centerX + 4, centerY - 5, centerX - 4, centerY + 5);
+      signal.strokeEllipse(centerX, centerY, 18, 7);
+      signal.lineBetween(centerX - 4, centerY - 3, centerX + 4, centerY + 3);
     } else if (kind === "haste") {
-      signal.lineBetween(centerX - 4, centerY - 5, centerX + 1, centerY);
-      signal.lineBetween(centerX + 1, centerY, centerX - 4, centerY + 5);
-      signal.lineBetween(centerX + 1, centerY - 5, centerX + 6, centerY);
-      signal.lineBetween(centerX + 6, centerY, centerX + 1, centerY + 5);
-    } else if (kind === "behavior_tell") {
-      signal.strokeTriangle(
-        centerX,
-        centerY - 6,
-        centerX + 6,
-        centerY + 5,
-        centerX - 6,
-        centerY + 5
-      );
-    } else if (kind === "behavior_commit") {
-      signal.lineBetween(centerX, centerY - 6, centerX + 6, centerY);
-      signal.lineBetween(centerX + 6, centerY, centerX, centerY + 6);
-      signal.lineBetween(centerX, centerY + 6, centerX - 6, centerY);
-      signal.lineBetween(centerX - 6, centerY, centerX, centerY - 6);
-    } else if (kind === "behavior_cooldown") {
-      signal.strokeCircle(centerX, centerY, 5);
-    } else if (kind === "behavior_cancelled") {
-      signal.lineBetween(centerX - 5, centerY - 5, centerX + 5, centerY + 5);
-      signal.lineBetween(centerX + 5, centerY - 5, centerX - 5, centerY + 5);
-    } else signal.strokeRect(centerX - 4, centerY - 4, 8, 8);
+      signal.lineBetween(centerX - 9, centerY + 2, centerX - 2, centerY - 2);
+      signal.lineBetween(centerX, centerY + 2, centerX + 7, centerY - 2);
+    }
   }
-  if (presentation.elite || presentation.boss) {
-    signal.lineStyle(2, presentation.boss ? 0xe7a2ff : 0xffd45c, 1);
-    signal.strokeCircle(entity.x, top - 5, presentation.boss ? 8 : 5);
+  const intent = deriveEnemyIntentPresentation(presentation.statusIds);
+  if (intent !== undefined) {
+    const crestX = entity.x + width / 2 + 10;
+    const crestY = top + 1;
+    signal.lineStyle(
+      intent.phase === "committed" ? 3 : 2,
+      0xe2c391,
+      intent.phase === "cancelled" ? 0.5 : 0.95
+    );
+    signal.fillStyle(
+      intent.phase === "committed" ? 0xd4a657 : 0xb07838,
+      intent.phase === "telling" ? 0.28 : 0.78
+    );
+    if (intent.mechanic === "target_intercept") {
+      signal.fillRoundedRect(crestX - 5, crestY - 6, 10, 11, 3);
+      signal.strokeRoundedRect(crestX - 5, crestY - 6, 10, 11, 3);
+    } else if (intent.mechanic === "attack_disrupt") {
+      signal.strokeCircle(crestX, crestY, 6);
+      signal.lineBetween(crestX, crestY - 8, crestX + 3, crestY - 5);
+    } else if (intent.mechanic === "attack_slow") {
+      signal.strokeCircle(crestX, crestY, 6);
+      signal.lineBetween(crestX - 4, crestY + 4, crestX + 4, crestY - 4);
+    } else if (
+      intent.mechanic === "ally_haste" ||
+      intent.mechanic === "formation_command"
+    ) {
+      signal.lineBetween(crestX, crestY - 7, crestX, crestY + 6);
+      signal.lineBetween(crestX, crestY - 6, crestX + 6, crestY - 3);
+      signal.lineBetween(crestX + 6, crestY - 3, crestX, crestY);
+    } else if (intent.mechanic === "target_mark") {
+      signal.strokeCircle(crestX, crestY, 6);
+      signal.lineBetween(crestX - 8, crestY, crestX + 8, crestY);
+      signal.lineBetween(crestX, crestY - 8, crestX, crestY + 8);
+    } else {
+      signal.beginPath();
+      signal.moveTo(crestX - 6, crestY + 5);
+      signal.lineTo(crestX + 6, crestY);
+      signal.lineTo(crestX - 6, crestY - 5);
+      signal.strokePath();
+    }
+    if (intent.phase === "cancelled") {
+      signal.lineBetween(crestX - 7, crestY - 7, crestX - 1, crestY - 1);
+      signal.lineBetween(crestX + 1, crestY + 1, crestX + 7, crestY + 7);
+    }
   }
   if (entity.cameraDepth !== undefined)
     signal.setMask(
       createDepthVisibilityMask(
         scene,
-        100,
-        90,
+        110,
+        110,
         {
           kind: "upright-billboard",
           cameraDepth: entity.cameraDepth,
           cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
           depthEdgeGuardPixels: 1,
-          frameLeft: Math.round(entity.x) - 50,
+          frameLeft: Math.round(entity.x) - 55,
           frameTop: Math.round(entity.y) - 82,
           pivotY: 82
         },
@@ -1760,6 +1921,7 @@ class PersistentBattlefieldScene {
   readonly departures = new Map<string, DepartingEntityObjects>();
   readonly effects: Phaser.GameObjects.Graphics[] = [];
   readonly projectileEffects = new Map<string, Phaser.GameObjects.Graphics>();
+  readonly behaviorEffects = new Map<string, Phaser.GameObjects.Graphics>();
   readonly abilityEffects = new Map<string, Phaser.GameObjects.Image>();
   readonly lighting: Phaser.GameObjects.Image;
   readonly terminalFrame: Phaser.GameObjects.Graphics;
@@ -2377,6 +2539,179 @@ class PersistentBattlefieldScene {
       }
     }
 
+    const primitiveById = new Map(
+      primitives.entities.map((entity) => [entity.id, entity])
+    );
+    const behaviorTells =
+      snapshot.schemaVersion === 2
+        ? snapshot.entities.flatMap((entity) => {
+            if (entity.faction !== "enemy") return [];
+            const intent = deriveEnemyIntentPresentation(
+              entity.statuses.map(({ id }) => id)
+            );
+            const source = primitiveById.get(entity.id);
+            return intent === undefined || source === undefined
+              ? []
+              : [{ entity, intent, source }];
+          })
+        : [];
+    const liveBehaviorEffectIds = new Set(
+      behaviorTells.map(({ entity }) => entity.id)
+    );
+    for (const [id, effect] of this.behaviorEffects)
+      if (!liveBehaviorEffectIds.has(id)) {
+        clearDepthVisibilityMask(effect);
+        this.layers["world-effects"].delete(effect);
+        effect.destroy();
+        this.behaviorEffects.delete(id);
+      }
+    for (const { entity: sourceEntity, intent, source } of behaviorTells) {
+      const effect =
+        this.behaviorEffects.get(sourceEntity.id) ?? this.scene.add.graphics();
+      clearDepthVisibilityMask(effect);
+      effect.clear();
+      const target =
+        sourceEntity.targetEntityId === null
+          ? undefined
+          : primitiveById.get(sourceEntity.targetEntityId);
+      const committed = intent.phase === "committed";
+      const cancelled = intent.phase === "cancelled";
+      effect.lineStyle(
+        committed ? 3 : 2,
+        0xc99a5b,
+        cancelled ? 0.36 : committed ? 0.82 : 0.56
+      );
+      effect.fillStyle(0xa96b35, committed ? 0.2 : 0.11);
+      if (intent.mechanic === "attack_disrupt") {
+        const x = target?.x ?? source.x;
+        const y = target?.y ?? source.y;
+        effect.fillEllipse(x, y + 1, 84, 34);
+        effect.strokeEllipse(x, y + 1, 84, 34);
+        effect.lineBetween(source.x, source.y - 19, x, y - 2);
+      } else if (intent.mechanic === "target_intercept") {
+        effect.beginPath();
+        effect.arc(source.x, source.y - 12, 34, 3.55, 5.88);
+        effect.strokePath();
+        if (target !== undefined)
+          effect.lineBetween(source.x, source.y - 18, target.x, target.y - 14);
+      } else if (
+        intent.mechanic === "attack_slow" ||
+        intent.mechanic === "target_mark"
+      ) {
+        if (target !== undefined) {
+          effect.lineBetween(source.x, source.y - 25, target.x, target.y - 24);
+          effect.strokeCircle(
+            target.x,
+            target.y - 24,
+            intent.mechanic === "target_mark" ? 13 : 9
+          );
+          if (intent.mechanic === "target_mark") {
+            effect.lineBetween(
+              target.x - 17,
+              target.y - 24,
+              target.x + 17,
+              target.y - 24
+            );
+            effect.lineBetween(target.x, target.y - 41, target.x, target.y - 7);
+          }
+        }
+      } else if (
+        intent.mechanic === "ally_haste" ||
+        intent.mechanic === "formation_command"
+      ) {
+        effect.strokeEllipse(source.x, source.y + 1, 104, 42);
+        if (target !== undefined)
+          effect.lineBetween(source.x, source.y - 6, target.x, target.y - 6);
+      } else {
+        const destination = target ?? {
+          x:
+            source.x +
+            (sourceEntity.facing === "east"
+              ? 72
+              : sourceEntity.facing === "west"
+                ? -72
+                : 0),
+          y:
+            source.y +
+            (sourceEntity.facing === "south"
+              ? 48
+              : sourceEntity.facing === "north"
+                ? -48
+                : 0)
+        };
+        effect.lineBetween(
+          source.x,
+          source.y - 10,
+          destination.x,
+          destination.y - 10
+        );
+        const direction = Math.atan2(
+          destination.y - source.y,
+          destination.x - source.x
+        );
+        effect.fillTriangle(
+          destination.x,
+          destination.y - 10,
+          destination.x - Math.cos(direction - 0.55) * 11,
+          destination.y - 10 - Math.sin(direction - 0.55) * 11,
+          destination.x - Math.cos(direction + 0.55) * 11,
+          destination.y - 10 - Math.sin(direction + 0.55) * 11
+        );
+      }
+      if (cancelled) {
+        effect.lineBetween(
+          source.x - 14,
+          source.y - 32,
+          source.x + 14,
+          source.y - 4
+        );
+        effect.lineBetween(
+          source.x + 14,
+          source.y - 32,
+          source.x - 14,
+          source.y - 4
+        );
+      }
+      effect.setAlpha(reduceMotion ? 0.9 : 1);
+      if (source.cameraDepth !== undefined) {
+        const effectLeft = Math.floor(
+          Math.min(source.x, target?.x ?? source.x) - 64
+        );
+        const effectTop = Math.floor(
+          Math.min(source.y, target?.y ?? source.y) - 64
+        );
+        const effectWidth = Math.ceil(
+          Math.abs((target?.x ?? source.x) - source.x) + 128
+        );
+        const effectHeight = Math.ceil(
+          Math.abs((target?.y ?? source.y) - source.y) + 128
+        );
+        effect.setMask(
+          createDepthVisibilityMask(
+            this.scene,
+            effectWidth,
+            effectHeight,
+            {
+              kind: "ground-plane",
+              cameraDepth: source.cameraDepth,
+              cameraDepthPerPixelX: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_X,
+              cameraDepthPerPixelY: SHUTTERGATE_GROUND_CAMERA_DEPTH_PER_PIXEL_Y,
+              depthEdgeGuardPixels: 0,
+              frameLeft: effectLeft,
+              frameTop: effectTop,
+              pivotX: source.x - effectLeft,
+              pivotY: source.y - effectTop
+            },
+            this.staticDepth
+          )
+        );
+      }
+      if (!this.behaviorEffects.has(sourceEntity.id)) {
+        this.behaviorEffects.set(sourceEntity.id, effect);
+        this.layers["world-effects"].add(effect);
+      }
+    }
+
     const impactKey =
       snapshot.schemaVersion === 2 && activeAbilityImpact !== undefined
         ? `${snapshot.scenarioId}:${snapshot.tick}:${activeAbilityImpact.abilityId}:${activeAbilityImpact.sourceEntityId}:${abilityImpactIds.join(",")}`
@@ -2583,6 +2918,8 @@ class PersistentBattlefieldScene {
       this.scene.children.bringToTop(effect);
     for (const effect of this.projectileEffects.values())
       this.scene.children.bringToTop(effect);
+    for (const effect of this.behaviorEffects.values())
+      this.scene.children.bringToTop(effect);
     for (const entity of orderedEntities) {
       const objects = this.entities.get(entity.id);
       if (objects !== undefined)
@@ -2740,6 +3077,11 @@ class PersistentBattlefieldScene {
     for (const effect of this.effects) clearDepthVisibilityMask(effect);
     for (const effect of this.projectileEffects.values()) effect.destroy();
     this.projectileEffects.clear();
+    for (const effect of this.behaviorEffects.values()) {
+      clearDepthVisibilityMask(effect);
+      effect.destroy();
+    }
+    this.behaviorEffects.clear();
     for (const effect of this.abilityEffects.values()) effect.destroy();
     this.abilityEffects.clear();
     this.entities.clear();
@@ -3041,6 +3383,33 @@ export function Battlefield({
     if (nextFeedback !== undefined) soundPlayerRef.current?.play(nextFeedback);
   }, [evidenceEffectAlpha, reduceMotion, simulationSpeed, snapshot]);
 
+  const inspectorPositions = new Map(
+    buildBattlefieldPrimitives(snapshot).entities.map((entity) => [
+      entity.id,
+      entity
+    ])
+  );
+  const enemyInspectors =
+    snapshot.schemaVersion === 2
+      ? snapshot.entities.flatMap((entity) => {
+          if (entity.faction !== "enemy") return [];
+          const position = inspectorPositions.get(entity.id);
+          const detail = enemyIntentDetail(entity);
+          if (position === undefined || detail === undefined) return [];
+          return [
+            {
+              id: entity.id,
+              detail,
+              x: (position.x / WIDTH) * 100,
+              y: (position.y / HEIGHT) * 100,
+              intent: deriveEnemyIntentPresentation(
+                entity.statuses.map(({ id }) => id)
+              )
+            }
+          ];
+        })
+      : [];
+
   return (
     <figure
       className="battlefield"
@@ -3049,6 +3418,24 @@ export function Battlefield({
       data-entity-count={snapshot.entities.length}
     >
       <div ref={parentRef} className="battlefield-canvas" aria-hidden="true" />
+      <fieldset className="battlefield-entity-inspectors">
+        <legend className="visually-hidden">Enemy details</legend>
+        {enemyInspectors.map(({ id, detail, x, y, intent }) => (
+          <button
+            key={id}
+            type="button"
+            className="battlefield-entity-inspector"
+            style={{ left: `${x}%`, top: `${y}%` }}
+            aria-label={detail}
+            data-entity-id={id}
+            data-intent-mechanic={intent?.mechanic ?? "none"}
+            data-intent-phase={intent?.phase ?? "none"}
+            data-motion={reduceMotion ? "static" : "animated"}
+          >
+            <span>{detail}</span>
+          </button>
+        ))}
+      </fieldset>
       <figcaption className="visually-hidden" aria-live="off">
         Shuttergate battlefield, {snapshot.phase}; {snapshot.entities.length}{" "}
         {snapshot.entities.length === 1 ? "entity" : "entities"}.
