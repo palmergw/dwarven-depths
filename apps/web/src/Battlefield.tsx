@@ -1706,9 +1706,17 @@ export function renderedFactionForSourceKey(
   if (typeof sourceKey !== "string") return undefined;
   if (sourceKey.startsWith("warden-")) return "dwarf";
   if (
-    ["raider-", "slinger-", "bulwark-", "captain-"].some((prefix) =>
-      sourceKey.startsWith(prefix)
-    )
+    [
+      "raider-",
+      "slinger-",
+      "bulwark-",
+      "captain-",
+      "skirmisher-",
+      "sapper-",
+      "hexer-",
+      "banner-",
+      "hunter-"
+    ].some((prefix) => sourceKey.startsWith(prefix))
   )
     return "enemy";
   return undefined;
@@ -2116,7 +2124,19 @@ class PersistentBattlefieldScene {
           (
             ["windup", "committed", "impact", "recoil", "recovery"] as const
           ).map((phase) => `${role}-attack-${phase}-source` as const)
-      )
+      ),
+      ...(
+        ["skirmisher", "sapper", "hexer", "banner", "hunter"] as const
+      ).flatMap((role) => [
+        `${role}-source` as const,
+        `${role}-downed-source` as const,
+        ...(["north", "east", "west"] as const).map(
+          (facing) => `${role}-${facing}-source` as const
+        ),
+        ...(
+          ["windup", "committed", "impact", "recoil", "recovery"] as const
+        ).map((phase) => `${role}-attack-${phase}-source` as const)
+      ])
     ];
     const poseTextures = new Map<CombatPoseAssetKey, string>(
       poseSourceKeys.map((source) => [

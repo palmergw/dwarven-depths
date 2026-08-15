@@ -3725,6 +3725,10 @@ describe("authoritative web worker", () => {
       "dwarf"
     );
     expect(renderedFactionForSourceKey("raider-attack-runtime")).toBe("enemy");
+    for (const role of ["skirmisher", "sapper", "hexer", "banner", "hunter"])
+      expect(
+        renderedFactionForSourceKey(`${role}-attack-committed-runtime`)
+      ).toBe("enemy");
     expect(renderedFactionForSourceKey("subject-depth-forged")).toBeUndefined();
   });
 
@@ -3896,7 +3900,7 @@ describe("authoritative web worker", () => {
       ).toBeLessThanOrEqual(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
-        cycle % 2 === 0 ? 62 : 61
+        cycle % 2 === 0 ? 112 : 111
       );
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects
