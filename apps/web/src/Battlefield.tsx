@@ -861,7 +861,8 @@ export function statusSignalKind(
   | "behavior_cooldown"
   | "behavior_cancelled"
   | "unknown" {
-  if (statusId.includes("stagger")) return "stagger";
+  if (statusId.includes("stagger") || statusId.includes("sunder"))
+    return "stagger";
   if (statusId.includes("slow")) return "slow";
   if (statusId.includes("haste")) return "haste";
   if (statusId.startsWith("status.enemy_behavior.")) {

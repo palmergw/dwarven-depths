@@ -239,6 +239,40 @@ export function createPresentationSnapshot(
         : []
     )
   );
+  const behaviorEffectsByTarget = new Map<
+    string,
+    {
+      readonly id: string;
+      readonly appliedAtTick: number;
+      readonly expiresAtTick: number;
+      readonly magnitude: number;
+    }[]
+  >();
+  for (const intent of behaviorIntentByEnemy.values()) {
+    if (
+      intent.effectStatus !== "committed" ||
+      intent.targetEntityId === undefined
+    )
+      continue;
+    const effectName =
+      intent.mechanic === "attack_disrupt"
+        ? "staggered_sunder"
+        : intent.mechanic === "attack_slow"
+          ? "slow"
+          : intent.mechanic === "ally_haste" ||
+              intent.mechanic === "formation_command"
+            ? "haste"
+            : undefined;
+    if (effectName === undefined) continue;
+    const effects = behaviorEffectsByTarget.get(intent.targetEntityId) ?? [];
+    effects.push({
+      id: `status.enemy_effect.${effectName}`,
+      appliedAtTick: intent.phaseStartedAtTick,
+      expiresAtTick: intent.phaseCompletesAtTick,
+      magnitude: intent.effectMagnitude
+    });
+    behaviorEffectsByTarget.set(intent.targetEntityId, effects);
+  }
   const currentCombatantsById = new Map<
     string,
     (typeof combatants)[number]["combatant"]
@@ -350,6 +384,7 @@ export function createPresentationSnapshot(
             expiresAtTick: status.expiresAtTick,
             magnitude: status.magnitude
           })),
+        ...(behaviorEffectsByTarget.get(entry.combatant.entityId) ?? []),
         ...(() => {
           const intent = behaviorIntentByEnemy.get(entry.combatant.entityId);
           return intent === undefined

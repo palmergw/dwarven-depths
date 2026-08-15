@@ -89,7 +89,31 @@ describe("presentation snapshot browser parity", () => {
       scenario,
       activeState,
       "running",
-      initial
+      initial,
+      [
+        {
+          id: "event.000001",
+          tick: 1,
+          sequence: 1,
+          ruleId: "SIM-ENEMY-BEHAVIOR-001",
+          type: "enemy.behavior.intent",
+          enemyEntityId: enemyId,
+          roleId: "enemy_role.demolition_sapper",
+          strategy: "disrupt",
+          mechanic: "attack_disrupt",
+          purposeId: "enemy_purpose.armor_disruption",
+          counterplayId: "enemy_counterplay.interrupt_fuse",
+          tellId: "enemy_tell.sapper_fuse",
+          effectId: "enemy_effect.sapper_sunder",
+          phase: "active",
+          phaseStartedAtTick: 1,
+          phaseCompletesAtTick: 12,
+          targetEntityId: "entity.dwarf.warden",
+          effectStatus: "committed",
+          effectMagnitude: 10,
+          reasonCode: "nearest_target"
+        } as never
+      ]
     );
     const enemy = active.entities.find((entity) => entity.id === enemyId);
     expect(parseRenderSnapshot(active)).toEqual(active);
@@ -134,12 +158,25 @@ describe("presentation snapshot browser parity", () => {
     expect(parseRenderSnapshot(unknownImpact)).toBeUndefined();
     expect(enemy).toMatchObject({
       transition: "moving",
-      currentHealth: authoritativeEnemy.currentHealth - 1,
-      statuses: [{ id: "status.stagger.fixture" }]
+      currentHealth: authoritativeEnemy.currentHealth - 1
+    });
+    expect(enemy?.statuses).toContainEqual({
+      id: "status.stagger.fixture",
+      appliedAtTick: 1,
+      expiresAtTick: 10,
+      magnitude: 1
     });
     expect(
       active.entities.find((entity) => entity.faction === "dwarf")?.action.kind
     ).toBe("ability");
+    expect(
+      active.entities.find((entity) => entity.faction === "dwarf")?.statuses
+    ).toContainEqual({
+      id: "status.enemy_effect.staggered_sunder",
+      appliedAtTick: 1,
+      expiresAtTick: 12,
+      magnitude: 10
+    });
     expect(active.encounter.activeWaveId).toBe("wave.shuttergate_1");
     expect(
       initial.entityTransitions.map((transition) => transition.kind)
