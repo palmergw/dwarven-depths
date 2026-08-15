@@ -587,13 +587,23 @@ try {
   for (const roleCapture of roleCaptures) {
     await armCapturePause(page, roleCapture);
     await enableAutopilot(page);
+    const resumeTick = await page.evaluate(
+      () => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick ?? -1
+    );
     await page.getByRole("button", { name: "Resume combat" }).click();
-    await page.getByRole("button", { name: "Pause combat" }).waitFor({
-      timeout: 10_000
-    });
-    await page.getByRole("button", { name: "Resume combat" }).waitFor({
-      timeout: 120_000
-    });
+    await page.waitForFunction(
+      ({ previousTick, minimumTick }) =>
+        (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick ?? -1) >
+          previousTick &&
+        (minimumTick === undefined ||
+          (window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.snapshot.tick ?? -1) >=
+            minimumTick) &&
+        [...document.querySelectorAll("button")].some(
+          (button) => button.getAttribute("aria-label") === "Resume combat"
+        ),
+      { previousTick: resumeTick, minimumTick: roleCapture.minimumTick },
+      { timeout: 120_000, polling: 5 }
+    );
     await capture(page, roleCapture.id, roleCapture);
     if (roleCapture.id === "wave-2-sapper-commit") {
       const inspector = page.locator(
