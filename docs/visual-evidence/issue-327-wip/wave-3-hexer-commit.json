@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-3-hexer-commit",
-  "sourceHead": "c048ab6fd97f275f421aa32a5a0000a7158d56ae",
+  "sourceHead": "561c9e6400a05026181eb9c36a49c0fe7e3dd021",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-3-hexer-commit.png",
-  "screenshotSha256": "ccb05fe7e0a925b1ef5a1286c4ed2330d2ffd6a3a080877eaa6f86619bd0a755",
+  "screenshotSha256": "f66efd308912d105500e60cce26a6c972fb28e838b8762244c67b8863bb85483",
   "expected": {
     "id": "wave-3-hexer-commit",
     "visualId": "enemy.goblin_hexer",
