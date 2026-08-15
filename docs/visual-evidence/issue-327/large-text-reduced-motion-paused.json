@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "large-text-reduced-motion-paused",
-  "sourceHead": "2b3ab5c7ee3581a6073d64c8b7d83b13b6970bd6",
+  "sourceHead": "19fed211170ecaf4db4260b0d97592da98498573",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "large-text-reduced-motion-paused.png",
-  "screenshotSha256": "6e2055446ff3683aa784400a4670a1842a77cb1c593c8d7fbb6a78db7ea3a71d",
+  "screenshotSha256": "79a96dd6db2993f18d037bd442d2624c9a6c1b84d389f61b994e588cfd9eaacd",
   "expected": {
     "textScale": "large"
   },
@@ -51,6 +51,8 @@
     "textScale": "large",
     "motion": "reduce",
     "reducedMotion": true,
-    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Enemy detailsCutter — Driving lunge · Preparing · Control before contact.Shuttergate battlefield, running; 2 entities.The ShuttergateFortressHoldingWave1Hostiles1 active0 approachingWave 1 1 hostile enteringCombat paused. Fortress holding. Wave 1. 1 hostiles active. Iron Warden health 840 of 840. Enemy is telegraphing: direct pressure, source authoritative enemy intent, strength 1, from tick 1 through tick 7.Combat controlsIron Warden◆Iron WardenNearest840 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
+    "activeInspector": null,
+    "visibleInspectorDetails": [],
+    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Enemy detailsCutter — Driving lunge · Preparing · Control before contact.Shuttergate battlefield, running; 2 entities. Combat update at tick 2: 1 combatant arrived.The ShuttergateFortressHoldingWave1Hostiles1 active0 approachingWave 1 1 hostile enteringCombat paused. Fortress holding. Wave 1. 1 hostiles active. Iron Warden health 840 of 840. Enemy is telegraphing: direct pressure, source authoritative enemy intent, strength 1, from tick 1 through tick 7.Combat controlsIron Warden◆Iron WardenNearest840 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
   }
 }

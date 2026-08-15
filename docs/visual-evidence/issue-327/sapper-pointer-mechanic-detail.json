@@ -1,16 +1,17 @@
 {
   "schemaVersion": 1,
   "issue": 327,
-  "id": "wave-2-sapper-commit",
+  "id": "sapper-pointer-mechanic-detail",
   "sourceHead": "19fed211170ecaf4db4260b0d97592da98498573",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
-  "screenshot": "wave-2-sapper-commit.png",
-  "screenshotSha256": "23d374acefd62a0b75fdf791c39d3f107d6326e703153bc9aba98c7bb6a5ff4b",
+  "screenshot": "sapper-pointer-mechanic-detail.png",
+  "screenshotSha256": "2111656cc91ee179990d96b5c0a047c39271afa3a093351b84cbc4da4c80fa9d",
   "expected": {
     "id": "wave-2-sapper-commit",
     "visualId": "enemy.goblin_sapper",
     "effectStatus": "committed",
-    "recipientStatusContains": "stagger"
+    "recipientStatusContains": "stagger",
+    "inspectorDetailContains": "Sapper"
   },
   "state": {
     "viewport": [1440, 900],
@@ -55,7 +56,9 @@
     "motion": "reduce",
     "reducedMotion": true,
     "activeInspector": null,
-    "visibleInspectorDetails": [],
+    "visibleInspectorDetails": [
+      "Sapper — Sundering fuse · Committed · Interrupt the fuse."
+    ],
     "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Enemy detailsSapper — Sundering fuse · Committed · Interrupt the fuse.Shuttergate battlefield, running; 2 entities. Combat update at tick 1213: basic attack, status.The ShuttergateFortressHoldingWave2Hostiles1 active0 approachingCombat paused. Fortress holding. Wave 2. 1 hostiles active. Iron Warden health 722 of 840. Iron Warden is staggered, source Shield Slam, strength 10, from tick 1212 through tick 1242. Enemy is committed: attack disrupt, source authoritative enemy intent, strength 10, from tick 1212 through tick 1242.Combat controlsIron Warden◆Iron WardenNearest722 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
   }
 }
