@@ -137,16 +137,20 @@ async function waitForStableTruth(page) {
     );
 }
 
-async function armRolePause(page, visualId, effectStatus) {
+async function armCapturePause(page, expected) {
   await page.evaluate(
-    ({ requestedVisualId, requestedEffectStatus }) => {
+    ({ requestedVisualId, requestedEffectStatus, requestedStatusContains }) => {
       window.__DD_ISSUE_327_CAPTURE_INTERVAL__ = window.setInterval(() => {
         const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
         const matched = truth?.registry.entities.some(
           (entity) =>
-            entity.visualId === requestedVisualId &&
+            (requestedVisualId === undefined ||
+              entity.visualId === requestedVisualId) &&
             entity.statusIds.some((statusId) =>
-              statusId.endsWith(`.${requestedEffectStatus}`)
+              requestedEffectStatus !== undefined
+                ? statusId.endsWith(`.${requestedEffectStatus}`)
+                : requestedStatusContains !== undefined &&
+                  statusId.includes(requestedStatusContains)
             )
         );
         if (!matched) return;
@@ -159,7 +163,11 @@ async function armRolePause(page, visualId, effectStatus) {
         window.clearInterval(window.__DD_ISSUE_327_CAPTURE_INTERVAL__);
       }, 1);
     },
-    { requestedVisualId: visualId, requestedEffectStatus: effectStatus }
+    {
+      requestedVisualId: expected.visualId,
+      requestedEffectStatus: expected.effectStatus,
+      requestedStatusContains: expected.statusContains
+    }
   );
 }
 
@@ -211,13 +219,17 @@ async function capture(page, id, expected = {}) {
     };
   });
   const matchedEntity =
-    expected.visualId === undefined
+    expected.visualId === undefined && expected.statusContains === undefined
       ? undefined
       : state.entities.find(
           (entity) =>
-            entity.visualId === expected.visualId &&
+            (expected.visualId === undefined ||
+              entity.visualId === expected.visualId) &&
             entity.statusIds.some((statusId) =>
-              statusId.endsWith(`.${expected.effectStatus}`)
+              expected.effectStatus !== undefined
+                ? statusId.endsWith(`.${expected.effectStatus}`)
+                : expected.statusContains !== undefined &&
+                  statusId.includes(expected.statusContains)
             )
         );
   if (
@@ -231,7 +243,9 @@ async function capture(page, id, expected = {}) {
     state.reducedMotion !== true ||
     (expected.textScale !== undefined &&
       state.textScale !== expected.textScale) ||
-    (expected.visualId !== undefined && matchedEntity === undefined)
+    ((expected.visualId !== undefined ||
+      expected.statusContains !== undefined) &&
+      matchedEntity === undefined)
   )
     throw new Error(
       `invalid Issue #327 capture ${id}: ${JSON.stringify(state)}`
@@ -269,9 +283,18 @@ const roleCaptures = [
     effectStatus: "telling"
   },
   {
+    id: "wave-2-sapper-preparation",
+    visualId: "enemy.goblin_sapper",
+    effectStatus: "telling"
+  },
+  {
     id: "wave-2-sapper-commit",
     visualId: "enemy.goblin_sapper",
     effectStatus: "committed"
+  },
+  {
+    id: "grounded-stagger-state",
+    statusContains: "stagger"
   },
   {
     id: "wave-3-hexer-commit",
@@ -296,7 +319,7 @@ try {
   await enterPausedCombat(page);
   await page.getByRole("button", { name: "2× combat speed" }).click();
   for (const roleCapture of roleCaptures) {
-    await armRolePause(page, roleCapture.visualId, roleCapture.effectStatus);
+    await armCapturePause(page, roleCapture);
     await enableAutopilot(page);
     await page.getByRole("button", { name: "Resume combat" }).click();
     await page.getByRole("button", { name: "Pause combat" }).waitFor({
