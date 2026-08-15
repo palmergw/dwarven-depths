@@ -284,3 +284,44 @@ No text, plaques, labels, UI, geometry symbols, or changes to adjacent cells.
 ### Bounded QA and export semantics
 
 The resulting source preserves exactly eight isolated cells. The Sapper source remains a compact actor-attached bomb, while its world tell is now a continuous braided fuse rather than detached smoke particles and its commit is a floor-integrated scorched fracture footprint. The Hexer source remains a compact lantern attachment; its world tell separates the floor rune from a narrow low channel, and its endpoint is an open asymmetric floor fracture rather than a closed ring. The exporter continues to create separate straight-alpha source, world, endpoint, and cancellation layers without environment or actor pixels. Runtime-scale WIP capture remains the controlling visual QA gate.
+
+## `shuttergate-sapper-hexer-intent-atlas-master.png` — pictorial-causality replacement
+
+- Provider: `openai-codex`
+- Model: `gpt-image-2-medium`
+- Aspect ratio: `landscape`
+- Requested and saved dimensions: `1536x1024`
+- Quality: `medium`
+- Modality: two image-to-image correction passes
+- Input image: preceding project-owned `shuttergate-sapper-hexer-intent-atlas-master.png`
+- Input SHA-256: `d48b067baf46a9f4d3c030e75bf9789d59e751e6303b9919ce60de86251c061d`
+- Output SHA-256: `e980b290f3402516d23ee4bfbd2ead5486aa6ed7fff1cf2bd676c8c275b89be9`
+- License: project MIT license (`LICENSE`)
+
+### Exact replacement prompt
+
+Edit this ORIGINAL project-owned Dwarven Depths 4-column × 2-row black-keyed VFX atlas into a clearer gameplay-scale production replacement. Preserve exactly 1536×1024, exactly eight isolated cells in the same grid/order, pure uniform black background, painterly chunky dark-fantasy pixel-art material language, and generous black margins. No text, labels, UI panels, plaques, hanging signs, health bars, characters, scenery, floor rectangles/tiles, circles, rings, crosshairs, arrows, chevrons, letters, neon, cyan, broad ribbons, smoke serpents, opaque clouds, or generic debug geometry. Nothing crosses a cell boundary.
+
+This is a readability correction, not amplification: use bold recognizable object silhouettes and controlled value separation, while keeping actors visually primary at 1440×900. Simplify fine noise. Effects must stay low and floor-integrated with transparent/keyable negative space.
+
+TOP ROW, SAPPER, left to right: (1) A compact unmistakable round black-iron powder bomb source attachment, about 60% of cell height, with a thick short braided fuse, glowing ember tip, brass cap/rivets, and a small attachment notch. No backing or frame. It must survive export to 30×30. (2) Preparation tell: at far LEFT, repeat a small unmistakable bomb with lit fuse. From it, one clearly left-to-right, low floor-skimming braided charcoal fuse with alternating aged-brass ember edge, 3–5 sparse sparks, and a very thin broken smoke wake. At far RIGHT, foreshadow the destination with only 3–4 short dim scorched radial scratches. The bomb → directional fuse → destination sequence must read at roughly 160×52, not as a rope alone or brown smear. (3) Commit: one broad low etched blast footprint, wider than tall, with an irregular dark scorched perimeter, 6–8 strong engraved amber fissures, a compact grounded central ignition, and a few embers. Underlying floor must remain visible through large empty gaps. No opaque disc, magic circle, star icon, or flame column. Must read at 98×50. (4) Cancellation: recognizable broken bomb halves, severed extinguished fuse, and restrained dissolving iron/ember fragments; no prohibition symbol.
+
+BOTTOM ROW, HEXER, left to right: (1) A compact unmistakable forged rune lantern/reliquary source attachment, about 60% of cell height, with dark iron body, brass handle/notch, and one bold asymmetrical muted-plum crystal rune. No backing or frame. It must survive export to 30×30. (2) Preparation/commit channel: at far LEFT, a compact visibly authored source rune/reliquary footprint made from an asymmetrical lantern-shaped brass outline plus a muted-plum crystal slash—not an arrow or generic glyph. From it, one narrow taut shallow-curved channel travelling left-to-right, only about 10% of cell height, formed by a continuous dusty-plum core and broken aged-brass thread. Leave abundant black negative space. At far RIGHT, finish with a small frayed hooked wisp and two motes, not a point or arrowhead. This source → direction must survive display around 180×50. (3) Target endpoint: one compact asymmetrical floor-hugging recipient seal, clearly different from the source: three broken claw-like brass/stone strokes open toward a small dim plum fracture, with over half the implied perimeter open. No ring, triangle, badge, crosshair, tablet, or floor patch. Must read beside an actor at 68×42. (4) Cancellation: fractured lantern body and plum crystal shards dissolving into sparse angular dust; no prohibition symbol.
+
+Use Shuttergate materials and lighting: smoked black iron, aged engraved brass, ember orange, charcoal, muted dusty plum-violet. Increase internal light/dark material separation, not overall glow, saturation, size, or particle count. Prioritize pictorial mechanic causality without captions at normal gameplay scale.
+
+### Exact alpha-separation correction prompt
+
+Make a surgical production correction to this ORIGINAL project-owned 1536×1024 4-column × 2-row black-keyed VFX atlas. Preserve exact canvas, grid, cell isolation, black background, painterly chunky pixel-art materials, and all eight asset identities. Do not add text, labels, UI, plaques, actors, scenery, floor tiles, rings, crosshairs, arrows, letters, neon, broad ribbons, smoke clouds, or extra assets.
+
+CRITICAL ALPHA-SEPARATION CORRECTION: remove every baked stone, cobblestone, rubble-floor, shadow-disc, or rectangular/oval ground patch from TOP ROW CELL 3 and BOTTOM ROW CELL 3. Their backgrounds must become pure black all around and between the marks, so runtime alpha extraction leaves the real Shuttergate floor visible. Top cell 3 must retain only sparse irregular scorched perimeter traces, 6–8 strong engraved amber fissure strokes, one compact central ignition, and a few embers floating on pure black; no stone pieces or filled floor mass. Bottom cell 3 must retain only three open asymmetric broken claw-like aged-brass/black-iron strokes and a small dim plum fracture/motes on pure black; no stone patch, tablet, backing, ring, or badge.
+
+HEXER SOURCE CORRECTION in BOTTOM ROW CELL 2: replace the oversized symmetric diamond/plaque-like source object at far left with a much smaller low floor-authored rune/reliquary footprint, no more than about one quarter of cell height. It must be asymmetrical and pictorial: three short unequal cracked aged-brass strokes suggesting an open lantern silhouette around one muted-plum crystal slash, with no enclosed border, diamond, triangle, badge, or backing. Preserve the existing narrow shallow-curved dusty-plum plus aged-brass channel travelling left-to-right and its small frayed non-arrow ending. Leave abundant black negative space.
+
+SAPPER PREPARATION in TOP ROW CELL 2: preserve the small recognizable bomb at left and narrow directional fuse, but reduce the far-right destination scratches to three short irregular dim scorched marks so they do not resemble an arrowhead or chevrons.
+
+Keep top-left bomb, top-right cancellation, bottom-left lantern, and bottom-right cancellation unchanged. Keep actors-above-effects hierarchy through low profiles and controlled contrast. Pure uniform black key background with generous margins in every cell.
+
+### Bounded QA and export semantics
+
+The replacement keeps eight isolated authored layers and removes baked floor pixels from both committed endpoints. Sapper preparation now carries its bomb source into the directional fuse itself before the open destination scratches; commitment is alpha-only etched fissures. Hexer preparation starts with a compact open source rune, follows a narrow channel, and resolves into a separate open asymmetric endpoint. Runtime-scale WIP capture remains the controlling readability and hierarchy gate.
