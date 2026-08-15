@@ -989,6 +989,20 @@ export function authoredEnemyIntentTargetPoint(
   };
 }
 
+export function authoredEnemyIntentEndpointPoint(
+  intent: EnemyIntentPresentation,
+  source: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }>
+): Readonly<{ x: number; y: number }> {
+  const destination = authoredEnemyIntentTargetPoint(intent, source, target);
+  if (intent.mechanic !== "attack_slow") return destination;
+  const direction = directionBetween(source, target);
+  return {
+    x: destination.x + direction.x * 12,
+    y: destination.y - 8
+  };
+}
+
 export function statusSignalKind(
   statusId: string
 ):
@@ -2793,6 +2807,11 @@ class PersistentBattlefieldScene {
         origin,
         targetPoint
       );
+      const endpointPoint = authoredEnemyIntentEndpointPoint(
+        intent,
+        origin,
+        targetPoint
+      );
       const crestPoint = authoredEnemyIntentCrestPoint(source, targetPoint);
       const midpointX = (origin.x + destination.x) / 2;
       const midpointY = (origin.y + destination.y) / 2;
@@ -2847,13 +2866,17 @@ class PersistentBattlefieldScene {
       } else {
         const endpoint =
           this.behaviorEndpoints.get(sourceEntity.id) ??
-          this.scene.add.image(destination.x, destination.y, assets.endpoint);
+          this.scene.add.image(
+            endpointPoint.x,
+            endpointPoint.y,
+            assets.endpoint
+          );
         endpoint
           .setTexture(assets.endpoint)
-          .setPosition(destination.x, destination.y)
+          .setPosition(endpointPoint.x, endpointPoint.y)
           .setDisplaySize(
             assets.endpoint === "sapper-blast-impact" ? 104 : 58,
-            assets.endpoint === "sapper-blast-impact" ? 52 : 46
+            assets.endpoint === "sapper-blast-impact" ? 52 : 58
           )
           .setAlpha(assets.endpoint === "sapper-blast-impact" ? 0.88 : 0.94)
           .setRotation(0);

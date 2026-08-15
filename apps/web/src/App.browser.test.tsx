@@ -21,6 +21,7 @@ import {
   authoredEnemyIntentCrestPoint,
   authoredEnemyIntentEffectAlpha,
   authoredEnemyIntentEffectLayout,
+  authoredEnemyIntentEndpointPoint,
   authoredEnemyIntentSourcePoint,
   authoredEnemyIntentSpanLength,
   authoredEnemyIntentTargetPoint,
@@ -1812,6 +1813,20 @@ describe("player-facing combat HUD", () => {
     ).toEqual({ x: 100, y: 108 });
     expect(
       authoredEnemyIntentTargetPoint(
+        { mechanic: "attack_disrupt", phase: "committed" },
+        { x: 200, y: 100 },
+        { x: 100, y: 100 }
+      )
+    ).toEqual({ x: 100, y: 110 });
+    expect(
+      authoredEnemyIntentEndpointPoint(
+        { mechanic: "attack_slow", phase: "committed" },
+        { x: 200, y: 100 },
+        { x: 100, y: 100 }
+      )
+    ).toEqual({ x: 88, y: 100 });
+    expect(
+      authoredEnemyIntentEndpointPoint(
         { mechanic: "attack_disrupt", phase: "committed" },
         { x: 200, y: 100 },
         { x: 100, y: 100 }
