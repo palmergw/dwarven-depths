@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-1-skirmisher-tell",
-  "sourceHead": "f568582b4603a0eaf104d2594d5ab6dc5c5271e5",
+  "sourceHead": "2b3ab5c7ee3581a6073d64c8b7d83b13b6970bd6",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-1-skirmisher-tell.png",
-  "screenshotSha256": "ecfed2d054c9b40400742f400f0e67a1460eb3f716fad52381c630a8fda9ebd9",
+  "screenshotSha256": "cdb3f69a27dd56f25e4d5da968c6bd54f0324a29b5c88d72917165f8708c101e",
   "expected": {
     "id": "wave-1-skirmisher-tell",
     "visualId": "enemy.goblin_skirmisher",

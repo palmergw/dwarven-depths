@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-4-banner-tell",
-  "sourceHead": "f568582b4603a0eaf104d2594d5ab6dc5c5271e5",
+  "sourceHead": "2b3ab5c7ee3581a6073d64c8b7d83b13b6970bd6",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-4-banner-tell.png",
-  "screenshotSha256": "be40afb8ff36227d2b19ffe30dac74f02cc662577834539edbeb8562bdca5075",
+  "screenshotSha256": "10e8d89b1dcdad756924db7d4f39575d9e74cc72ad9812be423a2d89ccf12bd7",
   "expected": {
     "id": "wave-4-banner-tell",
     "visualId": "enemy.goblin_banner_bearer",
