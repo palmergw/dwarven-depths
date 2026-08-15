@@ -916,6 +916,15 @@ export function authoredEnemyIntentEffectLayout(
     : "span";
 }
 
+export function authoredEnemyIntentEffectAlpha(
+  intent: EnemyIntentPresentation
+): number {
+  if (intent.mechanic === "attack_slow") return 0.98;
+  if (intent.mechanic === "attack_disrupt" && intent.phase === "telling")
+    return 0.94;
+  return 0.82;
+}
+
 export function authoredEnemyIntentTargetPoint(
   intent: EnemyIntentPresentation,
   source: Readonly<{ x: number; y: number }>,
@@ -2754,7 +2763,10 @@ class PersistentBattlefieldScene {
       const effect =
         this.behaviorEffects.get(sourceEntity.id) ??
         this.scene.add.image(midpointX, midpointY, assets.world);
-      effect.setTexture(assets.world).setOrigin(0.5).setAlpha(0.82);
+      effect
+        .setTexture(assets.world)
+        .setOrigin(0.5)
+        .setAlpha(authoredEnemyIntentEffectAlpha(intent));
       if (authoredEnemyIntentEffectLayout(intent) === "endpoint")
         effect
           .setPosition(destination.x, destination.y)
@@ -2795,7 +2807,7 @@ class PersistentBattlefieldScene {
           .setTexture(assets.endpoint)
           .setPosition(destination.x, destination.y)
           .setDisplaySize(60, 38)
-          .setAlpha(0.88)
+          .setAlpha(0.96)
           .setRotation(0);
         endpoint.setData("baseScaleX", endpoint.scaleX);
         endpoint.setData("baseScaleY", endpoint.scaleY);

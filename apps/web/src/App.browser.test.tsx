@@ -17,6 +17,7 @@ import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import {
   authoredEnemyIntentAssets,
+  authoredEnemyIntentEffectAlpha,
   authoredEnemyIntentEffectLayout,
   authoredEnemyIntentTargetPoint,
   Battlefield,
@@ -1760,6 +1761,24 @@ describe("player-facing combat HUD", () => {
         phase: "committed"
       })
     ).toBe("endpoint");
+    expect(
+      authoredEnemyIntentEffectAlpha({
+        mechanic: "attack_slow",
+        phase: "telling"
+      })
+    ).toBe(0.98);
+    expect(
+      authoredEnemyIntentEffectAlpha({
+        mechanic: "attack_disrupt",
+        phase: "telling"
+      })
+    ).toBe(0.94);
+    expect(
+      authoredEnemyIntentEffectAlpha({
+        mechanic: "attack_disrupt",
+        phase: "committed"
+      })
+    ).toBe(0.82);
     expect(
       authoredEnemyIntentTargetPoint(
         { mechanic: "attack_slow", phase: "committed" },
