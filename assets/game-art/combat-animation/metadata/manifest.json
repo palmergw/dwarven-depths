@@ -828,7 +828,7 @@
       "dimensions": [176, 64],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "284f3b3f647961b8dd62d1f489137a8eb615f5eeba3ed54fb71990e78e37653d"
+      "sha256": "7203c336a7902547cdb2115a3139d037ed976b25ff3c2adf28bf5a92f4b10ad4"
     },
     {
       "id": "hexer-target-tether",
@@ -836,7 +836,7 @@
       "dimensions": [112, 72],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "c9e5b90cb1da9a1dd6f170801c98d36e3ea6698c69bb1c78169928f4e212238d"
+      "sha256": "7d2fd1c15297b7908cae9d091139df31f659f3fb94f01ba6639b9aec8dc83859"
     },
     {
       "id": "iron-warden-basic-attack-committed",
@@ -972,7 +972,7 @@
       "dimensions": [176, 112],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "70a4872b01501b94075221121a2e3ee65afaa276dc7ec0a2a32d467494c0a741"
+      "sha256": "162c58ac2bf970a95bc0ae03c0d8f6e73516ab10bc6077c0e4ca083faaa91264"
     },
     {
       "id": "sapper-fracture-cancel",
@@ -988,7 +988,7 @@
       "dimensions": [176, 64],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "cf87df35ca606c6ea64ef94e6cfee2822a7389596338cba9d082c0138aadd66f"
+      "sha256": "a0e624036b5aeb1d018e9045584345c6971166d98e6affe2ccf7955e0fcdc98a"
     },
     {
       "id": "sapper-intent-crest",

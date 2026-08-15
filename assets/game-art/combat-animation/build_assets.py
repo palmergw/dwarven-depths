@@ -248,6 +248,14 @@ def centered_miniature(image: Image.Image, canvas: tuple[int, int]) -> Image.Ima
     return output
 
 
+def strengthen_alpha_linework(image: Image.Image) -> Image.Image:
+    """Give floor-scale authored strokes one pixel of material weight."""
+    output = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    for offset in ((-1, 0), (1, 0), (0, -1), (0, 1), (0, 0)):
+        output.alpha_composite(image, offset)
+    return output
+
+
 def encode_png(image: Image.Image) -> bytes:
     buffer = io.BytesIO()
     image.save(buffer, format="PNG", optimize=False, compress_level=9)
@@ -428,7 +436,15 @@ def build_outputs() -> dict[str, bytes]:
             )
         for name, canvas in ENEMY_INTENT_ASSETS:
             cell = intent_cells[name]
-            outputs[f"{name}.png"] = encode_png(centered_miniature(cell, canvas))
+            exported = centered_miniature(cell, canvas)
+            if name in {
+                "sapper-fuse-tell",
+                "sapper-blast-impact",
+                "hexer-rune-channel",
+                "hexer-target-tether",
+            }:
+                exported = strengthen_alpha_linework(exported)
+            outputs[f"{name}.png"] = encode_png(exported)
     return dict(sorted(outputs.items()))
 
 
