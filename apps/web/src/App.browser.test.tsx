@@ -1720,7 +1720,8 @@ describe("player-facing combat HUD", () => {
       })
     ).toEqual({
       crest: "sapper-intent-crest",
-      world: "sapper-blast-impact"
+      world: "sapper-fuse-tell",
+      endpoint: "sapper-blast-impact"
     });
     expect(
       authoredEnemyIntentAssets("enemy.goblin_hexer", {
@@ -1763,6 +1764,12 @@ describe("player-facing combat HUD", () => {
       authoredEnemyIntentEffectLayout({
         mechanic: "attack_disrupt",
         phase: "committed"
+      })
+    ).toBe("span");
+    expect(
+      authoredEnemyIntentEffectLayout({
+        mechanic: "attack_disrupt",
+        phase: "cancelled"
       })
     ).toBe("endpoint");
     expect(authoredEnemyIntentSpanLength(40)).toBe(82);

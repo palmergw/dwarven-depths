@@ -872,7 +872,7 @@ interface AuthoredEnemyIntentAssets {
     | "hexer-rune-channel"
     | "hexer-target-tether"
     | "hexer-fracture-cancel";
-  readonly endpoint?: "hexer-target-tether";
+  readonly endpoint?: "sapper-blast-impact" | "hexer-target-tether";
 }
 
 export function authoredEnemyIntentAssets(
@@ -889,8 +889,11 @@ export function authoredEnemyIntentAssets(
         intent.phase === "telling"
           ? "sapper-fuse-tell"
           : intent.phase === "committed"
-            ? "sapper-blast-impact"
-            : "sapper-fracture-cancel"
+            ? "sapper-fuse-tell"
+            : "sapper-fracture-cancel",
+      ...(intent.phase === "committed"
+        ? { endpoint: "sapper-blast-impact" as const }
+        : {})
     };
   if (visualId === "enemy.goblin_hexer" && intent.mechanic === "attack_slow")
     return {
@@ -911,9 +914,7 @@ export function authoredEnemyIntentAssets(
 export function authoredEnemyIntentEffectLayout(
   intent: EnemyIntentPresentation
 ): "span" | "endpoint" {
-  return intent.mechanic === "attack_disrupt" && intent.phase === "committed"
-    ? "endpoint"
-    : "span";
+  return intent.phase === "cancelled" ? "endpoint" : "span";
 }
 
 export function authoredEnemyIntentSpanLength(distance: number): number {
@@ -2850,8 +2851,11 @@ class PersistentBattlefieldScene {
         endpoint
           .setTexture(assets.endpoint)
           .setPosition(destination.x, destination.y)
-          .setDisplaySize(72, 42)
-          .setAlpha(0.96)
+          .setDisplaySize(
+            assets.endpoint === "sapper-blast-impact" ? 104 : 58,
+            assets.endpoint === "sapper-blast-impact" ? 52 : 46
+          )
+          .setAlpha(assets.endpoint === "sapper-blast-impact" ? 0.88 : 0.94)
           .setRotation(0);
         endpoint.setData("baseScaleX", endpoint.scaleX);
         endpoint.setData("baseScaleY", endpoint.scaleY);
