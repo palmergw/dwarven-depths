@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "issue": 327,
+  "packet": "sapper-hexer-targeted-wip",
+  "sourceHead": "94c53080b15140b86e7d775db0f8bb97d05f4014",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [1440, 900],
+  "deviceScaleFactor": 1,
+  "motionCoverage": ["reduce"],
+  "captureCount": 4,
+  "captures": [
+    {
+      "id": "wave-2-sapper-preparation",
+      "screenshot": "wave-2-sapper-preparation.png",
+      "screenshotSha256": "f35fa33b89df06f771697ecde391fa1fca23f622bb6318cc76d0939a0c0d28d6",
+      "sidecar": "wave-2-sapper-preparation.json",
+      "tick": 1212,
+      "expected": {
+        "id": "wave-2-sapper-preparation",
+        "visualId": "enemy.goblin_sapper",
+        "effectStatus": "telling",
+        "minimumTick": 1212
+      }
+    },
+    {
+      "id": "wave-2-sapper-commit",
+      "screenshot": "wave-2-sapper-commit.png",
+      "screenshotSha256": "32a47cc76b3321c436031eeec61eda28924038c8e5b99486e09bca2716970a4b",
+      "sidecar": "wave-2-sapper-commit.json",
+      "tick": 1213,
+      "expected": {
+        "id": "wave-2-sapper-commit",
+        "visualId": "enemy.goblin_sapper",
+        "effectStatus": "committed",
+        "recipientStatusContains": "stagger"
+      }
+    },
+    {
+      "id": "wave-3-hexer-channel",
+      "screenshot": "wave-3-hexer-channel.png",
+      "screenshotSha256": "3b04239b7d971bb402555c54d673365226385a40f0946de06ac822869454a933",
+      "sidecar": "wave-3-hexer-channel.json",
+      "tick": 1961,
+      "expected": {
+        "id": "wave-3-hexer-channel",
+        "visualId": "enemy.goblin_hexer",
+        "effectStatus": "telling",
+        "minimumTick": 1961
+      }
+    },
+    {
+      "id": "wave-3-hexer-commit",
+      "screenshot": "wave-3-hexer-commit.png",
+      "screenshotSha256": "eece0be8ed23fdf54337e803825748db4d2cad8e26c0cb968ca3d00a20649802",
+      "sidecar": "wave-3-hexer-commit.json",
+      "tick": 1962,
+      "expected": {
+        "id": "wave-3-hexer-commit",
+        "visualId": "enemy.goblin_hexer",
+        "effectStatus": "committed"
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "id": "sapper-phase-telling",
+      "source": {
+        "head": "94c53080b15140b86e7d775db0f8bb97d05f4014",
+        "tick": 1212
+      },
+      "screenshot": "sapper-phase-telling.png",
+      "screenshotSha256": "affa078737cd2a46cbdd60b10c8b239da80f940970dff26f3fa3b6803cc34d62",
+      "viewport": [1440, 900],
+      "crop": [520, 275, 600, 260],
+      "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+      "actionInterval": "attack_disrupt.telling"
+    },
+    {
+      "id": "sapper-phase-committed",
+      "source": {
+        "head": "94c53080b15140b86e7d775db0f8bb97d05f4014",
+        "tick": 1213
+      },
+      "screenshot": "sapper-phase-committed.png",
+      "screenshotSha256": "7b50184374b0881d0444801de8f71b3a63f0c64064573ca8801dfbf5d839d6e8",
+      "viewport": [1440, 900],
+      "crop": [520, 275, 600, 260],
+      "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+      "actionInterval": "attack_disrupt.committed"
+    },
+    {
+      "id": "hexer-phase-telling",
+      "source": {
+        "head": "94c53080b15140b86e7d775db0f8bb97d05f4014",
+        "tick": 1961
+      },
+      "screenshot": "hexer-phase-telling.png",
+      "screenshotSha256": "040858f404bc32d1b0167356557a327a97282d6fba096c9d6e2ccd46a531ccfb",
+      "viewport": [1440, 900],
+      "crop": [520, 275, 600, 260],
+      "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+      "actionInterval": "attack_slow.telling"
+    },
+    {
+      "id": "hexer-phase-committed",
+      "source": {
+        "head": "94c53080b15140b86e7d775db0f8bb97d05f4014",
+        "tick": 1962
+      },
+      "screenshot": "hexer-phase-committed.png",
+      "screenshotSha256": "30642d23c4c82ea044f37067890c84f7efcc58581ebc556e6df55ae10a1bbb89",
+      "viewport": [1440, 900],
+      "crop": [520, 275, 600, 260],
+      "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+      "actionInterval": "attack_slow.committed"
+    }
+  ],
+  "clips": [],
+  "contactSheets": [
+    {
+      "id": "sapper-hexer-runtime-contact-sheet",
+      "image": "sapper-hexer-runtime-contact-sheet.png",
+      "imageSha256": "fb68a120914b00016d3a117e049a8c810f5843bf85122bb04944cafe6261d781",
+      "source": [
+        {
+          "id": "sapper-phase-telling",
+          "source": {
+            "head": "94c53080b15140b86e7d775db0f8bb97d05f4014",
+            "tick": 1212
+          },
+          "actionInterval": "attack_disrupt.telling"
+        },
+        {
+          "id": "sapper-phase-committed",
+          "source": {
+            "head": "94c53080b15140b86e7d775db0f8bb97d05f4014",
+            "tick": 1213
+          },
+          "actionInterval": "attack_disrupt.committed"
+        },
+        {
+          "id": "hexer-phase-telling",
+          "source": {
+            "head": "94c53080b15140b86e7d775db0f8bb97d05f4014",
+            "tick": 1961
+          },
+          "actionInterval": "attack_slow.telling"
+        },
+        {
+          "id": "hexer-phase-committed",
+          "source": {
+            "head": "94c53080b15140b86e7d775db0f8bb97d05f4014",
+            "tick": 1962
+          },
+          "actionInterval": "attack_slow.committed"
+        }
+      ]
+    }
+  ]
+}
