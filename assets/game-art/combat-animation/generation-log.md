@@ -325,3 +325,43 @@ Keep top-left bomb, top-right cancellation, bottom-left lantern, and bottom-righ
 ### Bounded QA and export semantics
 
 The replacement keeps eight isolated authored layers and removes baked floor pixels from both committed endpoints. Sapper preparation now carries its bomb source into the directional fuse itself before the open destination scratches; commitment is alpha-only etched fissures. Hexer preparation starts with a compact open source rune, follows a narrow channel, and resolves into a separate open asymmetric endpoint. Runtime-scale WIP capture remains the controlling readability and hierarchy gate.
+
+## `shuttergate-sapper-hexer-intent-atlas-master.png` — structural-readability correction
+
+- Provider: `openai-codex`
+- Model: `gpt-image-2-medium`
+- Aspect ratio: `landscape`
+- Requested and saved dimensions: `1536x1024`
+- Quality: `medium`
+- Modality: three image-to-image correction passes plus one deterministic cell-containment pass
+- Input image: preceding project-owned `shuttergate-sapper-hexer-intent-atlas-master.png`
+- Input SHA-256: `e980b290f3402516d23ee4bfbd2ead5486aa6ed7fff1cf2bd676c8c275b89be9`
+- Intermediate image output SHA-256: `a02013bd9e4a85d91353b990c402a5a03d78763e89595455ec61f2231709f482`
+- Final source SHA-256 after deterministic cell containment: `9479ed764f82634c51c199c9e69bcf1dae20abca67ade12556e31a099abb4e98`
+- License: project MIT license (`LICENSE`)
+
+### Exact replacement prompt
+
+Edit this ORIGINAL project-owned Dwarven Depths 4-column x 2-row VFX atlas as a production readability correction. Preserve exactly eight isolated cells in the same order on a perfectly uniform pure black removable-key background, with generous black margins and no element crossing a cell boundary. Keep the painterly chunky pixel-art dark-fantasy material language, elevated floor-facing perspective, smoked iron, aged brass, ember orange, charcoal, and muted dusty plum. No text, labels, UI panels, plaques, health bars, actors, scenery, floor tiles or filled floor patches, circles, rings, crosshairs, arrows, chevrons, letters, neon, cyan, broad ribbons, smoke serpents, opaque clouds, or generic debug geometry.
+
+This correction must improve thumbnail readability by simplifying detail and strengthening bold object silhouettes and structural marks, not by increasing glow, saturation, particle count, or effect footprint. Actors will remain visually primary.
+
+Top row, left to right: (1) compact round black-iron Sapper powder bomb source attachment with a thick short braided fuse, one restrained amber ember, brass cap, two bold rivets, and a tiny asymmetric attachment notch; (2) one coherent low bomb-to-braided-fuse-to-open-etched-footprint preparation sequence, using sparse aged-brass ember segments, thin broken smoke, six chunky irregular scorch cuts, and large transparent gaps; (3) the same broad low committed footprint with six to eight chunky scorched fissures, modest grounded ignition, and at most five embers; (4) broken bomb halves and severed extinguished fuse cancellation. No backing, rope-only smear, smoke serpent, filled disc, magic circle, star, flame column, or prohibition icon.
+
+Bottom row, left to right: (1) compact forged Hexer rune lantern source attachment with dark iron body, brass handle/notch, and one bold asymmetrical muted-plum crystal slash; (2) an open three-stroke source rune followed by one taut shallow narrow dusty-plum channel with intermittent aged-brass thread and a frayed non-arrow hook; (3) a compact floor-hugging open recipient mark made from three unequal broken claw-like strokes around a dim plum fracture; (4) fractured lantern and crystal cancellation. Preserve abundant negative space and no backing, ribbon, generic glyph, ring, triangle, badge, crosshair, or prohibition icon.
+
+Prioritize bold legible silhouettes, controlled light/dark material separation, floor integration, pictorial source/direction/consequence, and clean negative space at normal 1440x900 gameplay scale.
+
+### Exact cell-containment correction prompt
+
+Make one surgical correction to this ORIGINAL project-owned 1536x1024 4-column x 2-row VFX atlas. Preserve every visible pixel, pure black background, canvas, grid, style, and asset exactly unchanged except bottom row, second column. Move and slightly compress the complete Hexer source-rune, narrow plum/brass channel, frayed hook, and two motes so all visible pixels remain safely inside x=384 through x=767 and y=512 through y=1023, with at least 28 pixels of pure black horizontal margin. Keep the source rune complete, the channel narrow and shallow, and the ending non-arrow. Do not clip, erase, redesign, enlarge, brighten, or alter any other cell.
+
+### Exact Sapper cell-containment correction prompt
+
+Make one surgical production correction to this ORIGINAL project-owned 1536x1024 4-column x 2-row VFX atlas. Preserve every visible pixel, pure black background, canvas, strict grid, painterly style, and asset exactly unchanged except top row, second column. Move and slightly compress the complete Sapper preparation artwork—the recognizable bomb, physical braided fuse, sparse ember/smoke marks, and open etched destination scratches—so all visible pixels remain inside x=384 through x=767 and y=0 through y=511. Preserve the full bomb silhouette at the left, one continuous readable fuse through the middle, and the open destination footprint at the right. Do not alter the adjacent cells, add a second bomb, clip, erase, redesign, enlarge, brighten, add particles, or change any other asset.
+
+The image correction retained four meaningful Hexer-source pixels across the equal-cell boundary. A deterministic Pillow correction recovered the complete artwork from x=350 through x=767, cleared that bounded region, resized the recovered keyed artwork proportionally to 344×96 pixels, and placed it at x=404, y=728. This leaves 20 black pixels on both sides of the canonical x=384 through x=767 export cell without changing the other seven assets.
+
+### Bounded QA and export semantics
+
+The candidate preserves eight isolated alpha-keyable assets and simplifies both mechanic sequences around readable structural silhouettes. The Sapper preparation repeats the bomb at its source, carries one continuous physical fuse toward an open destination footprint, and resolves into a related floor fracture. The Hexer source rune and narrow channel remain wholly contained in their export cell and lead to a separate open recipient mark. The exact running-client WIP board remains the controlling product-quality gate.
