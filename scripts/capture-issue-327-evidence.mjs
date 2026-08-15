@@ -288,7 +288,14 @@ async function capture(page, id, expected = {}) {
   captures.push(sidecar);
 }
 
-async function cropComparison(browser, inputUrl, id, source, actionInterval) {
+async function cropComparison(
+  browser,
+  inputUrl,
+  id,
+  source,
+  actionInterval,
+  crop = [520, 275, 600, 260]
+) {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1
@@ -312,7 +319,7 @@ async function cropComparison(browser, inputUrl, id, source, actionInterval) {
   const screenshotUrl = new URL(screenshot, outputDirectory);
   await page.screenshot({
     path: fileURLToPath(screenshotUrl),
-    clip: { x: 520, y: 275, width: 600, height: 260 }
+    clip: { x: crop[0], y: crop[1], width: crop[2], height: crop[3] }
   });
   const screenshotBytes = await readFile(screenshotUrl);
   comparisons.push({
@@ -321,11 +328,19 @@ async function cropComparison(browser, inputUrl, id, source, actionInterval) {
     screenshot,
     screenshotSha256: sha256(screenshotBytes),
     viewport: [1440, 900],
-    crop: [520, 275, 600, 260],
+    crop,
     fixtureId,
     actionInterval
   });
   await context.close();
+}
+
+function capturedTick(id) {
+  const tick = captures.find((capture) => capture.id === id)?.state.snapshot
+    ?.tick;
+  if (!Number.isInteger(tick))
+    throw new Error(`missing authoritative tick for comparison source ${id}`);
+  return tick;
 }
 
 const roleCaptures = [
@@ -419,14 +434,21 @@ try {
     browser,
     new URL("wave-2-sapper-preparation.png", outputDirectory),
     "review-sapper-preparation",
-    { head: sourceHead, tick: 1203 },
-    "attack_disrupt.telling"
+    {
+      head: sourceHead,
+      tick: capturedTick("wave-2-sapper-preparation")
+    },
+    "attack_disrupt.telling",
+    [600, 275, 650, 260]
   );
   await cropComparison(
     browser,
     new URL("wave-3-hexer-commit.png", outputDirectory),
     "review-cancellation-state",
-    { head: sourceHead, tick: 1964 },
+    {
+      head: sourceHead,
+      tick: capturedTick("wave-3-hexer-commit")
+    },
     "target_intercept.cancelled"
   );
   await rm(historicalFullFrameUrl);
