@@ -19,6 +19,7 @@ const outputDirectory = new URL(
 );
 const baseUrl = process.env.DD_WEB_URL ?? "http://127.0.0.1:5173";
 const fixtureId = "scenarios/conformance/shuttergate-web-truth.json";
+const rejectedEvidenceHead = "e491e19a2684d8a0cd0348f23dffe84da66d9715";
 
 const { stdout: headOutput } = await execFile("git", ["rev-parse", "HEAD"], {
   cwd: repositoryRoot
@@ -699,6 +700,90 @@ try {
       actionInterval
     }))
   });
+
+  const rejectedComparisonDirectory = new URL(
+    "../.ddh/issue-327-rejected-comparison/",
+    import.meta.url
+  );
+  await rm(rejectedComparisonDirectory, { recursive: true, force: true });
+  await mkdir(rejectedComparisonDirectory, { recursive: true });
+  const rejectedComparisons = [
+    {
+      id: "sapper-telling",
+      historicalScreenshot: "wave-2-sapper-preparation.png",
+      replacementScreenshot: "wave-2-sapper-preparation.png",
+      historicalTick: 1209,
+      replacementTick: capturedTick("wave-2-sapper-preparation"),
+      actionInterval: "attack_disrupt.telling"
+    },
+    {
+      id: "hexer-committed",
+      historicalScreenshot: "wave-3-hexer-commit.png",
+      replacementScreenshot: "wave-3-hexer-commit.png",
+      historicalTick: 1964,
+      replacementTick: capturedTick("wave-3-hexer-commit"),
+      actionInterval: "attack_slow.committed"
+    }
+  ];
+  for (const comparison of rejectedComparisons) {
+    const { stdout } = await execFile(
+      "git",
+      [
+        "show",
+        `${rejectedEvidenceHead}:docs/visual-evidence/issue-327/${comparison.historicalScreenshot}`
+      ],
+      { cwd: repositoryRoot, encoding: "buffer", maxBuffer: 4 * 1024 * 1024 }
+    );
+    await writeFile(
+      new URL(`${comparison.id}.png`, rejectedComparisonDirectory),
+      stdout
+    );
+  }
+  const rejectedComparisonSheet = new URL(
+    "rejected-vs-authored-prototype-contact-sheet.png",
+    outputDirectory
+  );
+  const comparisonLabels = [
+    "REJECTED SAPPER TELL",
+    "AUTHORED SAPPER TELL",
+    "REJECTED HEXER COMMIT",
+    "AUTHORED HEXER COMMIT"
+  ];
+  await execFile("ffmpeg", [
+    "-y",
+    "-loglevel",
+    "error",
+    "-i",
+    fileURLToPath(new URL("sapper-telling.png", rejectedComparisonDirectory)),
+    "-i",
+    fileURLToPath(new URL("wave-2-sapper-preparation.png", outputDirectory)),
+    "-i",
+    fileURLToPath(new URL("hexer-committed.png", rejectedComparisonDirectory)),
+    "-i",
+    fileURLToPath(new URL("wave-3-hexer-commit.png", outputDirectory)),
+    "-filter_complex",
+    `${comparisonLabels
+      .map(
+        (label, index) =>
+          `[${index}:v]crop=600:260:520:275,drawtext=text='${label}':fontcolor=white:fontsize=18:box=1:boxcolor=black@0.82:boxborderw=7:x=12:y=12[c${index}]`
+      )
+      .join(
+        ";"
+      )};[c0][c1][c2][c3]xstack=inputs=4:layout=0_0|600_0|0_260|600_260`,
+    fileURLToPath(rejectedComparisonSheet)
+  ]);
+  contactSheets.push({
+    id: "rejected-vs-authored-prototype-contact-sheet",
+    image: "rejected-vs-authored-prototype-contact-sheet.png",
+    imageSha256: sha256(await readFile(rejectedComparisonSheet)),
+    viewport: [1440, 900],
+    crop: [520, 275, 600, 260],
+    fixtureId,
+    historicalHead: rejectedEvidenceHead,
+    replacementHead: sourceHead,
+    comparisons: rejectedComparisons
+  });
+  await rm(rejectedComparisonDirectory, { recursive: true, force: true });
 
   const authoredSheet = new URL(
     "sapper-hexer-authored-layer-contact-sheet.png",
