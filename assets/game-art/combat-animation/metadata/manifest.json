@@ -11,7 +11,7 @@
     "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "bbf7c4fd3090f767ca8a187befc495a46303ad9934a57cd0cf6a28bdfda2d6c4",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
     "assets/game-art/combat-animation/sources/shuttergate-expanded-hostile-role-atlas-master.png": "8b88de6fe432b54f8b8821a90c10948bc0d37ae85f9c3c8f2630ea8fbe9cab5d",
-    "assets/game-art/combat-animation/sources/shuttergate-sapper-hexer-intent-atlas-master.png": "685be2e00a2d680d0830d2d0d9dba9ded6bf12644578127f599f2275e6cb331d"
+    "assets/game-art/combat-animation/sources/shuttergate-sapper-hexer-intent-atlas-master.png": "d48b067baf46a9f4d3c030e75bf9789d59e751e6303b9919ce60de86251c061d"
   },
   "files": [
     {
@@ -812,7 +812,7 @@
       "dimensions": [176, 112],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "3df6130a64ab7b47ec68811597931d5f974de26f592ba3b7b46e1d79b67df12a"
+      "sha256": "9628e5b03a03a7c4e785ba03591671b97c87b79e3e01063a9020bdaa82102233"
     },
     {
       "id": "hexer-intent-crest",
@@ -820,7 +820,7 @@
       "dimensions": [32, 32],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "58cd26a9566f315ebf124dcce63ccd173ddc7385a7fc19d870309efe0818fc33"
+      "sha256": "3e10c3252e375ec0a7a8ea70dd9aaf2e256ace7412b8d8773f4d1254b12040d4"
     },
     {
       "id": "hexer-rune-channel",
@@ -828,7 +828,7 @@
       "dimensions": [176, 112],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "a5a8b3f19c76990002627d20e2ae0dac7c6ed34590d3342fc4e92bb1a0390c7a"
+      "sha256": "c361d8bc1248bf732805e2c456dfa9c85288008e0729005a135942dc92eaeeb0"
     },
     {
       "id": "hexer-target-tether",
@@ -836,7 +836,7 @@
       "dimensions": [176, 112],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "9aed25b8536761f7e95526aa6581b28d2f2e6160db968b13c9138d9f390ef8ad"
+      "sha256": "3d093053a28f12f662292d20847766890c08ee1b6fb36379b182981eec71ceec"
     },
     {
       "id": "iron-warden-basic-attack-committed",
@@ -972,7 +972,7 @@
       "dimensions": [176, 112],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "e98e6c813e75ab65f0c70c7acc286cac6f288eb2e2ccb0cce8bed96a6eb3b5b2"
+      "sha256": "c96c44b58341df161b30e84bb8610718ef105c32d7bc0901a40d6292d2554ee3"
     },
     {
       "id": "sapper-fracture-cancel",
@@ -980,7 +980,7 @@
       "dimensions": [176, 112],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "17cb643982374ccf0f0e02818d1ffedc167474fc7e07cd7a6db82aefa5da241f"
+      "sha256": "ea76f2e2f32ccf611f0fb0504b00ba939ee1e87ee55a769671d41752b64a57ce"
     },
     {
       "id": "sapper-fuse-tell",
@@ -988,7 +988,7 @@
       "dimensions": [176, 112],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "12900b3ac06d32bf0360adc4dc1cb2cd4779511acdcf1bfaeac6f1231d9de23f"
+      "sha256": "cb8171d99b7ca07e324dbec1215301727f92cc78ae5f8553ccc7083c7bfc309b"
     },
     {
       "id": "sapper-intent-crest",
@@ -996,7 +996,7 @@
       "dimensions": [32, 32],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "1eae1a39d257aa02d6cf3b4cb3899318e23e8230cd7aaac8bd5fd4758210091a"
+      "sha256": "ad34b329b70169d4979f17efb783286fcccec1b2a968238db210d8bdda86c89d"
     }
   ]
 }

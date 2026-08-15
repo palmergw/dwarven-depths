@@ -229,10 +229,10 @@ The replacement preserves eight isolated cells and removes baked floor patches f
 - Aspect ratio: `landscape`
 - Requested and saved dimensions: `1536x1024`
 - Quality: `medium`
-- Modality: four image-to-image correction passes
+- Modality: five image-to-image correction passes
 - Input image: preceding project-owned `shuttergate-sapper-hexer-intent-atlas-master.png`
 - Input SHA-256: `05df683d24534804cb2b200ae41d0fe9e4c0a3580bc3708e8e143ec34c8f8e08`
-- Output SHA-256: `685be2e00a2d680d0830d2d0d9dba9ded6bf12644578127f599f2275e6cb331d`
+- Output SHA-256: `d48b067baf46a9f4d3c030e75bf9789d59e751e6303b9919ce60de86251c061d`
 - License: project MIT license (`LICENSE`)
 
 ### Exact first-pass prompt
@@ -268,6 +268,18 @@ The bottom-row second cell currently reads like a straight UI arrow because it h
 ### Exact cell-containment prompt
 
 Correct only the placement of BOTTOM ROW, SECOND COLUMN in this exact 4×2 black-background atlas. Do not redesign it and do not change any other cell. The irregular cracked-fork source rune currently touches/crosses the left boundary of its equal grid cell and is clipped by deterministic export. Move and scale the complete bottom-row second-cell rune-plus-channel artwork so every visible pixel lies safely inside column 2 (the horizontal quarter from 25% to 50% of canvas width), with at least 45 pixels of pure black margin from both the left and right cell boundaries. Keep the full irregular three-stroke source rune visible at the left within that cell, followed by the same narrow shallow-curved muted-plum/aged-brass channel and its softly frayed hooked wisp. Preserve the non-arrow silhouette, material, brightness, low profile, black negative space, exact 4×2 layout, pure black key background, and all other seven cells unchanged. No text, plaques, rings, arrows, triangles, crosshairs, or new elements.
+
+### Exact gameplay-contrast prompt
+
+Make a surgical gameplay-contrast correction to exactly two cells in this project-owned 4×2 black-background VFX atlas: TOP ROW COLUMN 2 (Sapper fuse) and BOTTOM ROW COLUMN 2 (Hexer rune-channel). Preserve canvas, positions, silhouettes, dimensions, pure-black background, cell containment, and every other cell unchanged. Do not make either effect larger, wider, glowier, more saturated, or more particle-heavy.
+
+Both effects currently disappear against the warm brown Shuttergate floor after downscaling. Improve material/value separation inside their existing silhouettes only.
+
+Top row column 2: preserve the same continuous left-to-right braided powder fuse and ember head. Lighten the rope's upper ridge from near-black to readable charcoal-brown, add a broken one-pixel-like aged-brass/ember edge along alternating braid segments, keep the underside dark, and strengthen only the tiny traveling ember core. It must read as a physical fuse at thumbnail scale, not a black scratch or smoke smear. Keep smoke sparse and dark.
+
+Bottom row column 2: preserve the complete asymmetric cracked-fork source rune, shallow curved narrow braided channel, frayed non-arrow endpoint, and black margins. Increase the source rune's engraved aged-brass edge and muted plum fracture core. Give the channel one continuous dusty-plum core strand with a restrained alternating aged-brass thread, both materially solid enough to survive heavy downscale. Keep the channel narrow with negative space and soft painterly edges; no neon, broad ribbon, straight UI line, arrow, triangle, chevron, ring, or particle cloud. Make the frayed hooked endpoint visible through a small warm-brass tip and two muted plum motes, never an arrowhead.
+
+No text, plaques, labels, UI, geometry symbols, or changes to adjacent cells.
 
 ### Bounded QA and export semantics
 
