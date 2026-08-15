@@ -245,11 +245,32 @@ h2 {
 }
 .battlefield-entity-inspector:hover,
 .battlefield-entity-inspector:focus-visible {
-  border: 1px solid #f0d394;
-  border-radius: 50%;
-  background: rgb(9 7 5 / 18%);
-  outline: 2px solid #fff;
-  outline-offset: 1px;
+  border: 2px solid #c9923f;
+  border-radius: 0.2rem 0.2rem 0.55rem 0.55rem;
+  background: linear-gradient(
+    90deg,
+    rgb(45 27 13 / 48%),
+    rgb(9 7 5 / 8%) 48%,
+    rgb(45 27 13 / 48%)
+  );
+  outline: 0;
+  box-shadow:
+    0 0 0 1px rgb(35 20 10 / 92%),
+    inset 0 0 0 1px rgb(244 196 105 / 38%),
+    0 2px 5px rgb(0 0 0 / 58%);
+}
+.battlefield-entity-inspector:is(:hover, :focus-visible)::before {
+  position: absolute;
+  top: -0.38rem;
+  left: 50%;
+  width: 0.62rem;
+  height: 0.38rem;
+  transform: translateX(-50%);
+  border: 1px solid #e2b764;
+  border-bottom: 0;
+  background: #3b2513;
+  clip-path: polygon(0 100%, 18% 0, 82% 0, 100% 100%);
+  content: "";
 }
 .battlefield-entity-inspector > span {
   position: absolute;
@@ -259,13 +280,18 @@ h2 {
   width: max-content;
   max-width: 19rem;
   transform: translateX(-50%);
-  border: 1px solid #b98b45;
-  border-radius: 0.25rem;
-  padding: 0.38rem 0.55rem;
-  background: rgb(16 11 7 / 94%);
-  color: #f4ead5;
+  border: 2px solid #9f6f31;
+  border-radius: 0.14rem;
+  padding: 0.34rem 0.62rem 0.38rem;
+  background: linear-gradient(rgb(255 222 151 / 7%), transparent 42%), #352416;
+  box-shadow:
+    inset 0 0 0 1px #21140b,
+    inset 0 -0.3rem 0 rgb(25 13 7 / 24%),
+    0 3px 6px rgb(0 0 0 / 62%);
+  color: #f3dfb7;
   font-size: 0.82rem;
   font-weight: 650;
+  letter-spacing: 0.01em;
   line-height: 1.3;
   opacity: 0;
   pointer-events: none;
