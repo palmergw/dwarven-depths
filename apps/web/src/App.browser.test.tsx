@@ -1792,7 +1792,7 @@ describe("player-facing combat HUD", () => {
     expect(animatedEnemyIntentAlpha(0.96, "cancelled", false, 1)).toBe(0.58);
     expect(
       authoredEnemyIntentSourcePoint({ x: 200, y: 100 }, { x: 100, y: 100 })
-    ).toEqual({ x: 170, y: 134 });
+    ).toEqual({ x: 188, y: 86 });
     expect(
       authoredEnemyIntentCrestPoint({ x: 200, y: 100 }, { x: 100, y: 100 })
     ).toEqual({ x: 175, y: 40 });
@@ -1802,14 +1802,14 @@ describe("player-facing combat HUD", () => {
         { x: 200, y: 100 },
         { x: 100, y: 100 }
       )
-    ).toEqual({ x: 100, y: 142 });
+    ).toEqual({ x: 100, y: 108 });
     expect(
       authoredEnemyIntentTargetPoint(
         { mechanic: "attack_disrupt", phase: "committed" },
         { x: 200, y: 100 },
         { x: 100, y: 100 }
       )
-    ).toEqual({ x: 100, y: 146 });
+    ).toEqual({ x: 100, y: 110 });
     expect(
       enemyIntentDetail({
         visualId: "enemy.goblin_hexer",

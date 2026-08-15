@@ -958,8 +958,8 @@ export function authoredEnemyIntentSourcePoint(
 ): Readonly<{ x: number; y: number }> {
   const direction = directionBetween(source, target);
   return {
-    x: source.x + direction.x * 30,
-    y: source.y + 34
+    x: source.x + direction.x * 12,
+    y: source.y - 14
   };
 }
 
@@ -980,11 +980,11 @@ export function authoredEnemyIntentTargetPoint(
   target: Readonly<{ x: number; y: number }>
 ): Readonly<{ x: number; y: number }> {
   if (intent.mechanic === "attack_disrupt" && intent.phase === "committed")
-    return { x: target.x, y: target.y + 46 };
+    return { x: target.x, y: target.y + 10 };
   const direction = directionBetween(source, target);
   return {
-    x: target.x - direction.y * 10,
-    y: target.y + 46 + direction.x * 4
+    x: target.x - direction.y * 6,
+    y: target.y + 10 + direction.x * 2
   };
 }
 
