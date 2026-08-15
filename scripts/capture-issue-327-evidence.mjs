@@ -232,6 +232,14 @@ async function capture(page, id, expected = {}) {
                   statusId.includes(expected.statusContains)
             )
         );
+  const matchedRecipient =
+    expected.recipientStatusContains === undefined
+      ? undefined
+      : state.entities.find((entity) =>
+          entity.statusIds.some((statusId) =>
+            statusId.includes(expected.recipientStatusContains)
+          )
+        );
   if (
     JSON.stringify(state.viewport) !== JSON.stringify([1440, 900]) ||
     state.fixtureId !== fixtureId ||
@@ -245,7 +253,9 @@ async function capture(page, id, expected = {}) {
       state.textScale !== expected.textScale) ||
     ((expected.visualId !== undefined ||
       expected.statusContains !== undefined) &&
-      matchedEntity === undefined)
+      matchedEntity === undefined) ||
+    (expected.recipientStatusContains !== undefined &&
+      matchedRecipient === undefined)
   )
     throw new Error(
       `invalid Issue #327 capture ${id}: ${JSON.stringify(state)}`
@@ -290,11 +300,8 @@ const roleCaptures = [
   {
     id: "wave-2-sapper-commit",
     visualId: "enemy.goblin_sapper",
-    effectStatus: "committed"
-  },
-  {
-    id: "grounded-stagger-state",
-    statusContains: "stagger"
+    effectStatus: "committed",
+    recipientStatusContains: "stagger"
   },
   {
     id: "wave-3-hexer-commit",
