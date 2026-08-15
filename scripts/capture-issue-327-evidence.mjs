@@ -288,7 +288,7 @@ async function capture(page, id, expected = {}) {
   captures.push(sidecar);
 }
 
-async function cropComparison(browser, inputUrl, id, source) {
+async function cropComparison(browser, inputUrl, id, source, actionInterval) {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1
@@ -323,7 +323,7 @@ async function cropComparison(browser, inputUrl, id, source) {
     viewport: [1440, 900],
     crop: [520, 275, 600, 260],
     fixtureId,
-    actionInterval: "attack_disrupt.committed"
+    actionInterval
   });
   await context.close();
 }
@@ -405,13 +405,29 @@ try {
     browser,
     historicalFullFrameUrl,
     "comparison-current-geometric-markers",
-    { head: comparisonSourceHead, tick: 1213 }
+    { head: comparisonSourceHead, tick: 1213 },
+    "attack_disrupt.committed"
   );
   await cropComparison(
     browser,
     new URL("wave-2-sapper-commit.png", outputDirectory),
     "comparison-replacement-world-tells",
-    { head: sourceHead, tick: 1214 }
+    { head: sourceHead, tick: 1214 },
+    "attack_disrupt.committed"
+  );
+  await cropComparison(
+    browser,
+    new URL("wave-2-sapper-preparation.png", outputDirectory),
+    "review-sapper-preparation",
+    { head: sourceHead, tick: 1203 },
+    "attack_disrupt.telling"
+  );
+  await cropComparison(
+    browser,
+    new URL("wave-3-hexer-commit.png", outputDirectory),
+    "review-cancellation-state",
+    { head: sourceHead, tick: 1964 },
+    "target_intercept.cancelled"
   );
   await rm(historicalFullFrameUrl);
 } finally {
