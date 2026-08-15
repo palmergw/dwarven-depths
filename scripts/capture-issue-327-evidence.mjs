@@ -19,7 +19,7 @@ const outputDirectory = new URL(
 );
 const baseUrl = process.env.DD_WEB_URL ?? "http://127.0.0.1:5173";
 const fixtureId = "scenarios/conformance/shuttergate-web-truth.json";
-const comparisonSourceHead = "68d2f4ee0a21f9ea9d6b8d8b8766e2ec71567043";
+
 const { stdout: headOutput } = await execFile("git", ["rev-parse", "HEAD"], {
   cwd: repositoryRoot
 });
@@ -96,21 +96,27 @@ async function seedProfile(page) {
   await page.unroute(interceptedUrl);
 }
 
-async function newPage(browser, { textScale = "default" } = {}) {
+async function newPage(
+  browser,
+  { textScale = "default", motion = "reduce" } = {}
+) {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1,
-    reducedMotion: "reduce"
+    reducedMotion: motion === "reduce" ? "reduce" : "no-preference"
   });
   const page = await context.newPage();
   await seedProfile(page);
-  await page.addInitScript((scale) => {
-    localStorage.setItem("dwarven-depths.presentation.text-scale.v1", scale);
-    localStorage.setItem(
-      "dwarven-depths.presentation.motion-preference.v1",
-      "reduce"
-    );
-  }, textScale);
+  await page.addInitScript(
+    ({ scale, requestedMotion }) => {
+      localStorage.setItem("dwarven-depths.presentation.text-scale.v1", scale);
+      localStorage.setItem(
+        "dwarven-depths.presentation.motion-preference.v1",
+        requestedMotion
+      );
+    },
+    { scale: textScale, requestedMotion: motion }
+  );
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   return page;
 }
@@ -195,6 +201,181 @@ async function enableAutopilot(page) {
 
 const captures = [];
 const comparisons = [];
+const clips = [];
+const contactSheets = [];
+
+async function captureNormalMotionPrototypeClips(browser) {
+  const temporaryDirectory = new URL(
+    "../.ddh/issue-327-video/",
+    import.meta.url
+  );
+  await rm(temporaryDirectory, { recursive: true, force: true });
+  await mkdir(temporaryDirectory, { recursive: true });
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+    reducedMotion: "no-preference",
+    recordVideo: {
+      dir: fileURLToPath(temporaryDirectory),
+      size: { width: 1440, height: 900 }
+    }
+  });
+  const recordingStartedAt = performance.now();
+  const page = await context.newPage();
+  const video = page.video();
+  if (video === null) throw new Error("Issue #327 video recording unavailable");
+  await seedProfile(page);
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "dwarven-depths.presentation.motion-preference.v1",
+      "allow"
+    );
+  });
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  await enterPausedCombat(page);
+  await enableAutopilot(page);
+  const samples = [];
+  let sampling = true;
+  const sampleLoop = (async () => {
+    while (sampling) {
+      const state = await page.evaluate(() => {
+        const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+        return {
+          tick: truth?.snapshot.tick ?? null,
+          entities:
+            truth?.registry.entities.flatMap((entity) =>
+              entity.visualId === "enemy.goblin_sapper" ||
+              entity.visualId === "enemy.goblin_hexer"
+                ? [
+                    {
+                      id: entity.id,
+                      visualId: entity.visualId,
+                      statusIds: entity.statusIds
+                    }
+                  ]
+                : []
+            ) ?? []
+        };
+      });
+      samples.push({
+        videoTimeMilliseconds: Math.round(
+          performance.now() - recordingStartedAt
+        ),
+        ...state
+      });
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  })();
+  await page.getByRole("button", { name: "Resume combat" }).click();
+
+  async function waitForPhase(visualId, phase) {
+    await page.waitForFunction(
+      ({ requestedVisualId, requestedPhase }) =>
+        window.__DWARVEN_DEPTHS_TRUTH_SCREEN__?.registry.entities.some(
+          (entity) =>
+            entity.visualId === requestedVisualId &&
+            entity.statusIds.some((statusId) =>
+              statusId.endsWith(`.${requestedPhase}`)
+            )
+        ),
+      { requestedVisualId: visualId, requestedPhase: phase },
+      { timeout: 180_000, polling: 5 }
+    );
+    return {
+      videoTimeMilliseconds: Math.round(performance.now() - recordingStartedAt),
+      state: await page.evaluate((requestedVisualId) => {
+        const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+        return {
+          tick: truth?.snapshot.tick ?? null,
+          entity: truth?.registry.entities.find(
+            ({ visualId }) => visualId === requestedVisualId
+          )
+        };
+      }, visualId)
+    };
+  }
+
+  const transitions = [];
+  for (const prototype of [
+    { id: "sapper", visualId: "enemy.goblin_sapper" },
+    { id: "hexer", visualId: "enemy.goblin_hexer" }
+  ]) {
+    const telling = await waitForPhase(prototype.visualId, "telling");
+    const committed = await waitForPhase(prototype.visualId, "committed");
+    transitions.push({ ...prototype, telling, committed });
+    await page.waitForTimeout(700);
+  }
+  await page.getByRole("button", { name: "Pause combat" }).click();
+  sampling = false;
+  await sampleLoop;
+  await page.close();
+  const rawVideoPath = fileURLToPath(new URL("raw.webm", temporaryDirectory));
+  await video.saveAs(rawVideoPath);
+
+  for (const transition of transitions) {
+    const clipStartMilliseconds = Math.max(
+      0,
+      transition.telling.videoTimeMilliseconds - 450
+    );
+    const clipEndMilliseconds =
+      transition.committed.videoTimeMilliseconds + 900;
+    const filename = `${transition.id}-normal-motion-cadence.webm`;
+    const outputUrl = new URL(filename, outputDirectory);
+    await execFile("ffmpeg", [
+      "-y",
+      "-loglevel",
+      "error",
+      "-ss",
+      String(clipStartMilliseconds / 1_000),
+      "-i",
+      rawVideoPath,
+      "-t",
+      String((clipEndMilliseconds - clipStartMilliseconds) / 1_000),
+      "-c:v",
+      "libvpx-vp9",
+      "-b:v",
+      "0",
+      "-crf",
+      "32",
+      "-an",
+      fileURLToPath(outputUrl)
+    ]);
+    const bytes = await readFile(outputUrl);
+    const clip = {
+      id: `${transition.id}-normal-motion-cadence`,
+      video: filename,
+      videoSha256: sha256(bytes),
+      sourceHead,
+      fixtureId,
+      viewport: [1440, 900],
+      motion: "allow",
+      simulationSpeed: 1,
+      clipStartMilliseconds,
+      clipEndMilliseconds,
+      telling: transition.telling,
+      committed: transition.committed,
+      samples: samples
+        .filter(
+          ({ videoTimeMilliseconds }) =>
+            videoTimeMilliseconds >= clipStartMilliseconds &&
+            videoTimeMilliseconds <= clipEndMilliseconds
+        )
+        .map((sample) => ({
+          ...sample,
+          videoTimeMilliseconds:
+            sample.videoTimeMilliseconds - clipStartMilliseconds
+        }))
+    };
+    await writeFile(
+      new URL(`${clip.id}.json`, outputDirectory),
+      `${JSON.stringify(clip, null, 2)}\n`
+    );
+    clips.push(clip);
+  }
+  await context.close();
+  await rm(temporaryDirectory, { recursive: true, force: true });
+}
+
 async function capture(page, id, expected = {}) {
   await waitForStableTruth(page);
   const state = await page.evaluate(() => {
@@ -225,6 +406,15 @@ async function capture(page, id, expected = {}) {
         "dwarven-depths.presentation.motion-preference.v1"
       ),
       reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+      activeInspector:
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement.getAttribute("data-entity-id")
+          : null,
+      visibleInspectorDetails: [
+        ...document.querySelectorAll(".battlefield-entity-inspector > span")
+      ].flatMap((element) =>
+        getComputedStyle(element).opacity === "1" ? [element.textContent] : []
+      ),
       visibleText: document
         .querySelector("main")
         ?.textContent?.replace(/\s+/g, " ")
@@ -262,15 +452,21 @@ async function capture(page, id, expected = {}) {
       (state.snapshot?.tick ?? -1) < expected.minimumTick) ||
     state.paused !== true ||
     state.rendererError !== null ||
-    state.motion !== "reduce" ||
-    state.reducedMotion !== true ||
+    state.motion !== (expected.motion ?? "reduce") ||
+    state.reducedMotion !== ((expected.motion ?? "reduce") === "reduce") ||
     (expected.textScale !== undefined &&
       state.textScale !== expected.textScale) ||
     ((expected.visualId !== undefined ||
       expected.statusContains !== undefined) &&
       matchedEntity === undefined) ||
     (expected.recipientStatusContains !== undefined &&
-      matchedRecipient === undefined)
+      matchedRecipient === undefined) ||
+    (expected.inspectorEntityId !== undefined &&
+      state.activeInspector !== expected.inspectorEntityId) ||
+    (expected.inspectorDetailContains !== undefined &&
+      !state.visibleInspectorDetails.some((detail) =>
+        detail?.includes(expected.inspectorDetailContains)
+      ))
   )
     throw new Error(
       `invalid Issue #327 capture ${id}: ${JSON.stringify(state)}`
@@ -358,11 +554,6 @@ function capturedTick(id) {
 
 const roleCaptures = [
   {
-    id: "wave-1-skirmisher-tell",
-    visualId: "enemy.goblin_skirmisher",
-    effectStatus: "telling"
-  },
-  {
     id: "wave-2-sapper-preparation",
     visualId: "enemy.goblin_sapper",
     effectStatus: "telling",
@@ -375,24 +566,20 @@ const roleCaptures = [
     recipientStatusContains: "stagger"
   },
   {
+    id: "wave-3-hexer-channel",
+    visualId: "enemy.goblin_hexer",
+    effectStatus: "telling"
+  },
+  {
     id: "wave-3-hexer-commit",
     visualId: "enemy.goblin_hexer",
     effectStatus: "committed"
-  },
-  {
-    id: "wave-4-banner-tell",
-    visualId: "enemy.goblin_banner_bearer",
-    effectStatus: "telling"
-  },
-  {
-    id: "wave-5-hunter-tell",
-    visualId: "enemy.goblin_warden_hunter",
-    effectStatus: "telling"
   }
 ];
 
 const browser = await chromium.launch({ headless: true });
 try {
+  await captureNormalMotionPrototypeClips(browser);
   const page = await newPage(browser);
   await enterPausedCombat(page);
   await page.getByRole("button", { name: "2× combat speed" }).click();
@@ -407,6 +594,28 @@ try {
       timeout: 120_000
     });
     await capture(page, roleCapture.id, roleCapture);
+    if (roleCapture.id === "wave-2-sapper-commit") {
+      const inspector = page.locator(
+        '.battlefield-entity-inspector[data-intent-mechanic="attack_disrupt"]'
+      );
+      await inspector.hover();
+      await capture(page, "sapper-pointer-mechanic-detail", {
+        ...roleCapture,
+        inspectorDetailContains: "Sapper"
+      });
+    }
+    if (roleCapture.id === "wave-3-hexer-commit") {
+      const inspector = page.locator(
+        '.battlefield-entity-inspector[data-intent-mechanic="attack_slow"]'
+      );
+      await inspector.focus();
+      const inspectorEntityId = await inspector.getAttribute("data-entity-id");
+      await capture(page, "hexer-keyboard-mechanic-detail", {
+        ...roleCapture,
+        inspectorDetailContains: "Hexer",
+        inspectorEntityId
+      });
+    }
   }
   await page.close();
 
@@ -417,55 +626,113 @@ try {
   });
   await accessibilityPage.close();
 
-  const historicalFullFrameUrl = new URL(
-    ".comparison-current-full-frame.png",
-    outputDirectory
-  );
-  const { stdout: historicalFullFrame } = await execFile(
-    "git",
-    [
-      "show",
-      `${comparisonSourceHead}:docs/visual-evidence/issue-327/wave-2-sapper-commit.png`
-    ],
-    { cwd: repositoryRoot, encoding: "buffer", maxBuffer: 4 * 1024 * 1024 }
-  );
-  await writeFile(historicalFullFrameUrl, historicalFullFrame);
   await cropComparison(
     browser,
-    historicalFullFrameUrl,
-    "comparison-current-geometric-markers",
-    { head: comparisonSourceHead, tick: 1213 },
-    "attack_disrupt.committed"
+    new URL("wave-2-sapper-preparation.png", outputDirectory),
+    "sapper-phase-telling",
+    { head: sourceHead, tick: capturedTick("wave-2-sapper-preparation") },
+    "attack_disrupt.telling"
   );
   await cropComparison(
     browser,
     new URL("wave-2-sapper-commit.png", outputDirectory),
-    "comparison-replacement-world-tells",
-    { head: sourceHead, tick: 1214 },
+    "sapper-phase-committed",
+    { head: sourceHead, tick: capturedTick("wave-2-sapper-commit") },
     "attack_disrupt.committed"
   );
   await cropComparison(
     browser,
-    new URL("wave-2-sapper-preparation.png", outputDirectory),
-    "review-sapper-preparation",
-    {
-      head: sourceHead,
-      tick: capturedTick("wave-2-sapper-preparation")
-    },
-    "attack_disrupt.telling",
-    [600, 275, 650, 260]
+    new URL("wave-3-hexer-channel.png", outputDirectory),
+    "hexer-phase-telling",
+    { head: sourceHead, tick: capturedTick("wave-3-hexer-channel") },
+    "attack_slow.telling"
   );
   await cropComparison(
     browser,
     new URL("wave-3-hexer-commit.png", outputDirectory),
-    "review-cancellation-state",
-    {
-      head: sourceHead,
-      tick: capturedTick("wave-3-hexer-commit")
-    },
-    "target_intercept.cancelled"
+    "hexer-phase-committed",
+    { head: sourceHead, tick: capturedTick("wave-3-hexer-commit") },
+    "attack_slow.committed"
   );
-  await rm(historicalFullFrameUrl);
+
+  const phaseSheet = new URL(
+    "sapper-hexer-runtime-contact-sheet.png",
+    outputDirectory
+  );
+  await execFile("ffmpeg", [
+    "-y",
+    "-loglevel",
+    "error",
+    ...[
+      "sapper-phase-telling.png",
+      "sapper-phase-committed.png",
+      "hexer-phase-telling.png",
+      "hexer-phase-committed.png"
+    ].flatMap((filename) => [
+      "-i",
+      fileURLToPath(new URL(filename, outputDirectory))
+    ]),
+    "-filter_complex",
+    "xstack=inputs=4:layout=0_0|600_0|0_260|600_260",
+    fileURLToPath(phaseSheet)
+  ]);
+  contactSheets.push({
+    id: "sapper-hexer-runtime-contact-sheet",
+    image: "sapper-hexer-runtime-contact-sheet.png",
+    imageSha256: sha256(await readFile(phaseSheet)),
+    source: comparisons.map(({ id, source, actionInterval }) => ({
+      id,
+      source,
+      actionInterval
+    }))
+  });
+
+  const authoredSheet = new URL(
+    "sapper-hexer-authored-layer-contact-sheet.png",
+    outputDirectory
+  );
+  const authoredAssets = [
+    "sapper-intent-crest",
+    "sapper-fuse-tell",
+    "sapper-blast-impact",
+    "sapper-fracture-cancel",
+    "hexer-intent-crest",
+    "hexer-rune-channel",
+    "hexer-target-tether",
+    "hexer-fracture-cancel"
+  ];
+  await execFile("ffmpeg", [
+    "-y",
+    "-loglevel",
+    "error",
+    ...authoredAssets.flatMap((id) => [
+      "-i",
+      fileURLToPath(
+        new URL(
+          `../assets/game-art/combat-animation/exports/entities/${id}.png`,
+          import.meta.url
+        )
+      )
+    ]),
+    "-filter_complex",
+    `${authoredAssets
+      .map(
+        (_, index) =>
+          `[${index}:v]scale=220:140:force_original_aspect_ratio=decrease,pad=220:140:(ow-iw)/2:(oh-ih)/2:color=0x03111f[a${index}]`
+      )
+      .join(";")};${authoredAssets
+      .map((_, index) => `[a${index}]`)
+      .join(
+        ""
+      )}xstack=inputs=8:layout=0_0|220_0|440_0|660_0|0_140|220_140|440_140|660_140`,
+    fileURLToPath(authoredSheet)
+  ]);
+  contactSheets.push({
+    id: "sapper-hexer-authored-layer-contact-sheet",
+    image: "sapper-hexer-authored-layer-contact-sheet.png",
+    imageSha256: sha256(await readFile(authoredSheet)),
+    assets: authoredAssets
+  });
 } finally {
   await browser.close();
 }
@@ -477,7 +744,7 @@ const manifest = {
   fixtureId,
   viewport: [1440, 900],
   deviceScaleFactor: 1,
-  reducedMotion: true,
+  motionCoverage: ["allow", "reduce"],
   captureCount: captures.length,
   captures: captures.map((capture) => ({
     id: capture.id,
@@ -487,7 +754,17 @@ const manifest = {
     tick: capture.state.snapshot?.tick ?? null,
     expected: capture.expected
   })),
-  comparisons
+  comparisons,
+  clips: clips.map((clip) => ({
+    id: clip.id,
+    video: clip.video,
+    videoSha256: clip.videoSha256,
+    sidecar: `${clip.id}.json`,
+    tellingTick: clip.telling.state.tick,
+    committedTick: clip.committed.state.tick,
+    simulationSpeed: clip.simulationSpeed
+  })),
+  contactSheets
 };
 await writeFile(
   new URL("manifest.json", outputDirectory),
@@ -502,6 +779,9 @@ await execFile(
     "--write",
     fileURLToPath(new URL("manifest.json", outputDirectory)),
     ...captures.map(({ id }) =>
+      fileURLToPath(new URL(`${id}.json`, outputDirectory))
+    ),
+    ...clips.map(({ id }) =>
       fileURLToPath(new URL(`${id}.json`, outputDirectory))
     )
   ],
