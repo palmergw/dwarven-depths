@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "manifest.web.shuttergate_battlefield",
   "budgetBytes": 4718592,
-  "totalBytes": 3348445,
+  "totalBytes": 3306198,
   "layerOrder": [
     "terrain",
     "ground-foreground",
@@ -939,64 +939,64 @@
       "kind": "image",
       "layer": "world-focus",
       "path": "assets/game-art/combat-animation/exports/entities/sapper-intent-crest.png",
-      "bytes": 8081,
-      "sha256": "ab0c7be3b4ba9e4cd184ada3d2b1e3d935c13beca72bfd661ecf23861c415d93"
+      "bytes": 5996,
+      "sha256": "ad39bf0777146e0b9c4d70dbc96e60518b26e339cf4e58cc39ea2a14d75ea1ee"
     },
     {
       "key": "sapper-fuse-tell",
       "kind": "image",
       "layer": "world-effects",
       "path": "assets/game-art/combat-animation/exports/entities/sapper-fuse-tell.png",
-      "bytes": 15562,
-      "sha256": "3bba95c3eecc6a7ac7fe773ab19434544ad314448506d474beffbab00a35c8ec"
+      "bytes": 18474,
+      "sha256": "9af05be29a1ecfed361410e727acb84bf7ca5c4feede8f2bfd4bfe189e7af502"
     },
     {
       "key": "sapper-blast-impact",
       "kind": "image",
       "layer": "world-effects",
       "path": "assets/game-art/combat-animation/exports/entities/sapper-blast-impact.png",
-      "bytes": 26363,
-      "sha256": "507ecce2fe0d4fe2cb49d06eca4d02a97318905da680b5d5046d69f6ad0cea37"
+      "bytes": 22259,
+      "sha256": "8958649d95631f5abdd9309539c1b13fb3e8618e106c99e8ae9f0ab2fb8a04d7"
     },
     {
       "key": "sapper-fracture-cancel",
       "kind": "image",
       "layer": "world-effects",
       "path": "assets/game-art/combat-animation/exports/entities/sapper-fracture-cancel.png",
-      "bytes": 25165,
-      "sha256": "6f48cf0019c4286673017dbe91784834d6bd7e87b9d79a36820de587d79137b4"
+      "bytes": 20370,
+      "sha256": "b8b7aad3ed714d30a455d1966d74ea2e09c8fdf17fedf6ef827befde612fd74d"
     },
     {
       "key": "hexer-intent-crest",
       "kind": "image",
       "layer": "world-focus",
       "path": "assets/game-art/combat-animation/exports/entities/hexer-intent-crest.png",
-      "bytes": 9051,
-      "sha256": "9f05fe80cf93b3d02e2456844bd145d2c5e2e1396fdb6620966aec746ef859f8"
+      "bytes": 6561,
+      "sha256": "63174e1074d2fc9906773ec631c8536d9f37a19a011d11a50f2e8c644326c663"
     },
     {
       "key": "hexer-rune-channel",
       "kind": "image",
       "layer": "world-effects",
       "path": "assets/game-art/combat-animation/exports/entities/hexer-rune-channel.png",
-      "bytes": 29613,
-      "sha256": "f4df4f6154fbeaa895296052d5c3e22c28815263986ad67c3fb510fbf3543cf1"
+      "bytes": 16218,
+      "sha256": "502b5d76ca1319fb9af3ec90a7cd9b7f25375d347378a79acf01486f1a6cfb24"
     },
     {
       "key": "hexer-target-tether",
       "kind": "image",
       "layer": "world-effects",
       "path": "assets/game-art/combat-animation/exports/entities/hexer-target-tether.png",
-      "bytes": 35951,
-      "sha256": "4e538cbc1a2dabcfc1f542e456b193d4df230c7c7b36e132bd0142e66c872745"
+      "bytes": 24835,
+      "sha256": "8a13be8b015031b074b4a3faa7d0b88047a335f46693cba5b19ebcb675ea1aae"
     },
     {
       "key": "hexer-fracture-cancel",
       "kind": "image",
       "layer": "world-effects",
       "path": "assets/game-art/combat-animation/exports/entities/hexer-fracture-cancel.png",
-      "bytes": 29208,
-      "sha256": "1b5934c9b4aac8a20965397fbe61c757bc48d7274fb7d6ac8db3cbb785a15277"
+      "bytes": 22034,
+      "sha256": "9b10db92cb6eb2562123a8be36f94b38048d95a8ae3cc7c33af5a5ef2035ea80"
     },
     {
       "key": "warm-light-overlay",

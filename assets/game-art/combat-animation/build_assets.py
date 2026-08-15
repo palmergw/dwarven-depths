@@ -42,7 +42,7 @@ SOURCE_DIGESTS = {
     "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "bbf7c4fd3090f767ca8a187befc495a46303ad9934a57cd0cf6a28bdfda2d6c4",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
     "assets/game-art/combat-animation/sources/shuttergate-expanded-hostile-role-atlas-master.png": "8b88de6fe432b54f8b8821a90c10948bc0d37ae85f9c3c8f2630ea8fbe9cab5d",
-    "assets/game-art/combat-animation/sources/shuttergate-sapper-hexer-intent-atlas-master.png": "ce2106d3d3c57c5325f81890834ba616d62847fdfea0903d3c41681a6305132d",
+    "assets/game-art/combat-animation/sources/shuttergate-sapper-hexer-intent-atlas-master.png": "b953aca51a36f2de30d6b5504cffe6604d73ada45c321aed119f1b6089811086",
 }
 
 WARDEN_CROPS = {

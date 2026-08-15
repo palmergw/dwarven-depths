@@ -17,6 +17,7 @@ import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import {
   authoredEnemyIntentAssets,
+  authoredEnemyIntentEffectLayout,
   Battlefield,
   battlefieldEffectLifetime,
   buildBattlefieldPrimitives,
@@ -1730,6 +1731,18 @@ describe("player-facing combat HUD", () => {
         phase: "telling"
       })
     ).toBeUndefined();
+    expect(
+      authoredEnemyIntentEffectLayout({
+        mechanic: "attack_slow",
+        phase: "telling"
+      })
+    ).toBe("span");
+    expect(
+      authoredEnemyIntentEffectLayout({
+        mechanic: "attack_slow",
+        phase: "committed"
+      })
+    ).toBe("endpoint");
     expect(
       enemyIntentDetail({
         visualId: "enemy.goblin_hexer",

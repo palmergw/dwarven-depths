@@ -904,6 +904,12 @@ export function authoredEnemyIntentAssets(
   return undefined;
 }
 
+export function authoredEnemyIntentEffectLayout(
+  intent: EnemyIntentPresentation
+): "span" | "endpoint" {
+  return intent.phase === "committed" ? "endpoint" : "span";
+}
+
 export function statusSignalKind(
   statusId: string
 ):
@@ -1675,6 +1681,47 @@ function updateEntitySignal(
     1
   );
   signal.strokeRoundedRect(entity.x - width / 2 - 3, top - 3, width + 6, 10, 2);
+  if (presentation.elite || presentation.boss) {
+    const frameColor = presentation.boss ? 0xd2a866 : 0xb98b45;
+    signal.lineStyle(presentation.boss ? 2 : 1.5, frameColor, 0.95);
+    signal.strokeRoundedRect(
+      entity.x - width / 2 - 5,
+      top - 5,
+      width + 10,
+      14,
+      3
+    );
+    signal.fillStyle(0x3b2818, 1);
+    signal.fillTriangle(
+      entity.x - width / 2 - 8,
+      top - 3,
+      entity.x - width / 2 - 3,
+      top + 2,
+      entity.x - width / 2 - 8,
+      top + 7
+    );
+    signal.fillTriangle(
+      entity.x + width / 2 + 8,
+      top - 3,
+      entity.x + width / 2 + 3,
+      top + 2,
+      entity.x + width / 2 + 8,
+      top + 7
+    );
+    signal.lineStyle(1, 0xf0d394, 0.82);
+    signal.lineBetween(
+      entity.x - width / 2 - 7,
+      top + 2,
+      entity.x - width / 2 - 3,
+      top + 2
+    );
+    signal.lineBetween(
+      entity.x + width / 2 + 3,
+      top + 2,
+      entity.x + width / 2 + 7,
+      top + 2
+    );
+  }
   signal.fillStyle(
     presentation.healthRatio > 0.5
       ? 0x69b96b
@@ -2642,27 +2689,30 @@ class PersistentBattlefieldScene {
       const effect =
         this.behaviorEffects.get(sourceEntity.id) ??
         this.scene.add.image(midpointX, midpointY, assets.world);
-      effect.setTexture(assets.world).setOrigin(0.5).setAlpha(0.92);
-      if (intent.mechanic === "attack_disrupt") {
-        if (intent.phase === "committed")
-          effect
-            .setPosition(destination.x, destination.y + 4)
-            .setDisplaySize(142, 90)
-            .setRotation(0);
-        else
-          effect
-            .setPosition(midpointX, midpointY - 10)
-            .setDisplaySize(Math.max(112, Math.min(176, distance + 52)), 88)
-            .setRotation(angle);
-      } else if (intent.phase === "telling")
+      effect.setTexture(assets.world).setOrigin(0.5).setAlpha(0.84);
+      if (authoredEnemyIntentEffectLayout(intent) === "endpoint")
         effect
-          .setPosition(source.x + 26, source.y - 28)
-          .setDisplaySize(112, 92)
+          .setPosition(destination.x, destination.y + 4)
+          .setDisplaySize(
+            intent.mechanic === "attack_disrupt" ? 108 : 88,
+            intent.mechanic === "attack_disrupt" ? 66 : 58
+          )
           .setRotation(0);
+      else if (intent.mechanic === "attack_disrupt")
+        effect
+          .setPosition(midpointX, midpointY - 4)
+          .setDisplaySize(Math.max(92, Math.min(154, distance + 38)), 58)
+          .setRotation(angle);
       else
         effect
-          .setPosition(midpointX, midpointY - 22)
-          .setDisplaySize(Math.max(126, distance + 70), 66)
+          .setPosition(midpointX, midpointY - 8)
+          .setDisplaySize(
+            Math.max(
+              98,
+              Math.min(164, distance + (intent.phase === "telling" ? 42 : 50))
+            ),
+            intent.phase === "telling" ? 54 : 58
+          )
           .setRotation(angle);
       effect.setData("baseScaleX", effect.scaleX);
       effect.setData("baseScaleY", effect.scaleY);
@@ -2673,12 +2723,11 @@ class PersistentBattlefieldScene {
       }
       const crest =
         this.behaviorCrests.get(sourceEntity.id) ??
-        this.scene.add.image(source.x + 39, source.y - 58, assets.crest);
-      const crestSize = intent.phase === "committed" ? 58 : 52;
+        this.scene.add.image(source.x + 31, source.y - 58, assets.crest);
       crest
         .setTexture(assets.crest)
-        .setPosition(source.x + 39, source.y - 58)
-        .setDisplaySize(crestSize, crestSize)
+        .setPosition(source.x + 31, source.y - 58)
+        .setDisplaySize(intent.phase === "committed" ? 34 : 31, 18)
         .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
       crest.setData("baseScaleX", crest.scaleX);
       crest.setData("baseScaleY", crest.scaleY);
