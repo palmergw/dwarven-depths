@@ -1,16 +1,16 @@
 {
   "id": "hexer-normal-motion-cadence",
   "video": "hexer-normal-motion-cadence.webm",
-  "videoSha256": "9957f3ade60747721b1cb27b748a6b330446beb0699102a3a8dde916b9c004c7",
-  "sourceHead": "19fed211170ecaf4db4260b0d97592da98498573",
+  "videoSha256": "3e9da24079b6a133b254e4a07b2bed0061ffd9bfe71346219bec93c6202efad0",
+  "sourceHead": "e56b120b7fdec2dd2ee237c20fad3deae9ca994b",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [1440, 900],
   "motion": "allow",
   "simulationSpeed": 1,
-  "clipStartMilliseconds": 35543,
-  "clipEndMilliseconds": 37092,
+  "clipStartMilliseconds": 35202,
+  "clipEndMilliseconds": 36759,
   "telling": {
-    "videoTimeMilliseconds": 35993,
+    "videoTimeMilliseconds": 35652,
     "state": {
       "tick": 1951,
       "entity": {
@@ -45,7 +45,7 @@
     }
   },
   "committed": {
-    "videoTimeMilliseconds": 36192,
+    "videoTimeMilliseconds": 35859,
     "state": {
       "tick": 1962,
       "entity": {
@@ -81,87 +81,87 @@
   },
   "samples": [
     {
-      "videoTimeMilliseconds": 17,
+      "videoTimeMilliseconds": 9,
       "tick": 1927,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 46,
+      "videoTimeMilliseconds": 35,
       "tick": 1928,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 78,
+      "videoTimeMilliseconds": 64,
       "tick": 1930,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 105,
+      "videoTimeMilliseconds": 91,
       "tick": 1931,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 132,
+      "videoTimeMilliseconds": 117,
       "tick": 1933,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 162,
-      "tick": 1935,
+      "videoTimeMilliseconds": 148,
+      "tick": 1934,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 189,
+      "videoTimeMilliseconds": 174,
       "tick": 1936,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 216,
-      "tick": 1938,
+      "videoTimeMilliseconds": 200,
+      "tick": 1937,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 247,
+      "videoTimeMilliseconds": 230,
       "tick": 1939,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 273,
-      "tick": 1941,
+      "videoTimeMilliseconds": 257,
+      "tick": 1940,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 299,
+      "videoTimeMilliseconds": 283,
       "tick": 1942,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 325,
-      "tick": 1944,
+      "videoTimeMilliseconds": 309,
+      "tick": 1943,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 354,
+      "videoTimeMilliseconds": 335,
       "tick": 1945,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 380,
-      "tick": 1947,
+      "videoTimeMilliseconds": 366,
+      "tick": 1946,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 407,
+      "videoTimeMilliseconds": 396,
       "tick": 1948,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 433,
-      "tick": 1950,
+      "videoTimeMilliseconds": 423,
+      "tick": 1949,
       "entities": []
     },
     {
-      "videoTimeMilliseconds": 463,
+      "videoTimeMilliseconds": 451,
       "tick": 1951,
       "entities": [
         {
@@ -172,7 +172,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 489,
+      "videoTimeMilliseconds": 483,
       "tick": 1953,
       "entities": [
         {
@@ -183,7 +183,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 515,
+      "videoTimeMilliseconds": 513,
       "tick": 1954,
       "entities": [
         {
@@ -194,7 +194,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 547,
+      "videoTimeMilliseconds": 543,
       "tick": 1956,
       "entities": [
         {
@@ -216,7 +216,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 605,
+      "videoTimeMilliseconds": 602,
       "tick": 1959,
       "entities": [
         {
@@ -227,7 +227,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 633,
+      "videoTimeMilliseconds": 634,
       "tick": 1961,
       "entities": [
         {
@@ -238,7 +238,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 663,
+      "videoTimeMilliseconds": 664,
       "tick": 1962,
       "entities": [
         {
@@ -249,7 +249,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 690,
+      "videoTimeMilliseconds": 696,
       "tick": 1964,
       "entities": [
         {
@@ -260,7 +260,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 716,
+      "videoTimeMilliseconds": 724,
       "tick": 1965,
       "entities": [
         {
@@ -271,7 +271,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 746,
+      "videoTimeMilliseconds": 757,
       "tick": 1967,
       "entities": [
         {
@@ -282,8 +282,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 773,
-      "tick": 1968,
+      "videoTimeMilliseconds": 784,
+      "tick": 1969,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -293,7 +293,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 799,
+      "videoTimeMilliseconds": 811,
       "tick": 1970,
       "entities": [
         {
@@ -304,8 +304,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 831,
-      "tick": 1971,
+      "videoTimeMilliseconds": 843,
+      "tick": 1972,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -315,18 +315,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 858,
-      "tick": 1973,
-      "entities": [
-        {
-          "id": "entity.enemy.shuttergate_008",
-          "visualId": "enemy.goblin_hexer",
-          "statusIds": ["status.enemy_behavior.attack_slow.committed"]
-        }
-      ]
-    },
-    {
-      "videoTimeMilliseconds": 885,
+      "videoTimeMilliseconds": 876,
       "tick": 1974,
       "entities": [
         {
@@ -337,8 +326,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 913,
-      "tick": 1976,
+      "videoTimeMilliseconds": 907,
+      "tick": 1975,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -348,8 +337,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 944,
-      "tick": 1978,
+      "videoTimeMilliseconds": 936,
+      "tick": 1977,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -359,7 +348,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 972,
+      "videoTimeMilliseconds": 962,
       "tick": 1979,
       "entities": [
         {
@@ -370,8 +359,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1000,
-      "tick": 1981,
+      "videoTimeMilliseconds": 990,
+      "tick": 1980,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -381,7 +370,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1029,
+      "videoTimeMilliseconds": 1018,
       "tick": 1982,
       "entities": [
         {
@@ -392,8 +381,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1056,
-      "tick": 1984,
+      "videoTimeMilliseconds": 1045,
+      "tick": 1983,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -403,7 +392,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1089,
+      "videoTimeMilliseconds": 1076,
       "tick": 1985,
       "entities": [
         {
@@ -414,8 +403,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1117,
-      "tick": 1987,
+      "videoTimeMilliseconds": 1107,
+      "tick": 1986,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -425,8 +414,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1144,
-      "tick": 1989,
+      "videoTimeMilliseconds": 1148,
+      "tick": 1988,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -436,7 +425,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1172,
+      "videoTimeMilliseconds": 1175,
       "tick": 1990,
       "entities": [
         {
@@ -447,7 +436,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1200,
+      "videoTimeMilliseconds": 1207,
       "tick": 1992,
       "entities": [
         {
@@ -458,8 +447,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1229,
-      "tick": 1993,
+      "videoTimeMilliseconds": 1237,
+      "tick": 1994,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -469,7 +458,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1256,
+      "videoTimeMilliseconds": 1267,
       "tick": 1995,
       "entities": [
         {
@@ -480,8 +469,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1283,
-      "tick": 1996,
+      "videoTimeMilliseconds": 1296,
+      "tick": 1997,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -491,7 +480,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1312,
+      "videoTimeMilliseconds": 1324,
       "tick": 1998,
       "entities": [
         {
@@ -502,8 +491,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1339,
-      "tick": 1999,
+      "videoTimeMilliseconds": 1353,
+      "tick": 2000,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",
@@ -513,7 +502,7 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1364,
+      "videoTimeMilliseconds": 1384,
       "tick": 2001,
       "entities": [
         {
@@ -524,8 +513,8 @@
       ]
     },
     {
-      "videoTimeMilliseconds": 1390,
-      "tick": 2002,
+      "videoTimeMilliseconds": 1416,
+      "tick": 2003,
       "entities": [
         {
           "id": "entity.enemy.shuttergate_008",

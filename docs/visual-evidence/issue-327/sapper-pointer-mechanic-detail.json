@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "sapper-pointer-mechanic-detail",
-  "sourceHead": "19fed211170ecaf4db4260b0d97592da98498573",
+  "sourceHead": "e56b120b7fdec2dd2ee237c20fad3deae9ca994b",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "sapper-pointer-mechanic-detail.png",
   "screenshotSha256": "2111656cc91ee179990d96b5c0a047c39271afa3a093351b84cbc4da4c80fa9d",

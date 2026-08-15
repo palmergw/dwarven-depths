@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "hexer-keyboard-mechanic-detail",
-  "sourceHead": "19fed211170ecaf4db4260b0d97592da98498573",
+  "sourceHead": "e56b120b7fdec2dd2ee237c20fad3deae9ca994b",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "hexer-keyboard-mechanic-detail.png",
   "screenshotSha256": "f818c790a375ee1d8d6583edfa9fff121b685d1ab8ccf6f6102203dac2069020",
@@ -21,7 +21,7 @@
     "snapshot": {
       "levelId": "level.shuttergate_hall",
       "mapId": "map.shuttergate_hall",
-      "tick": 1963,
+      "tick": 1962,
       "phase": "running"
     },
     "entities": [
@@ -71,6 +71,6 @@
     "visibleInspectorDetails": [
       "Hexer — Slowing hex · Committed · Interrupt or break line of sight."
     ],
-    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Enemy detailsBulwark — Intercepting guard · Cancelled · Retarget around guard.Hexer — Slowing hex · Committed · Interrupt or break line of sight.Shuttergate battlefield, running; 3 entities.The ShuttergateFortressHoldingWave3Hostiles2 active0 approachingCombat paused. Fortress holding. Wave 3. 2 hostiles active. Iron Warden health 625 of 840. Iron Warden is an unknown effect, source an unknown source, strength 4, from tick 1961 through tick 1997. Elite enemy is cancelled: target intercept, source authoritative enemy intent, strength 25, from tick 1950 through tick 1970. Elite enemy is committed: attack slow, source authoritative enemy intent, strength 4, from tick 1961 through tick 1997.Combat controlsIron Warden◆Iron WardenNearest625 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
+    "visibleText": "The Company MusterDwarven DepthsHold the ancient roads below the mountain.Shuttergate HallDeveloper inspectionYour run journeyReview the checkpointCompleteReview company progression and upgrades, then begin preparation.Prepare the companyCompleteReview the roster and placement summary, then confirm preparation.Follow the combatCurrent stepUse the combat controls as available. Press Escape or use the pause button to pause; changing windows pauses automatically.Review the evidenceUpcomingReview the terminal outcome and download its authoritative run evidence.Enemy detailsBulwark — Intercepting guard · Cancelled · Retarget around guard.Hexer — Slowing hex · Committed · Interrupt or break line of sight.Shuttergate battlefield, running; 3 entities. Combat update at tick 1962: status.The ShuttergateFortressHoldingWave3Hostiles2 active0 approachingCombat paused. Fortress holding. Wave 3. 2 hostiles active. Iron Warden health 625 of 840. Iron Warden is an unknown effect, source an unknown source, strength 4, from tick 1961 through tick 1997. Elite enemy is cancelled: target intercept, source authoritative enemy intent, strength 25, from tick 1950 through tick 1970. Elite enemy is committed: attack slow, source authoritative enemy intent, strength 4, from tick 1961 through tick 1997.Combat controlsIron Warden◆Iron WardenNearest625 / 840Target priorityNearest ✓Lowest healthHighest healthHighest armorFastestBoss or elite firstIron Warden abilitiesShield Slam1Ready▶Combat speed1×2×Esc pause · 1 Shield Slam · 2 Linebreaker · 3 Rallying Roar · −/+ speed · portrait targetingCombat pausedPress Escape or resume when readyCombat is manually paused."
   }
 }

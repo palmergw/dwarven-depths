@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-3-hexer-channel",
-  "sourceHead": "19fed211170ecaf4db4260b0d97592da98498573",
+  "sourceHead": "e56b120b7fdec2dd2ee237c20fad3deae9ca994b",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-3-hexer-channel.png",
   "screenshotSha256": "1e1ad411dd487f93ce9ca359761fb8154d461122a5e9bb4310031baafa72752c",

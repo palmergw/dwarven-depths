@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "large-text-reduced-motion-paused",
-  "sourceHead": "19fed211170ecaf4db4260b0d97592da98498573",
+  "sourceHead": "e56b120b7fdec2dd2ee237c20fad3deae9ca994b",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "large-text-reduced-motion-paused.png",
   "screenshotSha256": "79a96dd6db2993f18d037bd442d2624c9a6c1b84d389f61b994e588cfd9eaacd",
