@@ -134,8 +134,7 @@ async function waitForStableTruth(page) {
               fixtureId: truth.fixtureId,
               captureReady: truth.captureReady,
               alignmentValid: truth.alignment.valid,
-              snapshot: truth.snapshot,
-              registry: truth.registry
+              snapshot: truth.snapshot
             };
       })
     );
@@ -164,6 +163,7 @@ async function armRolePause(page, visualId, effectStatus) {
         );
         pause?.click();
         window.clearInterval(window.__DD_ISSUE_327_CAPTURE_INTERVAL__);
+        window.clearInterval(window.__DD_ISSUE_327_AUTOPILOT_INTERVAL__);
       }, 1);
     },
     { requestedVisualId: visualId, requestedEffectStatus: effectStatus }
@@ -302,9 +302,9 @@ try {
   const page = await newPage(browser);
   await enterPausedCombat(page);
   await page.getByRole("button", { name: "2× combat speed" }).click();
-  await enableAutopilot(page);
   for (const roleCapture of roleCaptures) {
     await armRolePause(page, roleCapture.visualId, roleCapture.effectStatus);
+    await enableAutopilot(page);
     await page.getByRole("button", { name: "Resume combat" }).click();
     await page.getByRole("button", { name: "Resume combat" }).waitFor({
       timeout: 120_000
