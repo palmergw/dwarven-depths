@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 327,
   "packet": "sapper-hexer-targeted-wip",
-  "sourceHead": "d22ec93e3a15dfebc9a8c5fb23d6ef8142457d7b",
+  "sourceHead": "116d06aaae3f6e4c76756f51bd43a70ad8a60e6d",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "viewport": [1440, 900],
   "deviceScaleFactor": 1,
@@ -12,7 +12,7 @@
     {
       "id": "wave-2-sapper-preparation",
       "screenshot": "wave-2-sapper-preparation.png",
-      "screenshotSha256": "5486ebffe7ec5a001eccbb8d172aeaabc6e9131b5aab30d38bf4f0e94275d97f",
+      "screenshotSha256": "8b9ebabc5aa09b1937b1573f16f1fd369dab123a873537ae5d4d4c7bacd9c3c3",
       "sidecar": "wave-2-sapper-preparation.json",
       "tick": 1212,
       "expected": {
@@ -25,7 +25,7 @@
     {
       "id": "wave-2-sapper-commit",
       "screenshot": "wave-2-sapper-commit.png",
-      "screenshotSha256": "2306558b3cfcb001ca05b639c8bb634bd3632571b0e15cedfe295ec7cb41596b",
+      "screenshotSha256": "4eaf1dff882e1ecd2bf03a317f2b50cb3a2407aa69dfe82bbcdd6be1a2c6d6ff",
       "sidecar": "wave-2-sapper-commit.json",
       "tick": 1213,
       "expected": {
@@ -38,7 +38,7 @@
     {
       "id": "wave-3-hexer-channel",
       "screenshot": "wave-3-hexer-channel.png",
-      "screenshotSha256": "8300fbd55f2ecdeaf16fbf6b88815c38ac3f18702fd2c2e3c6e49b59de08b1a8",
+      "screenshotSha256": "3d8c1c318b25bddef663c943334fe53242da77e7f43fdac23419c06b31233616",
       "sidecar": "wave-3-hexer-channel.json",
       "tick": 1961,
       "expected": {
@@ -51,7 +51,7 @@
     {
       "id": "wave-3-hexer-commit",
       "screenshot": "wave-3-hexer-commit.png",
-      "screenshotSha256": "73315621f9d0cf0b53a12fc86c2890dfa720f84668b2eeb222d997d782312574",
+      "screenshotSha256": "124af4c7f719eb957d8d47575301d8d17c58fb4e9f2a04403e70a14157eff6b4",
       "sidecar": "wave-3-hexer-commit.json",
       "tick": 1962,
       "expected": {
@@ -65,11 +65,11 @@
     {
       "id": "sapper-phase-telling",
       "source": {
-        "head": "d22ec93e3a15dfebc9a8c5fb23d6ef8142457d7b",
+        "head": "116d06aaae3f6e4c76756f51bd43a70ad8a60e6d",
         "tick": 1212
       },
       "screenshot": "sapper-phase-telling.png",
-      "screenshotSha256": "66f1657a7e78e059502f31b91c75747b436d11439fa935456fef33128ecbedec",
+      "screenshotSha256": "f0502b3d1a4f683fd1374a5dc0a8e4245878075e3ceff0b12d239af049ceba3f",
       "viewport": [1440, 900],
       "crop": [520, 275, 600, 260],
       "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
@@ -78,11 +78,11 @@
     {
       "id": "sapper-phase-committed",
       "source": {
-        "head": "d22ec93e3a15dfebc9a8c5fb23d6ef8142457d7b",
+        "head": "116d06aaae3f6e4c76756f51bd43a70ad8a60e6d",
         "tick": 1213
       },
       "screenshot": "sapper-phase-committed.png",
-      "screenshotSha256": "523f5dc70c1e8f1edacbd6a3eaccab4968f6892c7daa0b7885e4421f5d258093",
+      "screenshotSha256": "641bb22a014dafaff5ba7d5f4e5e752d04bce40527c515bfc323d351da95fcf5",
       "viewport": [1440, 900],
       "crop": [520, 275, 600, 260],
       "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
@@ -91,11 +91,11 @@
     {
       "id": "hexer-phase-telling",
       "source": {
-        "head": "d22ec93e3a15dfebc9a8c5fb23d6ef8142457d7b",
+        "head": "116d06aaae3f6e4c76756f51bd43a70ad8a60e6d",
         "tick": 1961
       },
       "screenshot": "hexer-phase-telling.png",
-      "screenshotSha256": "87af985ad4b8d08da1a636f8ea25ac1b1a73d7aa86a00d9ef45e029283e3c022",
+      "screenshotSha256": "32febeb1b678b05f2e4d5c646c9f097d844d0f100d90cb1b34548d342fa268ba",
       "viewport": [1440, 900],
       "crop": [520, 275, 600, 260],
       "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
@@ -104,11 +104,11 @@
     {
       "id": "hexer-phase-committed",
       "source": {
-        "head": "d22ec93e3a15dfebc9a8c5fb23d6ef8142457d7b",
+        "head": "116d06aaae3f6e4c76756f51bd43a70ad8a60e6d",
         "tick": 1962
       },
       "screenshot": "hexer-phase-committed.png",
-      "screenshotSha256": "e4625cedf3aadcaf5060cda6750700c49ee3980ca4d25ab86ad0ccd79b4c52e2",
+      "screenshotSha256": "619b50c79fffcfe5f8f2e3dd06a73c68b8156c77b6515bf233d2b7172db546db",
       "viewport": [1440, 900],
       "crop": [520, 275, 600, 260],
       "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
@@ -120,12 +120,12 @@
     {
       "id": "sapper-hexer-runtime-contact-sheet",
       "image": "sapper-hexer-runtime-contact-sheet.png",
-      "imageSha256": "bbe0a094acf338a1868101f0398cab3266ab470f1bea50f1fb90b768f7266420",
+      "imageSha256": "cb2a196e1e485a0cdf0b8eb27d2debc577efacb6d2d3a6927150139117369273",
       "source": [
         {
           "id": "sapper-phase-telling",
           "source": {
-            "head": "d22ec93e3a15dfebc9a8c5fb23d6ef8142457d7b",
+            "head": "116d06aaae3f6e4c76756f51bd43a70ad8a60e6d",
             "tick": 1212
           },
           "actionInterval": "attack_disrupt.telling"
@@ -133,7 +133,7 @@
         {
           "id": "sapper-phase-committed",
           "source": {
-            "head": "d22ec93e3a15dfebc9a8c5fb23d6ef8142457d7b",
+            "head": "116d06aaae3f6e4c76756f51bd43a70ad8a60e6d",
             "tick": 1213
           },
           "actionInterval": "attack_disrupt.committed"
@@ -141,7 +141,7 @@
         {
           "id": "hexer-phase-telling",
           "source": {
-            "head": "d22ec93e3a15dfebc9a8c5fb23d6ef8142457d7b",
+            "head": "116d06aaae3f6e4c76756f51bd43a70ad8a60e6d",
             "tick": 1961
           },
           "actionInterval": "attack_slow.telling"
@@ -149,7 +149,7 @@
         {
           "id": "hexer-phase-committed",
           "source": {
-            "head": "d22ec93e3a15dfebc9a8c5fb23d6ef8142457d7b",
+            "head": "116d06aaae3f6e4c76756f51bd43a70ad8a60e6d",
             "tick": 1962
           },
           "actionInterval": "attack_slow.committed"
