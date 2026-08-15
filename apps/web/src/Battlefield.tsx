@@ -2818,14 +2818,14 @@ class PersistentBattlefieldScene {
       else if (intent.mechanic === "attack_disrupt")
         effect
           .setPosition(midpointX, midpointY)
-          .setDisplaySize(authoredEnemyIntentSpanLength(distance), 58)
+          .setDisplaySize(authoredEnemyIntentSpanLength(distance), 64)
           .setRotation(angle);
       else
         effect
           .setPosition(midpointX, midpointY)
           .setDisplaySize(
             authoredEnemyIntentSpanLength(distance),
-            intent.mechanic === "attack_slow" ? 56 : 40
+            intent.mechanic === "attack_slow" ? 64 : 40
           )
           .setRotation(angle);
       effect.setData("baseScaleX", effect.scaleX);
@@ -2850,7 +2850,7 @@ class PersistentBattlefieldScene {
         endpoint
           .setTexture(assets.endpoint)
           .setPosition(destination.x, destination.y)
-          .setDisplaySize(76, 46)
+          .setDisplaySize(92, 54)
           .setAlpha(0.96)
           .setRotation(0);
         endpoint.setData("baseScaleX", endpoint.scaleX);
@@ -2868,7 +2868,7 @@ class PersistentBattlefieldScene {
       crest
         .setTexture(assets.crest)
         .setPosition(crestPoint.x, crestPoint.y)
-        .setDisplaySize(intent.phase === "committed" ? 30 : 28, 28)
+        .setDisplaySize(intent.phase === "committed" ? 38 : 36, 36)
         .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
       crest.setData("baseScaleX", crest.scaleX);
       crest.setData("baseScaleY", crest.scaleY);

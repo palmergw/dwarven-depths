@@ -825,18 +825,18 @@
     {
       "id": "hexer-rune-channel",
       "path": "assets/game-art/combat-animation/exports/entities/hexer-rune-channel.png",
-      "dimensions": [176, 112],
+      "dimensions": [176, 64],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "b43327a874787ad24617d7de4030e89233d466fecfa7954ce866a8d23cccdca1"
+      "sha256": "284f3b3f647961b8dd62d1f489137a8eb615f5eeba3ed54fb71990e78e37653d"
     },
     {
       "id": "hexer-target-tether",
       "path": "assets/game-art/combat-animation/exports/entities/hexer-target-tether.png",
-      "dimensions": [176, 112],
+      "dimensions": [112, 72],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "bd84bf967b3c72fabd9f80b1eb252badfaf6ad755d04284a5ed40465a68610e1"
+      "sha256": "c9e5b90cb1da9a1dd6f170801c98d36e3ea6698c69bb1c78169928f4e212238d"
     },
     {
       "id": "iron-warden-basic-attack-committed",
@@ -985,10 +985,10 @@
     {
       "id": "sapper-fuse-tell",
       "path": "assets/game-art/combat-animation/exports/entities/sapper-fuse-tell.png",
-      "dimensions": [176, 112],
+      "dimensions": [176, 64],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "b5e4905bfc7ceadcbc7e2c29ae8c23f5fbc951b5224c1c591b3c1e91fb67402b"
+      "sha256": "cf87df35ca606c6ea64ef94e6cfee2822a7389596338cba9d082c0138aadd66f"
     },
     {
       "id": "sapper-intent-crest",

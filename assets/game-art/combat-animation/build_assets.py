@@ -77,12 +77,15 @@ EXPANDED_HOSTILE_ROLES = (
 )
 ENEMY_INTENT_ASSETS = (
     ("sapper-intent-crest", (32, 32)),
-    ("sapper-fuse-tell", (176, 112)),
+    # Directional tells are authored as shallow floor strips. A tall padded
+    # canvas compressed their already restrained linework to a few pixels at
+    # runtime, so preserve the painted stroke weight in a strip-shaped export.
+    ("sapper-fuse-tell", (176, 64)),
     ("sapper-blast-impact", (176, 112)),
     ("sapper-fracture-cancel", (176, 112)),
     ("hexer-intent-crest", (32, 32)),
-    ("hexer-rune-channel", (176, 112)),
-    ("hexer-target-tether", (176, 112)),
+    ("hexer-rune-channel", (176, 64)),
+    ("hexer-target-tether", (112, 72)),
     ("hexer-fracture-cancel", (176, 112)),
 )
 HOSTILE_COLUMN_BOUNDS = (
