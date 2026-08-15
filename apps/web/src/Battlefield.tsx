@@ -958,8 +958,8 @@ export function authoredEnemyIntentSourcePoint(
 ): Readonly<{ x: number; y: number }> {
   const direction = directionBetween(source, target);
   return {
-    x: source.x + direction.x * 42,
-    y: source.y + 40
+    x: source.x + direction.x * 30,
+    y: source.y + 34
   };
 }
 
@@ -2825,7 +2825,7 @@ class PersistentBattlefieldScene {
           .setPosition(midpointX, midpointY)
           .setDisplaySize(
             authoredEnemyIntentSpanLength(distance),
-            intent.mechanic === "attack_slow" ? 50 : 40
+            intent.mechanic === "attack_slow" ? 56 : 40
           )
           .setRotation(angle);
       effect.setData("baseScaleX", effect.scaleX);

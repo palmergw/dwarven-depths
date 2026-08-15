@@ -1792,7 +1792,7 @@ describe("player-facing combat HUD", () => {
     expect(animatedEnemyIntentAlpha(0.96, "cancelled", false, 1)).toBe(0.58);
     expect(
       authoredEnemyIntentSourcePoint({ x: 200, y: 100 }, { x: 100, y: 100 })
-    ).toEqual({ x: 158, y: 140 });
+    ).toEqual({ x: 170, y: 134 });
     expect(
       authoredEnemyIntentCrestPoint({ x: 200, y: 100 }, { x: 100, y: 100 })
     ).toEqual({ x: 175, y: 40 });
