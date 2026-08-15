@@ -126,7 +126,18 @@ async function waitForStableTruth(page) {
   let previous;
   for (let attempt = 0; attempt < 50; attempt += 1) {
     const current = JSON.stringify(
-      await page.evaluate(() => window.__DWARVEN_DEPTHS_TRUTH_SCREEN__)
+      await page.evaluate(() => {
+        const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+        return truth === undefined
+          ? null
+          : {
+              fixtureId: truth.fixtureId,
+              captureReady: truth.captureReady,
+              alignmentValid: truth.alignment.valid,
+              snapshot: truth.snapshot,
+              registry: truth.registry
+            };
+      })
     );
     if (current === previous) return;
     previous = current;
