@@ -337,7 +337,7 @@ The replacement keeps eight isolated authored layers and removes baked floor pix
 - Input image: preceding project-owned `shuttergate-sapper-hexer-intent-atlas-master.png`
 - Input SHA-256: `e980b290f3402516d23ee4bfbd2ead5486aa6ed7fff1cf2bd676c8c275b89be9`
 - Intermediate image output SHA-256: `a02013bd9e4a85d91353b990c402a5a03d78763e89595455ec61f2231709f482`
-- Final source SHA-256 after deterministic cell containment: `9479ed764f82634c51c199c9e69bcf1dae20abca67ade12556e31a099abb4e98`
+- Final source SHA-256 after deterministic cell containment and pictorial-source correction: `c6c53b558d58fd4497369b5a1d1cb1cc45bff32b59ad7fa679564e44f576eaf8`
 - License: project MIT license (`LICENSE`)
 
 ### Exact replacement prompt
@@ -361,6 +361,8 @@ Make one surgical correction to this ORIGINAL project-owned 1536x1024 4-column x
 Make one surgical production correction to this ORIGINAL project-owned 1536x1024 4-column x 2-row VFX atlas. Preserve every visible pixel, pure black background, canvas, strict grid, painterly style, and asset exactly unchanged except top row, second column. Move and slightly compress the complete Sapper preparation artwork—the recognizable bomb, physical braided fuse, sparse ember/smoke marks, and open etched destination scratches—so all visible pixels remain inside x=384 through x=767 and y=0 through y=511. Preserve the full bomb silhouette at the left, one continuous readable fuse through the middle, and the open destination footprint at the right. Do not alter the adjacent cells, add a second bomb, clip, erase, redesign, enlarge, brighten, add particles, or change any other asset.
 
 The image correction retained four meaningful Hexer-source pixels across the equal-cell boundary. A deterministic Pillow correction recovered the complete artwork from x=350 through x=767, cleared that bounded region, resized the recovered keyed artwork proportionally to 344×96 pixels, and placed it at x=404, y=728. This leaves 20 black pixels on both sides of the canonical x=384 through x=767 export cell without changing the other seven assets.
+
+Adversarial runtime-scale review then found that the open source rune collapsed to a generic purple diamond. A second deterministic source correction reused the atlas's authored freestanding Hexer lantern pixels: the keyed lantern was proportionally reduced to 49×78 pixels and placed at x=404, y=737 inside the channel cell, replacing only the diamond-like source region. The narrow channel, frayed endpoint, separate recipient mark, and the other seven canonical cells remain unchanged.
 
 ### Bounded QA and export semantics
 
