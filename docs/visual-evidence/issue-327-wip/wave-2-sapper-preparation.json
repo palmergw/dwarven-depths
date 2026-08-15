@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-2-sapper-preparation",
-  "sourceHead": "116d06aaae3f6e4c76756f51bd43a70ad8a60e6d",
+  "sourceHead": "faa124d5f88d2820aab8675a34aa8bf97590dfab",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-2-sapper-preparation.png",
-  "screenshotSha256": "8b9ebabc5aa09b1937b1573f16f1fd369dab123a873537ae5d4d4c7bacd9c3c3",
+  "screenshotSha256": "b9ea96047a4206d91f8fbbef6b636699ec5183e78afd6a6b0734660d11be6359",
   "expected": {
     "id": "wave-2-sapper-preparation",
     "visualId": "enemy.goblin_sapper",
