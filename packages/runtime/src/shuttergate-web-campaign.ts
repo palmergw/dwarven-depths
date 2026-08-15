@@ -45,7 +45,7 @@ const authoredEnemyEntityIds = Object.freeze(
         .padStart(3, "0")}` as StableId
   )
 );
-const authoredEnemyDefinitions = Object.freeze([
+const legacyAuthoredEnemyDefinitions = Object.freeze([
   "enemy.goblin_cutter",
   "enemy.goblin_cutter",
   "enemy.goblin_cutter",
@@ -65,6 +65,30 @@ const authoredEnemyDefinitions = Object.freeze([
   "enemy.goblin_cutter",
   "enemy.goblin_bulwark"
 ] as const);
+const expandedAuthoredEnemyDefinitions = Object.freeze([
+  "enemy.goblin_cutter",
+  "enemy.goblin_skirmisher",
+  "enemy.goblin_cutter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_sapper",
+  "enemy.goblin_slinger",
+  "enemy.goblin_bulwark",
+  "enemy.goblin_hexer",
+  "enemy.goblin_slinger",
+  "enemy.gatebreaker_captain",
+  "enemy.goblin_banner_bearer",
+  "enemy.goblin_slinger",
+  "enemy.goblin_bulwark",
+  "enemy.goblin_warden_hunter",
+  "enemy.goblin_cutter",
+  "enemy.goblin_slinger",
+  "enemy.goblin_cutter",
+  "enemy.goblin_bulwark"
+] as const);
+const canonicalAuthoredEnemyRosters = Object.freeze([
+  legacyAuthoredEnemyDefinitions,
+  expandedAuthoredEnemyDefinitions
+]);
 const authoredAdmissionTicks = Object.freeze([
   1, 300, 600, 900, 1200, 1500, 1800, 1950, 2250, 2700, 2820, 3000, 3180, 3600,
   3750, 3900, 4050, 4200
@@ -426,6 +450,15 @@ export function resolveShuttergateWebAttemptReward(input: {
   const expectedFiredSpawnCount = authoredSpawnTicks.filter(
     (tick) => tick <= state.tick
   ).length;
+  const rosterMatches = canonicalAuthoredEnemyRosters.some(
+    (roster) =>
+      battlefield.enemyAdmissions.every(
+        (admission, index) => admission.enemyDefinitionId === roster[index]
+      ) &&
+      battlefield.enemyCombatants.every(
+        (enemy, index) => enemy.enemyDefinitionId === roster[index]
+      )
+  );
   if (
     firedSpawnCount !== expectedFiredSpawnCount ||
     battlefield.firedSpawnIds.some(
@@ -437,7 +470,6 @@ export function resolveShuttergateWebAttemptReward(input: {
         admission.schemaVersion !== 1 ||
         admission.spawnId !== authoredSpawnIds[index] ||
         admission.entityId !== authoredEnemyEntityIds[index] ||
-        admission.enemyDefinitionId !== authoredEnemyDefinitions[index] ||
         admission.admittedAtTick !== authoredAdmissionTicks[index]
     ) ||
     battlefield.enemyCombatants.length !== firedSpawnCount ||
@@ -445,12 +477,12 @@ export function resolveShuttergateWebAttemptReward(input: {
       (enemy, index) =>
         enemy.schemaVersion !== 1 ||
         enemy.entityId !== authoredEnemyEntityIds[index] ||
-        enemy.enemyDefinitionId !== authoredEnemyDefinitions[index] ||
         enemy.admittedAtTick !== authoredAdmissionTicks[index] ||
         (enemy.lifecycleState === "destroyed"
           ? enemy.currentHealth !== 0
           : enemy.currentHealth <= 0)
-    )
+    ) ||
+    !rosterMatches
   )
     throw new RangeError(
       "Shuttergate terminal result does not bind the authored enemy roster"

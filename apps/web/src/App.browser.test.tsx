@@ -4086,6 +4086,12 @@ describe("authoritative web worker", () => {
           command: { type: "confirmPreparation" }
         });
         await paused;
+        worker.postMessage({
+          protocolVersion: 4,
+          type: "command",
+          requestId: "encounter-speed",
+          command: { type: "setSimulationSpeed", speed: 2 }
+        });
         const result = waitForMessage(
           worker,
           (message) =>
