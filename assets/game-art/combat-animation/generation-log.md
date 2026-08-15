@@ -194,3 +194,30 @@ Make each source, direction, recipient, and consequence pictorially readable whe
 ### Bounded QA and export semantics
 
 The correction contains exactly eight isolated assets in the required 4×2 order. The first-column exports are now freestanding bomb and lantern objects with no plaque geometry or backing. The remaining cells retain distinct source, directional, destination, impact/resolve, and cancellation imagery. The keyed background is uniform and no character, UI, text, or environment layer is present. The deterministic exporter uses the first-column cells directly for compact health-frame endcaps and binds the corrected source digest and every exported digest.
+
+## `shuttergate-sapper-hexer-intent-atlas-master.png` — gameplay-scale readability correction
+
+- Provider: `openai-codex`
+- Model: `gpt-image-2-medium`
+- Aspect ratio: `landscape`
+- Requested and saved dimensions: `1536x1024`
+- Quality: `medium`
+- Modality: image-to-image correction
+- Input image: preceding project-owned `shuttergate-sapper-hexer-intent-atlas-master.png`
+- Input SHA-256: `c96f62a362266025b702437e3dd5502dc684c354ea6bf1cd4b4448944e320334`
+- Output SHA-256: `05df683d24534804cb2b200ae41d0fe9e4c0a3580bc3708e8e143ec34c8f8e08`
+- License: project MIT license (`LICENSE`)
+
+### Exact prompt
+
+Edit this ORIGINAL project-owned Dwarven Depths asset atlas into a cleaner production-ready replacement while preserving its exact 4-column × 2-row layout, 1536×1024 canvas intent, black removable key background, warm painterly pixel-art material, and generous cell isolation. No text, labels, borders, UI, plaques, health bars, characters, scenery, floor tiles, cobblestones, rings, crosshairs, arrows, letters, or generic geometric debug symbols. Exactly eight isolated effects, one centered in each equal cell, nothing crosses a cell boundary.
+
+TOP ROW — SAPPER, left to right: (1) compact recognizable black-iron spherical goblin bomb with brass winding key and a thick braided fuse, fuse tip visibly glowing amber; bold readable silhouette for a 20-pixel actor-attached crest, no backing plate; (2) directional fuse tell: the same compact bomb clearly at the LEFT source, its thick braided fuse and a restrained LOW horizontal stream of warm ember flecks and thin charcoal smoke traveling unmistakably LEFT→RIGHT; readable when displayed only 32 pixels high, smoke must not become a serpent or cloud and must leave negative space; (3) committed blast footprint: a broad, flat, floor-integrated radial blast warning made ONLY of sparse etched amber fissures, small ember points, and a restrained low central ignition; no bomb, no floor/tile patch, no opaque disc, no high flame column; silhouette wider than tall and readable at 98×50 pixels while underlying game floor texture remains visible; (4) cancellation: recognizable broken bomb halves and a few dissolving iron/ember fragments, no prohibition icon.
+
+BOTTOM ROW — HEXER, left to right: (1) compact recognizable dark forged hex lantern with one bold asymmetrical violet rune glowing inside and brass handle/key detail; bold readable silhouette for a 20-pixel actor-attached crest, no backing plate; (2) directional channel: the same lantern clearly at LEFT source emitting one narrow, taut, low violet-and-muted-brass braided channel toward a small rune-knot endpoint at RIGHT; channel thickness about 10–14% of cell height, much narrower and calmer than the prior ribbon, no floor patch, no smoky serpent, strong negative space above and below, readable when displayed 26 pixels high; (3) target endpoint: a compact floor-hugging asymmetrical rune-knot made of three short etched violet/brass strokes and a few low motes; no stone tablet, no circular ring, no crosshair, no floor/tile patch, remains visible beside rather than over an actor at 60×34 pixels; (4) cancellation: fractured lantern/rune shards dissolving into restrained violet dust, no prohibition icon.
+
+Keep effects crisp, materially grounded, low-profile, and darker at edges. Warm Sapper light must harmonize with Shuttergate amber illumination; Hexer violet must be desaturated plum with restrained brass highlights, never saturated neon. Prioritize normal gameplay-scale readability through recognizable objects and directional causality, not size, brightness, or particle count.
+
+### Bounded QA and export semantics
+
+The replacement preserves eight isolated cells and removes baked floor patches from both committed endpoints. The Sapper sequence uses one recognizable bomb language from source through fuse direction and then resolves into a sparse alpha-only etched blast footprint. The Hexer sequence uses one lantern source, a narrow channel, and a compact endpoint; runtime placement moves that endpoint beside the target footing so it does not cover the recipient silhouette. Cancellation remains authored fracture/dissolve rather than prohibition glyphs. The deterministic exporter binds the replacement source and every alpha export.

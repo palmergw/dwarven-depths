@@ -18,6 +18,7 @@ import { App } from "./App.js";
 import {
   authoredEnemyIntentAssets,
   authoredEnemyIntentEffectLayout,
+  authoredEnemyIntentTargetPoint,
   Battlefield,
   battlefieldEffectLifetime,
   buildBattlefieldPrimitives,
@@ -1759,6 +1760,20 @@ describe("player-facing combat HUD", () => {
         phase: "committed"
       })
     ).toBe("endpoint");
+    expect(
+      authoredEnemyIntentTargetPoint(
+        { mechanic: "attack_slow", phase: "committed" },
+        { x: 200, y: 100 },
+        { x: 100, y: 100 }
+      )
+    ).toEqual({ x: 100, y: 136 });
+    expect(
+      authoredEnemyIntentTargetPoint(
+        { mechanic: "attack_disrupt", phase: "committed" },
+        { x: 200, y: 100 },
+        { x: 100, y: 100 }
+      )
+    ).toEqual({ x: 100, y: 100 });
     expect(
       enemyIntentDetail({
         visualId: "enemy.goblin_hexer",

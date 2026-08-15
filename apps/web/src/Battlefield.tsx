@@ -916,6 +916,28 @@ export function authoredEnemyIntentEffectLayout(
     : "span";
 }
 
+export function authoredEnemyIntentTargetPoint(
+  intent: EnemyIntentPresentation,
+  source: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }>
+): Readonly<{ x: number; y: number }> {
+  if (intent.mechanic !== "attack_slow") return target;
+  const deltaX = target.x - source.x;
+  const deltaY = target.y - source.y;
+  const distance = Math.hypot(deltaX, deltaY);
+  if (distance === 0) return { x: target.x, y: target.y + 36 };
+  let perpendicularX = -deltaY / distance;
+  let perpendicularY = deltaX / distance;
+  if (perpendicularY < 0) {
+    perpendicularX *= -1;
+    perpendicularY *= -1;
+  }
+  return {
+    x: target.x + perpendicularX * 24,
+    y: target.y + perpendicularY * 24 + 12
+  };
+}
+
 export function statusSignalKind(
   statusId: string
 ):
@@ -2712,7 +2734,11 @@ class PersistentBattlefieldScene {
         sourceEntity.targetEntityId === null
           ? undefined
           : primitiveById.get(sourceEntity.targetEntityId);
-      const destination = target ?? source;
+      const destination = authoredEnemyIntentTargetPoint(
+        intent,
+        source,
+        target ?? source
+      );
       const midpointX = (source.x + destination.x) / 2;
       const midpointY = (source.y + destination.y) / 2;
       const distance = Math.hypot(
@@ -2762,14 +2788,10 @@ class PersistentBattlefieldScene {
       } else {
         const endpoint =
           this.behaviorEndpoints.get(sourceEntity.id) ??
-          this.scene.add.image(
-            destination.x,
-            destination.y + 25,
-            assets.endpoint
-          );
+          this.scene.add.image(destination.x, destination.y, assets.endpoint);
         endpoint
           .setTexture(assets.endpoint)
-          .setPosition(destination.x, destination.y + 25)
+          .setPosition(destination.x, destination.y)
           .setDisplaySize(60, 34)
           .setAlpha(0.88)
           .setRotation(0);
