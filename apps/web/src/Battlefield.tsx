@@ -940,28 +940,48 @@ export function animatedEnemyIntentAlpha(
   return Math.min(1, baseAlpha + Math.max(0, cadence) * 0.08);
 }
 
-export function authoredEnemyIntentTargetPoint(
-  intent: EnemyIntentPresentation,
+function directionBetween(
   source: Readonly<{ x: number; y: number }>,
   target: Readonly<{ x: number; y: number }>
 ): Readonly<{ x: number; y: number }> {
-  if (intent.mechanic === "attack_disrupt" && intent.phase === "committed")
-    return { x: target.x, y: target.y + 46 };
-  if (intent.mechanic !== "attack_slow") return target;
   const deltaX = target.x - source.x;
   const deltaY = target.y - source.y;
   const distance = Math.hypot(deltaX, deltaY);
-  if (distance === 0) return { x: target.x, y: target.y + 36 };
-  let perpendicularX = -deltaY / distance;
-  let perpendicularY = deltaX / distance;
-  if (perpendicularY < 0) {
-    perpendicularX *= -1;
-    perpendicularY *= -1;
-  }
+  return distance === 0
+    ? { x: 1, y: 0 }
+    : { x: deltaX / distance, y: deltaY / distance };
+}
+
+export function authoredEnemyIntentSourcePoint(
+  source: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }>
+): Readonly<{ x: number; y: number }> {
+  const direction = directionBetween(source, target);
   return {
-    x: target.x + perpendicularX * 36,
-    y: target.y + perpendicularY * 36 + 18
+    x: source.x + direction.x * 22,
+    y: source.y + 28
   };
+}
+
+export function authoredEnemyIntentCrestPoint(
+  source: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }>
+): Readonly<{ x: number; y: number }> {
+  const direction = directionBetween(source, target);
+  return {
+    x: source.x + direction.x * 25,
+    y: source.y - 24 + direction.y * 8
+  };
+}
+
+export function authoredEnemyIntentTargetPoint(
+  intent: EnemyIntentPresentation,
+  _source: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }>
+): Readonly<{ x: number; y: number }> {
+  if (intent.mechanic === "attack_disrupt" && intent.phase === "committed")
+    return { x: target.x, y: target.y + 42 };
+  return { x: target.x, y: target.y + 32 };
 }
 
 export function statusSignalKind(
@@ -2761,20 +2781,23 @@ class PersistentBattlefieldScene {
         sourceEntity.targetEntityId === null
           ? undefined
           : primitiveById.get(sourceEntity.targetEntityId);
+      const targetPoint = target ?? source;
+      const origin = authoredEnemyIntentSourcePoint(source, targetPoint);
       const destination = authoredEnemyIntentTargetPoint(
         intent,
-        source,
-        target ?? source
+        origin,
+        targetPoint
       );
-      const midpointX = (source.x + destination.x) / 2;
-      const midpointY = (source.y + destination.y) / 2;
+      const crestPoint = authoredEnemyIntentCrestPoint(source, targetPoint);
+      const midpointX = (origin.x + destination.x) / 2;
+      const midpointY = (origin.y + destination.y) / 2;
       const distance = Math.hypot(
-        destination.x - source.x,
-        destination.y - source.y
+        destination.x - origin.x,
+        destination.y - origin.y
       );
       const angle = Math.atan2(
-        destination.y - source.y,
-        destination.x - source.x
+        destination.y - origin.y,
+        destination.x - origin.x
       );
       const effect =
         this.behaviorEffects.get(sourceEntity.id) ??
@@ -2790,12 +2813,12 @@ class PersistentBattlefieldScene {
           .setRotation(0);
       else if (intent.mechanic === "attack_disrupt")
         effect
-          .setPosition(midpointX, midpointY + 8)
+          .setPosition(midpointX, midpointY)
           .setDisplaySize(authoredEnemyIntentSpanLength(distance), 48)
           .setRotation(angle);
       else
         effect
-          .setPosition(midpointX, midpointY + 18)
+          .setPosition(midpointX, midpointY)
           .setDisplaySize(
             authoredEnemyIntentSpanLength(distance),
             intent.mechanic === "attack_slow" ? 46 : 40
@@ -2837,11 +2860,11 @@ class PersistentBattlefieldScene {
       }
       const crest =
         this.behaviorCrests.get(sourceEntity.id) ??
-        this.scene.add.image(source.x + 27, source.y - 58, assets.crest);
+        this.scene.add.image(crestPoint.x, crestPoint.y, assets.crest);
       crest
         .setTexture(assets.crest)
-        .setPosition(source.x + 27, source.y - 58)
-        .setDisplaySize(intent.phase === "committed" ? 22 : 20, 20)
+        .setPosition(crestPoint.x, crestPoint.y)
+        .setDisplaySize(intent.phase === "committed" ? 28 : 26, 26)
         .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
       crest.setData("baseScaleX", crest.scaleX);
       crest.setData("baseScaleY", crest.scaleY);
