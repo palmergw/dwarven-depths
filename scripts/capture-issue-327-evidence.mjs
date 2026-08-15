@@ -589,7 +589,8 @@ try {
   if (!wipOnly) await captureNormalMotionPrototypeClips(browser);
   const page = await newPage(browser);
   await enterPausedCombat(page);
-  await page.getByRole("button", { name: "2× combat speed" }).click();
+  if (!wipOnly)
+    await page.getByRole("button", { name: "2× combat speed" }).click();
   for (const roleCapture of roleCaptures) {
     await armCapturePause(page, roleCapture);
     await enableAutopilot(page);
