@@ -140,9 +140,19 @@ async function waitForStableTruth(page) {
 
 async function armCapturePause(page, expected) {
   await page.evaluate(
-    ({ requestedVisualId, requestedEffectStatus, requestedStatusContains }) => {
+    ({
+      requestedVisualId,
+      requestedEffectStatus,
+      requestedStatusContains,
+      requestedMinimumTick
+    }) => {
       window.__DD_ISSUE_327_CAPTURE_INTERVAL__ = window.setInterval(() => {
         const truth = window.__DWARVEN_DEPTHS_TRUTH_SCREEN__;
+        if (
+          requestedMinimumTick !== undefined &&
+          (truth?.snapshot.tick ?? -1) < requestedMinimumTick
+        )
+          return;
         const matched = truth?.registry.entities.some(
           (entity) =>
             (requestedVisualId === undefined ||
@@ -167,7 +177,8 @@ async function armCapturePause(page, expected) {
     {
       requestedVisualId: expected.visualId,
       requestedEffectStatus: expected.effectStatus,
-      requestedStatusContains: expected.statusContains
+      requestedStatusContains: expected.statusContains,
+      requestedMinimumTick: expected.minimumTick
     }
   );
 }
@@ -247,6 +258,8 @@ async function capture(page, id, expected = {}) {
     state.fixtureId !== fixtureId ||
     state.captureReady !== true ||
     state.alignmentValid !== true ||
+    (expected.minimumTick !== undefined &&
+      (state.snapshot?.tick ?? -1) < expected.minimumTick) ||
     state.paused !== true ||
     state.rendererError !== null ||
     state.motion !== "reduce" ||
@@ -352,7 +365,8 @@ const roleCaptures = [
   {
     id: "wave-2-sapper-preparation",
     visualId: "enemy.goblin_sapper",
-    effectStatus: "telling"
+    effectStatus: "telling",
+    minimumTick: 1208
   },
   {
     id: "wave-2-sapper-commit",
