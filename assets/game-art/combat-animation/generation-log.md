@@ -122,3 +122,24 @@ Prioritize broad readable silhouette differences, consistent planted boots, weap
 ### Bounded QA
 
 Exactly five complete figures preserve the Warden's identity, anatomy, shield, hammer, scale, and planted ground line. The low brace, forward drive, maximum shield contact, high shield rebound, and guarded settle are distinct at gameplay scale. The contact accent is warm and restrained with no detached overlay. The deterministic exporter binds the source digest and all five phase exports.
+
+## `shuttergate-expanded-hostile-role-atlas-master.png`
+
+- Provider: `openai-codex`
+- Model: `gpt-image-2-medium`
+- Aspect ratio: `landscape`
+- Requested size setting: `1536x1024`
+- Saved dimensions: `1620x971`
+- Quality: `medium`
+- Modality: image-to-image consistency reference
+- Input image: `assets/game-art/combat-animation/sources/shuttergate-hostile-role-atlas-master.png`
+- Source SHA-256: `8b88de6fe432b54f8b8821a90c10948bc0d37ae85f9c3c8f2630ea8fbe9cab5d`
+- License: project MIT license (`LICENSE`)
+
+### Exact prompt
+
+Create an ORIGINAL production sprite atlas for the Dwarven Depths project, using the attached project-owned hostile atlas only as the exact style, camera, palette, logical texel, material, and scale reference. Wide landscape canvas, perfectly uniform deep navy (#061525) removable background. No scenery, floor, UI, text, labels, borders, rings, bars, or extra figures. Crisp hand-painted painterly pixel art with subtly pre-rendered volume, hard chunky texels, cold slate/navy/scavenged iron and restrained warm amber accents. Arrange EXACTLY FIFTEEN complete hostile figures in a strict 5-column by 3-row grid, evenly spaced, no overlap or cropping, one role per column with exact identity continuity down the column. Columns left to right: (1) GOBLIN SKIRMISHER: very lean agile silhouette, paired short hooked blades, light asymmetric leather/iron armor and narrow trailing scarf; (2) GOBLIN SAPPER: compact demolition specialist with unmistakable long fuse-bomb satchel and short mining maul, amber fuse accent; (3) GOBLIN HEXER ELITE: tall narrow hooded silhouette, forked iron channeling staff with a restrained amber rune lantern, no cyan; (4) GOBLIN BANNER BEARER ELITE: sturdy support silhouette carrying a tall torn rectangular fortress banner on a pole, short sidearm, warm ember badge; (5) GOBLIN WARDEN HUNTER ELITE: broad predatory silhouette with two-handed hooked polearm, marked iron visor and trophy plates. Rows top to bottom: TOP idle combat-ready three-quarter elevated orthographic pose facing lower-left; MIDDLE committed role action with anatomy and feet stable (skirmisher low feint, sapper lights/raises fuse charge, hexer channels staff, banner bearer braces and raises banner, hunter extends hooked polearm to mark prey); BOTTOM clearly downed/destroyed pose, still role-readable. Same invisible ground line per row. Every figure must remain readable at final 44-pixel-tall game scale. Exactly fifteen figures. No dwarves, no duplicate generic raiders, no smooth vector art, no photorealism, no concept sketch, no checkerboard transparency.
+
+### Bounded QA and export semantics
+
+The source contains exactly fifteen separated figures in a regular 5×3 layout. Each role preserves its equipment and silhouette across idle, committed action, and downed rows. The exporter creates separate straight-alpha 80×60 role files at the fixed 44-pixel hostile baseline. The source authors one elevated-orthographic facing and one committed action per new role; directional and attack-phase filenames deliberately reuse those authored pixels rather than claiming generated intermediate animation. Runtime tell/effect signals remain separate presentation layers. No concept-mockup pixels were supplied, cropped, traced, or composited.

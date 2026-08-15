@@ -232,6 +232,13 @@ export function createPresentationSnapshot(
         : []
     )
   );
+  const behaviorIntentByEnemy = new Map(
+    events.flatMap((event) =>
+      event.type === "enemy.behavior.intent"
+        ? [[event.enemyEntityId, event] as const]
+        : []
+    )
+  );
   const currentCombatantsById = new Map<
     string,
     (typeof combatants)[number]["combatant"]
@@ -334,15 +341,29 @@ export function createPresentationSnapshot(
       facing,
       action,
       targetEntityId,
-      statuses: [...(state.activeStatuses ?? [])]
-        .filter((status) => status.ownerEntityId === entry.combatant.entityId)
-        .sort((left, right) => compareRenderIds(left.statusId, right.statusId))
-        .map((status) => ({
-          id: status.statusId,
-          appliedAtTick: status.appliedAtTick,
-          expiresAtTick: status.expiresAtTick,
-          magnitude: status.magnitude
-        })),
+      statuses: [
+        ...(state.activeStatuses ?? [])
+          .filter((status) => status.ownerEntityId === entry.combatant.entityId)
+          .map((status) => ({
+            id: status.statusId,
+            appliedAtTick: status.appliedAtTick,
+            expiresAtTick: status.expiresAtTick,
+            magnitude: status.magnitude
+          })),
+        ...(() => {
+          const intent = behaviorIntentByEnemy.get(entry.combatant.entityId);
+          return intent === undefined
+            ? []
+            : [
+                {
+                  id: `status.enemy_behavior.${intent.mechanic}.${intent.effectStatus}`,
+                  appliedAtTick: intent.phaseStartedAtTick,
+                  expiresAtTick: intent.phaseCompletesAtTick,
+                  magnitude: intent.effectMagnitude
+                }
+              ];
+        })()
+      ].sort((left, right) => compareRenderIds(left.id, right.id)),
       transition:
         previousPosition === null ? "spawned" : moved ? "moving" : "active",
       elite: entry.elite,

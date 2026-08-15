@@ -49,17 +49,21 @@ describe("enemy behavior intent", () => {
       phaseStartedAtTick: 10,
       phaseCompletesAtTick: 13,
       targetEntityId: "entity.dwarf.wounded",
-      reason: "lowest_health_target"
+      reason: "lowest_health_target",
+      effectStatus: "telling",
+      effectMagnitude: 25
     });
     expect(resolveEnemyBehaviorIntent(request(13))).toMatchObject({
       phase: "active",
       phaseStartedAtTick: 13,
-      phaseCompletesAtTick: 17
+      phaseCompletesAtTick: 17,
+      effectStatus: "committed"
     });
     expect(resolveEnemyBehaviorIntent(request(17))).toMatchObject({
       phase: "cooldown",
       phaseStartedAtTick: 17,
-      phaseCompletesAtTick: 22
+      phaseCompletesAtTick: 22,
+      effectStatus: "cooling_down"
     });
     expect(resolveEnemyBehaviorIntent(request(22))).toMatchObject({
       phase: "telling",

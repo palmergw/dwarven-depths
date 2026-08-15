@@ -192,6 +192,9 @@ export interface EnemyBehaviorIntentDecision {
     | "lowest_health_ally"
     | "stable_formation_anchor"
     | "no_eligible_recipient";
+  /** Exact authoritative consequence at this tick's behavior boundary. */
+  readonly effectStatus: "telling" | "committed" | "cooling_down" | "cancelled";
+  readonly effectMagnitude: number;
 }
 
 export interface NavigationNodeDefinition {
@@ -1441,6 +1444,25 @@ export interface AbilityTimerSimulationEvent extends SimulationEventBase {
     | StatusTimerDecision["reason"];
 }
 
+export interface EnemyBehaviorSimulationEvent extends SimulationEventBase {
+  readonly type: "enemy.behavior.intent";
+  readonly enemyEntityId: EntityId;
+  readonly roleId: StableId;
+  readonly strategy: AuthoredEnemyBehaviorDefinition["strategy"];
+  readonly mechanic: AuthoredEnemyBehaviorDefinition["mechanic"];
+  readonly purposeId: StableId;
+  readonly counterplayId: StableId;
+  readonly tellId: StableId;
+  readonly effectId: StableId;
+  readonly phase: EnemyBehaviorIntentDecision["phase"];
+  readonly phaseStartedAtTick: number;
+  readonly phaseCompletesAtTick: number;
+  readonly targetEntityId?: EntityId;
+  readonly effectStatus: EnemyBehaviorIntentDecision["effectStatus"];
+  readonly effectMagnitude: number;
+  readonly reasonCode: EnemyBehaviorIntentDecision["reason"];
+}
+
 export type SimulationEvent =
   | LifecycleSimulationEvent
   | WaveStartedSimulationEvent
@@ -1451,7 +1473,8 @@ export type SimulationEvent =
   | AbilityImpactSimulationEvent
   | AbilityDamageSimulationEvent
   | AbilityStatusSimulationEvent
-  | AbilityTimerSimulationEvent;
+  | AbilityTimerSimulationEvent
+  | EnemyBehaviorSimulationEvent;
 
 export interface CommandEnvelope {
   readonly tick: number;

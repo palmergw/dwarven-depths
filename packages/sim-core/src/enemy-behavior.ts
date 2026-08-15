@@ -338,6 +338,14 @@ export function resolveEnemyBehaviorIntent(
           : behavior.strategy === "priority_hunt"
             ? "lowest_health_target"
             : "nearest_target";
+  const effectStatus: EnemyBehaviorIntentDecision["effectStatus"] =
+    recipient === undefined
+      ? "cancelled"
+      : phase === "telling"
+        ? "telling"
+        : phase === "active"
+          ? "committed"
+          : "cooling_down";
   return Object.freeze({
     schemaVersion: 1,
     enemyEntityId,
@@ -352,6 +360,8 @@ export function resolveEnemyBehaviorIntent(
     phaseStartedAtTick,
     phaseCompletesAtTick,
     ...(recipient === undefined ? {} : { targetEntityId: recipient.entityId }),
-    reason
+    reason,
+    effectStatus,
+    effectMagnitude: behavior.effectMagnitude
   });
 }

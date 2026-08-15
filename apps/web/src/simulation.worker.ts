@@ -18,7 +18,7 @@ import {
   type ShuttergateWebRunConfiguration
 } from "@dwarven-depths/runtime";
 import emptyContentFixture from "../../../content/fixtures/empty-content.json";
-import shieldSlamContentFixture from "../../../content/fixtures/phase-3-shuttergate.json";
+import shieldSlamContentFixture from "../../../content/fixtures/phase-6-shuttergate-enemy-roster.json";
 import emptyScenarioFixture from "../../../scenarios/conformance/empty-level.json";
 import shieldSlamScenarioFixture from "../../../scenarios/conformance/shuttergate-web-truth.json";
 import { createPresentationSnapshot } from "./presentation-snapshot.js";

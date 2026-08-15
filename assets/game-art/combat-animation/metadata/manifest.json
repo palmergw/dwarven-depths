@@ -9,7 +9,8 @@
     "assets/game-art/combat-animation/sources/shuttergate-hostile-attack-cycle-master.png": "ad465196d3a473e904a477588d31bce835dc37ef993eed3afdcb5f904a948b52",
     "assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png": "226aa23dea6cabfc04403cc93343e8122dd297615037911245b74750d8e279a2",
     "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "bbf7c4fd3090f767ca8a187befc495a46303ad9934a57cd0cf6a28bdfda2d6c4",
-    "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938"
+    "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
+    "assets/game-art/combat-animation/sources/shuttergate-expanded-hostile-role-atlas-master.png": "8b88de6fe432b54f8b8821a90c10948bc0d37ae85f9c3c8f2630ea8fbe9cab5d"
   },
   "files": [
     {
@@ -99,6 +100,94 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
       "sha256": "63a9c24169340a9ebcd2772e199fedbf3a2ac280ae94a4ac284a706d6afe7a38"
+    },
+    {
+      "id": "goblin-banner-bearer-attack-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack-committed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "id": "goblin-banner-bearer-attack-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack-impact.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "id": "goblin-banner-bearer-attack-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack-recoil.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "id": "goblin-banner-bearer-attack-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack-recovery.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "id": "goblin-banner-bearer-attack-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack-windup.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "id": "goblin-banner-bearer-attack",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "id": "goblin-banner-bearer-downed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-downed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "d8626e08f1220726740672a574bf99a22ba1fb3e858e0f8a764a86d2d4080cce"
+    },
+    {
+      "id": "goblin-banner-bearer-idle-e",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-idle-e.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "83ee38834cb9cdb057dbb25de268bba2fa69a68b390d09462572e57d7a85a39a"
+    },
+    {
+      "id": "goblin-banner-bearer-idle-n",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-idle-n.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "83ee38834cb9cdb057dbb25de268bba2fa69a68b390d09462572e57d7a85a39a"
+    },
+    {
+      "id": "goblin-banner-bearer-idle-s",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-idle-s.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "83ee38834cb9cdb057dbb25de268bba2fa69a68b390d09462572e57d7a85a39a"
+    },
+    {
+      "id": "goblin-banner-bearer-idle-w",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-idle-w.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "83ee38834cb9cdb057dbb25de268bba2fa69a68b390d09462572e57d7a85a39a"
     },
     {
       "id": "goblin-bulwark-attack-committed",
@@ -277,6 +366,270 @@
       "sha256": "d8f03077627f4c3f01aa62abaf9d87737e07920bdaf5ea4d0ad5bf22e221c500"
     },
     {
+      "id": "goblin-hexer-attack-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack-committed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "id": "goblin-hexer-attack-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack-impact.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "id": "goblin-hexer-attack-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack-recoil.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "id": "goblin-hexer-attack-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack-recovery.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "id": "goblin-hexer-attack-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack-windup.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "id": "goblin-hexer-attack",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "id": "goblin-hexer-downed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-downed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "58e85ac9895335bddc245aa6a4cca76a7fdee43c40e884e9e180c82e63325a95"
+    },
+    {
+      "id": "goblin-hexer-idle-e",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-idle-e.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "6e70c83612f48d43f0cdb07437b75a1b9a047092215b93868c202a46482d83e7"
+    },
+    {
+      "id": "goblin-hexer-idle-n",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-idle-n.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "6e70c83612f48d43f0cdb07437b75a1b9a047092215b93868c202a46482d83e7"
+    },
+    {
+      "id": "goblin-hexer-idle-s",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-idle-s.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "6e70c83612f48d43f0cdb07437b75a1b9a047092215b93868c202a46482d83e7"
+    },
+    {
+      "id": "goblin-hexer-idle-w",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-idle-w.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "6e70c83612f48d43f0cdb07437b75a1b9a047092215b93868c202a46482d83e7"
+    },
+    {
+      "id": "goblin-sapper-attack-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack-committed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "id": "goblin-sapper-attack-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack-impact.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "id": "goblin-sapper-attack-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack-recoil.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "id": "goblin-sapper-attack-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack-recovery.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "id": "goblin-sapper-attack-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack-windup.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "id": "goblin-sapper-attack",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "id": "goblin-sapper-downed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-downed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "a35c1e1645d3083c19c8944bb412d742798968e2eb1b4712dff70f6b6d86ecc3"
+    },
+    {
+      "id": "goblin-sapper-idle-e",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-idle-e.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "7460f06b3003b7f44e19c106421e910b7d79f954d073aff57bbae13abde0101f"
+    },
+    {
+      "id": "goblin-sapper-idle-n",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-idle-n.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "7460f06b3003b7f44e19c106421e910b7d79f954d073aff57bbae13abde0101f"
+    },
+    {
+      "id": "goblin-sapper-idle-s",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-idle-s.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "7460f06b3003b7f44e19c106421e910b7d79f954d073aff57bbae13abde0101f"
+    },
+    {
+      "id": "goblin-sapper-idle-w",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-idle-w.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "7460f06b3003b7f44e19c106421e910b7d79f954d073aff57bbae13abde0101f"
+    },
+    {
+      "id": "goblin-skirmisher-attack-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack-committed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "id": "goblin-skirmisher-attack-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack-impact.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "id": "goblin-skirmisher-attack-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack-recoil.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "id": "goblin-skirmisher-attack-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack-recovery.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "id": "goblin-skirmisher-attack-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack-windup.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "id": "goblin-skirmisher-attack",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "id": "goblin-skirmisher-downed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-downed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "6a30eb21efe2945f6dc800c0bae401ff5416cbaae754db217419314b910ea26a"
+    },
+    {
+      "id": "goblin-skirmisher-idle-e",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-idle-e.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f2025a7baa983f12f2ee5a75ff954ecb29e4357997ea605bdb7a987f7e6bb55e"
+    },
+    {
+      "id": "goblin-skirmisher-idle-n",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-idle-n.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f2025a7baa983f12f2ee5a75ff954ecb29e4357997ea605bdb7a987f7e6bb55e"
+    },
+    {
+      "id": "goblin-skirmisher-idle-s",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-idle-s.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f2025a7baa983f12f2ee5a75ff954ecb29e4357997ea605bdb7a987f7e6bb55e"
+    },
+    {
+      "id": "goblin-skirmisher-idle-w",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-idle-w.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "f2025a7baa983f12f2ee5a75ff954ecb29e4357997ea605bdb7a987f7e6bb55e"
+    },
+    {
       "id": "goblin-slinger-attack-committed",
       "path": "assets/game-art/combat-animation/exports/entities/goblin-slinger-attack-committed.png",
       "dimensions": [80, 60],
@@ -363,6 +716,94 @@
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
       "sha256": "1a980a96e6be6466c2c2f1789f7e8b25c931776ee0eed4c16d202ab15ec145ac"
+    },
+    {
+      "id": "goblin-warden-hunter-attack-committed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack-committed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
+    },
+    {
+      "id": "goblin-warden-hunter-attack-impact",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack-impact.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
+    },
+    {
+      "id": "goblin-warden-hunter-attack-recoil",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack-recoil.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
+    },
+    {
+      "id": "goblin-warden-hunter-attack-recovery",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack-recovery.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
+    },
+    {
+      "id": "goblin-warden-hunter-attack-windup",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack-windup.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
+    },
+    {
+      "id": "goblin-warden-hunter-attack",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
+    },
+    {
+      "id": "goblin-warden-hunter-downed",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-downed.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "ad86c5821a462d9bfe56b94277e2c998e767a6bebcaf20485259811d51479ed1"
+    },
+    {
+      "id": "goblin-warden-hunter-idle-e",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-idle-e.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "901fe826994a18ac734d5661e63bb98c2650b12e7e7e0aceed4dbe7ac5e4f127"
+    },
+    {
+      "id": "goblin-warden-hunter-idle-n",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-idle-n.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "901fe826994a18ac734d5661e63bb98c2650b12e7e7e0aceed4dbe7ac5e4f127"
+    },
+    {
+      "id": "goblin-warden-hunter-idle-s",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-idle-s.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "901fe826994a18ac734d5661e63bb98c2650b12e7e7e0aceed4dbe7ac5e4f127"
+    },
+    {
+      "id": "goblin-warden-hunter-idle-w",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-idle-w.png",
+      "dimensions": [80, 60],
+      "mode": "RGBA",
+      "alphaSemantics": "straight-alpha-padded-pivot",
+      "sha256": "901fe826994a18ac734d5661e63bb98c2650b12e7e7e0aceed4dbe7ac5e4f127"
     },
     {
       "id": "iron-warden-basic-attack-committed",

@@ -245,14 +245,47 @@ export function resolveAuthoritativeCombatTick(
     content,
     dwarfAuthority
   );
+  const behaviorIntents = enemyActions.decisions.flatMap((decision) =>
+    decision.behaviorIntent === undefined ? [] : [decision.behaviorIntent]
+  );
   if (
-    enemyMovement.reservations.decisions.length >
+    behaviorIntents.length + enemyMovement.reservations.decisions.length >
     Number.MAX_SAFE_INTEGER - scheduled.state.eventSequence
   )
-    throw new RangeError("movement events overflow eventSequence");
+    throw new RangeError("combat evidence events overflow eventSequence");
+  const behaviorEvents: SimulationEvent[] = behaviorIntents.map(
+    (intent, offset) => {
+      const sequence = scheduled.state.eventSequence + offset;
+      return Object.freeze({
+        id: `event.${String(sequence).padStart(6, "0")}`,
+        tick: scheduled.state.tick,
+        sequence,
+        type: "enemy.behavior.intent",
+        ruleId: "SIM-ENEMY-BEHAVIOR-001",
+        enemyEntityId: intent.enemyEntityId,
+        roleId: intent.roleId,
+        strategy: intent.strategy,
+        mechanic: intent.mechanic,
+        purposeId: intent.purposeId,
+        counterplayId: intent.counterplayId,
+        tellId: intent.tellId,
+        effectId: intent.effectId,
+        phase: intent.phase,
+        phaseStartedAtTick: intent.phaseStartedAtTick,
+        phaseCompletesAtTick: intent.phaseCompletesAtTick,
+        ...(intent.targetEntityId === undefined
+          ? {}
+          : { targetEntityId: intent.targetEntityId }),
+        effectStatus: intent.effectStatus,
+        effectMagnitude: intent.effectMagnitude,
+        reasonCode: intent.reason
+      });
+    }
+  );
   const movementEvents: SimulationEvent[] =
     enemyMovement.reservations.decisions.map((decision, offset) => {
-      const sequence = scheduled.state.eventSequence + offset;
+      const sequence =
+        scheduled.state.eventSequence + behaviorEvents.length + offset;
       return Object.freeze({
         id: `event.${String(sequence).padStart(6, "0")}`,
         tick: scheduled.state.tick,
@@ -271,10 +304,17 @@ export function resolveAuthoritativeCombatTick(
         reasonCode: decision.reason
       });
     });
-  const events = Object.freeze([...scheduled.events, ...movementEvents]);
+  const events = Object.freeze([
+    ...scheduled.events,
+    ...behaviorEvents,
+    ...movementEvents
+  ]);
   const resolvedState = Object.freeze({
     ...scheduled.state,
-    eventSequence: scheduled.state.eventSequence + movementEvents.length,
+    eventSequence:
+      scheduled.state.eventSequence +
+      behaviorEvents.length +
+      movementEvents.length,
     battlefield: impacts.battlefield
   });
 

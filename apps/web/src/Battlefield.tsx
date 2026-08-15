@@ -125,7 +125,12 @@ const hostileDirectionalAssetUrls = Object.fromEntries(
     ["raider", "goblin-cutter"],
     ["slinger", "goblin-slinger"],
     ["bulwark", "goblin-bulwark"],
-    ["captain", "gatebreaker-captain"]
+    ["captain", "gatebreaker-captain"],
+    ["skirmisher", "goblin-skirmisher"],
+    ["sapper", "goblin-sapper"],
+    ["hexer", "goblin-hexer"],
+    ["banner", "goblin-banner-bearer"],
+    ["hunter", "goblin-warden-hunter"]
   ].flatMap(([key, filename]) =>
     (
       [
@@ -144,7 +149,12 @@ const hostileAttackCycleAssetUrls = Object.fromEntries(
     ["raider", "goblin-cutter"],
     ["slinger", "goblin-slinger"],
     ["bulwark", "goblin-bulwark"],
-    ["captain", "gatebreaker-captain"]
+    ["captain", "gatebreaker-captain"],
+    ["skirmisher", "goblin-skirmisher"],
+    ["sapper", "goblin-sapper"],
+    ["hexer", "goblin-hexer"],
+    ["banner", "goblin-banner-bearer"],
+    ["hunter", "goblin-warden-hunter"]
   ].flatMap(([key, filename]) =>
     (["windup", "committed", "impact", "recoil", "recovery"] as const).map(
       (phase) => [
@@ -229,6 +239,22 @@ const battlefieldAssetUrls: Readonly<Record<string, string>> = {
   ),
   "captain-downed-source": combatAnimationAssetUrl(
     "gatebreaker-captain-downed.png"
+  ),
+  "skirmisher-source": combatAnimationAssetUrl("goblin-skirmisher-idle-s.png"),
+  "skirmisher-downed-source": combatAnimationAssetUrl(
+    "goblin-skirmisher-downed.png"
+  ),
+  "sapper-source": combatAnimationAssetUrl("goblin-sapper-idle-s.png"),
+  "sapper-downed-source": combatAnimationAssetUrl("goblin-sapper-downed.png"),
+  "hexer-source": combatAnimationAssetUrl("goblin-hexer-idle-s.png"),
+  "hexer-downed-source": combatAnimationAssetUrl("goblin-hexer-downed.png"),
+  "banner-source": combatAnimationAssetUrl("goblin-banner-bearer-idle-s.png"),
+  "banner-downed-source": combatAnimationAssetUrl(
+    "goblin-banner-bearer-downed.png"
+  ),
+  "hunter-source": combatAnimationAssetUrl("goblin-warden-hunter-idle-s.png"),
+  "hunter-downed-source": combatAnimationAssetUrl(
+    "goblin-warden-hunter-downed.png"
   ),
   ...hostileDirectionalAssetUrls,
   ...hostileAttackCycleAssetUrls,
@@ -546,32 +572,35 @@ type CombatPoseAssetKey =
   | "warden-hit-source"
   | "warden-guard-source"
   | "warden-downed-source"
-  | "raider-source"
-  | "raider-attack-source"
-  | "raider-downed-source"
-  | "slinger-source"
-  | "slinger-attack-source"
-  | "slinger-downed-source"
-  | "bulwark-source"
-  | "bulwark-attack-source"
-  | "bulwark-downed-source"
-  | "captain-source"
-  | "captain-attack-source"
-  | "captain-downed-source"
-  | `${"raider" | "slinger" | "bulwark" | "captain"}-attack-${"windup" | "committed" | "impact" | "recoil" | "recovery"}-source`
-  | `${"raider" | "slinger" | "bulwark" | "captain"}-${"north" | "east" | "west"}-source`;
+  | `${"raider" | "slinger" | "bulwark" | "captain" | "skirmisher" | "sapper" | "hexer" | "banner" | "hunter"}-${"source" | "attack-source" | "downed-source"}`
+  | `${"raider" | "slinger" | "bulwark" | "captain" | "skirmisher" | "sapper" | "hexer" | "banner" | "hunter"}-attack-${"windup" | "committed" | "impact" | "recoil" | "recovery"}-source`
+  | `${"raider" | "slinger" | "bulwark" | "captain" | "skirmisher" | "sapper" | "hexer" | "banner" | "hunter"}-${"north" | "east" | "west"}-source`;
 
 function hostilePosePrefix(
   visualId: string
-): "raider" | "slinger" | "bulwark" | "captain" {
+):
+  | "raider"
+  | "slinger"
+  | "bulwark"
+  | "captain"
+  | "skirmisher"
+  | "sapper"
+  | "hexer"
+  | "banner"
+  | "hunter" {
   if (visualId === "enemy.goblin_slinger") return "slinger";
   if (visualId === "enemy.goblin_bulwark") return "bulwark";
   if (visualId === "enemy.gatebreaker_captain") return "captain";
+  if (visualId === "enemy.goblin_skirmisher") return "skirmisher";
+  if (visualId === "enemy.goblin_sapper") return "sapper";
+  if (visualId === "enemy.goblin_hexer") return "hexer";
+  if (visualId === "enemy.goblin_banner_bearer") return "banner";
+  if (visualId === "enemy.goblin_warden_hunter") return "hunter";
   return "raider";
 }
 
 function hostileIdlePoseAsset(
-  prefix: "raider" | "slinger" | "bulwark" | "captain",
+  prefix: ReturnType<typeof hostilePosePrefix>,
   facing: RenderEntityV2["facing"]
 ): CombatPoseAssetKey {
   return facing === "south" ? `${prefix}-source` : `${prefix}-${facing}-source`;
@@ -703,10 +732,24 @@ export interface CombatPresentationState {
 
 export function statusSignalKind(
   statusId: string
-): "stagger" | "slow" | "haste" | "unknown" {
+):
+  | "stagger"
+  | "slow"
+  | "haste"
+  | "behavior_tell"
+  | "behavior_commit"
+  | "behavior_cooldown"
+  | "behavior_cancelled"
+  | "unknown" {
   if (statusId.includes("stagger")) return "stagger";
   if (statusId.includes("slow")) return "slow";
   if (statusId.includes("haste")) return "haste";
+  if (statusId.startsWith("status.enemy_behavior.")) {
+    if (statusId.endsWith(".telling")) return "behavior_tell";
+    if (statusId.endsWith(".committed")) return "behavior_commit";
+    if (statusId.endsWith(".cooling_down")) return "behavior_cooldown";
+    if (statusId.endsWith(".cancelled")) return "behavior_cancelled";
+  }
   return "unknown";
 }
 
@@ -1496,6 +1539,25 @@ function updateEntitySignal(
       signal.lineBetween(centerX + 1, centerY, centerX - 4, centerY + 5);
       signal.lineBetween(centerX + 1, centerY - 5, centerX + 6, centerY);
       signal.lineBetween(centerX + 6, centerY, centerX + 1, centerY + 5);
+    } else if (kind === "behavior_tell") {
+      signal.strokeTriangle(
+        centerX,
+        centerY - 6,
+        centerX + 6,
+        centerY + 5,
+        centerX - 6,
+        centerY + 5
+      );
+    } else if (kind === "behavior_commit") {
+      signal.lineBetween(centerX, centerY - 6, centerX + 6, centerY);
+      signal.lineBetween(centerX + 6, centerY, centerX, centerY + 6);
+      signal.lineBetween(centerX, centerY + 6, centerX - 6, centerY);
+      signal.lineBetween(centerX - 6, centerY, centerX, centerY - 6);
+    } else if (kind === "behavior_cooldown") {
+      signal.strokeCircle(centerX, centerY, 5);
+    } else if (kind === "behavior_cancelled") {
+      signal.lineBetween(centerX - 5, centerY - 5, centerX + 5, centerY + 5);
+      signal.lineBetween(centerX + 5, centerY - 5, centerX - 5, centerY + 5);
     } else signal.strokeRect(centerX - 4, centerY - 4, 8, 8);
   }
   if (presentation.elite || presentation.boss) {

@@ -27,6 +27,9 @@ FACING_SOURCE = PACKAGE / "sources/shuttergate-hostile-facing-atlas-master.png"
 HOSTILE_ATTACK_CYCLE_SOURCE = (
     PACKAGE / "sources/shuttergate-hostile-attack-cycle-master.png"
 )
+EXPANDED_HOSTILE_SOURCE = (
+    PACKAGE / "sources/shuttergate-expanded-hostile-role-atlas-master.png"
+)
 
 SOURCE_DIGESTS = {
     "assets/game-art/combat-animation/sources/shuttergate-hostile-role-atlas-master.png": "8f27d5e80b9adcbcab6d3b05435fda8777c81326d2a1f8e590673c04d14ed660",
@@ -35,6 +38,7 @@ SOURCE_DIGESTS = {
     "assets/game-art/combat-animation/sources/iron-warden-basic-attack-cycle-master.png": "226aa23dea6cabfc04403cc93343e8122dd297615037911245b74750d8e279a2",
     "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "bbf7c4fd3090f767ca8a187befc495a46303ad9934a57cd0cf6a28bdfda2d6c4",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
+    "assets/game-art/combat-animation/sources/shuttergate-expanded-hostile-role-atlas-master.png": "8b88de6fe432b54f8b8821a90c10948bc0d37ae85f9c3c8f2630ea8fbe9cab5d",
 }
 
 WARDEN_CROPS = {
@@ -59,6 +63,13 @@ HOSTILE_ATTACK_PHASES = (
     "impact",
     "recoil",
     "recovery",
+)
+EXPANDED_HOSTILE_ROLES = (
+    "goblin-skirmisher",
+    "goblin-sapper",
+    "goblin-hexer",
+    "goblin-banner-bearer",
+    "goblin-warden-hunter",
 )
 HOSTILE_COLUMN_BOUNDS = (
     (0, 350),
@@ -329,6 +340,37 @@ def build_outputs() -> dict[str, bytes]:
                 outputs[f"{role}-attack-{phase}.png"] = encode_png(
                     miniature(cell, (80, 60), (40, 54), (72, 44))
                 )
+    with Image.open(EXPANDED_HOSTILE_SOURCE) as master:
+        column_edges = [round(index * master.width / 5) for index in range(6)]
+        row_edges = [round(index * master.height / 3) for index in range(4)]
+        for column, role in enumerate(EXPANDED_HOSTILE_ROLES):
+            cells = []
+            for row in range(3):
+                cells.append(
+                    trim(
+                        remove_alpha_fragments(
+                            keyed_alpha(
+                                master.crop(
+                                    (
+                                        column_edges[column],
+                                        row_edges[row],
+                                        column_edges[column + 1],
+                                        row_edges[row + 1],
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            idle = encode_png(miniature(cells[0], (80, 60), (40, 54), (72, 44)))
+            attack = encode_png(miniature(cells[1], (80, 60), (40, 54), (72, 44)))
+            downed = encode_png(miniature(cells[2], (80, 60), (40, 54), (72, 44)))
+            for facing in HOSTILE_FACINGS:
+                outputs[f"{role}-idle-{facing}.png"] = idle
+            outputs[f"{role}-attack.png"] = attack
+            outputs[f"{role}-downed.png"] = downed
+            for phase in HOSTILE_ATTACK_PHASES:
+                outputs[f"{role}-attack-{phase}.png"] = attack
     return dict(sorted(outputs.items()))
 
 

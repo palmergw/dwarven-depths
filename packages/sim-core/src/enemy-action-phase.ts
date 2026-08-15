@@ -197,7 +197,37 @@ export function resolveEnemyActionPhase(
             })
           });
 
-    const selectedTargetId = planned.targetLock.targetEntityId ?? null;
+    const behaviorTargetCandidate =
+      behaviorIntent?.effectStatus === "committed" &&
+      behaviorIntent.targetEntityId !== undefined
+        ? entry.candidates.find(
+            (candidate) => candidate.entityId === behaviorIntent.targetEntityId
+          )
+        : undefined;
+    const targetLock: EnemyTargetLockDecision =
+      behaviorTargetCandidate === undefined
+        ? planned.targetLock
+        : Object.freeze({
+            schemaVersion: 1,
+            status:
+              combatant.actionState.currentTargetEntityId ===
+              behaviorTargetCandidate.entityId
+                ? "retained"
+                : "reacquired",
+            targetEntityId: behaviorTargetCandidate.entityId,
+            previousTargetReason:
+              combatant.actionState.currentTargetEntityId ===
+              behaviorTargetCandidate.entityId
+                ? "target_remains_eligible"
+                : combatant.actionState.currentTargetEntityId === null
+                  ? "no_previous_target"
+                  : "target_not_eligible",
+            ...(combatant.actionState.currentTargetEntityId ===
+            behaviorTargetCandidate.entityId
+              ? {}
+              : { acquisitionReason: "selected_reachable_dwarf" as const })
+          });
+    const selectedTargetId = targetLock.targetEntityId ?? null;
     const baseAction = {
       ...combatant.actionState,
       currentTargetEntityId: selectedTargetId
@@ -236,7 +266,6 @@ export function resolveEnemyActionPhase(
     };
 
     if (combatant.actionState.activeBasicAttack !== null) {
-      const targetLock = planned.targetLock;
       const commitment = resolveAttackCommitments({
         currentTick,
         windups: [
@@ -336,7 +365,7 @@ export function resolveEnemyActionPhase(
           combatant.entityId,
           "cooling_down",
           "cooldown_in_progress",
-          planned.targetLock,
+          targetLock,
           undefined,
           behaviorIntent
         )
@@ -356,7 +385,7 @@ export function resolveEnemyActionPhase(
           combatant.entityId,
           "unlocked",
           "no_eligible_target",
-          planned.targetLock,
+          targetLock,
           undefined,
           behaviorIntent
         )
@@ -376,7 +405,7 @@ export function resolveEnemyActionPhase(
           combatant.entityId,
           "tracking",
           "target_acquired_for_movement",
-          planned.targetLock,
+          targetLock,
           undefined,
           behaviorIntent
         )
@@ -433,7 +462,7 @@ export function resolveEnemyActionPhase(
           combatant.entityId,
           "committed",
           "basic_attack_committed",
-          planned.targetLock,
+          targetLock,
           attackId,
           behaviorIntent
         )
@@ -452,7 +481,7 @@ export function resolveEnemyActionPhase(
         combatant.entityId,
         "winding_up",
         "basic_attack_started",
-        planned.targetLock,
+        targetLock,
         attackId,
         behaviorIntent
       )

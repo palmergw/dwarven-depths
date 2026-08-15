@@ -177,7 +177,15 @@ describe("enemy action phase", () => {
       phaseStartedAtTick: 6,
       phaseCompletesAtTick: 12,
       targetEntityId: "entity.dwarf.warden",
-      reason: "nearest_target"
+      reason: "nearest_target",
+      effectStatus: "committed",
+      effectMagnitude: 1
+    });
+    expect(
+      result.enemyCombatants[0]?.actionState.activeBasicAttack
+    ).toMatchObject({
+      damage: 10,
+      targetEntityId: "entity.dwarf.warden"
     });
   });
 

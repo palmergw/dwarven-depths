@@ -1,0 +1,701 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "phase-6-shuttergate-enemy-roster-v1",
+  "definitions": [
+    {
+      "kind": "level",
+      "id": "level.shuttergate_hall",
+      "waveIds": [
+        "wave.shuttergate_1",
+        "wave.shuttergate_2",
+        "wave.shuttergate_3",
+        "wave.shuttergate_4",
+        "wave.shuttergate_5"
+      ],
+      "mapId": "map.shuttergate_hall"
+    },
+    {
+      "kind": "map",
+      "id": "map.shuttergate_hall",
+      "nodes": [
+        {
+          "id": "node.shuttergate_west_entry",
+          "x": -6,
+          "y": 0,
+          "aimPointId": "aim.shuttergate_west_entry",
+          "neighborNodeIds": ["node.shuttergate_west_hall"]
+        },
+        {
+          "id": "node.shuttergate_west_hall",
+          "x": -3,
+          "y": 0,
+          "aimPointId": "aim.shuttergate_west_hall",
+          "neighborNodeIds": [
+            "node.shuttergate_west_entry",
+            "node.shuttergate_gate"
+          ]
+        },
+        {
+          "id": "node.shuttergate_east_entry",
+          "x": 0,
+          "y": 6,
+          "aimPointId": "aim.shuttergate_east_entry",
+          "neighborNodeIds": ["node.shuttergate_east_hall"]
+        },
+        {
+          "id": "node.shuttergate_east_hall",
+          "x": 0,
+          "y": 3,
+          "aimPointId": "aim.shuttergate_east_hall",
+          "neighborNodeIds": [
+            "node.shuttergate_east_entry",
+            "node.shuttergate_gate"
+          ]
+        },
+        {
+          "id": "node.shuttergate_gate",
+          "x": 0,
+          "y": 0,
+          "aimPointId": "aim.shuttergate_gate",
+          "neighborNodeIds": [
+            "node.shuttergate_west_hall",
+            "node.shuttergate_east_hall",
+            "node.shuttergate_north_guard",
+            "node.shuttergate_keep"
+          ]
+        },
+        {
+          "id": "node.shuttergate_north_guard",
+          "x": 0,
+          "y": -1,
+          "aimPointId": "aim.shuttergate_north_guard",
+          "neighborNodeIds": ["node.shuttergate_gate"]
+        },
+        {
+          "id": "node.shuttergate_keep",
+          "x": 3,
+          "y": 0,
+          "aimPointId": "aim.shuttergate_keep",
+          "neighborNodeIds": [
+            "node.shuttergate_gate",
+            "node.shuttergate_keep_guard"
+          ]
+        },
+        {
+          "id": "node.shuttergate_keep_guard",
+          "x": 3,
+          "y": -1,
+          "aimPointId": "aim.shuttergate_keep_guard",
+          "neighborNodeIds": ["node.shuttergate_keep"]
+        }
+      ],
+      "connections": [
+        {
+          "id": "connection.shuttergate_west_entry_hall",
+          "nodeIds": [
+            "node.shuttergate_west_entry",
+            "node.shuttergate_west_hall"
+          ],
+          "cost": 30
+        },
+        {
+          "id": "connection.shuttergate_west_hall_gate",
+          "nodeIds": ["node.shuttergate_west_hall", "node.shuttergate_gate"],
+          "cost": 30
+        },
+        {
+          "id": "connection.shuttergate_east_entry_hall",
+          "nodeIds": [
+            "node.shuttergate_east_entry",
+            "node.shuttergate_east_hall"
+          ],
+          "cost": 30
+        },
+        {
+          "id": "connection.shuttergate_east_hall_gate",
+          "nodeIds": ["node.shuttergate_east_hall", "node.shuttergate_gate"],
+          "cost": 30
+        },
+        {
+          "id": "connection.shuttergate_gate_north_guard",
+          "nodeIds": ["node.shuttergate_gate", "node.shuttergate_north_guard"],
+          "cost": 20
+        },
+        {
+          "id": "connection.shuttergate_gate_keep",
+          "nodeIds": ["node.shuttergate_gate", "node.shuttergate_keep"],
+          "cost": 30
+        },
+        {
+          "id": "connection.shuttergate_keep_guard",
+          "nodeIds": ["node.shuttergate_keep", "node.shuttergate_keep_guard"],
+          "cost": 20
+        }
+      ],
+      "placementPoints": [
+        {
+          "id": "placement.shuttergate_north_guard",
+          "nodeId": "node.shuttergate_north_guard",
+          "capacity": 1,
+          "adjacentPlacementPointIds": []
+        },
+        {
+          "id": "placement.shuttergate_keep_guard",
+          "nodeId": "node.shuttergate_keep_guard",
+          "capacity": 1,
+          "adjacentPlacementPointIds": []
+        }
+      ],
+      "enemyEntrances": [
+        {
+          "id": "entrance.shuttergate_west",
+          "nodeId": "node.shuttergate_west_entry"
+        },
+        {
+          "id": "entrance.shuttergate_east",
+          "nodeId": "node.shuttergate_east_entry"
+        }
+      ],
+      "aimPoints": [
+        { "id": "aim.shuttergate_west_entry", "x": -6, "y": 0 },
+        { "id": "aim.shuttergate_west_hall", "x": -3, "y": 0 },
+        { "id": "aim.shuttergate_east_entry", "x": 0, "y": 6 },
+        { "id": "aim.shuttergate_east_hall", "x": 0, "y": 3 },
+        { "id": "aim.shuttergate_gate", "x": 0, "y": 0 },
+        { "id": "aim.shuttergate_north_guard", "x": 0, "y": -1 },
+        { "id": "aim.shuttergate_keep", "x": 3, "y": 0 },
+        { "id": "aim.shuttergate_keep_guard", "x": 3, "y": -1 }
+      ],
+      "opaqueRegions": [
+        {
+          "id": "opaque.shuttergate_inner_wall",
+          "minimumX": 1,
+          "minimumY": 1,
+          "maximumX": 2,
+          "maximumY": 2
+        }
+      ]
+    },
+    {
+      "kind": "wave",
+      "id": "wave.shuttergate_1",
+      "startAtTick": 0,
+      "durationTicks": 900,
+      "spawnEvents": [
+        {
+          "id": "spawn.shuttergate_001",
+          "authoredOrder": 0,
+          "atTick": 0,
+          "entityId": "entity.enemy.shuttergate_001",
+          "enemyDefinitionId": "enemy.goblin_cutter",
+          "entranceId": "entrance.shuttergate_west"
+        },
+        {
+          "id": "spawn.shuttergate_002",
+          "authoredOrder": 1,
+          "atTick": 300,
+          "entityId": "entity.enemy.shuttergate_002",
+          "enemyDefinitionId": "enemy.goblin_skirmisher",
+          "entranceId": "entrance.shuttergate_west"
+        },
+        {
+          "id": "spawn.shuttergate_003",
+          "authoredOrder": 2,
+          "atTick": 600,
+          "entityId": "entity.enemy.shuttergate_003",
+          "enemyDefinitionId": "enemy.goblin_cutter",
+          "entranceId": "entrance.shuttergate_west"
+        }
+      ]
+    },
+    {
+      "kind": "wave",
+      "id": "wave.shuttergate_2",
+      "startAtTick": 900,
+      "durationTicks": 900,
+      "spawnEvents": [
+        {
+          "id": "spawn.shuttergate_004",
+          "authoredOrder": 3,
+          "atTick": 900,
+          "entityId": "entity.enemy.shuttergate_004",
+          "enemyDefinitionId": "enemy.goblin_cutter",
+          "entranceId": "entrance.shuttergate_west"
+        },
+        {
+          "id": "spawn.shuttergate_005",
+          "authoredOrder": 4,
+          "atTick": 1200,
+          "entityId": "entity.enemy.shuttergate_005",
+          "enemyDefinitionId": "enemy.goblin_sapper",
+          "entranceId": "entrance.shuttergate_east"
+        },
+        {
+          "id": "spawn.shuttergate_006",
+          "authoredOrder": 5,
+          "atTick": 1500,
+          "entityId": "entity.enemy.shuttergate_006",
+          "enemyDefinitionId": "enemy.goblin_slinger",
+          "entranceId": "entrance.shuttergate_east"
+        }
+      ]
+    },
+    {
+      "kind": "wave",
+      "id": "wave.shuttergate_3",
+      "startAtTick": 1800,
+      "durationTicks": 900,
+      "spawnEvents": [
+        {
+          "id": "spawn.shuttergate_007",
+          "authoredOrder": 6,
+          "atTick": 1800,
+          "entityId": "entity.enemy.shuttergate_007",
+          "enemyDefinitionId": "enemy.goblin_bulwark",
+          "entranceId": "entrance.shuttergate_west"
+        },
+        {
+          "id": "spawn.shuttergate_008",
+          "authoredOrder": 7,
+          "atTick": 1950,
+          "entityId": "entity.enemy.shuttergate_008",
+          "enemyDefinitionId": "enemy.goblin_hexer",
+          "entranceId": "entrance.shuttergate_east"
+        },
+        {
+          "id": "spawn.shuttergate_009",
+          "authoredOrder": 8,
+          "atTick": 2250,
+          "entityId": "entity.enemy.shuttergate_009",
+          "enemyDefinitionId": "enemy.goblin_slinger",
+          "entranceId": "entrance.shuttergate_west"
+        }
+      ]
+    },
+    {
+      "kind": "wave",
+      "id": "wave.shuttergate_4",
+      "startAtTick": 2700,
+      "durationTicks": 900,
+      "spawnEvents": [
+        {
+          "id": "spawn.shuttergate_010",
+          "authoredOrder": 9,
+          "atTick": 2700,
+          "entityId": "entity.enemy.shuttergate_010",
+          "enemyDefinitionId": "enemy.gatebreaker_captain",
+          "entranceId": "entrance.shuttergate_west"
+        },
+        {
+          "id": "spawn.shuttergate_011",
+          "authoredOrder": 10,
+          "atTick": 2820,
+          "entityId": "entity.enemy.shuttergate_011",
+          "enemyDefinitionId": "enemy.goblin_banner_bearer",
+          "entranceId": "entrance.shuttergate_east"
+        },
+        {
+          "id": "spawn.shuttergate_012",
+          "authoredOrder": 11,
+          "atTick": 3000,
+          "entityId": "entity.enemy.shuttergate_012",
+          "enemyDefinitionId": "enemy.goblin_slinger",
+          "entranceId": "entrance.shuttergate_east"
+        },
+        {
+          "id": "spawn.shuttergate_013",
+          "authoredOrder": 12,
+          "atTick": 3180,
+          "entityId": "entity.enemy.shuttergate_013",
+          "enemyDefinitionId": "enemy.goblin_bulwark",
+          "entranceId": "entrance.shuttergate_west"
+        }
+      ]
+    },
+    {
+      "kind": "wave",
+      "id": "wave.shuttergate_5",
+      "startAtTick": 3600,
+      "durationTicks": 900,
+      "spawnEvents": [
+        {
+          "id": "spawn.shuttergate_014",
+          "authoredOrder": 13,
+          "atTick": 3600,
+          "entityId": "entity.enemy.shuttergate_014",
+          "enemyDefinitionId": "enemy.goblin_warden_hunter",
+          "entranceId": "entrance.shuttergate_west"
+        },
+        {
+          "id": "spawn.shuttergate_015",
+          "authoredOrder": 14,
+          "atTick": 3750,
+          "entityId": "entity.enemy.shuttergate_015",
+          "enemyDefinitionId": "enemy.goblin_cutter",
+          "entranceId": "entrance.shuttergate_east"
+        },
+        {
+          "id": "spawn.shuttergate_016",
+          "authoredOrder": 15,
+          "atTick": 3900,
+          "entityId": "entity.enemy.shuttergate_016",
+          "enemyDefinitionId": "enemy.goblin_slinger",
+          "entranceId": "entrance.shuttergate_east"
+        },
+        {
+          "id": "spawn.shuttergate_017",
+          "authoredOrder": 16,
+          "atTick": 4050,
+          "entityId": "entity.enemy.shuttergate_017",
+          "enemyDefinitionId": "enemy.goblin_cutter",
+          "entranceId": "entrance.shuttergate_west"
+        },
+        {
+          "id": "spawn.shuttergate_018",
+          "authoredOrder": 17,
+          "atTick": 4200,
+          "entityId": "entity.enemy.shuttergate_018",
+          "enemyDefinitionId": "enemy.goblin_bulwark",
+          "entranceId": "entrance.shuttergate_west"
+        }
+      ]
+    },
+    {
+      "kind": "character",
+      "id": "character.iron_warden",
+      "maximumHealth": 240,
+      "armor": 30,
+      "supportedTargetPolicies": [
+        "nearest",
+        "lowest_health",
+        "highest_health",
+        "highest_armor",
+        "fastest",
+        "boss_or_elite_first"
+      ],
+      "basicAttack": {
+        "id": "attack.iron_warden_basic",
+        "windupTicks": 8,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 24,
+        "damage": 18,
+        "range": 2,
+        "requiresLineOfSight": false
+      },
+      "activeAbilities": [
+        {
+          "schemaVersion": 1,
+          "id": "ability.iron_warden.shield_slam",
+          "windupTicks": 6,
+          "impactDelayTicks": 1,
+          "cooldownTicks": 90,
+          "damage": 24,
+          "range": 3,
+          "frontalHalfAngleDegrees": 60,
+          "staggerTicks": 18
+        },
+        {
+          "schemaVersion": 1,
+          "id": "ability.iron_warden.linebreaker",
+          "windupTicks": 9,
+          "impactDelayTicks": 2,
+          "cooldownTicks": 120,
+          "damage": 48,
+          "range": 5,
+          "frontalHalfAngleDegrees": 30,
+          "staggerTicks": 4
+        },
+        {
+          "schemaVersion": 1,
+          "id": "ability.iron_warden.rallying_roar",
+          "windupTicks": 3,
+          "impactDelayTicks": 1,
+          "cooldownTicks": 150,
+          "damage": 8,
+          "range": 7,
+          "frontalHalfAngleDegrees": 90,
+          "staggerTicks": 30
+        }
+      ]
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_cutter",
+      "classification": "basic",
+      "maximumHealth": 50,
+      "armor": 0,
+      "movementIntervalTicks": 6,
+      "basicAttack": {
+        "id": "attack.goblin_cutter_basic",
+        "windupTicks": 6,
+        "impactDelayTicks": 1,
+        "cooldownTicks": 20,
+        "damage": 10,
+        "range": 1,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.melee_pressure",
+        "strategy": "advance",
+        "tellId": "enemy_tell.cutter_lunge",
+        "tellTicks": 6,
+        "purposeId": "enemy_purpose.close_pressure",
+        "counterplayId": "enemy_counterplay.control_before_contact",
+        "mechanic": "direct_pressure",
+        "effectId": "enemy_effect.cutter_pressure",
+        "effectMagnitude": 1,
+        "effectDurationTicks": 6,
+        "effectCooldownTicks": 20
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_slinger",
+      "classification": "basic",
+      "maximumHealth": 38,
+      "armor": 0,
+      "movementIntervalTicks": 7,
+      "basicAttack": {
+        "id": "attack.goblin_slinger_basic",
+        "windupTicks": 10,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 28,
+        "damage": 9,
+        "range": 6,
+        "requiresLineOfSight": true
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.ranged_harrier",
+        "strategy": "hold_range",
+        "tellId": "enemy_tell.slinger_draw",
+        "tellTicks": 10,
+        "purposeId": "enemy_purpose.ranged_positioning",
+        "counterplayId": "enemy_counterplay.break_line_of_sight",
+        "mechanic": "standoff_fire",
+        "effectId": "enemy_effect.slinger_standoff",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 10,
+        "effectCooldownTicks": 28
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_bulwark",
+      "classification": "elite",
+      "maximumHealth": 120,
+      "armor": 25,
+      "movementIntervalTicks": 10,
+      "basicAttack": {
+        "id": "attack.goblin_bulwark_basic",
+        "windupTicks": 10,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 30,
+        "damage": 14,
+        "range": 1,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.armored_vanguard",
+        "strategy": "guard",
+        "tellId": "enemy_tell.bulwark_brace",
+        "tellTicks": 10,
+        "purposeId": "enemy_purpose.frontline_protection",
+        "counterplayId": "enemy_counterplay.retarget_around_guard",
+        "mechanic": "ally_guard",
+        "effectId": "enemy_effect.bulwark_guard",
+        "effectMagnitude": 25,
+        "effectDurationTicks": 20,
+        "effectCooldownTicks": 40
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_skirmisher",
+      "classification": "basic",
+      "maximumHealth": 42,
+      "armor": 0,
+      "movementIntervalTicks": 4,
+      "basicAttack": {
+        "id": "attack.goblin_skirmisher_basic",
+        "windupTicks": 4,
+        "impactDelayTicks": 1,
+        "cooldownTicks": 18,
+        "damage": 7,
+        "range": 2,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.flanking_skirmisher",
+        "strategy": "skirmish",
+        "tellId": "enemy_tell.skirmisher_feint",
+        "tellTicks": 4,
+        "purposeId": "enemy_purpose.flanking_pressure",
+        "counterplayId": "enemy_counterplay.deny_flank_route",
+        "mechanic": "flank_reposition",
+        "effectId": "enemy_effect.skirmisher_flank",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 8,
+        "effectCooldownTicks": 18
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_sapper",
+      "classification": "basic",
+      "maximumHealth": 46,
+      "armor": 5,
+      "movementIntervalTicks": 7,
+      "basicAttack": {
+        "id": "attack.goblin_sapper_basic",
+        "windupTicks": 12,
+        "impactDelayTicks": 3,
+        "cooldownTicks": 34,
+        "damage": 16,
+        "range": 3,
+        "requiresLineOfSight": true
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.demolition_sapper",
+        "strategy": "disrupt",
+        "tellId": "enemy_tell.sapper_fuse",
+        "tellTicks": 12,
+        "purposeId": "enemy_purpose.armor_disruption",
+        "counterplayId": "enemy_counterplay.interrupt_fuse",
+        "mechanic": "armor_sunder",
+        "effectId": "enemy_effect.sapper_sunder",
+        "effectMagnitude": 10,
+        "effectDurationTicks": 30,
+        "effectCooldownTicks": 42
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_hexer",
+      "classification": "elite",
+      "maximumHealth": 72,
+      "armor": 5,
+      "movementIntervalTicks": 8,
+      "basicAttack": {
+        "id": "attack.goblin_hexer_basic",
+        "windupTicks": 11,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 32,
+        "damage": 8,
+        "range": 5,
+        "requiresLineOfSight": true
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.debilitating_hexer",
+        "strategy": "disrupt",
+        "tellId": "enemy_tell.hexer_channel",
+        "tellTicks": 11,
+        "purposeId": "enemy_purpose.tempo_disruption",
+        "counterplayId": "enemy_counterplay.interrupt_channel",
+        "mechanic": "attack_slow",
+        "effectId": "enemy_effect.hexer_slow",
+        "effectMagnitude": 4,
+        "effectDurationTicks": 36,
+        "effectCooldownTicks": 44
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_banner_bearer",
+      "classification": "elite",
+      "maximumHealth": 90,
+      "armor": 10,
+      "movementIntervalTicks": 9,
+      "basicAttack": {
+        "id": "attack.goblin_banner_bearer_basic",
+        "windupTicks": 8,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 26,
+        "damage": 9,
+        "range": 2,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.formation_support",
+        "strategy": "support",
+        "tellId": "enemy_tell.banner_rally",
+        "tellTicks": 8,
+        "purposeId": "enemy_purpose.formation_support",
+        "counterplayId": "enemy_counterplay.focus_banner_bearer",
+        "mechanic": "ally_haste",
+        "effectId": "enemy_effect.banner_haste",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 32,
+        "effectCooldownTicks": 46
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_warden_hunter",
+      "classification": "elite",
+      "maximumHealth": 105,
+      "armor": 15,
+      "movementIntervalTicks": 6,
+      "basicAttack": {
+        "id": "attack.goblin_warden_hunter_basic",
+        "windupTicks": 9,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 27,
+        "damage": 15,
+        "range": 2,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.warden_hunter",
+        "strategy": "priority_hunt",
+        "tellId": "enemy_tell.warden_hunter_mark",
+        "tellTicks": 9,
+        "purposeId": "enemy_purpose.priority_threat",
+        "counterplayId": "enemy_counterplay.break_hunter_mark",
+        "mechanic": "target_mark",
+        "effectId": "enemy_effect.warden_hunter_mark",
+        "effectMagnitude": 25,
+        "effectDurationTicks": 30,
+        "effectCooldownTicks": 45
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.gatebreaker_captain",
+      "classification": "boss",
+      "maximumHealth": 360,
+      "armor": 20,
+      "movementIntervalTicks": 8,
+      "basicAttack": {
+        "id": "attack.gatebreaker_captain_basic",
+        "windupTicks": 14,
+        "impactDelayTicks": 3,
+        "cooldownTicks": 36,
+        "damage": 24,
+        "range": 2,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.formation_commander",
+        "strategy": "command",
+        "tellId": "enemy_tell.captain_command",
+        "tellTicks": 14,
+        "purposeId": "enemy_purpose.formation_command",
+        "counterplayId": "enemy_counterplay.interrupt_command",
+        "mechanic": "formation_command",
+        "effectId": "enemy_effect.captain_command",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 24,
+        "effectCooldownTicks": 48
+      }
+    }
+  ]
+}
