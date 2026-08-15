@@ -1698,8 +1698,13 @@ function updateEntitySignal(
       signal.fillRoundedRect(crestX - 5, crestY - 6, 10, 11, 3);
       signal.strokeRoundedRect(crestX - 5, crestY - 6, 10, 11, 3);
     } else if (intent.mechanic === "attack_disrupt") {
+      signal.fillCircle(crestX, crestY, intent.phase === "committed" ? 5 : 2);
       signal.strokeCircle(crestX, crestY, 6);
       signal.lineBetween(crestX, crestY - 8, crestX + 3, crestY - 5);
+      if (intent.phase === "committed") {
+        signal.lineBetween(crestX - 9, crestY, crestX - 6, crestY);
+        signal.lineBetween(crestX + 6, crestY, crestX + 9, crestY);
+      }
     } else if (intent.mechanic === "attack_slow") {
       signal.strokeCircle(crestX, crestY, 6);
       signal.lineBetween(crestX - 4, crestY + 4, crestX + 4, crestY - 4);
@@ -2586,9 +2591,22 @@ class PersistentBattlefieldScene {
       if (intent.mechanic === "attack_disrupt") {
         const x = target?.x ?? source.x;
         const y = target?.y ?? source.y;
-        effect.fillEllipse(x, y + 1, 84, 34);
+        if (committed) effect.fillEllipse(x, y + 1, 96, 40);
         effect.strokeEllipse(x, y + 1, 84, 34);
         effect.lineBetween(source.x, source.y - 19, x, y - 2);
+        if (committed) {
+          effect.lineBetween(x - 58, y + 1, x - 43, y + 1);
+          effect.lineBetween(x + 43, y + 1, x + 58, y + 1);
+          effect.lineBetween(x, y - 27, x, y - 19);
+          effect.lineBetween(x, y + 20, x, y + 28);
+        } else {
+          for (const progress of [0.2, 0.4, 0.6, 0.8])
+            effect.fillCircle(
+              source.x + (x - source.x) * progress,
+              source.y - 19 + (y + 17 - source.y) * progress,
+              progress < 0.8 ? 2 : 4
+            );
+        }
       } else if (intent.mechanic === "target_intercept") {
         effect.beginPath();
         effect.arc(source.x, source.y - 12, 34, 3.55, 5.88);
