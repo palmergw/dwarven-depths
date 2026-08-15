@@ -1673,6 +1673,24 @@ function updateEntitySignal(
   const dwarf = entity.faction === "dwarf";
   const width = dwarf ? 46 : 38;
   const top = entity.y - (dwarf ? 72 : 60);
+  if (presentation.elite || presentation.boss) {
+    signal.fillStyle(presentation.boss ? 0x76512e : 0x5d3d22, 1);
+    signal.fillRoundedRect(
+      entity.x - width / 2 - 6,
+      top - 6,
+      width + 12,
+      16,
+      4
+    );
+    signal.lineStyle(1, 0x2a1b11, 1);
+    signal.strokeRoundedRect(
+      entity.x - width / 2 - 4,
+      top - 4,
+      width + 8,
+      12,
+      3
+    );
+  }
   signal.fillStyle(0x090705, 0.9);
   signal.fillRoundedRect(entity.x - width / 2 - 3, top - 3, width + 6, 10, 2);
   signal.lineStyle(
@@ -1683,7 +1701,7 @@ function updateEntitySignal(
   signal.strokeRoundedRect(entity.x - width / 2 - 3, top - 3, width + 6, 10, 2);
   if (presentation.elite || presentation.boss) {
     const frameColor = presentation.boss ? 0xd2a866 : 0xb98b45;
-    signal.lineStyle(presentation.boss ? 2 : 1.5, frameColor, 0.95);
+    signal.lineStyle(presentation.boss ? 3 : 2.5, frameColor, 0.95);
     signal.strokeRoundedRect(
       entity.x - width / 2 - 5,
       top - 5,
@@ -2689,7 +2707,7 @@ class PersistentBattlefieldScene {
       const effect =
         this.behaviorEffects.get(sourceEntity.id) ??
         this.scene.add.image(midpointX, midpointY, assets.world);
-      effect.setTexture(assets.world).setOrigin(0.5).setAlpha(0.84);
+      effect.setTexture(assets.world).setOrigin(0.5).setAlpha(0.76);
       if (authoredEnemyIntentEffectLayout(intent) === "endpoint")
         effect
           .setPosition(destination.x, destination.y + 4)
