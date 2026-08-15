@@ -150,12 +150,13 @@ async function armRolePause(page, visualId, effectStatus) {
             )
         );
         if (!matched) return;
+        window.clearInterval(window.__DD_ISSUE_327_AUTOPILOT_INTERVAL__);
         const pause = [...document.querySelectorAll("button")].find(
           (button) => button.getAttribute("aria-label") === "Pause combat"
         );
-        pause?.click();
+        if (!(pause instanceof HTMLButtonElement) || pause.disabled) return;
+        pause.click();
         window.clearInterval(window.__DD_ISSUE_327_CAPTURE_INTERVAL__);
-        window.clearInterval(window.__DD_ISSUE_327_AUTOPILOT_INTERVAL__);
       }, 1);
     },
     { requestedVisualId: visualId, requestedEffectStatus: effectStatus }
@@ -298,6 +299,9 @@ try {
     await armRolePause(page, roleCapture.visualId, roleCapture.effectStatus);
     await enableAutopilot(page);
     await page.getByRole("button", { name: "Resume combat" }).click();
+    await page.getByRole("button", { name: "Pause combat" }).waitFor({
+      timeout: 10_000
+    });
     await page.getByRole("button", { name: "Resume combat" }).waitFor({
       timeout: 120_000
     });
