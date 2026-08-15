@@ -278,6 +278,10 @@ async function capture(page, id, expected = {}) {
 
 const roleCaptures = [
   {
+    id: "grounded-stagger-state",
+    statusContains: "stagger"
+  },
+  {
     id: "wave-1-skirmisher-tell",
     visualId: "enemy.goblin_skirmisher",
     effectStatus: "telling"
@@ -291,10 +295,6 @@ const roleCaptures = [
     id: "wave-2-sapper-commit",
     visualId: "enemy.goblin_sapper",
     effectStatus: "committed"
-  },
-  {
-    id: "grounded-stagger-state",
-    statusContains: "stagger"
   },
   {
     id: "wave-3-hexer-commit",
