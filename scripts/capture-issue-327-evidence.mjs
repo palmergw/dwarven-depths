@@ -341,4 +341,18 @@ await writeFile(
   new URL("manifest.json", outputDirectory),
   `${JSON.stringify(manifest, null, 2)}\n`
 );
+await execFile(
+  "pnpm",
+  [
+    "exec",
+    "biome",
+    "format",
+    "--write",
+    fileURLToPath(new URL("manifest.json", outputDirectory)),
+    ...captures.map(({ id }) =>
+      fileURLToPath(new URL(`${id}.json`, outputDirectory))
+    )
+  ],
+  { cwd: repositoryRoot }
+);
 console.log(JSON.stringify(manifest, null, 2));
