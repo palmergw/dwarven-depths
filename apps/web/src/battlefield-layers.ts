@@ -62,6 +62,18 @@ export const BATTLEFIELD_RUNTIME_ASSET_KEYS = [
       (phase) => `${role}-attack-${phase}-source`
     )
   ),
+  ...(["skirmisher", "sapper", "hexer", "banner", "hunter"] as const).flatMap(
+    (role) => [
+      `${role}-source`,
+      `${role}-north-source`,
+      `${role}-east-source`,
+      `${role}-west-source`,
+      `${role}-downed-source`,
+      ...(["windup", "committed", "impact", "recoil", "recovery"] as const).map(
+        (phase) => `${role}-attack-${phase}-source`
+      )
+    ]
+  ),
   "warm-light-overlay",
   "hostile-faction-ring",
   "shield-slam-impact",

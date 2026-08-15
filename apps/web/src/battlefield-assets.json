@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "manifest.web.shuttergate_battlefield",
   "budgetBytes": 4718592,
-  "totalBytes": 2946246,
+  "totalBytes": 3169451,
   "layerOrder": [
     "terrain",
     "ground-foreground",
@@ -533,6 +533,406 @@
       "path": "assets/game-art/combat-animation/exports/entities/gatebreaker-captain-attack-recovery.png",
       "bytes": 7690,
       "sha256": "8d45e835d1706d4c8c4811eaa145e1b5f4dc8a5ce0a2939385b0c512fa5c54f6"
+    },
+    {
+      "key": "skirmisher-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-idle-s.png",
+      "bytes": 6439,
+      "sha256": "f2025a7baa983f12f2ee5a75ff954ecb29e4357997ea605bdb7a987f7e6bb55e"
+    },
+    {
+      "key": "skirmisher-north-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-idle-n.png",
+      "bytes": 6439,
+      "sha256": "f2025a7baa983f12f2ee5a75ff954ecb29e4357997ea605bdb7a987f7e6bb55e"
+    },
+    {
+      "key": "skirmisher-east-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-idle-e.png",
+      "bytes": 6439,
+      "sha256": "f2025a7baa983f12f2ee5a75ff954ecb29e4357997ea605bdb7a987f7e6bb55e"
+    },
+    {
+      "key": "skirmisher-west-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-idle-w.png",
+      "bytes": 6439,
+      "sha256": "f2025a7baa983f12f2ee5a75ff954ecb29e4357997ea605bdb7a987f7e6bb55e"
+    },
+    {
+      "key": "skirmisher-downed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-downed.png",
+      "bytes": 5626,
+      "sha256": "6a30eb21efe2945f6dc800c0bae401ff5416cbaae754db217419314b910ea26a"
+    },
+    {
+      "key": "skirmisher-attack-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack-windup.png",
+      "bytes": 3053,
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "key": "skirmisher-attack-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack-committed.png",
+      "bytes": 3053,
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "key": "skirmisher-attack-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack-impact.png",
+      "bytes": 3053,
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "key": "skirmisher-attack-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack-recoil.png",
+      "bytes": 3053,
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "key": "skirmisher-attack-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-skirmisher-attack-recovery.png",
+      "bytes": 3053,
+      "sha256": "bc785a4e019e369358a5ebfe9463911237dfded590f0c078db4f00fe6c0f5da4"
+    },
+    {
+      "key": "sapper-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-idle-s.png",
+      "bytes": 6746,
+      "sha256": "7460f06b3003b7f44e19c106421e910b7d79f954d073aff57bbae13abde0101f"
+    },
+    {
+      "key": "sapper-north-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-idle-n.png",
+      "bytes": 6746,
+      "sha256": "7460f06b3003b7f44e19c106421e910b7d79f954d073aff57bbae13abde0101f"
+    },
+    {
+      "key": "sapper-east-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-idle-e.png",
+      "bytes": 6746,
+      "sha256": "7460f06b3003b7f44e19c106421e910b7d79f954d073aff57bbae13abde0101f"
+    },
+    {
+      "key": "sapper-west-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-idle-w.png",
+      "bytes": 6746,
+      "sha256": "7460f06b3003b7f44e19c106421e910b7d79f954d073aff57bbae13abde0101f"
+    },
+    {
+      "key": "sapper-downed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-downed.png",
+      "bytes": 5396,
+      "sha256": "a35c1e1645d3083c19c8944bb412d742798968e2eb1b4712dff70f6b6d86ecc3"
+    },
+    {
+      "key": "sapper-attack-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack-windup.png",
+      "bytes": 3009,
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "key": "sapper-attack-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack-committed.png",
+      "bytes": 3009,
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "key": "sapper-attack-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack-impact.png",
+      "bytes": 3009,
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "key": "sapper-attack-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack-recoil.png",
+      "bytes": 3009,
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "key": "sapper-attack-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-sapper-attack-recovery.png",
+      "bytes": 3009,
+      "sha256": "c1c330607d35de479fda2c62ba2e1aa9d803f66d1fcf629364da0e46628d6127"
+    },
+    {
+      "key": "hexer-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-idle-s.png",
+      "bytes": 4127,
+      "sha256": "6e70c83612f48d43f0cdb07437b75a1b9a047092215b93868c202a46482d83e7"
+    },
+    {
+      "key": "hexer-north-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-idle-n.png",
+      "bytes": 4127,
+      "sha256": "6e70c83612f48d43f0cdb07437b75a1b9a047092215b93868c202a46482d83e7"
+    },
+    {
+      "key": "hexer-east-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-idle-e.png",
+      "bytes": 4127,
+      "sha256": "6e70c83612f48d43f0cdb07437b75a1b9a047092215b93868c202a46482d83e7"
+    },
+    {
+      "key": "hexer-west-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-idle-w.png",
+      "bytes": 4127,
+      "sha256": "6e70c83612f48d43f0cdb07437b75a1b9a047092215b93868c202a46482d83e7"
+    },
+    {
+      "key": "hexer-downed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-downed.png",
+      "bytes": 4603,
+      "sha256": "58e85ac9895335bddc245aa6a4cca76a7fdee43c40e884e9e180c82e63325a95"
+    },
+    {
+      "key": "hexer-attack-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack-windup.png",
+      "bytes": 3287,
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "key": "hexer-attack-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack-committed.png",
+      "bytes": 3287,
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "key": "hexer-attack-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack-impact.png",
+      "bytes": 3287,
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "key": "hexer-attack-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack-recoil.png",
+      "bytes": 3287,
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "key": "hexer-attack-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-hexer-attack-recovery.png",
+      "bytes": 3287,
+      "sha256": "b3eeace0261197aca4559319382ae60c7f9b7443820538f814f292d6bae78e94"
+    },
+    {
+      "key": "banner-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-idle-s.png",
+      "bytes": 3804,
+      "sha256": "83ee38834cb9cdb057dbb25de268bba2fa69a68b390d09462572e57d7a85a39a"
+    },
+    {
+      "key": "banner-north-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-idle-n.png",
+      "bytes": 3804,
+      "sha256": "83ee38834cb9cdb057dbb25de268bba2fa69a68b390d09462572e57d7a85a39a"
+    },
+    {
+      "key": "banner-east-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-idle-e.png",
+      "bytes": 3804,
+      "sha256": "83ee38834cb9cdb057dbb25de268bba2fa69a68b390d09462572e57d7a85a39a"
+    },
+    {
+      "key": "banner-west-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-idle-w.png",
+      "bytes": 3804,
+      "sha256": "83ee38834cb9cdb057dbb25de268bba2fa69a68b390d09462572e57d7a85a39a"
+    },
+    {
+      "key": "banner-downed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-downed.png",
+      "bytes": 5974,
+      "sha256": "d8626e08f1220726740672a574bf99a22ba1fb3e858e0f8a764a86d2d4080cce"
+    },
+    {
+      "key": "banner-attack-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack-windup.png",
+      "bytes": 4209,
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "key": "banner-attack-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack-committed.png",
+      "bytes": 4209,
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "key": "banner-attack-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack-impact.png",
+      "bytes": 4209,
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "key": "banner-attack-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack-recoil.png",
+      "bytes": 4209,
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "key": "banner-attack-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-banner-bearer-attack-recovery.png",
+      "bytes": 4209,
+      "sha256": "f45fb5ef73b423db0414b16a5e781acb289d0facb5babb8d78f55176ca215cdc"
+    },
+    {
+      "key": "hunter-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-idle-s.png",
+      "bytes": 6451,
+      "sha256": "901fe826994a18ac734d5661e63bb98c2650b12e7e7e0aceed4dbe7ac5e4f127"
+    },
+    {
+      "key": "hunter-north-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-idle-n.png",
+      "bytes": 6451,
+      "sha256": "901fe826994a18ac734d5661e63bb98c2650b12e7e7e0aceed4dbe7ac5e4f127"
+    },
+    {
+      "key": "hunter-east-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-idle-e.png",
+      "bytes": 6451,
+      "sha256": "901fe826994a18ac734d5661e63bb98c2650b12e7e7e0aceed4dbe7ac5e4f127"
+    },
+    {
+      "key": "hunter-west-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-idle-w.png",
+      "bytes": 6451,
+      "sha256": "901fe826994a18ac734d5661e63bb98c2650b12e7e7e0aceed4dbe7ac5e4f127"
+    },
+    {
+      "key": "hunter-downed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-downed.png",
+      "bytes": 7173,
+      "sha256": "ad86c5821a462d9bfe56b94277e2c998e767a6bebcaf20485259811d51479ed1"
+    },
+    {
+      "key": "hunter-attack-windup-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack-windup.png",
+      "bytes": 3275,
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
+    },
+    {
+      "key": "hunter-attack-committed-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack-committed.png",
+      "bytes": 3275,
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
+    },
+    {
+      "key": "hunter-attack-impact-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack-impact.png",
+      "bytes": 3275,
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
+    },
+    {
+      "key": "hunter-attack-recoil-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack-recoil.png",
+      "bytes": 3275,
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
+    },
+    {
+      "key": "hunter-attack-recovery-source",
+      "kind": "image",
+      "layer": "world-entities",
+      "path": "assets/game-art/combat-animation/exports/entities/goblin-warden-hunter-attack-recovery.png",
+      "bytes": 3275,
+      "sha256": "bcb0562de5dd3c1bd1dd0321fe234b6e4987738487d2020cc9280e2d8912cb3b"
     },
     {
       "key": "warm-light-overlay",
