@@ -2674,7 +2674,7 @@ class PersistentBattlefieldScene {
       const crest =
         this.behaviorCrests.get(sourceEntity.id) ??
         this.scene.add.image(source.x + 39, source.y - 58, assets.crest);
-      const crestSize = intent.phase === "committed" ? 52 : 46;
+      const crestSize = intent.phase === "committed" ? 58 : 52;
       crest
         .setTexture(assets.crest)
         .setPosition(source.x + 39, source.y - 58)

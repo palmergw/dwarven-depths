@@ -557,7 +557,7 @@ const roleCaptures = [
     id: "wave-2-sapper-preparation",
     visualId: "enemy.goblin_sapper",
     effectStatus: "telling",
-    minimumTick: 1208
+    minimumTick: 1212
   },
   {
     id: "wave-2-sapper-commit",
@@ -568,7 +568,8 @@ const roleCaptures = [
   {
     id: "wave-3-hexer-channel",
     visualId: "enemy.goblin_hexer",
-    effectStatus: "telling"
+    effectStatus: "telling",
+    minimumTick: 1961
   },
   {
     id: "wave-3-hexer-commit",
