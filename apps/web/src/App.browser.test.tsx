@@ -1766,14 +1766,14 @@ describe("player-facing combat HUD", () => {
         { x: 200, y: 100 },
         { x: 100, y: 100 }
       )
-    ).toEqual({ x: 100, y: 136 });
+    ).toEqual({ x: 100, y: 154 });
     expect(
       authoredEnemyIntentTargetPoint(
         { mechanic: "attack_disrupt", phase: "committed" },
         { x: 200, y: 100 },
         { x: 100, y: 100 }
       )
-    ).toEqual({ x: 100, y: 100 });
+    ).toEqual({ x: 100, y: 146 });
     expect(
       enemyIntentDetail({
         visualId: "enemy.goblin_hexer",

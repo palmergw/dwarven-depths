@@ -921,6 +921,8 @@ export function authoredEnemyIntentTargetPoint(
   source: Readonly<{ x: number; y: number }>,
   target: Readonly<{ x: number; y: number }>
 ): Readonly<{ x: number; y: number }> {
+  if (intent.mechanic === "attack_disrupt" && intent.phase === "committed")
+    return { x: target.x, y: target.y + 46 };
   if (intent.mechanic !== "attack_slow") return target;
   const deltaX = target.x - source.x;
   const deltaY = target.y - source.y;
@@ -933,8 +935,8 @@ export function authoredEnemyIntentTargetPoint(
     perpendicularY *= -1;
   }
   return {
-    x: target.x + perpendicularX * 24,
-    y: target.y + perpendicularY * 24 + 12
+    x: target.x + perpendicularX * 36,
+    y: target.y + perpendicularY * 36 + 18
   };
 }
 
@@ -2755,20 +2757,20 @@ class PersistentBattlefieldScene {
       effect.setTexture(assets.world).setOrigin(0.5).setAlpha(0.82);
       if (authoredEnemyIntentEffectLayout(intent) === "endpoint")
         effect
-          .setPosition(destination.x, destination.y + 15)
+          .setPosition(destination.x, destination.y)
           .setDisplaySize(98, 50)
           .setRotation(0);
       else if (intent.mechanic === "attack_disrupt")
         effect
           .setPosition(midpointX, midpointY + 8)
-          .setDisplaySize(Math.max(82, Math.min(142, distance + 24)), 32)
+          .setDisplaySize(Math.max(82, Math.min(142, distance + 24)), 48)
           .setRotation(angle);
       else
         effect
-          .setPosition(midpointX, midpointY + 14)
+          .setPosition(midpointX, midpointY + 18)
           .setDisplaySize(
             Math.max(74, Math.min(146, distance + 20)),
-            intent.phase === "telling" ? 26 : 28
+            intent.mechanic === "attack_slow" ? 46 : 40
           )
           .setRotation(angle);
       effect.setData("baseScaleX", effect.scaleX);
@@ -2792,7 +2794,7 @@ class PersistentBattlefieldScene {
         endpoint
           .setTexture(assets.endpoint)
           .setPosition(destination.x, destination.y)
-          .setDisplaySize(60, 34)
+          .setDisplaySize(60, 38)
           .setAlpha(0.88)
           .setRotation(0);
         endpoint.setData("baseScaleX", endpoint.scaleX);
