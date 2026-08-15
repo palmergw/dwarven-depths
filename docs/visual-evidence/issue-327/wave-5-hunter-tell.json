@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-5-hunter-tell",
-  "sourceHead": "852568b212752416aaa7eedaa71cf488cbb88631",
+  "sourceHead": "f8cbe77218daed38cb857dcb99cd277d97034e8f",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-5-hunter-tell.png",
   "screenshotSha256": "fa8319dbb9ae5a23d8ec82d711880dd105970d144d780de8abfa02a65ef8d599",
@@ -12,10 +12,7 @@
     "effectStatus": "telling"
   },
   "state": {
-    "viewport": [
-      1440,
-      900
-    ],
+    "viewport": [1440, 900],
     "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
     "captureReady": true,
     "alignmentValid": true,
@@ -42,9 +39,7 @@
         "id": "entity.enemy.shuttergate_011",
         "visualId": "enemy.goblin_banner_bearer",
         "faction": "enemy",
-        "statusIds": [
-          "status.enemy_behavior.ally_haste.telling"
-        ],
+        "statusIds": ["status.enemy_behavior.ally_haste.telling"],
         "action": {
           "kind": "basic_attack",
           "phase": "recovery",
@@ -56,9 +51,7 @@
         "id": "entity.enemy.shuttergate_012",
         "visualId": "enemy.goblin_slinger",
         "faction": "enemy",
-        "statusIds": [
-          "status.enemy_behavior.standoff_fire.cooling_down"
-        ],
+        "statusIds": ["status.enemy_behavior.standoff_fire.cooling_down"],
         "action": {
           "kind": "basic_attack",
           "phase": "recovery",
@@ -70,9 +63,7 @@
         "id": "entity.enemy.shuttergate_014",
         "visualId": "enemy.goblin_warden_hunter",
         "faction": "enemy",
-        "statusIds": [
-          "status.enemy_behavior.target_mark.telling"
-        ],
+        "statusIds": ["status.enemy_behavior.target_mark.telling"],
         "action": {
           "kind": "idle",
           "phase": "idle",

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-3-hexer-commit",
-  "sourceHead": "852568b212752416aaa7eedaa71cf488cbb88631",
+  "sourceHead": "f8cbe77218daed38cb857dcb99cd277d97034e8f",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-3-hexer-commit.png",
   "screenshotSha256": "d57d0410612a59ab1f74694e9788b9d00de5c6dbc86714e93b603d5ad35b4d54",
@@ -12,10 +12,7 @@
     "effectStatus": "committed"
   },
   "state": {
-    "viewport": [
-      1440,
-      900
-    ],
+    "viewport": [1440, 900],
     "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
     "captureReady": true,
     "alignmentValid": true,
@@ -42,9 +39,7 @@
         "id": "entity.enemy.shuttergate_007",
         "visualId": "enemy.goblin_bulwark",
         "faction": "enemy",
-        "statusIds": [
-          "status.enemy_behavior.target_intercept.cancelled"
-        ],
+        "statusIds": ["status.enemy_behavior.target_intercept.cancelled"],
         "action": {
           "kind": "basic_attack",
           "phase": "recovery",
@@ -56,9 +51,7 @@
         "id": "entity.enemy.shuttergate_008",
         "visualId": "enemy.goblin_hexer",
         "faction": "enemy",
-        "statusIds": [
-          "status.enemy_behavior.attack_slow.committed"
-        ],
+        "statusIds": ["status.enemy_behavior.attack_slow.committed"],
         "action": {
           "kind": "basic_attack",
           "phase": "windup",

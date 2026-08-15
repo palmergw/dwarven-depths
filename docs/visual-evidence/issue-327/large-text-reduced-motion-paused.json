@@ -2,18 +2,15 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "large-text-reduced-motion-paused",
-  "sourceHead": "852568b212752416aaa7eedaa71cf488cbb88631",
+  "sourceHead": "f8cbe77218daed38cb857dcb99cd277d97034e8f",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "large-text-reduced-motion-paused.png",
-  "screenshotSha256": "93184ccef69de30dc0f66e2368957f0a965903cc86c9035b2bc2535fc58e8662",
+  "screenshotSha256": "fdf54adc0d19333140b05d042d69c7544af72d9f14320c3d052ea68116f3fbc1",
   "expected": {
     "textScale": "large"
   },
   "state": {
-    "viewport": [
-      1440,
-      900
-    ],
+    "viewport": [1440, 900],
     "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
     "captureReady": true,
     "alignmentValid": true,
@@ -40,9 +37,7 @@
         "id": "entity.enemy.shuttergate_001",
         "visualId": "enemy.goblin_cutter",
         "faction": "enemy",
-        "statusIds": [
-          "status.enemy_behavior.direct_pressure.telling"
-        ],
+        "statusIds": ["status.enemy_behavior.direct_pressure.telling"],
         "action": {
           "kind": "idle",
           "phase": "idle",

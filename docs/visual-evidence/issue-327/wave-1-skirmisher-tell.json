@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-1-skirmisher-tell",
-  "sourceHead": "852568b212752416aaa7eedaa71cf488cbb88631",
+  "sourceHead": "f8cbe77218daed38cb857dcb99cd277d97034e8f",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-1-skirmisher-tell.png",
   "screenshotSha256": "be0c01007b20602bcdcdfa9ddefcfc88dd82f198bae8a825271f42dbc7877aae",
@@ -12,10 +12,7 @@
     "effectStatus": "telling"
   },
   "state": {
-    "viewport": [
-      1440,
-      900
-    ],
+    "viewport": [1440, 900],
     "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
     "captureReady": true,
     "alignmentValid": true,
@@ -42,9 +39,7 @@
         "id": "entity.enemy.shuttergate_002",
         "visualId": "enemy.goblin_skirmisher",
         "faction": "enemy",
-        "statusIds": [
-          "status.enemy_behavior.flank_reposition.telling"
-        ],
+        "statusIds": ["status.enemy_behavior.flank_reposition.telling"],
         "action": {
           "kind": "idle",
           "phase": "idle",
