@@ -22,6 +22,7 @@ import {
   authoredEnemyIntentEffectAlpha,
   authoredEnemyIntentEffectLayout,
   authoredEnemyIntentEndpointPoint,
+  authoredEnemyIntentEndpointPresentation,
   authoredEnemyIntentSourcePoint,
   authoredEnemyIntentSpanLength,
   authoredEnemyIntentTargetPoint,
@@ -1824,7 +1825,7 @@ describe("player-facing combat HUD", () => {
         { x: 200, y: 100 },
         { x: 100, y: 100 }
       )
-    ).toEqual({ x: 88, y: 100 });
+    ).toEqual({ x: 100, y: 92 });
     expect(
       authoredEnemyIntentEndpointPoint(
         { mechanic: "attack_disrupt", phase: "committed" },
@@ -1832,6 +1833,22 @@ describe("player-facing combat HUD", () => {
         { x: 100, y: 100 }
       )
     ).toEqual({ x: 100, y: 110 });
+    expect(
+      authoredEnemyIntentEndpointPresentation("hexer-target-tether")
+    ).toEqual({
+      width: 72,
+      height: 54,
+      alpha: 0.78,
+      overlaysRecipient: true
+    });
+    expect(
+      authoredEnemyIntentEndpointPresentation("sapper-blast-impact")
+    ).toEqual({
+      width: 104,
+      height: 52,
+      alpha: 0.88,
+      overlaysRecipient: false
+    });
     expect(
       enemyIntentDetail({
         visualId: "enemy.goblin_hexer",

@@ -996,11 +996,23 @@ export function authoredEnemyIntentEndpointPoint(
 ): Readonly<{ x: number; y: number }> {
   const destination = authoredEnemyIntentTargetPoint(intent, source, target);
   if (intent.mechanic !== "attack_slow") return destination;
-  const direction = directionBetween(source, target);
   return {
-    x: destination.x + direction.x * 12,
-    y: destination.y - 8
+    x: target.x,
+    y: target.y - 8
   };
+}
+
+export function authoredEnemyIntentEndpointPresentation(
+  asset: NonNullable<AuthoredEnemyIntentAssets["endpoint"]>
+): Readonly<{
+  width: number;
+  height: number;
+  alpha: number;
+  overlaysRecipient: boolean;
+}> {
+  return asset === "sapper-blast-impact"
+    ? { width: 104, height: 52, alpha: 0.88, overlaysRecipient: false }
+    : { width: 72, height: 54, alpha: 0.78, overlaysRecipient: true };
 }
 
 export function statusSignalKind(
@@ -2864,6 +2876,9 @@ class PersistentBattlefieldScene {
           this.behaviorEndpoints.delete(sourceEntity.id);
         }
       } else {
+        const endpointPresentation = authoredEnemyIntentEndpointPresentation(
+          assets.endpoint
+        );
         const endpoint =
           this.behaviorEndpoints.get(sourceEntity.id) ??
           this.scene.add.image(
@@ -2875,11 +2890,15 @@ class PersistentBattlefieldScene {
           .setTexture(assets.endpoint)
           .setPosition(endpointPoint.x, endpointPoint.y)
           .setDisplaySize(
-            assets.endpoint === "sapper-blast-impact" ? 104 : 58,
-            assets.endpoint === "sapper-blast-impact" ? 52 : 58
+            endpointPresentation.width,
+            endpointPresentation.height
           )
-          .setAlpha(assets.endpoint === "sapper-blast-impact" ? 0.88 : 0.94)
+          .setAlpha(endpointPresentation.alpha)
           .setRotation(0);
+        endpoint.setData(
+          "overlaysRecipient",
+          endpointPresentation.overlaysRecipient
+        );
         endpoint.setData("baseScaleX", endpoint.scaleX);
         endpoint.setData("baseScaleY", endpoint.scaleY);
         endpoint.setData("baseAlpha", endpoint.alpha);
@@ -3120,6 +3139,9 @@ class PersistentBattlefieldScene {
       if (objects !== undefined)
         this.scene.children.bringToTop(objects.subject);
     }
+    for (const endpoint of this.behaviorEndpoints.values())
+      if (endpoint.getData("overlaysRecipient") === true)
+        this.scene.children.bringToTop(endpoint);
     this.scene.children.bringToTop(this.lighting);
     for (const effect of this.effects.slice(0, this.activeEffects))
       this.scene.children.bringToTop(effect);
@@ -3278,6 +3300,8 @@ class PersistentBattlefieldScene {
       effect.destroy();
     }
     this.behaviorEffects.clear();
+    for (const endpoint of this.behaviorEndpoints.values()) endpoint.destroy();
+    this.behaviorEndpoints.clear();
     for (const crest of this.behaviorCrests.values()) crest.destroy();
     this.behaviorCrests.clear();
     for (const effect of this.abilityEffects.values()) effect.destroy();
