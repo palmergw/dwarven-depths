@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-2-sapper-preparation",
-  "sourceHead": "67bac84cc4c3b28cb83d335bf6de4fe7cfd203f3",
+  "sourceHead": "a03c7bdc41ee2694da7160b5dde1dd1dae920198",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-2-sapper-preparation.png",
   "screenshotSha256": "cdc9bc80cb31c0f75f35ca46662af64c699ff4504be8d7f18ab4cd9023d9c966",

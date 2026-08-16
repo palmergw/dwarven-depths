@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "issue": 327,
   "id": "wave-2-sapper-commit",
-  "sourceHead": "67bac84cc4c3b28cb83d335bf6de4fe7cfd203f3",
+  "sourceHead": "a03c7bdc41ee2694da7160b5dde1dd1dae920198",
   "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
   "screenshot": "wave-2-sapper-commit.png",
   "screenshotSha256": "162cb8cc9d464b023e6fcc2e43c4bd497b958959c6c8c73a3845f8d4984274cd",
