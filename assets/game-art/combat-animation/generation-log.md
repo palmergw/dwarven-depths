@@ -403,3 +403,32 @@ Also reduce the smoke loops in TOP ROW COLUMN 2: preserve the bomb, three broad 
 ### Bounded QA and export semantics
 
 The final source keeps exactly eight isolated canonical cells. The Sapper tell now carries a recognizable bomb through three restrained fuse beats into an open scorched destination; its committed footprint contains only separated fissure marks. The Hexer channel now binds an unmistakable lantern source to a narrow two-pulse cast and open recipient socket. The alpha-separation pass removes generated stone patches from both endpoint cells before deterministic keyed export. Exact running-client capture remains the controlling normal-scale hierarchy and mechanic-readability gate.
+
+## `shuttergate-sapper-hexer-intent-atlas-master.png` — spatial-anchor correction
+
+- Provider: `openai-codex`
+- Model: `gpt-image-2-medium`
+- Aspect ratio: `landscape`
+- Requested and saved dimensions: `1536x1024`
+- Quality: `medium`
+- Modality: image-to-image correction
+- Input image: preceding project-owned `shuttergate-sapper-hexer-intent-atlas-master.png`
+- Input SHA-256: `c868b6ffa0e8589ca651b5a30359aca50102ebe827d02a31aa38ea2d0042dd1b`
+- Generated output SHA-256: `b52eba1eba051de3b433f26ab1c77221ab8631bf2e9f7da5bb45dae8fc9efd2f`
+- Final source SHA-256 after deterministic unchanged-cell preservation: `ca6f2f9f3c3ba509e0c5a8a23776fb2940e5c498a217a8774c59b6010c16a89d`
+- License: project MIT license (`LICENSE`)
+
+### Exact prompt
+
+Edit this original Dwarven Depths 4-column by 2-row game-effect source atlas while preserving the exact 1536x1024 atlas grid, pure near-black key background, painterly dark-bronze/charcoal/ember-orange/low-saturation-purple material language, and all cells not explicitly changed. This is a production sprite source, not a presentation board: no text, labels, borders, UI symbols, characters, scenery, or shadows outside each isolated effect.
+
+Change only these cells:
+TOP ROW, CELL 2 (Sapper fuse directional tell): replace the large bomb-plus-dotted-arrow/plaque silhouette with a low, floor-hugging directional effect. At the LEFT source edge, show only a compact partial bomb/fuse nozzle and one short curling ember-smoke transition that could visibly emerge from a Sapper hand/weapon. From there, create a continuous tapered trail of restrained ember dust and thin smoke sweeping toward the RIGHT recipient edge. No repeated beads, no arrowhead, no chain, no horizontal bar, no large smoke serpent. Keep abundant transparency/black negative space and a clearly directional left-to-right taper.
+BOTTOM ROW, CELL 2 (Hexer rune channel): replace the lantern-plus-chain/plaque with a compact LEFT source cast: a small cropped staff/hand-adjacent rune spark and a very short downward curl to floor contact, then a narrow continuous ochre-purple energy seam travelling left-to-right. No lantern, no rings, no chain links, no repeated diamonds, no bar. Keep the channel slender and floor-textured, with dark gaps and low saturation so actors remain primary.
+BOTTOM ROW, CELL 3 (Hexer target endpoint): replace the segmented brass ring with a restrained planted endpoint: a shallow broken ochre-purple floor rune/fracture footprint centered low, plus two or three thin translucent purple wisps rising only a short distance to suggest a target-foot wrap. No enclosing ring, no large metal chunks, no crosshair or UI glyph.
+
+The changed effects must read as painterly, physically grounded tactical effects at small 1440x900 gameplay scale. They must not look like detached inventory icons, plaques, chains, arrows, or debug overlays. Preserve top row cells 1, 3, 4 and bottom row cells 1, 4 exactly as close as possible.
+
+### Bounded QA and export semantics
+
+The atlas remains an eight-cell black-keyed source. A deterministic cell-composition pass copied only top-row cell 2 and bottom-row cells 2 and 3 from the generated candidate over the preceding source, preserving the other five canonical cells byte-for-byte at the pixel level. The corrected Sapper tell replaces repeated beads and a fork with a single tapered ember-smoke travel seam. The Hexer cast replaces the lantern-chain plaque with a compact cast-to-floor transition and narrow energy seam, while its endpoint becomes an open floor fracture with a restrained vertical wisp response. Deterministic export and exact running-client capture remain the controlling integrity and normal-scale visual gates.

@@ -11,7 +11,7 @@
     "assets/game-art/combat-animation/sources/iron-warden-shield-slam-cycle-master.png": "bbf7c4fd3090f767ca8a187befc495a46303ad9934a57cd0cf6a28bdfda2d6c4",
     "assets/game-art/visual-direction/sources/iron-warden-master.png": "2b566af41592a606a7a702d83af40b0445b665f83ff5ccc3b009ee6b132b5938",
     "assets/game-art/combat-animation/sources/shuttergate-expanded-hostile-role-atlas-master.png": "8b88de6fe432b54f8b8821a90c10948bc0d37ae85f9c3c8f2630ea8fbe9cab5d",
-    "assets/game-art/combat-animation/sources/shuttergate-sapper-hexer-intent-atlas-master.png": "c868b6ffa0e8589ca651b5a30359aca50102ebe827d02a31aa38ea2d0042dd1b"
+    "assets/game-art/combat-animation/sources/shuttergate-sapper-hexer-intent-atlas-master.png": "ca6f2f9f3c3ba509e0c5a8a23776fb2940e5c498a217a8774c59b6010c16a89d"
   },
   "files": [
     {
@@ -828,7 +828,7 @@
       "dimensions": [176, 64],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "dd1291707702300c491dc54b0dd3446bc531de9ce3e28a8051bc2597740796b2"
+      "sha256": "6e89d3f37789db55a8534d9723c02a6e5492db421a1c2d2ba3804f5410b26beb"
     },
     {
       "id": "hexer-target-tether",
@@ -836,7 +836,7 @@
       "dimensions": [112, 72],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "bb096f561081ee14db16010ba40fd38819818a24c2e54775949189c34c6d11aa"
+      "sha256": "5db8d174d31830e236f01c01e88c28b5003ffdc1c34260eac145d5a40eae8033"
     },
     {
       "id": "iron-warden-basic-attack-committed",
@@ -988,7 +988,7 @@
       "dimensions": [176, 64],
       "mode": "RGBA",
       "alphaSemantics": "straight-alpha-padded-pivot",
-      "sha256": "3a2023296a12cfe0eb981bacc6a6e6476579768015759437bbd5a22429c29dfd"
+      "sha256": "96b5d80c1dea026678986c2597cf26144aa3d2eaa86800958821131de82071e0"
     },
     {
       "id": "sapper-intent-crest",
