@@ -8,6 +8,9 @@ import referenceCombatantsInput from "../../../content/fixtures/phase-3-referenc
 import shuttergateInput from "../../../content/fixtures/phase-3-shuttergate.json" with {
   type: "json"
 };
+import enemyRosterInput from "../../../content/fixtures/shuttergate-enemy-roster-v1.json" with {
+  type: "json"
+};
 import {
   ContentValidationError,
   validateContentBundle,
@@ -368,6 +371,89 @@ describe("content validation", () => {
     });
     expect(waves).toHaveLength(5);
     expect(waves.flatMap((wave) => wave.spawnEvents)).toHaveLength(18);
+  });
+
+  it("strictly validates the versioned Shuttergate enemy-role contract", () => {
+    const result = validateContentBundle(enemyRosterInput);
+    const nonBossRoles = result.definitions.flatMap((definition) =>
+      definition.kind === "enemy" && definition.classification !== "boss"
+        ? [definition.behavior?.roleId]
+        : []
+    );
+    expect(nonBossRoles).toHaveLength(8);
+    expect(new Set(nonBossRoles).size).toBe(8);
+    const authoredBehaviors = result.definitions.flatMap((definition) =>
+      definition.kind === "enemy" && definition.behavior !== undefined
+        ? [definition.behavior]
+        : []
+    );
+    expect(new Set(authoredBehaviors.map(({ tellId }) => tellId)).size).toBe(9);
+    expect(
+      new Set(authoredBehaviors.map(({ mechanic }) => mechanic)).size
+    ).toBe(9);
+    expect(
+      authoredBehaviors.every(
+        ({ purposeId, counterplayId, effectId }) =>
+          purposeId.startsWith("enemy_purpose.") &&
+          counterplayId.startsWith("enemy_counterplay.") &&
+          effectId.startsWith("enemy_effect.")
+      )
+    ).toBe(true);
+
+    const unknownField = structuredClone(enemyRosterInput) as unknown as {
+      definitions: Array<{
+        kind: string;
+        behavior?: { unexpected?: unknown };
+      }>;
+    };
+    const behavior = unknownField.definitions.find(
+      (definition) => definition.kind === "enemy"
+    )?.behavior;
+    if (behavior === undefined)
+      throw new Error("missing enemy behavior fixture");
+    behavior.unexpected = true;
+    expect(() => validateContentBundle(unknownField)).toThrow(
+      /Unrecognized key/
+    );
+
+    const wrongDomain = structuredClone(enemyRosterInput) as unknown as {
+      definitions: Array<{
+        kind: string;
+        behavior?: { roleId: string };
+      }>;
+    };
+    const wrongRole = wrongDomain.definitions.find(
+      (definition) => definition.kind === "enemy"
+    )?.behavior;
+    if (wrongRole === undefined)
+      throw new Error("missing enemy behavior fixture");
+    wrongRole.roleId = "role.not_enemy_scoped";
+    expect(() => validateContentBundle(wrongDomain)).toThrow(/Invalid option/);
+
+    const unknownRole = structuredClone(enemyRosterInput) as typeof wrongDomain;
+    const unknownBehavior = unknownRole.definitions.find(
+      (definition) => definition.kind === "enemy"
+    )?.behavior;
+    if (unknownBehavior === undefined)
+      throw new Error("missing enemy behavior fixture");
+    unknownBehavior.roleId = "enemy_role.unknown_authored_role";
+    expect(() => validateContentBundle(unknownRole)).toThrow(/Invalid option/);
+
+    const mismatchedRole = structuredClone(enemyRosterInput) as unknown as {
+      definitions: Array<{
+        kind: string;
+        behavior?: { strategy: string };
+      }>;
+    };
+    const mismatchedBehavior = mismatchedRole.definitions.find(
+      (definition) => definition.kind === "enemy"
+    )?.behavior;
+    if (mismatchedBehavior === undefined)
+      throw new Error("missing enemy behavior fixture");
+    mismatchedBehavior.strategy = "support";
+    expect(() => validateContentBundle(mismatchedRole)).toThrow(
+      /does not match canonical enemy_role\.melee_pressure contract/
+    );
   });
 
   it("strictly validates the Iron Warden ability roster fields and ownership", () => {

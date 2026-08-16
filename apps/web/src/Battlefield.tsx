@@ -125,7 +125,12 @@ const hostileDirectionalAssetUrls = Object.fromEntries(
     ["raider", "goblin-cutter"],
     ["slinger", "goblin-slinger"],
     ["bulwark", "goblin-bulwark"],
-    ["captain", "gatebreaker-captain"]
+    ["captain", "gatebreaker-captain"],
+    ["skirmisher", "goblin-skirmisher"],
+    ["sapper", "goblin-sapper"],
+    ["hexer", "goblin-hexer"],
+    ["banner", "goblin-banner-bearer"],
+    ["hunter", "goblin-warden-hunter"]
   ].flatMap(([key, filename]) =>
     (
       [
@@ -144,7 +149,12 @@ const hostileAttackCycleAssetUrls = Object.fromEntries(
     ["raider", "goblin-cutter"],
     ["slinger", "goblin-slinger"],
     ["bulwark", "goblin-bulwark"],
-    ["captain", "gatebreaker-captain"]
+    ["captain", "gatebreaker-captain"],
+    ["skirmisher", "goblin-skirmisher"],
+    ["sapper", "goblin-sapper"],
+    ["hexer", "goblin-hexer"],
+    ["banner", "goblin-banner-bearer"],
+    ["hunter", "goblin-warden-hunter"]
   ].flatMap(([key, filename]) =>
     (["windup", "committed", "impact", "recoil", "recovery"] as const).map(
       (phase) => [
@@ -169,6 +179,18 @@ const wardenShieldSlamCycleAssetUrls = Object.fromEntries(
       combatAnimationAssetUrl(`iron-warden-shield-slam-${phase}.png`)
     ]
   )
+);
+const enemyIntentAssetUrls = Object.fromEntries(
+  [
+    "sapper-intent-crest",
+    "sapper-fuse-tell",
+    "sapper-blast-impact",
+    "sapper-fracture-cancel",
+    "hexer-intent-crest",
+    "hexer-rune-channel",
+    "hexer-target-tether",
+    "hexer-fracture-cancel"
+  ].map((key) => [key, combatAnimationAssetUrl(`${key}.png`)])
 );
 const warmLightOverlayUrl = new URL(
   "../../../assets/game-art/production-scene/exports/lighting/warm-light-overlay.png",
@@ -230,10 +252,27 @@ const battlefieldAssetUrls: Readonly<Record<string, string>> = {
   "captain-downed-source": combatAnimationAssetUrl(
     "gatebreaker-captain-downed.png"
   ),
+  "skirmisher-source": combatAnimationAssetUrl("goblin-skirmisher-idle-s.png"),
+  "skirmisher-downed-source": combatAnimationAssetUrl(
+    "goblin-skirmisher-downed.png"
+  ),
+  "sapper-source": combatAnimationAssetUrl("goblin-sapper-idle-s.png"),
+  "sapper-downed-source": combatAnimationAssetUrl("goblin-sapper-downed.png"),
+  "hexer-source": combatAnimationAssetUrl("goblin-hexer-idle-s.png"),
+  "hexer-downed-source": combatAnimationAssetUrl("goblin-hexer-downed.png"),
+  "banner-source": combatAnimationAssetUrl("goblin-banner-bearer-idle-s.png"),
+  "banner-downed-source": combatAnimationAssetUrl(
+    "goblin-banner-bearer-downed.png"
+  ),
+  "hunter-source": combatAnimationAssetUrl("goblin-warden-hunter-idle-s.png"),
+  "hunter-downed-source": combatAnimationAssetUrl(
+    "goblin-warden-hunter-downed.png"
+  ),
   ...hostileDirectionalAssetUrls,
   ...hostileAttackCycleAssetUrls,
   ...wardenAttackCycleAssetUrls,
   ...wardenShieldSlamCycleAssetUrls,
+  ...enemyIntentAssetUrls,
   "warm-light-overlay": warmLightOverlayUrl,
   "hostile-faction-ring": hostileFactionRingUrl,
   "shield-slam-impact": shieldSlamImpactUrl,
@@ -546,32 +585,35 @@ type CombatPoseAssetKey =
   | "warden-hit-source"
   | "warden-guard-source"
   | "warden-downed-source"
-  | "raider-source"
-  | "raider-attack-source"
-  | "raider-downed-source"
-  | "slinger-source"
-  | "slinger-attack-source"
-  | "slinger-downed-source"
-  | "bulwark-source"
-  | "bulwark-attack-source"
-  | "bulwark-downed-source"
-  | "captain-source"
-  | "captain-attack-source"
-  | "captain-downed-source"
-  | `${"raider" | "slinger" | "bulwark" | "captain"}-attack-${"windup" | "committed" | "impact" | "recoil" | "recovery"}-source`
-  | `${"raider" | "slinger" | "bulwark" | "captain"}-${"north" | "east" | "west"}-source`;
+  | `${"raider" | "slinger" | "bulwark" | "captain" | "skirmisher" | "sapper" | "hexer" | "banner" | "hunter"}-${"source" | "attack-source" | "downed-source"}`
+  | `${"raider" | "slinger" | "bulwark" | "captain" | "skirmisher" | "sapper" | "hexer" | "banner" | "hunter"}-attack-${"windup" | "committed" | "impact" | "recoil" | "recovery"}-source`
+  | `${"raider" | "slinger" | "bulwark" | "captain" | "skirmisher" | "sapper" | "hexer" | "banner" | "hunter"}-${"north" | "east" | "west"}-source`;
 
 function hostilePosePrefix(
   visualId: string
-): "raider" | "slinger" | "bulwark" | "captain" {
+):
+  | "raider"
+  | "slinger"
+  | "bulwark"
+  | "captain"
+  | "skirmisher"
+  | "sapper"
+  | "hexer"
+  | "banner"
+  | "hunter" {
   if (visualId === "enemy.goblin_slinger") return "slinger";
   if (visualId === "enemy.goblin_bulwark") return "bulwark";
   if (visualId === "enemy.gatebreaker_captain") return "captain";
+  if (visualId === "enemy.goblin_skirmisher") return "skirmisher";
+  if (visualId === "enemy.goblin_sapper") return "sapper";
+  if (visualId === "enemy.goblin_hexer") return "hexer";
+  if (visualId === "enemy.goblin_banner_bearer") return "banner";
+  if (visualId === "enemy.goblin_warden_hunter") return "hunter";
   return "raider";
 }
 
 function hostileIdlePoseAsset(
-  prefix: "raider" | "slinger" | "bulwark" | "captain",
+  prefix: ReturnType<typeof hostilePosePrefix>,
   facing: RenderEntityV2["facing"]
 ): CombatPoseAssetKey {
   return facing === "south" ? `${prefix}-source` : `${prefix}-${facing}-source`;
@@ -701,12 +743,299 @@ export interface CombatPresentationState {
   readonly shieldSlamImpact: boolean;
 }
 
+export type EnemyIntentMechanic =
+  | "direct_pressure"
+  | "standoff_fire"
+  | "target_intercept"
+  | "formation_command"
+  | "flank_reposition"
+  | "attack_disrupt"
+  | "attack_slow"
+  | "ally_haste"
+  | "target_mark";
+
+export type EnemyIntentPhase = "telling" | "committed" | "cancelled";
+
+export interface EnemyIntentPresentation {
+  readonly mechanic: EnemyIntentMechanic;
+  readonly phase: EnemyIntentPhase;
+}
+
+const enemyIntentMechanics = new Set<EnemyIntentMechanic>([
+  "direct_pressure",
+  "standoff_fire",
+  "target_intercept",
+  "formation_command",
+  "flank_reposition",
+  "attack_disrupt",
+  "attack_slow",
+  "ally_haste",
+  "target_mark"
+]);
+
+export function deriveEnemyIntentPresentation(
+  statusIds: readonly string[]
+): EnemyIntentPresentation | undefined {
+  for (const statusId of statusIds) {
+    const match =
+      /^status\.enemy_behavior\.([a-z_]+)\.(telling|committed|cancelled)$/.exec(
+        statusId
+      );
+    if (match === null) continue;
+    const mechanic = match[1] as EnemyIntentMechanic;
+    if (!enemyIntentMechanics.has(mechanic)) continue;
+    return { mechanic, phase: match[2] as EnemyIntentPhase };
+  }
+  return undefined;
+}
+
+const enemyRoleDetails: Readonly<
+  Record<
+    string,
+    {
+      readonly role: string;
+      readonly mechanic: string;
+      readonly counterplay: string;
+    }
+  >
+> = {
+  "enemy.goblin_cutter": {
+    role: "Cutter",
+    mechanic: "Driving lunge",
+    counterplay: "Control before contact"
+  },
+  "enemy.goblin_slinger": {
+    role: "Slinger",
+    mechanic: "Standoff shot",
+    counterplay: "Break line of sight"
+  },
+  "enemy.goblin_bulwark": {
+    role: "Bulwark",
+    mechanic: "Intercepting guard",
+    counterplay: "Retarget around guard"
+  },
+  "enemy.gatebreaker_captain": {
+    role: "Gatebreaker Captain",
+    mechanic: "Formation command",
+    counterplay: "Interrupt the command"
+  },
+  "enemy.goblin_skirmisher": {
+    role: "Skirmisher",
+    mechanic: "Flanking feint",
+    counterplay: "Deny the flank route"
+  },
+  "enemy.goblin_sapper": {
+    role: "Sapper",
+    mechanic: "Sundering fuse",
+    counterplay: "Interrupt the fuse"
+  },
+  "enemy.goblin_hexer": {
+    role: "Hexer",
+    mechanic: "Slowing hex",
+    counterplay: "Interrupt or break line of sight"
+  },
+  "enemy.goblin_banner_bearer": {
+    role: "Banner Bearer",
+    mechanic: "Rallying banner",
+    counterplay: "Focus the banner bearer"
+  },
+  "enemy.goblin_warden_hunter": {
+    role: "Warden Hunter",
+    mechanic: "Hunt mark",
+    counterplay: "Break the hunter mark"
+  }
+};
+
+export function enemyIntentDetail(entity: RenderEntityV2): string | undefined {
+  const detail = enemyRoleDetails[entity.visualId];
+  if (detail === undefined) return undefined;
+  const intent = deriveEnemyIntentPresentation(
+    entity.statuses.map(({ id }) => id)
+  );
+  const phase =
+    intent?.phase === "telling"
+      ? "Preparing"
+      : intent?.phase === "committed"
+        ? "Committed"
+        : intent?.phase === "cancelled"
+          ? "Cancelled"
+          : "Watching";
+  return `${detail.role} — ${detail.mechanic} · ${phase} · ${detail.counterplay}.`;
+}
+
+interface AuthoredEnemyIntentAssets {
+  readonly crest: "sapper-intent-crest" | "hexer-intent-crest";
+  readonly world:
+    | "sapper-fuse-tell"
+    | "sapper-blast-impact"
+    | "sapper-fracture-cancel"
+    | "hexer-rune-channel"
+    | "hexer-target-tether"
+    | "hexer-fracture-cancel";
+  readonly endpoint?: "sapper-blast-impact" | "hexer-target-tether";
+}
+
+export function authoredEnemyIntentAssets(
+  visualId: string,
+  intent: EnemyIntentPresentation
+): AuthoredEnemyIntentAssets | undefined {
+  if (
+    visualId === "enemy.goblin_sapper" &&
+    intent.mechanic === "attack_disrupt"
+  )
+    return {
+      crest: "sapper-intent-crest",
+      world:
+        intent.phase === "telling"
+          ? "sapper-fuse-tell"
+          : intent.phase === "committed"
+            ? "sapper-fuse-tell"
+            : "sapper-fracture-cancel",
+      ...(intent.phase === "committed"
+        ? { endpoint: "sapper-blast-impact" as const }
+        : {})
+    };
+  if (visualId === "enemy.goblin_hexer" && intent.mechanic === "attack_slow")
+    return {
+      crest: "hexer-intent-crest",
+      world:
+        intent.phase === "telling"
+          ? "hexer-rune-channel"
+          : intent.phase === "committed"
+            ? "hexer-rune-channel"
+            : "hexer-fracture-cancel",
+      ...(intent.phase === "committed"
+        ? { endpoint: "hexer-target-tether" as const }
+        : {})
+    };
+  return undefined;
+}
+
+export function authoredEnemyIntentEffectLayout(
+  intent: EnemyIntentPresentation
+): "span" | "endpoint" {
+  return intent.phase === "cancelled" ? "endpoint" : "span";
+}
+
+export function authoredEnemyIntentSpanLength(distance: number): number {
+  return Math.max(82, Math.min(320, distance + 12));
+}
+
+export function authoredEnemyIntentEffectAlpha(
+  intent: EnemyIntentPresentation
+): number {
+  if (intent.mechanic === "attack_slow") return 0.98;
+  if (intent.mechanic === "attack_disrupt" && intent.phase === "telling")
+    return 0.94;
+  return 0.82;
+}
+
+export function animatedEnemyIntentAlpha(
+  baseAlpha: number,
+  phase: EnemyIntentPhase,
+  reduceMotion: boolean,
+  cadence: number
+): number {
+  if (phase === "cancelled") return Math.min(baseAlpha, 0.58);
+  if (reduceMotion) return baseAlpha;
+  return Math.min(1, baseAlpha + Math.max(0, cadence) * 0.08);
+}
+
+function directionBetween(
+  source: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }>
+): Readonly<{ x: number; y: number }> {
+  const deltaX = target.x - source.x;
+  const deltaY = target.y - source.y;
+  const distance = Math.hypot(deltaX, deltaY);
+  return distance === 0
+    ? { x: 1, y: 0 }
+    : { x: deltaX / distance, y: deltaY / distance };
+}
+
+export function authoredEnemyIntentSourcePoint(
+  source: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }>
+): Readonly<{ x: number; y: number }> {
+  const direction = directionBetween(source, target);
+  return {
+    x: source.x + direction.x * 12,
+    y: source.y - 14
+  };
+}
+
+export function authoredEnemyIntentCrestPoint(
+  source: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }>
+): Readonly<{ x: number; y: number }> {
+  const direction = directionBetween(source, target);
+  return {
+    x: source.x + direction.x * 25,
+    y: source.y - 60
+  };
+}
+
+export function authoredEnemyIntentTargetPoint(
+  intent: EnemyIntentPresentation,
+  source: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }>
+): Readonly<{ x: number; y: number }> {
+  if (intent.mechanic === "attack_disrupt" && intent.phase === "committed")
+    return { x: target.x, y: target.y + 10 };
+  const direction = directionBetween(source, target);
+  return {
+    x: target.x - direction.y * 6,
+    y: target.y + 10 + direction.x * 2
+  };
+}
+
+export function authoredEnemyIntentEndpointPoint(
+  intent: EnemyIntentPresentation,
+  source: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }>
+): Readonly<{ x: number; y: number }> {
+  const destination = authoredEnemyIntentTargetPoint(intent, source, target);
+  if (intent.mechanic !== "attack_slow") return destination;
+  return {
+    x: target.x,
+    y: target.y - 8
+  };
+}
+
+export function authoredEnemyIntentEndpointPresentation(
+  asset: NonNullable<AuthoredEnemyIntentAssets["endpoint"]>
+): Readonly<{
+  width: number;
+  height: number;
+  alpha: number;
+  overlaysRecipient: boolean;
+}> {
+  return asset === "sapper-blast-impact"
+    ? { width: 104, height: 52, alpha: 0.88, overlaysRecipient: false }
+    : { width: 72, height: 54, alpha: 0.78, overlaysRecipient: true };
+}
+
 export function statusSignalKind(
   statusId: string
-): "stagger" | "slow" | "haste" | "unknown" {
-  if (statusId.includes("stagger")) return "stagger";
+):
+  | "stagger"
+  | "slow"
+  | "haste"
+  | "behavior_tell"
+  | "behavior_commit"
+  | "behavior_cooldown"
+  | "behavior_cancelled"
+  | "unknown" {
+  if (statusId.includes("stagger") || statusId.includes("sunder"))
+    return "stagger";
   if (statusId.includes("slow")) return "slow";
   if (statusId.includes("haste")) return "haste";
+  if (statusId.startsWith("status.enemy_behavior.")) {
+    if (statusId.endsWith(".telling")) return "behavior_tell";
+    if (statusId.endsWith(".committed")) return "behavior_commit";
+    if (statusId.endsWith(".cooling_down")) return "behavior_cooldown";
+    if (statusId.endsWith(".cancelled")) return "behavior_cancelled";
+  }
   return "unknown";
 }
 
@@ -1449,8 +1778,78 @@ function updateEntitySignal(
   const dwarf = entity.faction === "dwarf";
   const width = dwarf ? 46 : 38;
   const top = entity.y - (dwarf ? 72 : 60);
+  if (presentation.elite || presentation.boss) {
+    signal.fillStyle(presentation.boss ? 0x76512e : 0x34271d, 1);
+    signal.fillRoundedRect(
+      entity.x - width / 2 - 6,
+      top - 6,
+      width + 12,
+      16,
+      4
+    );
+    signal.lineStyle(1, 0x2a1b11, 1);
+    signal.strokeRoundedRect(
+      entity.x - width / 2 - 4,
+      top - 4,
+      width + 8,
+      12,
+      3
+    );
+  }
   signal.fillStyle(0x090705, 0.9);
-  signal.fillRect(entity.x - width / 2 - 1, top - 1, width + 2, 6);
+  signal.fillRoundedRect(entity.x - width / 2 - 3, top - 3, width + 6, 10, 2);
+  signal.lineStyle(
+    presentation.boss ? 3 : presentation.elite ? 2 : 1,
+    presentation.boss ? 0xd2a866 : presentation.elite ? 0xb98b45 : 0x6c5b44,
+    1
+  );
+  signal.strokeRoundedRect(entity.x - width / 2 - 3, top - 3, width + 6, 10, 2);
+  if (presentation.elite || presentation.boss) {
+    const frameColor = presentation.boss ? 0xd2a866 : 0x9a7140;
+    signal.lineStyle(presentation.boss ? 3 : 3, frameColor, 0.95);
+    signal.strokeRoundedRect(
+      entity.x - width / 2 - 5,
+      top - 5,
+      width + 10,
+      14,
+      3
+    );
+    signal.fillStyle(0x3b2818, 1);
+    signal.fillRoundedRect(entity.x - width / 2 - 8, top - 5, 7, 14, 2);
+    signal.fillRoundedRect(entity.x + width / 2 + 1, top - 5, 7, 14, 2);
+    signal.fillTriangle(
+      entity.x - width / 2 - 8,
+      top - 3,
+      entity.x - width / 2 - 3,
+      top + 2,
+      entity.x - width / 2 - 8,
+      top + 7
+    );
+    signal.fillTriangle(
+      entity.x + width / 2 + 8,
+      top - 3,
+      entity.x + width / 2 + 3,
+      top + 2,
+      entity.x + width / 2 + 8,
+      top + 7
+    );
+    signal.lineStyle(1, 0xc79b5a, 0.88);
+    signal.lineBetween(
+      entity.x - width / 2 - 7,
+      top + 2,
+      entity.x - width / 2 - 3,
+      top + 2
+    );
+    signal.lineBetween(
+      entity.x + width / 2 + 3,
+      top + 2,
+      entity.x + width / 2 + 7,
+      top + 2
+    );
+    signal.fillStyle(0x17100b, 1);
+    signal.fillCircle(entity.x - width / 2 - 4.5, top + 2, 1.5);
+    signal.fillCircle(entity.x + width / 2 + 4.5, top + 2, 1.5);
+  }
   signal.fillStyle(
     presentation.healthRatio > 0.5
       ? 0x69b96b
@@ -1476,44 +1875,50 @@ function updateEntitySignal(
       top - 2
     );
   }
-  for (const [index, statusId] of presentation.statusIds.entries()) {
-    signal.lineStyle(2, 0x73d7ef, 1);
-    const centerX = entity.x + width / 2 + 7 + index * 10;
-    const centerY = top + 2;
-    const kind = statusSignalKind(statusId);
-    if (kind === "stagger") {
-      signal.lineBetween(centerX, centerY - 5, centerX + 5, centerY);
-      signal.lineBetween(centerX + 5, centerY, centerX, centerY + 5);
-      signal.lineBetween(centerX, centerY + 5, centerX - 5, centerY);
-      signal.lineBetween(centerX - 5, centerY, centerX, centerY - 5);
-    } else if (kind === "slow") {
-      signal.lineBetween(centerX - 4, centerY - 5, centerX + 4, centerY - 5);
-      signal.lineBetween(centerX - 4, centerY + 5, centerX + 4, centerY + 5);
-      signal.lineBetween(centerX - 4, centerY - 5, centerX + 4, centerY + 5);
-      signal.lineBetween(centerX + 4, centerY - 5, centerX - 4, centerY + 5);
-    } else if (kind === "haste") {
-      signal.lineBetween(centerX - 4, centerY - 5, centerX + 1, centerY);
-      signal.lineBetween(centerX + 1, centerY, centerX - 4, centerY + 5);
-      signal.lineBetween(centerX + 1, centerY - 5, centerX + 6, centerY);
-      signal.lineBetween(centerX + 6, centerY, centerX + 1, centerY + 5);
-    } else signal.strokeRect(centerX - 4, centerY - 4, 8, 8);
-  }
   if (presentation.elite || presentation.boss) {
-    signal.lineStyle(2, presentation.boss ? 0xe7a2ff : 0xffd45c, 1);
-    signal.strokeCircle(entity.x, top - 5, presentation.boss ? 8 : 5);
+    const emblemX = entity.x - width / 2 + 1;
+    signal.lineStyle(1.5, 0xf0d394, 1);
+    signal.strokeTriangle(
+      emblemX,
+      top - 1,
+      emblemX + 4,
+      top + 2,
+      emblemX,
+      top + 5
+    );
+    if (presentation.boss)
+      signal.lineBetween(emblemX + 4, top + 2, emblemX + 7, top - 1);
   }
+  const groundedStatuses = presentation.statusIds.filter((statusId) => {
+    const kind = statusSignalKind(statusId);
+    return kind === "slow" || kind === "haste";
+  });
+  for (const [index, statusId] of groundedStatuses.entries()) {
+    signal.lineStyle(2, 0xc8b089, 0.9);
+    const centerX = entity.x - 9 + index * 9;
+    const centerY = entity.y + 3;
+    const kind = statusSignalKind(statusId);
+    if (kind === "slow") {
+      signal.strokeEllipse(centerX, centerY, 18, 7);
+      signal.lineBetween(centerX - 4, centerY - 3, centerX + 4, centerY + 3);
+    } else if (kind === "haste") {
+      signal.lineBetween(centerX - 9, centerY + 2, centerX - 2, centerY - 2);
+      signal.lineBetween(centerX, centerY + 2, centerX + 7, centerY - 2);
+    }
+  }
+
   if (entity.cameraDepth !== undefined)
     signal.setMask(
       createDepthVisibilityMask(
         scene,
-        100,
-        90,
+        110,
+        110,
         {
           kind: "upright-billboard",
           cameraDepth: entity.cameraDepth,
           cameraDepthPerPixelY: SHUTTERGATE_UPRIGHT_CAMERA_DEPTH_PER_PIXEL_Y,
           depthEdgeGuardPixels: 1,
-          frameLeft: Math.round(entity.x) - 50,
+          frameLeft: Math.round(entity.x) - 55,
           frameTop: Math.round(entity.y) - 82,
           pivotY: 82
         },
@@ -1644,9 +2049,17 @@ export function renderedFactionForSourceKey(
   if (typeof sourceKey !== "string") return undefined;
   if (sourceKey.startsWith("warden-")) return "dwarf";
   if (
-    ["raider-", "slinger-", "bulwark-", "captain-"].some((prefix) =>
-      sourceKey.startsWith(prefix)
-    )
+    [
+      "raider-",
+      "slinger-",
+      "bulwark-",
+      "captain-",
+      "skirmisher-",
+      "sapper-",
+      "hexer-",
+      "banner-",
+      "hunter-"
+    ].some((prefix) => sourceKey.startsWith(prefix))
   )
     return "enemy";
   return undefined;
@@ -1690,6 +2103,9 @@ class PersistentBattlefieldScene {
   readonly departures = new Map<string, DepartingEntityObjects>();
   readonly effects: Phaser.GameObjects.Graphics[] = [];
   readonly projectileEffects = new Map<string, Phaser.GameObjects.Graphics>();
+  readonly behaviorEffects = new Map<string, Phaser.GameObjects.Image>();
+  readonly behaviorEndpoints = new Map<string, Phaser.GameObjects.Image>();
+  readonly behaviorCrests = new Map<string, Phaser.GameObjects.Image>();
   readonly abilityEffects = new Map<string, Phaser.GameObjects.Image>();
   readonly lighting: Phaser.GameObjects.Image;
   readonly terminalFrame: Phaser.GameObjects.Graphics;
@@ -1790,6 +2206,33 @@ class PersistentBattlefieldScene {
       deltaMilliseconds,
       simulationSpeed
     );
+    for (const presentation of [
+      ...this.behaviorEffects.values(),
+      ...this.behaviorEndpoints.values(),
+      ...this.behaviorCrests.values()
+    ]) {
+      const phase = presentation.getData("phase") as EnemyIntentPhase;
+      const cadence =
+        reduceMotion || phase === "cancelled"
+          ? 0
+          : Math.sin(
+              (this.scene.time.now * simulationSpeed * Math.PI) /
+                (phase === "committed" ? 260 : 520)
+            );
+      const pulse = 1 + cadence * (phase === "committed" ? 0.055 : 0.035);
+      presentation.setScale(
+        Number(presentation.getData("baseScaleX")) * pulse,
+        Number(presentation.getData("baseScaleY")) * pulse
+      );
+      presentation.setAlpha(
+        animatedEnemyIntentAlpha(
+          Number(presentation.getData("baseAlpha")),
+          phase,
+          reduceMotion,
+          cadence
+        )
+      );
+    }
     for (const objects of this.entities.values()) {
       const deltaX = objects.targetX - objects.motionX;
       const deltaY = objects.targetY - objects.motionY;
@@ -1803,12 +2246,20 @@ class PersistentBattlefieldScene {
         distance > 0,
         reduceMotion
       );
+      const staggered = objects.signalPresentation?.statusIds.some(
+        (statusId) => statusSignalKind(statusId) === "stagger"
+      );
+      const recoilX = staggered ? -5 : 0;
+      const recoilAngle = staggered ? -8 : 0;
       objects.motionX = x;
       objects.motionY = y;
-      objects.subject.setPosition(x, y + locomotionCadence);
+      objects.subject
+        .setPosition(x + recoilX, y + locomotionCadence + (staggered ? 3 : 0))
+        .setAngle(recoilAngle);
       objects.ring.setPosition(x, y);
-      const offsetX = x - objects.targetX;
-      const offsetY = y + locomotionCadence - objects.targetY;
+      const offsetX = x + recoilX - objects.targetX;
+      const offsetY =
+        y + locomotionCadence + (staggered ? 3 : 0) - objects.targetY;
       objects.subject.mask?.geometryMask?.setPosition(offsetX, offsetY);
       objects.signal.setPosition(offsetX, offsetY);
       objects.signal.mask?.geometryMask?.setPosition(offsetX, offsetY);
@@ -2054,7 +2505,19 @@ class PersistentBattlefieldScene {
           (
             ["windup", "committed", "impact", "recoil", "recovery"] as const
           ).map((phase) => `${role}-attack-${phase}-source` as const)
-      )
+      ),
+      ...(
+        ["skirmisher", "sapper", "hexer", "banner", "hunter"] as const
+      ).flatMap((role) => [
+        `${role}-source` as const,
+        `${role}-downed-source` as const,
+        ...(["north", "east", "west"] as const).map(
+          (facing) => `${role}-${facing}-source` as const
+        ),
+        ...(
+          ["windup", "committed", "impact", "recoil", "recovery"] as const
+        ).map((phase) => `${role}-attack-${phase}-source` as const)
+      ])
     ];
     const poseTextures = new Map<CombatPoseAssetKey, string>(
       poseSourceKeys.map((source) => [
@@ -2295,6 +2758,174 @@ class PersistentBattlefieldScene {
       }
     }
 
+    const primitiveById = new Map(
+      primitives.entities.map((entity) => [entity.id, entity])
+    );
+    const behaviorTells =
+      snapshot.schemaVersion === 2
+        ? snapshot.entities.flatMap((entity) => {
+            if (entity.faction !== "enemy") return [];
+            const intent = deriveEnemyIntentPresentation(
+              entity.statuses.map(({ id }) => id)
+            );
+            const source = primitiveById.get(entity.id);
+            return intent === undefined || source === undefined
+              ? []
+              : [{ entity, intent, source }];
+          })
+        : [];
+    const authoredBehaviorTells = behaviorTells.flatMap((tell) => {
+      const assets = authoredEnemyIntentAssets(
+        tell.entity.visualId,
+        tell.intent
+      );
+      return assets === undefined ? [] : [{ ...tell, assets }];
+    });
+    const liveBehaviorEffectIds = new Set(
+      authoredBehaviorTells.map(({ entity }) => entity.id)
+    );
+    for (const [id, effect] of this.behaviorEffects)
+      if (!liveBehaviorEffectIds.has(id)) {
+        this.layers["world-effects"].delete(effect);
+        effect.destroy();
+        this.behaviorEffects.delete(id);
+      }
+    for (const [id, endpoint] of this.behaviorEndpoints)
+      if (!liveBehaviorEffectIds.has(id)) {
+        this.layers["world-effects"].delete(endpoint);
+        endpoint.destroy();
+        this.behaviorEndpoints.delete(id);
+      }
+    for (const [id, crest] of this.behaviorCrests)
+      if (!liveBehaviorEffectIds.has(id)) {
+        this.layers["world-focus"].delete(crest);
+        crest.destroy();
+        this.behaviorCrests.delete(id);
+      }
+    for (const {
+      entity: sourceEntity,
+      intent,
+      source,
+      assets
+    } of authoredBehaviorTells) {
+      const target =
+        sourceEntity.targetEntityId === null
+          ? undefined
+          : primitiveById.get(sourceEntity.targetEntityId);
+      const targetPoint = target ?? source;
+      const origin = authoredEnemyIntentSourcePoint(source, targetPoint);
+      const destination = authoredEnemyIntentTargetPoint(
+        intent,
+        origin,
+        targetPoint
+      );
+      const endpointPoint = authoredEnemyIntentEndpointPoint(
+        intent,
+        origin,
+        targetPoint
+      );
+      const crestPoint = authoredEnemyIntentCrestPoint(source, targetPoint);
+      const midpointX = (origin.x + destination.x) / 2;
+      const midpointY = (origin.y + destination.y) / 2;
+      const distance = Math.hypot(
+        destination.x - origin.x,
+        destination.y - origin.y
+      );
+      const angle = Math.atan2(
+        destination.y - origin.y,
+        destination.x - origin.x
+      );
+      const effect =
+        this.behaviorEffects.get(sourceEntity.id) ??
+        this.scene.add.image(midpointX, midpointY, assets.world);
+      effect
+        .setTexture(assets.world)
+        .setOrigin(0.5)
+        .setAlpha(authoredEnemyIntentEffectAlpha(intent));
+      if (authoredEnemyIntentEffectLayout(intent) === "endpoint")
+        effect
+          .setPosition(destination.x, destination.y)
+          .setDisplaySize(104, 52)
+          .setRotation(0);
+      else if (intent.mechanic === "attack_disrupt")
+        effect
+          .setPosition(midpointX, midpointY)
+          .setDisplaySize(authoredEnemyIntentSpanLength(distance), 44)
+          .setRotation(angle);
+      else
+        effect
+          .setPosition(midpointX, midpointY)
+          .setDisplaySize(
+            authoredEnemyIntentSpanLength(distance),
+            intent.mechanic === "attack_slow" ? 44 : 40
+          )
+          .setRotation(angle);
+      effect.setData("baseScaleX", effect.scaleX);
+      effect.setData("baseScaleY", effect.scaleY);
+      effect.setData("baseAlpha", effect.alpha);
+      effect.setData("phase", intent.phase);
+      if (!this.behaviorEffects.has(sourceEntity.id)) {
+        this.behaviorEffects.set(sourceEntity.id, effect);
+        this.layers["world-effects"].add(effect);
+      }
+      if (assets.endpoint === undefined) {
+        const staleEndpoint = this.behaviorEndpoints.get(sourceEntity.id);
+        if (staleEndpoint !== undefined) {
+          this.layers["world-effects"].delete(staleEndpoint);
+          staleEndpoint.destroy();
+          this.behaviorEndpoints.delete(sourceEntity.id);
+        }
+      } else {
+        const endpointPresentation = authoredEnemyIntentEndpointPresentation(
+          assets.endpoint
+        );
+        const endpoint =
+          this.behaviorEndpoints.get(sourceEntity.id) ??
+          this.scene.add.image(
+            endpointPoint.x,
+            endpointPoint.y,
+            assets.endpoint
+          );
+        endpoint
+          .setTexture(assets.endpoint)
+          .setPosition(endpointPoint.x, endpointPoint.y)
+          .setDisplaySize(
+            endpointPresentation.width,
+            endpointPresentation.height
+          )
+          .setAlpha(endpointPresentation.alpha)
+          .setRotation(0);
+        endpoint.setData(
+          "overlaysRecipient",
+          endpointPresentation.overlaysRecipient
+        );
+        endpoint.setData("baseScaleX", endpoint.scaleX);
+        endpoint.setData("baseScaleY", endpoint.scaleY);
+        endpoint.setData("baseAlpha", endpoint.alpha);
+        endpoint.setData("phase", intent.phase);
+        if (!this.behaviorEndpoints.has(sourceEntity.id)) {
+          this.behaviorEndpoints.set(sourceEntity.id, endpoint);
+          this.layers["world-effects"].add(endpoint);
+        }
+      }
+      const crest =
+        this.behaviorCrests.get(sourceEntity.id) ??
+        this.scene.add.image(crestPoint.x, crestPoint.y, assets.crest);
+      crest
+        .setTexture(assets.crest)
+        .setPosition(crestPoint.x, crestPoint.y)
+        .setDisplaySize(intent.phase === "committed" ? 38 : 36, 36)
+        .setAlpha(intent.phase === "cancelled" ? 0.58 : 1);
+      crest.setData("baseScaleX", crest.scaleX);
+      crest.setData("baseScaleY", crest.scaleY);
+      crest.setData("baseAlpha", crest.alpha);
+      crest.setData("phase", intent.phase);
+      if (!this.behaviorCrests.has(sourceEntity.id)) {
+        this.behaviorCrests.set(sourceEntity.id, crest);
+        this.layers["world-focus"].add(crest);
+      }
+    }
+
     const impactKey =
       snapshot.schemaVersion === 2 && activeAbilityImpact !== undefined
         ? `${snapshot.scenarioId}:${snapshot.tick}:${activeAbilityImpact.abilityId}:${activeAbilityImpact.sourceEntityId}:${abilityImpactIds.join(",")}`
@@ -2501,11 +3132,16 @@ class PersistentBattlefieldScene {
       this.scene.children.bringToTop(effect);
     for (const effect of this.projectileEffects.values())
       this.scene.children.bringToTop(effect);
+    for (const effect of this.behaviorEffects.values())
+      this.scene.children.bringToTop(effect);
     for (const entity of orderedEntities) {
       const objects = this.entities.get(entity.id);
       if (objects !== undefined)
         this.scene.children.bringToTop(objects.subject);
     }
+    for (const endpoint of this.behaviorEndpoints.values())
+      if (endpoint.getData("overlaysRecipient") === true)
+        this.scene.children.bringToTop(endpoint);
     this.scene.children.bringToTop(this.lighting);
     for (const effect of this.effects.slice(0, this.activeEffects))
       this.scene.children.bringToTop(effect);
@@ -2513,6 +3149,8 @@ class PersistentBattlefieldScene {
       this.scene.children.bringToTop(effect);
     for (const objects of this.entities.values())
       this.scene.children.bringToTop(objects.signal);
+    for (const crest of this.behaviorCrests.values())
+      this.scene.children.bringToTop(crest);
     for (const { objects } of this.departures.values()) {
       this.scene.children.bringToTop(objects.subject);
       this.scene.children.bringToTop(objects.signal);
@@ -2658,6 +3296,14 @@ class PersistentBattlefieldScene {
     for (const effect of this.effects) clearDepthVisibilityMask(effect);
     for (const effect of this.projectileEffects.values()) effect.destroy();
     this.projectileEffects.clear();
+    for (const effect of this.behaviorEffects.values()) {
+      effect.destroy();
+    }
+    this.behaviorEffects.clear();
+    for (const endpoint of this.behaviorEndpoints.values()) endpoint.destroy();
+    this.behaviorEndpoints.clear();
+    for (const crest of this.behaviorCrests.values()) crest.destroy();
+    this.behaviorCrests.clear();
     for (const effect of this.abilityEffects.values()) effect.destroy();
     this.abilityEffects.clear();
     this.entities.clear();
@@ -2959,6 +3605,33 @@ export function Battlefield({
     if (nextFeedback !== undefined) soundPlayerRef.current?.play(nextFeedback);
   }, [evidenceEffectAlpha, reduceMotion, simulationSpeed, snapshot]);
 
+  const inspectorPositions = new Map(
+    buildBattlefieldPrimitives(snapshot).entities.map((entity) => [
+      entity.id,
+      entity
+    ])
+  );
+  const enemyInspectors =
+    snapshot.schemaVersion === 2
+      ? snapshot.entities.flatMap((entity) => {
+          if (entity.faction !== "enemy") return [];
+          const position = inspectorPositions.get(entity.id);
+          const detail = enemyIntentDetail(entity);
+          if (position === undefined || detail === undefined) return [];
+          return [
+            {
+              id: entity.id,
+              detail,
+              x: (position.x / WIDTH) * 100,
+              y: (position.y / HEIGHT) * 100,
+              intent: deriveEnemyIntentPresentation(
+                entity.statuses.map(({ id }) => id)
+              )
+            }
+          ];
+        })
+      : [];
+
   return (
     <figure
       className="battlefield"
@@ -2967,6 +3640,24 @@ export function Battlefield({
       data-entity-count={snapshot.entities.length}
     >
       <div ref={parentRef} className="battlefield-canvas" aria-hidden="true" />
+      <fieldset className="battlefield-entity-inspectors">
+        <legend className="visually-hidden">Enemy details</legend>
+        {enemyInspectors.map(({ id, detail, x, y, intent }) => (
+          <button
+            key={id}
+            type="button"
+            className="battlefield-entity-inspector"
+            style={{ left: `${x}%`, top: `${y}%` }}
+            aria-label={detail}
+            data-entity-id={id}
+            data-intent-mechanic={intent?.mechanic ?? "none"}
+            data-intent-phase={intent?.phase ?? "none"}
+            data-motion={reduceMotion ? "static" : "animated"}
+          >
+            <span>{detail}</span>
+          </button>
+        ))}
+      </fieldset>
       <figcaption className="visually-hidden" aria-live="off">
         Shuttergate battlefield, {snapshot.phase}; {snapshot.entities.length}{" "}
         {snapshot.entities.length === 1 ? "entity" : "entities"}.

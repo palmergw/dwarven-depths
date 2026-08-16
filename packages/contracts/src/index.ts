@@ -112,6 +112,91 @@ export interface EnemyDefinition {
   readonly armor: number;
   readonly movementIntervalTicks: number;
   readonly basicAttack: AuthoredBasicAttackDefinition;
+  /** Optional only for compatibility with pre-campaign content. */
+  readonly behavior?: AuthoredEnemyBehaviorDefinition;
+}
+
+export interface AuthoredEnemyBehaviorDefinition {
+  readonly schemaVersion: 1;
+  readonly roleId: StableId;
+  readonly strategy:
+    | "advance"
+    | "hold_range"
+    | "guard"
+    | "command"
+    | "skirmish"
+    | "disrupt"
+    | "support"
+    | "priority_hunt";
+  readonly tellId: StableId;
+  readonly tellTicks: number;
+  readonly purposeId: StableId;
+  readonly counterplayId: StableId;
+  readonly mechanic:
+    | "direct_pressure"
+    | "standoff_fire"
+    | "target_intercept"
+    | "formation_command"
+    | "flank_reposition"
+    | "attack_disrupt"
+    | "attack_slow"
+    | "ally_haste"
+    | "target_mark";
+  readonly effectId: StableId;
+  readonly effectMagnitude: number;
+  readonly effectDurationTicks: number;
+  readonly effectCooldownTicks: number;
+}
+
+export interface EnemyBehaviorTargetCandidate {
+  readonly entityId: EntityId;
+  readonly currentHealth: number;
+  readonly maximumHealth: number;
+  readonly pathCost: number;
+}
+
+export interface EnemyBehaviorAllyCandidate {
+  readonly entityId: EntityId;
+  readonly currentHealth: number;
+  readonly maximumHealth: number;
+  readonly pathCost: number;
+}
+
+export interface EnemyBehaviorIntentRequest {
+  readonly schemaVersion: 1;
+  readonly currentTick: number;
+  readonly admittedAtTick: number;
+  readonly enemyEntityId: EntityId;
+  /** Target locked by the tell; null starts a new deterministic acquisition. */
+  readonly lockedTargetEntityId: EntityId | null;
+  readonly behavior: AuthoredEnemyBehaviorDefinition;
+  readonly targets: readonly EnemyBehaviorTargetCandidate[];
+  readonly allies: readonly EnemyBehaviorAllyCandidate[];
+}
+
+export interface EnemyBehaviorIntentDecision {
+  readonly schemaVersion: 1;
+  readonly enemyEntityId: EntityId;
+  readonly roleId: StableId;
+  readonly strategy: AuthoredEnemyBehaviorDefinition["strategy"];
+  readonly mechanic: AuthoredEnemyBehaviorDefinition["mechanic"];
+  readonly purposeId: StableId;
+  readonly counterplayId: StableId;
+  readonly tellId: StableId;
+  readonly effectId: StableId;
+  readonly phase: "telling" | "active" | "cooldown";
+  readonly phaseStartedAtTick: number;
+  readonly phaseCompletesAtTick: number;
+  readonly targetEntityId?: EntityId;
+  readonly reason:
+    | "nearest_target"
+    | "lowest_health_target"
+    | "stable_ally_recipient"
+    | "stable_formation_anchor"
+    | "no_eligible_recipient";
+  /** Authoritative effect lifecycle at this tick's behavior boundary. */
+  readonly effectStatus: "telling" | "committed" | "cooling_down" | "cancelled";
+  readonly effectMagnitude: number;
 }
 
 export interface NavigationNodeDefinition {
@@ -337,6 +422,7 @@ export interface EnemyActionPhaseDecision {
   readonly reason: EnemyActionPhaseReason;
   readonly targetLock: EnemyTargetLockDecision;
   readonly attackId?: StableId;
+  readonly behaviorIntent?: EnemyBehaviorIntentDecision;
 }
 
 export interface EnemyActionPhaseResolution {
@@ -1360,6 +1446,25 @@ export interface AbilityTimerSimulationEvent extends SimulationEventBase {
     | StatusTimerDecision["reason"];
 }
 
+export interface EnemyBehaviorSimulationEvent extends SimulationEventBase {
+  readonly type: "enemy.behavior.intent";
+  readonly enemyEntityId: EntityId;
+  readonly roleId: StableId;
+  readonly strategy: AuthoredEnemyBehaviorDefinition["strategy"];
+  readonly mechanic: AuthoredEnemyBehaviorDefinition["mechanic"];
+  readonly purposeId: StableId;
+  readonly counterplayId: StableId;
+  readonly tellId: StableId;
+  readonly effectId: StableId;
+  readonly phase: EnemyBehaviorIntentDecision["phase"];
+  readonly phaseStartedAtTick: number;
+  readonly phaseCompletesAtTick: number;
+  readonly targetEntityId?: EntityId;
+  readonly effectStatus: EnemyBehaviorIntentDecision["effectStatus"];
+  readonly effectMagnitude: number;
+  readonly reasonCode: EnemyBehaviorIntentDecision["reason"];
+}
+
 export type SimulationEvent =
   | LifecycleSimulationEvent
   | WaveStartedSimulationEvent
@@ -1370,7 +1475,8 @@ export type SimulationEvent =
   | AbilityImpactSimulationEvent
   | AbilityDamageSimulationEvent
   | AbilityStatusSimulationEvent
-  | AbilityTimerSimulationEvent;
+  | AbilityTimerSimulationEvent
+  | EnemyBehaviorSimulationEvent;
 
 export interface CommandEnvelope {
   readonly tick: number;

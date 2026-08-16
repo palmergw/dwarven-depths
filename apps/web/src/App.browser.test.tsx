@@ -16,6 +16,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { App } from "./App.js";
 import {
+  animatedEnemyIntentAlpha,
+  authoredEnemyIntentAssets,
+  authoredEnemyIntentCrestPoint,
+  authoredEnemyIntentEffectAlpha,
+  authoredEnemyIntentEffectLayout,
+  authoredEnemyIntentEndpointPoint,
+  authoredEnemyIntentEndpointPresentation,
+  authoredEnemyIntentSourcePoint,
+  authoredEnemyIntentSpanLength,
+  authoredEnemyIntentTargetPoint,
   Battlefield,
   battlefieldEffectLifetime,
   buildBattlefieldPrimitives,
@@ -26,9 +36,11 @@ import {
   decodeBattlefieldDepthAsset,
   deriveActiveAbilityImpact,
   deriveCombatPresentationState,
+  deriveEnemyIntentPresentation,
   deriveRallyingRoarPresentationSourceId,
   deriveShieldSlamImpactIds,
   deriveSlingerProjectilePaths,
+  enemyIntentDetail,
   hasRenderedInitialFeedback,
   interpolationDistanceForFrame,
   locomotionCadenceOffset,
@@ -1683,6 +1695,168 @@ describe("player-facing combat HUD", () => {
     expect(statusSignalKind("status.slow")).toBe("slow");
     expect(statusSignalKind("status.haste")).toBe("haste");
     expect(statusSignalKind("status.unknown")).toBe("unknown");
+    expect(
+      deriveEnemyIntentPresentation([
+        "status.enemy_behavior.attack_slow.telling",
+        "status.slow"
+      ])
+    ).toEqual({ mechanic: "attack_slow", phase: "telling" });
+    expect(
+      deriveEnemyIntentPresentation([
+        "status.enemy_behavior.attack_slow.cooling_down"
+      ])
+    ).toBeUndefined();
+    expect(
+      authoredEnemyIntentAssets("enemy.goblin_sapper", {
+        mechanic: "attack_disrupt",
+        phase: "telling"
+      })
+    ).toEqual({
+      crest: "sapper-intent-crest",
+      world: "sapper-fuse-tell"
+    });
+    expect(
+      authoredEnemyIntentAssets("enemy.goblin_sapper", {
+        mechanic: "attack_disrupt",
+        phase: "committed"
+      })
+    ).toEqual({
+      crest: "sapper-intent-crest",
+      world: "sapper-fuse-tell",
+      endpoint: "sapper-blast-impact"
+    });
+    expect(
+      authoredEnemyIntentAssets("enemy.goblin_hexer", {
+        mechanic: "attack_slow",
+        phase: "committed"
+      })
+    ).toEqual({
+      crest: "hexer-intent-crest",
+      world: "hexer-rune-channel",
+      endpoint: "hexer-target-tether"
+    });
+    expect(
+      authoredEnemyIntentAssets("enemy.goblin_hexer", {
+        mechanic: "attack_slow",
+        phase: "cancelled"
+      })
+    ).toEqual({
+      crest: "hexer-intent-crest",
+      world: "hexer-fracture-cancel"
+    });
+    expect(
+      authoredEnemyIntentAssets("enemy.goblin_slinger", {
+        mechanic: "standoff_fire",
+        phase: "telling"
+      })
+    ).toBeUndefined();
+    expect(
+      authoredEnemyIntentEffectLayout({
+        mechanic: "attack_slow",
+        phase: "telling"
+      })
+    ).toBe("span");
+    expect(
+      authoredEnemyIntentEffectLayout({
+        mechanic: "attack_slow",
+        phase: "committed"
+      })
+    ).toBe("span");
+    expect(
+      authoredEnemyIntentEffectLayout({
+        mechanic: "attack_disrupt",
+        phase: "committed"
+      })
+    ).toBe("span");
+    expect(
+      authoredEnemyIntentEffectLayout({
+        mechanic: "attack_disrupt",
+        phase: "cancelled"
+      })
+    ).toBe("endpoint");
+    expect(authoredEnemyIntentSpanLength(40)).toBe(82);
+    expect(authoredEnemyIntentSpanLength(180)).toBe(192);
+    expect(authoredEnemyIntentSpanLength(400)).toBe(320);
+    expect(
+      authoredEnemyIntentEffectAlpha({
+        mechanic: "attack_slow",
+        phase: "telling"
+      })
+    ).toBe(0.98);
+    expect(
+      authoredEnemyIntentEffectAlpha({
+        mechanic: "attack_disrupt",
+        phase: "telling"
+      })
+    ).toBe(0.94);
+    expect(
+      authoredEnemyIntentEffectAlpha({
+        mechanic: "attack_disrupt",
+        phase: "committed"
+      })
+    ).toBe(0.82);
+    expect(animatedEnemyIntentAlpha(0.98, "telling", true, 1)).toBe(0.98);
+    expect(animatedEnemyIntentAlpha(0.94, "telling", false, 1)).toBe(1);
+    expect(animatedEnemyIntentAlpha(0.82, "committed", false, -1)).toBe(0.82);
+    expect(animatedEnemyIntentAlpha(0.96, "cancelled", false, 1)).toBe(0.58);
+    expect(
+      authoredEnemyIntentSourcePoint({ x: 200, y: 100 }, { x: 100, y: 100 })
+    ).toEqual({ x: 188, y: 86 });
+    expect(
+      authoredEnemyIntentCrestPoint({ x: 200, y: 100 }, { x: 100, y: 100 })
+    ).toEqual({ x: 175, y: 40 });
+    expect(
+      authoredEnemyIntentTargetPoint(
+        { mechanic: "attack_slow", phase: "committed" },
+        { x: 200, y: 100 },
+        { x: 100, y: 100 }
+      )
+    ).toEqual({ x: 100, y: 108 });
+    expect(
+      authoredEnemyIntentTargetPoint(
+        { mechanic: "attack_disrupt", phase: "committed" },
+        { x: 200, y: 100 },
+        { x: 100, y: 100 }
+      )
+    ).toEqual({ x: 100, y: 110 });
+    expect(
+      authoredEnemyIntentEndpointPoint(
+        { mechanic: "attack_slow", phase: "committed" },
+        { x: 200, y: 100 },
+        { x: 100, y: 100 }
+      )
+    ).toEqual({ x: 100, y: 92 });
+    expect(
+      authoredEnemyIntentEndpointPoint(
+        { mechanic: "attack_disrupt", phase: "committed" },
+        { x: 200, y: 100 },
+        { x: 100, y: 100 }
+      )
+    ).toEqual({ x: 100, y: 110 });
+    expect(
+      authoredEnemyIntentEndpointPresentation("hexer-target-tether")
+    ).toEqual({
+      width: 72,
+      height: 54,
+      alpha: 0.78,
+      overlaysRecipient: true
+    });
+    expect(
+      authoredEnemyIntentEndpointPresentation("sapper-blast-impact")
+    ).toEqual({
+      width: 104,
+      height: 52,
+      alpha: 0.88,
+      overlaysRecipient: false
+    });
+    expect(
+      enemyIntentDetail({
+        visualId: "enemy.goblin_hexer",
+        statuses: [{ id: "status.enemy_behavior.attack_slow.committed" }]
+      } as never)
+    ).toBe(
+      "Hexer — Slowing hex · Committed · Interrupt or break line of sight."
+    );
     expect(document.querySelector(".wave-signal")?.textContent).toBe(
       "Entrance watch Wave 1 · 2 approaching"
     );
@@ -3725,6 +3899,10 @@ describe("authoritative web worker", () => {
       "dwarf"
     );
     expect(renderedFactionForSourceKey("raider-attack-runtime")).toBe("enemy");
+    for (const role of ["skirmisher", "sapper", "hexer", "banner", "hunter"])
+      expect(
+        renderedFactionForSourceKey(`${role}-attack-committed-runtime`)
+      ).toBe("enemy");
     expect(renderedFactionForSourceKey("subject-depth-forged")).toBeUndefined();
   });
 
@@ -3896,7 +4074,7 @@ describe("authoritative web worker", () => {
       ).toBeLessThanOrEqual(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.activeEffects).toBe(1);
       expect(window.__DWARVEN_DEPTHS_RENDERER__?.runtimeTextures).toBe(
-        cycle % 2 === 0 ? 62 : 61
+        cycle % 2 === 0 ? 112 : 111
       );
       expect(
         window.__DWARVEN_DEPTHS_RENDERER__?.sceneObjects
@@ -4086,6 +4264,12 @@ describe("authoritative web worker", () => {
           command: { type: "confirmPreparation" }
         });
         await paused;
+        worker.postMessage({
+          protocolVersion: 4,
+          type: "command",
+          requestId: "encounter-speed",
+          command: { type: "setSimulationSpeed", speed: 2 }
+        });
         const result = waitForMessage(
           worker,
           (message) =>

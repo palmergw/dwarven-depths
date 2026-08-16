@@ -1,0 +1,285 @@
+{
+  "schemaVersion": 1,
+  "contentVersion": "shuttergate-enemy-roster-v1",
+  "definitions": [
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_cutter",
+      "classification": "basic",
+      "maximumHealth": 50,
+      "armor": 0,
+      "movementIntervalTicks": 6,
+      "basicAttack": {
+        "id": "attack.goblin_cutter_basic",
+        "windupTicks": 6,
+        "impactDelayTicks": 1,
+        "cooldownTicks": 20,
+        "damage": 10,
+        "range": 1,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.melee_pressure",
+        "strategy": "advance",
+        "tellId": "enemy_tell.cutter_lunge",
+        "tellTicks": 6,
+        "purposeId": "enemy_purpose.close_pressure",
+        "counterplayId": "enemy_counterplay.control_before_contact",
+        "mechanic": "direct_pressure",
+        "effectId": "enemy_effect.cutter_pressure",
+        "effectMagnitude": 1,
+        "effectDurationTicks": 6,
+        "effectCooldownTicks": 20
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_slinger",
+      "classification": "basic",
+      "maximumHealth": 38,
+      "armor": 0,
+      "movementIntervalTicks": 7,
+      "basicAttack": {
+        "id": "attack.goblin_slinger_basic",
+        "windupTicks": 10,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 28,
+        "damage": 9,
+        "range": 6,
+        "requiresLineOfSight": true
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.ranged_harrier",
+        "strategy": "hold_range",
+        "tellId": "enemy_tell.slinger_draw",
+        "tellTicks": 10,
+        "purposeId": "enemy_purpose.ranged_positioning",
+        "counterplayId": "enemy_counterplay.break_line_of_sight",
+        "mechanic": "standoff_fire",
+        "effectId": "enemy_effect.slinger_standoff",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 10,
+        "effectCooldownTicks": 28
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_bulwark",
+      "classification": "elite",
+      "maximumHealth": 120,
+      "armor": 25,
+      "movementIntervalTicks": 10,
+      "basicAttack": {
+        "id": "attack.goblin_bulwark_basic",
+        "windupTicks": 10,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 30,
+        "damage": 14,
+        "range": 1,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.armored_vanguard",
+        "strategy": "guard",
+        "tellId": "enemy_tell.bulwark_brace",
+        "tellTicks": 10,
+        "purposeId": "enemy_purpose.frontline_protection",
+        "counterplayId": "enemy_counterplay.retarget_around_guard",
+        "mechanic": "target_intercept",
+        "effectId": "enemy_effect.bulwark_guard",
+        "effectMagnitude": 25,
+        "effectDurationTicks": 20,
+        "effectCooldownTicks": 40
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.gatebreaker_captain",
+      "classification": "boss",
+      "maximumHealth": 360,
+      "armor": 20,
+      "movementIntervalTicks": 8,
+      "basicAttack": {
+        "id": "attack.gatebreaker_captain_basic",
+        "windupTicks": 14,
+        "impactDelayTicks": 3,
+        "cooldownTicks": 36,
+        "damage": 24,
+        "range": 2,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.formation_commander",
+        "strategy": "command",
+        "tellId": "enemy_tell.captain_command",
+        "tellTicks": 14,
+        "purposeId": "enemy_purpose.formation_command",
+        "counterplayId": "enemy_counterplay.interrupt_command",
+        "mechanic": "formation_command",
+        "effectId": "enemy_effect.captain_command",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 24,
+        "effectCooldownTicks": 48
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_skirmisher",
+      "classification": "basic",
+      "maximumHealth": 42,
+      "armor": 0,
+      "movementIntervalTicks": 4,
+      "basicAttack": {
+        "id": "attack.goblin_skirmisher_basic",
+        "windupTicks": 4,
+        "impactDelayTicks": 1,
+        "cooldownTicks": 18,
+        "damage": 7,
+        "range": 2,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.flanking_skirmisher",
+        "strategy": "skirmish",
+        "tellId": "enemy_tell.skirmisher_feint",
+        "tellTicks": 4,
+        "purposeId": "enemy_purpose.flanking_pressure",
+        "counterplayId": "enemy_counterplay.deny_flank_route",
+        "mechanic": "flank_reposition",
+        "effectId": "enemy_effect.skirmisher_flank",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 8,
+        "effectCooldownTicks": 18
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_sapper",
+      "classification": "basic",
+      "maximumHealth": 46,
+      "armor": 5,
+      "movementIntervalTicks": 7,
+      "basicAttack": {
+        "id": "attack.goblin_sapper_basic",
+        "windupTicks": 12,
+        "impactDelayTicks": 3,
+        "cooldownTicks": 34,
+        "damage": 16,
+        "range": 3,
+        "requiresLineOfSight": true
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.demolition_sapper",
+        "strategy": "disrupt",
+        "tellId": "enemy_tell.sapper_fuse",
+        "tellTicks": 12,
+        "purposeId": "enemy_purpose.armor_disruption",
+        "counterplayId": "enemy_counterplay.interrupt_fuse",
+        "mechanic": "attack_disrupt",
+        "effectId": "enemy_effect.sapper_sunder",
+        "effectMagnitude": 10,
+        "effectDurationTicks": 30,
+        "effectCooldownTicks": 42
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_hexer",
+      "classification": "elite",
+      "maximumHealth": 72,
+      "armor": 5,
+      "movementIntervalTicks": 8,
+      "basicAttack": {
+        "id": "attack.goblin_hexer_basic",
+        "windupTicks": 11,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 32,
+        "damage": 8,
+        "range": 5,
+        "requiresLineOfSight": true
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.debilitating_hexer",
+        "strategy": "disrupt",
+        "tellId": "enemy_tell.hexer_channel",
+        "tellTicks": 11,
+        "purposeId": "enemy_purpose.tempo_disruption",
+        "counterplayId": "enemy_counterplay.interrupt_channel",
+        "mechanic": "attack_slow",
+        "effectId": "enemy_effect.hexer_slow",
+        "effectMagnitude": 4,
+        "effectDurationTicks": 36,
+        "effectCooldownTicks": 44
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_banner_bearer",
+      "classification": "elite",
+      "maximumHealth": 90,
+      "armor": 10,
+      "movementIntervalTicks": 9,
+      "basicAttack": {
+        "id": "attack.goblin_banner_bearer_basic",
+        "windupTicks": 8,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 26,
+        "damage": 9,
+        "range": 2,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.formation_support",
+        "strategy": "support",
+        "tellId": "enemy_tell.banner_rally",
+        "tellTicks": 8,
+        "purposeId": "enemy_purpose.formation_support",
+        "counterplayId": "enemy_counterplay.focus_banner_bearer",
+        "mechanic": "ally_haste",
+        "effectId": "enemy_effect.banner_haste",
+        "effectMagnitude": 2,
+        "effectDurationTicks": 32,
+        "effectCooldownTicks": 46
+      }
+    },
+    {
+      "kind": "enemy",
+      "id": "enemy.goblin_warden_hunter",
+      "classification": "elite",
+      "maximumHealth": 105,
+      "armor": 15,
+      "movementIntervalTicks": 6,
+      "basicAttack": {
+        "id": "attack.goblin_warden_hunter_basic",
+        "windupTicks": 9,
+        "impactDelayTicks": 2,
+        "cooldownTicks": 27,
+        "damage": 15,
+        "range": 2,
+        "requiresLineOfSight": false
+      },
+      "behavior": {
+        "schemaVersion": 1,
+        "roleId": "enemy_role.warden_hunter",
+        "strategy": "priority_hunt",
+        "tellId": "enemy_tell.warden_hunter_mark",
+        "tellTicks": 9,
+        "purposeId": "enemy_purpose.priority_threat",
+        "counterplayId": "enemy_counterplay.break_hunter_mark",
+        "mechanic": "target_mark",
+        "effectId": "enemy_effect.warden_hunter_mark",
+        "effectMagnitude": 25,
+        "effectDurationTicks": 30,
+        "effectCooldownTicks": 45
+      }
+    }
+  ]
+}

@@ -139,6 +139,15 @@ function statusDetails(statusId: string): {
 } {
   if (statusId.includes("stagger"))
     return { effect: "staggered", source: "Shield Slam" };
+  if (statusId.startsWith("status.enemy_behavior.")) {
+    const [, , mechanic = "unknown", phase = "unknown"] = statusId.split(".");
+    const effect =
+      phase === "telling" ? "telegraphing" : phase.replaceAll("_", " ");
+    return {
+      effect: `${effect}: ${mechanic.replaceAll("_", " ")}`,
+      source: "authoritative enemy intent"
+    };
+  }
   return (
     STATUS_DETAILS[statusId] ?? {
       effect: "an unknown effect",

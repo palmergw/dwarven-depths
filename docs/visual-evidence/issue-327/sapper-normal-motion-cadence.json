@@ -1,0 +1,593 @@
+{
+  "id": "sapper-normal-motion-cadence",
+  "video": "sapper-normal-motion-cadence.webm",
+  "videoSha256": "8572d38aae60faf538ef33c5b9ecb3703297bbd0e2092acd1ff9d66045e1c743",
+  "sourceHead": "e56b120b7fdec2dd2ee237c20fad3deae9ca994b",
+  "fixtureId": "scenarios/conformance/shuttergate-web-truth.json",
+  "viewport": [1440, 900],
+  "motion": "allow",
+  "simulationSpeed": 1,
+  "clipStartMilliseconds": 21717,
+  "clipEndMilliseconds": 23277,
+  "telling": {
+    "videoTimeMilliseconds": 22167,
+    "state": {
+      "tick": 1201,
+      "entity": {
+        "id": "entity.enemy.shuttergate_005",
+        "faction": "enemy",
+        "nodeId": "node.shuttergate_east_entry",
+        "visualId": "enemy.goblin_sapper",
+        "archetype": "basic",
+        "currentHealth": 46,
+        "maximumHealth": 46,
+        "action": {
+          "kind": "idle",
+          "phase": "idle",
+          "abilityId": null,
+          "impactTargetEntityIds": []
+        },
+        "targetEntityId": "entity.dwarf.warden",
+        "statusIds": ["status.enemy_behavior.attack_disrupt.telling"],
+        "transition": "spawned",
+        "elite": false,
+        "boss": false,
+        "x": 1054,
+        "y": 302,
+        "nominalHeight": 44,
+        "canvasBounds": [1014, 248, 80, 60],
+        "alphaBounds": [1021, 258, 67, 44],
+        "nonzeroAlphaPixels": 1760,
+        "fullAlphaPixels": 1548,
+        "partialAlphaPixels": 212,
+        "intersectsUnobscuredWorldViewport": true
+      }
+    }
+  },
+  "committed": {
+    "videoTimeMilliseconds": 22377,
+    "state": {
+      "tick": 1213,
+      "entity": {
+        "id": "entity.enemy.shuttergate_005",
+        "faction": "enemy",
+        "nodeId": "node.shuttergate_east_hall",
+        "visualId": "enemy.goblin_sapper",
+        "archetype": "basic",
+        "currentHealth": 46,
+        "maximumHealth": 46,
+        "action": {
+          "kind": "idle",
+          "phase": "idle",
+          "abilityId": null,
+          "impactTargetEntityIds": []
+        },
+        "targetEntityId": "entity.dwarf.warden",
+        "statusIds": ["status.enemy_behavior.attack_disrupt.committed"],
+        "transition": "active",
+        "elite": false,
+        "boss": false,
+        "x": 838,
+        "y": 330,
+        "nominalHeight": 44,
+        "canvasBounds": [798, 276, 80, 60],
+        "alphaBounds": [805, 286, 67, 44],
+        "nonzeroAlphaPixels": 1760,
+        "fullAlphaPixels": 1548,
+        "partialAlphaPixels": 212,
+        "intersectsUnobscuredWorldViewport": true
+      }
+    }
+  },
+  "samples": [
+    {
+      "videoTimeMilliseconds": 9,
+      "tick": 1176,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 36,
+      "tick": 1178,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 67,
+      "tick": 1179,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 99,
+      "tick": 1181,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 126,
+      "tick": 1183,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 153,
+      "tick": 1184,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 183,
+      "tick": 1186,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 209,
+      "tick": 1187,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 236,
+      "tick": 1189,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 263,
+      "tick": 1190,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 291,
+      "tick": 1192,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 319,
+      "tick": 1194,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 349,
+      "tick": 1195,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 376,
+      "tick": 1197,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 402,
+      "tick": 1198,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 433,
+      "tick": 1200,
+      "entities": []
+    },
+    {
+      "videoTimeMilliseconds": 463,
+      "tick": 1201,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.telling"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 492,
+      "tick": 1203,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.telling"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 519,
+      "tick": 1205,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.telling"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 551,
+      "tick": 1207,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.telling"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 577,
+      "tick": 1208,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.telling"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 603,
+      "tick": 1210,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.telling"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 633,
+      "tick": 1211,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.telling"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 660,
+      "tick": 1213,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 686,
+      "tick": 1214,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 716,
+      "tick": 1216,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 745,
+      "tick": 1218,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 775,
+      "tick": 1219,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 804,
+      "tick": 1221,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 838,
+      "tick": 1223,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 870,
+      "tick": 1224,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 897,
+      "tick": 1226,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 926,
+      "tick": 1227,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 953,
+      "tick": 1229,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 980,
+      "tick": 1231,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1008,
+      "tick": 1232,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1036,
+      "tick": 1234,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1067,
+      "tick": 1235,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1094,
+      "tick": 1237,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1121,
+      "tick": 1238,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1149,
+      "tick": 1240,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1176,
+      "tick": 1241,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.committed"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1203,
+      "tick": 1243,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1234,
+      "tick": 1245,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1260,
+      "tick": 1246,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1286,
+      "tick": 1248,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1316,
+      "tick": 1249,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1342,
+      "tick": 1251,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1371,
+      "tick": 1252,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1397,
+      "tick": 1254,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1426,
+      "tick": 1255,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1453,
+      "tick": 1257,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1483,
+      "tick": 1259,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1510,
+      "tick": 1260,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    },
+    {
+      "videoTimeMilliseconds": 1537,
+      "tick": 1262,
+      "entities": [
+        {
+          "id": "entity.enemy.shuttergate_005",
+          "visualId": "enemy.goblin_sapper",
+          "statusIds": ["status.enemy_behavior.attack_disrupt.cooling_down"]
+        }
+      ]
+    }
+  ]
+}

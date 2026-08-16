@@ -260,6 +260,33 @@ describe("Shuttergate web campaign authority", () => {
     });
     const battlefield = result.finalState.battlefield;
     if (battlefield === undefined) throw new Error("missing battlefield");
+    const mixedRoster = {
+      ...battlefield,
+      enemyAdmissions: battlefield.enemyAdmissions.map((admission, index) =>
+        index === 1
+          ? {
+              ...admission,
+              enemyDefinitionId: "enemy.goblin_skirmisher" as never
+            }
+          : admission
+      ),
+      enemyCombatants: battlefield.enemyCombatants.map((enemy, index) =>
+        index === 1
+          ? {
+              ...enemy,
+              enemyDefinitionId: "enemy.goblin_skirmisher" as never
+            }
+          : enemy
+      )
+    };
+    expect(() =>
+      resolveShuttergateWebAttemptReward({
+        schemaVersion: 1,
+        configuration,
+        terminalResult: "victory",
+        finalState: { ...result.finalState, battlefield: mixedRoster }
+      })
+    ).toThrow("authored enemy roster");
     const survivingEnemy = battlefield.enemyCombatants.find(
       (enemy) => enemy.entityId !== "entity.enemy.shuttergate_010"
     );

@@ -143,6 +143,143 @@ const characterDefinitionSchema = z
     activeAbilities: z.array(authoredActiveAbilitySchema).nonempty().optional()
   })
   .strict();
+const canonicalEnemyRoleFields = {
+  "enemy_role.melee_pressure": [
+    "advance",
+    "direct_pressure",
+    "enemy_tell.cutter_lunge",
+    "enemy_purpose.close_pressure",
+    "enemy_counterplay.control_before_contact",
+    "enemy_effect.cutter_pressure"
+  ],
+  "enemy_role.ranged_harrier": [
+    "hold_range",
+    "standoff_fire",
+    "enemy_tell.slinger_draw",
+    "enemy_purpose.ranged_positioning",
+    "enemy_counterplay.break_line_of_sight",
+    "enemy_effect.slinger_standoff"
+  ],
+  "enemy_role.armored_vanguard": [
+    "guard",
+    "target_intercept",
+    "enemy_tell.bulwark_brace",
+    "enemy_purpose.frontline_protection",
+    "enemy_counterplay.retarget_around_guard",
+    "enemy_effect.bulwark_guard"
+  ],
+  "enemy_role.flanking_skirmisher": [
+    "skirmish",
+    "flank_reposition",
+    "enemy_tell.skirmisher_feint",
+    "enemy_purpose.flanking_pressure",
+    "enemy_counterplay.deny_flank_route",
+    "enemy_effect.skirmisher_flank"
+  ],
+  "enemy_role.demolition_sapper": [
+    "disrupt",
+    "attack_disrupt",
+    "enemy_tell.sapper_fuse",
+    "enemy_purpose.armor_disruption",
+    "enemy_counterplay.interrupt_fuse",
+    "enemy_effect.sapper_sunder"
+  ],
+  "enemy_role.debilitating_hexer": [
+    "disrupt",
+    "attack_slow",
+    "enemy_tell.hexer_channel",
+    "enemy_purpose.tempo_disruption",
+    "enemy_counterplay.interrupt_channel",
+    "enemy_effect.hexer_slow"
+  ],
+  "enemy_role.formation_support": [
+    "support",
+    "ally_haste",
+    "enemy_tell.banner_rally",
+    "enemy_purpose.formation_support",
+    "enemy_counterplay.focus_banner_bearer",
+    "enemy_effect.banner_haste"
+  ],
+  "enemy_role.warden_hunter": [
+    "priority_hunt",
+    "target_mark",
+    "enemy_tell.warden_hunter_mark",
+    "enemy_purpose.priority_threat",
+    "enemy_counterplay.break_hunter_mark",
+    "enemy_effect.warden_hunter_mark"
+  ],
+  "enemy_role.formation_commander": [
+    "command",
+    "formation_command",
+    "enemy_tell.captain_command",
+    "enemy_purpose.formation_command",
+    "enemy_counterplay.interrupt_command",
+    "enemy_effect.captain_command"
+  ]
+} as const;
+const enemyBehaviorSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    roleId: z.enum([
+      "enemy_role.melee_pressure",
+      "enemy_role.ranged_harrier",
+      "enemy_role.armored_vanguard",
+      "enemy_role.flanking_skirmisher",
+      "enemy_role.demolition_sapper",
+      "enemy_role.debilitating_hexer",
+      "enemy_role.formation_support",
+      "enemy_role.warden_hunter",
+      "enemy_role.formation_commander"
+    ]),
+    strategy: z.enum([
+      "advance",
+      "hold_range",
+      "guard",
+      "command",
+      "skirmish",
+      "disrupt",
+      "support",
+      "priority_hunt"
+    ]),
+    tellId: domainIdSchema("enemy_tell"),
+    tellTicks: positiveCombatIntegerSchema,
+    purposeId: domainIdSchema("enemy_purpose"),
+    counterplayId: domainIdSchema("enemy_counterplay"),
+    mechanic: z.enum([
+      "direct_pressure",
+      "standoff_fire",
+      "target_intercept",
+      "formation_command",
+      "flank_reposition",
+      "attack_disrupt",
+      "attack_slow",
+      "ally_haste",
+      "target_mark"
+    ]),
+    effectId: domainIdSchema("enemy_effect"),
+    effectMagnitude: positiveCombatIntegerSchema,
+    effectDurationTicks: positiveCombatIntegerSchema,
+    effectCooldownTicks: positiveCombatIntegerSchema
+  })
+  .strict()
+  .superRefine((behavior, context) => {
+    const expected = canonicalEnemyRoleFields[behavior.roleId];
+    const fields = [
+      "strategy",
+      "mechanic",
+      "tellId",
+      "purposeId",
+      "counterplayId",
+      "effectId"
+    ] as const;
+    for (const [index, field] of fields.entries())
+      if (behavior[field] !== expected[index])
+        context.addIssue({
+          code: "custom",
+          path: [field],
+          message: `${field} does not match canonical ${behavior.roleId} contract`
+        });
+  });
 const enemyDefinitionSchema = z
   .object({
     kind: z.literal("enemy"),
@@ -151,7 +288,8 @@ const enemyDefinitionSchema = z
     maximumHealth: positiveCombatIntegerSchema,
     armor: boundedCombatIntegerSchema,
     movementIntervalTicks: positiveCombatIntegerSchema,
-    basicAttack: authoredBasicAttackSchema
+    basicAttack: authoredBasicAttackSchema,
+    behavior: enemyBehaviorSchema.optional()
   })
   .strict();
 
@@ -896,15 +1034,29 @@ export function validateContentBundle(input: unknown): ContentBundle {
               })
         };
       }
-      if (definition.kind === "enemy")
+      if (definition.kind === "enemy") {
+        const { behavior, ...enemy } = definition;
         return {
-          ...definition,
+          ...enemy,
           id: definition.id as StableId,
           basicAttack: {
             ...definition.basicAttack,
             id: definition.basicAttack.id as StableId
-          }
+          },
+          ...(behavior === undefined
+            ? {}
+            : {
+                behavior: {
+                  ...behavior,
+                  roleId: behavior.roleId as StableId,
+                  tellId: behavior.tellId as StableId,
+                  purposeId: behavior.purposeId as StableId,
+                  counterplayId: behavior.counterplayId as StableId,
+                  effectId: behavior.effectId as StableId
+                }
+              })
         };
+      }
       return {
         kind: "map",
         id: definition.id as StableId,

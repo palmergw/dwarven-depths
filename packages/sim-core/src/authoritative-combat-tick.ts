@@ -4,14 +4,19 @@ import type {
   AuthoritativeCombatTickResolution,
   BattlefieldState,
   DwarfActionPhaseEntry,
+  EnemyBehaviorIntentDecision,
+  EntityId,
   SimulationEvent,
   SimulationState
 } from "@dwarven-depths/contracts";
 import {
   type BattlefieldDwarfDeploymentAuthority,
+  delayDwarfActionForEnemyBehavior,
+  interceptDwarfTargetForEnemyBehavior,
   resolveBattlefieldAttackImpacts,
   resolveDwarfActionPhase
 } from "./battlefield-attack-impact.js";
+import { propagateBattlefieldRoundLineage } from "./battlefield-round-lineage.js";
 import { resolveEnemyActionPhase } from "./enemy-action-phase.js";
 import { deriveEnemyPlanningEntries } from "./enemy-movement-planning.js";
 import {
@@ -166,6 +171,111 @@ function normalizeCombatState(
   });
 }
 
+function applyEnemyBehaviorEffects(
+  battlefield: BattlefieldState,
+  intents: readonly EnemyBehaviorIntentDecision[],
+  currentTick: number,
+  content: CompiledContent,
+  authority: BattlefieldDwarfDeploymentAuthority
+): BattlefieldState {
+  const committed = intents.filter(
+    (intent) =>
+      intent.effectStatus === "committed" &&
+      intent.phaseStartedAtTick === currentTick
+  );
+  if (committed.length === 0) return battlefield;
+  const hastedEnemies = new Set<EntityId>();
+  const slowedDwarves = new Map<
+    EntityId,
+    { readonly delayTicks: number; readonly interruptWindup: boolean }
+  >();
+  const interceptions: Array<
+    readonly [protectedEntityId: EntityId, guardEntityId: EntityId]
+  > = [];
+  for (const intent of committed) {
+    if (intent.mechanic === "formation_command") {
+      for (const enemy of battlefield.enemyCombatants)
+        if (
+          enemy.lifecycleState === "active" &&
+          enemy.entityId !== intent.enemyEntityId
+        ) {
+          hastedEnemies.add(enemy.entityId);
+        }
+      continue;
+    }
+    const targetEntityId = intent.targetEntityId;
+    if (targetEntityId === undefined) continue;
+    if (intent.mechanic === "ally_haste") {
+      hastedEnemies.add(targetEntityId);
+    } else if (intent.mechanic === "target_intercept") {
+      interceptions.push([targetEntityId, intent.enemyEntityId]);
+    } else if (
+      intent.mechanic === "attack_disrupt" ||
+      intent.mechanic === "attack_slow"
+    ) {
+      const prior = slowedDwarves.get(targetEntityId);
+      slowedDwarves.set(
+        targetEntityId,
+        Object.freeze({
+          delayTicks: Math.max(prior?.delayTicks ?? 0, intent.effectMagnitude),
+          interruptWindup:
+            prior?.interruptWindup === true ||
+            intent.mechanic === "attack_disrupt"
+        })
+      );
+    }
+  }
+  const enemyCombatants = battlefield.enemyCombatants.map((enemy) => {
+    if (!hastedEnemies.has(enemy.entityId)) return enemy;
+    return Object.freeze({
+      ...enemy,
+      actionState: Object.freeze({
+        ...enemy.actionState,
+        cooldownCompleteAtTick: null
+      })
+    });
+  });
+  let resolved = Object.freeze({
+    ...battlefield,
+    enemyCombatants: Object.freeze(enemyCombatants),
+    dwarfCombatants: battlefield.dwarfCombatants
+  });
+  propagateBattlefieldRoundLineage(battlefield, resolved);
+  for (const [protectedEntityId, guardEntityId] of interceptions.sort(
+    (left, right) =>
+      left[0] < right[0]
+        ? -1
+        : left[0] > right[0]
+          ? 1
+          : left[1] < right[1]
+            ? -1
+            : left[1] > right[1]
+              ? 1
+              : 0
+  ))
+    resolved = interceptDwarfTargetForEnemyBehavior(
+      resolved,
+      protectedEntityId,
+      guardEntityId,
+      currentTick,
+      content,
+      authority
+    );
+  for (const [dwarfEntityId, slow] of [...slowedDwarves].sort(
+    ([left], [right]) => (left < right ? -1 : left > right ? 1 : 0)
+  ))
+    resolved = delayDwarfActionForEnemyBehavior(
+      resolved,
+      dwarfEntityId,
+      currentTick,
+      slow.delayTicks,
+      slow.interruptWindup,
+      content,
+      authority
+    );
+  return resolved;
+}
+
 /**
  * Composes the currently implemented authoritative battlefield boundaries in
  * fixed same-step order. Rewards, terminal evaluation, statuses, and death
@@ -222,10 +332,24 @@ export function resolveAuthoritativeCombatTick(
     content,
     dwarfAuthority
   );
+  const behaviorIntents = enemyActions.decisions.flatMap((decision) =>
+    decision.behaviorIntent === undefined ? [] : [decision.behaviorIntent]
+  );
+  const behaviorBattlefield = applyEnemyBehaviorEffects(
+    enemyActions.battlefield,
+    behaviorIntents,
+    scheduled.state.tick,
+    content,
+    dwarfAuthority
+  );
+  propagateBattlefieldRoundLineage(
+    enemyActions.battlefield,
+    behaviorBattlefield
+  );
   const dwarfActions = resolveDwarfActionPhase(
     {
       ...common,
-      battlefield: enemyActions.battlefield,
+      battlefield: behaviorBattlefield,
       entries: dwarfActionEntries
     },
     content,
@@ -246,13 +370,43 @@ export function resolveAuthoritativeCombatTick(
     dwarfAuthority
   );
   if (
-    enemyMovement.reservations.decisions.length >
+    behaviorIntents.length + enemyMovement.reservations.decisions.length >
     Number.MAX_SAFE_INTEGER - scheduled.state.eventSequence
   )
-    throw new RangeError("movement events overflow eventSequence");
+    throw new RangeError("combat evidence events overflow eventSequence");
+  const behaviorEvents: SimulationEvent[] = behaviorIntents.map(
+    (intent, offset) => {
+      const sequence = scheduled.state.eventSequence + offset;
+      return Object.freeze({
+        id: `event.${String(sequence).padStart(6, "0")}`,
+        tick: scheduled.state.tick,
+        sequence,
+        type: "enemy.behavior.intent",
+        ruleId: "SIM-ENEMY-BEHAVIOR-001",
+        enemyEntityId: intent.enemyEntityId,
+        roleId: intent.roleId,
+        strategy: intent.strategy,
+        mechanic: intent.mechanic,
+        purposeId: intent.purposeId,
+        counterplayId: intent.counterplayId,
+        tellId: intent.tellId,
+        effectId: intent.effectId,
+        phase: intent.phase,
+        phaseStartedAtTick: intent.phaseStartedAtTick,
+        phaseCompletesAtTick: intent.phaseCompletesAtTick,
+        ...(intent.targetEntityId === undefined
+          ? {}
+          : { targetEntityId: intent.targetEntityId }),
+        effectStatus: intent.effectStatus,
+        effectMagnitude: intent.effectMagnitude,
+        reasonCode: intent.reason
+      });
+    }
+  );
   const movementEvents: SimulationEvent[] =
     enemyMovement.reservations.decisions.map((decision, offset) => {
-      const sequence = scheduled.state.eventSequence + offset;
+      const sequence =
+        scheduled.state.eventSequence + behaviorEvents.length + offset;
       return Object.freeze({
         id: `event.${String(sequence).padStart(6, "0")}`,
         tick: scheduled.state.tick,
@@ -271,10 +425,17 @@ export function resolveAuthoritativeCombatTick(
         reasonCode: decision.reason
       });
     });
-  const events = Object.freeze([...scheduled.events, ...movementEvents]);
+  const events = Object.freeze([
+    ...scheduled.events,
+    ...behaviorEvents,
+    ...movementEvents
+  ]);
   const resolvedState = Object.freeze({
     ...scheduled.state,
-    eventSequence: scheduled.state.eventSequence + movementEvents.length,
+    eventSequence:
+      scheduled.state.eventSequence +
+      behaviorEvents.length +
+      movementEvents.length,
     battlefield: impacts.battlefield
   });
 

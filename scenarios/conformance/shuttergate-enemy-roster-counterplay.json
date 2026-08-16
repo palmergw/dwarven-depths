@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "scenario.conformance.shuttergate_web_truth",
+  "levelId": "level.shuttergate_hall",
+  "seed": "327",
+  "maximumTicks": 5000,
+  "commands": [
+    { "atTick": 0, "type": "confirmPreparation" },
+    {
+      "atTick": 1,
+      "type": "setTargetPolicy",
+      "dwarfEntityId": "entity.dwarf.warden",
+      "requestedPolicy": "fastest"
+    },
+    {
+      "atTick": 305,
+      "type": "activateAbility",
+      "dwarfEntityId": "entity.dwarf.warden",
+      "abilityId": "ability.iron_warden.shield_slam"
+    },
+    {
+      "atTick": 1205,
+      "type": "activateAbility",
+      "dwarfEntityId": "entity.dwarf.warden",
+      "abilityId": "ability.iron_warden.linebreaker"
+    },
+    {
+      "atTick": 1960,
+      "type": "activateAbility",
+      "dwarfEntityId": "entity.dwarf.warden",
+      "abilityId": "ability.iron_warden.rallying_roar"
+    }
+  ],
+  "expectedTerminalResult": "defeat"
+}
